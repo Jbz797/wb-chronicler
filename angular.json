@@ -1,0 +1,34 @@
+{
+  "cli": { "analytics": "384efcfb-fd9b-4f4f-b1f0-5a72b6ef3c7e", "packageManager": "yarn" },
+  "version": 1,
+  "projects": {
+    "wb-chronicler": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "assets": ["src/assets", { "glob": "**/*", "input": "./node_modules/@ant-design/icons-angular/src/inline-svg/", "output": "/assets/" }],
+            "browser": "src/main.ts",
+            "index": "src/index.html",
+            "optimization": false,
+            "polyfills": ["zone.js"],
+            "sourceMap": true,
+            "styles": ["src/theme.less", "src/styles.scss"],
+            "tsConfig": "tsconfig.json"
+          }
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": { "buildTarget": "wb-chronicler:build" }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": { "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"] }
+        }
+      }
+    }
+  }
+}
