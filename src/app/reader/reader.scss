@@ -105,15 +105,18 @@
   }
 
   blockquote {
-    border-left: 4px solid $gold;
+    border-left: 3px solid $gold;
     color: $sienna-soft;
     font-style: italic;
-    margin: 1.2em 0;
-    padding: 0.5em 1.2em;
+    margin: 1.6em 0;
+    padding: 0.25em 1em;
+
+    p {
+      margin: 0;
+    }
   }
 
   table {
-    border-collapse: collapse;
     margin: 1.2em 0;
     width: 100%;
 
@@ -126,7 +129,6 @@
 
     th {
       background: $paper-shade;
-      font-weight: 600;
     }
 
     tr:nth-child(even) td {
@@ -134,33 +136,17 @@
     }
   }
 
-  // Ornamental fleuron separator
   hr {
-    background: none;
     border: 0;
-    height: 2em;
+    height: 1.8em;
     margin: 2.5em 0;
-    overflow: visible;
-    position: relative;
     text-align: center;
 
     &::before {
       color: $gold;
       content: '❦';
-      display: block;
       font-size: 1.8em;
       line-height: 1;
-    }
-
-    &::after {
-      background: linear-gradient(90deg, transparent 0%, $gold-soft 30%, $gold-soft 70%, transparent 100%);
-      content: '';
-      height: 1px;
-      left: 0;
-      position: absolute;
-      right: 0;
-      top: 50%;
-      z-index: -1;
     }
   }
 

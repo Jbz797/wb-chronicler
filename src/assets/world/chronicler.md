@@ -22,8 +22,6 @@ Le Principe d'innovation est une **obligation active**, pas une autorisation pas
 
 La chronique vit dans un **dossier local** géré via Claude Code. Plus de Project Knowledge, plus d'uploads, plus de cloisonnement par conversation : le chroniqueur accède directement au filesystem et peut consulter à la demande tout l'historique du monde.
 
-`test code inline`
-
 ## Arborescence
 
 ```
