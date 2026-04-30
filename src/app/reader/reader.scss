@@ -1,6 +1,5 @@
 @use 'variables' as *;
 
-// Pierce shadow boundary so styles also apply to markdown rendered via [innerHTML]
 :host ::ng-deep .reader-page {
   background: $parchment-noise, radial-gradient(ellipse at center, $paper 0%, $paper-dim 100%);
   border-radius: $radius;
@@ -8,43 +7,20 @@
     0 6px 20px rgba(black, 0.75),
     0 0 30px rgba($gold, 0.35);
   color: $dark-warm;
-  font-family: $font-body;
   font-size: 1.08rem;
   height: calc(100vh - 4rem);
   line-height: 1.75;
   margin: 2rem auto;
   max-width: 50%;
-  overflow: hidden; // clip the rounded corners — scroll happens on the inner <markdown>
+  overflow: hidden;
 
-  // Inner scrollable zone (so scrollbar respects parent's border-radius)
-  > markdown {
+  & > markdown {
     display: block;
     height: 100%;
     overflow-y: auto;
     padding: 2rem;
-
-    // Firefox scrollbar
     scrollbar-color: $gold $paper-shade;
     scrollbar-width: thin;
-
-    // Webkit scrollbar (Chrome, Safari, Edge)
-    &::-webkit-scrollbar {
-      width: 10px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: $paper-shade;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: $gold;
-      border: 2px solid $paper-shade;
-      border-radius: $radius;
-
-      &:hover {
-        background: $gold-deep;
-      }
-    }
   }
 
   p,
@@ -63,14 +39,12 @@
     font-weight: 600;
     letter-spacing: 0.02em;
     margin-top: 1.8em;
-    margin-bottom: 0.6em;
   }
 
   h1 {
     border-bottom: 2px solid $gold-soft;
-    font-size: 2.3em;
     font-weight: 700;
-    padding-bottom: 0.3em;
+    padding-bottom: 0.2em;
     text-align: center;
 
     &:first-child {
@@ -82,16 +56,17 @@
 
   h2 {
     border-bottom: 1px solid $gold-soft;
-    font-size: 1.6em;
-    padding-bottom: 0.2em;
+    padding-bottom: 0.1em;
   }
 
-  h3 {
-    font-size: 1.3em;
+  h4 {
+    letter-spacing: 0.1em;
   }
 
-  // Drop cap on the first narrative paragraph after each H1.
-  // .metadata paragraphs are skipped — drop cap falls through to the next p.
+  h5 {
+    font-style: italic;
+  }
+
   h1 + p:not(.metadata)::first-letter,
   h1 + p.metadata + p::first-letter {
     color: $sienna;
@@ -99,12 +74,9 @@
     font-family: $font-display;
     font-size: 3.6em;
     font-weight: 700;
-    line-height: 0.85;
-    margin: 0.1em 0.1em 0 0;
-    padding: 0.05em 0.1em 0;
+    margin: 0.15em 0.15em 0 0;
   }
 
-  // Discreet centered metadata line (e.g. "Date de mise à jour")
   .metadata {
     color: $sienna-soft;
     font-size: 0.92em;
@@ -119,11 +91,10 @@
     text-decoration: underline;
   }
 
-  code {
+  :not(pre) > code {
     background: $paper-shade;
     border-radius: $radius;
     color: $sienna;
-    font-family: $font-mono;
     font-size: 0.88em;
     padding: 0.15em 0.4em;
   }
@@ -131,16 +102,6 @@
   pre {
     background: $dark-warm;
     border-radius: $radius;
-    color: $paper-shade;
-    font-family: $font-mono;
-    overflow-x: auto;
-    padding: 1em 1.2em;
-
-    code {
-      background: transparent;
-      color: inherit;
-      padding: 0;
-    }
   }
 
   blockquote {
