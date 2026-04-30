@@ -1,0 +1,32 @@
+// ⚠️ The 9 colors below mirror theme.less with the same names — keep in sync.
+$accent: #e6b94a;
+$background: #1a1612;
+$dark-warm: #2a2520;
+$error: #c14040;
+$info: #d4a017;
+$primary: #7a9b3a;
+$success: #5fa35f;
+$text: rgb(245 235 215 / 88%);
+$text-secondary: rgb(245 235 215 / 55%);
+
+// Reader: light parchment palette
+$gold-deep: #a87f30;
+$gold-soft: #d4c290;
+$gold: #c9a04a;
+$paper-dim: #f2eada;
+$paper-shade: #ebe1c6;
+$paper: #faf6ec;
+$sienna-soft: #6b5a3a;
+$sienna: #6b4a1f;
+
+// Fonts
+$font-body: 'EB Garamond', 'Georgia', 'Times New Roman', serif;
+$font-display: 'Cinzel', 'Trajan Pro', 'Georgia', serif;
+$font-mono: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+
+// Layout
+$radius: 4px;
+$transition: 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+
+// Subtle parchment noise texture (SVG data-url, low-opacity)
+$parchment-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.13  0 0 0 0 0.08  0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");

@@ -1,7 +1,8 @@
 {
   "extends": "stylelint-config-standard-scss",
   "rules": {
+    "color-function-alias-notation": null,
     "selector-pseudo-element-no-unknown": [true, { "ignorePseudoElements": ["ng-deep"] }],
-    "selector-type-no-unknown": [true, { "ignoreTypes": ["/^nz-/"] }]
+    "selector-type-no-unknown": [true, { "ignoreTypes": ["/^nz-/", "markdown"] }]
   }
 }

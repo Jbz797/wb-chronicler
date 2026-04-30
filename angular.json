@@ -16,7 +16,8 @@
             "optimization": false,
             "polyfills": ["zone.js"],
             "sourceMap": true,
-            "styles": ["src/theme.less", "src/styles.scss"],
+            "stylePreprocessorOptions": { "includePaths": ["src"] },
+            "styles": ["src/theme.less", "src/styles.scss", "node_modules/prism-themes/themes/prism-gruvbox-dark.css"],
             "tsConfig": "tsconfig.json"
           }
         },

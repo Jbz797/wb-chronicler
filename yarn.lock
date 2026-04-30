@@ -5494,6 +5494,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"marked@npm:^17.0.0":
+  version: 17.0.6
+  resolution: "marked@npm:17.0.6"
+  bin:
+    marked: bin/marked.js
+  checksum: 10c0/77961fbb360511d6638491e097cb15b1ef5e643f27c25b9cd52aa3cd92e216fc3cda7dbfc6a10adb7922d1b38df132510df65de4afe6c53c7280772c9d4221bd
+  languageName: node
+  linkType: hard
+
 "math-intrinsics@npm:^1.1.0":
   version: 1.1.0
   resolution: "math-intrinsics@npm:1.1.0"
@@ -5727,6 +5736,38 @@ __metadata:
     "@angular/platform-browser": ^21.0.0
     "@angular/router": ^21.0.0
   checksum: 10c0/bbc68d56cde3b3ae65b4d32e70daff71e6318343d88f1f8cdb0aeaa557014e050cbd5c27a79b4998f3b38fb640293ce317f8b7ad7112f351613176534cb36437
+  languageName: node
+  linkType: hard
+
+"ngx-markdown@npm:^21.2.0":
+  version: 21.2.0
+  resolution: "ngx-markdown@npm:21.2.0"
+  dependencies:
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/common": ^21.0.0
+    "@angular/core": ^21.0.0
+    "@angular/platform-browser": ^21.0.0
+    clipboard: ^2.0.11
+    emoji-toolkit: ">= 8.0.0 < 11.0.0"
+    katex: ^0.16.0
+    marked: ^17.0.0
+    mermaid: ">= 10.6.0 < 12.0.0"
+    prismjs: ^1.30.0
+    rxjs: ^6.5.3 || ^7.4.0
+    zone.js: ~0.15.0 || ~0.16.0
+  peerDependenciesMeta:
+    clipboard:
+      optional: true
+    emoji-toolkit:
+      optional: true
+    katex:
+      optional: true
+    mermaid:
+      optional: true
+    prismjs:
+      optional: true
+  checksum: 10c0/a9d92346941f98aff56b67d25ccc473ebdc21b016f349c143574530367983ec1f4993e449eeee83e63c8a98277c80606550c1c5f30109fa79a8a6a4d9ccc9079
   languageName: node
   linkType: hard
 
@@ -6173,6 +6214,20 @@ __metadata:
   bin:
     prettier: bin/prettier.cjs
   checksum: 10c0/754816fd7593eb80f6376d7476d463e832c38a12f32775a82683adb6e35b772b1f484d65f19401507b983a8c8a7cd5a4a9f12006bd56491e8f35503473f77473
+  languageName: node
+  linkType: hard
+
+"prism-themes@npm:^1.9.0":
+  version: 1.9.0
+  resolution: "prism-themes@npm:1.9.0"
+  checksum: 10c0/8ead5f4344248eeb21bcc3dc5f52f68fc8997e496ab523975f26954c20294d5b04c487b38ae39b35a449e436fc0226a2bf4dc2a3c97e0f0303e81fa05614002d
+  languageName: node
+  linkType: hard
+
+"prismjs@npm:^1.30.0":
+  version: 1.30.0
+  resolution: "prismjs@npm:1.30.0"
+  checksum: 10c0/f56205bfd58ef71ccfcbcb691fd0eb84adc96c6ff21b0b69fc6fdcf02be42d6ef972ba4aed60466310de3d67733f6a746f89f2fb79c00bf217406d465b3e8f23
   languageName: node
   linkType: hard
 
@@ -7539,8 +7594,12 @@ __metadata:
     "@angular/platform-browser": "npm:21.2.11"
     eslint-config-angular-strict: "npm:^2.3.72"
     less: "npm:^4.6.4"
+    marked: "npm:^17.0.0"
     ng-zorro-antd: "npm:^21.2.2"
+    ngx-markdown: "npm:^21.2.0"
     prettier: "npm:^3.8.3"
+    prism-themes: "npm:^1.9.0"
+    prismjs: "npm:^1.30.0"
     rxjs: "npm:^7.8.2"
     stylelint: "npm:^17.9.1"
     stylelint-config-standard-scss: "npm:^17.0.0"
