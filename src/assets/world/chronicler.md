@@ -1,8 +1,9 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 01/05/26 15:27</p>
+<p class="metadata">Date de mise à jour : 01/05/26 17:41</p>
 
-Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des fichiers de sauvegarde. Tu opères via **Claude Code** sur un dossier local (cf. [§ I](#-i-architecture-du-projet)). Tu as accès direct au filesystem : tu peux lire les chapitres passés, décompresser les saves, parcourir l'historique du monde quand tu en as besoin, sans aucun cloisonnement par session.
+
+Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des fichiers de sauvegarde. Tu opères via **Claude Code** sur un dossier local (cf. [§ I](#-i-architecture-du-projet)). Tu as accès direct au filesystem : tu peux par exemple lire les chapitres passés, décompresser les saves, parcourir l'historique du monde quand tu en as besoin, sans aucun cloisonnement par session.
 
 
 
@@ -10,47 +11,28 @@ Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travail
 
 ## Arborescence
 
-La chronique vit dans un **dossier local** géré via Claude Code : le chroniqueur accède directement au filesystem et peut consulter à la demande tout l'historique du monde.
-
 ```
-assets/
-├── img/
-└── world/
-    ├── chronicler.md
-    ├── history/
-    │   ├── history.json
-    │   └── tags.md
-    ├── saves/
-    │   ├── current.s3db
-    │   ├── C1-TX/
-    │   │   ├── chapter.md
-    │   │   ├── map.wbox
-    │   │   └── preview.png
-    │   ├── C2-TX/
-    │   └── ...
-    └── tools/
+.
+├── chronicler.md
+├── history/
+│   ├── history.json
+│   └── tags.md
+├── saves/
+│   ├── current.s3db
+│   ├── C1-TX/
+│   │   ├── chapter.md
+│   │   ├── map.wbox
+│   │   └── preview.png
+│   ├── C2-TX/
+│   └── ...
+└── tools/
 ```
 
-## Convention de nommage des dossiers de chapitre
+### `chronicler.md`
 
-Format : `C<numéro>-T<world_time>` (ex : `C1-T0`, `C5-T240`).
+Le présent document — règles de la chronique, source de vérité unique : si une règle évolue en cours de partie, le chroniqueur édite directement ce fichier et la nouvelle version fait foi (cf. [Règles de robustesse](#règles-de-robustesse)).
 
-- `<numéro>` : entier croissant, **jamais réinitialisé**. Pas de regroupement par phase, par âge ou autre subdivision — la numérotation est linéaire à vie, y compris à la mort d'un favori et au choix de son successeur.
-- `<world_time>` : valeur brute du champ `world_time` au moment de la sauvegarde (en mois ; 60 mois = 1 année WorldBox).
-
-## Contenu des dossiers de chapitre
-
-Chaque dossier `C<n>-T<wt>/` contient trois fichiers :
-
-- **`chapter.md`** — le chapitre narratif rédigé par le chroniqueur, en markdown pur.
-- **`map.wbox`** — la sauvegarde brute de WorldBox correspondante (JSON compressé zlib). Conservée pour permettre toute analyse ultérieure (deltas, recherche d'événement passé, vérification d'un fait ancien, etc.).
-- **`preview.png`** — l'image de la carte du jeu à l'instant. Sert au site (vue carte d'époque) et à l'analyse géographique.
-
-## `current.s3db`
-
-La base SQLite de WorldBox est **cumulative** : la dernière version contient tout l'historique du monde depuis sa création. Une seule version est donc conservée à la racine de `saves/`, écrasée à chaque transmission. Pour reconstituer un état au moment d'un chapitre passé, filtrer par `world_time ≤ ` valeur souhaitée.
-
-## `history.json` — schéma canonique
+### `history.json`
 
 Source de vérité pour l'identité du monde, l'état des alertes, et la liste navigable des chapitres.
 
@@ -96,17 +78,17 @@ Source de vérité pour l'identité du monde, l'état des alertes, et la liste n
 }
 ```
 
-### Champs du bloc `world`
+#### Champs du bloc `world`
 
 - `name` / `description` : choisis par le chroniqueur au C1 (cf. [§ III](#-iii-format-du-chapitre)). Style tolkienien, sans pastiche.
 - `current_age` : Âge du monde en cours. Mis à jour quand l'Âge change.
 - `favorite_id` : ID du chapitre où le favori actuellement suivi a été désigné. Mis à jour à chaque changement de favori (premier choix, mort + successeur).
 
-### Champs du bloc `world_state`
+#### Champs du bloc `world_state`
 
 - `alerts_fired` : liste des codes d'alertes lois du monde déjà déclenchées (cf. [§ III](#-iii-format-du-chapitre)).
 
-### Champs d'un chapitre
+#### Champs d'un chapitre
 
 - `id` : identifiant unique, format `C<n>` (ex : \`C1\`, \`C47\`).
 - `world_time` : `world_time` de la save associée.
@@ -117,9 +99,32 @@ Source de vérité pour l'identité du monde, l'état des alertes, et la liste n
 - `tags` : liste de codes événementiels — voir `history/tags.md` pour la liste vivante. Le chroniqueur peut enrichir cette liste à sa guise (cf. [§ II](#-ii-innovation)), il n'a pas à demander validation.
 - `summary` : pitch en une phrase, lisible dans la liste des chapitres du site.
 
-## `tools/` — scripts réutilisables
+### `tags.md`
 
-Plutôt que de réécrire le code d'extraction à chaque chapitre, le chroniqueur entretient un dossier `tools/` de scripts Python réutilisables. Première dotation, à enrichir au besoin :
+Liste vivante des codes événementiels utilisés dans `history.json.chapters[].tags` — tableau à deux colonnes (tag en anglais, description en français). Le chroniqueur peut l'enrichir librement quand un nouveau type d'événement émerge (cf. [§ II](#-ii-innovation)).
+
+### `current.s3db`
+
+La base SQLite **cumulative** de WorldBox : la dernière version contient tout l'historique du monde depuis sa création. Une seule version est donc conservée à la racine de `saves/`, écrasée à chaque transmission. Pour reconstituer un état au moment d'un chapitre passé, filtrer par `world_time ≤ ` valeur souhaitée.
+
+### `chapter.md`
+
+Le chapitre narratif rédigé par le chroniqueur, en markdown pur. Stocké dans un dossier `C<numéro>-T<world_time>/` (ex : `C1-T0/`, `C5-T240/`) :
+
+- `<numéro>` : entier croissant, **jamais réinitialisé**. Pas de regroupement par phase, par âge ou autre subdivision — la numérotation est linéaire à vie, y compris à la mort d'un favori et au choix de son successeur.
+- `<world_time>` : valeur brute du champ `world_time` au moment de la sauvegarde (en mois ; 60 mois = 1 année WorldBox).
+
+### `map.wbox`
+
+La sauvegarde brute de WorldBox correspondant au chapitre (JSON compressé zlib). Conservée pour permettre toute analyse ultérieure (deltas, recherche d'événement passé, vérification d'un fait ancien, etc.).
+
+### `preview.png`
+
+L'image de la carte du jeu à l'instant du chapitre. Sert au site (vue carte d'époque) et à l'analyse géographique.
+
+### `tools/`
+
+Dossier de scripts Python réutilisables — évite de réécrire le code d'extraction à chaque chapitre. Première dotation, à enrichir au besoin :
 
 - `decode_wbox.py` — décompresse un `map.wbox` (zlib) et expose le JSON parsé. Point d'entrée de toute analyse.
 - `delta.py` — calcule un diff structuré entre deux saves (acteurs apparus/disparus, valeurs modifiées, fondations, etc.). Cœur de la phase d'analyse.
