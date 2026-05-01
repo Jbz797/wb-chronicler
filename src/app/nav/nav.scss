@@ -1,0 +1,33 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  padding-top: 1.5rem;
+
+  .nav-title {
+    color: $primary;
+    font-family: $font-display;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    margin: 1.5rem 1.5rem 1rem;
+    text-transform: uppercase;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  .nav-empty {
+    color: $text-secondary;
+    font-style: italic;
+    margin: 0 1.5rem;
+  }
+
+  // Boost the active state of nz-menu-item for stronger visibility
+  ::ng-deep .ant-menu-item-selected .ant-menu-title-content {
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-shadow: $glow;
+  }
+}

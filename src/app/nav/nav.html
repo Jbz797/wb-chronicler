@@ -1,0 +1,9 @@
+<h2 class="nav-title">Préceptes</h2>
+<ul nz-menu nzMode="inline">
+  @for (item of items; track item.slug) {
+    <li nz-menu-item nzMatchRouter routerLinkActive [routerLink]="['/', item.slug]">{{ item.label }}</li>
+  }
+</ul>
+
+<h2 class="nav-title">Chroniques</h2>
+<p class="nav-empty">Aucun chapitre pour l'instant.</p>

@@ -1,10 +1,10 @@
 // ⚠️ The 9 colors below mirror theme.less with the same names — keep in sync.
-$accent: #e6b94a;
+$accent: #7a9b3a;
 $background: #1a1612;
 $dark-warm: #2a2520;
 $error: #c14040;
 $info: #d4a017;
-$primary: #7a9b3a;
+$primary: #e6b94a;
 $success: #5fa35f;
 $text: rgb(245 235 215 / 88%);
 $text-secondary: rgb(245 235 215 / 55%);
@@ -23,7 +23,8 @@ $sienna: #6b4a1f;
 $font-body: 'EB Garamond', 'Georgia', 'Times New Roman', serif;
 $font-display: 'Cinzel', 'Trajan Pro', 'Georgia', serif;
 
-// Layout
+// Layout & effects
+$glow: 0 0 10px rgba($primary, 0.4);
 $radius: 4px;
 $transition: 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
 

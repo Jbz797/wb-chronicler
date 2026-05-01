@@ -1,10 +1,13 @@
 import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
-import { ReaderComponent } from './reader/reader';
+import { NzLayoutModule } from 'ng-zorro-antd/layout';
+
+import { NavComponent } from './nav/nav';
 
 @Component({
   selector: 'app-root',
-  imports: [ReaderComponent],
+  imports: [NavComponent, NzLayoutModule, RouterOutlet],
   templateUrl: './app.html',
 })
-export class AppComponent {}
+export class App {}

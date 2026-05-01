@@ -3,18 +3,16 @@
 :host ::ng-deep .reader-page {
   background: $parchment-noise, radial-gradient(ellipse at center, $paper 0%, $paper-dim 100%);
   border-radius: $radius;
-  box-shadow:
-    0 6px 20px rgba(black, 0.75),
-    0 0 30px rgba($gold, 0.35);
+  box-shadow: $glow;
   color: $dark-warm;
   font-size: 1.08rem;
   height: calc(100vh - 4rem);
   line-height: 1.75;
   margin: 2rem auto;
-  max-width: 50%;
   overflow: hidden;
+  width: calc(100% - 4rem);
 
-  & > markdown {
+  > markdown {
     display: block;
     height: 100%;
     overflow-y: auto;
@@ -46,6 +44,7 @@
     font-weight: 700;
     padding-bottom: 0.2em;
     text-align: center;
+    text-shadow: $glow;
 
     &:first-child {
       border-bottom: none;

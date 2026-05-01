@@ -309,6 +309,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@angular/router@npm:^21.2.11":
+  version: 21.2.11
+  resolution: "@angular/router@npm:21.2.11"
+  dependencies:
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/common": 21.2.11
+    "@angular/core": 21.2.11
+    "@angular/platform-browser": 21.2.11
+    rxjs: ^6.5.3 || ^7.4.0
+  checksum: 10c0/55bb1e80ac7f1feff5079a2a49a7bfdb34bf0ae3b469315f8da22658e12dabc9866644833ee0c157aa4ec4f99a7d6bd08e9a36edb6c6c9ed01361614b3845293
+  languageName: node
+  linkType: hard
+
 "@ant-design/colors@npm:^7.0.0":
   version: 7.2.1
   resolution: "@ant-design/colors@npm:7.2.1"
@@ -3762,9 +3776,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:^2.3.72":
-  version: 2.3.72
-  resolution: "eslint-config-angular-strict@npm:2.3.72"
+"eslint-config-angular-strict@npm:^2.3.73":
+  version: 2.3.73
+  resolution: "eslint-config-angular-strict@npm:2.3.73"
   dependencies:
     "@angular-eslint/builder": "npm:21.3.1"
     "@angular-eslint/eslint-plugin": "npm:21.3.1"
@@ -3780,7 +3794,7 @@ __metadata:
     eslint-plugin-import-x: "npm:4.16.2"
     eslint-plugin-perfectionist: "npm:5.9.0"
     eslint-plugin-unicorn: "npm:64.0.0"
-  checksum: 10c0/c59f7c2c491b7634a9e5f6a1706cc5fc3e555ad03019313fe428431c776de2a3e94910b5bbfdc280a9f3b22bf720420e0a425907bc7524ba0136e18215ddb85f
+  checksum: 10c0/cae3978f4113fedf3bb24fe1a12dce677d43041091f9bdbb643e9bf69eeff16f5193c9c8174f6e05f13dcb8f9c2725cca1866b3840574b8d7ed36253fb7b0933
   languageName: node
   linkType: hard
 
@@ -5494,12 +5508,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^17.0.0":
-  version: 17.0.6
-  resolution: "marked@npm:17.0.6"
+"marked@npm:^18.0.2":
+  version: 18.0.2
+  resolution: "marked@npm:18.0.2"
   bin:
     marked: bin/marked.js
-  checksum: 10c0/77961fbb360511d6638491e097cb15b1ef5e643f27c25b9cd52aa3cd92e216fc3cda7dbfc6a10adb7922d1b38df132510df65de4afe6c53c7280772c9d4221bd
+  checksum: 10c0/d04f58c0dee158a8069dad88de549b0039f2af7e1f0fd078aa783f360655e39296662f6c722dc6dd94c1c9ce9ba7ca9355ee1d8d77dd7b9a2f8162ebac6d9bbd
   languageName: node
   linkType: hard
 
@@ -7592,9 +7606,10 @@ __metadata:
     "@angular/core": "npm:21.2.11"
     "@angular/language-service": "npm:^21.2.11"
     "@angular/platform-browser": "npm:21.2.11"
-    eslint-config-angular-strict: "npm:^2.3.72"
+    "@angular/router": "npm:^21.2.11"
+    eslint-config-angular-strict: "npm:^2.3.73"
     less: "npm:^4.6.4"
-    marked: "npm:^17.0.0"
+    marked: "npm:^18.0.2"
     ng-zorro-antd: "npm:^21.2.2"
     ngx-markdown: "npm:^21.2.0"
     prettier: "npm:^3.8.3"
