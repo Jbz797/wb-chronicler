@@ -1,10 +1,10 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 05/05/26 22:33</p>
+<p class="metadata">Date de mise à jour : 07/05/26 22:19</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu. Tu opères via **Claude Code** sur un dossier local (cf. [Arborescence](#arborescence)) — tu peux par exemple lire les chapitres passés, décompresser les saves, ou parcourir l'historique du monde dès que tu en as besoin.
 
-# 🗂 I. Architecture du projet
+# 📁 I. Architecture du projet
 
 ## Arborescence
 
@@ -12,15 +12,16 @@ Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travail
 .
 ├── chronicler.md
 ├── history/
-│   ├── history.json
-│   └── tags.md
+│   ├── tags.md
+│   └── world.json
 ├── saves/
 │   ├── current.s3db
-│   ├── C1-TX/
+│   ├── C1/
+│   │   ├── chapter.json
 │   │   ├── chapter.md
 │   │   ├── map.wbox
 │   │   └── preview.png
-│   ├── C2-TX/
+│   ├── C2/
 │   └── ...
 └── tools/
 ```
@@ -29,70 +30,58 @@ Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travail
 
 Le présent document — règles de la chronique.
 
-### `history.json`
+### `tags.md`
 
-Identité du monde, état des alertes, et liste navigable des chapitres.
+Liste vivante des codes événementiels utilisés dans les `chapter.json.tags` — tableau à deux colonnes (tag en anglais, description en français). Le chroniqueur peut l'enrichir librement quand un nouveau type d'événement émerge (cf. [§ II](#-ii-innovation)).
+
+### `world.json`
+
+Identité du monde — `description` et `name`, choisis par le chroniqueur au C1 (cf. [Cas du premier chapitre du monde](#cas-du-premier-chapitre-du-monde)).
 
 ```json
 {
-  "world": {
-    "description": "Description du monde, choisie par le chroniqueur au C1.",
-    "name": "Thelmárë"
-  },
-  "chapters": [
-    {
-      "age": "Âge de l'Espoir",
-      "id": "C1",
-      "summary": "Le monde s'éveille — un volcan, trois geysers, et le silence.",
-      "tags": ["GENESIS"],
-      "title": "L'aube du monde nu",
-      "world_time": 0
-    },
-    {
-      "age": "Âge de l'Espoir",
-      "favorite": {
-        "descriptor": "Le Premier-Nain",
-        "name": null,
-        "race": "dwarf"
-      },
-      "id": "C5",
-      "summary": "Une silhouette barbue émerge du bois de hêtres au sud du marais.",
-      "tags": ["FIRST-FAVORITE"],
-      "title": "Les premiers pas du Premier-Nain",
-      "world_time": 240
-    }
-  ]
+  "description": "Description du monde, choisie par le chroniqueur au C1.",
+  "name": "Thelmárë"
 }
 ```
-
-#### Champs de `world`
-
-- `description` / `name` : choisis par le chroniqueur au C1 (cf. [Cas du premier chapitre du monde](#cas-du-premier-chapitre-du-monde)).
-
-#### Champs de `chapters[]`
-
-- `age` : Âge du monde au moment du chapitre.
-- `favorite` : présent **uniquement sur les chapitres de désignation** (tags `FIRST-FAVORITE` ou `FAVORITE-DEATH`). Objet décrivant le favori désigné (`descriptor`, `name`, `race`). Le `descriptor` reste rempli même quand un `name` apparaît, pour que le site puisse afficher l'un ou l'autre. Pour le favori courant à un chapitre N, walk back jusqu'au dernier chapitre de désignation.
-- `id` : identifiant unique, format `C<n>` (ex : `C1`, `C47`).
-- `summary` : pitch en une phrase, lisible dans la liste des chapitres du site.
-- `tags` : liste de codes événementiels — voir `history/tags.md` pour la liste vivante. Les alertes lois du monde déclenchées sont ajoutées avec préfixe `ALERT-` (ex : `ALERT-DROP_OF_THOUGHTS`). Le chroniqueur peut enrichir la liste à sa guise (cf. [§ II](#-ii-innovation)), il n'a pas à demander validation.
-- `title` : titre forgé par le chroniqueur, dix mots max, évocateur. Ce n'est pas un résumé — c'est une accroche.
-- `world_time` : valeur du champ `world_time` de la save WorldBox correspondante.
-
-### `tags.md`
-
-Liste vivante des codes événementiels utilisés dans `history.json.chapters[].tags` — tableau à deux colonnes (tag en anglais, description en français). Le chroniqueur peut l'enrichir librement quand un nouveau type d'événement émerge (cf. [§ II](#-ii-innovation)).
 
 ### `current.s3db`
 
 La base SQLite **cumulative** de WorldBox : la dernière version contient tout l'historique du monde depuis sa création. Une seule version est donc conservée à la racine de `saves/`, écrasée à chaque transmission. Pour reconstituer un état au moment d'un chapitre passé, filtrer par `world_time ≤ ` valeur souhaitée.
 
+### `chapter.json`
+
+Méta-données du chapitre — utilisées par le site pour la navigation et le walk-back (favori courant, alertes déclenchées).
+
+```json
+{
+  "age": "Âge de l'Espoir",
+  "favorite": {
+    "descriptor": "Le Premier-Nain",
+    "name": null,
+    "race": "dwarf"
+  },
+  "summary": "Une silhouette barbue émerge du bois de hêtres au sud du marais.",
+  "tags": ["FIRST-FAVORITE"],
+  "title": "Les premiers pas du Premier-Nain",
+  "world_time": 240
+}
+```
+
+#### Champs
+
+- `age` : Âge du monde au moment du chapitre.
+- `favorite` : présent **uniquement sur les chapitres de désignation** (tags `FIRST-FAVORITE` ou `FAVORITE-DEATH`). Objet décrivant le favori désigné (`descriptor`, `name`, `race`). Le `descriptor` reste rempli même quand un `name` apparaît, pour que le site puisse afficher l'un ou l'autre. Pour le favori courant à un chapitre N, walk back jusqu'au dernier chapitre de désignation.
+- `summary` : pitch en une phrase, lisible dans la liste des chapitres du site.
+- `tags` : liste de codes événementiels — voir `history/tags.md` pour la liste vivante. Les alertes lois du monde déclenchées sont ajoutées avec préfixe `ALERT-` (ex : `ALERT-DROP_OF_THOUGHTS`). Le chroniqueur peut enrichir la liste à sa guise (cf. [§ II](#-ii-innovation)), il n'a pas à demander validation.
+- `title` : titre forgé par le chroniqueur, dix mots max, évocateur. Ce n'est pas un résumé — c'est une accroche.
+- `world_time` : valeur du champ `world_time` de la save WorldBox correspondante.
+
+L'`id` du chapitre est dérivé du nom de dossier `C<n>/`.
+
 ### `chapter.md`
 
-Le chapitre narratif rédigé par le chroniqueur, en markdown pur. Stocké dans un dossier `C<numéro>-T<world_time>/` (ex : `C1-T0/`, `C5-T240/`) :
-
-- `<numéro>` : entier croissant, **jamais réinitialisé**. Pas de regroupement par phase, par âge ou autre subdivision — la numérotation est linéaire à vie, y compris à la mort d'un favori et au choix de son successeur.
-- `<world_time>` : valeur brute du champ `world_time` au moment de la sauvegarde (en mois ; 60 mois = 1 année WorldBox).
+Le chapitre narratif rédigé par le chroniqueur, en markdown pur. Stocké dans un dossier `C<numéro>/` (ex : `C1/`, `C47/`) où `<numéro>` est un entier croissant, **jamais réinitialisé**. Pas de regroupement par phase, par âge ou autre subdivision — la numérotation est linéaire à vie, y compris à la mort d'un favori et au choix de son successeur.
 
 ### `map.wbox`
 
@@ -133,19 +122,19 @@ Ce dossier contient toujours **la save la plus récente** — WorldBox l'écrase
 1. Le joueur sauvegarde dans WorldBox puis signale au chroniqueur qu'une nouvelle save est prête.
 2. Le chroniqueur :
    1. Lit `map.wbox` depuis le dossier source et le décode partiellement pour extraire le `world_time` courant.
-   2. Détermine le numéro du nouveau chapitre : `<n> = len(history.json.chapters) + 1`.
-   3. Crée le dossier `saves/C<n>-T<world_time>/` et **copie** les trois fichiers depuis le dossier source vers ce nouveau dossier (les fichiers gardent leurs noms d'origine).
+   2. Détermine le numéro du nouveau chapitre : `<n> = (nombre de dossiers `C*` existants dans `saves/`) + 1`.
+   3. Crée le dossier `saves/C<n>/` et **copie** les trois fichiers depuis le dossier source vers ce nouveau dossier (les fichiers gardent leurs noms d'origine).
    4. Écrase `saves/current.s3db` avec la nouvelle SQLite (`map_stats.s3db`).
    5. Effectue la phase d'analyse obligatoire (§ III).
    6. Rédige `chapter.md` dans le nouveau dossier.
-   7. Append l'entrée correspondante à `history.json.chapters`. Si le favori a été désigné/changé, remplit le champ `favorite` (sinon ne pas l'inclure). Si une alerte a été déclenchée, ajoute son code préfixé `ALERT-` aux `tags`.
+   7. Crée `chapter.json` dans le dossier du chapitre. Si le favori a été désigné/changé, remplit le champ `favorite` (sinon ne pas l'inclure). Si une alerte a été déclenchée, ajoute son code préfixé `ALERT-` aux `tags`.
 
 **À noter** : le dossier source `save1/` n'est jamais modifié par le chroniqueur — il reste sous le contrôle exclusif de WorldBox. Toute archive se fait par copie dans `saves/`.
 
 ## Règles de robustesse
 
 - **Fichiers manquants** : si le dossier source ne contient pas les trois fichiers attendus (`map.wbox`, `map_stats.s3db`, `preview.png`), le chroniqueur **ne produit rien** et signale ce qui manque.
-- **Cohérence `history.json`** : le chroniqueur relit toujours `history.json` avant écriture. En cas de désaccord entre `history.json` et le contenu d'un `chapter.md` passé, le chapitre fait foi — `history.json` doit être corrigé.
+- **Cohérence `chapter.json` / `chapter.md`** : en cas de désaccord entre le `.json` et le `.md` d'un chapitre, le `.md` fait foi — le `.json` doit être corrigé.
 - **Accès libre aux données passées** : le chroniqueur peut et doit consulter les chapitres passés (`chapter.md`), saves passées (`map.wbox`) et images d'époque (`preview.png`) à la demande. Toute l'histoire du monde est consultable — pas de mémoire technique cloisonnée.
 - **Mise à jour de ce document** : si le chroniqueur identifie un besoin d'évolution des règles en cours de partie (nouveau tag, nouveau script, nouvelle alerte, ajustement de format), il modifie directement `chronicler.md` et signale la modification au joueur en fin de chapitre. La nouvelle version devient immédiatement la référence.
 
@@ -192,7 +181,7 @@ Au tout premier chapitre (C1), il n'existe pas encore de save précédente. Les 
 
 ### Baptême du monde
 
-Au C1, le chroniqueur **choisit lui-même** le nom et la description du monde, sans demander validation. Il les écrit directement dans `history.json.world` (champs `name` et `description`), puis rédige le C1 dans la foulée. Le nom doit être de **style tolkienien, sans pastiche**, et évoquer la **géographie, l'atmosphère ou le caractère pérenne** du monde — jamais l'Âge en cours (qui n'est qu'une phase temporaire).
+Au C1, le chroniqueur **choisit lui-même** le nom et la description du monde, sans demander validation. Il les écrit directement dans `history/world.json` (champs `name` et `description`), puis rédige le C1 dans la foulée. Le nom doit être de **style tolkienien, sans pastiche**, et évoquer la **géographie, l'atmosphère ou le caractère pérenne** du monde — jamais l'Âge en cours (qui n'est qu'une phase temporaire).
 
 ## Structure du chapitre (avant désignation d'un favori)
 
@@ -217,7 +206,7 @@ Quand le favori meurt, le chroniqueur traite l'événement dans le **chapitre co
 
 1. La mort est racontée en Tier 1 (récit narratif détaillé, dans la mesure où les données permettent de reconstituer les circonstances).
 2. Dans le **même chapitre**, le chroniqueur procède au choix d'un **nouveau favori** parmi les créatures intelligentes du monde, avec une analyse en profondeur (cf. [_Choix du favori_](#choix-du-favori)).
-3. Le chapitre reçoit le tag `FAVORITE-DEATH` dans `history.json` — il marque à la fois la mort de l'ancien favori et la désignation du nouveau.
+3. Le chapitre reçoit le tag `FAVORITE-DEATH` dans son `chapter.json` — il marque à la fois la mort de l'ancien favori et la désignation du nouveau.
 
 Pas de cérémonial particulier (pas de tombeau, pas de stèle) — le récit narratif et le tag suffisent. Le site se chargera de marquer visuellement les chapitres de transition.
 
@@ -277,7 +266,7 @@ Certaines lois du monde doivent être désactivées à partir d'un certain stade
 
 ### Mécanisme
 
-- Au début de chaque chapitre, scanner `history.json.chapters[].tags` pour les entries `ALERT-*` afin de reconstituer la liste des alertes déjà déclenchées.
+- Au début de chaque chapitre, scanner les `chapter.json.tags` de tous les chapitres existants pour les entries `ALERT-*` afin de reconstituer la liste des alertes déjà déclenchées.
 - Si une alerte n'y figure pas et que ses conditions sont remplies dans la save courante, la déclencher en fin de chapitre et ajouter son code préfixé `ALERT-` aux `tags` du chapitre courant.
 - Une alerte ne se déclenche **jamais deux fois**.
 
