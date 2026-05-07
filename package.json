@@ -2,6 +2,7 @@
   "name": "wb-chronicler",
   "version": "0.0.0",
   "scripts": {
+    "build": "ng build",
     "lint": "ng lint && stylelint \"src/**/*.scss\" && prettier --check \"src/**/*.html\"",
     "lint:fix": "ng lint --fix && stylelint --fix \"src/**/*.scss\" && prettier --write \"src/**/*.html\"",
     "start": "ng serve"

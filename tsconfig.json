@@ -22,9 +22,11 @@
     "types": []
   },
   "angularCompilerOptions": {
+    "extendedDiagnostics": { "defaultCategory": "error" },
     "strictInjectionParameters": true,
     "strictStandalone": true,
-    "strictTemplates": true
+    "strictTemplates": true,
+    "typeCheckHostBindings": true
   },
   "files": ["src/main.ts"],
   "include": ["src/**/*.ts"]

@@ -12,7 +12,7 @@
 ## ESLint
 
 - `max-lines` est configuré avec `skipBlankLines: true` et `skipComments: true`
-- Vérifier les erreurs avec `yarn lint`
+- Vérifier les erreurs avec `yarn lint && yarn build`
 
 ## Méthodes
 
