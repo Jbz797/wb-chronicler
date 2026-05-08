@@ -1,6 +1,22 @@
-# wb-chronicler
+<p align="center">
+  <img src="logo.svg" alt="WB Chronicler Logo" width="120" height="120">
+</p>
 
-Tolkien-style chronicle for WorldBox playthroughs — Claude Code turns saves into narrative chapters, rendered in a parchment-themed Angular reader.
+<h1 align="center">WB Chronicler</h1>
+
+<p align="center">Tolkien-style chronicle for <strong>WorldBox</strong> playthroughs</p>
+
+<p align="center">
+    <a href="https://github.com/Jbz797/wb-chronicler/blob/master/LICENSE"><img src="https://img.shields.io/github/license/Jbz797/wb-chronicler" alt="License" /></a>
+    <img src="https://img.shields.io/badge/Angular-21-DD0031?logo=angular&logoColor=white" alt="Angular 21" />
+    <img src="https://img.shields.io/badge/Claude%20Code-required-D97757?logo=anthropic&logoColor=white" alt="Claude Code required" />
+</p>
+
+<br>
+
+## Overview
+
+Claude Code turns your **WorldBox** save files into narrative chapters, rendered in a parchment-themed Angular reader. The player runs the game in pure observation mode, the chronicler writes the story.
 
 ## How it works
 

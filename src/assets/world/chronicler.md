@@ -55,15 +55,15 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
 
 ```json
 {
-  "age": 0, // Âge du monde au moment du chapitre
-  "favorite": { // Favori courant à ce chapitre (`null` tant qu'aucun favori n'a été désigné)
-    "asset_id": "", // Espèce du favori
+  "age": 0,           // Âge du monde au moment du chapitre
+  "favorite": {       // Favori courant à ce chapitre (`null` tant qu'aucun favori n'a été désigné)
+    "asset_id": "",   // Espèce du favori
     "descriptor": "", // Descripteur narratif court
-    "name": "" // Nom du favori dans les données du jeu
+    "name": ""        // Nom du favori dans les données du jeu
   },
-  "tags": [], // Liste de codes événementiels — voir `history/tags.md` pour la liste
-  "title": "", // Titre forgé par le chroniqueur, court, évocateur
-  "world_time": 0 // Valeur du champ `world_time` de la save WorldBox correspondante (en mois ; 60 mois = 1 année)
+  "tags": [],         // Liste de codes événementiels — voir `history/tags.md` pour la liste
+  "title": "",        // Titre forgé par le chroniqueur, court, évocateur
+  "world_time": 0     // Valeur du champ `world_time` de la save WorldBox correspondante (en mois ; 60 mois = 1 année)
 }
 ```
 
