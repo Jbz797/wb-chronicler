@@ -40,10 +40,10 @@ The chronicle lives under [src/assets/world/](src/assets/world/):
 .
 ├── chronicler.md       # Rules & conventions — single source of truth for the chronicler
 ├── history/
-│   ├── tags.md         # Living vocabulary of event codes (NEW-FAVORITE, ALERT-*, etc.)
-│   └── world.json      # World identity (name + description, set at C1)
+│   ├── tags.md         # Living vocabulary of event codes
+│   └── world.json      # World identity
 ├── saves/
-│   ├── current.s3db    # Latest cumulative WorldBox SQLite (overwritten each save)
+│   ├── current.s3db    # Latest cumulative WorldBox SQLite
 │   └── C<n>/           # One folder per chapter, numbered linearly
 │       ├── chapter.json
 │       ├── chapter.md
