@@ -1,14 +1,35 @@
 {
   "name": "wb-chronicler",
   "version": "0.0.0",
+  "description": "Tolkien-style chronicle for WorldBox playthroughs — Claude Code turns saves into narrative chapters, rendered in a parchment-themed Angular reader.",
+  "keywords": [
+    "angular",
+    "claude-code",
+    "narrative",
+    "ng-zorro",
+    "ngx-markdown",
+    "tolkien",
+    "worldbox"
+  ],
+  "author": {
+    "name": "Jean-benoit Gautier"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jbz797/wb-chronicler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Jbz797/wb-chronicler/issues"
+  },
+  "private": true,
+  "type": "module",
   "scripts": {
     "build": "ng build",
     "lint": "ng lint && stylelint \"src/**/*.scss\" && prettier --check \"src/**/*.html\"",
     "lint:fix": "ng lint --fix && stylelint --fix \"src/**/*.scss\" && prettier --write \"src/**/*.html\"",
     "start": "ng serve"
   },
-  "private": true,
-  "type": "module",
   "dependencies": {
     "@angular/common": "21.2.12",
     "@angular/compiler": "21.2.12",
