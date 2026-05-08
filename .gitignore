@@ -1,8 +1,7 @@
-*.DS_Store
-*.cache
-*.log
 .angular
 .vscode
 .yarn
 dist/
+history/
 node_modules/
+saves/
