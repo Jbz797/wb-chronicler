@@ -1,9 +1,14 @@
 <nz-layout>
-  <nz-sider nzWidth="1">
+  <nz-sider nzWidth="220px">
     <app-nav />
+    <app-map-preview />
   </nz-sider>
   <nz-content>
     <router-outlet />
   </nz-content>
-  <nz-sider nzWidth="200px" />
+  @if (chapters().length) {
+    <nz-sider nzWidth="220px">
+      <app-world-info />
+    </nz-sider>
+  }
 </nz-layout>

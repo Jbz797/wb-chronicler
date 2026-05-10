@@ -1,9 +1,17 @@
 <h2 class="nav-title">Préceptes</h2>
 <ul nz-menu nzMode="inline">
-  @for (item of items; track item.slug) {
-    <li nz-menu-item nzMatchRouter routerLinkActive [routerLink]="['/', item.slug]">{{ item.label }}</li>
+  @for (page of pages; track page.slug) {
+    <li nz-menu-item nzMatchRouter [routerLink]="['/', page.slug]">{{ page.label }}</li>
   }
 </ul>
 
 <h2 class="nav-title">Chroniques</h2>
-<p class="nav-empty">Aucun chapitre pour l'instant.</p>
+@if (chapters().length) {
+  <ul nz-menu nzMode="inline">
+    @for (chapter of chapters(); track chapter.slug) {
+      <li nz-menu-item nzMatchRouter [routerLink]="['/', chapter.slug]">{{ chapter.label }}</li>
+    }
+  </ul>
+} @else {
+  <p class="nav-empty">Aucun chapitre pour l'instant.</p>
+}

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.svg" alt="WB Chronicler Logo" width="120" height="120">
+  <img src="src/assets/img/favicon.svg" alt="WB Chronicler Logo" width="120" height="120">
 </p>
 
 <h1 align="center">WB Chronicler</h1>
@@ -29,27 +29,20 @@ The player runs **WorldBox** in pure observation mode (zero intervention, sandbo
 Each chapter is a self-contained folder under `saves/C<n>/` carrying its own narrative, metadata, the original save snapshot, and the map preview at that moment in time.
 
 > **Notes**
+> - **One save = one chapter.** The system is built around **manual saves only** — disable WorldBox auto-saves before you start. Each time the player triggers a save, the chronicler picks it up and writes the next chapter.
 > - **Claude Max** (or higher) is recommended — the chronicler reads, cross-checks, and writes a multi-section chapter on every save.
 > - Narrative output is **French only** for now.
 
 ## Chronicle layout
 
-The chronicle lives under [src/assets/world/](src/assets/world/):
+The chronicle lives under [src/assets/world/](src/assets/world/) — full structure and conventions are documented in `chronicler.md`:
 
 ```
-.
-├── chronicler.md       # Rules & conventions — single source of truth for the chronicler
+src/assets/world/
+├── chronicler.md
 ├── history/
-│   ├── tags.md         # Living vocabulary of event codes
-│   └── world.json      # World identity
 ├── saves/
-│   ├── current.s3db    # Latest cumulative WorldBox SQLite
-│   └── C<n>/           # One folder per chapter, numbered linearly
-│       ├── chapter.json
-│       ├── chapter.md
-│       ├── map.wbox
-│       └── preview.png
-└── tools/              # Reusable Python scripts for save analysis
+└── tools/
 ```
 
 The contents of `history/` and `saves/` are gitignored — every player's chronicle stays local to their machine.

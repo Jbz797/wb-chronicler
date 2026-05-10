@@ -5,7 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MarkdownComponent } from 'ngx-markdown';
 import { map } from 'rxjs';
 
-import { findPage } from '../constants';
+import { ChroniclerService } from '../services/chronicler.service';
 
 @Component({
   selector: 'app-reader',
@@ -16,8 +16,9 @@ import { findPage } from '../constants';
 })
 export class ReaderComponent {
 
+  private readonly _chronicler = inject(ChroniclerService);
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });
-  protected readonly src = computed(() => findPage(this._slug()).src);
+  protected readonly src = computed(() => this._chronicler.findPage(this._slug()).mdUrl);
 
   // Scroll to internal anchors programmatically (bypasses <base href> redirect; suffix match handles invisible-char prefixes like emoji VS-16).
   protected onClick(event: MouseEvent): void {
