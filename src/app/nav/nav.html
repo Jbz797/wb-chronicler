@@ -1,11 +1,11 @@
-<h2 class="nav-title">Préceptes</h2>
+<h2 class="section-title">Préceptes</h2>
 <ul nz-menu nzMode="inline">
   @for (page of pages; track page.slug) {
     <li nz-menu-item nzMatchRouter [routerLink]="['/', page.slug]">{{ page.label }}</li>
   }
 </ul>
 
-<h2 class="nav-title">Chroniques</h2>
+<h2 class="section-title">Chroniques</h2>
 @if (chapters().length) {
   <ul nz-menu nzMode="inline">
     @for (chapter of chapters(); track chapter.slug) {

@@ -20,7 +20,7 @@ export class ChroniclerService {
     )),
     scan((accumulator: Chapter[], { meta, n }) => meta === null ? accumulator : [...accumulator,
       {
-        label: `C${n}`,
+        label: `C${n} — An ${Math.floor(meta.world_time / 60) + 1}`,
         mdUrl: `${SAVES_DIR}/C${n}/chapter.md`,
         meta,
         previewUrl: `${SAVES_DIR}/C${n}/preview.png`,

@@ -1,4 +1,21 @@
-::ng-deep .ant-layout-sider-children {
-  display: flex;
-  flex-direction: column;
+@use 'variables' as *;
+
+::ng-deep {
+  .ant-layout-sider-children {
+    display: flex;
+    flex-direction: column;
+
+    .section-title {
+      color: $primary;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      margin: 1.5rem 1.5rem 1rem;
+      text-transform: uppercase;
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+  }
 }
