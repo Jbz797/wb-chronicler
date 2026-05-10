@@ -9,9 +9,31 @@
     margin: 0 1.5rem;
   }
 
-  ::ng-deep .ant-menu-item-selected .ant-menu-title-content {
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-shadow: $glow;
+  ::ng-deep {
+    .ant-menu-item {
+      .ant-menu-title-content {
+        align-items: center;
+        display: flex;
+        transition: all $transition;
+
+        .tag-icon {
+          height: 12px;
+          margin-left: 0.5rem;
+          width: 12px;
+          transition: all $transition;
+        }
+      }
+
+      &.ant-menu-item-selected .ant-menu-title-content {
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-shadow: $glow;
+
+        .tag-icon {
+          height: 14px;
+          width: 14px;
+        }
+      }
+    }
   }
 }

@@ -9,7 +9,14 @@
 @if (chapters().length) {
   <ul nz-menu nzMode="inline">
     @for (chapter of chapters(); track chapter.slug) {
-      <li nz-menu-item nzMatchRouter [routerLink]="['/', chapter.slug]">{{ chapter.label }}</li>
+      <li nz-menu-item nzMatchRouter [routerLink]="['/', chapter.slug]">
+        {{ chapter.label }}
+        @for (tag of chapter.meta.tags; track tag) {
+          @if (tagIcons[tag]; as iconUrl) {
+            <img class="tag-icon" [src]="iconUrl" />
+          }
+        }
+      </li>
     }
   </ul>
 } @else {
