@@ -27,7 +27,7 @@
     "build": "ng build",
     "lint": "ng lint && stylelint \"src/**/*.scss\" && prettier --check \"src/**/*.html\"",
     "lint:fix": "ng lint --fix && stylelint --fix \"src/**/*.scss\" && prettier --write \"src/**/*.html\"",
-    "start": "ng serve"
+    "start": "concurrently --kill-others --names \"ng,watch\" -c \"green,cyan\" \"ng serve\" \"node scripts/watch-saves.mjs\""
   },
   "dependencies": {
     "@angular/common": "21.2.12",
@@ -48,6 +48,8 @@
     "@angular/build": "^21.2.10",
     "@angular/compiler-cli": "^21.2.12",
     "@angular/language-service": "^21.2.12",
+    "chokidar": "^5.0.0",
+    "concurrently": "^9.2.1",
     "eslint-config-angular-strict": "^2.3.79",
     "less": "^4.6.4",
     "prettier": "^3.8.3",
