@@ -13,7 +13,7 @@ import { ChroniclerService } from '../services/chronicler.service';
 })
 export class WorldInfoComponent {
 
-  protected latestChapter = inject(ChroniclerService).latestChapter;
+  protected currentChapter = inject(ChroniclerService).currentChapter;
 
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
 

@@ -9,6 +9,6 @@ import { ChroniclerService } from '../services/chronicler.service';
 })
 export class MapPreviewComponent {
 
-  protected latestChapter = inject(ChroniclerService).latestChapter;
+  protected currentChapter = inject(ChroniclerService).currentChapter;
 
 }

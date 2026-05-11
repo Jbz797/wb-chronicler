@@ -1,7 +1,7 @@
 # 📌 Vocabulaire des tags
 
-<p class="metadata">Date de mise à jour : 10/05/26 17:44</p>
+<p class="metadata">Date de mise à jour : 10/05/26 19:23</p>
 
-| Tag | Icon | Description |
-|-----|------|-------------|
-| `NEW-FAVORITE` | ![](assets/img/tags/new-favorite.png) | Un nouveau favori est désigné dans ce chapitre |
+| Tag | Description |
+|-----|-------------|
+| `NEW-FAVORITE` | Un nouveau favori est désigné dans ce chapitre |

@@ -2,6 +2,6 @@
   <h2 class="section-title">{{ w.name }}</h2>
 }
 
-@if (latestChapter(); as c) {
+@if (currentChapter(); as c) {
   <p class="world-age">{{ c.meta.age }}</p>
 }

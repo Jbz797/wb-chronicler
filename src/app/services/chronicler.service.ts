@@ -1,34 +1,47 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router } from '@angular/router';
 
-import { catchError, EMPTY, expand, map, of, scan } from 'rxjs';
+import { catchError, EMPTY, expand, filter, map, scan } from 'rxjs';
 
-import { PAGES, SAVES_DIR } from '../constants';
-import { Chapter, ChapterMeta, Page } from '../interfaces';
+import { SAVES_DIR } from '../constants';
+import { ChroniclerHelpers } from '../helpers';
+import { Chapter, ChapterMeta } from '../interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class ChroniclerService {
 
-  private readonly _http = inject(HttpClient);
-
   // Chapter list, dynamically discovered by probing C1, C2, ... until 404. Each chapter's chapter.json is captured during probing.
-  public readonly chapters = toSignal(of({ meta: null, n: 0 }).pipe(
-    expand(({ n }) => this._http.get<ChapterMeta>(`${SAVES_DIR}/C${n + 1}/chapter.json`).pipe(
-      map((m): { meta: ChapterMeta | null; n: number } => ({ meta: m, n: n + 1 })),
-      catchError(() => EMPTY),
-    )),
-    scan((accumulator: Chapter[], { meta, n }) => meta === null ? accumulator : [...accumulator,
-      {
-        label: `C${n} — An ${Math.floor(meta.world_time / 60) + 1}`,
-        mdUrl: `${SAVES_DIR}/C${n}/chapter.md`,
-        meta,
-        previewUrl: `${SAVES_DIR}/C${n}/preview.png`,
-        slug: `C${n}`,
-      }], []),
-  ), { initialValue: [] });
-  public readonly latestChapter = computed(() => this.chapters().at(-1));
+  public readonly chapters = (() => {
+    const http = inject(HttpClient);
+    const probeChapter = (n: number) => http.get<ChapterMeta>(`${SAVES_DIR}/C${n}/chapter.json`).pipe(map(meta => ({ meta, n })), catchError(() => EMPTY));
 
-  public findPage = (slug: string | null): Page => [...PAGES, ...this.chapters()].find(p => p.slug === slug) ?? PAGES[0]!;
+    return toSignal(
+      probeChapter(1).pipe(
+        expand(({ n }) => probeChapter(n + 1)),
+        scan((accumulator: Chapter[], { meta, n }) => [
+          ...accumulator,
+          {
+            label: `C${n} — An ${ChroniclerHelpers.yearFromWorldTime(meta.world_time)}`,
+            mdUrl: `${SAVES_DIR}/C${n}/chapter.md`,
+            meta,
+            previewUrl: `${SAVES_DIR}/C${n}/preview.png`,
+            slug: `C${n}`,
+          },
+        ], []),
+      ),
+      { initialValue: [] },
+    );
+  })();
+  // Active chapter resolved from the route — re-evaluated on every NavigationEnd.
+  public readonly currentChapter = (() => {
+    const router = inject(Router);
+    const slugFromUrl = (url: string) => (url.split('?')[0] ?? '').replace(/^\//, '');
+
+    const slug = toSignal(router.events.pipe(filter(event => event instanceof NavigationEnd), map(() => slugFromUrl(router.url))));
+
+    return computed(() => this.chapters().find(c => c.slug === slug()));
+  })();
 
 }
