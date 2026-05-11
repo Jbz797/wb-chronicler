@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { NzMenuModule } from 'ng-zorro-antd/menu';
 
-import { PAGES, TAG_ICONS } from '../constants';
+import { PAGES } from '../constants';
 import { ChroniclerService } from '../services/chronicler.service';
 
 @Component({
@@ -16,6 +16,7 @@ export class NavComponent {
 
   protected chapters = inject(ChroniclerService).chapters;
   protected pages = PAGES;
-  protected tagIcons = TAG_ICONS;
+
+  protected tagIconUrl = (tag: string): string => `assets/img/tags/${tag.toLowerCase().replaceAll('_', '-')}.png`;
 
 }
