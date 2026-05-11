@@ -5,6 +5,12 @@
     display: flex;
     flex-direction: column;
 
+    .empty-state {
+      color: $text-secondary;
+      font-style: italic;
+      text-align: center;
+    }
+
     .section-title {
       color: $primary;
       font-size: 0.9rem;
