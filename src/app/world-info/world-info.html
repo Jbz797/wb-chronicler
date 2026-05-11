@@ -11,11 +11,16 @@
 
   @if (c.meta.favorite; as fav) {
     <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-      <nz-descriptions-item nzTitle="Nom">{{ fav.name }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Espèce">{{ fav.asset_id }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Nom">
+        <img class="species-icon" [src]="`assets/img/species/${fav.asset_id}.png`" />
+        {{ fav.name }}
+      </nz-descriptions-item>
       <nz-descriptions-item nzTitle="Descripteur">{{ fav.descriptor }}</nz-descriptions-item>
     </nz-descriptions>
   } @else {
     <p class="empty-state">Aucun favoris pour l'instant.</p>
   }
+} @else {
+  <nz-divider />
+  <p class="empty-state">Aucune donnée à afficher.</p>
 }

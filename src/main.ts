@@ -7,8 +7,6 @@ import { provideRouter } from '@angular/router';
 
 import { fr_FR, provideNzI18n } from 'ng-zorro-antd/i18n';
 
-import { marked } from 'marked';
-import { gfmHeadingId } from 'marked-gfm-heading-id';
 import { provideMarkdown } from 'ngx-markdown';
 import 'prismjs';
 import 'prismjs/components/prism-bash';
@@ -16,11 +14,12 @@ import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-python';
 
 import { App } from './app/app';
+import { MarkedHelpers } from './app/helpers';
 import { ROUTES } from './app/routes';
 
 registerLocaleData(fr);
 
-marked.use(gfmHeadingId());
+MarkedHelpers.configure();
 
 bootstrapApplication(App, {
   providers: [

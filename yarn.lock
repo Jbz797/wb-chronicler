@@ -3970,9 +3970,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:^2.3.79":
-  version: 2.3.79
-  resolution: "eslint-config-angular-strict@npm:2.3.79"
+"eslint-config-angular-strict@npm:^2.3.82":
+  version: 2.3.82
+  resolution: "eslint-config-angular-strict@npm:2.3.82"
   dependencies:
     "@angular-eslint/builder": "npm:21.3.1"
     "@angular-eslint/eslint-plugin": "npm:21.3.1"
@@ -3988,7 +3988,7 @@ __metadata:
     eslint-plugin-import-x: "npm:4.16.2"
     eslint-plugin-perfectionist: "npm:5.9.0"
     eslint-plugin-unicorn: "npm:64.0.0"
-  checksum: 10c0/8b542a25f263ebe59738a6f37c723643dbc9f36c2ea519eb572b501ce0f0f6db60206c366ede6514b30fafa50b63089ac8470b3e320611c23967dbf4b8169250
+  checksum: 10c0/d7babb1114358533e4c4a2fac215e639d86f0f29a23a3d9f2594692a127726045b93b806783090fb38331d02b98cfbf4fa86af9a6221b6a09b7e9a3c1187d0ed
   languageName: node
   linkType: hard
 
@@ -7864,7 +7864,7 @@ __metadata:
     "@angular/router": "npm:^21.2.12"
     chokidar: "npm:^5.0.0"
     concurrently: "npm:^9.2.1"
-    eslint-config-angular-strict: "npm:^2.3.79"
+    eslint-config-angular-strict: "npm:^2.3.82"
     less: "npm:^4.6.4"
     marked: "npm:^18.0.3"
     marked-gfm-heading-id: "npm:^4.1.4"

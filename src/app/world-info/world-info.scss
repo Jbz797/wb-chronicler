@@ -20,4 +20,14 @@
       height: 1.2rem;
     }
   }
+
+  ::ng-deep .ant-descriptions-item-content {
+    align-items: center;
+    display: flex;
+    gap: 0.4rem;
+
+    .species-icon {
+      height: 1.2rem;
+    }
+  }
 }
