@@ -16,7 +16,40 @@
         {{ fav.name }}
       </nz-descriptions-item>
       <nz-descriptions-item nzTitle="Descripteur">{{ fav.descriptor }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Âge">{{ fav.age }} ans</nz-descriptions-item>
     </nz-descriptions>
+
+    <nz-descriptions nzBordered nzSize="small" nzTitle="Nombre de traits" [nzColumn]="1">
+      <nz-descriptions-item [nzTitle]="normalTitle">
+        {{ fav.traits.normal }}
+        @if (traitDeltas()?.normal; as d) {
+          <nz-tag [nzColor]="d > 0 ? 'success' : 'error'">{{ d > 0 ? '+' : '' }}{{ d }}</nz-tag>
+        }
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="rareTitle">
+        {{ fav.traits.rare }}
+        @if (traitDeltas()?.rare; as d) {
+          <nz-tag [nzColor]="d > 0 ? 'success' : 'error'">{{ d > 0 ? '+' : '' }}{{ d }}</nz-tag>
+        }
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="epicTitle">
+        {{ fav.traits.epic }}
+        @if (traitDeltas()?.epic; as d) {
+          <nz-tag [nzColor]="d > 0 ? 'success' : 'error'">{{ d > 0 ? '+' : '' }}{{ d }}</nz-tag>
+        }
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="legendaryTitle">
+        {{ fav.traits.legendary }}
+        @if (traitDeltas()?.legendary; as d) {
+          <nz-tag [nzColor]="d > 0 ? 'success' : 'error'">{{ d > 0 ? '+' : '' }}{{ d }}</nz-tag>
+        }
+      </nz-descriptions-item>
+    </nz-descriptions>
+
+    <ng-template #normalTitle><nz-badge nzColor="default" nzText="Normaux" /></ng-template>
+    <ng-template #rareTitle><nz-badge nzColor="blue" nzText="Rares" /></ng-template>
+    <ng-template #epicTitle><nz-badge nzColor="yellow" nzText="Épiques" /></ng-template>
+    <ng-template #legendaryTitle><nz-badge nzColor="orange" nzText="Légendaires" /></ng-template>
   } @else {
     <p class="empty-state">Aucun favoris pour l'instant.</p>
   }

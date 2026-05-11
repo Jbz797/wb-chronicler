@@ -21,13 +21,32 @@
     }
   }
 
-  ::ng-deep .ant-descriptions-item-content {
-    align-items: center;
-    display: flex;
-    gap: 0.4rem;
+  ::ng-deep {
+    nz-descriptions + nz-descriptions {
+      margin-top: 1.5rem;
+    }
 
-    .species-icon {
-      height: 1.2rem;
+    .ant-descriptions-header {
+      margin-bottom: 4px;
+
+      .ant-descriptions-title {
+        color: $primary;
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+    }
+
+    .ant-descriptions-item-content {
+      align-items: center;
+      display: flex;
+      gap: 0.4rem;
+
+      .species-icon {
+        height: 1.2rem;
+      }
     }
   }
 }
