@@ -15,8 +15,8 @@
       color: $primary;
       font-size: 0.9rem;
       font-weight: 700;
-      letter-spacing: 0.18em;
-      margin: 1.5rem 1.5rem 0.75rem;
+      letter-spacing: $letter-spacing-wide;
+      margin: 1rem 1rem 0.5rem;
       text-transform: uppercase;
 
       &:first-child {

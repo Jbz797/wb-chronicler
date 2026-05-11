@@ -1,7 +1,7 @@
 @use 'variables' as *;
 
 :host {
-  padding: 1.5rem;
+  padding: 1rem;
 
   .section-title {
     margin-bottom: 0;
@@ -23,7 +23,7 @@
 
   ::ng-deep {
     nz-descriptions + nz-descriptions {
-      margin-top: 1.5rem;
+      margin-top: 1rem;
     }
 
     .ant-descriptions-header {
@@ -33,10 +33,15 @@
         color: $primary;
         font-size: 0.75rem;
         font-weight: 500;
-        letter-spacing: 0.1em;
+        letter-spacing: $letter-spacing-wide;
         text-align: center;
         text-transform: uppercase;
       }
+    }
+
+    .ant-descriptions-item-label,
+    .ant-descriptions-item-content {
+      padding: 6px 12px !important;
     }
 
     .ant-descriptions-item-content {

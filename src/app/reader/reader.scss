@@ -34,7 +34,7 @@
     color: $background;
     font-family: $font-display;
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: $letter-spacing-tight;
     margin-top: 1.8em;
   }
 
@@ -124,6 +124,7 @@
 
     th {
       background: $paper-shade;
+      text-transform: uppercase;
     }
 
     tr:nth-child(even) td {
