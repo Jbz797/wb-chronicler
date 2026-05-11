@@ -3,7 +3,10 @@
 }
 
 @if (currentChapter(); as c) {
-  <p class="world-age">{{ c.meta.age }}</p>
+  <p class="world-age">
+    <img class="age-icon" [src]="`assets/img/ages/${c.meta.age.id}.png`" />
+    {{ c.meta.age.label }}
+  </p>
   <nz-divider />
 
   @if (c.meta.favorite; as fav) {

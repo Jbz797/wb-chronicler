@@ -9,8 +9,15 @@
   }
 
   .world-age {
+    align-items: center;
     color: $text-secondary;
+    display: flex;
     font-size: 0.9rem;
-    text-align: center;
+    gap: 0.4rem;
+    justify-content: center;
+
+    .age-icon {
+      height: 1.2rem;
+    }
   }
 }
