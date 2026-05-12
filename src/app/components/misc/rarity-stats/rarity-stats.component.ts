@@ -1,15 +1,15 @@
 import { Component, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
-import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { RarityCounts } from '../../interfaces';
+import { RarityCounts } from '../../../interfaces';
+import { DeltaComponent } from '../delta/delta.component';
 
 @Component({
   selector: 'app-rarity-stats',
-  imports: [NzDescriptionsModule, NzTagModule],
-  templateUrl: './rarity-stats.html',
-  styleUrl: './rarity-stats.scss',
+  imports: [DeltaComponent, NzDescriptionsModule],
+  templateUrl: './rarity-stats.component.html',
+  styleUrl: './rarity-stats.component.scss',
 })
 export class RarityStatsComponent {
 

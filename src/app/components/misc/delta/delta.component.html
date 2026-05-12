@@ -1,0 +1,3 @@
+@if (value(); as v) {
+  <nz-tag [nzColor]="v > 0 ? 'success' : 'error'">{{ v > 0 ? '+' : '' }}{{ v }}</nz-tag>
+}

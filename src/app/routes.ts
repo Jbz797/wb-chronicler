@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
 
-import { ReaderComponent } from './reader/reader';
+import { ReaderPage } from './pages/reader/reader.page';
 
 export const ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'chronicler' },
-  { component: ReaderComponent, path: ':slug' },
+  { component: ReaderPage, path: ':slug' },
 ];

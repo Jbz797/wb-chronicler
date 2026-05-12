@@ -12,6 +12,7 @@ export interface ChapterMeta {
     equipment: RarityCounts;
     name: string;
     sex: 'female' | 'male';
+    stats: { happiness: number; health: number; mana: number; nutrition: number };
     traits: RarityCounts;
   } | null;
   tags: string[];

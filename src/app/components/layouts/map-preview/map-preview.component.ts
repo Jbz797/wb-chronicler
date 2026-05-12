@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
 
-import { ChroniclerService } from '../services/chronicler.service';
+import { ChroniclerService } from '../../../services/chronicler.service';
 
 @Component({
   selector: 'app-map-preview',
-  templateUrl: './map-preview.html',
-  styleUrl: './map-preview.scss',
+  templateUrl: './map-preview.component.html',
+  styleUrl: './map-preview.component.scss',
 })
 export class MapPreviewComponent {
 

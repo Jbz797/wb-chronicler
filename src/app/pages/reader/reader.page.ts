@@ -5,17 +5,17 @@ import { ActivatedRoute } from '@angular/router';
 import { MarkdownComponent } from 'ngx-markdown';
 import { map } from 'rxjs';
 
-import { PAGES } from '../constants';
-import { ChroniclerService } from '../services/chronicler.service';
+import { PAGES } from '../../constants';
+import { ChroniclerService } from '../../services/chronicler.service';
 
 @Component({
   selector: 'app-reader',
   imports: [MarkdownComponent],
-  templateUrl: './reader.html',
-  styleUrl: './reader.scss',
+  templateUrl: './reader.page.html',
+  styleUrl: './reader.page.scss',
   host: { '(click)': 'onClick($event)' },
 })
-export class ReaderComponent {
+export class ReaderPage {
 
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });

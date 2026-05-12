@@ -26,10 +26,6 @@
   }
 
   ::ng-deep {
-    nz-descriptions + nz-descriptions {
-      margin-top: 1rem;
-    }
-
     .ant-descriptions-header {
       margin-bottom: 2px;
 
@@ -47,19 +43,24 @@
     .ant-descriptions-item-label,
     .ant-descriptions-item-content {
       padding: 6px 12px !important;
-    }
 
-    .ant-descriptions-item-content {
-      align-items: center;
-      display: flex;
-      gap: 0.4rem;
-
-      .species-icon {
-        height: 1.2rem;
+      nz-tag {
+        margin-left: 2px;
+        margin-right: 0;
+        vertical-align: center;
       }
 
-      .sex-icon {
-        height: 0.9rem;
+      img {
+        height: 1rem;
+        vertical-align: text-bottom;
+
+        &:not(:last-child) {
+          margin-right: 0.3rem;
+        }
+
+        &:not(:first-child) {
+          margin-left: 0.3rem;
+        }
       }
     }
   }

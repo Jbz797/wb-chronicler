@@ -1,27 +1,19 @@
 <nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="title()">
   <nz-descriptions-item [nzTitle]="normalTitle">
     {{ counts().normal }}
-    @if (deltas()?.normal; as d) {
-      <nz-tag [nzColor]="d > 0 ? 'success' : 'error'">{{ d > 0 ? '+' : '' }}{{ d }}</nz-tag>
-    }
+    <app-delta [value]="deltas()?.normal" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="rareTitle">
     {{ counts().rare }}
-    @if (deltas()?.rare; as d) {
-      <nz-tag [nzColor]="d > 0 ? 'success' : 'error'">{{ d > 0 ? '+' : '' }}{{ d }}</nz-tag>
-    }
+    <app-delta [value]="deltas()?.rare" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="epicTitle">
     {{ counts().epic }}
-    @if (deltas()?.epic; as d) {
-      <nz-tag [nzColor]="d > 0 ? 'success' : 'error'">{{ d > 0 ? '+' : '' }}{{ d }}</nz-tag>
-    }
+    <app-delta [value]="deltas()?.epic" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="legendaryTitle">
     {{ counts().legendary }}
-    @if (deltas()?.legendary; as d) {
-      <nz-tag [nzColor]="d > 0 ? 'success' : 'error'">{{ d > 0 ? '+' : '' }}{{ d }}</nz-tag>
-    }
+    <app-delta [value]="deltas()?.legendary" />
   </nz-descriptions-item>
 </nz-descriptions>
 
