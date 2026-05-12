@@ -11,6 +11,7 @@ export interface ChapterMeta {
     descriptor: string;
     equipment: RarityCounts;
     name: string;
+    sex: 'female' | 'male';
     traits: RarityCounts;
   } | null;
   tags: string[];
