@@ -1,4 +1,4 @@
-<nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="title()">
+<nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="title()">
   <nz-descriptions-item [nzTitle]="normalTitle">
     {{ counts().normal }}
     @if (deltas()?.normal; as d) {
@@ -25,7 +25,7 @@
   </nz-descriptions-item>
 </nz-descriptions>
 
-<ng-template #normalTitle><nz-badge nzColor="default" nzText="Normaux" /></ng-template>
-<ng-template #rareTitle><nz-badge nzColor="blue" nzText="Rares" /></ng-template>
-<ng-template #epicTitle><nz-badge nzColor="yellow" nzText="Épiques" /></ng-template>
-<ng-template #legendaryTitle><nz-badge nzColor="orange" nzText="Légendaires" /></ng-template>
+<ng-template #normalTitle><span class="rarity normal">Normaux</span></ng-template>
+<ng-template #rareTitle><span class="rarity rare">Rares</span></ng-template>
+<ng-template #epicTitle><span class="rarity epic">Épiques</span></ng-template>
+<ng-template #legendaryTitle><span class="rarity legendary">Légend.</span></ng-template>

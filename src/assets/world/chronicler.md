@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 12/05/26 14:39</p>
+<p class="metadata">Date de mise à jour : 12/05/26 16:18</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -113,7 +113,7 @@ WorldBox écrit ses sauvegardes dans un dossier système. Le chroniqueur lit **d
 Slot 1, machine du joueur, macOS :
 
 ```
-/Users/jbgautier/Library/Application Support/mkarpenko/WorldBox/saves/save1/
+$HOME/Library/Application Support/mkarpenko/WorldBox/saves/save1/
 ```
 
 Ce dossier contient toujours **la save la plus récente** — WorldBox l'écrase à chaque sauvegarde in-game. Les fichiers attendus sont `map.wbox`, `map_stats.s3db`, et `preview.png`.

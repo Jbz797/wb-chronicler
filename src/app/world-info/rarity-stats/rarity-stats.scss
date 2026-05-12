@@ -1,0 +1,25 @@
+@use 'variables' as *;
+
+:host {
+  nz-tag {
+    margin-right: 0;
+  }
+
+  .rarity {
+    &.normal {
+      color: $rarity-normal;
+    }
+
+    &.rare {
+      color: $rarity-rare;
+    }
+
+    &.epic {
+      color: $rarity-epic;
+    }
+
+    &.legendary {
+      color: $rarity-legendary;
+    }
+  }
+}

@@ -1,6 +1,5 @@
 import { Component, input } from '@angular/core';
 
-import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
@@ -8,8 +7,9 @@ import { RarityCounts } from '../../interfaces';
 
 @Component({
   selector: 'app-rarity-stats',
-  imports: [NzBadgeModule, NzDescriptionsModule, NzTagModule],
+  imports: [NzDescriptionsModule, NzTagModule],
   templateUrl: './rarity-stats.html',
+  styleUrl: './rarity-stats.scss',
 })
 export class RarityStatsComponent {
 

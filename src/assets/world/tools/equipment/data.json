@@ -1,0 +1,908 @@
+{
+  "items": {
+    "$axe": {
+      "damage_range": 0.6
+    },
+    "$bow": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "recoil": 1
+    },
+    "$hammer": {
+      "damage_range": 0.1,
+      "targets": 2
+    },
+    "$melee": {
+      "damage_range": 0.5
+    },
+    "$range": {
+      "damage_range": 0.6,
+      "projectiles": 1
+    },
+    "$spear": {
+      "damage_range": 0.7,
+      "range": 1
+    },
+    "$sword": {
+      "damage": 1,
+      "damage_range": 0.8
+    },
+    "$weapon": {
+      "damage_range": 0.5
+    },
+    "alien_blaster": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 30,
+      "damage_range": 0.6,
+      "mana": 20,
+      "projectiles": 1,
+      "range": 20,
+      "stamina": 20,
+      "targets": 1
+    },
+    "amulet_adamantine": {
+      "critical_chance": 0.1,
+      "mana": 20,
+      "stamina": 5
+    },
+    "amulet_bone": {
+      "critical_chance": 0.02,
+      "stamina": 5
+    },
+    "amulet_bronze": {
+      "critical_chance": 0.04,
+      "stamina": 5
+    },
+    "amulet_copper": {
+      "critical_chance": 0.03,
+      "stamina": 5
+    },
+    "amulet_iron": {
+      "critical_chance": 0.06,
+      "stamina": 5
+    },
+    "amulet_mythril": {
+      "critical_chance": 0.08,
+      "mana": 15,
+      "stamina": 5
+    },
+    "amulet_silver": {
+      "critical_chance": 0.05,
+      "mana": 10,
+      "stamina": 5
+    },
+    "amulet_steel": {
+      "critical_chance": 0.07,
+      "stamina": 5
+    },
+    "armor_adamantine": {
+      "armor": 10,
+      "mana": 35,
+      "stamina": 5
+    },
+    "armor_bronze": {
+      "armor": 4,
+      "stamina": 10
+    },
+    "armor_copper": {
+      "armor": 3,
+      "stamina": 15
+    },
+    "armor_iron": {
+      "armor": 6,
+      "stamina": 5
+    },
+    "armor_leather": {
+      "armor": 2,
+      "speed": 1,
+      "stamina": 20
+    },
+    "armor_mythril": {
+      "armor": 8,
+      "mana": 25,
+      "stamina": 5
+    },
+    "armor_silver": {
+      "armor": 5,
+      "mana": 15,
+      "stamina": 5
+    },
+    "armor_steel": {
+      "armor": 7,
+      "stamina": 5
+    },
+    "axe_adamantine": {
+      "critical_chance": 0.15,
+      "damage": 10,
+      "damage_range": 0.6,
+      "mana": 35,
+      "speed": 1,
+      "stamina": 10
+    },
+    "axe_bronze": {
+      "damage": 4,
+      "damage_range": 0.6,
+      "stamina": 5
+    },
+    "axe_copper": {
+      "damage": 3,
+      "damage_range": 0.6,
+      "stamina": 10
+    },
+    "axe_iron": {
+      "critical_chance": 0.05,
+      "damage": 6,
+      "damage_range": 0.6,
+      "stamina": 5
+    },
+    "axe_mythril": {
+      "critical_chance": 0.05,
+      "damage": 8,
+      "damage_range": 0.6,
+      "mana": 25,
+      "stamina": 10
+    },
+    "axe_silver": {
+      "damage": 5,
+      "damage_range": 0.6,
+      "mana": 15,
+      "stamina": 5
+    },
+    "axe_steel": {
+      "critical_chance": 0.05,
+      "damage": 7,
+      "damage_range": 0.6,
+      "speed": 1,
+      "stamina": 5
+    },
+    "axe_stone": {
+      "damage": 3,
+      "damage_range": 0.6,
+      "speed": -2
+    },
+    "axe_wood": {
+      "damage": 1,
+      "damage_range": 0.6,
+      "stamina": 15
+    },
+    "base_attack": {
+      "damage_range": 0.5
+    },
+    "bite": {
+      "damage_range": 0.5
+    },
+    "boat_acid_ball": {
+      "area_of_effect": 4,
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 50,
+      "damage_range": 0.6,
+      "projectiles": 5,
+      "range": 14,
+      "targets": 4
+    },
+    "boat_arrow": {
+      "accuracy": 4,
+      "area_of_effect": 0,
+      "attack_speed": 0.5,
+      "critical_chance": 0.2,
+      "critical_damage_multiplier": 0.5,
+      "damage": 30,
+      "damage_range": 0.6,
+      "projectiles": 5,
+      "range": 9,
+      "targets": 4
+    },
+    "boat_cannonball": {
+      "area_of_effect": 3,
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 50,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 14,
+      "targets": 4
+    },
+    "boat_fireball": {
+      "area_of_effect": 2,
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 30,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 12,
+      "targets": 4
+    },
+    "boat_freeze_ball": {
+      "area_of_effect": 2,
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 30,
+      "damage_range": 0.6,
+      "projectiles": 3,
+      "range": 12,
+      "targets": 4
+    },
+    "boat_necro_ball": {
+      "area_of_effect": 3,
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 45,
+      "damage_range": 0.6,
+      "projectiles": 3,
+      "range": 12,
+      "targets": 4
+    },
+    "boat_plasma_ball": {
+      "area_of_effect": 2,
+      "critical_chance": 0.2,
+      "critical_damage_multiplier": 0.5,
+      "damage": 65,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 20,
+      "targets": 4
+    },
+    "boat_snowball": {
+      "area_of_effect": 3,
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 50,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 14,
+      "targets": 4
+    },
+    "boots_adamantine": {
+      "armor": 10,
+      "mana": 35,
+      "stamina": 10
+    },
+    "boots_bronze": {
+      "armor": 4,
+      "stamina": 5
+    },
+    "boots_copper": {
+      "armor": 3,
+      "stamina": 5
+    },
+    "boots_iron": {
+      "armor": 6,
+      "stamina": 5
+    },
+    "boots_leather": {
+      "armor": 2,
+      "speed": 1,
+      "stamina": 10
+    },
+    "boots_mythril": {
+      "armor": 8,
+      "mana": 25,
+      "stamina": 10
+    },
+    "boots_silver": {
+      "armor": 5,
+      "mana": 15,
+      "stamina": 5
+    },
+    "boots_steel": {
+      "armor": 7,
+      "stamina": 5
+    },
+    "bow_adamantine": {
+      "critical_chance": 0.15,
+      "critical_damage_multiplier": 0.5,
+      "damage": 10,
+      "damage_range": 0.6,
+      "mana": 35,
+      "projectiles": 1,
+      "range": 12,
+      "recoil": 1,
+      "speed": 1,
+      "stamina": 10
+    },
+    "bow_bronze": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 4,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 7,
+      "recoil": 1,
+      "stamina": 5
+    },
+    "bow_copper": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 3,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 6,
+      "recoil": 1,
+      "stamina": 10
+    },
+    "bow_iron": {
+      "critical_chance": 0.05,
+      "critical_damage_multiplier": 0.5,
+      "damage": 6,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 9,
+      "recoil": 1,
+      "stamina": 5
+    },
+    "bow_mythril": {
+      "critical_chance": 0.05,
+      "critical_damage_multiplier": 0.5,
+      "damage": 8,
+      "damage_range": 0.6,
+      "mana": 25,
+      "projectiles": 1,
+      "range": 11,
+      "recoil": 1,
+      "stamina": 10
+    },
+    "bow_silver": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 5,
+      "damage_range": 0.6,
+      "mana": 15,
+      "projectiles": 1,
+      "range": 8,
+      "recoil": 1,
+      "stamina": 5
+    },
+    "bow_steel": {
+      "critical_chance": 0.05,
+      "critical_damage_multiplier": 0.5,
+      "damage": 7,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 10,
+      "recoil": 1,
+      "speed": 1,
+      "stamina": 5
+    },
+    "bow_wood": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 1,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 6,
+      "recoil": 1,
+      "stamina": 15
+    },
+    "claws": {
+      "damage_range": 0.5
+    },
+    "druid_staff": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.3,
+      "damage": 12,
+      "damage_range": 0.6,
+      "mana": 40,
+      "projectiles": 2,
+      "range": 20,
+      "targets": 1
+    },
+    "evil_staff": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 10,
+      "damage_range": 0.6,
+      "mana": 40,
+      "projectiles": 20,
+      "range": 13,
+      "targets": 1
+    },
+    "fire_hands": {
+      "damage_range": 0.5
+    },
+    "flame_hammer": {
+      "critical_chance": 0.15,
+      "damage": 20,
+      "damage_range": 0.5,
+      "mana": 15,
+      "speed": 1,
+      "stamina": 15,
+      "targets": 3
+    },
+    "flame_sword": {
+      "critical_damage_multiplier": 0.1,
+      "damage": 33,
+      "damage_range": 0.5,
+      "mana": 15,
+      "stamina": 15,
+      "targets": 2
+    },
+    "hammer_adamantine": {
+      "critical_chance": 0.15,
+      "damage": 10,
+      "damage_range": 0.1,
+      "mana": 35,
+      "speed": 1,
+      "stamina": 10,
+      "targets": 2
+    },
+    "hammer_bronze": {
+      "damage": 4,
+      "damage_range": 0.1,
+      "stamina": 5,
+      "targets": 2
+    },
+    "hammer_copper": {
+      "damage": 3,
+      "damage_range": 0.1,
+      "stamina": 10,
+      "targets": 2
+    },
+    "hammer_iron": {
+      "critical_chance": 0.05,
+      "damage": 6,
+      "damage_range": 0.1,
+      "stamina": 5,
+      "targets": 2
+    },
+    "hammer_mythril": {
+      "critical_chance": 0.05,
+      "damage": 8,
+      "damage_range": 0.1,
+      "mana": 25,
+      "stamina": 10,
+      "targets": 2
+    },
+    "hammer_silver": {
+      "damage": 5,
+      "damage_range": 0.1,
+      "mana": 15,
+      "stamina": 5,
+      "targets": 2
+    },
+    "hammer_steel": {
+      "critical_chance": 0.05,
+      "damage": 7,
+      "damage_range": 0.1,
+      "speed": 1,
+      "stamina": 5,
+      "targets": 2
+    },
+    "hammer_stone": {
+      "damage": 3,
+      "damage_range": 0.1,
+      "speed": -2,
+      "targets": 2
+    },
+    "hammer_wood": {
+      "damage": 1,
+      "damage_range": 0.1,
+      "stamina": 15,
+      "targets": 2
+    },
+    "hands": {
+      "damage_range": 0.5
+    },
+    "helmet_adamantine": {
+      "armor": 10,
+      "mana": 35,
+      "stamina": 10
+    },
+    "helmet_bronze": {
+      "armor": 4,
+      "stamina": 5
+    },
+    "helmet_copper": {
+      "armor": 3,
+      "stamina": 5
+    },
+    "helmet_iron": {
+      "armor": 6,
+      "stamina": 5
+    },
+    "helmet_leather": {
+      "armor": 2,
+      "speed": 1,
+      "stamina": 10
+    },
+    "helmet_mythril": {
+      "armor": 8,
+      "mana": 25,
+      "stamina": 10
+    },
+    "helmet_silver": {
+      "armor": 5,
+      "mana": 15,
+      "stamina": 5
+    },
+    "helmet_steel": {
+      "armor": 7,
+      "stamina": 5
+    },
+    "ice_hammer": {
+      "critical_chance": 0.15,
+      "damage": 20,
+      "damage_range": 0.5,
+      "mana": 15,
+      "speed": 1,
+      "stamina": 15,
+      "targets": 3
+    },
+    "jaws": {
+      "damage_range": 0.5
+    },
+    "necromancer_staff": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 30,
+      "damage_range": 0.6,
+      "mana": 40,
+      "projectiles": 1,
+      "range": 13,
+      "targets": 1
+    },
+    "plague_doctor_staff": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 35,
+      "damage_range": 0.5,
+      "mana": 40,
+      "targets": 3
+    },
+    "ring_adamantine": {
+      "critical_chance": 0.1,
+      "mana": 20,
+      "stamina": 5
+    },
+    "ring_bone": {
+      "critical_chance": 0.02,
+      "stamina": 5
+    },
+    "ring_bronze": {
+      "critical_chance": 0.04,
+      "stamina": 5
+    },
+    "ring_copper": {
+      "critical_chance": 0.03,
+      "stamina": 5
+    },
+    "ring_iron": {
+      "critical_chance": 0.06,
+      "stamina": 5
+    },
+    "ring_mythril": {
+      "critical_chance": 0.08,
+      "mana": 15,
+      "stamina": 5
+    },
+    "ring_silver": {
+      "critical_chance": 0.05,
+      "mana": 10,
+      "stamina": 5
+    },
+    "ring_steel": {
+      "critical_chance": 0.07,
+      "stamina": 5
+    },
+    "rocks": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 15
+    },
+    "shotgun": {
+      "damage": 10,
+      "damage_range": 0.9,
+      "mana": 5,
+      "projectiles": 12,
+      "range": 10,
+      "stamina": 10,
+      "targets": 1
+    },
+    "snowball": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage_range": 0.6,
+      "projectiles": 1,
+      "range": 6
+    },
+    "spear_adamantine": {
+      "critical_chance": 0.15,
+      "damage": 10,
+      "damage_range": 0.7,
+      "mana": 35,
+      "range": 1,
+      "speed": 1,
+      "stamina": 10
+    },
+    "spear_bronze": {
+      "damage": 4,
+      "damage_range": 0.7,
+      "range": 1,
+      "stamina": 5
+    },
+    "spear_copper": {
+      "damage": 3,
+      "damage_range": 0.7,
+      "range": 1,
+      "stamina": 10
+    },
+    "spear_iron": {
+      "critical_chance": 0.05,
+      "damage": 6,
+      "damage_range": 0.7,
+      "range": 1,
+      "stamina": 5
+    },
+    "spear_mythril": {
+      "critical_chance": 0.05,
+      "damage": 8,
+      "damage_range": 0.7,
+      "mana": 25,
+      "range": 1,
+      "stamina": 10
+    },
+    "spear_silver": {
+      "damage": 5,
+      "damage_range": 0.7,
+      "mana": 15,
+      "range": 1,
+      "stamina": 5
+    },
+    "spear_steel": {
+      "critical_chance": 0.05,
+      "damage": 7,
+      "damage_range": 0.7,
+      "range": 1,
+      "speed": 1,
+      "stamina": 5
+    },
+    "spear_stone": {
+      "damage": 3,
+      "damage_range": 0.7,
+      "range": 1,
+      "speed": -2
+    },
+    "spear_wood": {
+      "damage": 1,
+      "damage_range": 0.7,
+      "range": 1,
+      "stamina": 15
+    },
+    "stick_wood": {
+      "damage": 1,
+      "damage_range": 0.5,
+      "mana": 5,
+      "stamina": 5
+    },
+    "sword_adamantine": {
+      "critical_chance": 0.15,
+      "damage": 10,
+      "damage_range": 0.8,
+      "mana": 35,
+      "speed": 1,
+      "stamina": 10
+    },
+    "sword_bronze": {
+      "damage": 4,
+      "damage_range": 0.8,
+      "stamina": 5
+    },
+    "sword_copper": {
+      "damage": 3,
+      "damage_range": 0.8,
+      "stamina": 10
+    },
+    "sword_iron": {
+      "critical_chance": 0.05,
+      "damage": 6,
+      "damage_range": 0.8,
+      "stamina": 5
+    },
+    "sword_mythril": {
+      "critical_chance": 0.05,
+      "damage": 8,
+      "damage_range": 0.8,
+      "mana": 25,
+      "stamina": 10
+    },
+    "sword_silver": {
+      "damage": 5,
+      "damage_range": 0.8,
+      "mana": 15,
+      "stamina": 5
+    },
+    "sword_steel": {
+      "critical_chance": 0.05,
+      "damage": 7,
+      "damage_range": 0.8,
+      "speed": 1,
+      "stamina": 5
+    },
+    "sword_stone": {
+      "damage": 3,
+      "damage_range": 0.8,
+      "speed": -2
+    },
+    "sword_wood": {
+      "damage": 1,
+      "damage_range": 0.8,
+      "stamina": 15
+    },
+    "white_staff": {
+      "critical_chance": 0.1,
+      "critical_damage_multiplier": 0.5,
+      "damage": 35,
+      "damage_range": 0.6,
+      "mana": 40,
+      "projectiles": 1,
+      "range": 18,
+      "targets": 1
+    }
+  },
+  "modifiers": {
+    "balance1": {
+      "critical_chance": 0.05
+    },
+    "balance2": {
+      "critical_chance": 0.15
+    },
+    "balance3": {
+      "critical_chance": 0.2
+    },
+    "balance4": {
+      "critical_chance": 0.25
+    },
+    "balance5": {
+      "critical_chance": 0.3
+    },
+    "finesse1": {
+      "attack_speed": 1
+    },
+    "finesse2": {
+      "attack_speed": 1,
+      "speed": 1
+    },
+    "finesse3": {
+      "attack_speed": 2,
+      "speed": 1
+    },
+    "finesse4": {
+      "attack_speed": 2,
+      "speed": 2
+    },
+    "finesse5": {
+      "attack_speed": 3,
+      "speed": 3
+    },
+    "health1": {
+      "health": 50
+    },
+    "health2": {
+      "health": 100
+    },
+    "health3": {
+      "health": 150
+    },
+    "health4": {
+      "health": 200
+    },
+    "health5": {
+      "health": 250
+    },
+    "knowledge1": {
+      "intelligence": 1
+    },
+    "knowledge2": {
+      "intelligence": 2
+    },
+    "knowledge3": {
+      "intelligence": 3
+    },
+    "knowledge4": {
+      "intelligence": 4
+    },
+    "knowledge5": {
+      "intelligence": 7
+    },
+    "mastery1": {
+      "warfare": 1
+    },
+    "mastery2": {
+      "warfare": 2
+    },
+    "mastery3": {
+      "warfare": 3
+    },
+    "mastery4": {
+      "warfare": 4
+    },
+    "mastery5": {
+      "warfare": 5
+    },
+    "power1": {
+      "damage": 1
+    },
+    "power2": {
+      "damage": 2
+    },
+    "power3": {
+      "damage": 3
+    },
+    "power4": {
+      "damage": 4
+    },
+    "power5": {
+      "damage": 5
+    },
+    "protection1": {
+      "armor": 3
+    },
+    "protection2": {
+      "armor": 4
+    },
+    "protection3": {
+      "armor": 5
+    },
+    "protection4": {
+      "armor": 6
+    },
+    "protection5": {
+      "armor": 7
+    },
+    "sharpness1": {
+      "damage": 1,
+      "multiplier_crit": 0.05
+    },
+    "sharpness2": {
+      "damage": 2,
+      "multiplier_crit": 0.06
+    },
+    "sharpness3": {
+      "damage": 3,
+      "multiplier_crit": 0.08
+    },
+    "sharpness4": {
+      "damage": 5,
+      "multiplier_crit": 0.1
+    },
+    "sharpness5": {
+      "damage": 10,
+      "multiplier_crit": 0.1
+    },
+    "speed1": {
+      "speed": 2
+    },
+    "speed2": {
+      "speed": 3
+    },
+    "speed3": {
+      "speed": 4
+    },
+    "speed4": {
+      "speed": 5
+    },
+    "speed5": {
+      "speed": 6
+    },
+    "truth1": {
+      "diplomacy": 1
+    },
+    "truth2": {
+      "diplomacy": 2
+    },
+    "truth3": {
+      "diplomacy": 3
+    },
+    "truth4": {
+      "diplomacy": 4
+    },
+    "truth5": {
+      "diplomacy": 5
+    }
+  }
+}

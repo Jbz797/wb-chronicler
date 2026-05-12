@@ -32,6 +32,7 @@ Each chapter is a self-contained folder under `saves/C<n>/` carrying its own nar
 > - **One save = one chapter.** The system is built around **manual saves only** — disable WorldBox auto-saves before you start. Each time the player triggers a save, the chronicler picks it up and writes the next chapter.
 > - **Claude Max** (or higher) is recommended — the chronicler reads, cross-checks, and writes a multi-section chapter on every save.
 > - Narrative output is **French only** for now.
+> - **macOS only.** The live WorldBox save path used by `chronicler.md` and the `tools/` scripts is hardcoded for macOS (`$HOME/Library/Application Support/mkarpenko/WorldBox/saves/save1/`). On other OSes, update those references to match the local path.
 
 ## Chronicle layout
 
