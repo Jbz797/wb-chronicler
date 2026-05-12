@@ -4,8 +4,14 @@
 Usage:
     python3 lookup.py <trait_id> [<trait_id> ...]
 
-Reads `data.json` (sibling file) and prints `id | rarity | description | flavor` for each requested ID.
-Unknown IDs are reported on stderr. Data source: game assets only — IDs/names/descriptions from the `traits_units` TextAsset (EN locale), rarity reconstructed from the `autoSetRarity` algorithm of `BaseTraitLibrary<T>` in `Assembly-CSharp.dll`.
+Reads `data.json` (sibling file) and prints `id | rarity | description | flavor | stats` for each
+requested ID. `stats` is formatted as `k1=v1,k2=v2,...` (alphabetical) using the game's internal
+stat names — empty when the trait has no modifiers. Unknown IDs are reported on stderr.
+
+Data source: game assets only — IDs/names/descriptions from the `traits_units` TextAsset
+(EN locale); rarity reconstructed from the `autoSetRarity` algorithm of `BaseTraitLibrary<T>`;
+stats extracted from `BaseStats.set_Item` calls in `ActorTraitLibrary.addTraits*` methods
+(`Assembly-CSharp.dll`).
 """
 import json
 import sys
@@ -27,7 +33,8 @@ def main(argv: list[str]) -> int:
             print(f'unknown: {tid}', file=sys.stderr)
             exit_code = 1
             continue
-        print(f"{tid} | {entry['rarity']} | {entry['description']} | {entry['flavor']}")
+        stats = ','.join(f'{k}={v}' for k, v in sorted(entry.get('stats', {}).items()))
+        print(f"{tid} | {entry['rarity']} | {entry['description']} | {entry['flavor']} | {stats}")
     return exit_code
 
 

@@ -21,25 +21,47 @@
     "description": "Quick, and always one step ahead",
     "flavor": "Never misses a chance to show off",
     "name": "Agile",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "lifespan": 3,
+      "scale": -0.01,
+      "skill_combat": 0.2,
+      "stamina": 20
+    }
   },
   "ambitious": {
     "description": "Driven to achieve greatness",
     "flavor": "The view is better from the throne",
     "name": "Ambitious",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "cities": 5,
+      "diplomacy": 2,
+      "loyalty_traits": -15,
+      "stewardship": 1,
+      "warfare": 4
+    }
   },
   "arcane_reflexes": {
     "description": "More likely to cast spells",
     "flavor": "Trigger-happy with magic",
     "name": "Arcane Reflexes",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "skill_spell": 0.5
+    }
   },
   "attractive": {
     "description": "Appearance brings comfort to others",
     "flavor": "Beauty is in the eye... of everyone",
     "name": "Attractive",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "critical_chance": 0.1,
+      "diplomacy": 2,
+      "multiplier_offspring": 0.6,
+      "stewardship": 1
+    }
   },
   "backstep": {
     "description": "Ability to step back before being hit in battle",
@@ -51,13 +73,24 @@
     "description": "More likely to perform combat actions",
     "flavor": "Their fists do the thinking",
     "name": "Battle Reflexes",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "skill_combat": 0.5
+    }
   },
   "blessed": {
     "description": "Chosen by higher powers",
     "flavor": "They never asked for this!",
     "name": "Blessed",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "lifespan": 5,
+      "multiplier_crit": 0.1,
+      "multiplier_damage": 0.5,
+      "multiplier_diplomacy": 0.2,
+      "multiplier_health": 0.5,
+      "multiplier_speed": 0.5
+    }
   },
   "block": {
     "description": "Chance to block incoming attacks",
@@ -69,7 +102,14 @@
     "description": "Conflict fuels their very soul",
     "flavor": "Without war, they feel empty",
     "name": "Bloodlust",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "cities": 3,
+      "diplomacy": -2,
+      "loyalty_traits": -20,
+      "multiplier_supply_timer": 1.5,
+      "warfare": 5
+    }
   },
   "boat": {
     "description": "Is actually a sentient boat",
@@ -87,7 +127,10 @@
     "description": "Greatly enhances overall health",
     "flavor": "So alive, it's almost unfair",
     "name": "Boosted Vitality",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "multiplier_health": 0.5
+    }
   },
   "bubble_defense": {
     "description": "Creates a bubble shield for protection",
@@ -105,7 +148,11 @@
     "description": "Unmatched power and magic at their command",
     "flavor": "Destiny has plans for this one. No pressure, though",
     "name": "The Chosen One",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "mana": 1000,
+      "stamina": 1000
+    }
   },
   "clone": {
     "description": "An artificially created copy of an original being",
@@ -117,7 +164,10 @@
     "description": "Prone to accidents and mishaps",
     "flavor": "Meant to do that!",
     "name": "Clumsy",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "multiplier_lifespan": -0.5
+    }
   },
   "cold_aura": {
     "description": "Freezes the ground around him",
@@ -135,13 +185,25 @@
     "description": "At peace with their place in the world",
     "flavor": "Simple pleasures are the best",
     "name": "Content",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "diplomacy": 2,
+      "loyalty_traits": 10,
+      "multiplier_supply_timer": -0.3,
+      "stewardship": 2,
+      "warfare": -2
+    }
   },
   "crippled": {
     "description": "They used to be an adventurer like you",
     "flavor": "Now they have better stories",
     "name": "Crippled",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "diplomacy": -3,
+      "multiplier_offspring": -0.5,
+      "multiplier_speed": -0.5
+    }
   },
   "dash": {
     "description": "Can dash toward enemies before attacking",
@@ -171,7 +233,12 @@
     "description": "They weave webs of lies to get what they want",
     "flavor": "Their smile hides a future betrayal",
     "name": "Deceitful",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "diplomacy": 1,
+      "loyalty_traits": -20,
+      "stewardship": 4
+    }
   },
   "deflect_projectile": {
     "description": "Can deflect projectiles back at the attacker",
@@ -183,25 +250,42 @@
     "description": "Yearns for extraterrestrial growth",
     "flavor": "Space fungus is best fungus",
     "name": "Alien Mold Desire",
-    "rarity": "Epic"
+    "rarity": "Epic",
+    "stats": {
+      "armor": 10,
+      "damage_range": 0.3,
+      "multiplier_crit": 0.3,
+      "targets": 1
+    }
   },
   "desire_computer": {
     "description": "Seeks the forbidden machine that knows all",
     "flavor": "The allure of ultimate knowledge is impossible to resist",
     "name": "Evil Computer Desire",
-    "rarity": "Epic"
+    "rarity": "Epic",
+    "stats": {
+      "multiplier_health": 0.3,
+      "multiplier_lifespan": 0.5
+    }
   },
   "desire_golden_egg": {
     "description": "Dreams of the perfect omelet",
     "flavor": "Worth more than its weight in gold",
     "name": "Golden Egg Desire",
-    "rarity": "Epic"
+    "rarity": "Epic",
+    "stats": {
+      "multiplier_damage": 0.5
+    }
   },
   "desire_harp": {
     "description": "Seeks the mystical instrument of the heavens",
     "flavor": "Music to die for",
     "name": "Ethereal Harp Desire",
-    "rarity": "Epic"
+    "rarity": "Epic",
+    "stats": {
+      "multiplier_attack_speed": 0.3,
+      "multiplier_speed": 0.3
+    }
   },
   "dodge": {
     "description": "Knows how to get out of danger",
@@ -213,49 +297,86 @@
     "description": "The grandchildren will be tired of hearing this story",
     "flavor": "A tale of fire, fury, and a lot of luck",
     "name": "Dragonslayer",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "critical_chance": 0.04,
+      "multiplier_diplomacy": 0.1,
+      "warfare": 5
+    }
   },
   "eagle_eyed": {
     "description": "Enhanced vision and accuracy",
     "flavor": "Sees everything, pretends not to",
     "name": "Eagle Eyed",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "accuracy": 5,
+      "critical_chance": 0.15
+    }
   },
   "energized": {
     "description": "Has chance to spawn lightning on death",
     "flavor": "One last spark before dark",
     "name": "Energized",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "lifespan": 7,
+      "multiplier_speed": 2
+    }
   },
   "evil": {
     "description": "Can't be cursed and blessed",
     "flavor": "Morality is just a suggestion",
     "name": "Evil",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "cities": -2,
+      "warfare": 10
+    }
   },
   "eyepatch": {
     "description": "The price of bravery or a cruel twist of fate",
     "flavor": "It definitely looks cool!",
     "name": "One Eyed",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "accuracy": -5,
+      "critical_chance": -0.15,
+      "diplomacy": 1,
+      "warfare": -1
+    }
   },
   "fast": {
     "description": "Speed is their greatest asset",
     "flavor": "They never know when to stop",
     "name": "Fast",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "attack_speed": 5,
+      "multiplier_speed": 0.3
+    }
   },
   "fat": {
     "description": "Built big, built strong",
     "flavor": "Strength comes in all sizes",
     "name": "Fat",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "multiplier_damage": 0.1,
+      "multiplier_mass": 0.3,
+      "multiplier_stamina": -0.5,
+      "scale": 0.02
+    }
   },
   "fertile": {
     "description": "Can have more babies",
     "flavor": "Life... finds a way",
     "name": "Fertile",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "birth_rate": 4,
+      "multiplier_offspring": 0.8
+    }
   },
   "fire_blood": {
     "description": "Spawns fire on death",
@@ -285,7 +406,10 @@
     "description": "More vulnerable to damage and sickness",
     "flavor": "Because sometimes life just wants to watch you suffer",
     "name": "Fragile Health",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "multiplier_health": -0.5
+    }
   },
   "freeze_proof": {
     "description": "Drank a lot of antifreeze",
@@ -297,13 +421,26 @@
     "description": "Possesses superior cognitive abilities",
     "flavor": "Overthinking is just thinking",
     "name": "Genius",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "cities": 3,
+      "diplomacy": 5,
+      "intelligence": 10,
+      "loyalty_traits": -10,
+      "stewardship": 7,
+      "warfare": 5
+    }
   },
   "giant": {
     "description": "Likes to hold the door",
     "flavor": "Size does matter",
     "name": "Giant",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "multiplier_health": 0.5,
+      "multiplier_speed": -0.25,
+      "scale": 0.05
+    }
   },
   "gluttonous": {
     "description": "Consumes more food than most can imagine",
@@ -315,19 +452,33 @@
     "description": "Symbol of wealth and respect",
     "flavor": "A smile worth its weight in gold",
     "name": "Golden Tooth",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "diplomacy": 2
+    }
   },
   "greedy": {
     "description": "Nothing is ever enough for those ruled by greed",
     "flavor": "More, always more",
     "name": "Greedy",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "cities": 2,
+      "diplomacy": -2,
+      "loyalty_traits": -5,
+      "multiplier_supply_timer": 4,
+      "stewardship": -3,
+      "warfare": 4
+    }
   },
   "hard_skin": {
     "description": "Nothing can penetrate this tough exterior",
     "flavor": "Except love! And maybe a really sharp knife",
     "name": "Hard Skin",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "armor": 5
+    }
   },
   "healing_aura": {
     "description": "Restores health and cures plague of creatures around it",
@@ -339,7 +490,10 @@
     "description": "Possesses abundant mana reserves for spellcasting",
     "flavor": "Magical essence flows like blood",
     "name": "Heart of Wizard",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "multiplier_mana": 10
+    }
   },
   "heliophobia": {
     "description": "Sunlight is lethal to them",
@@ -351,7 +505,13 @@
     "description": "They value honesty above all, even when it hurts",
     "flavor": "The truth might hurt, but they won't sugarcoat it",
     "name": "Honest",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "diplomacy": 2,
+      "loyalty_traits": 5,
+      "stewardship": 3,
+      "warfare": -2
+    }
   },
   "hotheaded": {
     "description": "Has a short fuse and is prone to starting fights",
@@ -363,7 +523,10 @@
     "description": "Can't die from an old age",
     "flavor": "Eternal life comes with its own burdens",
     "name": "Immortal",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "loyalty_traits": -20
+    }
   },
   "immune": {
     "description": "Completely resistant to diseases and illnesses",
@@ -375,19 +538,32 @@
     "description": "Slowly turning into a zombie",
     "flavor": "The hunger grows stronger",
     "name": "Infected",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "loyalty_traits": -15,
+      "multiplier_speed": 0.1
+    }
   },
   "infertile": {
     "description": "Unable to produce offspring",
     "flavor": "Life finds another way",
     "name": "Infertile",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "offspring": -99999
+    }
   },
   "kingslayer": {
     "description": "Killed a king and survived the aftermath... for now",
     "flavor": "When you attack a king, you better not miss!",
     "name": "Kingslayer",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "diplomacy": -5,
+      "loyalty_traits": -25,
+      "multiplier_supply_timer": 2,
+      "warfare": 5
+    }
   },
   "light_lamp": {
     "description": "Glows in the dark",
@@ -399,31 +575,54 @@
     "description": "Lives significantly longer than others",
     "flavor": "They count every calorie and step toward eternity",
     "name": "Long Liver",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "multiplier_lifespan": 0.5
+    }
   },
   "lucky": {
     "description": "Luck is always by their side",
     "flavor": "They make life look easy...",
     "name": "Lucky",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "accuracy": 4,
+      "birth_rate": 5,
+      "critical_chance": 0.3,
+      "lifespan": 7
+    }
   },
   "lustful": {
     "description": "Open to new experiences",
     "flavor": "Curiosity never killed this cat",
     "name": "Lustful",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "diplomacy": -2,
+      "multiplier_offspring": 0.2
+    }
   },
   "madness": {
     "description": "Attacks everyone indiscriminately",
     "flavor": "Finds prophecies between the lines of reality",
     "name": "Madness",
-    "rarity": "Epic"
+    "rarity": "Epic",
+    "stats": {
+      "diplomacy": -100,
+      "loyalty_traits": -100,
+      "multiplier_speed": 0.1
+    }
   },
   "mageslayer": {
     "description": "Loves the smell of burned magic in the morning",
     "flavor": "They asked for it",
     "name": "Mageslayer",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "critical_chance": 0.03,
+      "loyalty_traits": -10,
+      "warfare": 5
+    }
   },
   "mega_heartbeat": {
     "description": "Emits a powerful pulse that pushes everyone away",
@@ -453,19 +652,34 @@
     "description": "Appeared like a miracle into this world",
     "flavor": "A story that defies explanation",
     "name": "Miracle Born",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "birth_rate": 2,
+      "lifespan": 20,
+      "multiplier_offspring": 2
+    }
   },
   "moonchild": {
     "description": "Grants unique bonuses during the Age of the Moon",
     "flavor": "Touched by the Moon",
     "name": "Moonchild",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "armor": 1,
+      "intelligence": 3,
+      "multiplier_damage": 0.5,
+      "multiplier_speed": 0.1
+    }
   },
   "mush_spores": {
     "description": "The MUSH must grow! Carries fungal spores that activate upon the host's death",
     "flavor": "The end of one life sparks a new beginning",
     "name": "MUSH Spores",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "loyalty_traits": -15,
+      "multiplier_speed": 0.3
+    }
   },
   "mute": {
     "description": "Unable to speak or use religion spells",
@@ -477,19 +691,38 @@
     "description": "Grants unique bonuses during dark",
     "flavor": "The night reveals to them what the day obscures",
     "name": "Nightchild",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "critical_chance": 0.03,
+      "multiplier_damage": 0.5,
+      "multiplier_speed": 0.1,
+      "warfare": 3
+    }
   },
   "pacifist": {
     "description": "Strongly favors peace and avoids conflict whenever possible",
     "flavor": "For them, conflict is the result of failure, not the key to success",
     "name": "Pacifist",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "diplomacy": 10,
+      "loyalty_traits": 50,
+      "multiplier_supply_timer": -0.1,
+      "warfare": -4
+    }
   },
   "paranoid": {
     "description": "Constantly on edge, they see threats in every corner",
     "flavor": "Trust no one, not even themselves",
     "name": "Paranoid",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "cities": -1,
+      "diplomacy": -2,
+      "loyalty_traits": -15,
+      "multiplier_supply_timer": 0.5,
+      "warfare": 4
+    }
   },
   "peaceful": {
     "description": "Never attacks first",
@@ -501,7 +734,15 @@
     "description": "Damages over time and spreads to nearby units",
     "flavor": "They should have stayed home",
     "name": "Plague",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "armor": -2,
+      "lifespan": -30,
+      "loyalty_traits": -15,
+      "multiplier_damage": -0.5,
+      "multiplier_speed": -0.3,
+      "stamina": -10
+    }
   },
   "poison_immune": {
     "description": "Completely immune to the effects of poison",
@@ -549,37 +790,62 @@
     "description": "Emits a radiant shine, attracting attention from others",
     "flavor": "Born to sparkle",
     "name": "Shiny",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "diplomacy": 5
+    }
   },
   "short_sighted": {
     "description": "Reduced vision and attack range",
     "flavor": "The world is a mystery",
     "name": "Short Sighted",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "accuracy": -5,
+      "critical_chance": -0.05
+    }
   },
   "skin_burns": {
     "description": "A mark of fire's embrace",
     "flavor": "Played with fire... and lost",
     "name": "Skin Burns",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "diplomacy": -2,
+      "lifespan": -5,
+      "multiplier_speed": -0.25,
+      "warfare": 2
+    }
   },
   "slow": {
     "description": "Moves at reduced speed",
     "flavor": "There's always tomorrow... or the day after",
     "name": "Slow",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "attack_speed": -5,
+      "multiplier_speed": -0.5
+    }
   },
   "soft_skin": {
     "description": "Soft and squishy, like a marshmallow",
     "flavor": "Fragile but strangely endearing",
     "name": "Soft Skin",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "armor": -5
+    }
   },
   "strong": {
     "description": "Significantly increases physical damage dealt in combat",
     "flavor": "Opens all jars on first try",
     "name": "Strong",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "lifespan": 3,
+      "multiplier_damage": 0.5,
+      "warfare": 2
+    }
   },
   "strong_minded": {
     "description": "Resistant to mental manipulation",
@@ -591,7 +857,17 @@
     "description": "Reduced decision-making ability",
     "flavor": "Not the sharpest tool in the shed",
     "name": "Stupid",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "cities": -3,
+      "damage": 5,
+      "diplomacy": -2,
+      "intelligence": -5,
+      "loyalty_traits": -15,
+      "personality_rationality": -0.5,
+      "stewardship": -5,
+      "warfare": -2
+    }
   },
   "sunblessed": {
     "description": "Heals over time when exposed to sunlight",
@@ -603,7 +879,11 @@
     "description": "Greatly enhances maximum health",
     "flavor": "Granted for the love of crab",
     "name": "Super Health",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "lifespan": 100,
+      "multiplier_health": 100
+    }
   },
   "thief": {
     "description": "Skilled at taking others' possessions",
@@ -621,37 +901,63 @@
     "description": "Small in size, mighty in spirit",
     "flavor": "What is this, a trait for ants?",
     "name": "Tiny",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "diplomacy": -1,
+      "multiplier_health": -0.25,
+      "multiplier_speed": 0.25,
+      "scale": -0.02
+    }
   },
   "titan_lungs": {
     "description": "Their stamina is seemingly inexhaustible",
     "flavor": "Breathing is their superweapon",
     "name": "Titan's Lungs",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "multiplier_stamina": 10
+    }
   },
   "tough": {
     "description": "Damage reduction and stun immunity",
     "flavor": "What doesn't kill them just bounces off",
     "name": "Tough",
-    "rarity": "Legendary"
+    "rarity": "Legendary",
+    "stats": {
+      "armor": 10,
+      "lifespan": 4,
+      "warfare": 1
+    }
   },
   "tumor_infection": {
     "description": "Slowly transforms into a horrible creature",
     "flavor": "Self becomes memory, memory becomes nightmare",
     "name": "Tumor Infection",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "loyalty_traits": -15,
+      "multiplier_speed": 0.3
+    }
   },
   "ugly": {
     "description": "Appearance causes discomfort to others",
     "flavor": "Winning hearts through charm",
     "name": "Ugly",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "multiplier_offspring": -0.3
+    }
   },
   "unlucky": {
     "description": "Increases the likelihood of negative events for self and nearby units",
     "flavor": "Black cats follow them everywhere",
     "name": "Unlucky",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "accuracy": -4,
+      "critical_chance": -0.3,
+      "lifespan": -13
+    }
   },
   "venomous": {
     "description": "Applies poison to enemies upon landing a hit",
@@ -663,13 +969,24 @@
     "description": "Experienced in battle after surviving numerous fights",
     "flavor": "Not a rookie anymore",
     "name": "Veteran",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "multiplier_damage": 0.1,
+      "multiplier_health": 0.1,
+      "skill_combat": 0.1
+    }
   },
   "weak": {
     "description": "Reduced physical strength",
     "flavor": "Physically frail, but resilient in spirit",
     "name": "Weak",
-    "rarity": "Normal"
+    "rarity": "Normal",
+    "stats": {
+      "diplomacy": -2,
+      "lifespan": -6,
+      "multiplier_damage": -0.5,
+      "warfare": -2
+    }
   },
   "weightless": {
     "description": "Too light to break thin ice",
@@ -687,7 +1004,13 @@
     "description": "Possesses wisdom accumulated over a lifetime",
     "flavor": "They have seen some stuff",
     "name": "Wise",
-    "rarity": "Rare"
+    "rarity": "Rare",
+    "stats": {
+      "diplomacy": 1,
+      "intelligence": 1,
+      "stewardship": 1,
+      "warfare": 1
+    }
   },
   "zombie": {
     "description": "Has an insatiable hunger for brains",
