@@ -4,7 +4,7 @@
 Usage:
     python3 lookup.py <trait_id> [<trait_id> ...]
 
-Reads `data.json` (sibling file) and prints `id | rarity | description` for each requested ID.
+Reads `data.json` (sibling file) and prints `id | rarity | description | flavor` for each requested ID.
 Unknown IDs are reported on stderr. Data source: game assets only — IDs/names/descriptions from the `traits_units` TextAsset (EN locale), rarity reconstructed from the `autoSetRarity` algorithm of `BaseTraitLibrary<T>` in `Assembly-CSharp.dll`.
 """
 import json
@@ -27,7 +27,7 @@ def main(argv: list[str]) -> int:
             print(f'unknown: {tid}', file=sys.stderr)
             exit_code = 1
             continue
-        print(f"{tid} | {entry['rarity']} | {entry['description']}")
+        print(f"{tid} | {entry['rarity']} | {entry['description']} | {entry['flavor']}")
     return exit_code
 
 

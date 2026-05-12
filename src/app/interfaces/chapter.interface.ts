@@ -1,4 +1,5 @@
 import { Page } from './page.interface';
+import { RarityCounts } from './rarity-counts.interface';
 
 export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 
@@ -8,8 +9,9 @@ export interface ChapterMeta {
     age: number;
     asset_id: string;
     descriptor: string;
+    inventory: RarityCounts;
     name: string;
-    traits: { epic: number; legendary: number; normal: number; rare: number };
+    traits: RarityCounts;
   } | null;
   tags: string[];
   title: string;

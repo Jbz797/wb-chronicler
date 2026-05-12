@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 11/05/26 19:22</p>
+<p class="metadata">Date de mise à jour : 12/05/26 10:53</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -66,8 +66,14 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
     "age": 0,         // Âge du favori en années (arrondi à l'année entière, cf. § IV)
     "asset_id": "",   // Espèce du favori
     "descriptor": "", // Descripteur narratif court
+    "inventory": {    // Décompte des items équipés par rareté (cf. `tools/tools.md`)
+      "epic": 0,
+      "legendary": 0,
+      "normal": 0,
+      "rare": 0
+    },
     "name": "",       // Nom du favori dans les données du jeu
-    "traits": {       // Décompte des `saved_traits` du favori par rareté (utiliser `tools/creature-traits/lookup.py` pour résoudre chaque ID)
+    "traits": {       // Décompte des traits par rareté (cf. `tools/tools.md`)
       "epic": 0,
       "legendary": 0,
       "normal": 0,

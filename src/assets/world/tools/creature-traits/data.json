@@ -1,118 +1,698 @@
 {
-  "acid_blood": { "description": "Spills acid upon death", "name": "Acid Blood", "rarity": "Legendary" },
-  "acid_proof": { "description": "Knows how to deal with acid", "name": "Acid Proof", "rarity": "Legendary" },
-  "acid_touch": { "description": "Turns the surrounding biomes into a wasteland", "name": "Acid Touch", "rarity": "Legendary" },
-  "agile": { "description": "Quick, and always one step ahead", "name": "Agile", "rarity": "Normal" },
-  "ambitious": { "description": "Driven to achieve greatness", "name": "Ambitious", "rarity": "Legendary" },
-  "arcane_reflexes": { "description": "More likely to cast spells", "name": "Arcane Reflexes", "rarity": "Normal" },
-  "attractive": { "description": "Appearance brings comfort to others", "name": "Attractive", "rarity": "Normal" },
-  "backstep": { "description": "Ability to step back before being hit in battle", "name": "Backstep", "rarity": "Rare" },
-  "battle_reflexes": { "description": "More likely to perform combat actions", "name": "Battle Reflexes", "rarity": "Normal" },
-  "blessed": { "description": "Chosen by higher powers", "name": "Blessed", "rarity": "Normal" },
-  "block": { "description": "Chance to block incoming attacks", "name": "Block", "rarity": "Rare" },
-  "bloodlust": { "description": "Conflict fuels their very soul", "name": "Bloodlust", "rarity": "Legendary" },
-  "boat": { "description": "Is actually a sentient boat", "name": "It's a Boat", "rarity": "Normal" },
-  "bomberman": { "description": "Likes to throw bombs at their troubles", "name": "Bomberman", "rarity": "Rare" },
-  "boosted_vitality": { "description": "Greatly enhances overall health", "name": "Boosted Vitality", "rarity": "Normal" },
-  "bubble_defense": { "description": "Creates a bubble shield for protection", "name": "Bubble Defense", "rarity": "Rare" },
-  "burning_feet": { "description": "Burns the ground where he walks", "name": "Burning Feet", "rarity": "Legendary" },
-  "chosen_one": { "description": "Unmatched power and magic at their command", "name": "The Chosen One", "rarity": "Legendary" },
-  "clone": { "description": "An artificially created copy of an original being", "name": "Clone", "rarity": "Normal" },
-  "clumsy": { "description": "Prone to accidents and mishaps", "name": "Clumsy", "rarity": "Normal" },
-  "cold_aura": { "description": "Freezes the ground around him", "name": "Cold Aura", "rarity": "Rare" },
-  "contagious": { "description": "Increases the chance of plague outbreaks", "name": "Contagious", "rarity": "Rare" },
-  "content": { "description": "At peace with their place in the world", "name": "Content", "rarity": "Normal" },
-  "crippled": { "description": "They used to be an adventurer like you", "name": "Crippled", "rarity": "Normal" },
-  "dash": { "description": "Can dash toward enemies before attacking", "name": "Dash", "rarity": "Rare" },
-  "death_bomb": { "description": "Small bomb explosion on death", "name": "Death Bomb", "rarity": "Legendary" },
-  "death_mark": { "description": "Marked for an untimely death", "name": "Mark of Death", "rarity": "Legendary" },
-  "death_nuke": { "description": "Huge explosion on death", "name": "Death Nuke", "rarity": "Legendary" },
-  "deceitful": { "description": "They weave webs of lies to get what they want", "name": "Deceitful", "rarity": "Normal" },
-  "deflect_projectile": { "description": "Can deflect projectiles back at the attacker", "name": "Deflect Projectiles", "rarity": "Rare" },
-  "desire_alien_mold": { "description": "Yearns for extraterrestrial growth", "name": "Alien Mold Desire", "rarity": "Epic" },
-  "desire_computer": { "description": "Seeks the forbidden machine that knows all", "name": "Evil Computer Desire", "rarity": "Epic" },
-  "desire_golden_egg": { "description": "Dreams of the perfect omelet", "name": "Golden Egg Desire", "rarity": "Epic" },
-  "desire_harp": { "description": "Seeks the mystical instrument of the heavens", "name": "Ethereal Harp Desire", "rarity": "Epic" },
-  "dodge": { "description": "Knows how to get out of danger", "name": "Dodge", "rarity": "Rare" },
-  "dragonslayer": { "description": "The grandchildren will be tired of hearing this story", "name": "Dragonslayer", "rarity": "Normal" },
-  "eagle_eyed": { "description": "Enhanced vision and accuracy", "name": "Eagle Eyed", "rarity": "Normal" },
-  "energized": { "description": "Has chance to spawn lightning on death", "name": "Energized", "rarity": "Rare" },
-  "evil": { "description": "Can't be cursed and blessed", "name": "Evil", "rarity": "Normal" },
-  "eyepatch": { "description": "The price of bravery or a cruel twist of fate", "name": "One Eyed", "rarity": "Normal" },
-  "fast": { "description": "Speed is their greatest asset", "name": "Fast", "rarity": "Normal" },
-  "fat": { "description": "Built big, built strong", "name": "Fat", "rarity": "Normal" },
-  "fertile": { "description": "Can have more babies", "name": "Fertile", "rarity": "Normal" },
-  "fire_blood": { "description": "Spawns fire on death", "name": "Fire Blood", "rarity": "Rare" },
-  "fire_proof": { "description": "Loves hot situations", "name": "Fire Proof", "rarity": "Rare" },
-  "flesh_eater": { "description": "Ah... Fresh meat!", "name": "Flesh Eater", "rarity": "Rare" },
-  "flower_prints": { "description": "Grows flowers where it walks", "name": "Flower Prints", "rarity": "Legendary" },
-  "fragile_health": { "description": "More vulnerable to damage and sickness", "name": "Fragile Health", "rarity": "Normal" },
-  "freeze_proof": { "description": "Drank a lot of antifreeze", "name": "Freeze Proof", "rarity": "Rare" },
-  "genius": { "description": "Possesses superior cognitive abilities", "name": "Genius", "rarity": "Legendary" },
-  "giant": { "description": "Likes to hold the door", "name": "Giant", "rarity": "Legendary" },
-  "gluttonous": { "description": "Consumes more food than most can imagine", "name": "Gluttonous", "rarity": "Normal" },
-  "golden_tooth": { "description": "Symbol of wealth and respect", "name": "Golden Tooth", "rarity": "Normal" },
-  "greedy": { "description": "Nothing is ever enough for those ruled by greed", "name": "Greedy", "rarity": "Normal" },
-  "hard_skin": { "description": "Nothing can penetrate this tough exterior", "name": "Hard Skin", "rarity": "Normal" },
-  "healing_aura": { "description": "Restores health and cures plague of creatures around it", "name": "Healing Aura", "rarity": "Rare" },
-  "heart_of_wizard": { "description": "Possesses abundant mana reserves for spellcasting", "name": "Heart of Wizard", "rarity": "Normal" },
-  "heliophobia": { "description": "Sunlight is lethal to them", "name": "Heliophobia", "rarity": "Rare" },
-  "honest": { "description": "They value honesty above all, even when it hurts", "name": "Honest", "rarity": "Normal" },
-  "hotheaded": { "description": "Has a short fuse and is prone to starting fights", "name": "Hotheaded", "rarity": "Normal" },
-  "immortal": { "description": "Can't die from an old age", "name": "Immortal", "rarity": "Legendary" },
-  "immune": { "description": "Completely resistant to diseases and illnesses", "name": "Immune", "rarity": "Normal" },
-  "infected": { "description": "Slowly turning into a zombie", "name": "Infected", "rarity": "Rare" },
-  "infertile": { "description": "Unable to produce offspring", "name": "Infertile", "rarity": "Normal" },
-  "kingslayer": { "description": "Killed a king and survived the aftermath... for now", "name": "Kingslayer", "rarity": "Normal" },
-  "light_lamp": { "description": "Glows in the dark", "name": "Light Lamp", "rarity": "Rare" },
-  "long_liver": { "description": "Lives significantly longer than others", "name": "Long Liver", "rarity": "Normal" },
-  "lucky": { "description": "Luck is always by their side", "name": "Lucky", "rarity": "Normal" },
-  "lustful": { "description": "Open to new experiences", "name": "Lustful", "rarity": "Normal" },
-  "madness": { "description": "Attacks everyone indiscriminately", "name": "Madness", "rarity": "Epic" },
-  "mageslayer": { "description": "Loves the smell of burned magic in the morning", "name": "Mageslayer", "rarity": "Normal" },
-  "mega_heartbeat": { "description": "Emits a powerful pulse that pushes everyone away", "name": "Mega Heartbeat", "rarity": "Legendary" },
-  "metamorphed": { "description": "Has shifted into a new form", "name": "Metamorphed", "rarity": "Normal" },
-  "miner": { "description": "Increases chances to get gems from mines", "name": "Miner", "rarity": "Normal" },
-  "miracle_bearer": { "description": "Gave birth under miraculous circumstances", "name": "Miracle Bearer", "rarity": "Normal" },
-  "miracle_born": { "description": "Appeared like a miracle into this world", "name": "Miracle Born", "rarity": "Normal" },
-  "moonchild": { "description": "Grants unique bonuses during the Age of the Moon", "name": "Moonchild", "rarity": "Normal" },
-  "mush_spores": { "description": "The MUSH must grow! Carries fungal spores that activate upon the host's death", "name": "MUSH Spores", "rarity": "Rare" },
-  "mute": { "description": "Unable to speak or use religion spells", "name": "Mute", "rarity": "Normal" },
-  "nightchild": { "description": "Grants unique bonuses during dark", "name": "Nightchild", "rarity": "Normal" },
-  "pacifist": { "description": "Strongly favors peace and avoids conflict whenever possible", "name": "Pacifist", "rarity": "Normal" },
-  "paranoid": { "description": "Constantly on edge, they see threats in every corner", "name": "Paranoid", "rarity": "Normal" },
-  "peaceful": { "description": "Never attacks first", "name": "Peaceful", "rarity": "Rare" },
-  "plague": { "description": "Damages over time and spreads to nearby units", "name": "Plague", "rarity": "Legendary" },
-  "poison_immune": { "description": "Completely immune to the effects of poison", "name": "Poison Immunity", "rarity": "Normal" },
-  "poisonous": { "description": "Inflicts poison status when eaten", "name": "Poisonous", "rarity": "Normal" },
-  "psychopath": { "description": "Their mind is a labyrinth of cold calculations", "name": "Psychopath", "rarity": "Normal" },
-  "pyromaniac": { "description": "Likes to see the world burn", "name": "Pyromaniac", "rarity": "Legendary" },
-  "regeneration": { "description": "Gradually restores lost health over time", "name": "Regeneration", "rarity": "Rare" },
-  "savage": { "description": "Harvests bones and leather from defeated enemies", "name": "Savage", "rarity": "Normal" },
-  "scar_of_divinity": { "description": "Touched by something divine", "name": "Scar of Divinity", "rarity": "Normal" },
-  "shiny": { "description": "Emits a radiant shine, attracting attention from others", "name": "Shiny", "rarity": "Rare" },
-  "short_sighted": { "description": "Reduced vision and attack range", "name": "Short Sighted", "rarity": "Normal" },
-  "skin_burns": { "description": "A mark of fire's embrace", "name": "Skin Burns", "rarity": "Normal" },
-  "slow": { "description": "Moves at reduced speed", "name": "Slow", "rarity": "Normal" },
-  "soft_skin": { "description": "Soft and squishy, like a marshmallow", "name": "Soft Skin", "rarity": "Normal" },
-  "strong": { "description": "Significantly increases physical damage dealt in combat", "name": "Strong", "rarity": "Normal" },
-  "strong_minded": { "description": "Resistant to mental manipulation", "name": "Strong Minded", "rarity": "Rare" },
-  "stupid": { "description": "Reduced decision-making ability", "name": "Stupid", "rarity": "Normal" },
-  "sunblessed": { "description": "Heals over time when exposed to sunlight", "name": "Sunblessed", "rarity": "Rare" },
-  "super_health": { "description": "Greatly enhances maximum health", "name": "Super Health", "rarity": "Legendary" },
-  "thief": { "description": "Skilled at taking others' possessions", "name": "Thief", "rarity": "Epic" },
-  "thorns": { "description": "Damages attackers when hit", "name": "Thorns", "rarity": "Rare" },
-  "tiny": { "description": "Small in size, mighty in spirit", "name": "Tiny", "rarity": "Legendary" },
-  "titan_lungs": { "description": "Their stamina is seemingly inexhaustible", "name": "Titan's Lungs", "rarity": "Normal" },
-  "tough": { "description": "Damage reduction and stun immunity", "name": "Tough", "rarity": "Legendary" },
-  "tumor_infection": { "description": "Slowly transforms into a horrible creature", "name": "Tumor Infection", "rarity": "Rare" },
-  "ugly": { "description": "Appearance causes discomfort to others", "name": "Ugly", "rarity": "Normal" },
-  "unlucky": { "description": "Increases the likelihood of negative events for self and nearby units", "name": "Unlucky", "rarity": "Rare" },
-  "venomous": { "description": "Applies poison to enemies upon landing a hit", "name": "Venomous", "rarity": "Rare" },
-  "veteran": { "description": "Experienced in battle after surviving numerous fights", "name": "Veteran", "rarity": "Normal" },
-  "weak": { "description": "Reduced physical strength", "name": "Weak", "rarity": "Normal" },
-  "weightless": { "description": "Too light to break thin ice", "name": "Weightless", "rarity": "Normal" },
-  "whirlwind": { "description": "Generates swirling wind around them", "name": "Whirlwind", "rarity": "Legendary" },
-  "wise": { "description": "Possesses wisdom accumulated over a lifetime", "name": "Wise", "rarity": "Normal" },
-  "zombie": { "description": "Has an insatiable hunger for brains", "name": "Zombie", "rarity": "Rare" }
+  "acid_blood": {
+    "description": "Spills acid upon death",
+    "flavor": "Their insides match their attitude",
+    "name": "Acid Blood",
+    "rarity": "Legendary"
+  },
+  "acid_proof": {
+    "description": "Knows how to deal with acid",
+    "flavor": "Acid is just spicy water",
+    "name": "Acid Proof",
+    "rarity": "Legendary"
+  },
+  "acid_touch": {
+    "description": "Turns the surrounding biomes into a wasteland",
+    "flavor": "Nature's worst nightmare",
+    "name": "Acid Touch",
+    "rarity": "Legendary"
+  },
+  "agile": {
+    "description": "Quick, and always one step ahead",
+    "flavor": "Never misses a chance to show off",
+    "name": "Agile",
+    "rarity": "Rare"
+  },
+  "ambitious": {
+    "description": "Driven to achieve greatness",
+    "flavor": "The view is better from the throne",
+    "name": "Ambitious",
+    "rarity": "Legendary"
+  },
+  "arcane_reflexes": {
+    "description": "More likely to cast spells",
+    "flavor": "Trigger-happy with magic",
+    "name": "Arcane Reflexes",
+    "rarity": "Rare"
+  },
+  "attractive": {
+    "description": "Appearance brings comfort to others",
+    "flavor": "Beauty is in the eye... of everyone",
+    "name": "Attractive",
+    "rarity": "Rare"
+  },
+  "backstep": {
+    "description": "Ability to step back before being hit in battle",
+    "flavor": "Sometimes the best defense is a good... step back",
+    "name": "Backstep",
+    "rarity": "Rare"
+  },
+  "battle_reflexes": {
+    "description": "More likely to perform combat actions",
+    "flavor": "Their fists do the thinking",
+    "name": "Battle Reflexes",
+    "rarity": "Rare"
+  },
+  "blessed": {
+    "description": "Chosen by higher powers",
+    "flavor": "They never asked for this!",
+    "name": "Blessed",
+    "rarity": "Rare"
+  },
+  "block": {
+    "description": "Chance to block incoming attacks",
+    "flavor": "The best conversation is no conversation",
+    "name": "Block",
+    "rarity": "Rare"
+  },
+  "bloodlust": {
+    "description": "Conflict fuels their very soul",
+    "flavor": "Without war, they feel empty",
+    "name": "Bloodlust",
+    "rarity": "Legendary"
+  },
+  "boat": {
+    "description": "Is actually a sentient boat",
+    "flavor": "Smart boat, without dumb boat problems",
+    "name": "It's a Boat",
+    "rarity": "Rare"
+  },
+  "bomberman": {
+    "description": "Likes to throw bombs at their troubles",
+    "flavor": "When life gives them lemons, they make grenades",
+    "name": "Bomberman",
+    "rarity": "Rare"
+  },
+  "boosted_vitality": {
+    "description": "Greatly enhances overall health",
+    "flavor": "So alive, it's almost unfair",
+    "name": "Boosted Vitality",
+    "rarity": "Rare"
+  },
+  "bubble_defense": {
+    "description": "Creates a bubble shield for protection",
+    "flavor": "Trouble can't burst their bubble",
+    "name": "Bubble Defense",
+    "rarity": "Rare"
+  },
+  "burning_feet": {
+    "description": "Burns the ground where he walks",
+    "flavor": "Step by step, burn by burn",
+    "name": "Burning Feet",
+    "rarity": "Legendary"
+  },
+  "chosen_one": {
+    "description": "Unmatched power and magic at their command",
+    "flavor": "Destiny has plans for this one. No pressure, though",
+    "name": "The Chosen One",
+    "rarity": "Legendary"
+  },
+  "clone": {
+    "description": "An artificially created copy of an original being",
+    "flavor": "A shadow of another being, bound to suffer the same fate",
+    "name": "Clone",
+    "rarity": "Normal"
+  },
+  "clumsy": {
+    "description": "Prone to accidents and mishaps",
+    "flavor": "Meant to do that!",
+    "name": "Clumsy",
+    "rarity": "Normal"
+  },
+  "cold_aura": {
+    "description": "Freezes the ground around him",
+    "flavor": "Cold follows them like a shadow",
+    "name": "Cold Aura",
+    "rarity": "Rare"
+  },
+  "contagious": {
+    "description": "Increases the chance of plague outbreaks",
+    "flavor": "Misery loves company",
+    "name": "Contagious",
+    "rarity": "Rare"
+  },
+  "content": {
+    "description": "At peace with their place in the world",
+    "flavor": "Simple pleasures are the best",
+    "name": "Content",
+    "rarity": "Normal"
+  },
+  "crippled": {
+    "description": "They used to be an adventurer like you",
+    "flavor": "Now they have better stories",
+    "name": "Crippled",
+    "rarity": "Rare"
+  },
+  "dash": {
+    "description": "Can dash toward enemies before attacking",
+    "flavor": "Why wait for them to come to you?",
+    "name": "Dash",
+    "rarity": "Rare"
+  },
+  "death_bomb": {
+    "description": "Small bomb explosion on death",
+    "flavor": "A minor explosion, but a major inconvenience",
+    "name": "Death Bomb",
+    "rarity": "Legendary"
+  },
+  "death_mark": {
+    "description": "Marked for an untimely death",
+    "flavor": "The void calls. The answer is inevitable",
+    "name": "Mark of Death",
+    "rarity": "Legendary"
+  },
+  "death_nuke": {
+    "description": "Huge explosion on death",
+    "flavor": "They turn death into a weapon",
+    "name": "Death Nuke",
+    "rarity": "Legendary"
+  },
+  "deceitful": {
+    "description": "They weave webs of lies to get what they want",
+    "flavor": "Their smile hides a future betrayal",
+    "name": "Deceitful",
+    "rarity": "Normal"
+  },
+  "deflect_projectile": {
+    "description": "Can deflect projectiles back at the attacker",
+    "flavor": "Projectiles? More like rejectiles!",
+    "name": "Deflect Projectiles",
+    "rarity": "Rare"
+  },
+  "desire_alien_mold": {
+    "description": "Yearns for extraterrestrial growth",
+    "flavor": "Space fungus is best fungus",
+    "name": "Alien Mold Desire",
+    "rarity": "Epic"
+  },
+  "desire_computer": {
+    "description": "Seeks the forbidden machine that knows all",
+    "flavor": "The allure of ultimate knowledge is impossible to resist",
+    "name": "Evil Computer Desire",
+    "rarity": "Epic"
+  },
+  "desire_golden_egg": {
+    "description": "Dreams of the perfect omelet",
+    "flavor": "Worth more than its weight in gold",
+    "name": "Golden Egg Desire",
+    "rarity": "Epic"
+  },
+  "desire_harp": {
+    "description": "Seeks the mystical instrument of the heavens",
+    "flavor": "Music to die for",
+    "name": "Ethereal Harp Desire",
+    "rarity": "Epic"
+  },
+  "dodge": {
+    "description": "Knows how to get out of danger",
+    "flavor": "Can't touch this!",
+    "name": "Dodge",
+    "rarity": "Rare"
+  },
+  "dragonslayer": {
+    "description": "The grandchildren will be tired of hearing this story",
+    "flavor": "A tale of fire, fury, and a lot of luck",
+    "name": "Dragonslayer",
+    "rarity": "Rare"
+  },
+  "eagle_eyed": {
+    "description": "Enhanced vision and accuracy",
+    "flavor": "Sees everything, pretends not to",
+    "name": "Eagle Eyed",
+    "rarity": "Normal"
+  },
+  "energized": {
+    "description": "Has chance to spawn lightning on death",
+    "flavor": "One last spark before dark",
+    "name": "Energized",
+    "rarity": "Rare"
+  },
+  "evil": {
+    "description": "Can't be cursed and blessed",
+    "flavor": "Morality is just a suggestion",
+    "name": "Evil",
+    "rarity": "Rare"
+  },
+  "eyepatch": {
+    "description": "The price of bravery or a cruel twist of fate",
+    "flavor": "It definitely looks cool!",
+    "name": "One Eyed",
+    "rarity": "Rare"
+  },
+  "fast": {
+    "description": "Speed is their greatest asset",
+    "flavor": "They never know when to stop",
+    "name": "Fast",
+    "rarity": "Normal"
+  },
+  "fat": {
+    "description": "Built big, built strong",
+    "flavor": "Strength comes in all sizes",
+    "name": "Fat",
+    "rarity": "Normal"
+  },
+  "fertile": {
+    "description": "Can have more babies",
+    "flavor": "Life... finds a way",
+    "name": "Fertile",
+    "rarity": "Normal"
+  },
+  "fire_blood": {
+    "description": "Spawns fire on death",
+    "flavor": "Fire flows through the veins",
+    "name": "Fire Blood",
+    "rarity": "Rare"
+  },
+  "fire_proof": {
+    "description": "Loves hot situations",
+    "flavor": "Plays with fire and always wins",
+    "name": "Fire Proof",
+    "rarity": "Rare"
+  },
+  "flesh_eater": {
+    "description": "Ah... Fresh meat!",
+    "flavor": "Everyone needs a hobby",
+    "name": "Flesh Eater",
+    "rarity": "Rare"
+  },
+  "flower_prints": {
+    "description": "Grows flowers where it walks",
+    "flavor": "Nature follows in their footsteps",
+    "name": "Flower Prints",
+    "rarity": "Legendary"
+  },
+  "fragile_health": {
+    "description": "More vulnerable to damage and sickness",
+    "flavor": "Because sometimes life just wants to watch you suffer",
+    "name": "Fragile Health",
+    "rarity": "Normal"
+  },
+  "freeze_proof": {
+    "description": "Drank a lot of antifreeze",
+    "flavor": "Winter's just a state of mind",
+    "name": "Freeze Proof",
+    "rarity": "Rare"
+  },
+  "genius": {
+    "description": "Possesses superior cognitive abilities",
+    "flavor": "Overthinking is just thinking",
+    "name": "Genius",
+    "rarity": "Legendary"
+  },
+  "giant": {
+    "description": "Likes to hold the door",
+    "flavor": "Size does matter",
+    "name": "Giant",
+    "rarity": "Legendary"
+  },
+  "gluttonous": {
+    "description": "Consumes more food than most can imagine",
+    "flavor": "Food mysteriously disappears in their presence",
+    "name": "Gluttonous",
+    "rarity": "Normal"
+  },
+  "golden_tooth": {
+    "description": "Symbol of wealth and respect",
+    "flavor": "A smile worth its weight in gold",
+    "name": "Golden Tooth",
+    "rarity": "Rare"
+  },
+  "greedy": {
+    "description": "Nothing is ever enough for those ruled by greed",
+    "flavor": "More, always more",
+    "name": "Greedy",
+    "rarity": "Rare"
+  },
+  "hard_skin": {
+    "description": "Nothing can penetrate this tough exterior",
+    "flavor": "Except love! And maybe a really sharp knife",
+    "name": "Hard Skin",
+    "rarity": "Normal"
+  },
+  "healing_aura": {
+    "description": "Restores health and cures plague of creatures around it",
+    "flavor": "A soothing presence that mends all wounds",
+    "name": "Healing Aura",
+    "rarity": "Rare"
+  },
+  "heart_of_wizard": {
+    "description": "Possesses abundant mana reserves for spellcasting",
+    "flavor": "Magical essence flows like blood",
+    "name": "Heart of Wizard",
+    "rarity": "Rare"
+  },
+  "heliophobia": {
+    "description": "Sunlight is lethal to them",
+    "flavor": "A creature of the night, cursed by the day",
+    "name": "Heliophobia",
+    "rarity": "Rare"
+  },
+  "honest": {
+    "description": "They value honesty above all, even when it hurts",
+    "flavor": "The truth might hurt, but they won't sugarcoat it",
+    "name": "Honest",
+    "rarity": "Normal"
+  },
+  "hotheaded": {
+    "description": "Has a short fuse and is prone to starting fights",
+    "flavor": "Anger is their default response to most situations",
+    "name": "Hotheaded",
+    "rarity": "Rare"
+  },
+  "immortal": {
+    "description": "Can't die from an old age",
+    "flavor": "Eternal life comes with its own burdens",
+    "name": "Immortal",
+    "rarity": "Legendary"
+  },
+  "immune": {
+    "description": "Completely resistant to diseases and illnesses",
+    "flavor": "Their body is a fortress",
+    "name": "Immune",
+    "rarity": "Rare"
+  },
+  "infected": {
+    "description": "Slowly turning into a zombie",
+    "flavor": "The hunger grows stronger",
+    "name": "Infected",
+    "rarity": "Rare"
+  },
+  "infertile": {
+    "description": "Unable to produce offspring",
+    "flavor": "Life finds another way",
+    "name": "Infertile",
+    "rarity": "Rare"
+  },
+  "kingslayer": {
+    "description": "Killed a king and survived the aftermath... for now",
+    "flavor": "When you attack a king, you better not miss!",
+    "name": "Kingslayer",
+    "rarity": "Rare"
+  },
+  "light_lamp": {
+    "description": "Glows in the dark",
+    "flavor": "Bright side of everything",
+    "name": "Light Lamp",
+    "rarity": "Rare"
+  },
+  "long_liver": {
+    "description": "Lives significantly longer than others",
+    "flavor": "They count every calorie and step toward eternity",
+    "name": "Long Liver",
+    "rarity": "Normal"
+  },
+  "lucky": {
+    "description": "Luck is always by their side",
+    "flavor": "They make life look easy...",
+    "name": "Lucky",
+    "rarity": "Rare"
+  },
+  "lustful": {
+    "description": "Open to new experiences",
+    "flavor": "Curiosity never killed this cat",
+    "name": "Lustful",
+    "rarity": "Rare"
+  },
+  "madness": {
+    "description": "Attacks everyone indiscriminately",
+    "flavor": "Finds prophecies between the lines of reality",
+    "name": "Madness",
+    "rarity": "Epic"
+  },
+  "mageslayer": {
+    "description": "Loves the smell of burned magic in the morning",
+    "flavor": "They asked for it",
+    "name": "Mageslayer",
+    "rarity": "Rare"
+  },
+  "mega_heartbeat": {
+    "description": "Emits a powerful pulse that pushes everyone away",
+    "flavor": "Too much love can be as destructive as too little",
+    "name": "Mega Heartbeat",
+    "rarity": "Legendary"
+  },
+  "metamorphed": {
+    "description": "Has shifted into a new form",
+    "flavor": "Remade, for better or worse",
+    "name": "Metamorphed",
+    "rarity": "Normal"
+  },
+  "miner": {
+    "description": "Increases chances to get gems from mines",
+    "flavor": "Every stone has a story",
+    "name": "Miner",
+    "rarity": "Rare"
+  },
+  "miracle_bearer": {
+    "description": "Gave birth under miraculous circumstances",
+    "flavor": "Evidence that life persists against all odds",
+    "name": "Miracle Bearer",
+    "rarity": "Rare"
+  },
+  "miracle_born": {
+    "description": "Appeared like a miracle into this world",
+    "flavor": "A story that defies explanation",
+    "name": "Miracle Born",
+    "rarity": "Rare"
+  },
+  "moonchild": {
+    "description": "Grants unique bonuses during the Age of the Moon",
+    "flavor": "Touched by the Moon",
+    "name": "Moonchild",
+    "rarity": "Rare"
+  },
+  "mush_spores": {
+    "description": "The MUSH must grow! Carries fungal spores that activate upon the host's death",
+    "flavor": "The end of one life sparks a new beginning",
+    "name": "MUSH Spores",
+    "rarity": "Rare"
+  },
+  "mute": {
+    "description": "Unable to speak or use religion spells",
+    "flavor": "...",
+    "name": "Mute",
+    "rarity": "Rare"
+  },
+  "nightchild": {
+    "description": "Grants unique bonuses during dark",
+    "flavor": "The night reveals to them what the day obscures",
+    "name": "Nightchild",
+    "rarity": "Rare"
+  },
+  "pacifist": {
+    "description": "Strongly favors peace and avoids conflict whenever possible",
+    "flavor": "For them, conflict is the result of failure, not the key to success",
+    "name": "Pacifist",
+    "rarity": "Rare"
+  },
+  "paranoid": {
+    "description": "Constantly on edge, they see threats in every corner",
+    "flavor": "Trust no one, not even themselves",
+    "name": "Paranoid",
+    "rarity": "Rare"
+  },
+  "peaceful": {
+    "description": "Never attacks first",
+    "flavor": "Violence is never the answer",
+    "name": "Peaceful",
+    "rarity": "Rare"
+  },
+  "plague": {
+    "description": "Damages over time and spreads to nearby units",
+    "flavor": "They should have stayed home",
+    "name": "Plague",
+    "rarity": "Legendary"
+  },
+  "poison_immune": {
+    "description": "Completely immune to the effects of poison",
+    "flavor": "Toxins fear their body",
+    "name": "Poison Immunity",
+    "rarity": "Rare"
+  },
+  "poisonous": {
+    "description": "Inflicts poison status when eaten",
+    "flavor": "Probably shouldn't eat it... unless?",
+    "name": "Poisonous",
+    "rarity": "Rare"
+  },
+  "psychopath": {
+    "description": "Their mind is a labyrinth of cold calculations",
+    "flavor": "Manipulate, dominate, eliminate",
+    "name": "Psychopath",
+    "rarity": "Rare"
+  },
+  "pyromaniac": {
+    "description": "Likes to see the world burn",
+    "flavor": "Fire is just misunderstood art",
+    "name": "Pyromaniac",
+    "rarity": "Legendary"
+  },
+  "regeneration": {
+    "description": "Gradually restores lost health over time",
+    "flavor": "A second chance, one cell at a time",
+    "name": "Regeneration",
+    "rarity": "Rare"
+  },
+  "savage": {
+    "description": "Harvests bones and leather from defeated enemies",
+    "flavor": "Kill, collect, repeat",
+    "name": "Savage",
+    "rarity": "Rare"
+  },
+  "scar_of_divinity": {
+    "description": "Touched by something divine",
+    "flavor": "Somebody up there has some plans",
+    "name": "Scar of Divinity",
+    "rarity": "Rare"
+  },
+  "shiny": {
+    "description": "Emits a radiant shine, attracting attention from others",
+    "flavor": "Born to sparkle",
+    "name": "Shiny",
+    "rarity": "Rare"
+  },
+  "short_sighted": {
+    "description": "Reduced vision and attack range",
+    "flavor": "The world is a mystery",
+    "name": "Short Sighted",
+    "rarity": "Normal"
+  },
+  "skin_burns": {
+    "description": "A mark of fire's embrace",
+    "flavor": "Played with fire... and lost",
+    "name": "Skin Burns",
+    "rarity": "Rare"
+  },
+  "slow": {
+    "description": "Moves at reduced speed",
+    "flavor": "There's always tomorrow... or the day after",
+    "name": "Slow",
+    "rarity": "Normal"
+  },
+  "soft_skin": {
+    "description": "Soft and squishy, like a marshmallow",
+    "flavor": "Fragile but strangely endearing",
+    "name": "Soft Skin",
+    "rarity": "Normal"
+  },
+  "strong": {
+    "description": "Significantly increases physical damage dealt in combat",
+    "flavor": "Opens all jars on first try",
+    "name": "Strong",
+    "rarity": "Normal"
+  },
+  "strong_minded": {
+    "description": "Resistant to mental manipulation",
+    "flavor": "Their mind is an iron fortress",
+    "name": "Strong Minded",
+    "rarity": "Rare"
+  },
+  "stupid": {
+    "description": "Reduced decision-making ability",
+    "flavor": "Not the sharpest tool in the shed",
+    "name": "Stupid",
+    "rarity": "Normal"
+  },
+  "sunblessed": {
+    "description": "Heals over time when exposed to sunlight",
+    "flavor": "Like a plant, just with more personality!",
+    "name": "Sunblessed",
+    "rarity": "Rare"
+  },
+  "super_health": {
+    "description": "Greatly enhances maximum health",
+    "flavor": "Granted for the love of crab",
+    "name": "Super Health",
+    "rarity": "Legendary"
+  },
+  "thief": {
+    "description": "Skilled at taking others' possessions",
+    "flavor": "One for you... all for me",
+    "name": "Thief",
+    "rarity": "Epic"
+  },
+  "thorns": {
+    "description": "Damages attackers when hit",
+    "flavor": "Every rose has its thorns",
+    "name": "Thorns",
+    "rarity": "Rare"
+  },
+  "tiny": {
+    "description": "Small in size, mighty in spirit",
+    "flavor": "What is this, a trait for ants?",
+    "name": "Tiny",
+    "rarity": "Legendary"
+  },
+  "titan_lungs": {
+    "description": "Their stamina is seemingly inexhaustible",
+    "flavor": "Breathing is their superweapon",
+    "name": "Titan's Lungs",
+    "rarity": "Rare"
+  },
+  "tough": {
+    "description": "Damage reduction and stun immunity",
+    "flavor": "What doesn't kill them just bounces off",
+    "name": "Tough",
+    "rarity": "Legendary"
+  },
+  "tumor_infection": {
+    "description": "Slowly transforms into a horrible creature",
+    "flavor": "Self becomes memory, memory becomes nightmare",
+    "name": "Tumor Infection",
+    "rarity": "Rare"
+  },
+  "ugly": {
+    "description": "Appearance causes discomfort to others",
+    "flavor": "Winning hearts through charm",
+    "name": "Ugly",
+    "rarity": "Normal"
+  },
+  "unlucky": {
+    "description": "Increases the likelihood of negative events for self and nearby units",
+    "flavor": "Black cats follow them everywhere",
+    "name": "Unlucky",
+    "rarity": "Rare"
+  },
+  "venomous": {
+    "description": "Applies poison to enemies upon landing a hit",
+    "flavor": "Venom is a gift of death",
+    "name": "Venomous",
+    "rarity": "Rare"
+  },
+  "veteran": {
+    "description": "Experienced in battle after surviving numerous fights",
+    "flavor": "Not a rookie anymore",
+    "name": "Veteran",
+    "rarity": "Rare"
+  },
+  "weak": {
+    "description": "Reduced physical strength",
+    "flavor": "Physically frail, but resilient in spirit",
+    "name": "Weak",
+    "rarity": "Normal"
+  },
+  "weightless": {
+    "description": "Too light to break thin ice",
+    "flavor": "Defies gravity with an effortless grace",
+    "name": "Weightless",
+    "rarity": "Rare"
+  },
+  "whirlwind": {
+    "description": "Generates swirling wind around them",
+    "flavor": "Guess their favorite song",
+    "name": "Whirlwind",
+    "rarity": "Legendary"
+  },
+  "wise": {
+    "description": "Possesses wisdom accumulated over a lifetime",
+    "flavor": "They have seen some stuff",
+    "name": "Wise",
+    "rarity": "Rare"
+  },
+  "zombie": {
+    "description": "Has an insatiable hunger for brains",
+    "flavor": "A mind is a terrible thing to waste",
+    "name": "Zombie",
+    "rarity": "Rare"
+  }
 }
