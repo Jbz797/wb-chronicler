@@ -23,7 +23,7 @@ export class WorldInfoComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  // Per-bucket deltas (inventory + traits) vs the previous chapter's favorite. `null` if there is no comparable previous favorite.
+  // Per-bucket deltas (equipment + traits) vs the previous chapter's favorite. `null` if there is no comparable previous favorite.
   protected readonly deltas = computed(() => {
     const current = this.currentChapter()?.meta.favorite;
     const previous = this._chronicler.previousChapter()?.meta.favorite;
@@ -34,7 +34,7 @@ export class WorldInfoComponent {
       normal: a.normal - b.normal,
       rare: a.rare - b.rare,
     });
-    return { inventory: diff(current.inventory, previous.inventory), traits: diff(current.traits, previous.traits) };
+    return { equipment: diff(current.equipment, previous.equipment), traits: diff(current.traits, previous.traits) };
   });
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
 

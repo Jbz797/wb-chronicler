@@ -20,7 +20,7 @@
     </nz-descriptions>
 
     <app-rarity-stats title="Nombre de traits" [counts]="fav.traits" [deltas]="deltas()?.traits ?? null" />
-    <app-rarity-stats title="Inventaire" [counts]="fav.inventory" [deltas]="deltas()?.inventory ?? null" />
+    <app-rarity-stats title="Équipement" [counts]="fav.equipment" [deltas]="deltas()?.equipment ?? null" />
   } @else {
     <p class="empty-state">Aucun favoris pour l'instant.</p>
   }

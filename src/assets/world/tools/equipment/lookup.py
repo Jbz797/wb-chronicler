@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Look up equipped items by ID in a `map.wbox`.
+"""Look up equipment items by ID in a `map.wbox`.
 
 Usage:
     python3 lookup.py <map.wbox> <id> [<id> ...]
 
-For each requested ID (from an actor's `saved_items`), prints `id | rarity`.
+Accepts any item ID in `save['items']` — equipped on an actor (`saved_items`) or stored
+in a city (`cities[].equipment.item_storage_*`). Prints `id | rarity` per item.
 Unknown IDs are reported on stderr.
 
 Rarity rule (cf. wiki Equipment#Rarity): max level among leveled modifiers in `items[].modifiers`

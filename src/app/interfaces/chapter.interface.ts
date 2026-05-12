@@ -9,7 +9,7 @@ export interface ChapterMeta {
     age: number;
     asset_id: string;
     descriptor: string;
-    inventory: RarityCounts;
+    equipment: RarityCounts;
     name: string;
     traits: RarityCounts;
   } | null;
