@@ -41,12 +41,12 @@ Output per item: `id | rarity | asset_id | durability | by | from | kills | age 
 import json
 import re
 import sys
-import zlib
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _lib import CURRENT_SAVE, load_save
+
 DATA = Path(__file__).parent / 'data.json'
-# macOS path — mirror chronicler.md § "Emplacement source des saves WorldBox".
-CURRENT_SAVE = Path.home() / 'Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox'
 LEVEL_RE = re.compile(r'(\d+)$')
 MONTHS_PER_YEAR = 60
 
@@ -82,8 +82,7 @@ def main(argv: list[str]) -> int:
     if not CURRENT_SAVE.exists():
         print(f'no save found at {CURRENT_SAVE}', file=sys.stderr)
         return 2
-    with CURRENT_SAVE.open('rb') as f:
-        save = json.loads(zlib.decompress(f.read()))
+    save = load_save()
     items_by_id = {it['id']: it for it in save['items']}
     world_time = save['mapStats']['world_time']
     with DATA.open() as f:

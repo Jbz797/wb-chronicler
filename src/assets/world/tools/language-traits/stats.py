@@ -21,30 +21,14 @@ Unknown IDs reported on stderr.
 # Most language traits are behavioral (alphabet, calligraphy, decision triggers...) and carry
 # no numeric stat. Only a handful contribute directly to intelligence / warfare / lifespan /
 # offspring.
-import json
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _lib import trait_lookup_main
 
 DATA = Path(__file__).parent / 'data.json'
 
 
-def main(argv: list[str]) -> int:
-    if not argv:
-        print(__doc__, file=sys.stderr)
-        return 2
-    with DATA.open() as f:
-        traits = json.load(f)
-    exit_code = 0
-    for tid in argv:
-        entry = traits.get(tid)
-        if entry is None:
-            print(f'unknown: {tid}', file=sys.stderr)
-            exit_code = 1
-            continue
-        stats = ','.join(f'{k}={v}' for k, v in (entry.get('stats') or {}).items())
-        print(f"{tid} | {stats}")
-    return exit_code
-
-
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(trait_lookup_main(DATA, sys.argv[1:], __doc__ or ''))

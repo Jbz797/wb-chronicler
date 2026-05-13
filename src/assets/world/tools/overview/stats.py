@@ -54,18 +54,18 @@ Output: `actor_id | <stat>=<value>,...` (alphabetical, zeros dropped).
 # place `bad` on a voided locus, but if a divergence appears, gate on void_set here.
 import json
 import sys
-import zlib
 from functools import cache
 from pathlib import Path
 
-# macOS path — mirror chronicler.md § "Emplacement source des saves WorldBox".
-CURRENT_SAVE = Path.home() / 'Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox'
-CLAN_TRAITS_DATA = Path(__file__).parent.parent / 'clan-traits' / 'data.json'
-CREATURE_TRAITS_DATA = Path(__file__).parent.parent / 'creature-traits' / 'data.json'
-EQUIPMENT_DATA = Path(__file__).parent.parent / 'equipment' / 'data.json'
-LANGUAGE_TRAITS_DATA = Path(__file__).parent.parent / 'language-traits' / 'data.json'
-SPECIES_DATA = Path(__file__).parent.parent / 'species' / 'data.json'
-SUBSPECIES_TRAITS_DATA = Path(__file__).parent.parent / 'subspecies-traits' / 'data.json'
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _lib import CURRENT_SAVE, load_save
+
+_CLAN_TRAITS_DATA = Path(__file__).parent.parent / 'clan-traits' / 'data.json'
+_CREATURE_TRAITS_DATA = Path(__file__).parent.parent / 'creature-traits' / 'data.json'
+_EQUIPMENT_DATA = Path(__file__).parent.parent / 'equipment' / 'data.json'
+_LANGUAGE_TRAITS_DATA = Path(__file__).parent.parent / 'language-traits' / 'data.json'
+_SPECIES_DATA = Path(__file__).parent.parent / 'species' / 'data.json'
+_SUBSPECIES_TRAITS_DATA = Path(__file__).parent.parent / 'subspecies-traits' / 'data.json'
 
 GRID_COLS = 6
 
@@ -117,14 +117,14 @@ COLOR_MAP = {'T': 'red', 'G': 'yellow', 'A': 'green', 'C': 'blue'}
 
 
 # Mirrors C# int32 wrap-around — required because the game's SystemRandom relies on it.
-def to_int32(x: int) -> int:
+def _to_int32(x: int) -> int:
     x &= 0xFFFFFFFF
     return x - 0x100000000 if x >= 0x80000000 else x
 
 
 # Faithful port of .NET `System.Random` (subtractive generator). Constants and seed loop
 # match the reference .NET implementation — do not "simplify" without verifying outputs.
-class SystemRandom:
+class _SystemRandom:
 
     MBIG = 2147483647
     MSEED = 161803398
@@ -133,24 +133,24 @@ class SystemRandom:
         self.inext, self.inextp = 0, 21
         sa = self.SeedArray = [0] * 56
         subtraction = 0x7FFFFFFF if seed == -0x80000000 else abs(seed)
-        mj = to_int32(self.MSEED - subtraction)
+        mj = _to_int32(self.MSEED - subtraction)
         sa[55] = mj
         mk = 1
         for i in range(1, 55):
             ii = (21 * i) % 55
             sa[ii] = mk
-            mk = to_int32(mj - mk)
+            mk = _to_int32(mj - mk)
             if mk < 0: mk += self.MBIG
             mj = sa[ii]
         for _ in range(4):
             for i in range(1, 56):
-                sa[i] = to_int32(sa[i] - sa[1 + (i + 30) % 55])
+                sa[i] = _to_int32(sa[i] - sa[1 + (i + 30) % 55])
                 if sa[i] < 0: sa[i] += self.MBIG
 
     def _internal_sample(self) -> int:
         ln = (self.inext + 1) if (self.inext + 1) < 56 else 1
         lnp = (self.inextp + 1) if (self.inextp + 1) < 56 else 1
-        r = to_int32(self.SeedArray[ln] - self.SeedArray[lnp])
+        r = _to_int32(self.SeedArray[ln] - self.SeedArray[lnp])
         if r == self.MBIG: r -= 1
         if r < 0: r += self.MBIG
         self.SeedArray[ln] = r
@@ -164,10 +164,10 @@ class SystemRandom:
 # Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's
 # colors only depend on (gene, life_dna), and life_dna is constant for one run.
 @cache
-def gene_colors(gene: str, life_dna: int) -> dict:
+def _gene_colors(gene: str, life_dna: int) -> dict:
     idx = GENE_INDEX.get(gene)
     if idx is None: return {}
-    rnd = SystemRandom(to_int32(life_dna + idx))
+    rnd = _SystemRandom(_to_int32(life_dna + idx))
     text = ''.join('ACGT'[rnd.Next(4)] for _ in range(15))
     return {'left': COLOR_MAP[text[0]], 'up': COLOR_MAP[text[6]],
             'down': COLOR_MAP[text[8]], 'right': COLOR_MAP[text[14]]}
@@ -180,7 +180,7 @@ DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 
 # Returns (gene, idx) of neighbor, or (None, ...) for border (off-grid or voided).
-def neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) -> tuple[str | None, int]:
+def _neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) -> tuple[str | None, int]:
     rows = len(loci) // GRID_COLS
     x, y = idx % GRID_COLS, idx // GRID_COLS
     nx, ny = x + dx, y + dy
@@ -190,18 +190,18 @@ def neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) ->
     return loci[nidx], nidx
 
 
-def synergizes(gene: str, ngene: str, dx: int, dy: int, super_set: set[int],
+def _synergizes(gene: str, ngene: str, dx: int, dy: int, super_set: set[int],
                my_idx: int, n_idx: int, life_dna: int) -> bool:
     my_super = my_idx in super_set
     n_super = n_idx in super_set
     if my_super and n_super: return False           # two amplifiers don't synergize with each other
-    if my_super or n_super: return True             # amplifier synergizes with anything
+    if my_super or n_super: return True             # amplifier _synergizes with anything
     if gene in SYNERGY_ALWAYS or ngene in SYNERGY_ALWAYS: return True
     if gene == 'empty' or ngene == 'empty': return False
-    return gene_colors(gene, life_dna).get(SIDE[dx, dy]) == gene_colors(ngene, life_dna).get(OPPOSITE[dx, dy])
+    return _gene_colors(gene, life_dna).get(SIDE[dx, dy]) == _gene_colors(ngene, life_dna).get(OPPOSITE[dx, dy])
 
 
-def is_bad(loci: list[str], idx: int) -> bool:
+def _is_bad(loci: list[str], idx: int) -> bool:
     rows = len(loci) // GRID_COLS
     x, y = idx % GRID_COLS, idx // GRID_COLS
     for dx, dy in DIRECTIONS:
@@ -211,25 +211,25 @@ def is_bad(loci: list[str], idx: int) -> bool:
     return False
 
 
-def is_golden(loci: list[str], idx: int, void_set: set[int], super_set: set[int], life_dna: int) -> bool:
+def _is_golden(loci: list[str], idx: int, void_set: set[int], super_set: set[int], life_dna: int) -> bool:
     gene = loci[idx]
     non_border = synergized = 0
     for dx, dy in DIRECTIONS:
-        ngene, nidx = neighbor(loci, void_set, idx, dx, dy)
+        ngene, nidx = _neighbor(loci, void_set, idx, dx, dy)
         if ngene is None: continue
         non_border += 1
-        if synergizes(gene, ngene, dx, dy, super_set, idx, nidx, life_dna):
+        if _synergizes(gene, ngene, dx, dy, super_set, idx, nidx, life_dna):
             synergized += 1
     return synergized >= 1 and synergized == non_border
 
 
 # BAD → floor(v/2) (or ceil for the few `_1`-tier genes listed in CEIL_ON_BAD); GOLDEN → v×2.
-def apply_tier(gene: str, value: float, bad: bool, golden: bool) -> float:
+def _apply_tier(gene: str, value: float, bad: bool, golden: bool) -> float:
     if bad: return -(-value // 2) if gene in CEIL_ON_BAD else value // 2
     return value * 2 if golden else value
 
 
-def add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> None:
+def _add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> None:
     for chrom in sub.get('saved_chromosome_data') or []:
         loci = chrom.get('loci') or []
         void_set = set(chrom.get('void_loci') or [])
@@ -239,12 +239,12 @@ def add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> None:
             entry = GENE_VALUES.get(gene)
             if entry is None: continue
             stat, value = entry
-            bad = is_bad(loci, idx)
-            golden = (not bad) and is_golden(loci, idx, void_set, super_set, life_dna)
-            totals[stat] = totals.get(stat, 0) + apply_tier(gene, value, bad, golden)
+            bad = _is_bad(loci, idx)
+            golden = (not bad) and _is_golden(loci, idx, void_set, super_set, life_dna)
+            totals[stat] = totals.get(stat, 0) + _apply_tier(gene, value, bad, golden)
 
 
-def add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> None:
+def _add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> None:
     for trait_id in trait_ids or []:
         entry = traits_data.get(trait_id) or {}
         for k, v in (entry.get('stats') or {}).items():
@@ -252,13 +252,13 @@ def add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> No
 
 
 # Add the species template's base stats (already flattened in data.json — clone chain resolved).
-def add_species_stats(totals: dict, asset_id: str, species_data: dict) -> None:
+def _add_species_stats(totals: dict, asset_id: str, species_data: dict) -> None:
     for k, v in ((species_data.get(asset_id) or {}).get('stats') or {}).items():
         totals[k] = totals.get(k, 0) + v
 
 
 # Sums each equipped item's base stats + the stats of every applied modifier.
-def add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, item_stats: dict, mod_stats: dict) -> None:
+def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, item_stats: dict, mod_stats: dict) -> None:
     for iid in item_ids or []:
         item = items_by_id.get(iid)
         if item is None: continue
@@ -281,7 +281,7 @@ MANA_PER_INTELLIGENCE = 10
 # Intelligence is read AFTER all mergeStats but BEFORE level scaling on mana — order doesn't
 # matter for the final value since level scaling on mana only multiplies what mergeStats wrote
 # (which is 0 for non-mage actors).
-def apply_intelligence_bonus(totals: dict) -> None:
+def _apply_intelligence_bonus(totals: dict) -> None:
     intel = totals.get('intelligence', 0)
     if intel:
         totals['mana'] = totals.get('mana', 0) + int(intel * MANA_PER_INTELLIGENCE)
@@ -289,14 +289,14 @@ def apply_intelligence_bonus(totals: dict) -> None:
 
 # Civil progression accumulator (`actor.custom_data_float`) — diplomacy / warfare / stewardship
 # / intelligence each gain +1 per conversation / event / aging tick over the actor's life.
-def add_custom_data_float(totals: dict, custom: dict | None) -> None:
+def _add_custom_data_float(totals: dict, custom: dict | None) -> None:
     for k, v in (custom or {}).items():
         totals[k] = totals.get(k, 0) + v
 
 
 # Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat
 # +0.1 to skill_combat / skill_spell when level > 5.
-def apply_level_scaling(totals: dict, level: int) -> None:
+def _apply_level_scaling(totals: dict, level: int) -> None:
     for stat, mult in LEVEL_MOD.items():
         if stat in totals:
             totals[stat] = totals[stat] * (1 + level * mult)
@@ -308,7 +308,7 @@ def apply_level_scaling(totals: dict, level: int) -> None:
 RENAMES = {'health': 'health_max', 'mana': 'mana_max'}
 
 
-def cleanup(totals: dict) -> dict:
+def _cleanup(totals: dict) -> dict:
     # Floor floats to int — the game stores stats as int32, so 261.9 displays as 261 in-game.
     # `health` / `mana` are renamed to `health_max` / `mana_max` — the values represent the
     # actor's post-pipeline maximum HP/MP, the semantically useful name for the chronicler.
@@ -319,26 +319,21 @@ def cleanup(totals: dict) -> dict:
     return result
 
 
-def load_save() -> dict:
-    with CURRENT_SAVE.open('rb') as f:
-        return json.loads(zlib.decompress(f.read()))
-
-
 # Build a shared context — preloaded data files + per-id indices on the save.
 # Pass it to `compute_actor_stats` to amortize JSON parsing across many actors (cf. `rank.py`).
 def build_context(save: dict) -> dict:
     return {
-        'clan_traits':       json.load(CLAN_TRAITS_DATA.open()),
+        'clan_traits':       json.load(_CLAN_TRAITS_DATA.open()),
         'clans_by_id':       {c['id']: c for c in save.get('clans', [])},
-        'creature_traits':   json.load(CREATURE_TRAITS_DATA.open()),
-        'equipment':         json.load(EQUIPMENT_DATA.open()),
+        'creature_traits':   json.load(_CREATURE_TRAITS_DATA.open()),
+        'equipment':         json.load(_EQUIPMENT_DATA.open()),
         'items_by_id':       {it['id']: it for it in save['items']},
-        'language_traits':   json.load(LANGUAGE_TRAITS_DATA.open()),
+        'language_traits':   json.load(_LANGUAGE_TRAITS_DATA.open()),
         'languages_by_id':   {l['id']: l for l in save.get('languages', [])},
         'life_dna':          int(save['mapStats'].get('life_dna') or 0),
-        'species_data':      json.load(SPECIES_DATA.open()),
+        'species_data':      json.load(_SPECIES_DATA.open()),
         'subspecies_by_id':  {s['id']: s for s in save.get('subspecies', [])},
-        'subspecies_traits': json.load(SUBSPECIES_TRAITS_DATA.open()),
+        'subspecies_traits': json.load(_SUBSPECIES_TRAITS_DATA.open()),
     }
 
 
@@ -352,20 +347,20 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     base = subspecies_base_cache.get(sub_id) if subspecies_base_cache is not None else None
     if base is None:
         base = {}
-        add_species_stats(base, actor.get('asset_id', ''), ctx['species_data'])
-        add_chromosome_stats(base, sub, ctx['life_dna'])
-        add_trait_stats(base, sub.get('saved_traits') or [], ctx['subspecies_traits'])
+        _add_species_stats(base, actor.get('asset_id', ''), ctx['species_data'])
+        _add_chromosome_stats(base, sub, ctx['life_dna'])
+        _add_trait_stats(base, sub.get('saved_traits') or [], ctx['subspecies_traits'])
         if subspecies_base_cache is not None:
             subspecies_base_cache[sub_id] = dict(base)
     totals = dict(base)
-    add_trait_stats(totals, actor.get('saved_traits') or [], ctx['creature_traits'])
-    add_trait_stats(totals, (ctx['clans_by_id'].get(actor.get('clan')) or {}).get('saved_traits') or [], ctx['clan_traits'])
-    add_trait_stats(totals, (ctx['languages_by_id'].get(actor.get('language')) or {}).get('saved_traits') or [], ctx['language_traits'])
-    add_equipment_stats(totals, actor.get('saved_items') or [], ctx['items_by_id'], ctx['equipment']['items'], ctx['equipment']['modifiers'])
-    add_custom_data_float(totals, actor.get('custom_data_float'))
-    apply_level_scaling(totals, int(actor.get('level') or 0))
-    apply_intelligence_bonus(totals)
-    return cleanup(totals)
+    _add_trait_stats(totals, actor.get('saved_traits') or [], ctx['creature_traits'])
+    _add_trait_stats(totals, (ctx['clans_by_id'].get(actor.get('clan')) or {}).get('saved_traits') or [], ctx['clan_traits'])
+    _add_trait_stats(totals, (ctx['languages_by_id'].get(actor.get('language')) or {}).get('saved_traits') or [], ctx['language_traits'])
+    _add_equipment_stats(totals, actor.get('saved_items') or [], ctx['items_by_id'], ctx['equipment']['items'], ctx['equipment']['modifiers'])
+    _add_custom_data_float(totals, actor.get('custom_data_float'))
+    _apply_level_scaling(totals, int(actor.get('level') or 0))
+    _apply_intelligence_bonus(totals)
+    return _cleanup(totals)
 
 
 def main(argv: list[str]) -> int:
