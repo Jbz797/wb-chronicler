@@ -60,10 +60,12 @@ from pathlib import Path
 
 # macOS path — mirror chronicler.md § "Emplacement source des saves WorldBox".
 CURRENT_SAVE = Path.home() / 'Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox'
-SUBSPECIES_TRAITS_DATA = Path(__file__).parent.parent / 'subspecies-traits' / 'data.json'
+CLAN_TRAITS_DATA = Path(__file__).parent.parent / 'clan-traits' / 'data.json'
 CREATURE_TRAITS_DATA = Path(__file__).parent.parent / 'creature-traits' / 'data.json'
 EQUIPMENT_DATA = Path(__file__).parent.parent / 'equipment' / 'data.json'
+LANGUAGE_TRAITS_DATA = Path(__file__).parent.parent / 'language-traits' / 'data.json'
 SPECIES_DATA = Path(__file__).parent.parent / 'species' / 'data.json'
+SUBSPECIES_TRAITS_DATA = Path(__file__).parent.parent / 'subspecies-traits' / 'data.json'
 
 GRID_COLS = 6
 
@@ -267,10 +269,29 @@ def add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, it
                 totals[k] = totals.get(k, 0) + v
 
 
-# Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* constants.
+# Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / MANA_PER_INTELLIGENCE constants.
 LEVEL_MOD = {'health': 0.05, 'mana': 0.02, 'stamina': 0.02}
 LEVEL_VETERAN_THRESHOLD = 5
 LEVEL_VETERAN_SKILL_BONUS = 0.1
+MANA_PER_INTELLIGENCE = 10
+
+
+# Flat additive bonuses applied late in `Actor.updateStats`:
+#   stats["mana"] += int(stats["intelligence"] × MANA_PER_INTELLIGENCE)
+# Intelligence is read AFTER all mergeStats but BEFORE level scaling on mana — order doesn't
+# matter for the final value since level scaling on mana only multiplies what mergeStats wrote
+# (which is 0 for non-mage actors).
+def apply_intelligence_bonus(totals: dict) -> None:
+    intel = totals.get('intelligence', 0)
+    if intel:
+        totals['mana'] = totals.get('mana', 0) + int(intel * MANA_PER_INTELLIGENCE)
+
+
+# Civil progression accumulator (`actor.custom_data_float`) — diplomacy / warfare / stewardship
+# / intelligence each gain +1 per conversation / event / aging tick over the actor's life.
+def add_custom_data_float(totals: dict, custom: dict | None) -> None:
+    for k, v in (custom or {}).items():
+        totals[k] = totals.get(k, 0) + v
 
 
 # Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat
@@ -284,15 +305,67 @@ def apply_level_scaling(totals: dict, level: int) -> None:
             totals[stat] = totals.get(stat, 0) + LEVEL_VETERAN_SKILL_BONUS
 
 
+RENAMES = {'health': 'health_max', 'mana': 'mana_max'}
+
+
 def cleanup(totals: dict) -> dict:
     # Floor floats to int — the game stores stats as int32, so 261.9 displays as 261 in-game.
-    # `health` is renamed to `health_max` in the output — the value represents the actor's
-    # post-level-scaling maximum HP, which is the semantically useful name for the chronicler.
+    # `health` / `mana` are renamed to `health_max` / `mana_max` — the values represent the
+    # actor's post-pipeline maximum HP/MP, the semantically useful name for the chronicler.
     result = {}
     for k, v in totals.items():
         if isinstance(v, float): v = int(v)
-        if v: result['health_max' if k == 'health' else k] = v
+        if v: result[RENAMES.get(k, k)] = v
     return result
+
+
+def load_save() -> dict:
+    with CURRENT_SAVE.open('rb') as f:
+        return json.loads(zlib.decompress(f.read()))
+
+
+# Build a shared context — preloaded data files + per-id indices on the save.
+# Pass it to `compute_actor_stats` to amortize JSON parsing across many actors (cf. `rank.py`).
+def build_context(save: dict) -> dict:
+    return {
+        'clan_traits':       json.load(CLAN_TRAITS_DATA.open()),
+        'clans_by_id':       {c['id']: c for c in save.get('clans', [])},
+        'creature_traits':   json.load(CREATURE_TRAITS_DATA.open()),
+        'equipment':         json.load(EQUIPMENT_DATA.open()),
+        'items_by_id':       {it['id']: it for it in save['items']},
+        'language_traits':   json.load(LANGUAGE_TRAITS_DATA.open()),
+        'languages_by_id':   {l['id']: l for l in save.get('languages', [])},
+        'life_dna':          int(save['mapStats'].get('life_dna') or 0),
+        'species_data':      json.load(SPECIES_DATA.open()),
+        'subspecies_by_id':  {s['id']: s for s in save.get('subspecies', [])},
+        'subspecies_traits': json.load(SUBSPECIES_TRAITS_DATA.open()),
+    }
+
+
+# Aggregate one actor's stats through the full pipeline. `subspecies_base_cache` is optional;
+# when provided, the heavy (species + chromosomes + subspecies traits) base is computed once
+# per subspecies and reused across actors — a 5× speedup when batching (cf. `rank.py`).
+def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
+    sub_id = actor.get('subspecies')
+    sub = ctx['subspecies_by_id'].get(sub_id) if sub_id is not None else None
+    if sub is None: return {}
+    base = subspecies_base_cache.get(sub_id) if subspecies_base_cache is not None else None
+    if base is None:
+        base = {}
+        add_species_stats(base, actor.get('asset_id', ''), ctx['species_data'])
+        add_chromosome_stats(base, sub, ctx['life_dna'])
+        add_trait_stats(base, sub.get('saved_traits') or [], ctx['subspecies_traits'])
+        if subspecies_base_cache is not None:
+            subspecies_base_cache[sub_id] = dict(base)
+    totals = dict(base)
+    add_trait_stats(totals, actor.get('saved_traits') or [], ctx['creature_traits'])
+    add_trait_stats(totals, (ctx['clans_by_id'].get(actor.get('clan')) or {}).get('saved_traits') or [], ctx['clan_traits'])
+    add_trait_stats(totals, (ctx['languages_by_id'].get(actor.get('language')) or {}).get('saved_traits') or [], ctx['language_traits'])
+    add_equipment_stats(totals, actor.get('saved_items') or [], ctx['items_by_id'], ctx['equipment']['items'], ctx['equipment']['modifiers'])
+    add_custom_data_float(totals, actor.get('custom_data_float'))
+    apply_level_scaling(totals, int(actor.get('level') or 0))
+    apply_intelligence_bonus(totals)
+    return cleanup(totals)
 
 
 def main(argv: list[str]) -> int:
@@ -306,35 +379,15 @@ def main(argv: list[str]) -> int:
     if not CURRENT_SAVE.exists():
         print(f'no save found at {CURRENT_SAVE}', file=sys.stderr)
         return 2
-    with CURRENT_SAVE.open('rb') as f:
-        save = json.loads(zlib.decompress(f.read()))
+    save = load_save()
     actor = next((a for a in save['actors_data'] if a.get('id') == actor_id), None)
     if actor is None:
         print(f'unknown actor: {actor_id}', file=sys.stderr)
         return 1
-    sub = next((s for s in save.get('subspecies', []) if s.get('id') == actor.get('subspecies')), None)
-    if sub is None:
+    totals = compute_actor_stats(actor, build_context(save))
+    if not totals:
         print(f'no subspecies for actor {actor_id}', file=sys.stderr)
         return 1
-    with SUBSPECIES_TRAITS_DATA.open() as f:
-        subspecies_traits = json.load(f)
-    with CREATURE_TRAITS_DATA.open() as f:
-        creature_traits = json.load(f)
-    with EQUIPMENT_DATA.open() as f:
-        equipment = json.load(f)
-    with SPECIES_DATA.open() as f:
-        species_data = json.load(f)
-    items_by_id = {it['id']: it for it in save['items']}
-
-    life_dna = int(save['mapStats'].get('life_dna') or 0)
-    totals: dict[str, float] = {}
-    add_species_stats(totals, actor.get('asset_id', ''), species_data)
-    add_chromosome_stats(totals, sub, life_dna)
-    add_trait_stats(totals, sub.get('saved_traits') or [], subspecies_traits)
-    add_trait_stats(totals, actor.get('saved_traits') or [], creature_traits)
-    add_equipment_stats(totals, actor.get('saved_items') or [], items_by_id, equipment['items'], equipment['modifiers'])
-    apply_level_scaling(totals, int(actor.get('level') or 0))
-    totals = cleanup(totals)
     stats_str = ','.join(f'{k}={v}' for k, v in sorted(totals.items()))
     print(f"{actor_id} | {stats_str}")
     return 0

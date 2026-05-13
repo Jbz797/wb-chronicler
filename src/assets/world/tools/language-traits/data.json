@@ -1,0 +1,90 @@
+{
+  "ancient_runes": {
+    "stats": {}
+  },
+  "beautiful_calligraphy": {
+    "stats": {}
+  },
+  "chilly_font": {
+    "stats": {}
+  },
+  "confusing_semantics": {
+    "stats": {}
+  },
+  "cursed_font": {
+    "stats": {}
+  },
+  "divine_encryption": {
+    "stats": {}
+  },
+  "doomed_glyphs": {
+    "stats": {}
+  },
+  "elegant_words": {
+    "stats": {
+      "offspring": 4
+    }
+  },
+  "enlightening_script": {
+    "stats": {
+      "intelligence": 10
+    }
+  },
+  "eternal_text": {
+    "stats": {
+      "lifespan": 500
+    }
+  },
+  "font_of_gods": {
+    "stats": {}
+  },
+  "foolish_glyphs": {
+    "stats": {
+      "intelligence": -5
+    }
+  },
+  "grin_mark": {
+    "stats": {}
+  },
+  "magic_words": {
+    "stats": {}
+  },
+  "melodic": {
+    "stats": {}
+  },
+  "mortal_tongue": {
+    "stats": {}
+  },
+  "nicely_structured_grammar": {
+    "stats": {}
+  },
+  "powerful_words": {
+    "stats": {}
+  },
+  "raging_paragraphs": {
+    "stats": {}
+  },
+  "repeated_sentences": {
+    "stats": {}
+  },
+  "scorching_words": {
+    "stats": {}
+  },
+  "scribble": {
+    "stats": {}
+  },
+  "spooky_language": {
+    "stats": {}
+  },
+  "strict_spelling": {
+    "stats": {
+      "warfare": 10
+    }
+  },
+  "stylish_writing": {
+    "stats": {}
+  },
+  "words_of_madness": {
+    "stats": {}
+  }
+}

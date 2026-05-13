@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 13/05/26 14:30</p>
+<p class="metadata">Date de mise à jour : 13/05/26 18:54</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -77,7 +77,9 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
       "damage_max": 0,
       "damage_min": 0,
       "health_max": 0,
-      "health_max_rank": 0
+      "health_max_rank": 0,
+      "mana_max": 0,
+      "mana_max_rank": 0
     },
     "sex": "",             // "male" ou "female" (`sex: 1` = female, absent = male)
     "stats": {             // Stats courantes
@@ -391,15 +393,19 @@ Autres pistes : mouvements suspects, changements de statut, corrélations tempor
 
 ## 🧬 Stats de base — sources et agrégation
 
-Quand le chroniqueur veut comprendre d'où vient la valeur d'une stat (notamment pour distinguer inné/acquis, cf. § V), 5 sources se cumulent par ordre d'impact :
+Quand le chroniqueur veut comprendre d'où vient la valeur d'une stat (notamment pour distinguer inné/acquis, cf. § V), les sources se cumulent par ordre d'impact :
 
 1. **Gènes chromosomiques** de la sous-espèce
 2. **Subspecies traits** (`subspecies.saved_traits`) — la plupart sont comportementaux, ~7 ont des contributions numériques
 3. **Creature traits** (`actor.saved_traits`) — bonus de particularités
-4. **Progression civile acquise** (`actor.custom_data_float`) — +1 par conversation / vieillissement sur diplomacy / warfare / stewardship / intelligence
-5. **Bonus de clan / langue / religion / équipement / statut** — rares au début de partie, à enrichir
+4. **Clan traits** (`clan.saved_traits`) — `iron_will`, `blood_pact`, etc.
+5. **Language traits** (`language.saved_traits`) — `strict_spelling`, `enlightening_script`, etc.
+6. **Équipement** (`actor.saved_items` + leurs modifiers)
+7. **Progression civile acquise** (`actor.custom_data_float`) — +1 par conversation / vieillissement sur diplomacy / warfare / stewardship / intelligence
+8. **Bonus dérivés** appliqués en fin de pipeline : level scaling (`× (1 + level × mult)` pour health/mana/stamina) + `mana += int(intelligence × 10)` (MANA_PER_INTELLIGENCE)
+9. **Sources non modélisées** — statuts, culture, religion, profession, era. À enrichir si écart constaté avec l'in-game.
 
-Les sources **1 + 2 + 3** sont agrégées automatiquement par `tools/overview/stats.py <id>`. Les sources **4 + 5** restent à lire manuellement dans le save par le chroniqueur.
+`tools/overview/stats.py <id>` agrège les sources **1 → 8** et restitue les stats finales (health_max, mana_max, intelligence, etc.). La source **9** reste à lire manuellement si besoin.
 
 ⚠️ **Multipliers** : certains creature traits (ex. `fat` → `multiplier_damage=0.1`) sont des coefficients (« +10% sur damage final »). `overview/stats.py` les agrège naïvement comme des additions ; pour une valeur in-game exacte, appliquer `final = base × (1 + multiplier)` manuellement.
 

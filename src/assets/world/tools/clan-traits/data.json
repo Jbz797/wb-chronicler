@@ -1,0 +1,135 @@
+{
+  "antimatter_blood": {
+    "stats": {
+      "damage": 1
+    }
+  },
+  "best_five": {
+    "stats": {}
+  },
+  "blood_of_eons": {
+    "stats": {
+      "lifespan": 1000000000
+    }
+  },
+  "blood_of_giants": {
+    "stats": {
+      "scale": 0.05
+    }
+  },
+  "blood_of_sea": {
+    "stats": {
+      "stamina": 20
+    }
+  },
+  "blood_pact": {
+    "stats": {
+      "warfare": 1
+    }
+  },
+  "bonebreakers": {
+    "stats": {
+      "damage": 5
+    }
+  },
+  "combat_instincts": {
+    "stats": {
+      "warfare": 10
+    }
+  },
+  "cursed_blood": {
+    "stats": {
+      "lifespan": -666
+    }
+  },
+  "deathbound": {
+    "stats": {
+      "warfare": 5
+    }
+  },
+  "divine_dozen": {
+    "stats": {}
+  },
+  "endurance_of_titans": {
+    "stats": {
+      "multiplier_stamina": 3
+    }
+  },
+  "flesh_weavers": {
+    "stats": {
+      "multiplier_health": 0.2
+    }
+  },
+  "gaia_blood": {
+    "stats": {
+      "multiplier_health": 0.05
+    }
+  },
+  "gaia_shield": {
+    "stats": {
+      "armor": 10,
+      "multiplier_health": 0.1
+    }
+  },
+  "geb": {
+    "stats": {}
+  },
+  "gods_chosen": {
+    "stats": {
+      "armor": 20,
+      "diplomacy": 5,
+      "stewardship": 10
+    }
+  },
+  "grin_mark": {
+    "stats": {}
+  },
+  "iron_will": {
+    "stats": {
+      "intelligence": 5
+    }
+  },
+  "magic_blood": {
+    "stats": {
+      "multiplier_mana": 3
+    }
+  },
+  "mark_of_becoming": {
+    "stats": {}
+  },
+  "masters_of_propaganda": {
+    "stats": {
+      "loyalty_traits": 20
+    }
+  },
+  "nitroglycerin_blood": {
+    "stats": {
+      "health": -1
+    }
+  },
+  "silver_tongues": {
+    "stats": {
+      "diplomacy": 5,
+      "opinion": 20
+    }
+  },
+  "stonefists": {
+    "stats": {
+      "damage": 30
+    }
+  },
+  "void_ban": {
+    "stats": {
+      "multiplier_mana": -10
+    }
+  },
+  "warlocks_vein": {
+    "stats": {}
+  },
+  "we_are_legion": {
+    "stats": {}
+  },
+  "witchs_vein": {
+    "stats": {}
+  }
+}
