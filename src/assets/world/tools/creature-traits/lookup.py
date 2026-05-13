@@ -1,18 +1,34 @@
 #!/usr/bin/env python3
 """Look up creature traits by ID.
 
-Usage:
-    python3 lookup.py <trait_id> [<trait_id> ...]
+Usage: python3 lookup.py <id> [<id> ...]
 
-Reads `data.json` (sibling file) and prints `id | rarity | description | flavor | stats` for each
-requested ID. `stats` is formatted as `k1=v1,k2=v2,...` (alphabetical) using the game's internal
-stat names — empty when the trait has no modifiers. Unknown IDs are reported on stderr.
-
-Data source: game assets only — IDs/names/descriptions from the `traits_units` TextAsset
-(EN locale); rarity reconstructed from the `autoSetRarity` algorithm of `BaseTraitLibrary<T>`;
-stats extracted from `BaseStats.set_Item` calls in `ActorTraitLibrary.addTraits*` methods
-(`Assembly-CSharp.dll`).
+Prints `id | rarity | description | flavor | stats` per ID — `stats` is `k=v` pairs
+(alphabetical, empty when none). Unknown IDs reported on stderr.
 """
+# ─── Maintenance / re-extraction notes ───
+# `data.json` is rebuilt from the WorldBox game files (macOS):
+#   $HOME/Library/Application Support/Steam/steamapps/common/worldbox/worldbox.app/
+#       Contents/Resources/Data/Managed/Assembly-CSharp.dll  (rarity + stats)
+#       Contents/Resources/Data/resources.assets             (TextAsset `traits_units`)
+# Toolchain: `dncil` (IL decoder), `dnfile` (PE/metadata parser), `UnityPy` (TextAsset extraction).
+#
+# Each trait aggregates 3 independent extractions:
+#   • id / name / description / flavor → `traits_units` TextAsset, EN locale (UnityPy).
+#   • rarity → reconstructed from `BaseTraitLibrary<T>.autoSetRarity` (IL walk).
+#       ⚠️ Gotcha: `BaseTrait<T>.ctor` defaults `rarity = 1` (= Rare), not Normal. Many
+#       traits never re-assign rarity, so the “fallback” is Rare. Algorithm summary:
+#       Legendary if `unlocked_with_achievement`; else feature counter (actions /
+#       decisions / spells / combat_actions / hasTags / plot) → Epic (≥2) / Rare (==1) /
+#       constructor default (Rare unless explicit Normal).
+#   • stats → `BaseStats.set_Item` calls inside `ActorTraitLibrary.addTraits{Body,Mind,
+#       Spirit,Acquired,Fun,Misc,Special}` IL bodies. Pattern after `library.add(trait)`:
+#       `ldfld library.t.base_stats ; ldstr <stat> ; ldc.r4|ldc.i4 <val> ; callvirt set_Item`.
+#       Float values from `ldc.r4` rounded to 4 decimals; integer-equivalents cast to int.
+#
+# Output ordering assumption: `data.json` was dumped with `json.dump(..., sort_keys=True)`,
+# so the `stats` dict from `json.load` is already alphabetical (dict preserves order since
+# Python 3.7). If a future extraction drops `sort_keys`, restore `sorted(...)` below.
 import json
 import sys
 from pathlib import Path
@@ -29,11 +45,11 @@ def main(argv: list[str]) -> int:
     exit_code = 0
     for tid in argv:
         entry = traits.get(tid)
-        if not entry:
+        if entry is None:
             print(f'unknown: {tid}', file=sys.stderr)
             exit_code = 1
             continue
-        stats = ','.join(f'{k}={v}' for k, v in sorted(entry.get('stats', {}).items()))
+        stats = ','.join(f'{k}={v}' for k, v in (entry.get('stats') or {}).items())
         print(f"{tid} | {entry['rarity']} | {entry['description']} | {entry['flavor']} | {stats}")
     return exit_code
 
