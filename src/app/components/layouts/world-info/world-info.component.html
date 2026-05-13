@@ -22,9 +22,17 @@
 
     <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
       <nz-descriptions-item [nzSpan]="2" [nzTitle]="healthTitle">
-        <span [class]="`health-${healthTier(fav.stats.health, fav.overview.health_max)}`">{{ fav.stats.health }}</span>
-        / {{ fav.overview.health_max }}
-        <app-delta [value]="deltas()?.overview?.health_max" />
+        <div class="health-row">
+          <span>
+            <span [class]="`health-${healthTier(fav.stats.health, fav.overview.health_max)}`">{{ fav.stats.health }}</span>
+            / {{ fav.overview.health_max }}
+            <app-delta [value]="deltas()?.overview?.health_max" />
+          </span>
+          <span>
+            #{{ fav.overview.health_max_rank }}
+            <app-delta [inverted]="true" [value]="deltas()?.overview?.health_max_rank" />
+          </span>
+        </div>
       </nz-descriptions-item>
       <nz-descriptions-item [nzTitle]="happinessTitle">
         {{ fav.stats.happiness }}

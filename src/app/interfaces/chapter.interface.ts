@@ -11,7 +11,7 @@ export interface ChapterMeta {
     descriptor: string;
     equipment: RarityCounts;
     name: string;
-    overview: { damage_max: number; damage_min: number; health_max: number };
+    overview: { damage_max: number; damage_min: number; health_max: number; health_max_rank: number };
     sex: 'female' | 'male';
     stats: { happiness: number; health: number; mana: number; nutrition: number };
     traits: RarityCounts;

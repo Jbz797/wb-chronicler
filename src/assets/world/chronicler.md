@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 13/05/26 11:03</p>
+<p class="metadata">Date de mise à jour : 13/05/26 14:30</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -58,42 +58,44 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
 
 ```json
 {
-  "age": {            // Âge en cours
-    "id": "",         // ID standard du jeu
-    "label": ""       // Libellé français choisi par le chroniqueur
+  "age": {                 // Âge en cours
+    "id": "",              // ID standard du jeu
+    "label": ""            // Libellé choisi par le chroniqueur
   },
-  "favorite": {       // Favori courant à ce chapitre (`null` tant qu'aucun favori n'a été désigné)
-    "age": 0,         // Âge du favori en années (arrondi à l'année entière, cf. § IV)
-    "asset_id": "",   // Espèce du favori
-    "descriptor": "", // Descripteur narratif court
-    "equipment": {    // Décompte des items d'équipement (équipés sur le favori) par rareté (cf. `tools/tools.md`)
+  "favorite": {            // Favori courant à ce chapitre (`null` tant qu'aucun favori n'a été désigné)
+    "age": 0,              // Âge du favori en années (arrondi à l'année entière, cf. § IV)
+    "asset_id": "",        // Espèce du favori
+    "descriptor": "",      // Descripteur narratif court
+    "equipment": {         // Décompte des items d'équipement par rareté
       "epic": 0,
       "legendary": 0,
       "normal": 0,
       "rare": 0
     },
-    "name": "",       // Nom du favori dans les données du jeu
-    "overview": {     // Stats dérivées du panneau Overview in-game (à enrichir au fil des chapitres)
+    "name": "",            // Nom du favori dans les données du jeu
+    "overview": {          // Stats agrégées
       "damage_max": 0,
-      "damage_min": 0
+      "damage_min": 0,
+      "health_max": 0,
+      "health_max_rank": 0
     },
-    "sex": "",        // "male" ou "female" — déduit du champ `sex` de l'actor (`sex: 1` = female, absent = male)
-    "stats": {        // Stats vitales du favori (lus directement sur l'actor, valeurs à l'instant de la save)
+    "sex": "",             // "male" ou "female" (`sex: 1` = female, absent = male)
+    "stats": {             // Stats courantes
       "happiness": 0,
       "health": 0,
       "mana": 0,
       "nutrition": 0
     },
-    "traits": {       // Décompte des traits par rareté (cf. `tools/tools.md`)
+    "traits": {            // Décompte des traits par rareté
       "epic": 0,
       "legendary": 0,
       "normal": 0,
       "rare": 0
     }
   },
-  "tags": [],         // Liste de codes événementiels (cf. `history/tags.md`)
-  "title": "",        // Titre forgé par le chroniqueur, court, évocateur
-  "world_time": 0     // Valeur du champ `world_time` de la save WorldBox correspondante (en mois ; 60 mois = 1 année)
+  "tags": [],              // Liste de codes événementiels (cf. `history/tags.md`)
+  "title": "",             // Titre forgé par le chroniqueur et utilisé dans le chapitre
+  "world_time": 0          // Valeur du champ `world_time` (en mois ; 60 mois = 1 année)
 }
 ```
 
@@ -397,7 +399,7 @@ Quand le chroniqueur veut comprendre d'où vient la valeur d'une stat (notamment
 4. **Progression civile acquise** (`actor.custom_data_float`) — +1 par conversation / vieillissement sur diplomacy / warfare / stewardship / intelligence
 5. **Bonus de clan / langue / religion / équipement / statut** — rares au début de partie, à enrichir
 
-Les sources **1 + 2 + 3** sont agrégées automatiquement par `tools/overview/stats.py <actor_id>`. Les sources **4 + 5** restent à lire manuellement dans le save par le chroniqueur.
+Les sources **1 + 2 + 3** sont agrégées automatiquement par `tools/overview/stats.py <id>`. Les sources **4 + 5** restent à lire manuellement dans le save par le chroniqueur.
 
 ⚠️ **Multipliers** : certains creature traits (ex. `fat` → `multiplier_damage=0.1`) sont des coefficients (« +10% sur damage final »). `overview/stats.py` les agrège naïvement comme des additions ; pour une valeur in-game exacte, appliquer `final = base × (1 + multiplier)` manuellement.
 

@@ -45,6 +45,7 @@ export class WorldInfoComponent {
     const diffOverview = (a: typeof current.overview, b: typeof current.overview) => ({
       damage: (a.damage_min + a.damage_max) - (b.damage_min + b.damage_max),
       health_max: a.health_max - b.health_max,
+      health_max_rank: a.health_max_rank - b.health_max_rank,
     });
 
     return {

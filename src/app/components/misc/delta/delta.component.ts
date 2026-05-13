@@ -9,6 +9,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 })
 export class DeltaComponent {
 
-  public readonly value = input<number | undefined>();
+  public readonly inverted = input<boolean>(false);
+  public readonly value = input.required<number | undefined>();
 
 }

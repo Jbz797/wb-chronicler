@@ -14,7 +14,7 @@ import { DeltaComponent } from '../delta/delta.component';
 export class RarityStatsComponent {
 
   public readonly counts = input.required<RarityCounts>();
-  public readonly deltas = input<RarityCounts | null>(null);
+  public readonly deltas = input.required<RarityCounts | null>();
   public readonly title = input.required<string>();
 
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compute an actor's aggregated base stats.
 
-Usage: python3 stats.py <actor_id>
+Usage: python3 stats.py <id>
 
 Reads the live save (cf. `CURRENT_SAVE`). Resolves the actor → their species template,
 subspecies, `saved_traits`, `saved_items` and `level`.
@@ -285,14 +285,12 @@ def apply_level_scaling(totals: dict, level: int) -> None:
 
 
 def cleanup(totals: dict) -> dict:
-    # Round floats to 4 decimals, cast integer-equivalents to int, drop zeros.
+    # Floor floats to int — the game stores stats as int32, so 261.9 displays as 261 in-game.
     # `health` is renamed to `health_max` in the output — the value represents the actor's
     # post-level-scaling maximum HP, which is the semantically useful name for the chronicler.
     result = {}
     for k, v in totals.items():
-        if isinstance(v, float):
-            v = round(v, 4)
-            if v.is_integer(): v = int(v)
+        if isinstance(v, float): v = int(v)
         if v: result['health_max' if k == 'health' else k] = v
     return result
 

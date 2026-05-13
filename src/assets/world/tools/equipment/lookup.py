@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Look up equipment items by ID for a given chapter (or the live save).
+"""Look up equipment items by ID from the live save.
 
-Usage: python3 lookup.py <chapterIndex|current> <id> [<id> ...]
+Usage: python3 lookup.py <id> [<id> ...]
 
-`<chapterIndex>` resolves `saves/C<chapterIndex>/map.wbox` relative to this script.
-`current` reads the live WorldBox save (cf. CURRENT_SAVE below) — used when generating a
-new chapter from a freshly saved game.
+Reads the live WorldBox save (cf. CURRENT_SAVE below).
 
 Output per item: `id | rarity | asset_id | durability | by | from | kills | age | stats`
   • `by` / `from` / `kills`: creator name / kingdom / kill counter — `—` / `0` when absent
@@ -47,7 +45,6 @@ import zlib
 from pathlib import Path
 
 DATA = Path(__file__).parent / 'data.json'
-SAVES_DIR = Path(__file__).parent.parent.parent / 'saves'
 # macOS path — mirror chronicler.md § "Emplacement source des saves WorldBox".
 CURRENT_SAVE = Path.home() / 'Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox'
 LEVEL_RE = re.compile(r'(\d+)$')
@@ -79,22 +76,13 @@ def combine_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_sta
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) < 2:
+    if not argv:
         print(__doc__, file=sys.stderr)
         return 2
-    target = argv[0]
-    if target == 'current':
-        map_path = CURRENT_SAVE
-    else:
-        try: chapter_index = int(target)
-        except ValueError:
-            print(f'invalid chapterIndex: {target} (expected integer or "current")', file=sys.stderr)
-            return 2
-        map_path = SAVES_DIR / f'C{chapter_index}' / 'map.wbox'
-    if not map_path.exists():
-        print(f'no save found at {map_path}', file=sys.stderr)
+    if not CURRENT_SAVE.exists():
+        print(f'no save found at {CURRENT_SAVE}', file=sys.stderr)
         return 2
-    with map_path.open('rb') as f:
+    with CURRENT_SAVE.open('rb') as f:
         save = json.loads(zlib.decompress(f.read()))
     items_by_id = {it['id']: it for it in save['items']}
     world_time = save['mapStats']['world_time']
@@ -104,7 +92,7 @@ def main(argv: list[str]) -> int:
     mod_stats = data['modifiers']
 
     exit_code = 0
-    for raw in argv[1:]:
+    for raw in argv:
         try: iid = int(raw)
         except ValueError:
             print(f'invalid id: {raw}', file=sys.stderr)
