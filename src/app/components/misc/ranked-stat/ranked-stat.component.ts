@@ -1,0 +1,50 @@
+import { Component, computed, inject, input } from '@angular/core';
+
+import { ChapterMeta, RankedStatKind, RankedStatSnapshot } from '../../../interfaces';
+import { ChroniclerService } from '../../../services/chronicler.service';
+import { DeltaComponent } from '../delta/delta.component';
+
+@Component({
+  selector: 'app-ranked-stat',
+  imports: [DeltaComponent],
+  templateUrl: './ranked-stat.component.html',
+  styleUrl: './ranked-stat.component.scss',
+})
+export class RankedStatComponent {
+
+  public readonly stat = input.required<RankedStatKind>();
+
+  private readonly _chronicler = inject(ChroniclerService);
+
+  protected readonly data = computed(() => {
+    const current = this._chronicler.currentChapter()?.meta.favorite;
+    if (!current) return null;
+
+    const previous = this._chronicler.previousChapter()?.meta.favorite ?? null;
+    const c = this._resolve(current);
+    const p = previous ? this._resolve(previous) : null;
+
+    return {
+      ...c,
+      rankDelta: p ? c.rank - p.rank : undefined,
+      valueClass: this.stat() === 'health' ? `health-${this._healthTier(c.current, c.max)}` : '',
+      valueDelta: p ? c.max - p.max : undefined,
+    };
+  });
+
+  // CSS tier for the current/max HP ratio — mirrors a typical RPG HP-bar color band.
+  private _healthTier(current: number, max: number): string {
+    const r = max > 0 ? current / max : 0;
+    if (r >= 0.75) return 'full';
+    if (r >= 0.5) return 'high';
+    if (r >= 0.25) return 'mid';
+    return 'low';
+  }
+
+  // Per-kind field accessor — keeps `overview[<computed key>]` off the hot path and stays type-safe.
+  private _resolve(f: NonNullable<ChapterMeta['favorite']>): RankedStatSnapshot {
+    if (this.stat() === 'health') return { current: f.stats.health, max: f.overview.health_max, rank: f.overview.health_max_rank };
+    return { current: f.stats.mana, max: f.overview.mana_max, rank: f.overview.mana_max_rank };
+  }
+
+}
