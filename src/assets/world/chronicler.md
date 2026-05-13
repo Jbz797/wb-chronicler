@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 13/05/26 18:54</p>
+<p class="metadata">Date de mise à jour : 13/05/26 20:54</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -79,14 +79,17 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
       "health_max": 0,
       "health_max_rank": 0,
       "mana_max": 0,
-      "mana_max_rank": 0
+      "mana_max_rank": 0,
+      "stamina_max": 0,
+      "stamina_max_rank": 0
     },
     "sex": "",             // "male" ou "female" (`sex: 1` = female, absent = male)
     "stats": {             // Stats courantes
       "happiness": 0,
       "health": 0,
       "mana": 0,
-      "nutrition": 0
+      "nutrition": 0,
+      "stamina": 0
     },
     "traits": {            // Décompte des traits par rareté
       "epic": 0,
@@ -405,9 +408,7 @@ Quand le chroniqueur veut comprendre d'où vient la valeur d'une stat (notamment
 8. **Bonus dérivés** appliqués en fin de pipeline : level scaling (`× (1 + level × mult)` pour health/mana/stamina) + `mana += int(intelligence × 10)` (MANA_PER_INTELLIGENCE)
 9. **Sources non modélisées** — statuts, culture, religion, profession, era. À enrichir si écart constaté avec l'in-game.
 
-`tools/overview/stats.py <id>` agrège les sources **1 → 8** et restitue les stats finales (health_max, mana_max, intelligence, etc.). La source **9** reste à lire manuellement si besoin.
-
-⚠️ **Multipliers** : certains creature traits (ex. `fat` → `multiplier_damage=0.1`) sont des coefficients (« +10% sur damage final »). `overview/stats.py` les agrège naïvement comme des additions ; pour une valeur in-game exacte, appliquer `final = base × (1 + multiplier)` manuellement.
+`tools/overview/stats.py <id>` agrège les sources **1 → 8** et restitue les stats finales (health_max, mana_max, stamina_max, intelligence, etc.). Les `multiplier_X` (ex. `fat` → `multiplier_stamina=-0.5`) sont résolus en fin de pipeline via `final = base × (1 + multiplier)`. La source **9** reste à lire manuellement si besoin.
 
 ---
 

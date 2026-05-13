@@ -18,9 +18,11 @@ export interface ChapterMeta {
       health_max_rank: number;
       mana_max: number;
       mana_max_rank: number;
+      stamina_max: number;
+      stamina_max_rank: number;
     };
     sex: 'female' | 'male';
-    stats: { happiness: number; health: number; mana: number; nutrition: number };
+    stats: { happiness: number; health: number; mana: number; nutrition: number; stamina: number };
     traits: RarityCounts;
   } | null;
   tags: string[];

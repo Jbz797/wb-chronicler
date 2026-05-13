@@ -6,7 +6,6 @@ import { SpeciesToken } from '../interfaces';
 
 export class MarkedHelpers {
 
-  // One-shot setup at bootstrap
   public static configure(): void {
     // GFM heading IDs
     marked.use(gfmHeadingId());

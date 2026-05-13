@@ -294,6 +294,18 @@ def _add_custom_data_float(totals: dict, custom: dict | None) -> None:
         totals[k] = totals.get(k, 0) + v
 
 
+# Resolve every `multiplier_X` key as a coefficient on stats[X]: `final = base × (1 + multiplier)`.
+# Mirrors `BaseStats.checkMultipliers` called at the end of `Actor.updateStats`. Multipliers from
+# multiple sources have already been summed during merging — applied once here, then dropped.
+def _apply_multipliers(totals: dict) -> None:
+    for k in list(totals.keys()):
+        if k.startswith('multiplier_'):
+            target = k[len('multiplier_'):]
+            if target in totals:
+                totals[target] = totals[target] * (1 + totals[k])
+            del totals[k]
+
+
 # Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat
 # +0.1 to skill_combat / skill_spell when level > 5.
 def _apply_level_scaling(totals: dict, level: int) -> None:
@@ -305,7 +317,7 @@ def _apply_level_scaling(totals: dict, level: int) -> None:
             totals[stat] = totals.get(stat, 0) + LEVEL_VETERAN_SKILL_BONUS
 
 
-RENAMES = {'health': 'health_max', 'mana': 'mana_max'}
+RENAMES = {'health': 'health_max', 'mana': 'mana_max', 'stamina': 'stamina_max'}
 
 
 def _cleanup(totals: dict) -> dict:
@@ -360,6 +372,7 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _add_custom_data_float(totals, actor.get('custom_data_float'))
     _apply_level_scaling(totals, int(actor.get('level') or 0))
     _apply_intelligence_bonus(totals)
+    _apply_multipliers(totals)
     return _cleanup(totals)
 
 

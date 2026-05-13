@@ -7,12 +7,13 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 
 import { HISTORY_DIR } from '../../../constants';
 import { RarityCounts, World } from '../../../interfaces';
+import { TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services/chronicler.service';
 import { DeltaComponent, RankedStatComponent, RarityStatsComponent } from '../../misc';
 
 @Component({
   selector: 'app-world-info',
-  imports: [DeltaComponent, NzDescriptionsModule, NzDividerModule, RankedStatComponent, RarityStatsComponent],
+  imports: [DeltaComponent, NzDescriptionsModule, NzDividerModule, RankedStatComponent, RarityStatsComponent, TierPipe],
   templateUrl: './world-info.component.html',
   styleUrl: './world-info.component.scss',
 })
@@ -22,7 +23,7 @@ export class WorldInfoComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — HP/mana ranks compute their own deltas in `app-ranked-stat`.
+  // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — ranked stats handle their own deltas.
   protected readonly deltas = computed(() => {
     const current = this.currentChapter()?.meta.favorite;
     const previous = this._chronicler.previousChapter()?.meta.favorite;
@@ -35,15 +36,9 @@ export class WorldInfoComponent {
       rare: a.rare - b.rare,
     });
 
-    const diffStats = (a: typeof current.stats, b: typeof current.stats) => ({
-      happiness: a.happiness - b.happiness,
-      nutrition: a.nutrition - b.nutrition,
-    });
-
     return {
       damage: (current.overview.damage_min + current.overview.damage_max) - (previous.overview.damage_min + previous.overview.damage_max),
       equipment: diffCounts(current.equipment, previous.equipment),
-      stats: diffStats(current.stats, previous.stats),
       traits: diffCounts(current.traits, previous.traits),
     };
   });

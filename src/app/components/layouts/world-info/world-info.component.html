@@ -27,13 +27,14 @@
       <nz-descriptions-item [nzSpan]="2" [nzTitle]="manaTitle">
         <app-ranked-stat stat="mana" />
       </nz-descriptions-item>
+      <nz-descriptions-item [nzSpan]="2" [nzTitle]="staminaTitle">
+        <app-ranked-stat stat="stamina" />
+      </nz-descriptions-item>
       <nz-descriptions-item [nzTitle]="happinessTitle">
-        {{ fav.stats.happiness }}
-        <app-delta [value]="deltas()?.stats?.happiness" />
+        <span [class]="fav.stats.happiness | tier: 100">{{ fav.stats.happiness }}</span>
       </nz-descriptions-item>
       <nz-descriptions-item [nzTitle]="nutritionTitle">
-        {{ fav.stats.nutrition }}
-        <app-delta [value]="deltas()?.stats?.nutrition" />
+        <span [class]="fav.stats.nutrition | tier: 100">{{ fav.stats.nutrition }}</span>
       </nz-descriptions-item>
     </nz-descriptions>
 
@@ -41,6 +42,7 @@
     <ng-template #happinessTitle><img src="assets/img/stats/happiness.png" /></ng-template>
     <ng-template #manaTitle><img src="assets/img/stats/mana.png" /></ng-template>
     <ng-template #nutritionTitle><img src="assets/img/stats/nutrition.png" /></ng-template>
+    <ng-template #staminaTitle><img src="assets/img/stats/stamina.png" /></ng-template>
 
     <app-rarity-stats title="Nombre de traits" [counts]="fav.traits" [deltas]="deltas()?.traits ?? null" />
     <app-rarity-stats title="Équipement" [counts]="fav.equipment" [deltas]="deltas()?.equipment ?? null" />

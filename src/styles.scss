@@ -1,5 +1,24 @@
+@use 'variables' as *;
+
 html,
 body {
   font-family: 'Jersey 15', georgia, sans-serif;
   overflow: hidden;
+}
+
+// Color band for any current/max (or 0..100 percent) stat — green / blue / cyan / red.
+.tier-full {
+  color: $success;
+}
+
+.tier-high {
+  color: $primary;
+}
+
+.tier-mid {
+  color: $info;
+}
+
+.tier-low {
+  color: $error;
 }

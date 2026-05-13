@@ -1,12 +1,14 @@
 @if (data(); as d) {
   <div class="stat-row">
     <span>
-      <span [class]="d.valueClass">{{ d.current }}</span> / {{ d.max }}
+      <span [class]="d.current | tier: d.max">{{ d.current }}</span> / {{ d.max }}
       <app-delta [value]="d.valueDelta" />
     </span>
-    <span>
-      <app-delta [inverted]="true" [value]="d.rankDelta" />
-      #{{ d.rank }}
-    </span>
+    @if (d.rank <= 10) {
+      <span>
+        <app-delta [inverted]="true" [value]="d.rankDelta" />
+        #{{ d.rank }}
+      </span>
+    }
   </div>
 }
