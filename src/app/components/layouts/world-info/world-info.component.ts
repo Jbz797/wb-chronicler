@@ -22,7 +22,7 @@ export class WorldInfoComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  // Per-bucket deltas (stats + equipment + traits) vs the previous chapter's favorite. `null` if there is no comparable previous favorite.
+  // Per-bucket deltas (overview + stats + equipment + traits) vs the previous chapter's favorite. `null` if there is no comparable previous favorite.
   protected readonly deltas = computed(() => {
     const current = this.currentChapter()?.meta.favorite;
     const previous = this._chronicler.previousChapter()?.meta.favorite;
@@ -42,8 +42,12 @@ export class WorldInfoComponent {
       nutrition: a.nutrition - b.nutrition,
     });
 
+    // Overview delta = total (min + max) variation — captures global damage potential change in a single sign.
+    const diffOverview = (a: typeof current.overview, b: typeof current.overview): number => (a.damage_min + a.damage_max) - (b.damage_min + b.damage_max);
+
     return {
       equipment: diffCounts(current.equipment, previous.equipment),
+      overview: diffOverview(current.overview, previous.overview),
       stats: diffStats(current.stats, previous.stats),
       traits: diffCounts(current.traits, previous.traits),
     };

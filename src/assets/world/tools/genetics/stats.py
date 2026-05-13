@@ -35,7 +35,7 @@ Output: `id | <stat>=<value>,...` (alphabetical, empty values dropped).
 # text those map to 0/6/8/14. ⚠️ If you ever rewrite the DNA generator to keep the spaces,
 # remember to shift the indices back.
 #
-# `gene_colors` is `lru_cache`d — each call to `is_golden` traverses 4 neighbors and calls
+# `gene_colors` is `@cache`d — each call to `is_golden` traverses 4 neighbors and calls
 # `gene_colors` for both gene and neighbor twice on average, so re-init of SystemRandom (a
 # 220-iteration setup loop) dominated runtime without caching.
 #
@@ -45,7 +45,7 @@ Output: `id | <stat>=<value>,...` (alphabetical, empty values dropped).
 import json
 import sys
 import zlib
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 # macOS path — mirror chronicler.md § "Emplacement source des saves WorldBox".
@@ -147,7 +147,7 @@ class SystemRandom:
 
 # Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's
 # colors only depend on (gene, life_dna), and life_dna is constant for one run.
-@lru_cache(maxsize=None)
+@cache
 def gene_colors(gene: str, life_dna: int) -> dict:
     idx = GENE_INDEX.get(gene)
     if idx is None: return {}

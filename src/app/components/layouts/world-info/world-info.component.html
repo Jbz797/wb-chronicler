@@ -46,6 +46,15 @@
 
     <app-rarity-stats title="Nombre de traits" [counts]="fav.traits" [deltas]="deltas()?.traits ?? null" />
     <app-rarity-stats title="Équipement" [counts]="fav.equipment" [deltas]="deltas()?.equipment ?? null" />
+
+    <nz-descriptions nzBordered nzSize="small" nzTitle="Caractéristiques" [nzColumn]="1">
+      <nz-descriptions-item [nzTitle]="damageTitle">
+        {{ fav.overview.damage_min }}-{{ fav.overview.damage_max }}
+        <app-delta [value]="deltas()?.overview" />
+      </nz-descriptions-item>
+    </nz-descriptions>
+
+    <ng-template #damageTitle><img src="assets/img/stats/damage.png" /></ng-template>
   } @else {
     <p class="empty-state">Aucun favoris pour l'instant.</p>
   }

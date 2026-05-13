@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 12/05/26 16:18</p>
+<p class="metadata">Date de mise à jour : 12/05/26 21:57</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -73,6 +73,17 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
       "rare": 0
     },
     "name": "",       // Nom du favori dans les données du jeu
+    "overview": {     // Stats dérivées du panneau Overview in-game (à enrichir au fil des chapitres)
+      "damage_max": 0,
+      "damage_min": 0
+    },
+    "sex": "",        // "male" ou "female" — déduit du champ `sex` de l'actor (`sex: 1` = female, absent = male)
+    "stats": {        // Stats vitales du favori (lus directement sur l'actor, valeurs à l'instant de la save)
+      "happiness": 0,
+      "health": 0,
+      "mana": 0,
+      "nutrition": 0
+    },
     "traits": {       // Décompte des traits par rareté (cf. `tools/tools.md`)
       "epic": 0,
       "legendary": 0,
@@ -515,177 +526,18 @@ La colonne _Jouable_ indique les espèces parmi lesquelles le chroniqueur doit c
 
 # 🧬 VI. Annexe technique — Génétique et stats de base
 
-Cette annexe est **purement technique** et ne concerne pas la narration. Le chroniqueur la consulte uniquement s'il veut calculer exactement les stats de base d'un acteur depuis les gènes de sa sous-espèce, ou vérifier un calcul divergent. La plupart des chapitres n'en ont pas besoin — les champs `health`, `damage`, etc. observés directement dans la sauvegarde suffisent.
+Annexe **purement technique** — la plupart des chapitres n'en ont pas besoin. Le chroniqueur la consulte uniquement pour distinguer un **don inné** (présent dans les chromosomes) d'une **progression acquise** (cf. § V « Distinguer base chromosomique et progression »).
 
-Les gènes chromosomiques de la sous-espèce déterminent **toutes les stats de base** d'une unité. Le calcul est **entièrement déterministe depuis la sauvegarde** — il est possible d'obtenir la valeur exacte en combinant les gènes (algorithme BAD/GOLDEN/couleurs), la progression acquise (`custom_data_float`), et les bonus de particularités (`saved_traits`).
-
-## Stats couvertes par les gènes
-
-| Catégorie    | Gènes                                                                                                                            | Stat du jeu                                  |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| Combat       | `attack_speed`, `damage_1/2/3` (+1/+6/+10), `armor_1/2/3` (+1/+6/+10)                                                            | Vitesse d'attaque, Dommages, Armure          |
-| Physique     | `health_1/2/3/4/5` (+1/+10/+50/+100/+300), `stamina_1/2/3` (+10/+50/+100), `speed_1/2/3` (+1/+2/+5), `scale_plus/minus` (±3%/1%) | Santé, Énergie, Vitesse, Taille              |
-| Reproduction | `birth_rate_1` (+1), `offspring_1/2/3/4` (+1/+3/+5/+10)                                                                          | Taux de naissance, Nombre d'enfants          |
-| Longévité    | `lifespan_1/2/3/4` (+5/+20/+50/+100)                                                                                             | Espérance de vie                             |
-| Civiques     | `diplomacy_1/2/3`, `warfare_1/2/3`, `stewardship_1/2/3`, `intelligence_1/2/3` (tous +1/+2/+3)                                    | Diplomatie, Guérilla, Gestion, Renseignement |
+Les gènes chromosomiques de la sous-espèce déterminent la **base** de toutes les stats d'une unité. Le calcul exact (algorithme BAD/GOLDEN/synergie de couleurs) vit dans `tools/genetics/stats.py` — l'invoquer avec un `actor_id` donne la contribution totale des gènes par stat.
 
 ## Sources de stats (par ordre d'impact)
 
-1. **Gènes chromosomiques** de la sous-espèce (calcul détaillé ci-dessous)
+1. **Gènes chromosomiques** de la sous-espèce → `tools/genetics/stats.py`
 2. **Progression acquise** pour les stats civiles (`custom_data_float` de l'acteur) : +1 par conversation / vieillissement
-3. **Bonus de particularités** (creature traits) — exemples notables :
-   - `attractive` : Diplomacy +2, Stewardship +1, Offspring +60%, Critical Chance +10%.
-   - `boosted_vitality` : Health +50%.
-   - `fat` : Stamina +20, Lifespan +3, Combat Skill +20%, Size -10%.
-   - `fragile_health` : Health -50%.
-   - Consulter le wiki `Creature_Traits` ou `Subspecies_Traits` au besoin.
+3. **Bonus de particularités** (creature traits) — résolus par `tools/creature-traits/lookup.py`
 4. **Bonus de sous-espèce** (subspecies traits) — rare
 5. **Bonus de clan / langue / religion / équipement / statut** — rares au début de partie
 
 Pour un monde jeune, les sources **1 + 2 (+ 3 pour les stats physiques)** suffisent pour tomber pile.
-
-## Règles de calcul
-
-La grille d'un chromosome est toujours **6 colonnes × N lignes** (où N = `amount_loci / 6`). Pour un `chromosome_big`, N = 5 (30 loci). L'index dans la liste `loci` est : `index = x + y × 6`.
-
-### Champs de la sauvegarde
-
-Dans `subspecies[].saved_chromosome_data[]` :
-
-- `loci` : liste des gènes à chaque position.
-- `super_loci` : positions contenant un **amplificateur doré** (synergise avec tout).
-- `void_loci` : positions **VIDES** (pas d'amp, agissent comme des bordures). ⚠️ Le nom est trompeur — ce sont juste les slots vides du chromosome.
-
-### Traitement de chaque gène
-
-Sauf `empty`, `bad`, et les gènes sans contribution directe :
-
-1. **Détecter BAD** : le gène est "BAD" si au moins un voisin cardinal (N/S/E/O) contient `bad`.
-2. **Détecter GOLDEN** :
-   - Compter les **côtés non-bordure** (bordure = voisin hors-grille OU dans `void_loci`).
-   - Compter les **côtés synergisés** (voir règles ci-dessous).
-   - GOLDEN si `côtés_synergisés == côtés_non_bordure` ET `côtés_synergisés ≥ 1`.
-   - **BAD est prioritaire sur GOLDEN** : si BAD, jamais GOLDEN.
-3. **Appliquer le tier** :
-   - BAD → `floor(valeur / 2)` (exceptions : `health_1`, `speed_1`, `damage_1`, `attack_speed` → `ceil`).
-   - GOLDEN → `valeur × 2`.
-   - Normal → `valeur`.
-
-## Règles de synergie
-
-- **Golden amplifier** (`super_loci`) : synergise avec tout, dans les deux sens.
-- **Synergy always** : `mutagenic`, `bonus_male`, `bonus_female` synergisent avec tout.
-  - `bonus_male` ne bénéficie qu'aux mâles, `bonus_female` qu'aux femelles.
-- **Deux golden adjacents ne synergisent PAS entre eux**.
-- **Empty sans amp** : pas de synergie possible.
-- **Synergie par couleur** : les quatre côtés de chaque gène ont une couleur. Deux voisins synergisent si la couleur du côté qui se touche est identique.
-
-## Calcul des couleurs DNA depuis `life_dna`
-
-La valeur `life_dna` se trouve dans `mapStats.life_dna` (int64 représentant `YYYYMMDDHH` en UTC de création du monde).
-
-Chaque gène a un `index_id` fixe — l'ordre d'ajout dans `GeneLibrary` (1-indexé). **Ordre : `addSpecial()` → `addBaseStats()` → `addFightStats()` → `addBonusStats()` → `addAttributes()`** :
-
-```
-# addSpecial (1-6)
-1:empty, 2:temp_for_generation, 3:bad, 4:bonus_male, 5:bonus_female, 6:mutagenic,
-
-# addBaseStats (7-26)
-7:birth_rate_1,
-8:offspring_1, 9:offspring_2, 10:offspring_3, 11:offspring_4,
-12:lifespan_1, 13:lifespan_2, 14:lifespan_3, 15:lifespan_4,
-16:health_1, 17:health_2, 18:health_3, 19:health_4, 20:health_5,
-21:stamina_1, 22:stamina_2, 23:stamina_3,
-24:speed_1, 25:speed_2, 26:speed_3,
-
-# addFightStats (27-32)
-27:armor_1, 28:armor_2, 29:armor_3,
-30:damage_1, 31:damage_2, 32:damage_3,
-
-# addBonusStats (33-35)
-33:attack_speed, 34:scale_plus, 35:scale_minus,
-
-# addAttributes (36-47)
-36:diplomacy_1, 37:diplomacy_2, 38:diplomacy_3,
-39:warfare_1, 40:warfare_2, 41:warfare_3,
-42:stewardship_1, 43:stewardship_2, 44:stewardship_3,
-45:intelligence_1, 46:intelligence_2, 47:intelligence_3
-```
-
-Note : les gènes spéciaux n'ont pas de séquence fixe. On ne calcule pas leurs couleurs — ils synergisent via d'autres règles.
-
-### Pour générer le DNA d'un gène
-
-- Seed individuel = `life_dna + gene.index_id`.
-- Utiliser `System.Random` de .NET (PAS le `random` de Python).
-- Générer 15 lettres dans `"ACGT"` via `Next(4)`, groupes de 3 avec espaces → `"XXX XXX XXX XXX XXX"`.
-- Les 4 couleurs : **Left** = `text[0]`, **Up** = `text[8]`, **Down** = `text[10]`, **Right** = `text[18]`.
-- Conversion : `T = rouge, G = jaune, A = vert, C = bleu`.
-
-### Test de synergie par couleur
-
-Entre voisins A et B :
-
-- A à droite de B : `A.left == B.right`.
-- A à gauche de B : `A.right == B.left`.
-- A au-dessus de B : `A.down == B.up`.
-- A en-dessous de B : `A.up == B.down`.
-
-## Implémentation de référence de System.Random
-
-```python
-def to_int32(x):
-    """Simule le wrap arithmétique int32 de C#"""
-    x = x & 0xFFFFFFFF
-    if x >= 0x80000000: x -= 0x100000000
-    return x
-
-class SystemRandom:
-    MBIG = 2147483647
-    MSEED = 161803398
-    def __init__(self, seed):
-        self.inext, self.inextp = 0, 21
-        self.SeedArray = [0] * 56
-        subtraction = 0x7FFFFFFF if seed == -0x80000000 else abs(seed)
-        mj = to_int32(self.MSEED - subtraction)
-        self.SeedArray[55] = mj
-        mk = 1
-        for i in range(1, 55):
-            ii = (21 * i) % 55
-            self.SeedArray[ii] = mk
-            mk = to_int32(mj - mk)
-            if mk < 0: mk += self.MBIG
-            mj = self.SeedArray[ii]
-        for k in range(1, 5):
-            for i in range(1, 56):
-                self.SeedArray[i] = to_int32(self.SeedArray[i] - self.SeedArray[1 + (i + 30) % 55])
-                if self.SeedArray[i] < 0: self.SeedArray[i] += self.MBIG
-    def _internal_sample(self):
-        ln = (self.inext + 1) if (self.inext + 1) < 56 else 1
-        lnp = (self.inextp + 1) if (self.inextp + 1) < 56 else 1
-        r = to_int32(self.SeedArray[ln] - self.SeedArray[lnp])
-        if r == self.MBIG: r -= 1
-        if r < 0: r += self.MBIG
-        self.SeedArray[ln] = r
-        self.inext, self.inextp = ln, lnp
-        return r
-    def Next(self, mv):
-        return int((self._internal_sample() / self.MBIG) * mv)
-
-def gen_dna(gene_index_id, life_dna):
-    seed = life_dna + gene_index_id
-    s32 = to_int32(seed)
-    rnd = SystemRandom(s32)
-    text = ""
-    for i in range(15):
-        text += "ACGT"[rnd.Next(4)]
-        if (i + 1) % 3 == 0 and (i + 1) < 15:
-            text += " "
-    return {'left': text[0], 'up': text[8], 'down': text[10], 'right': text[-1]}
-```
-
-## Vérification
-
-Si un calcul diverge des stats affichées en jeu : trait non pris en compte (personnage, clan, religion, etc.), ordre des gènes incorrect, mauvaise détection `bad`/`void_loci`, ou bug dans `System.Random` (wrap int32 à chaque soustraction).
 
 ---
