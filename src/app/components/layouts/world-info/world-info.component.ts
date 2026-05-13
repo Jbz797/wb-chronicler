@@ -37,13 +37,15 @@ export class WorldInfoComponent {
 
     const diffStats = (a: typeof current.stats, b: typeof current.stats) => ({
       happiness: a.happiness - b.happiness,
-      health: a.health - b.health,
       mana: a.mana - b.mana,
       nutrition: a.nutrition - b.nutrition,
     });
 
-    // Overview delta = total (min + max) variation — captures global damage potential change in a single sign.
-    const diffOverview = (a: typeof current.overview, b: typeof current.overview): number => (a.damage_min + a.damage_max) - (b.damage_min + b.damage_max);
+    // Damage delta = total (min + max) variation — captures global damage potential change in a single sign.
+    const diffOverview = (a: typeof current.overview, b: typeof current.overview) => ({
+      damage: (a.damage_min + a.damage_max) - (b.damage_min + b.damage_max),
+      health_max: a.health_max - b.health_max,
+    });
 
     return {
       equipment: diffCounts(current.equipment, previous.equipment),
@@ -53,5 +55,14 @@ export class WorldInfoComponent {
     };
   });
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
+
+  // CSS tier for the current/max HP ratio — mirrors a typical RPG HP-bar color band.
+  protected healthTier = (current: number, max: number): string => {
+    const r = max > 0 ? current / max : 0;
+    if (r >= 0.75) return 'full';
+    if (r >= 0.5) return 'high';
+    if (r >= 0.25) return 'mid';
+    return 'low';
+  };
 
 }

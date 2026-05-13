@@ -1,17 +1,27 @@
 #!/usr/bin/env python3
-"""Resolve a subspecies' chromosomes to gene-level stat contributions.
+"""Compute an actor's aggregated base stats.
 
-Usage: python3 stats.py <subspecies_id>
+Usage: python3 stats.py <actor_id>
 
-Reads the live save (cf. `CURRENT_SAVE`) — chromosomes are stable per subspecies so no
-chapter arg is needed. The chronicler reads `actor.subspecies` from the save then passes
-that id here.
+Reads the live save (cf. `CURRENT_SAVE`). Resolves the actor → their species template,
+subspecies, `saved_traits`, `saved_items` and `level`.
 
-Returns the SUM of every gene's contribution to base stats, applying BAD / GOLDEN modifiers
-per `chronicler.md § VI`. Output is the **chromosome-level** part of the subspecies' base —
-the chronicler still adds trait bonuses, species template stats, items, etc. on top.
+Sums five additive sources + one multiplicative pass:
+  1. Species template — `actor.asset_id` via `species/data.json` (clone chain resolved).
+  2. Chromosomes — BAD / GOLDEN modifiers per `chronicler.md § IV "Stats de base"`.
+  3. Subspecies traits — `subspecies.saved_traits` via `subspecies-traits/data.json`.
+  4. Creature traits — `actor.saved_traits` via `creature-traits/data.json`.
+  5. Equipment — `actor.saved_items` via `equipment/data.json` (base item stats + modifiers).
+  6. Level scaling — applied at the end via `SimGlobalAsset.level_mod_bonus_{health,mana,stamina}`:
+       `final = base × (1 + level × mult)` with health=0.05, mana=0.02, stamina=0.02.
+       Level > 5 also grants flat +0.1 to `skill_combat` and `skill_spell`.
 
-Output: `id | <stat>=<value>,...` (alphabetical, empty values dropped).
+⚠️ Naive additive merge: `multiplier_*` stats are summed alongside their base counterparts.
+The game applies them as final multipliers (`final = base × (1 + multiplier)`) — for an
+accurate end-stat estimate the chronicler must apply that step manually until we model it
+here.
+
+Output: `actor_id | <stat>=<value>,...` (alphabetical, zeros dropped).
 """
 # ─── Maintenance / algorithm reference ───
 # Full algorithm spec: `chronicler.md § VI` ("Annexe technique — Génétique et stats de base").
@@ -50,6 +60,10 @@ from pathlib import Path
 
 # macOS path — mirror chronicler.md § "Emplacement source des saves WorldBox".
 CURRENT_SAVE = Path.home() / 'Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox'
+SUBSPECIES_TRAITS_DATA = Path(__file__).parent.parent / 'subspecies-traits' / 'data.json'
+CREATURE_TRAITS_DATA = Path(__file__).parent.parent / 'creature-traits' / 'data.json'
+EQUIPMENT_DATA = Path(__file__).parent.parent / 'equipment' / 'data.json'
+SPECIES_DATA = Path(__file__).parent.parent / 'species' / 'data.json'
 
 GRID_COLS = 6
 
@@ -213,8 +227,7 @@ def apply_tier(gene: str, value: float, bad: bool, golden: bool) -> float:
     return value * 2 if golden else value
 
 
-def process_chromosomes(sub: dict, life_dna: int) -> dict:
-    totals: dict[str, float] = {}
+def add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> None:
     for chrom in sub.get('saved_chromosome_data') or []:
         loci = chrom.get('loci') or []
         void_set = set(chrom.get('void_loci') or [])
@@ -227,13 +240,60 @@ def process_chromosomes(sub: dict, life_dna: int) -> dict:
             bad = is_bad(loci, idx)
             golden = (not bad) and is_golden(loci, idx, void_set, super_set, life_dna)
             totals[stat] = totals.get(stat, 0) + apply_tier(gene, value, bad, golden)
+
+
+def add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> None:
+    for trait_id in trait_ids or []:
+        entry = traits_data.get(trait_id) or {}
+        for k, v in (entry.get('stats') or {}).items():
+            totals[k] = totals.get(k, 0) + v
+
+
+# Add the species template's base stats (already flattened in data.json — clone chain resolved).
+def add_species_stats(totals: dict, asset_id: str, species_data: dict) -> None:
+    for k, v in ((species_data.get(asset_id) or {}).get('stats') or {}).items():
+        totals[k] = totals.get(k, 0) + v
+
+
+# Sums each equipped item's base stats + the stats of every applied modifier.
+def add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, item_stats: dict, mod_stats: dict) -> None:
+    for iid in item_ids or []:
+        item = items_by_id.get(iid)
+        if item is None: continue
+        for k, v in (item_stats.get(item['asset_id']) or {}).items():
+            totals[k] = totals.get(k, 0) + v
+        for mod in item.get('modifiers') or []:
+            for k, v in (mod_stats.get(mod) or {}).items():
+                totals[k] = totals.get(k, 0) + v
+
+
+# Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* constants.
+LEVEL_MOD = {'health': 0.05, 'mana': 0.02, 'stamina': 0.02}
+LEVEL_VETERAN_THRESHOLD = 5
+LEVEL_VETERAN_SKILL_BONUS = 0.1
+
+
+# Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat
+# +0.1 to skill_combat / skill_spell when level > 5.
+def apply_level_scaling(totals: dict, level: int) -> None:
+    for stat, mult in LEVEL_MOD.items():
+        if stat in totals:
+            totals[stat] = totals[stat] * (1 + level * mult)
+    if level > LEVEL_VETERAN_THRESHOLD:
+        for stat in ('skill_combat', 'skill_spell'):
+            totals[stat] = totals.get(stat, 0) + LEVEL_VETERAN_SKILL_BONUS
+
+
+def cleanup(totals: dict) -> dict:
     # Round floats to 4 decimals, cast integer-equivalents to int, drop zeros.
+    # `health` is renamed to `health_max` in the output — the value represents the actor's
+    # post-level-scaling maximum HP, which is the semantically useful name for the chronicler.
     result = {}
     for k, v in totals.items():
         if isinstance(v, float):
             v = round(v, 4)
             if v.is_integer(): v = int(v)
-        if v: result[k] = v
+        if v: result['health_max' if k == 'health' else k] = v
     return result
 
 
@@ -241,7 +301,7 @@ def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__, file=sys.stderr)
         return 2
-    try: sub_id = int(argv[0])
+    try: actor_id = int(argv[0])
     except ValueError:
         print(f'invalid id: {argv[0]}', file=sys.stderr)
         return 1
@@ -250,15 +310,35 @@ def main(argv: list[str]) -> int:
         return 2
     with CURRENT_SAVE.open('rb') as f:
         save = json.loads(zlib.decompress(f.read()))
-    sub = next((s for s in save.get('subspecies', []) if s.get('id') == sub_id), None)
-    if sub is None:
-        print(f'unknown subspecies: {sub_id}', file=sys.stderr)
+    actor = next((a for a in save['actors_data'] if a.get('id') == actor_id), None)
+    if actor is None:
+        print(f'unknown actor: {actor_id}', file=sys.stderr)
         return 1
+    sub = next((s for s in save.get('subspecies', []) if s.get('id') == actor.get('subspecies')), None)
+    if sub is None:
+        print(f'no subspecies for actor {actor_id}', file=sys.stderr)
+        return 1
+    with SUBSPECIES_TRAITS_DATA.open() as f:
+        subspecies_traits = json.load(f)
+    with CREATURE_TRAITS_DATA.open() as f:
+        creature_traits = json.load(f)
+    with EQUIPMENT_DATA.open() as f:
+        equipment = json.load(f)
+    with SPECIES_DATA.open() as f:
+        species_data = json.load(f)
+    items_by_id = {it['id']: it for it in save['items']}
 
     life_dna = int(save['mapStats'].get('life_dna') or 0)
-    totals = process_chromosomes(sub, life_dna)
+    totals: dict[str, float] = {}
+    add_species_stats(totals, actor.get('asset_id', ''), species_data)
+    add_chromosome_stats(totals, sub, life_dna)
+    add_trait_stats(totals, sub.get('saved_traits') or [], subspecies_traits)
+    add_trait_stats(totals, actor.get('saved_traits') or [], creature_traits)
+    add_equipment_stats(totals, actor.get('saved_items') or [], items_by_id, equipment['items'], equipment['modifiers'])
+    apply_level_scaling(totals, int(actor.get('level') or 0))
+    totals = cleanup(totals)
     stats_str = ','.join(f'{k}={v}' for k, v in sorted(totals.items()))
-    print(f"{sub_id} | {stats_str}")
+    print(f"{actor_id} | {stats_str}")
     return 0
 
 

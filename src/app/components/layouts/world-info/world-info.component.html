@@ -21,9 +21,10 @@
     </nz-descriptions>
 
     <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
-      <nz-descriptions-item [nzTitle]="healthTitle">
-        {{ fav.stats.health }}
-        <app-delta [value]="deltas()?.stats?.health" />
+      <nz-descriptions-item [nzSpan]="2" [nzTitle]="healthTitle">
+        <span [class]="`health-${healthTier(fav.stats.health, fav.overview.health_max)}`">{{ fav.stats.health }}</span>
+        / {{ fav.overview.health_max }}
+        <app-delta [value]="deltas()?.overview?.health_max" />
       </nz-descriptions-item>
       <nz-descriptions-item [nzTitle]="happinessTitle">
         {{ fav.stats.happiness }}
@@ -50,7 +51,7 @@
     <nz-descriptions nzBordered nzSize="small" nzTitle="Caractéristiques" [nzColumn]="1">
       <nz-descriptions-item [nzTitle]="damageTitle">
         {{ fav.overview.damage_min }}-{{ fav.overview.damage_max }}
-        <app-delta [value]="deltas()?.overview" />
+        <app-delta [value]="deltas()?.overview?.damage" />
       </nz-descriptions-item>
     </nz-descriptions>
 

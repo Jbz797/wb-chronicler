@@ -1,0 +1,143 @@
+{
+  "$adaptation$": {},
+  "$egg$": {},
+  "$magic_blood$": {},
+  "$skin_mutation$": {},
+  "accelerated_healing": {},
+  "advanced_hippocampus": {},
+  "aggressive": {},
+  "amygdala": {},
+  "annoying_fireworks": {},
+  "antimatter_essence": {},
+  "aquatic": {},
+  "bad_genes": {},
+  "big_stomach": {},
+  "bioluminescence": {},
+  "bioproduct_gems": {},
+  "bioproduct_gold": {},
+  "bioproduct_mushrooms": {},
+  "bioproduct_stone": {},
+  "cautious_instincts": {},
+  "chaos_driven": {},
+  "circadian_drift": {},
+  "cold_resistance": {},
+  "death_grow_mythril": {},
+  "death_grow_plant": {},
+  "death_grow_tree": {},
+  "diet_algivore": {},
+  "diet_cannibalism": {},
+  "diet_carnivore": {},
+  "diet_florivore": {},
+  "diet_folivore": {},
+  "diet_frugivore": {},
+  "diet_geophagy": {},
+  "diet_graminivore": {},
+  "diet_granivore": {},
+  "diet_hematophagy": {},
+  "diet_herbivore": {},
+  "diet_insectivore": {},
+  "diet_lithotroph": {},
+  "diet_nectarivore": {},
+  "diet_omnivore": {},
+  "diet_piscivore": {},
+  "diet_xylophagy": {},
+  "dreamweavers": {},
+  "energy_preserver": {},
+  "enhanced_strength": {
+    "stats": {
+      "damage": 50
+    }
+  },
+  "exoskeleton": {
+    "stats": {
+      "armor": 10
+    }
+  },
+  "fast_builders": {},
+  "fenix_born": {},
+  "fins": {},
+  "fire_elemental_form": {},
+  "gaia_roots": {},
+  "genetic_mirror": {},
+  "genetic_psychosis": {},
+  "gestation_extremely_long": {},
+  "gestation_long": {},
+  "gestation_moderate": {},
+  "gestation_short": {},
+  "gestation_very_long": {},
+  "gmo": {},
+  "good_throwers": {
+    "stats": {
+      "throwing_range": 6
+    }
+  },
+  "grin_mark": {},
+  "heat_resistance": {},
+  "high_fecundity": {
+    "stats": {
+      "birth_rate": 5
+    }
+  },
+  "hovering": {},
+  "hydrophobia": {},
+  "hyper_intelligence": {
+    "stats": {
+      "intelligence": 30
+    }
+  },
+  "inquisitive_nature": {},
+  "long_lifespan": {
+    "stats": {
+      "lifespan": 100
+    }
+  },
+  "metamorphosis_butterfly": {},
+  "metamorphosis_chicken": {},
+  "metamorphosis_crab": {},
+  "metamorphosis_sword": {},
+  "metamorphosis_wolf": {},
+  "monophasic_sleep": {},
+  "nimble": {},
+  "nocturnal_dormancy": {},
+  "parental_care": {},
+  "photosynthetic_skin": {},
+  "pollinating": {},
+  "polyphasic_sleep": {},
+  "population_expansive": {},
+  "population_large": {},
+  "population_minimal": {},
+  "population_moderate": {},
+  "population_small": {},
+  "prefrontal_cortex": {},
+  "prolonged_rest": {},
+  "pure": {},
+  "rapid_aging": {},
+  "reproduction_budding": {},
+  "reproduction_divine": {},
+  "reproduction_fission": {},
+  "reproduction_hermaphroditic": {},
+  "reproduction_metamorph": {},
+  "reproduction_parthenogenesis": {},
+  "reproduction_sexual": {
+    "stats": {
+      "birth_rate": 3
+    }
+  },
+  "reproduction_soulborne": {},
+  "reproduction_spores": {},
+  "reproduction_strategy_oviparity": {},
+  "reproduction_strategy_viviparity": {},
+  "reproduction_vegetative": {},
+  "shiny_love": {},
+  "slow_builders": {},
+  "spicy_kids": {},
+  "stomach": {},
+  "super_positivity": {},
+  "telepathic_link": {},
+  "unmoving": {},
+  "unstable_genome": {},
+  "uplifted": {},
+  "voracious": {},
+  "wernicke_area": {},
+  "winter_slumberers": {}
+}

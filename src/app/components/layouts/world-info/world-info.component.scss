@@ -25,6 +25,12 @@
     margin: 0 0 20px;
   }
 
+  // HP bar tier colors — current/max ratio bands.
+  .health-full { color: $success; }
+  .health-high { color: $primary; }
+  .health-mid { color: $info; }
+  .health-low { color: $error; }
+
   ::ng-deep {
     .ant-descriptions-header {
       margin-bottom: 2px;

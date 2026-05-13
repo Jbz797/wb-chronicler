@@ -1,0 +1,3479 @@
+{
+  "$animal$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$animal_base$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$animal_civ$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$animal_fur$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$animal_skin$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$basic_unit$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$basic_unit_colored$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$boat$": {
+    "stats": {
+      "mass": 1000,
+      "scale": 0.25,
+      "size": 1
+    }
+  },
+  "$boat_trading$": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "$boat_transport$": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "$carnivore$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$civ_advanced_unit$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$civ_unit$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$creep_mob$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 10,
+      "targets": 1
+    }
+  },
+  "$flying_insect$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "health": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.015,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 5,
+      "targets": 1
+    }
+  },
+  "$herbivore$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$insect$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "health": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.015,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 5,
+      "targets": 1
+    }
+  },
+  "$mob$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$mob_no_genes$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$omnivore$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "$peaceful_animal$": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "UFO": {
+    "stats": {
+      "armor": 5,
+      "damage": 80,
+      "health": 1000,
+      "lifespan": 0,
+      "mass": 5,
+      "mass_2": 2500,
+      "scale": 0.3,
+      "size": 2,
+      "speed": 20
+    }
+  },
+  "acid_blob": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 66,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "alien": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "lifespan": 1000,
+      "mass": 1,
+      "mass_2": 32.5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "alpaca": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 67,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "angle": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 7.77,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "ant_black": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.01,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 20,
+      "targets": 1
+    }
+  },
+  "ant_blue": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.01,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 20,
+      "targets": 1
+    }
+  },
+  "ant_green": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.01,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 20,
+      "targets": 1
+    }
+  },
+  "ant_red": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.01,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 20,
+      "targets": 1
+    }
+  },
+  "armadillo": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "assimilator": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 0,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 15,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "bandit": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 67,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "bear": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 2,
+      "mass_2": 175,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 2
+    }
+  },
+  "bee": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "health": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.015,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 5,
+      "targets": 1
+    }
+  },
+  "beetle": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "health": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.015,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 5,
+      "targets": 1
+    }
+  },
+  "bioblob": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 15,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "boat_fishing": {
+    "stats": {
+      "health": 100,
+      "mass": 1000,
+      "mass_2": 100,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 10
+    }
+  },
+  "boat_trading_acid_gentleman": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_alien": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_alpaca": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_angle": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_armadillo": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_bandit": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_bear": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_bee": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_beetle": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_buffalo": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_candy_man": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_capybara": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_cat": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_chicken": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_cold_one": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_cow": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_crab": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_crocodile": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_crystal_golem": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_demon": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_dog": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_druid": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_dwarf": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_elf": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_evil_mage": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_fairy": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_fox": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_frog": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_garlic_man": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_ghost": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_goat": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_greg": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_human": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_hyena": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_lemon_man": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_liliar": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_monkey": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_necromancer": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_orc": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_penguin": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_piranha": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_rabbit": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_rat": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_rhino": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_scorpion": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_seal": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_sheep": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_snake": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_snowman": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_turtle": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_unicorn": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_white_mage": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_trading_wolf": {
+    "stats": {
+      "attack_speed": 0.1,
+      "health": 200,
+      "mass": 1000,
+      "mass_2": 3000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 30
+    }
+  },
+  "boat_transport_acid_gentleman": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_alien": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_alpaca": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_angle": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_armadillo": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_bandit": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_bear": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_bee": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_beetle": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_buffalo": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_candy_man": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_capybara": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_cat": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_chicken": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_cold_one": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_cow": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_crab": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_crocodile": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_crystal_golem": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_demon": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_dog": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_druid": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_dwarf": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_elf": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_evil_mage": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_fairy": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_fox": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_frog": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_garlic_man": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_ghost": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_goat": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_greg": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_human": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_hyena": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_lemon_man": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_liliar": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_monkey": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_necromancer": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_orc": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_penguin": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_piranha": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_rabbit": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_rat": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_rhino": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_scorpion": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_seal": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_sheep": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_snake": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_snowman": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_turtle": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_unicorn": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_white_mage": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "boat_transport_wolf": {
+    "stats": {
+      "attack_speed": 0.5,
+      "health": 1000,
+      "mass": 1000,
+      "mass_2": 2000,
+      "scale": 0.25,
+      "size": 1,
+      "speed": 25
+    }
+  },
+  "buffalo": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 650,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "butterfly": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "health": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.015,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 5,
+      "targets": 1
+    }
+  },
+  "capybara": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 50,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "cat": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "chicken": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 4,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_acid_gentleman": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 99,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_alpaca": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 70,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_armadillo": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 45,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_bear": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 140,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_beetle": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 10,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_buffalo": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 290,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_candy_man": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 70,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_capybara": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 70,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_cat": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 35,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_chicken": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 35,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_cow": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 175,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_crab": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 30,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_crocodile": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 200,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_crystal_golem": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 455,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_dog": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 70,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_fox": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 60,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_frog": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 15,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_garlic_man": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 30,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_goat": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 50,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_hyena": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 60,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_lemon_man": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 45,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_liliar": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 90,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_monkey": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 65,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_penguin": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 35,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_piranha": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 19,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_rabbit": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 30,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_rat": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 20,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_rhino": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 295,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_scorpion": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 25,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_seal": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_sheep": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 80,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_snake": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 15,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_turtle": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 110,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_unicorn": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 300,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "civ_wolf": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 85,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "cold_one": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 85,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "cow": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 550,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "crab": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 2,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "crabzilla": {
+    "stats": {
+      "damage": 10,
+      "health": 10000,
+      "mass_2": 99999,
+      "scale": 0.25,
+      "size": 8,
+      "speed": 50
+    }
+  },
+  "crocodile": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 20,
+      "mass_2": 450,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "crystal_sword": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 10,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "demon": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 66.6,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "dog": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 45,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "dragon": {
+    "stats": {
+      "damage": 100,
+      "health": 1000,
+      "lifespan": 10000,
+      "mass": 4,
+      "mass_2": 2500,
+      "scale": 0.3,
+      "size": 2,
+      "speed": 40,
+      "targets": 20
+    }
+  },
+  "druid": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 80,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "dwarf": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 75,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "elf": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 25,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "evil_mage": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 75,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "fairy": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.01,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "fire_elemental": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 50,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "fire_elemental_blob": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 66,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 3,
+      "targets": 1
+    }
+  },
+  "fire_elemental_horse": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 450,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 20,
+      "targets": 1
+    }
+  },
+  "fire_elemental_slug": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 30,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 2,
+      "targets": 1
+    }
+  },
+  "fire_elemental_snake": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 15,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 5,
+      "targets": 1
+    }
+  },
+  "fire_skull": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 3.5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "flower_bud": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "fly": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "health": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.015,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 5,
+      "targets": 1
+    }
+  },
+  "fox": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 7,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "frog": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 1.5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "garl": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 25,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "ghost": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "goat": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 30,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "god_finger": {
+    "stats": {
+      "armor": 5,
+      "damage": 80,
+      "health": 100,
+      "lifespan": 10000,
+      "mass": 5,
+      "mass_2": 99999,
+      "scale": 0.3,
+      "size": 2,
+      "speed": 50
+    }
+  },
+  "grasshopper": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "damage": 1,
+      "health": 1,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.015,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 5,
+      "targets": 1
+    }
+  },
+  "greg": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "human": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 65,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "hyena": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 63,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "jumpy_skull": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 3.5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "lemon_snail": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "lil_pumpkin": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 9,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "living_house": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "armor": 1,
+      "attack_speed": 60,
+      "critical_damage_multiplier": 2,
+      "damage": 50,
+      "health": 500,
+      "knockback": 1.4,
+      "mass": 50,
+      "mass_2": 10000,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.25,
+      "size": 0.5,
+      "speed": 10,
+      "targets": 3
+    }
+  },
+  "living_plants": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "armor": 0,
+      "attack_speed": 70,
+      "critical_damage_multiplier": 2,
+      "damage": 30,
+      "health": 300,
+      "knockback": 1.2,
+      "mass": 50,
+      "mass_2": 500,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.25,
+      "size": 0.5,
+      "speed": 10,
+      "targets": 3
+    }
+  },
+  "monkey": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 50,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "mush_animal": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "health": 200,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 45,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 10,
+      "targets": 1
+    }
+  },
+  "mush_unit": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 60,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 10,
+      "targets": 1
+    }
+  },
+  "necromancer": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 50,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "orc": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 85,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "ostrich": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 117,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "penguin": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 35,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "piranha": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 10,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "plague_doctor": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 80,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "printer": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "health": 1,
+      "knockback": 1.5,
+      "mass": 10,
+      "mass_2": 0.01,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 10000,
+      "targets": 1
+    }
+  },
+  "rabbit": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 4.5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "raccoon": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 9,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "rat": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.5,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "rhino": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 20,
+      "mass_2": 700,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 3
+    }
+  },
+  "sand_spider": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.01,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 100,
+      "targets": 1
+    }
+  },
+  "scorpion": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.25,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "seal": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 90,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "sheep": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 65,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "skeleton": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 15,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "smore": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 4,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "snake": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 15,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "snowman": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 67,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "tumor_monster_animal": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 55,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "tumor_monster_unit": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 75,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "turtle": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 50,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "unicorn": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 500,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "white_mage": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 75,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "wolf": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 55,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "targets": 1
+    }
+  },
+  "worm": {
+    "stats": {
+      "accuracy": 1,
+      "area_of_effect": 0.1,
+      "attack_speed": 1,
+      "critical_damage_multiplier": 2,
+      "knockback": 1.5,
+      "mass": 1,
+      "mass_2": 0.05,
+      "multiplier_supply_timer": 1,
+      "range": 1,
+      "scale": 0.1,
+      "size": 0.5,
+      "speed": 100,
+      "targets": 1
+    }
+  },
+  "zombie_dragon": {
+    "stats": {
+      "damage": 100,
+      "health": 1000,
+      "lifespan": 10000,
+      "mass": 4,
+      "mass_2": 2500,
+      "scale": 0.3,
+      "size": 2,
+      "speed": 40,
+      "targets": 20
+    }
+  }
+}
