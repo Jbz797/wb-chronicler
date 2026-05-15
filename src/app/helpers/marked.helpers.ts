@@ -10,15 +10,6 @@ export class MarkedHelpers {
     // GFM heading IDs
     marked.use(gfmHeadingId());
 
-    // Equivalent to `<h* nz-typography>` — the directive only sets `class="ant-typography"`, and the CSS is already loaded globally via `theme.less`.
-    marked.use({
-      renderer: {
-        heading({ depth, tokens }) {
-          return `<h${depth} class="ant-typography">${this.parser.parseInline(tokens)}</h${depth}>`;
-        },
-      },
-    });
-
     // Inline species codes (asset_id = in-game ID, cf. chronicler.md):
     marked.use({
       extensions: [{

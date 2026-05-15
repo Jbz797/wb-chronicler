@@ -4,7 +4,6 @@
   background: $parchment-noise, radial-gradient(ellipse at center, $paper 0%, $paper-dim 100%);
   border-radius: $radius;
   box-shadow: $glow;
-  color: $dark-warm;
   font-family: $font-body;
   font-size: 1.08rem;
   height: calc(100vh - 4rem);
@@ -13,7 +12,7 @@
   overflow: hidden;
   width: calc(100% - 4rem);
 
-  > markdown {
+  > article {
     display: block;
     height: 100%;
     overflow-y: auto;
@@ -56,6 +55,10 @@
     padding-bottom: 0.1em;
   }
 
+  h3 {
+    margin-top: 1.4em;
+  }
+
   h4 {
     font-style: italic;
   }
@@ -65,7 +68,7 @@
     color: $sienna;
     float: left;
     font-family: $font-display;
-    font-size: 3.6em;
+    font-size: 3.55em;
     font-weight: 700;
     margin: 0.15em 0.15em 0 0;
   }
@@ -86,21 +89,16 @@
 
   :not(pre) > code {
     background: $paper-shade;
-    border-radius: $radius;
     color: $sienna;
-    font-size: 0.88em;
-    padding: 0.15em 0.4em;
   }
 
   pre {
     background: $dark-warm;
-    border-radius: $radius;
-    margin-top: 1em;
   }
 
   blockquote {
     border-left: 3px solid $gold;
-    color: $sienna-soft;
+    color: $sienna;
     font-style: italic;
     margin: 1.6em 0;
     padding: 0.25em 1em;
@@ -118,7 +116,6 @@
     td {
       border: 1px solid $gold-soft;
       padding: 0.5em 0.8em;
-      text-align: left;
     }
 
     th {
@@ -133,8 +130,8 @@
 
   hr {
     border: 0;
-    height: 1.8em;
-    margin: 2.5em 0;
+    height: 2em;
+    margin-top: 2em;
     text-align: center;
 
     &::before {
@@ -143,15 +140,6 @@
       font-size: 1.8em;
       line-height: 1;
     }
-  }
-
-  ul,
-  ol {
-    padding-left: 1.6em;
-  }
-
-  li {
-    margin: 0.3em 0;
   }
 
   .species {
