@@ -6,6 +6,10 @@
   height: 100%;
   padding: 1rem;
 
+  nz-divider {
+    margin: 0 0 20px;
+  }
+
   nz-empty {
     margin: auto 0;
   }
@@ -28,60 +32,61 @@
     }
   }
 
-  nz-divider {
-    margin: 0 0 20px;
-  }
-
   ::ng-deep {
+    .ant-collapse {
+      font-size: 16px;
+
+      .ant-descriptions-header {
+        margin-bottom: 2px;
+
+        .ant-descriptions-title {
+          color: $accent;
+          font-size: 0.9rem;
+          font-weight: 500;
+          letter-spacing: $letter-spacing-wide;
+          margin-top: 1rem;
+          text-align: center;
+          text-transform: uppercase;
+        }
+      }
+
+      .ant-descriptions-item-label {
+        text-align: right;
+
+        &:has(> img:only-child) {
+          text-align: center;
+        }
+      }
+
+      .ant-descriptions-item-label,
+      .ant-descriptions-item-content {
+        padding: 6px 12px !important;
+
+        nz-tag {
+          font-size: 13px;
+          margin-left: 4px;
+          margin-right: 0;
+          vertical-align: center;
+        }
+
+        img {
+          height: 1rem;
+          vertical-align: text-bottom;
+
+          &:not(:last-child) {
+            margin-right: 0.3rem;
+          }
+
+          &:not(:first-child) {
+            margin-left: 0.3rem;
+          }
+        }
+      }
+    }
+
     .ant-empty-image {
       height: auto;
       margin-bottom: 12px;
-    }
-
-    .ant-descriptions-header {
-      margin-bottom: 2px;
-
-      .ant-descriptions-title {
-        color: $accent;
-        font-size: 0.9rem;
-        font-weight: 500;
-        letter-spacing: $letter-spacing-wide;
-        margin-top: 1rem;
-        text-align: center;
-        text-transform: uppercase;
-      }
-    }
-
-    .ant-descriptions-item-label {
-      text-align: right;
-
-      &:has(> img:first-child) {
-        text-align: center;
-      }
-    }
-
-    .ant-descriptions-item-label,
-    .ant-descriptions-item-content {
-      padding: 6px 12px !important;
-
-      nz-tag {
-        margin-left: 2px;
-        margin-right: 0;
-        vertical-align: center;
-      }
-
-      img {
-        height: 1rem;
-        vertical-align: text-bottom;
-
-        &:not(:last-child) {
-          margin-right: 0.3rem;
-        }
-
-        &:not(:first-child) {
-          margin-left: 0.3rem;
-        }
-      }
     }
   }
 }

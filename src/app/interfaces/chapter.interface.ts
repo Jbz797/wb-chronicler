@@ -27,5 +27,24 @@ export interface ChapterMeta {
   } | null;
   tags: string[];
   title: string;
+  world: {
+    alliances: number;
+    books: number;
+    cities: number;
+    clans: number;
+    creatures: number;
+    cultures: number;
+    deaths: number;
+    equipment: number;
+    families: number;
+    houses: number;
+    kingdoms: number;
+    languages: number;
+    plants: number;
+    population: number;
+    religions: number;
+    subspecies: number;
+    wars: number;
+  };
   world_time: number;
 }

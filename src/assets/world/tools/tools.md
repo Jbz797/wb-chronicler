@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 13/05/26 18:43</p>
+<p class="metadata">Date de mise à jour : 15/05/26 17:52</p>
 
 | Script | Usage | Sortie |
 |--------|-------|--------|
@@ -11,3 +11,4 @@
 | `overview/rank.py <id>` | Classe un acteur sur chacune de ses stats parmi ceux de son espèce. | `id \| ranks` |
 | `overview/stats.py <id>` | Calcule les stats agrégées d'un acteur. | `id \| stats` |
 | `subspecies-traits/stats.py <id> [<id>...]` | Résout un ou plusieurs traits de sous-espèce. | Une ligne par trait : `id \| stats` |
+| `world/stats.py` | Agrège les compteurs globaux du monde. | `stats` |

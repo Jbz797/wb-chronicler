@@ -8,14 +8,24 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
 import { HISTORY_DIR } from '../../../constants';
-import { RarityCounts, World } from '../../../interfaces';
-import { TierPipe } from '../../../pipes';
+import { RarityCounts, World, WorldStat } from '../../../interfaces';
+import { CompactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services/chronicler.service';
 import { DeltaComponent, RankedStatComponent, RarityStatsComponent } from '../../misc';
 
 @Component({
   selector: 'app-world-info',
-  imports: [DeltaComponent, NzCollapseModule, NzDescriptionsModule, NzDividerModule, NzEmptyModule, RankedStatComponent, RarityStatsComponent, TierPipe],
+  imports: [
+    CompactPipe,
+    DeltaComponent,
+    NzCollapseModule,
+    NzDescriptionsModule,
+    NzDividerModule,
+    NzEmptyModule,
+    RankedStatComponent,
+    RarityStatsComponent,
+    TierPipe,
+  ],
   templateUrl: './world-info.component.html',
   styleUrl: './world-info.component.scss',
 })
@@ -45,5 +55,32 @@ export class WorldInfoComponent {
     };
   });
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
+  // Display order — left→right, top→bottom (mirrors the in-game stats panel).
+  protected readonly worldStats: { key: WorldStat; label: string; useDelta?: boolean }[] = [
+    { key: 'deaths', label: 'Morts récents', useDelta: true },
+    { key: 'population', label: 'Population' },
+    { key: 'creatures', label: 'Créatures' },
+    { key: 'plants', label: 'Végétation' },
+    { key: 'houses', label: 'Maisons' },
+    { key: 'wars', label: 'Guerres' },
+    { key: 'subspecies', label: 'Sous-espèces' },
+    { key: 'kingdoms', label: 'Royaumes' },
+    { key: 'cities', label: 'Villes' },
+    { key: 'families', label: 'Familles' },
+    { key: 'clans', label: 'Clans' },
+    { key: 'alliances', label: 'Alliances' },
+    { key: 'languages', label: 'Langues' },
+    { key: 'cultures', label: 'Cultures' },
+    { key: 'religions', label: 'Religions' },
+    { key: 'books', label: 'Livres' },
+    { key: 'equipment', label: 'Équipement' },
+  ];
+  // Per-stat delta on `meta.world` — `null` when no previous chapter to compare.
+  protected readonly worldDeltas = computed(() => {
+    const current = this.currentChapter()?.meta.world;
+    const previous = this._chronicler.previousChapter()?.meta.world;
+    if (!current || !previous) return null;
+    return Object.fromEntries(this.worldStats.map(({ key }) => [key, current[key] - previous[key]])) as Record<WorldStat, number>;
+  });
 
 }

@@ -10,9 +10,22 @@
   <nz-divider />
 
   <nz-collapse nzAccordion>
-    <nz-collapse-panel nzHeader="Informations sur le Monde" [nzActive]="true">
+    <nz-collapse-panel nzHeader="Statistiques sur le Monde" [nzActive]="true">
       <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-        <nz-descriptions-item nzTitle="Placeholder">À remplir</nz-descriptions-item>
+        @for (stat of worldStats; track stat.key) {
+          <ng-template #titleRef>
+            <img [src]="`assets/img/world/${stat.key}.png`" />
+            <span>{{ stat.label }}</span>
+          </ng-template>
+          <nz-descriptions-item [nzTitle]="titleRef">
+            @if (stat.useDelta) {
+              <span>{{ worldDeltas()?.[stat.key] ?? 0 | compact }}</span>
+            } @else {
+              <span>{{ c.meta.world[stat.key] | compact }}</span>
+              <app-delta [value]="worldDeltas()?.[stat.key]" />
+            }
+          </nz-descriptions-item>
+        }
       </nz-descriptions>
     </nz-collapse-panel>
 
