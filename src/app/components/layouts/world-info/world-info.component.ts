@@ -8,7 +8,7 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
 import { HISTORY_DIR } from '../../../constants';
-import { RarityCounts, World, WorldStat } from '../../../interfaces';
+import { DeathCause, RarityCounts, World, WorldStat } from '../../../interfaces';
 import { CompactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services/chronicler.service';
 import { DeltaComponent, RankedStatComponent, RarityStatsComponent } from '../../misc';
@@ -35,6 +35,24 @@ export class WorldInfoComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
+  // Display order — by descending magnitude on current save (most-frequent cause first).
+  protected readonly deathCauses: { key: DeathCause; label: string }[] = [
+    { key: 'weapon', label: 'Armes' },
+    { key: 'age', label: 'Âge' },
+    { key: 'eaten', label: 'Dévorés' },
+    { key: 'fire', label: 'Feu' },
+    { key: 'explosion', label: 'Explosion' },
+    { key: 'hunger', label: 'Faim' },
+    { key: 'drowning', label: 'Noyade' },
+    { key: 'water', label: 'Eau' },
+  ];
+  // Per-cause death count between previous chapter and current — at C1 the baseline is 0 so we get the cumulative count instead.
+  protected readonly deathsSincePrevious = computed(() => {
+    const current = this.currentChapter()?.meta.world.deaths_by_cause;
+    if (!current) return null;
+    const previous = this._chronicler.previousChapter()?.meta.world.deaths_by_cause;
+    return Object.fromEntries(this.deathCauses.map(({ key }) => [key, current[key] - (previous?.[key] ?? 0)])) as Record<DeathCause, number>;
+  });
   // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — ranked stats handle their own deltas.
   protected readonly deltas = computed(() => {
     const current = this.currentChapter()?.meta.favorite;
@@ -54,10 +72,14 @@ export class WorldInfoComponent {
       traits: diffCounts(current.traits, previous.traits),
     };
   });
+  // Sum of per-cause death counts since previous chapter — `null` mirrors `deathsSincePrevious`.
+  protected readonly totalDeathsSincePrevious = computed(() => {
+    const breakdown = this.deathsSincePrevious();
+    return breakdown ? Object.values(breakdown).reduce((sum, v) => sum + v, 0) : null;
+  });
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
   // Display order — left→right, top→bottom (mirrors the in-game stats panel).
-  protected readonly worldStats: { key: WorldStat; label: string; useDelta?: boolean }[] = [
-    { key: 'deaths', label: 'Morts récents', useDelta: true },
+  protected readonly worldStats: { key: WorldStat; label: string }[] = [
     { key: 'population', label: 'Population' },
     { key: 'creatures', label: 'Créatures' },
     { key: 'plants', label: 'Végétation' },

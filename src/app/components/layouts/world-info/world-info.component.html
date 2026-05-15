@@ -18,14 +18,21 @@
             <span>{{ stat.label }}</span>
           </ng-template>
           <nz-descriptions-item [nzTitle]="titleRef">
-            @if (stat.useDelta) {
-              <span>{{ worldDeltas()?.[stat.key] ?? 0 | compact }}</span>
-            } @else {
-              <span>{{ c.meta.world[stat.key] | compact }}</span>
-              <app-delta [value]="worldDeltas()?.[stat.key]" />
-            }
+            <span>{{ c.meta.world[stat.key] | compact }}</span>
+            <app-delta [value]="worldDeltas()?.[stat.key]" />
           </nz-descriptions-item>
         }
+      </nz-descriptions>
+
+      <nz-descriptions nzBordered nzSize="small" nzTitle="Causes de mortalité" [nzColumn]="2">
+        @for (cause of deathCauses; track cause.key) {
+          <nz-descriptions-item [nzTitle]="cause.label">
+            {{ deathsSincePrevious()?.[cause.key] ?? 0 | compact }}
+          </nz-descriptions-item>
+        }
+        <nz-descriptions-item nzTitle="Total" [nzSpan]="2">
+          {{ totalDeathsSincePrevious() ?? 0 | compact }}
+        </nz-descriptions-item>
       </nz-descriptions>
     </nz-collapse-panel>
 

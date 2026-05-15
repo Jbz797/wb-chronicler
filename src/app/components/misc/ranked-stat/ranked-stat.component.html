@@ -4,7 +4,7 @@
       <span [class]="d.current | tier: d.max">{{ d.current }}</span> / {{ d.max }}
       <app-delta [value]="d.valueDelta" />
     </span>
-    @if (d.rank <= 10) {
+    @if (d.rank <= 8) {
       <span>
         <app-delta [inverted]="true" [value]="d.rankDelta" />
         #{{ d.rank }}

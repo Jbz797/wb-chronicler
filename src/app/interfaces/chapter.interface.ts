@@ -35,6 +35,16 @@ export interface ChapterMeta {
     creatures: number;
     cultures: number;
     deaths: number;
+    deaths_by_cause: {
+      age: number;
+      drowning: number;
+      eaten: number;
+      explosion: number;
+      fire: number;
+      hunger: number;
+      water: number;
+      weapon: number;
+    };
     equipment: number;
     families: number;
     houses: number;

@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 15/05/26 22:30</p>
+<p class="metadata">Date de mise à jour : 15/05/26 23:09</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -70,6 +70,16 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
     "creatures": 0,
     "cultures": 0,
     "deaths": 0,           // Cumulé depuis le début du monde
+    "deaths_by_cause": {   // Cumul par cause (cf. `tools/world/stats.py` ligne `deaths | ...`)
+      "age": 0,
+      "drowning": 0,
+      "eaten": 0,
+      "explosion": 0,
+      "fire": 0,
+      "hunger": 0,
+      "water": 0,
+      "weapon": 0
+    },
     "equipment": 0,
     "families": 0,
     "houses": 0,

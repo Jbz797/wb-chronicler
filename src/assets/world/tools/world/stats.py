@@ -8,7 +8,9 @@ panel counters (population, vegetation, cities, etc.). `houses` is derived from
 `mapStats.housesBuilt - housesDestroyed` (matches the in-game world stats panel).
 `alliances` lives in the compressed save and is loaded separately.
 
-Output: `world | <stat>=<value>,...` (alphabetical).
+Output (two lines):
+  `world  | <stat>=<value>,...`    (alphabetical)
+  `deaths | <cause>=<value>,...`   (cumulative deaths by cause, alphabetical)
 """
 import json
 import sys
@@ -35,6 +37,18 @@ _META_KEYS = {
     'subspecies': 'subspecies',
     'wars':       'wars',
 }
+# Mapping chronicler cause => map.meta.mapStats death-counter (`deaths_age` is what
+# `world_statistics_deaths_natural` aggregates per the DLL; we surface it as `age`).
+_DEATH_CAUSES = {
+    'age':       'deaths_age',
+    'drowning':  'deaths_drowning',
+    'eaten':     'deaths_eaten',
+    'explosion': 'deaths_explosion',
+    'fire':      'deaths_fire',
+    'hunger':    'deaths_hunger',
+    'water':     'deaths_water',
+    'weapon':    'deaths_weapon',
+}
 
 
 def main() -> int:
@@ -49,7 +63,9 @@ def main() -> int:
     stats['houses'] = int(map_stats.get('housesBuilt', 0)) - int(map_stats.get('housesDestroyed', 0))
     # `alliances` isn't surfaced in map.meta — fall back to the compressed save.
     stats['alliances'] = len(load_save().get('alliances') or [])
-    print(f"world | {','.join(f'{k}={v}' for k, v in sorted(stats.items()))}")
+    deaths = {k: int(map_stats.get(v, 0)) for k, v in _DEATH_CAUSES.items()}
+    print(f"world  | {','.join(f'{k}={v}' for k, v in sorted(stats.items()))}")
+    print(f"deaths | {','.join(f'{k}={v}' for k, v in sorted(deaths.items()))}")
     return 0
 
 
