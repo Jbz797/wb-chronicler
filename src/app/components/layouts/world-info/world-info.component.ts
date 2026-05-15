@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 
+import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
@@ -14,7 +15,7 @@ import { DeltaComponent, RankedStatComponent, RarityStatsComponent } from '../..
 
 @Component({
   selector: 'app-world-info',
-  imports: [DeltaComponent, NzDescriptionsModule, NzDividerModule, NzEmptyModule, RankedStatComponent, RarityStatsComponent, TierPipe],
+  imports: [DeltaComponent, NzCollapseModule, NzDescriptionsModule, NzDividerModule, NzEmptyModule, RankedStatComponent, RarityStatsComponent, TierPipe],
   templateUrl: './world-info.component.html',
   styleUrl: './world-info.component.scss',
 })
