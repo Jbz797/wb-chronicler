@@ -56,9 +56,9 @@
 
     <ng-template #damageTitle><img src="assets/img/stats/damage.png" /></ng-template>
   } @else {
-    <p class="empty-state">Aucun favoris pour l'instant.</p>
+    <nz-empty nzNotFoundContent="Aucun favoris pour l'instant" nzNotFoundImage="assets/img/empty/no-favorite.png" />
   }
 } @else {
   <nz-divider />
-  <p class="empty-state">Aucune donnée à afficher.</p>
+  <nz-empty nzNotFoundContent="Aucune donnée à afficher" nzNotFoundImage="assets/img/empty/no-data.png" />
 }

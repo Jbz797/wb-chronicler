@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
 import { HISTORY_DIR } from '../../../constants';
 import { RarityCounts, World } from '../../../interfaces';
@@ -13,7 +14,7 @@ import { DeltaComponent, RankedStatComponent, RarityStatsComponent } from '../..
 
 @Component({
   selector: 'app-world-info',
-  imports: [DeltaComponent, NzDescriptionsModule, NzDividerModule, RankedStatComponent, RarityStatsComponent, TierPipe],
+  imports: [DeltaComponent, NzDescriptionsModule, NzDividerModule, NzEmptyModule, RankedStatComponent, RarityStatsComponent, TierPipe],
   templateUrl: './world-info.component.html',
   styleUrl: './world-info.component.scss',
 })

@@ -1,7 +1,14 @@
 @use 'variables' as *;
 
 :host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 1rem;
+
+  nz-empty {
+    margin: auto 0;
+  }
 
   .section-title {
     margin-bottom: 0;
@@ -26,6 +33,11 @@
   }
 
   ::ng-deep {
+    .ant-empty-image {
+      height: auto;
+      margin-bottom: 12px;
+    }
+
     .ant-descriptions-header {
       margin-bottom: 2px;
 

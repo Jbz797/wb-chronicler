@@ -4,7 +4,10 @@
   padding-top: 1rem;
 
   .empty-state {
+    color: $text-secondary;
+    font-style: italic;
     margin: 0 1rem;
+    text-align: center;
   }
 
   ::ng-deep {

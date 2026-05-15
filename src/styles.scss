@@ -6,7 +6,10 @@ body {
   overflow: hidden;
 }
 
-// Color band for any current/max (or 0..100 percent) stat — green / blue / cyan / red.
+img {
+  image-rendering: pixelated;
+}
+
 .tier-full {
   color: $success;
 }
