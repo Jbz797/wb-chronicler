@@ -130,7 +130,7 @@ WorldBox écrit ses sauvegardes dans un dossier système. Le chroniqueur lit **d
 
 Slot 1, machine du joueur, macOS :
 
-```
+```bash
 $HOME/Library/Application Support/mkarpenko/WorldBox/saves/save1/
 ```
 

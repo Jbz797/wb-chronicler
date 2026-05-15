@@ -30,17 +30,15 @@
   h1,
   h2,
   h3,
-  h4 {
-    color: $background;
+  h4,
+  h5 {
+    color: rgb(0 0 0 / 85%);
     font-family: $font-display;
-    font-weight: 600;
-    letter-spacing: $letter-spacing-tight;
-    margin-top: 1.8em;
   }
 
   h1 {
     border-bottom: 2px solid $gold-soft;
-    font-weight: 700;
+    margin-top: 1.8em;
     padding-bottom: 0.2em;
     text-align: center;
     text-shadow: $glow;
@@ -54,6 +52,7 @@
 
   h2 {
     border-bottom: 0.5px solid $gold-soft;
+    margin-top: 1.6em;
     padding-bottom: 0.1em;
   }
 

@@ -22,3 +22,16 @@ body {
 .tier-low {
   color: $error;
 }
+
+// ng-zorro Typography is compiled in dark mode globally — restore the light-theme colors (cf. `node_modules/ng-zorro-antd/typography/style/index.css`).
+.ant-typography {
+  color: rgb(0 0 0 / 85%);
+}
+
+.ant-typography-secondary {
+  color: rgb(0 0 0 / 45%);
+}
+
+.ant-typography-disabled {
+  color: rgb(0 0 0 / 25%);
+}
