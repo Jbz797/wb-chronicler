@@ -35,15 +35,14 @@ export class WorldInfoComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  // Display order — by descending magnitude on current save (most-frequent cause first).
   protected readonly deathCauses: { key: DeathCause; label: string }[] = [
     { key: 'weapon', label: 'Armes' },
     { key: 'age', label: 'Âge' },
     { key: 'eaten', label: 'Dévorés' },
     { key: 'fire', label: 'Feu' },
+    { key: 'water', label: 'Eau' },
     { key: 'explosion', label: 'Explosion' },
     { key: 'hunger', label: 'Faim' },
-    { key: 'water', label: 'Eau' },
   ];
   // Per-cause death count between previous chapter and current — at C1 the baseline is 0 so we get the cumulative count instead.
   protected readonly deathsSincePrevious = computed(() => {
@@ -77,26 +76,29 @@ export class WorldInfoComponent {
     return breakdown ? Object.values(breakdown).reduce((sum, v) => sum + v, 0) : null;
   });
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
-  // Display order — left→right, top→bottom (mirrors the in-game stats panel).
+  // Display order — by thematic layers (demography → environment → society → conflict → culture → activity).
   protected readonly worldStats: { key: WorldStat; label: string; useDelta?: boolean }[] = [
     { key: 'population', label: 'Population' },
     { key: 'creatures', label: 'Créatures' },
-    { key: 'vegetation', label: 'Végétation' },
-    { key: 'houses', label: 'Maisons' },
-    { key: 'wars', label: 'Guerres' },
     { key: 'subspecies', label: 'Sous-espèces' },
+    { key: 'vegetation', label: 'Végétation' },
+    { key: 'frozen_tiles', label: 'Tuiles gelées' },
+    { key: 'houses', label: 'Maisons' },
     { key: 'kingdoms', label: 'Royaumes' },
     { key: 'cities', label: 'Villes' },
-    { key: 'families', label: 'Familles' },
     { key: 'clans', label: 'Clans' },
+    { key: 'families', label: 'Familles' },
+    { key: 'relations', label: 'Relations' },
     { key: 'alliances', label: 'Alliances' },
+    { key: 'wars', label: 'Guerres' },
+    { key: 'armies', label: 'Armées' },
+    { key: 'plots_succeeded', label: 'Complots réussis', useDelta: true },
     { key: 'languages', label: 'Langues' },
     { key: 'cultures', label: 'Cultures' },
     { key: 'religions', label: 'Religions' },
-    { key: 'books', label: 'Livres' },
     { key: 'equipment', label: 'Équipement' },
+    { key: 'books', label: 'Livres' },
     { key: 'books_read', label: 'Livres lus', useDelta: true },
-    { key: 'plots_succeeded', label: 'Complots réussis', useDelta: true },
   ];
   // Per-stat delta on `meta.world` — `null` when no previous chapter to compare.
   protected readonly worldDeltas = computed(() => {

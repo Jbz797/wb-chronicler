@@ -63,8 +63,12 @@ def main() -> int:
     # Cumulative — UI surfaces only the per-chapter delta.
     stats['books_read'] = int(map_stats.get('booksRead', 0))
     stats['plots_succeeded'] = int(map_stats.get('plotsSucceeded', 0))
-    # `alliances` isn't surfaced in map.meta — fall back to the compressed save.
-    stats['alliances'] = len(load_save().get('alliances') or [])
+    # Live-only collections not surfaced in map.meta — fall back to the compressed save.
+    save = load_save()
+    stats['alliances'] = len(save.get('alliances') or [])
+    stats['armies'] = len(save.get('armies') or [])
+    stats['frozen_tiles'] = len(save.get('frozen_tiles') or [])
+    stats['relations'] = len(save.get('relations') or [])
     deaths = {k: sum(int(map_stats.get(s, 0)) for s in srcs) for k, srcs in _DEATH_CAUSES.items()}
     print(f"world  | {','.join(f'{k}={v}' for k, v in sorted(stats.items()))}")
     print(f"deaths | {','.join(f'{k}={v}' for k, v in sorted(deaths.items()))}")

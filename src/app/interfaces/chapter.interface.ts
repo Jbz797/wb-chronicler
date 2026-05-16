@@ -29,6 +29,7 @@ export interface ChapterMeta {
   title: string;
   world: {
     alliances: number;
+    armies: number;
     books: number;
     books_read: number;
     cities: number;
@@ -46,11 +47,13 @@ export interface ChapterMeta {
     };
     equipment: number;
     families: number;
+    frozen_tiles: number;
     houses: number;
     kingdoms: number;
     languages: number;
     plots_succeeded: number;
     population: number;
+    relations: number;
     religions: number;
     subspecies: number;
     vegetation: number;
