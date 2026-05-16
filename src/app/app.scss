@@ -1,6 +1,8 @@
 @use 'variables' as *;
 
-::ng-deep {
+::ng-deep .ant-layout {
+  height: 100vh;
+
   .ant-layout-sider-children {
     display: flex;
     flex-direction: column;
