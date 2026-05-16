@@ -95,8 +95,12 @@
           <nz-descriptions-item [nzTitle]="damageRangeTitle">
             <app-ranked-stat stat="damage_range" />
           </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="armorTitle">
+            <app-ranked-stat stat="armor" />
+          </nz-descriptions-item>
         </nz-descriptions>
 
+        <ng-template #armorTitle><img src="assets/img/stats/armor.png" /></ng-template>
         <ng-template #damageTitle><img src="assets/img/stats/damage.png" /></ng-template>
         <ng-template #damageRangeTitle><img src="assets/img/stats/damage_range.png" /></ng-template>
       } @else {

@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 16/05/26 14:07</p>
+<p class="metadata">Date de mise à jour : 16/05/26 17:03</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -58,11 +58,11 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
 
 ```json
 {
-  "age": {                 // Âge en cours
-    "id": "",              // ID standard du jeu
-    "label": ""            // Libellé choisi par le chroniqueur
+  "age": {                   // Âge en cours
+    "id": "",                // ID standard du jeu
+    "label": ""              // Libellé choisi par le chroniqueur
   },
-  "world": {               // Compteurs globaux — agrégés via `tools/world/stats.py`
+  "world": {                 // Compteurs globaux — agrégés via `tools/world/stats.py`
     "alliances": 0,
     "armies": 0,
     "books": 0,
@@ -94,20 +94,24 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
     "vegetation": 0,
     "wars": 0
   },
-  "favorite": {            // Favori courant à ce chapitre (`null` tant qu'aucun favori n'a été désigné)
-    "age": 0,              // Âge du favori en années (arrondi à l'année entière, cf. § IV)
-    "asset_id": "",        // Espèce du favori
-    "descriptor": "",      // Descripteur narratif court
-    "equipment": {         // Décompte des items d'équipement par rareté
+  "favorite": {              // Favori courant à ce chapitre (`null` tant qu'aucun favori n'a été désigné)
+    "age": 0,                // Âge du favori en années (arrondi à l'année entière, cf. § IV)
+    "asset_id": "",          // Espèce du favori
+    "descriptor": "",        // Descripteur narratif court
+    "equipment": {           // Décompte des items d'équipement par rareté
       "epic": 0,
       "legendary": 0,
       "normal": 0,
       "rare": 0
     },
-    "name": "",            // Nom du favori dans les données du jeu
-    "overview": {          // Stats agrégées
-      "damage_max": 0,
-      "damage_min": 0,
+    "name": "",              // Nom du favori dans les données du jeu
+    "overview": {            // Stats agrégées via `tools/overview/stats.py <id>` + rangs via `rank.py <id>`
+      "armor": 0,
+      "armor_rank": 0,
+      "damage": 0,
+      "damage_range": 0.0,
+      "damage_range_rank": 0,
+      "damage_rank": 0,
       "health_max": 0,
       "health_max_rank": 0,
       "mana_max": 0,
@@ -115,24 +119,24 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
       "stamina_max": 0,
       "stamina_max_rank": 0
     },
-    "sex": "",             // "male" ou "female" (`sex: 1` = female, absent = male)
-    "stats": {             // Stats courantes
+    "sex": "",               // "male" ou "female" (`sex: 1` = female, absent = male)
+    "stats": {               // Stats courantes
       "happiness": 0,
       "health": 0,
       "mana": 0,
       "nutrition": 0,
       "stamina": 0
     },
-    "traits": {            // Décompte des traits par rareté
+    "traits": {              // Décompte des traits par rareté
       "epic": 0,
       "legendary": 0,
       "normal": 0,
       "rare": 0
     }
   },
-  "tags": [],              // Liste de codes événementiels (cf. `history/tags.md`)
-  "title": "",             // Titre forgé par le chroniqueur et utilisé dans le chapitre
-  "world_time": 0          // Valeur du champ `world_time` (en mois ; 60 mois = 1 année)
+  "tags": [],                // Liste de codes événementiels (cf. `history/tags.md`)
+  "title": "",               // Titre forgé par le chroniqueur et utilisé dans le chapitre
+  "world_time": 0            // Valeur du champ `world_time` (en mois ; 60 mois = 1 année)
 }
 ```
 

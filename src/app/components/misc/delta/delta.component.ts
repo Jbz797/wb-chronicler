@@ -2,9 +2,11 @@ import { Component, input } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { CompactPipe } from '../../../pipes';
+
 @Component({
   selector: 'app-delta',
-  imports: [NzTagModule],
+  imports: [CompactPipe, NzTagModule],
   templateUrl: './delta.component.html',
 })
 export class DeltaComponent {

@@ -328,15 +328,19 @@ def _apply_level_scaling(totals: dict, level: int) -> None:
 
 
 RENAMES = {'health': 'health_max', 'mana': 'mana_max', 'stamina': 'stamina_max'}
+# Stats kept as 1-decimal floats — integer truncate would lose meaningful precision
+# (damage_range is typically `damage × ratio` where ratio < 1).
+KEEP_DECIMAL = {'damage_range'}
 
 
 def _cleanup(totals: dict) -> dict:
-    # Floor floats to int — the game stores stats as int32, so 261.9 displays as 261 in-game.
+    # Floor floats to int — the game stores most stats as int32, so 261.9 displays as 261 in-game.
     # `health` / `mana` are renamed to `health_max` / `mana_max` — the values represent the
     # actor's post-pipeline maximum HP/MP, the semantically useful name for the chronicler.
     result = {}
     for k, v in totals.items():
-        if isinstance(v, float): v = int(v)
+        if isinstance(v, float):
+            v = round(v, 1) if k in KEEP_DECIMAL else int(v)
         if v: result[RENAMES.get(k, k)] = v
     return result
 
