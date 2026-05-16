@@ -36,6 +36,12 @@
     .ant-collapse {
       font-size: 16px;
 
+      .ant-collapse-title {
+        position: relative;
+        text-transform: uppercase;
+        top: -0.5px;
+      }
+
       .ant-descriptions-header {
         margin-bottom: 2px;
 
@@ -70,8 +76,10 @@
         }
 
         img {
-          height: 1rem;
-          vertical-align: text-bottom;
+          max-height: 18px;
+          max-width: 18px;
+          position: relative;
+          top: -1px;
 
           &:not(:last-child) {
             margin-right: 0.3rem;

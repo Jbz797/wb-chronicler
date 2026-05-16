@@ -79,10 +79,10 @@ export class WorldInfoComponent {
   });
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
   // Display order — left→right, top→bottom (mirrors the in-game stats panel).
-  protected readonly worldStats: { key: WorldStat; label: string }[] = [
+  protected readonly worldStats: { key: WorldStat; label: string; useDelta?: boolean }[] = [
     { key: 'population', label: 'Population' },
     { key: 'creatures', label: 'Créatures' },
-    { key: 'plants', label: 'Végétation' },
+    { key: 'vegetation', label: 'Végétation' },
     { key: 'houses', label: 'Maisons' },
     { key: 'wars', label: 'Guerres' },
     { key: 'subspecies', label: 'Sous-espèces' },
@@ -96,6 +96,7 @@ export class WorldInfoComponent {
     { key: 'religions', label: 'Religions' },
     { key: 'books', label: 'Livres' },
     { key: 'equipment', label: 'Équipement' },
+    { key: 'plots_succeeded', label: 'Complots réussis', useDelta: true },
   ];
   // Per-stat delta on `meta.world` — `null` when no previous chapter to compare.
   protected readonly worldDeltas = computed(() => {

@@ -18,8 +18,12 @@
             <span>{{ stat.label }}</span>
           </ng-template>
           <nz-descriptions-item [nzTitle]="titleRef">
-            <span>{{ c.meta.world[stat.key] | compact }}</span>
-            <app-delta [value]="worldDeltas()?.[stat.key]" />
+            @if (stat.useDelta) {
+              <span>{{ worldDeltas()?.[stat.key] ?? c.meta.world[stat.key] | compact }}</span>
+            } @else {
+              <span>{{ c.meta.world[stat.key] | compact }}</span>
+              <app-delta [value]="worldDeltas()?.[stat.key]" />
+            }
           </nz-descriptions-item>
         }
       </nz-descriptions>

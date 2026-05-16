@@ -34,7 +34,6 @@ export interface ChapterMeta {
     clans: number;
     creatures: number;
     cultures: number;
-    deaths: number;
     deaths_by_cause: {
       age: number;
       drowning: number;
@@ -50,10 +49,11 @@ export interface ChapterMeta {
     houses: number;
     kingdoms: number;
     languages: number;
-    plants: number;
+    plots_succeeded: number;
     population: number;
     religions: number;
     subspecies: number;
+    vegetation: number;
     wars: number;
   };
   world_time: number;

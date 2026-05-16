@@ -26,15 +26,14 @@ _META_KEYS = {
     'clans':      'clans',
     'creatures':  'mobs',
     'cultures':   'cultures',
-    'deaths':     'deaths',
     'equipment':  'equipment',
     'families':   'families',
     'kingdoms':   'kingdoms',
     'languages':  'languages',
-    'plants':     'vegetation',
     'population': 'population',
     'religions':  'religions',
     'subspecies': 'subspecies',
+    'vegetation': 'vegetation',
     'wars':       'wars',
 }
 # Mapping chronicler cause => map.meta.mapStats death-counter (`deaths_age` is what
@@ -61,6 +60,8 @@ def main() -> int:
     stats = {k: int(meta.get(v, 0)) for k, v in _META_KEYS.items()}
     # Current city-buildings — matches the in-game `world_statistics_houses` panel.
     stats['houses'] = int(map_stats.get('housesBuilt', 0)) - int(map_stats.get('housesDestroyed', 0))
+    # Cumulative — UI surfaces only the per-chapter delta.
+    stats['plots_succeeded'] = int(map_stats.get('plotsSucceeded', 0))
     # `alliances` isn't surfaced in map.meta — fall back to the compressed save.
     stats['alliances'] = len(load_save().get('alliances') or [])
     deaths = {k: int(map_stats.get(v, 0)) for k, v in _DEATH_CAUSES.items()}

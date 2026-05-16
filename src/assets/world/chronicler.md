@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 15/05/26 23:09</p>
+<p class="metadata">Date de mise à jour : 16/05/26 10:51</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -62,15 +62,14 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
     "id": "",              // ID standard du jeu
     "label": ""            // Libellé choisi par le chroniqueur
   },
-  "world": {               // Compteurs globaux — agrégés via `tools/world/stats.py` (lit `map.meta`)
+  "world": {               // Compteurs globaux — agrégés via `tools/world/stats.py`
     "alliances": 0,
     "books": 0,
     "cities": 0,
     "clans": 0,
     "creatures": 0,
     "cultures": 0,
-    "deaths": 0,           // Cumulé depuis le début du monde
-    "deaths_by_cause": {   // Cumul par cause (cf. `tools/world/stats.py` ligne `deaths | ...`)
+    "deaths_by_cause": {
       "age": 0,
       "drowning": 0,
       "eaten": 0,
@@ -85,10 +84,11 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
     "houses": 0,
     "kingdoms": 0,
     "languages": 0,
-    "plants": 0,           // `map.meta.vegetation`
+    "plots_succeeded": 0,
     "population": 0,
     "religions": 0,
     "subspecies": 0,
+    "vegetation": 0,
     "wars": 0
   },
   "favorite": {            // Favori courant à ce chapitre (`null` tant qu'aucun favori n'a été désigné)
