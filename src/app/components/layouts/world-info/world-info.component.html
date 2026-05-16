@@ -9,8 +9,17 @@
   </p>
   <nz-divider />
 
+  <ng-template #worldStatsHeader>
+    <img class="panel-icon" src="assets/img/world/_panels/world_stats.png" />
+    <span>Statistiques sur le Monde</span>
+  </ng-template>
+  <ng-template #favoritesHeader>
+    <img class="panel-icon" src="assets/img/world/_panels/favorites.png" />
+    <span>Favoris</span>
+  </ng-template>
+
   <nz-collapse nzAccordion>
-    <nz-collapse-panel nzHeader="Statistiques sur le Monde" [nzActive]="true">
+    <nz-collapse-panel [nzActive]="true" [nzHeader]="worldStatsHeader">
       <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
         @for (stat of worldStats; track stat.key) {
           <ng-template #titleRef>
@@ -34,13 +43,13 @@
             {{ deathsSincePrevious()?.[cause.key] ?? 0 | compact }}
           </nz-descriptions-item>
         }
-        <nz-descriptions-item nzTitle="Total" [nzSpan]="2">
+        <nz-descriptions-item nzTitle="Total">
           {{ totalDeathsSincePrevious() ?? 0 | compact }}
         </nz-descriptions-item>
       </nz-descriptions>
     </nz-collapse-panel>
 
-    <nz-collapse-panel nzHeader="Favoris">
+    <nz-collapse-panel [nzHeader]="favoritesHeader">
       @if (c.meta.favorite; as fav) {
         <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
           <nz-descriptions-item nzTitle="Favoris">

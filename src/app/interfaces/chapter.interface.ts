@@ -37,7 +37,6 @@ export interface ChapterMeta {
     cultures: number;
     deaths_by_cause: {
       age: number;
-      drowning: number;
       eaten: number;
       explosion: number;
       fire: number;

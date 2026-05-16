@@ -43,7 +43,6 @@ export class WorldInfoComponent {
     { key: 'fire', label: 'Feu' },
     { key: 'explosion', label: 'Explosion' },
     { key: 'hunger', label: 'Faim' },
-    { key: 'drowning', label: 'Noyade' },
     { key: 'water', label: 'Eau' },
   ];
   // Per-cause death count between previous chapter and current — at C1 the baseline is 0 so we get the cumulative count instead.

@@ -36,17 +36,17 @@ _META_KEYS = {
     'vegetation': 'vegetation',
     'wars':       'wars',
 }
-# Mapping chronicler cause => map.meta.mapStats death-counter (`deaths_age` is what
-# `world_statistics_deaths_natural` aggregates per the DLL; we surface it as `age`).
+# Mapping chronicler cause => list of map.meta.mapStats death-counters to sum.
+# `water` aggregates both `deaths_water` (hydrophobic damage from rain / ocean) and
+# `deaths_drowning` (classic suffocation in deep water) — same flavor in the chronicle.
 _DEATH_CAUSES = {
-    'age':       'deaths_age',
-    'drowning':  'deaths_drowning',
-    'eaten':     'deaths_eaten',
-    'explosion': 'deaths_explosion',
-    'fire':      'deaths_fire',
-    'hunger':    'deaths_hunger',
-    'water':     'deaths_water',
-    'weapon':    'deaths_weapon',
+    'age':       ('deaths_age',),
+    'eaten':     ('deaths_eaten',),
+    'explosion': ('deaths_explosion',),
+    'fire':      ('deaths_fire',),
+    'hunger':    ('deaths_hunger',),
+    'water':     ('deaths_water', 'deaths_drowning'),
+    'weapon':    ('deaths_weapon',),
 }
 
 
@@ -65,7 +65,7 @@ def main() -> int:
     stats['plots_succeeded'] = int(map_stats.get('plotsSucceeded', 0))
     # `alliances` isn't surfaced in map.meta — fall back to the compressed save.
     stats['alliances'] = len(load_save().get('alliances') or [])
-    deaths = {k: int(map_stats.get(v, 0)) for k, v in _DEATH_CAUSES.items()}
+    deaths = {k: sum(int(map_stats.get(s, 0)) for s in srcs) for k, srcs in _DEATH_CAUSES.items()}
     print(f"world  | {','.join(f'{k}={v}' for k, v in sorted(stats.items()))}")
     print(f"deaths | {','.join(f'{k}={v}' for k, v in sorted(deaths.items()))}")
     return 0
