@@ -306,6 +306,16 @@ def _apply_multipliers(totals: dict) -> None:
             del totals[k]
 
 
+# Final adjustments per `Actor.updateStats` + tooltip render:
+#   • damage += warfare / 5                         (DLL: stats["damage"] += stats["warfare"] / 5)
+#   • damage_range becomes the amplitude in raw hp  (DLL tooltip: int(damage * damage_range))
+def _apply_damage_finalize(totals: dict) -> None:
+    if 'damage' in totals:
+        totals['damage'] = totals['damage'] + totals.get('warfare', 0) / 5
+    if 'damage_range' in totals:
+        totals['damage_range'] = totals.get('damage', 0) * totals['damage_range']
+
+
 # Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat
 # +0.1 to skill_combat / skill_spell when level > 5.
 def _apply_level_scaling(totals: dict, level: int) -> None:
@@ -373,6 +383,7 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _apply_level_scaling(totals, int(actor.get('level') or 0))
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
+    _apply_damage_finalize(totals)
     return _cleanup(totals)
 
 

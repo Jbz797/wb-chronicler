@@ -65,7 +65,6 @@ export class WorldInfoComponent {
     });
 
     return {
-      damage: (current.overview.damage_min + current.overview.damage_max) - (previous.overview.damage_min + previous.overview.damage_max),
       equipment: diffCounts(current.equipment, previous.equipment),
       traits: diffCounts(current.traits, previous.traits),
     };

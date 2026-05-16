@@ -90,12 +90,15 @@
 
         <nz-descriptions nzBordered nzSize="small" nzTitle="Caractéristiques" [nzColumn]="1">
           <nz-descriptions-item [nzTitle]="damageTitle">
-            {{ fav.overview.damage_min }}-{{ fav.overview.damage_max }}
-            <app-delta [value]="deltas()?.damage" />
+            <app-ranked-stat stat="damage" />
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="damageRangeTitle">
+            <app-ranked-stat stat="damage_range" />
           </nz-descriptions-item>
         </nz-descriptions>
 
         <ng-template #damageTitle><img src="assets/img/stats/damage.png" /></ng-template>
+        <ng-template #damageRangeTitle><img src="assets/img/stats/damage_range.png" /></ng-template>
       } @else {
         <nz-empty nzNotFoundContent="Aucun favoris pour l'instant" nzNotFoundImage="assets/img/empty/no-favorite.png" />
       }

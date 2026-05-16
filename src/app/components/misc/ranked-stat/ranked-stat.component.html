@@ -1,7 +1,11 @@
 @if (data(); as d) {
   <div class="stat-row">
     <span>
-      <span [class]="d.current | tier: d.max">{{ d.current }}</span> / {{ d.max }}
+      @if (d.current !== undefined) {
+        <span [class]="d.current | tier: d.max">{{ d.current }}</span> / {{ d.max }}
+      } @else {
+        <span>{{ d.max }}</span>
+      }
       <app-delta [value]="d.valueDelta" />
     </span>
     @if (d.rank <= 8) {

@@ -12,8 +12,10 @@ export interface ChapterMeta {
     equipment: RarityCounts;
     name: string;
     overview: {
-      damage_max: number;
-      damage_min: number;
+      damage: number;
+      damage_range: number;
+      damage_range_rank: number;
+      damage_rank: number;
       health_max: number;
       health_max_rank: number;
       mana_max: number;
