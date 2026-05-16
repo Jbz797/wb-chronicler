@@ -30,6 +30,7 @@ export interface ChapterMeta {
   world: {
     alliances: number;
     books: number;
+    books_read: number;
     cities: number;
     clans: number;
     creatures: number;

@@ -61,6 +61,7 @@ def main() -> int:
     # Current city-buildings — matches the in-game `world_statistics_houses` panel.
     stats['houses'] = int(map_stats.get('housesBuilt', 0)) - int(map_stats.get('housesDestroyed', 0))
     # Cumulative — UI surfaces only the per-chapter delta.
+    stats['books_read'] = int(map_stats.get('booksRead', 0))
     stats['plots_succeeded'] = int(map_stats.get('plotsSucceeded', 0))
     # `alliances` isn't surfaced in map.meta — fall back to the compressed save.
     stats['alliances'] = len(load_save().get('alliances') or [])

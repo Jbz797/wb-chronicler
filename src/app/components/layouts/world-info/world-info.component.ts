@@ -96,6 +96,7 @@ export class WorldInfoComponent {
     { key: 'religions', label: 'Religions' },
     { key: 'books', label: 'Livres' },
     { key: 'equipment', label: 'Équipement' },
+    { key: 'books_read', label: 'Livres lus', useDelta: true },
     { key: 'plots_succeeded', label: 'Complots réussis', useDelta: true },
   ];
   // Per-stat delta on `meta.world` — `null` when no previous chapter to compare.
