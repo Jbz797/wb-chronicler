@@ -14,6 +14,10 @@ export interface ChapterMeta {
     overview: {
       armor: number;
       armor_rank: number;
+      attack_speed: number;
+      attack_speed_rank: number;
+      critical_chance: number;
+      critical_chance_rank: number;
       damage: number;
       damage_range: number;
       damage_range_rank: number;
@@ -22,6 +26,8 @@ export interface ChapterMeta {
       health_max_rank: number;
       mana_max: number;
       mana_max_rank: number;
+      speed: number;
+      speed_rank: number;
       stamina_max: number;
       stamina_max_rank: number;
     };

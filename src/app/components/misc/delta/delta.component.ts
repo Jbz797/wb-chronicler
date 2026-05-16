@@ -12,6 +12,7 @@ import { CompactPipe } from '../../../pipes';
 export class DeltaComponent {
 
   public readonly inverted = input<boolean>(false);
+  public readonly suffix = input<string>('');
   public readonly value = input.required<number | undefined>();
 
 }

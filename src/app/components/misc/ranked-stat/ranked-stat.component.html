@@ -2,13 +2,13 @@
   <div class="stat-row">
     <span>
       @if (d.current !== undefined) {
-        <span [class]="d.current | tier: d.max">{{ d.current | number: numberFormat() }}</span> / {{ d.max | number: numberFormat() }}
+        <span [class]="d.current | tier: d.max">{{ d.current | number: numberFormat() }}</span> / {{ d.max | number: numberFormat() }}{{ suffix() }}
       } @else {
-        <span>{{ d.max | number: numberFormat() }}</span>
+        <span>{{ d.max | number: numberFormat() }}{{ suffix() }}</span>
       }
-      <app-delta [value]="d.valueDelta" />
+      <app-delta [suffix]="suffix()" [value]="d.valueDelta" />
     </span>
-    @if (d.rank <= 8) {
+    @if (showRank() && d.rank <= 8) {
       <span>
         <app-delta [inverted]="true" [value]="d.rankDelta" />
         #{{ d.rank }}
