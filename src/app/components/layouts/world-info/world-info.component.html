@@ -1,8 +1,7 @@
-@if (world(); as w) {
+@let w = world();
+@let c = currentChapter();
+@if (w && c) {
   <h2 class="section-title">{{ w.name }}</h2>
-}
-
-@if (currentChapter(); as c) {
   <p class="world-age">
     <img class="age-icon" [src]="`assets/img/ages/${c.meta.age.id}.png`" />
     {{ c.meta.age.label }}
@@ -121,6 +120,5 @@
     </nz-collapse-panel>
   </nz-collapse>
 } @else {
-  <nz-divider />
   <nz-empty nzNotFoundContent="Aucune donnée à afficher" nzNotFoundImage="assets/img/empty/no-data.png" />
 }

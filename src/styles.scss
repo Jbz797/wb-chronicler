@@ -4,6 +4,15 @@ html,
 body {
   font-family: 'Jersey 15', georgia, sans-serif;
   overflow: hidden;
+  scrollbar-color: $gold $paper-shade;
+  scrollbar-width: thin;
+}
+
+*,
+*::before,
+*::after {
+  scrollbar-color: inherit;
+  scrollbar-width: inherit;
 }
 
 img {
