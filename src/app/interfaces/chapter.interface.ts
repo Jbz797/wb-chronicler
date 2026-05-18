@@ -40,7 +40,11 @@ export interface ChapterMeta {
       lifespan_rank: number;
       mana_max: number;
       mana_max_rank: number;
+      money: number;
+      money_rank: number;
       offspring: number;
+      pecule: number;
+      pecule_rank: number;
       renown: number;
       renown_rank: number;
       speed: number;

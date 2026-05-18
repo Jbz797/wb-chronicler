@@ -62,6 +62,8 @@ export class RankedStatComponent {
     if (k === 'level') return { max: f.overview.level, rank: f.overview.level_rank };
     if (k === 'lifespan') return { max: f.overview.lifespan, rank: f.overview.lifespan_rank };
     if (k === 'mana') return { current: f.stats.mana, max: f.overview.mana_max, rank: f.overview.mana_max_rank };
+    if (k === 'money') return { max: f.overview.money, rank: f.overview.money_rank };
+    if (k === 'pecule') return { max: f.overview.pecule, rank: f.overview.pecule_rank };
     if (k === 'renown') return { max: f.overview.renown, rank: f.overview.renown_rank };
     if (k === 'speed') return { max: f.overview.speed, rank: f.overview.speed_rank };
     if (k === 'stamina') return { current: f.stats.stamina, max: f.overview.stamina_max, rank: f.overview.stamina_max_rank };

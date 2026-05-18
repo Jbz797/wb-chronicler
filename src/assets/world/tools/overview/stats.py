@@ -427,7 +427,13 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     totals['renown'] = int(actor.get('renown') or 0)
     totals['births'] = int(actor.get('births') or 0)
     totals['children'] = ctx['children_by_parent'].get(actor.get('id'), 0)
+    # WB defaults to gen 1 for founders (no parents recorded). Surfaced for the chronicler's
+    # narrative use — not consumed by the UI.
+    totals['generation'] = int(actor.get('generation') or 1)
     totals['kills'] = int(actor.get('kills') or 0)
+    # `pecule` = WB `loot` — value accumulated by work/kills/theft, pending conversion to coins.
+    totals['pecule'] = int(actor.get('loot') or 0)
+    totals['money'] = int(actor.get('money') or 0)
     return _cleanup(totals)
 
 

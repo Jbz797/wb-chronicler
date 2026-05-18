@@ -79,6 +79,12 @@
           <nz-descriptions-item [nzTitle]="killsTitle">
             <app-ranked-stat stat="kills" />
           </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="peculeTitle">
+            <app-ranked-stat stat="pecule" />
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="moneyTitle">
+            <app-ranked-stat stat="money" />
+          </nz-descriptions-item>
         </nz-descriptions>
 
         <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
@@ -87,6 +93,8 @@
         <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
         <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
         <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
+        <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
+        <ng-template #peculeTitle><img src="assets/img/stats/pecule.png" /><span>Pécule</span></ng-template>
         <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
 
         <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
