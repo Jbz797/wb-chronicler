@@ -427,6 +427,7 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     totals['renown'] = int(actor.get('renown') or 0)
     totals['births'] = int(actor.get('births') or 0)
     totals['children'] = ctx['children_by_parent'].get(actor.get('id'), 0)
+    totals['kills'] = int(actor.get('kills') or 0)
     return _cleanup(totals)
 
 

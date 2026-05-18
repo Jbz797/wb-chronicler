@@ -2,8 +2,9 @@ export type DeathCause = 'age' | 'eaten' | 'explosion' | 'fire' | 'hunger'
   | 'water' | 'weapon';
 
 export type RankedStatKind = 'armor' | 'attack_speed' | 'birth_rate' | 'critical_chance'
-  | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'intelligence' | 'level'
-  | 'lifespan' | 'mana' | 'renown' | 'speed' | 'stamina' | 'stewardship' | 'warfare';
+  | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'intelligence' | 'kills'
+  | 'level' | 'lifespan' | 'mana' | 'renown' | 'speed' | 'stamina' | 'stewardship'
+  | 'warfare';
 
 export type RankedStatSnapshot = Partial<Record<'current', number>> & Record<'max' | 'rank', number>;
 

@@ -32,6 +32,8 @@ export interface ChapterMeta {
       health_max_rank: number;
       intelligence: number;
       intelligence_rank: number;
+      kills: number;
+      kills_rank: number;
       level: number;
       level_rank: number;
       lifespan: number;
