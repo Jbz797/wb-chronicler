@@ -57,6 +57,7 @@ export class RankedStatComponent {
     if (k === 'diplomacy') return { max: f.overview.diplomacy, rank: f.overview.diplomacy_rank };
     if (k === 'health') return { current: f.stats.health, max: f.overview.health_max, rank: f.overview.health_max_rank };
     if (k === 'intelligence') return { max: f.overview.intelligence, rank: f.overview.intelligence_rank };
+    if (k === 'level') return { max: f.overview.level, rank: f.overview.level_rank };
     if (k === 'lifespan') return { max: f.overview.lifespan, rank: f.overview.lifespan_rank };
     if (k === 'mana') return { current: f.stats.mana, max: f.overview.mana_max, rank: f.overview.mana_max_rank };
     if (k === 'speed') return { max: f.overview.speed, rank: f.overview.speed_rank };

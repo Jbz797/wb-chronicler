@@ -392,10 +392,13 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _add_trait_stats(totals, (ctx['languages_by_id'].get(actor.get('language')) or {}).get('saved_traits') or [], ctx['language_traits'])
     _add_equipment_stats(totals, actor.get('saved_items') or [], ctx['items_by_id'], ctx['equipment']['items'], ctx['equipment']['modifiers'])
     _add_custom_data_float(totals, actor.get('custom_data_float'))
-    _apply_level_scaling(totals, int(actor.get('level') or 0))
+    level = int(actor.get('level') or 0)
+    _apply_level_scaling(totals, level)
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
+    # Surface `level` itself as a stat so it appears in the pipeline output and gets ranked.
+    totals['level'] = level
     return _cleanup(totals)
 
 

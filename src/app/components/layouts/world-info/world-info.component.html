@@ -57,11 +57,18 @@
             <img [src]="`assets/img/sex/${fav.sex}.png`" />
           </nz-descriptions-item>
           <nz-descriptions-item nzTitle="Descripteur">{{ fav.descriptor }}</nz-descriptions-item>
-          <nz-descriptions-item nzTitle="Âge">{{ fav.age }} ans</nz-descriptions-item>
-          <nz-descriptions-item nzTitle="Espérance">
+          <nz-descriptions-item [nzTitle]="ageTitle">{{ fav.age }} ans</nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="lifespanTitle">
             <app-ranked-stat stat="lifespan" />
           </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="levelTitle">
+            <app-ranked-stat stat="level" />
+          </nz-descriptions-item>
         </nz-descriptions>
+
+        <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
+        <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
+        <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
 
         <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
           <nz-descriptions-item [nzSpan]="2" [nzTitle]="healthTitle">
@@ -73,19 +80,23 @@
           <nz-descriptions-item [nzSpan]="2" [nzTitle]="staminaTitle">
             <app-ranked-stat stat="stamina" />
           </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="happinessTitle">
+          <nz-descriptions-item [nzSpan]="2" [nzTitle]="happinessTitle">
             <span [class]="fav.stats.happiness | tier: 100">{{ fav.stats.happiness }}</span>
           </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="nutritionTitle">
+          <nz-descriptions-item [nzSpan]="2" [nzTitle]="nutritionTitle">
             <span [class]="fav.stats.nutrition | tier: 100">{{ fav.stats.nutrition }}</span>
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzSpan]="2" [nzTitle]="speedTitle">
+            <app-ranked-stat stat="speed" />
           </nz-descriptions-item>
         </nz-descriptions>
 
-        <ng-template #healthTitle><img src="assets/img/stats/health.png" /></ng-template>
-        <ng-template #happinessTitle><img src="assets/img/stats/happiness.png" /></ng-template>
-        <ng-template #manaTitle><img src="assets/img/stats/mana.png" /></ng-template>
-        <ng-template #nutritionTitle><img src="assets/img/stats/nutrition.png" /></ng-template>
-        <ng-template #staminaTitle><img src="assets/img/stats/stamina.png" /></ng-template>
+        <ng-template #healthTitle><img src="assets/img/stats/health.png" /><span>Santé</span></ng-template>
+        <ng-template #happinessTitle><img src="assets/img/stats/happiness.png" /><span>Bonheur</span></ng-template>
+        <ng-template #manaTitle><img src="assets/img/stats/mana.png" /><span>Mana</span></ng-template>
+        <ng-template #nutritionTitle><img src="assets/img/stats/nutrition.png" /><span>Satiété</span></ng-template>
+        <ng-template #speedTitle><img src="assets/img/stats/speed.png" /><span>Vitesse</span></ng-template>
+        <ng-template #staminaTitle><img src="assets/img/stats/stamina.png" /><span>Vigueur</span></ng-template>
 
         <app-rarity-stats title="Nombre de traits" [counts]="fav.traits" [deltas]="deltas()?.traits ?? null" />
         <app-rarity-stats title="Équipement" [counts]="fav.equipment" [deltas]="deltas()?.equipment ?? null" />
@@ -121,9 +132,6 @@
           <nz-descriptions-item [nzTitle]="attackSpeedTitle">
             <app-ranked-stat stat="attack_speed" />
           </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="speedTitle">
-            <app-ranked-stat stat="speed" />
-          </nz-descriptions-item>
         </nz-descriptions>
 
         <ng-template #armorTitle><img src="assets/img/stats/armor.png" /><span>Armure</span></ng-template>
@@ -133,7 +141,6 @@
         <ng-template #damageRangeTitle><img src="assets/img/stats/damage_range.png" /><span>Aléa</span></ng-template>
         <ng-template #diplomacyTitle><img src="assets/img/stats/diplomacy.png" /><span>Diplomatie</span></ng-template>
         <ng-template #intelligenceTitle><img src="assets/img/stats/intelligence.png" /><span>Intelligence</span></ng-template>
-        <ng-template #speedTitle><img src="assets/img/stats/speed.png" /><span>Vitesse</span></ng-template>
         <ng-template #stewardshipTitle><img src="assets/img/stats/stewardship.png" /><span>Intendance</span></ng-template>
         <ng-template #warfareTitle><img src="assets/img/stats/warfare.png" /><span>Martial</span></ng-template>
       } @else {

@@ -94,10 +94,7 @@
 
       .ant-descriptions-item-label {
         text-align: right;
-
-        &:has(> img:only-child) {
-          text-align: center;
-        }
+        white-space: nowrap;
       }
 
       .ant-descriptions-item-label,
