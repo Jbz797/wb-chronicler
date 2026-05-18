@@ -334,6 +334,10 @@ RENAMES = {'health': 'health_max', 'mana': 'mana_max', 'stamina': 'stamina_max'}
 # Stats kept as 1-decimal floats — integer truncate would lose meaningful precision
 # (damage_range is typically `damage × ratio` where ratio < 1).
 KEEP_DECIMAL = {'damage_range'}
+# Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
+# stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
+DROP = {'accuracy', 'birth_rate', 'cities', 'critical_damage_multiplier', 'knockback',
+        'loyalty_traits', 'mass', 'mass_2', 'offspring', 'range', 'targets'}
 
 
 def _cleanup(totals: dict) -> dict:
@@ -342,6 +346,7 @@ def _cleanup(totals: dict) -> dict:
     # actor's post-pipeline maximum HP/MP, the semantically useful name for the chronicler.
     result = {}
     for k, v in totals.items():
+        if k in DROP: continue
         if isinstance(v, float):
             v = round(v, 1) if k in KEEP_DECIMAL else int(v)
         if v: result[RENAMES.get(k, k)] = v

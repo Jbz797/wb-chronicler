@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 16/05/26 17:03</p>
+<p class="metadata">Date de mise à jour : 18/05/26 15:43</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -108,16 +108,32 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
     "overview": {            // Stats agrégées via `tools/overview/stats.py <id>` + rangs via `rank.py <id>`
       "armor": 0,
       "armor_rank": 0,
+      "attack_speed": 0,
+      "attack_speed_rank": 0,
+      "critical_chance": 0,
+      "critical_chance_rank": 0,
       "damage": 0,
       "damage_range": 0.0,
       "damage_range_rank": 0,
       "damage_rank": 0,
+      "diplomacy": 0,
+      "diplomacy_rank": 0,
       "health_max": 0,
       "health_max_rank": 0,
+      "intelligence": 0,
+      "intelligence_rank": 0,
+      "lifespan": 0,
+      "lifespan_rank": 0,
       "mana_max": 0,
       "mana_max_rank": 0,
+      "speed": 0,
+      "speed_rank": 0,
       "stamina_max": 0,
-      "stamina_max_rank": 0
+      "stamina_max_rank": 0,
+      "stewardship": 0,
+      "stewardship_rank": 0,
+      "warfare": 0,
+      "warfare_rank": 0
     },
     "sex": "",               // "male" ou "female" (`sex: 1` = female, absent = male)
     "stats": {               // Stats courantes

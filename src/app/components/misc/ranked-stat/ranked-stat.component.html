@@ -6,9 +6,9 @@
       } @else {
         <span>{{ d.max | number: numberFormat() }}{{ suffix() }}</span>
       }
-      <app-delta [suffix]="suffix()" [value]="d.valueDelta" />
+      <app-delta [suffix]="deltaSuffix()" [value]="d.valueDelta" />
     </span>
-    @if (showRank() && d.rank <= 8) {
+    @if (showRank() && d.rank <= 5) {
       <span>
         <app-delta [inverted]="true" [value]="d.rankDelta" />
         #{{ d.rank }}
