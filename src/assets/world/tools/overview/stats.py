@@ -349,7 +349,7 @@ RENAMES = {'health': 'health_max', 'mana': 'mana_max', 'stamina': 'stamina_max'}
 KEEP_DECIMAL = {'damage_range'}
 # Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
 # stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
-DROP = {'accuracy', 'birth_rate', 'cities', 'critical_damage_multiplier', 'knockback',
+DROP = {'accuracy', 'cities', 'critical_damage_multiplier', 'knockback',
         'loyalty_traits', 'mass', 'mass_2', 'range', 'targets'}
 
 

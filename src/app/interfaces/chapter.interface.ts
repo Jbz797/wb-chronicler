@@ -16,6 +16,8 @@ export interface ChapterMeta {
       armor_rank: number;
       attack_speed: number;
       attack_speed_rank: number;
+      birth_rate: number;
+      birth_rate_rank: number;
       births: number;
       children: number;
       critical_chance: number;

@@ -51,6 +51,7 @@ export class RankedStatComponent {
     const k = this.stat();
     if (k === 'armor') return { max: f.overview.armor, rank: f.overview.armor_rank };
     if (k === 'attack_speed') return { max: f.overview.attack_speed, rank: f.overview.attack_speed_rank };
+    if (k === 'birth_rate') return { max: f.overview.birth_rate, rank: f.overview.birth_rate_rank };
     if (k === 'critical_chance') return { max: f.overview.critical_chance, rank: f.overview.critical_chance_rank };
     if (k === 'damage') return { max: f.overview.damage, rank: f.overview.damage_rank };
     if (k === 'damage_range') return { max: f.overview.damage_range, rank: f.overview.damage_range_rank };
