@@ -53,6 +53,7 @@ Output: `actor_id | <stat>=<value>,...` (alphabetical, zeros dropped).
 # the `bad` gene would still trigger BAD on neighbors. None of our observed subspecies
 # place `bad` on a voided locus, but if a divergence appears, gate on void_set here.
 import json
+import math
 import sys
 from functools import cache
 from pathlib import Path
@@ -319,6 +320,18 @@ def _apply_damage_finalize(totals: dict) -> None:
         totals['critical_chance'] = totals['critical_chance'] * 100
 
 
+# Per `Actor.calculateOffspringBasedOnAge`: scale `offspring` by an age-bracket multiplier
+# so the displayed max matches the in-game tooltip (e.g. raw 3 → 2 for a mature actor).
+def _apply_offspring_age_scaling(totals: dict, age_ratio: float) -> None:
+    if 'offspring' not in totals: return
+    if age_ratio > 0.9: mult = 0.1
+    elif age_ratio > 0.7: mult = 0.2
+    elif age_ratio > 0.5: mult = 0.5
+    elif age_ratio > 0.3: mult = 0.8
+    else: mult = 1.0
+    totals['offspring'] = math.ceil(totals['offspring'] * mult)
+
+
 # Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat
 # +0.1 to skill_combat / skill_spell when level > 5.
 def _apply_level_scaling(totals: dict, level: int) -> None:
@@ -337,7 +350,7 @@ KEEP_DECIMAL = {'damage_range'}
 # Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
 # stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
 DROP = {'accuracy', 'birth_rate', 'cities', 'critical_damage_multiplier', 'knockback',
-        'loyalty_traits', 'mass', 'mass_2', 'offspring', 'range', 'targets'}
+        'loyalty_traits', 'mass', 'mass_2', 'range', 'targets'}
 
 
 def _cleanup(totals: dict) -> dict:
@@ -356,7 +369,14 @@ def _cleanup(totals: dict) -> dict:
 # Build a shared context — preloaded data files + per-id indices on the save.
 # Pass it to `compute_actor_stats` to amortize JSON parsing across many actors (cf. `rank.py`).
 def build_context(save: dict) -> dict:
+    # Index of living children per parent — matches `Actor.get_current_children_count` (DLL).
+    children_by_parent: dict[int, int] = {}
+    for actor in save.get('actors_data', []):
+        for parent_id in (actor.get('parent_id_1'), actor.get('parent_id_2')):
+            if parent_id:
+                children_by_parent[parent_id] = children_by_parent.get(parent_id, 0) + 1
     return {
+        'children_by_parent': children_by_parent,
         'clan_traits':       json.load(_CLAN_TRAITS_DATA.open()),
         'clans_by_id':       {c['id']: c for c in save.get('clans', [])},
         'creature_traits':   json.load(_CREATURE_TRAITS_DATA.open()),
@@ -368,6 +388,7 @@ def build_context(save: dict) -> dict:
         'species_data':      json.load(_SPECIES_DATA.open()),
         'subspecies_by_id':  {s['id']: s for s in save.get('subspecies', [])},
         'subspecies_traits': json.load(_SUBSPECIES_TRAITS_DATA.open()),
+        'world_time':        float(save['mapStats'].get('world_time') or 0),
     }
 
 
@@ -397,9 +418,15 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
+    # Age ratio = (world_time - created_time) / (lifespan months) — months because world_time is in months.
+    age_months = ctx['world_time'] - float(actor.get('created_time') or 0)
+    lifespan_months = totals.get('lifespan', 0) * 60
+    _apply_offspring_age_scaling(totals, age_months / lifespan_months if lifespan_months else 0)
     # Surface actor-level attributes (not derived) so they appear in the pipeline output + get ranked.
     totals['level'] = level
     totals['renown'] = int(actor.get('renown') or 0)
+    totals['births'] = int(actor.get('births') or 0)
+    totals['children'] = ctx['children_by_parent'].get(actor.get('id'), 0)
     return _cleanup(totals)
 
 

@@ -16,6 +16,8 @@ export interface ChapterMeta {
       armor_rank: number;
       attack_speed: number;
       attack_speed_rank: number;
+      births: number;
+      children: number;
       critical_chance: number;
       critical_chance_rank: number;
       damage: number;
@@ -34,6 +36,7 @@ export interface ChapterMeta {
       lifespan_rank: number;
       mana_max: number;
       mana_max_rank: number;
+      offspring: number;
       renown: number;
       renown_rank: number;
       speed: number;
