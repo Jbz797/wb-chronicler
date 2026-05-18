@@ -397,8 +397,9 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
-    # Surface `level` itself as a stat so it appears in the pipeline output and gets ranked.
+    # Surface actor-level attributes (not derived) so they appear in the pipeline output + get ranked.
     totals['level'] = level
+    totals['renown'] = int(actor.get('renown') or 0)
     return _cleanup(totals)
 
 

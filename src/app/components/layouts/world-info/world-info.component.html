@@ -64,11 +64,15 @@
           <nz-descriptions-item [nzTitle]="levelTitle">
             <app-ranked-stat stat="level" />
           </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="renownTitle">
+            <app-ranked-stat stat="renown" />
+          </nz-descriptions-item>
         </nz-descriptions>
 
         <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
         <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
         <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
+        <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
 
         <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
           <nz-descriptions-item [nzSpan]="2" [nzTitle]="healthTitle">

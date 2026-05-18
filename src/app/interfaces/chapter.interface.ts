@@ -34,6 +34,8 @@ export interface ChapterMeta {
       lifespan_rank: number;
       mana_max: number;
       mana_max_rank: number;
+      renown: number;
+      renown_rank: number;
       speed: number;
       speed_rank: number;
       stamina_max: number;
