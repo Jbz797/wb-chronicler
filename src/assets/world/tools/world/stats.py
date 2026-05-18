@@ -40,11 +40,11 @@ _META_KEYS = {
 # `water` aggregates both `deaths_water` (hydrophobic damage from rain / ocean) and
 # `deaths_drowning` (classic suffocation in deep water) — same flavor in the chronicle.
 _DEATH_CAUSES = {
-    'age':       ('deaths_age',),
     'eaten':     ('deaths_eaten',),
     'explosion': ('deaths_explosion',),
     'fire':      ('deaths_fire',),
     'hunger':    ('deaths_hunger',),
+    'old_age':   ('deaths_age',),
     'water':     ('deaths_water', 'deaths_drowning'),
     'weapon':    ('deaths_weapon',),
 }

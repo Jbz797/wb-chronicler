@@ -68,7 +68,7 @@
             <app-ranked-stat stat="renown" />
           </nz-descriptions-item>
           <nz-descriptions-item [nzTitle]="childrenTitle">
-            {{ fav.overview.children }} / {{ fav.overview.offspring }}
+            {{ fav.overview.children }} / {{ fav.overview.max_children }}
             @if (fav.overview.births !== fav.overview.children) {
               <em>({{ fav.overview.births }} naissances)</em>
             }
@@ -79,8 +79,8 @@
           <nz-descriptions-item [nzTitle]="killsTitle">
             <app-ranked-stat stat="kills" />
           </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="peculeTitle">
-            <app-ranked-stat stat="pecule" />
+          <nz-descriptions-item [nzTitle]="earningsTitle">
+            <app-ranked-stat stat="earnings" />
           </nz-descriptions-item>
           <nz-descriptions-item [nzTitle]="moneyTitle">
             <app-ranked-stat stat="money" />
@@ -93,8 +93,8 @@
         <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
         <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
         <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
+        <ng-template #earningsTitle><img src="assets/img/stats/earnings.png" /><span>Pécule</span></ng-template>
         <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
-        <ng-template #peculeTitle><img src="assets/img/stats/pecule.png" /><span>Pécule</span></ng-template>
         <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
 
         <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
@@ -129,47 +129,28 @@
         <app-rarity-stats title="Équipement" [counts]="fav.equipment" [deltas]="deltas()?.equipment ?? null" />
 
         <nz-descriptions nzBordered nzSize="small" nzTitle="Compétences" [nzColumn]="1">
-          <nz-descriptions-item [nzTitle]="diplomacyTitle">
-            <app-ranked-stat stat="diplomacy" />
-          </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="warfareTitle">
-            <app-ranked-stat stat="warfare" />
-          </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="stewardshipTitle">
-            <app-ranked-stat stat="stewardship" />
-          </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="intelligenceTitle">
-            <app-ranked-stat stat="intelligence" />
-          </nz-descriptions-item>
+          @for (s of skillStats; track s.key) {
+            <ng-template #titleRef>
+              <img [src]="`assets/img/stats/${s.key}.png`" />
+              <span>{{ s.label }}</span>
+            </ng-template>
+            <nz-descriptions-item [nzTitle]="titleRef">
+              <app-ranked-stat [stat]="s.key" />
+            </nz-descriptions-item>
+          }
         </nz-descriptions>
 
         <nz-descriptions nzBordered nzSize="small" nzTitle="Combat" [nzColumn]="1">
-          <nz-descriptions-item [nzTitle]="damageTitle">
-            <app-ranked-stat stat="damage" />
-          </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="damageRangeTitle">
-            <app-ranked-stat stat="damage_range" />
-          </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="armorTitle">
-            <app-ranked-stat stat="armor" />
-          </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="criticalChanceTitle">
-            <app-ranked-stat stat="critical_chance" />
-          </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="attackSpeedTitle">
-            <app-ranked-stat stat="attack_speed" />
-          </nz-descriptions-item>
+          @for (s of combatStats; track s.key) {
+            <ng-template #titleRef>
+              <img [src]="`assets/img/stats/${s.key}.png`" />
+              <span>{{ s.label }}</span>
+            </ng-template>
+            <nz-descriptions-item [nzTitle]="titleRef">
+              <app-ranked-stat [stat]="s.key" />
+            </nz-descriptions-item>
+          }
         </nz-descriptions>
-
-        <ng-template #armorTitle><img src="assets/img/stats/armor.png" /><span>Armure</span></ng-template>
-        <ng-template #attackSpeedTitle><img src="assets/img/stats/attack_speed.png" /><span>Cadence</span></ng-template>
-        <ng-template #criticalChanceTitle><img src="assets/img/stats/critical_chance.png" /><span>Critiques</span></ng-template>
-        <ng-template #damageTitle><img src="assets/img/stats/damage.png" /><span>Dommages</span></ng-template>
-        <ng-template #damageRangeTitle><img src="assets/img/stats/damage_range.png" /><span>Aléa</span></ng-template>
-        <ng-template #diplomacyTitle><img src="assets/img/stats/diplomacy.png" /><span>Diplomatie</span></ng-template>
-        <ng-template #intelligenceTitle><img src="assets/img/stats/intelligence.png" /><span>Intelligence</span></ng-template>
-        <ng-template #stewardshipTitle><img src="assets/img/stats/stewardship.png" /><span>Intendance</span></ng-template>
-        <ng-template #warfareTitle><img src="assets/img/stats/warfare.png" /><span>Martial</span></ng-template>
       } @else {
         <nz-empty nzNotFoundContent="Aucun favoris pour l'instant" nzNotFoundImage="assets/img/empty/no-favorite.png" />
       }

@@ -7,7 +7,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
-import { HISTORY_DIR } from '../../../constants';
+import { COMBAT_STATS, DEATH_CAUSES, HISTORY_DIR, SKILL_STATS, WORLD_STATS } from '../../../constants';
 import { DeathCause, RarityCounts, World, WorldStat } from '../../../interfaces';
 import { CompactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services/chronicler.service';
@@ -35,21 +35,14 @@ export class WorldInfoComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  protected readonly deathCauses: { key: DeathCause; label: string }[] = [
-    { key: 'weapon', label: 'Armes' },
-    { key: 'age', label: 'Âge' },
-    { key: 'eaten', label: 'Dévorés' },
-    { key: 'fire', label: 'Feu' },
-    { key: 'water', label: 'Eau' },
-    { key: 'explosion', label: 'Explosion' },
-    { key: 'hunger', label: 'Faim' },
-  ];
+  protected readonly combatStats = COMBAT_STATS;
+  protected readonly deathCauses = DEATH_CAUSES;
   // Per-cause death count between previous chapter and current — at C1 the baseline is 0 so we get the cumulative count instead.
   protected readonly deathsSincePrevious = computed(() => {
     const current = this.currentChapter()?.meta.world.deaths_by_cause;
     if (!current) return null;
     const previous = this._chronicler.previousChapter()?.meta.world.deaths_by_cause;
-    return Object.fromEntries(this.deathCauses.map(({ key }) => [key, current[key] - (previous?.[key] ?? 0)])) as Record<DeathCause, number>;
+    return Object.fromEntries(this.deathCauses.map(({ key }): [DeathCause, number] => [key, current[key] - (previous?.[key] ?? 0)])) as Record<DeathCause, number>;
   });
   // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — ranked stats handle their own deltas.
   protected readonly deltas = computed(() => {
@@ -69,42 +62,20 @@ export class WorldInfoComponent {
       traits: diffCounts(current.traits, previous.traits),
     };
   });
+  protected readonly skillStats = SKILL_STATS;
   // Sum of per-cause death counts since previous chapter — `null` mirrors `deathsSincePrevious`.
   protected readonly totalDeathsSincePrevious = computed(() => {
     const breakdown = this.deathsSincePrevious();
     return breakdown ? Object.values(breakdown).reduce((sum, v) => sum + v, 0) : null;
   });
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
-  // Display order — by thematic layers (demography → environment → society → conflict → culture → activity).
-  protected readonly worldStats: { key: WorldStat; label: string; useDelta?: boolean }[] = [
-    { key: 'population', label: 'Population' },
-    { key: 'creatures', label: 'Créatures' },
-    { key: 'subspecies', label: 'Sous-espèces' },
-    { key: 'vegetation', label: 'Végétation' },
-    { key: 'frozen_tiles', label: 'Tuiles gelées' },
-    { key: 'houses', label: 'Maisons' },
-    { key: 'kingdoms', label: 'Royaumes' },
-    { key: 'cities', label: 'Villes' },
-    { key: 'clans', label: 'Clans' },
-    { key: 'families', label: 'Familles' },
-    { key: 'relations', label: 'Relations' },
-    { key: 'alliances', label: 'Alliances' },
-    { key: 'wars', label: 'Guerres' },
-    { key: 'armies', label: 'Armées' },
-    { key: 'plots_succeeded', label: 'Complots réussis', useDelta: true },
-    { key: 'languages', label: 'Langues' },
-    { key: 'cultures', label: 'Cultures' },
-    { key: 'religions', label: 'Religions' },
-    { key: 'equipment', label: 'Équipement' },
-    { key: 'books', label: 'Livres' },
-    { key: 'books_read', label: 'Livres lus', useDelta: true },
-  ];
+  protected readonly worldStats = WORLD_STATS;
   // Per-stat delta on `meta.world` — `null` when no previous chapter to compare.
   protected readonly worldDeltas = computed(() => {
     const current = this.currentChapter()?.meta.world;
     const previous = this._chronicler.previousChapter()?.meta.world;
     if (!current || !previous) return null;
-    return Object.fromEntries(this.worldStats.map(({ key }) => [key, current[key] - previous[key]])) as Record<WorldStat, number>;
+    return Object.fromEntries(this.worldStats.map(({ key }): [WorldStat, number] => [key, current[key] - previous[key]])) as Record<WorldStat, number>;
   });
 
 }

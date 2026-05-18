@@ -56,6 +56,7 @@ export class RankedStatComponent {
     if (k === 'damage') return { max: f.overview.damage, rank: f.overview.damage_rank };
     if (k === 'damage_range') return { max: f.overview.damage_range, rank: f.overview.damage_range_rank };
     if (k === 'diplomacy') return { max: f.overview.diplomacy, rank: f.overview.diplomacy_rank };
+    if (k === 'earnings') return { max: f.overview.earnings, rank: f.overview.earnings_rank };
     if (k === 'health') return { current: f.stats.health, max: f.overview.health_max, rank: f.overview.health_max_rank };
     if (k === 'intelligence') return { max: f.overview.intelligence, rank: f.overview.intelligence_rank };
     if (k === 'kills') return { max: f.overview.kills, rank: f.overview.kills_rank };
@@ -63,7 +64,6 @@ export class RankedStatComponent {
     if (k === 'lifespan') return { max: f.overview.lifespan, rank: f.overview.lifespan_rank };
     if (k === 'mana') return { current: f.stats.mana, max: f.overview.mana_max, rank: f.overview.mana_max_rank };
     if (k === 'money') return { max: f.overview.money, rank: f.overview.money_rank };
-    if (k === 'pecule') return { max: f.overview.pecule, rank: f.overview.pecule_rank };
     if (k === 'renown') return { max: f.overview.renown, rank: f.overview.renown_rank };
     if (k === 'speed') return { max: f.overview.speed, rank: f.overview.speed_rank };
     if (k === 'stamina') return { current: f.stats.stamina, max: f.overview.stamina_max, rank: f.overview.stamina_max_rank };

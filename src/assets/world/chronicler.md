@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 18/05/26 15:43</p>
+<p class="metadata">Date de mise à jour : 19/05/26 00:06</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -72,11 +72,11 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
     "creatures": 0,
     "cultures": 0,
     "deaths_by_cause": {
-      "age": 0,
       "eaten": 0,
       "explosion": 0,
       "fire": 0,
       "hunger": 0,
+      "old_age": 0,
       "water": 0,
       "weapon": 0
     },
@@ -110,6 +110,10 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
       "armor_rank": 0,
       "attack_speed": 0,
       "attack_speed_rank": 0,
+      "birth_rate": 0,
+      "birth_rate_rank": 0,
+      "births": 0,
+      "children": 0,
       "critical_chance": 0,
       "critical_chance_rank": 0,
       "damage": 0,
@@ -118,14 +122,25 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
       "damage_rank": 0,
       "diplomacy": 0,
       "diplomacy_rank": 0,
+      "earnings": 0,
+      "earnings_rank": 0,
       "health_max": 0,
       "health_max_rank": 0,
       "intelligence": 0,
       "intelligence_rank": 0,
+      "kills": 0,
+      "kills_rank": 0,
+      "level": 0,
+      "level_rank": 0,
       "lifespan": 0,
       "lifespan_rank": 0,
       "mana_max": 0,
       "mana_max_rank": 0,
+      "max_children": 0,
+      "money": 0,
+      "money_rank": 0,
+      "renown": 0,
+      "renown_rank": 0,
       "speed": 0,
       "speed_rank": 0,
       "stamina_max": 0,

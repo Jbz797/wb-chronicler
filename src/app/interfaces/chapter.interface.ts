@@ -28,6 +28,8 @@ export interface ChapterMeta {
       damage_rank: number;
       diplomacy: number;
       diplomacy_rank: number;
+      earnings: number;
+      earnings_rank: number;
       health_max: number;
       health_max_rank: number;
       intelligence: number;
@@ -40,11 +42,9 @@ export interface ChapterMeta {
       lifespan_rank: number;
       mana_max: number;
       mana_max_rank: number;
+      max_children: number;
       money: number;
       money_rank: number;
-      offspring: number;
-      pecule: number;
-      pecule_rank: number;
       renown: number;
       renown_rank: number;
       speed: number;
@@ -72,11 +72,11 @@ export interface ChapterMeta {
     creatures: number;
     cultures: number;
     deaths_by_cause: {
-      age: number;
       eaten: number;
       explosion: number;
       fire: number;
       hunger: number;
+      old_age: number;
       water: number;
       weapon: number;
     };

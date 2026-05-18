@@ -343,7 +343,7 @@ def _apply_level_scaling(totals: dict, level: int) -> None:
             totals[stat] = totals.get(stat, 0) + LEVEL_VETERAN_SKILL_BONUS
 
 
-RENAMES = {'health': 'health_max', 'mana': 'mana_max', 'stamina': 'stamina_max'}
+RENAMES = {'health': 'health_max', 'mana': 'mana_max', 'offspring': 'max_children', 'stamina': 'stamina_max'}
 # Stats kept as 1-decimal floats — integer truncate would lose meaningful precision
 # (damage_range is typically `damage × ratio` where ratio < 1).
 KEEP_DECIMAL = {'damage_range'}
@@ -431,8 +431,8 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     # narrative use — not consumed by the UI.
     totals['generation'] = int(actor.get('generation') or 1)
     totals['kills'] = int(actor.get('kills') or 0)
-    # `pecule` = WB `loot` — value accumulated by work/kills/theft, pending conversion to coins.
-    totals['pecule'] = int(actor.get('loot') or 0)
+    # `earnings` = WB `loot` — value accumulated by work/kills/theft, pending conversion to coins.
+    totals['earnings'] = int(actor.get('loot') or 0)
     totals['money'] = int(actor.get('money') or 0)
     return _cleanup(totals)
 
