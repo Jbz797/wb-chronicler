@@ -5,8 +5,9 @@
   padding: 1rem;
 
   .map {
-    border: 1px solid rgba($primary, 0.3);
     border-radius: $radius;
+    border: 1px solid rgba($primary, 0.3);
+    image-rendering: auto;
     width: 100%;
   }
 }
