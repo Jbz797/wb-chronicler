@@ -1,0 +1,25 @@
+@use 'variables' as *;
+
+.github-stars {
+  align-items: center;
+  bottom: 0.25rem;
+  color: $text-secondary;
+  display: inline-flex;
+  gap: 0.3rem;
+  left: 50%;
+  opacity: 0.65;
+  position: absolute;
+  transform: translateX(-50%);
+  transition: opacity $transition;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  .github-icon {
+    background-color: currentcolor;
+    height: 0.85rem;
+    mask: url('/assets/img/github.svg') center / contain no-repeat;
+    width: 0.85rem;
+  }
+}

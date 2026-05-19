@@ -4,11 +4,12 @@ import { RouterOutlet } from '@angular/router';
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
 
 import { MapPreviewComponent, NavComponent, WorldInfoComponent } from './components/layouts';
+import { GithubStarsComponent } from './components/misc';
 import { ChroniclerService } from './services/chronicler.service';
 
 @Component({
   selector: 'app-root',
-  imports: [MapPreviewComponent, NavComponent, NzLayoutModule, RouterOutlet, WorldInfoComponent],
+  imports: [GithubStarsComponent, MapPreviewComponent, NavComponent, NzLayoutModule, RouterOutlet, WorldInfoComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
