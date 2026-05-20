@@ -23,7 +23,7 @@ export class ChroniclerService {
         scan((accumulator: Chapter[], { meta, n }) => [
           ...accumulator,
           {
-            label: `C${n} — An ${ChroniclerHelpers.yearFromWorldTime(meta.world_time)}`,
+            label: `C${n} — An ${ChroniclerHelpers.yearFromWorldTime(meta.world.metadata.world_time)}`,
             mdUrl: `${SAVES_DIR}/C${n}/chapter.md`,
             meta,
             previewUrl: `${SAVES_DIR}/C${n}/preview.png`,

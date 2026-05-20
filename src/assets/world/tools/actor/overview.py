@@ -1,28 +1,8 @@
 #!/usr/bin/env python3
-"""Compute an actor's aggregated base stats.
 
-Usage: python3 stats.py <id>
-
-Reads the live save (cf. `CURRENT_SAVE`). Resolves the actor → their species template,
-subspecies, `saved_traits`, `saved_items` and `level`.
-
-Sums five additive sources + one multiplicative pass:
-  1. Species template — `actor.asset_id` via `species/data.json` (clone chain resolved).
-  2. Chromosomes — BAD / GOLDEN modifiers per `chronicler.md § IV "Stats de base"`.
-  3. Subspecies traits — `subspecies.saved_traits` via `subspecies-traits/data.json`.
-  4. Creature traits — `actor.saved_traits` via `creature-traits/data.json`.
-  5. Equipment — `actor.saved_items` via `equipment/data.json` (base item stats + modifiers).
-  6. Level scaling — applied at the end via `SimGlobalAsset.level_mod_bonus_{health,mana,stamina}`:
-       `final = base × (1 + level × mult)` with health=0.05, mana=0.02, stamina=0.02.
-       Level > 5 also grants flat +0.1 to `skill_combat` and `skill_spell`.
-
-⚠️ Naive additive merge: `multiplier_*` stats are summed alongside their base counterparts.
-The game applies them as final multipliers (`final = base × (1 + multiplier)`) — for an
-accurate end-stat estimate the chronicler must apply that step manually until we model it
-here.
-
-Output: `actor_id | <stat>=<value>,...` (alphabetical, zeros dropped).
-"""
+# User-facing docs (usage, available sections) live in `tools/tools.md`. The notes
+# below are for maintainers — algorithm references, gotchas, source pointers.
+#
 # ─── Maintenance / algorithm reference ───
 # Full algorithm spec: `chronicler.md § VI` ("Annexe technique — Génétique et stats de base").
 # All numeric tables (GENE_VALUES, GENE_INDEX, ceil-on-bad exceptions, synergy-always genes)
@@ -40,35 +20,34 @@ Output: `actor_id | <stat>=<value>,...` (alphabetical, zeros dropped).
 #
 # Color synergy uses .NET `System.Random` seeded with `life_dna + gene.GENE_INDEX` to derive
 # each gene's 4-side color signature. The port mirrors .NET's int32 overflow semantics — see
-# `to_int32()` and `SystemRandom`. Color positions per chronicler.md spec use indices on a
+# `_to_int32()` and `_SystemRandom`. Color positions per chronicler.md spec use indices on a
 # *spaced* text (`"XXX XXX XXX XXX XXX"`, 19 chars) at 0/8/10/18 → in our unspaced 15-char
 # text those map to 0/6/8/14. ⚠️ If you ever rewrite the DNA generator to keep the spaces,
 # remember to shift the indices back.
-#
-# `gene_colors` is `@cache`d — each call to `is_golden` traverses 4 neighbors and calls
-# `gene_colors` for both gene and neighbor twice on average, so re-init of SystemRandom (a
-# 220-iteration setup loop) dominated runtime without caching.
-#
-# Known edge case: `is_bad` does NOT currently check `void_set` — a voided locus containing
-# the `bad` gene would still trigger BAD on neighbors. None of our observed subspecies
-# place `bad` on a voided locus, but if a divergence appears, gate on void_set here.
 import json
 import math
+import re
 import sys
+import zlib
 from functools import cache
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from _lib import CURRENT_SAVE, load_save
+# macOS path — mirror chronicler.md § "Emplacement source des saves WorldBox".
+CURRENT_SAVE = Path.home() / 'Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox'
 
-_CLAN_TRAITS_DATA = Path(__file__).parent.parent / 'clan-traits' / 'data.json'
-_CREATURE_TRAITS_DATA = Path(__file__).parent.parent / 'creature-traits' / 'data.json'
-_EQUIPMENT_DATA = Path(__file__).parent.parent / 'equipment' / 'data.json'
-_LANGUAGE_TRAITS_DATA = Path(__file__).parent.parent / 'language-traits' / 'data.json'
-_SPECIES_DATA = Path(__file__).parent.parent / 'species' / 'data.json'
-_SUBSPECIES_TRAITS_DATA = Path(__file__).parent.parent / 'subspecies-traits' / 'data.json'
+_DATAS_DIR = Path(__file__).parent.parent / 'datas'
+_CLAN_TRAITS_DATA = _DATAS_DIR / 'clan-traits.json'
+_CREATURE_TRAITS_DATA = _DATAS_DIR / 'creature-traits.json'
+_EQUIPMENT_DATA = _DATAS_DIR / 'equipment.json'
+_LANGUAGE_TRAITS_DATA = _DATAS_DIR / 'language-traits.json'
+_SPECIES_DATA = _DATAS_DIR / 'species.json'
+_SUBSPECIES_TRAITS_DATA = _DATAS_DIR / 'subspecies-traits.json'
+
+ALL_SECTIONS = ('creature_traits', 'equipment', 'metadata', 'ranks', 'stats')
 
 GRID_COLS = 6
+LEVEL_RE = re.compile(r'(\d+)$')
+MONTHS_PER_YEAR = 60
 
 # Per chronicler.md § VI — gene -> (stat name, value contribution).
 GENE_VALUES = {
@@ -115,6 +94,29 @@ GENE_INDEX = {
 }
 
 COLOR_MAP = {'T': 'red', 'G': 'yellow', 'A': 'green', 'C': 'blue'}
+DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
+SIDE = {(1, 0): 'right', (-1, 0): 'left', (0, 1): 'down', (0, -1): 'up'}
+OPPOSITE = {(1, 0): 'left', (-1, 0): 'right', (0, 1): 'up', (0, -1): 'down'}
+
+# Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / MANA_PER_INTELLIGENCE constants.
+LEVEL_MOD = {'health': 0.05, 'mana': 0.02, 'stamina': 0.02}
+LEVEL_VETERAN_THRESHOLD = 5
+LEVEL_VETERAN_SKILL_BONUS = 0.1
+MANA_PER_INTELLIGENCE = 10
+
+RENAMES = {'health': 'health_max', 'mana': 'mana_max', 'offspring': 'max_children', 'stamina': 'stamina_max'}
+# Stats kept as 1-decimal floats — integer truncate would lose meaningful precision
+# (damage_range is typically `damage × ratio` where ratio < 1).
+KEEP_DECIMAL = {'damage_range'}
+# Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
+# stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
+DROP = {'accuracy', 'cities', 'critical_damage_multiplier', 'knockback',
+        'loyalty_traits', 'mass', 'mass_2', 'range', 'targets'}
+
+
+def load_save() -> dict:
+    with CURRENT_SAVE.open('rb') as f:
+        return json.loads(zlib.decompress(f.read()))
 
 
 # Mirrors C# int32 wrap-around — required because the game's SystemRandom relies on it.
@@ -174,13 +176,6 @@ def _gene_colors(gene: str, life_dna: int) -> dict:
             'down': COLOR_MAP[text[8]], 'right': COLOR_MAP[text[14]]}
 
 
-# `dx`/`dy` → which side of the current gene faces the neighbor.
-SIDE = {(1, 0): 'right', (-1, 0): 'left', (0, 1): 'down', (0, -1): 'up'}
-OPPOSITE = {(1, 0): 'left', (-1, 0): 'right', (0, 1): 'up', (0, -1): 'down'}
-DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
-
-
-# Returns (gene, idx) of neighbor, or (None, ...) for border (off-grid or voided).
 def _neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) -> tuple[str | None, int]:
     rows = len(loci) // GRID_COLS
     x, y = idx % GRID_COLS, idx // GRID_COLS
@@ -196,7 +191,7 @@ def _synergizes(gene: str, ngene: str, dx: int, dy: int, super_set: set[int],
     my_super = my_idx in super_set
     n_super = n_idx in super_set
     if my_super and n_super: return False           # two amplifiers don't synergize with each other
-    if my_super or n_super: return True             # amplifier _synergizes with anything
+    if my_super or n_super: return True             # amplifier synergizes with anything
     if gene in SYNERGY_ALWAYS or ngene in SYNERGY_ALWAYS: return True
     if gene == 'empty' or ngene == 'empty': return False
     return _gene_colors(gene, life_dna).get(SIDE[dx, dy]) == _gene_colors(ngene, life_dna).get(OPPOSITE[dx, dy])
@@ -252,7 +247,6 @@ def _add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> N
             totals[k] = totals.get(k, 0) + v
 
 
-# Add the species template's base stats (already flattened in data.json — clone chain resolved).
 def _add_species_stats(totals: dict, asset_id: str, species_data: dict) -> None:
     for k, v in ((species_data.get(asset_id) or {}).get('stats') or {}).items():
         totals[k] = totals.get(k, 0) + v
@@ -270,18 +264,8 @@ def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, i
                 totals[k] = totals.get(k, 0) + v
 
 
-# Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / MANA_PER_INTELLIGENCE constants.
-LEVEL_MOD = {'health': 0.05, 'mana': 0.02, 'stamina': 0.02}
-LEVEL_VETERAN_THRESHOLD = 5
-LEVEL_VETERAN_SKILL_BONUS = 0.1
-MANA_PER_INTELLIGENCE = 10
-
-
 # Flat additive bonuses applied late in `Actor.updateStats`:
 #   stats["mana"] += int(stats["intelligence"] × MANA_PER_INTELLIGENCE)
-# Intelligence is read AFTER all mergeStats but BEFORE level scaling on mana — order doesn't
-# matter for the final value since level scaling on mana only multiplies what mergeStats wrote
-# (which is 0 for non-mage actors).
 def _apply_intelligence_bonus(totals: dict) -> None:
     intel = totals.get('intelligence', 0)
     if intel:
@@ -296,8 +280,6 @@ def _add_custom_data_float(totals: dict, custom: dict | None) -> None:
 
 
 # Resolve every `multiplier_X` key as a coefficient on stats[X]: `final = base × (1 + multiplier)`.
-# Mirrors `BaseStats.checkMultipliers` called at the end of `Actor.updateStats`. Multipliers from
-# multiple sources have already been summed during merging — applied once here, then dropped.
 def _apply_multipliers(totals: dict) -> None:
     for k in list(totals.keys()):
         if k.startswith('multiplier_'):
@@ -343,33 +325,20 @@ def _apply_level_scaling(totals: dict, level: int) -> None:
             totals[stat] = totals.get(stat, 0) + LEVEL_VETERAN_SKILL_BONUS
 
 
-RENAMES = {'health': 'health_max', 'mana': 'mana_max', 'offspring': 'max_children', 'stamina': 'stamina_max'}
-# Stats kept as 1-decimal floats — integer truncate would lose meaningful precision
-# (damage_range is typically `damage × ratio` where ratio < 1).
-KEEP_DECIMAL = {'damage_range'}
-# Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
-# stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
-DROP = {'accuracy', 'cities', 'critical_damage_multiplier', 'knockback',
-        'loyalty_traits', 'mass', 'mass_2', 'range', 'targets'}
-
-
-def _cleanup(totals: dict) -> dict:
-    # Floor floats to int — the game stores most stats as int32, so 261.9 displays as 261 in-game.
-    # `health` / `mana` are renamed to `health_max` / `mana_max` — the values represent the
-    # actor's post-pipeline maximum HP/MP, the semantically useful name for the chronicler.
+# Floor floats to int (game stores most stats as int32). `health` / `mana` are renamed to
+# `health_max` / `mana_max` — the values represent the actor's post-pipeline maximum.
+def _cleanup_stats(totals: dict) -> dict:
     result = {}
     for k, v in totals.items():
         if k in DROP: continue
         if isinstance(v, float):
             v = round(v, 1) if k in KEEP_DECIMAL else int(v)
         if v: result[RENAMES.get(k, k)] = v
-    return result
+    return dict(sorted(result.items()))
 
 
-# Build a shared context — preloaded data files + per-id indices on the save.
-# Pass it to `compute_actor_stats` to amortize JSON parsing across many actors (cf. `rank.py`).
-def build_context(save: dict) -> dict:
-    # Index of living children per parent — matches `Actor.get_current_children_count` (DLL).
+def _build_context(save: dict) -> dict:
+    # Index of living children per parent — matches `Actor.get_current_children_count`.
     children_by_parent: dict[int, int] = {}
     for actor in save.get('actors_data', []):
         for parent_id in (actor.get('parent_id_1'), actor.get('parent_id_2')):
@@ -394,8 +363,8 @@ def build_context(save: dict) -> dict:
 
 # Aggregate one actor's stats through the full pipeline. `subspecies_base_cache` is optional;
 # when provided, the heavy (species + chromosomes + subspecies traits) base is computed once
-# per subspecies and reused across actors — a 5× speedup when batching (cf. `rank.py`).
-def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
+# per subspecies and reused across actors — a 5× speedup when ranking.
+def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
     sub_id = actor.get('subspecies')
     sub = ctx['subspecies_by_id'].get(sub_id) if sub_id is not None else None
     if sub is None: return {}
@@ -418,33 +387,142 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
-    # Age ratio = (world_time - created_time) / (lifespan months) — months because world_time is in months.
     age_months = ctx['world_time'] - float(actor.get('created_time') or 0)
-    lifespan_months = totals.get('lifespan', 0) * 60
+    lifespan_months = totals.get('lifespan', 0) * MONTHS_PER_YEAR
     _apply_offspring_age_scaling(totals, age_months / lifespan_months if lifespan_months else 0)
-    # Surface actor-level attributes (not derived) so they appear in the pipeline output + get ranked.
+    # Surface actor-level attributes (not derived) so they appear and get ranked.
     totals['level'] = level
     totals['renown'] = int(actor.get('renown') or 0)
     totals['births'] = int(actor.get('births') or 0)
     totals['children'] = ctx['children_by_parent'].get(actor.get('id'), 0)
-    # WB defaults to gen 1 for founders (no parents recorded). Surfaced for the chronicler's
-    # narrative use — not consumed by the UI.
     totals['generation'] = int(actor.get('generation') or 1)
     totals['kills'] = int(actor.get('kills') or 0)
     # `earnings` = WB `loot` — value accumulated by work/kills/theft, pending conversion to coins.
     totals['earnings'] = int(actor.get('loot') or 0)
     totals['money'] = int(actor.get('money') or 0)
-    return _cleanup(totals)
+    return _cleanup_stats(totals)
+
+
+# Standard competition rank (1,2,2,4) for the actor's stats among same-`asset_id` peers.
+def _compute_ranks(actor: dict, ctx: dict, save: dict) -> dict:
+    asset_id = actor.get('asset_id', '')
+    cache: dict = {}
+    peers = [(a['id'], _compute_stats(a, ctx, cache)) for a in save['actors_data'] if a.get('asset_id') == asset_id]
+    own = next(s for aid, s in peers if aid == actor['id'])
+    return {stat: sum(1 for _, s in peers if s.get(stat, 0) > value) + 1 for stat, value in sorted(own.items())}
+
+
+def _equipment_rarity(modifiers: list[str]) -> str:
+    max_level = max((int(m.group(1)) for m in (LEVEL_RE.search(x) for x in modifiers) if m), default=0)
+    if max_level >= 5: return 'Legendary'
+    if max_level >= 4: return 'Epic'
+    if max_level >= 3: return 'Rare'
+    return 'Normal'
+
+
+def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_stats: dict) -> dict:
+    out = dict(item_stats.get(asset_id, {}))
+    for mod in modifiers:
+        for k, v in mod_stats.get(mod, {}).items():
+            out[k] = out.get(k, 0) + v
+    result = {}
+    for k, v in out.items():
+        if isinstance(v, float):
+            v = round(v, 4)
+            if v.is_integer(): v = int(v)
+        if v: result[k] = v
+    return dict(sorted(result.items()))
+
+
+def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
+    sub = ctx['subspecies_by_id'].get(actor.get('subspecies')) or {}
+    clan = ctx['clans_by_id'].get(actor.get('clan')) or {}
+    language = ctx['languages_by_id'].get(actor.get('language')) or {}
+    cities_by_id = {c['id']: c for c in save.get('cities', [])}
+    kingdoms_by_id = {k['id']: k for k in save.get('kingdoms', [])}
+    cultures_by_id = {c['id']: c for c in save.get('cultures', [])}
+    families_by_id = {f['id']: f for f in save.get('families', [])}
+    religions_by_id = {r['id']: r for r in save.get('religions', [])}
+    age_months = ctx['world_time'] - float(actor.get('created_time') or 0)
+    return {
+        'age':        round(age_months / MONTHS_PER_YEAR),
+        'asset_id':   actor.get('asset_id'),
+        'city':       (cities_by_id.get(actor.get('city')) or {}).get('data', {}).get('name'),
+        'clan':       clan.get('name'),
+        'culture':    (cultures_by_id.get(actor.get('culture')) or {}).get('name'),
+        'family':     (families_by_id.get(actor.get('family')) or {}).get('name'),
+        'generation': int(actor.get('generation') or 1),
+        'id':         actor.get('id'),
+        'kingdom':    (kingdoms_by_id.get(actor.get('kingdom')) or {}).get('data', {}).get('name'),
+        'language':   language.get('name'),
+        'name':       actor.get('name'),
+        'religion':   (religions_by_id.get(actor.get('religion')) or {}).get('name'),
+        'sex':        'female' if actor.get('isFemale') else 'male',
+        'subspecies': sub.get('name') or actor.get('subspecies'),
+    }
+
+
+def _build_trait_list(trait_ids: list[str], traits_data: dict, narrative: bool) -> list:
+    out = []
+    for tid in trait_ids or []:
+        entry = traits_data.get(tid) or {}
+        item: dict = {'id': tid}
+        if narrative:
+            if 'rarity' in entry:      item['rarity'] = entry['rarity']
+            if 'description' in entry: item['description'] = entry['description']
+            if 'flavor' in entry:      item['flavor'] = entry['flavor']
+        item['stats'] = entry.get('stats') or {}
+        out.append(item)
+    return out
+
+
+def _build_equipment_list(actor: dict, ctx: dict) -> list:
+    item_stats = ctx['equipment']['items']
+    mod_stats = ctx['equipment']['modifiers']
+    world_time = ctx['world_time']
+    out = []
+    for iid in actor.get('saved_items') or []:
+        item = ctx['items_by_id'].get(iid)
+        if item is None: continue
+        mods = item.get('modifiers') or []
+        ct = item.get('created_time')
+        out.append({
+            'age':        round((world_time - ct) / MONTHS_PER_YEAR) if ct is not None else None,
+            'asset_id':   item['asset_id'],
+            'by':         item.get('by'),
+            'durability': item.get('durability'),
+            'from':       item.get('from'),
+            'id':         iid,
+            'kills':      item.get('kills', 0),
+            'modifiers':  mods,
+            'rarity':     _equipment_rarity(mods),
+            'stats':      _equipment_stats(item['asset_id'], mods, item_stats, mod_stats),
+        })
+    return out
+
+
+def _parse_sections(arg: str | None) -> tuple[str, ...]:
+    if not arg or arg == 'full':
+        return ALL_SECTIONS
+    requested = tuple(s.strip() for s in arg.split(',') if s.strip())
+    unknown = [s for s in requested if s not in ALL_SECTIONS]
+    if unknown:
+        raise ValueError(f'unknown section(s): {",".join(unknown)} — valid: full,{",".join(ALL_SECTIONS)}')
+    return requested
 
 
 def main(argv: list[str]) -> int:
     if not argv:
-        print(__doc__, file=sys.stderr)
+        print('usage: overview.py <id> [sections] — see tools/tools.md', file=sys.stderr)
         return 2
     try: actor_id = int(argv[0])
     except ValueError:
         print(f'invalid id: {argv[0]}', file=sys.stderr)
         return 1
+    try: sections = _parse_sections(argv[1] if len(argv) > 1 else None)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 2
     if not CURRENT_SAVE.exists():
         print(f'no save found at {CURRENT_SAVE}', file=sys.stderr)
         return 2
@@ -453,12 +531,25 @@ def main(argv: list[str]) -> int:
     if actor is None:
         print(f'unknown actor: {actor_id}', file=sys.stderr)
         return 1
-    totals = compute_actor_stats(actor, build_context(save))
-    if not totals:
+    ctx = _build_context(save)
+    sub = ctx['subspecies_by_id'].get(actor.get('subspecies'))
+    if sub is None:
         print(f'no subspecies for actor {actor_id}', file=sys.stderr)
         return 1
-    stats_str = ','.join(f'{k}={v}' for k, v in sorted(totals.items()))
-    print(f"{actor_id} | {stats_str}")
+
+    out: dict = {}
+    if 'creature_traits' in sections:
+        out['creature_traits'] = _build_trait_list(actor.get('saved_traits') or [], ctx['creature_traits'], narrative=True)
+    if 'equipment' in sections:
+        out['equipment'] = _build_equipment_list(actor, ctx)
+    if 'metadata' in sections:
+        out['metadata'] = _build_metadata(actor, ctx, save)
+    if 'ranks' in sections:
+        out['ranks'] = _compute_ranks(actor, ctx, save)
+    if 'stats' in sections:
+        out['stats'] = _compute_stats(actor, ctx)
+
+    print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0
 
 

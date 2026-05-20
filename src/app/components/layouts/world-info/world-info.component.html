@@ -1,10 +1,11 @@
 @let w = world();
 @let c = currentChapter();
 @if (w && c) {
+  @let ageId = c.meta.world.metadata.age_id.replace('age_', '');
   <h2 class="section-title">{{ w.name }}</h2>
   <p class="world-age">
-    <img class="age-icon" [src]="`assets/img/ages/${c.meta.age.id}.png`" />
-    {{ c.meta.age.label }}
+    <img class="age-icon" [src]="`assets/img/ages/${ageId}.png`" />
+    {{ c.meta.age_label }}
   </p>
   <nz-divider />
 
@@ -20,18 +21,23 @@
   <nz-collapse nzAccordion>
     <nz-collapse-panel [nzActive]="true" [nzHeader]="worldStatsHeader">
       <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-        @for (stat of worldStats; track stat.key) {
+        @for (stat of snapshotStats; track stat.key) {
           <ng-template #titleRef>
             <img [src]="`assets/img/world/${stat.key}.png`" />
             <span>{{ stat.label }}</span>
           </ng-template>
           <nz-descriptions-item [nzTitle]="titleRef">
-            @if (stat.useDelta) {
-              <span>{{ worldDeltas()?.[stat.key] ?? c.meta.world[stat.key] | compact }}</span>
-            } @else {
-              <span>{{ c.meta.world[stat.key] | compact }}</span>
-              <app-delta [value]="worldDeltas()?.[stat.key]" />
-            }
+            <span>{{ c.meta.world.snapshot[stat.key] | compact }}</span>
+            <app-delta [value]="snapshotDeltas()?.[stat.key]" />
+          </nz-descriptions-item>
+        }
+        @for (stat of cumulativeStats; track stat.key) {
+          <ng-template #titleRef>
+            <img [src]="`assets/img/world/${stat.key}.png`" />
+            <span>{{ stat.label }}</span>
+          </ng-template>
+          <nz-descriptions-item [nzTitle]="titleRef">
+            {{ cumulativeDeltas()?.[stat.key] ?? c.meta.world.cumulative[stat.key] | compact }}
           </nz-descriptions-item>
         }
       </nz-descriptions>

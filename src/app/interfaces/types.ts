@@ -1,3 +1,5 @@
+export type CumulativeStat = 'books_read' | 'plots_succeeded';
+
 export type DeathCause = 'eaten' | 'explosion' | 'fire' | 'hunger' | 'old_age'
   | 'water' | 'weapon';
 
@@ -8,7 +10,7 @@ export type RankedStatKind = 'armor' | 'attack_speed' | 'birth_rate' | 'critical
 
 export type RankedStatSnapshot = Partial<Record<'current', number>> & Record<'max' | 'rank', number>;
 
-export type WorldStat = 'alliances' | 'armies' | 'books' | 'books_read' | 'cities'
-  | 'clans' | 'creatures' | 'cultures' | 'equipment' | 'families' | 'frozen_tiles'
-  | 'houses' | 'kingdoms' | 'languages' | 'plots_succeeded' | 'population'
-  | 'relations' | 'religions' | 'subspecies' | 'vegetation' | 'wars';
+export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'cities' | 'clans'
+  | 'cultures' | 'diplomatic_relations' | 'equipment' | 'families' | 'frozen_tiles'
+  | 'houses' | 'kingdoms' | 'languages' | 'population' | 'religions' | 'subspecies'
+  | 'vegetation' | 'wars' | 'wild_creatures';

@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+# Primary source: `map.meta` (sibling of `map.wbox`). Falls back to the compressed
+# save only for live-only collections not exposed in `map.meta` (armies, frozen
+# tiles, relations). User-facing docs live in `tools/tools.md`.
+#
+# ⚠️ Output keys must stay self-descriptive — the chronicler reads them with no other
+# context. Prefer disambiguated names (e.g. `wild_creatures` over `creatures`,
+# `diplomatic_relations` over `relations`). Exception: keep the WB-native name when
+# the chronicler also reads it from the raw save (e.g. `world_time`) to avoid
+# friction between our output and the save.
+
+import json
+import sys
+import zlib
+from pathlib import Path
+
+CURRENT_SAVE = Path.home() / 'Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox'
+
+ALL_SECTIONS = ('cumulative', 'metadata', 'snapshot')
+
+# Chronicler key => map.meta top-level key. Most match 1:1; `wild_creatures` aliases `mobs`.
+_SNAPSHOT_KEYS = {
+    'alliances':      'alliances',
+    'books':          'books',
+    'cities':         'cities',
+    'clans':          'clans',
+    'cultures':       'cultures',
+    'equipment':      'equipment',
+    'families':       'families',
+    'kingdoms':       'kingdoms',
+    'languages':      'languages',
+    'population':     'population',
+    'religions':      'religions',
+    'subspecies':     'subspecies',
+    'vegetation':     'vegetation',
+    'wars':           'wars',
+    'wild_creatures': 'mobs',
+}
+
+# `water` aggregates `deaths_water` (hydrophobic damage) + `deaths_drowning` (suffocation).
+_DEATH_CAUSES = {
+    'eaten':     ('deaths_eaten',),
+    'explosion': ('deaths_explosion',),
+    'fire':      ('deaths_fire',),
+    'hunger':    ('deaths_hunger',),
+    'old_age':   ('deaths_age',),
+    'water':     ('deaths_water', 'deaths_drowning'),
+    'weapon':    ('deaths_weapon',),
+}
+
+
+def _build_snapshot(meta: dict, map_stats: dict) -> dict:
+    # `frozen_tiles` / `relations` aren't in `map.meta` — decompress the save.
+    with CURRENT_SAVE.open('rb') as f:
+        save = json.loads(zlib.decompress(f.read()))
+    return dict(sorted({
+        **{k: int(meta.get(v, 0)) for k, v in _SNAPSHOT_KEYS.items()},
+        'armies':                int(map_stats.get('armiesCreated', 0)) - int(map_stats.get('armiesDestroyed', 0)),
+        'diplomatic_relations':  len(save.get('relations') or []),
+        'frozen_tiles':          len(save.get('frozen_tiles') or []),
+        'houses':                int(map_stats.get('housesBuilt', 0)) - int(map_stats.get('housesDestroyed', 0)),  # current city-buildings (matches `world_statistics_houses`)
+    }.items()))
+
+
+def _build_cumulative(map_stats: dict) -> dict:
+    return {
+        'books_read':      int(map_stats.get('booksRead', 0)),
+        'deaths':          dict(sorted((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())),
+        'plots_succeeded': int(map_stats.get('plotsSucceeded', 0)),
+    }
+
+
+def _build_metadata(map_stats: dict) -> dict:
+    return {
+        'age_id':     map_stats.get('world_age_id') or '',               # WorldAgeLibrary key (e.g. `stone_age`)
+        'world_time': round(float(map_stats.get('world_time', 0)), 2),   # months elapsed; 60 = 1 year — name kept aligned with the raw save field
+    }
+
+
+def _parse_sections(arg: str | None) -> tuple[str, ...]:
+    if not arg or arg == 'full': return ALL_SECTIONS
+    requested = tuple(s.strip() for s in arg.split(',') if s.strip())
+    if unknown := [s for s in requested if s not in ALL_SECTIONS]:
+        raise ValueError(f'unknown section(s): {",".join(unknown)} — valid: full,{",".join(ALL_SECTIONS)}')
+    return requested
+
+
+def main(argv: list[str]) -> int:
+    try: sections = _parse_sections(argv[0] if argv else None)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 2
+    meta_path = CURRENT_SAVE.with_name('map.meta')
+    if not meta_path.exists():
+        print(f'no map.meta found next to {CURRENT_SAVE}', file=sys.stderr)
+        return 2
+    meta = json.loads(meta_path.read_text())
+    map_stats = meta.get('mapStats') or {}
+    out: dict = {}
+    if 'cumulative' in sections: out['cumulative'] = _build_cumulative(map_stats)
+    if 'metadata' in sections: out['metadata'] = _build_metadata(map_stats)
+    if 'snapshot' in sections: out['snapshot'] = _build_snapshot(meta, map_stats)
+    print(json.dumps(out, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

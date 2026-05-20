@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 19/05/26 00:06</p>
+<p class="metadata">Date de mise à jour : 20/05/26 09:44</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -58,116 +58,11 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
 
 ```json
 {
-  "age": {                   // Âge en cours
-    "id": "",                // ID standard du jeu
-    "label": ""              // Libellé choisi par le chroniqueur
-  },
-  "world": {                 // Compteurs globaux — agrégés via `tools/world/stats.py`
-    "alliances": 0,
-    "armies": 0,
-    "books": 0,
-    "books_read": 0,
-    "cities": 0,
-    "clans": 0,
-    "creatures": 0,
-    "cultures": 0,
-    "deaths_by_cause": {
-      "eaten": 0,
-      "explosion": 0,
-      "fire": 0,
-      "hunger": 0,
-      "old_age": 0,
-      "water": 0,
-      "weapon": 0
-    },
-    "equipment": 0,
-    "families": 0,
-    "frozen_tiles": 0,
-    "houses": 0,
-    "kingdoms": 0,
-    "languages": 0,
-    "plots_succeeded": 0,
-    "population": 0,
-    "relations": 0,
-    "religions": 0,
-    "subspecies": 0,
-    "vegetation": 0,
-    "wars": 0
-  },
-  "favorite": {              // Favori courant à ce chapitre (`null` tant qu'aucun favori n'a été désigné)
-    "age": 0,                // Âge du favori en années (arrondi à l'année entière, cf. § IV)
-    "asset_id": "",          // Espèce du favori
-    "descriptor": "",        // Descripteur narratif court
-    "equipment": {           // Décompte des items d'équipement par rareté
-      "epic": 0,
-      "legendary": 0,
-      "normal": 0,
-      "rare": 0
-    },
-    "name": "",              // Nom du favori dans les données du jeu
-    "overview": {            // Stats agrégées via `tools/overview/stats.py <id>` + rangs via `rank.py <id>`
-      "armor": 0,
-      "armor_rank": 0,
-      "attack_speed": 0,
-      "attack_speed_rank": 0,
-      "birth_rate": 0,
-      "birth_rate_rank": 0,
-      "births": 0,
-      "children": 0,
-      "critical_chance": 0,
-      "critical_chance_rank": 0,
-      "damage": 0,
-      "damage_range": 0.0,
-      "damage_range_rank": 0,
-      "damage_rank": 0,
-      "diplomacy": 0,
-      "diplomacy_rank": 0,
-      "earnings": 0,
-      "earnings_rank": 0,
-      "health_max": 0,
-      "health_max_rank": 0,
-      "intelligence": 0,
-      "intelligence_rank": 0,
-      "kills": 0,
-      "kills_rank": 0,
-      "level": 0,
-      "level_rank": 0,
-      "lifespan": 0,
-      "lifespan_rank": 0,
-      "mana_max": 0,
-      "mana_max_rank": 0,
-      "max_children": 0,
-      "money": 0,
-      "money_rank": 0,
-      "renown": 0,
-      "renown_rank": 0,
-      "speed": 0,
-      "speed_rank": 0,
-      "stamina_max": 0,
-      "stamina_max_rank": 0,
-      "stewardship": 0,
-      "stewardship_rank": 0,
-      "warfare": 0,
-      "warfare_rank": 0
-    },
-    "sex": "",               // "male" ou "female" (`sex: 1` = female, absent = male)
-    "stats": {               // Stats courantes
-      "happiness": 0,
-      "health": 0,
-      "mana": 0,
-      "nutrition": 0,
-      "stamina": 0
-    },
-    "traits": {              // Décompte des traits par rareté
-      "epic": 0,
-      "legendary": 0,
-      "normal": 0,
-      "rare": 0
-    }
-  },
-  "tags": [],                // Liste de codes événementiels (cf. `history/tags.md`)
-  "title": "",               // Titre forgé par le chroniqueur et utilisé dans le chapitre
-  "world_time": 0            // Valeur du champ `world_time` (en mois ; 60 mois = 1 année)
+  "age_label": "",     // Libellé de l'âge en cours choisi par le chroniqueur (`age_id` vit dans `world`)
+  "favorite": { ... }, // Sortie de `python3 tools/actor/overview.py <id> "full"` (`null` tant qu'aucun favori n'a été désigné)
+  "tags": [],          // Liste de codes événementiels (cf. `history/tags.md`)
+  "title": "",         // Titre forgé par le chroniqueur et utilisé dans le chapitre
+  "world": { ... }     // Sortie de `python3 tools/world/overview.py "full"`
 }
 ```
 
@@ -475,7 +370,7 @@ Quand le chroniqueur veut comprendre d'où vient la valeur d'une stat (notamment
 8. **Bonus dérivés** appliqués en fin de pipeline : level scaling (`× (1 + level × mult)` pour health/mana/stamina) + `mana += int(intelligence × 10)` (MANA_PER_INTELLIGENCE)
 9. **Sources non modélisées** — statuts, culture, religion, profession, era. À enrichir si écart constaté avec l'in-game.
 
-`tools/overview/stats.py <id>` agrège les sources **1 → 8** et restitue les stats finales (health_max, mana_max, stamina_max, intelligence, etc.). Les `multiplier_X` (ex. `fat` → `multiplier_stamina=-0.5`) sont résolus en fin de pipeline via `final = base × (1 + multiplier)`. La source **9** reste à lire manuellement si besoin.
+`tools/actor/overview.py <id>` agrège les sources **1 → 8** et restitue les stats finales (health_max, mana_max, stamina_max, intelligence, etc.). Les `multiplier_X` (ex. `fat` → `multiplier_stamina=-0.5`) sont résolus en fin de pipeline via `final = base × (1 + multiplier)`. La source **9** reste à lire manuellement si besoin.
 
 ---
 

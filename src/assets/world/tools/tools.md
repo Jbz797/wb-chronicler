@@ -1,14 +1,10 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 15/05/26 23:09</p>
+<p class="metadata">Date de mise à jour : 20/05/26 09:44</p>
 
-| Script | Usage | Sortie |
-|--------|-------|--------|
-| `clan-traits/stats.py <id> [<id>...]` | Résout un ou plusieurs traits de clan. | Une ligne par trait : `id \| stats` |
-| `creature-traits/lookup.py <id> [<id>...]` | Résout un ou plusieurs traits de créature. | Une ligne par trait : `id \| rareté \| description \| flavor \| stats` |
-| `equipment/lookup.py <id> [<id>...]` | Résout un ou plusieurs items d'équipement. | Une ligne par item : `id \| rareté \| asset_id \| durabilité \| by \| from \| kills \| âge \| stats` |
-| `language-traits/stats.py <id> [<id>...]` | Résout un ou plusieurs traits de langue. | Une ligne par trait : `id \| stats` |
-| `overview/rank.py <id>` | Classe un acteur sur chacune de ses stats parmi ceux de son espèce. | `id \| ranks` |
-| `overview/stats.py <id>` | Calcule les stats agrégées d'un acteur. | `id \| stats` |
-| `subspecies-traits/stats.py <id> [<id>...]` | Résout un ou plusieurs traits de sous-espèce. | Une ligne par trait : `id \| stats` |
-| `world/stats.py` | Agrège les compteurs globaux du monde + détail des causes de mortalité. | Deux lignes : `world  \| stats` et `deaths \| stats` |
+Invoquer chaque script via `python3 tools/<commande>`. Sortie : objet JSON sur `stdout`. `sections` accepte une liste séparée par des virgules (ex. `stats,ranks`) — `full` (défaut) renvoie toutes les sections.
+
+| Commande | Sections |
+|----------|----------|
+| `actor/overview.py <id> [sections]` | `full`, `creature_traits`, `equipment`, `metadata`, `ranks`, `stats` |
+| `world/overview.py [sections]` | `full`, `cumulative`, `metadata`, `snapshot` |

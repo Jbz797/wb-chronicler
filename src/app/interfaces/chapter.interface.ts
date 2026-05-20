@@ -4,7 +4,7 @@ import { RarityCounts } from './rarity-counts.interface';
 export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 
 export interface ChapterMeta {
-  age: { id: string; label: string };
+  age_label: string;
   favorite: {
     age: number;
     asset_id: string;
@@ -63,36 +63,43 @@ export interface ChapterMeta {
   tags: string[];
   title: string;
   world: {
-    alliances: number;
-    armies: number;
-    books: number;
-    books_read: number;
-    cities: number;
-    clans: number;
-    creatures: number;
-    cultures: number;
-    deaths_by_cause: {
-      eaten: number;
-      explosion: number;
-      fire: number;
-      hunger: number;
-      old_age: number;
-      water: number;
-      weapon: number;
+    cumulative: {
+      books_read: number;
+      deaths: {
+        eaten: number;
+        explosion: number;
+        fire: number;
+        hunger: number;
+        old_age: number;
+        water: number;
+        weapon: number;
+      };
+      plots_succeeded: number;
     };
-    equipment: number;
-    families: number;
-    frozen_tiles: number;
-    houses: number;
-    kingdoms: number;
-    languages: number;
-    plots_succeeded: number;
-    population: number;
-    relations: number;
-    religions: number;
-    subspecies: number;
-    vegetation: number;
-    wars: number;
+    metadata: {
+      age_id: string;
+      world_time: number;
+    };
+    snapshot: {
+      alliances: number;
+      armies: number;
+      books: number;
+      cities: number;
+      clans: number;
+      cultures: number;
+      diplomatic_relations: number;
+      equipment: number;
+      families: number;
+      frozen_tiles: number;
+      houses: number;
+      kingdoms: number;
+      languages: number;
+      population: number;
+      religions: number;
+      subspecies: number;
+      vegetation: number;
+      wars: number;
+      wild_creatures: number;
+    };
   };
-  world_time: number;
 }
