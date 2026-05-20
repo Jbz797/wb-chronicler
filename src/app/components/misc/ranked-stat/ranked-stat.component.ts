@@ -59,13 +59,13 @@ export class RankedStatComponent {
     if (k === 'diplomacy') return { max: f.snapshot.diplomacy, rank: f.ranks.diplomacy };
     if (k === 'health') return { current: f.stats.health, max: f.snapshot.health_max, rank: f.ranks.health_max };
     if (k === 'intelligence') return { max: f.snapshot.intelligence, rank: f.ranks.intelligence };
-    if (k === 'kills') return { max: f.cumulative.kills, rank: f.ranks.kills };
-    if (k === 'level') return { max: f.cumulative.level, rank: f.ranks.level };
+    if (k === 'kills') return { max: f.snapshot.kills, rank: f.ranks.kills };
+    if (k === 'level') return { max: f.snapshot.level, rank: f.ranks.level };
     if (k === 'lifespan') return { max: f.snapshot.lifespan, rank: f.ranks.lifespan };
-    if (k === 'loot') return { max: f.cumulative.loot, rank: f.ranks.loot };
+    if (k === 'loot') return { max: f.snapshot.loot, rank: f.ranks.loot };
     if (k === 'mana') return { current: f.stats.mana, max: f.snapshot.mana_max, rank: f.ranks.mana_max };
     if (k === 'money') return { max: f.snapshot.money, rank: f.ranks.money };
-    if (k === 'renown') return { max: f.cumulative.renown, rank: f.ranks.renown };
+    if (k === 'renown') return { max: f.snapshot.renown, rank: f.ranks.renown };
     if (k === 'speed') return { max: f.snapshot.speed, rank: f.ranks.speed };
     if (k === 'stamina') return { current: f.stats.stamina, max: f.snapshot.stamina_max, rank: f.ranks.stamina_max };
     if (k === 'stewardship') return { max: f.snapshot.stewardship, rank: f.ranks.stewardship };

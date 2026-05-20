@@ -6,13 +6,6 @@ export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 export interface ChapterMeta {
   age_label: string;
   favorite: {
-    cumulative: {
-      births: number;
-      kills: number;
-      level: number;
-      loot: number;
-      renown: number;
-    };
     descriptor: string;
     equipment: RarityCounts;
     metadata: {
@@ -47,6 +40,7 @@ export interface ChapterMeta {
       armor: number;
       attack_speed: number;
       birth_rate: number;
+      births: number;
       children: number;
       critical_chance: number;
       damage: number;
@@ -54,10 +48,14 @@ export interface ChapterMeta {
       diplomacy: number;
       health_max: number;
       intelligence: number;
+      kills: number;
+      level: number;
       lifespan: number;
+      loot: number;
       mana_max: number;
       max_children: number;
       money: number;
+      renown: number;
       speed: number;
       stamina_max: number;
       stewardship: number;

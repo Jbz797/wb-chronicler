@@ -75,8 +75,8 @@
           </nz-descriptions-item>
           <nz-descriptions-item [nzTitle]="childrenTitle">
             {{ fav.snapshot.children }} / {{ fav.snapshot.max_children }}
-            @if (fav.cumulative.births !== fav.snapshot.children) {
-              <em>({{ fav.cumulative.births }} naissances)</em>
+            @if (fav.snapshot.births !== fav.snapshot.children) {
+              <em>({{ fav.snapshot.births }} naissances)</em>
             }
           </nz-descriptions-item>
           <nz-descriptions-item [nzTitle]="birthRateTitle">
