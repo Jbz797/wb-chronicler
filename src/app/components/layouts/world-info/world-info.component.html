@@ -58,12 +58,12 @@
       @if (c.meta.favorite; as fav) {
         <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
           <nz-descriptions-item nzTitle="Favoris">
-            <img class="species-icon" [src]="`assets/img/species/${fav.asset_id}.png`" />
-            {{ fav.name }}
-            <img [src]="`assets/img/sex/${fav.sex}.png`" />
+            <img class="species-icon" [src]="`assets/img/species/${fav.metadata.asset_id}.png`" />
+            {{ fav.metadata.name }}
+            <img [src]="`assets/img/sex/${fav.metadata.sex}.png`" />
           </nz-descriptions-item>
           <nz-descriptions-item nzTitle="Descripteur">{{ fav.descriptor }}</nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="ageTitle">{{ fav.age }} ans</nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="ageTitle">{{ fav.metadata.age }} ans</nz-descriptions-item>
           <nz-descriptions-item [nzTitle]="lifespanTitle">
             <app-ranked-stat stat="lifespan" />
           </nz-descriptions-item>
@@ -74,9 +74,9 @@
             <app-ranked-stat stat="renown" />
           </nz-descriptions-item>
           <nz-descriptions-item [nzTitle]="childrenTitle">
-            {{ fav.overview.children }} / {{ fav.overview.max_children }}
-            @if (fav.overview.births !== fav.overview.children) {
-              <em>({{ fav.overview.births }} naissances)</em>
+            {{ fav.snapshot.children }} / {{ fav.snapshot.max_children }}
+            @if (fav.cumulative.births !== fav.snapshot.children) {
+              <em>({{ fav.cumulative.births }} naissances)</em>
             }
           </nz-descriptions-item>
           <nz-descriptions-item [nzTitle]="birthRateTitle">
@@ -85,8 +85,8 @@
           <nz-descriptions-item [nzTitle]="killsTitle">
             <app-ranked-stat stat="kills" />
           </nz-descriptions-item>
-          <nz-descriptions-item [nzTitle]="earningsTitle">
-            <app-ranked-stat stat="earnings" />
+          <nz-descriptions-item [nzTitle]="lootTitle">
+            <app-ranked-stat stat="loot" />
           </nz-descriptions-item>
           <nz-descriptions-item [nzTitle]="moneyTitle">
             <app-ranked-stat stat="money" />
@@ -99,7 +99,7 @@
         <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
         <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
         <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
-        <ng-template #earningsTitle><img src="assets/img/stats/earnings.png" /><span>Pécule</span></ng-template>
+        <ng-template #lootTitle><img src="assets/img/stats/loot.png" /><span>Pécule</span></ng-template>
         <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
         <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
 

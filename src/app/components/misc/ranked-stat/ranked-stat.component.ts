@@ -46,29 +46,30 @@ export class RankedStatComponent {
     return '';
   });
 
-  // Per-kind field accessor — keeps `overview[<computed key>]` off the hot path and stays type-safe.
+  // Per-kind field accessor — pulls value/rank from the right section (cumulative for life-long
+  // counters, snapshot for instant-T stats; `f.stats` carries the current health/mana/stamina).
   private _resolve(f: NonNullable<ChapterMeta['favorite']>): RankedStatSnapshot {
     const k = this.stat();
-    if (k === 'armor') return { max: f.overview.armor, rank: f.overview.armor_rank };
-    if (k === 'attack_speed') return { max: f.overview.attack_speed, rank: f.overview.attack_speed_rank };
-    if (k === 'birth_rate') return { max: f.overview.birth_rate, rank: f.overview.birth_rate_rank };
-    if (k === 'critical_chance') return { max: f.overview.critical_chance, rank: f.overview.critical_chance_rank };
-    if (k === 'damage') return { max: f.overview.damage, rank: f.overview.damage_rank };
-    if (k === 'damage_range') return { max: f.overview.damage_range, rank: f.overview.damage_range_rank };
-    if (k === 'diplomacy') return { max: f.overview.diplomacy, rank: f.overview.diplomacy_rank };
-    if (k === 'earnings') return { max: f.overview.earnings, rank: f.overview.earnings_rank };
-    if (k === 'health') return { current: f.stats.health, max: f.overview.health_max, rank: f.overview.health_max_rank };
-    if (k === 'intelligence') return { max: f.overview.intelligence, rank: f.overview.intelligence_rank };
-    if (k === 'kills') return { max: f.overview.kills, rank: f.overview.kills_rank };
-    if (k === 'level') return { max: f.overview.level, rank: f.overview.level_rank };
-    if (k === 'lifespan') return { max: f.overview.lifespan, rank: f.overview.lifespan_rank };
-    if (k === 'mana') return { current: f.stats.mana, max: f.overview.mana_max, rank: f.overview.mana_max_rank };
-    if (k === 'money') return { max: f.overview.money, rank: f.overview.money_rank };
-    if (k === 'renown') return { max: f.overview.renown, rank: f.overview.renown_rank };
-    if (k === 'speed') return { max: f.overview.speed, rank: f.overview.speed_rank };
-    if (k === 'stamina') return { current: f.stats.stamina, max: f.overview.stamina_max, rank: f.overview.stamina_max_rank };
-    if (k === 'stewardship') return { max: f.overview.stewardship, rank: f.overview.stewardship_rank };
-    return { max: f.overview.warfare, rank: f.overview.warfare_rank };
+    if (k === 'armor') return { max: f.snapshot.armor, rank: f.ranks.armor };
+    if (k === 'attack_speed') return { max: f.snapshot.attack_speed, rank: f.ranks.attack_speed };
+    if (k === 'birth_rate') return { max: f.snapshot.birth_rate, rank: f.ranks.birth_rate };
+    if (k === 'critical_chance') return { max: f.snapshot.critical_chance, rank: f.ranks.critical_chance };
+    if (k === 'damage') return { max: f.snapshot.damage, rank: f.ranks.damage };
+    if (k === 'damage_range') return { max: f.snapshot.damage_range, rank: f.ranks.damage_range };
+    if (k === 'diplomacy') return { max: f.snapshot.diplomacy, rank: f.ranks.diplomacy };
+    if (k === 'health') return { current: f.stats.health, max: f.snapshot.health_max, rank: f.ranks.health_max };
+    if (k === 'intelligence') return { max: f.snapshot.intelligence, rank: f.ranks.intelligence };
+    if (k === 'kills') return { max: f.cumulative.kills, rank: f.ranks.kills };
+    if (k === 'level') return { max: f.cumulative.level, rank: f.ranks.level };
+    if (k === 'lifespan') return { max: f.snapshot.lifespan, rank: f.ranks.lifespan };
+    if (k === 'loot') return { max: f.cumulative.loot, rank: f.ranks.loot };
+    if (k === 'mana') return { current: f.stats.mana, max: f.snapshot.mana_max, rank: f.ranks.mana_max };
+    if (k === 'money') return { max: f.snapshot.money, rank: f.ranks.money };
+    if (k === 'renown') return { max: f.cumulative.renown, rank: f.ranks.renown };
+    if (k === 'speed') return { max: f.snapshot.speed, rank: f.ranks.speed };
+    if (k === 'stamina') return { current: f.stats.stamina, max: f.snapshot.stamina_max, rank: f.ranks.stamina_max };
+    if (k === 'stewardship') return { max: f.snapshot.stewardship, rank: f.ranks.stewardship };
+    return { max: f.snapshot.warfare, rank: f.ranks.warfare };
   }
 
 }

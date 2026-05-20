@@ -46,7 +46,7 @@ export const SNAPSHOT_STATS: { key: SnapshotStat; label: string }[] = [
   { key: 'cities', label: 'Villes' },
   { key: 'clans', label: 'Clans' },
   { key: 'families', label: 'Familles' },
-  { key: 'diplomatic_relations', label: 'Relations' },
+  { key: 'relations', label: 'Relations' },
   { key: 'alliances', label: 'Alliances' },
   { key: 'wars', label: 'Guerres' },
   { key: 'armies', label: 'Armées' },

@@ -3,6 +3,13 @@
 # User-facing docs (usage, available sections) live in `tools/tools.md`. The notes
 # below are for maintainers — algorithm references, gotchas, source pointers.
 #
+# ⚠️ Output keys must stay self-descriptive — the chronicler reads them with no other
+# context. Prefer disambiguated names. Exception: keep the WB-native name verbatim for
+# anything sourced from the raw save (e.g. `loot`, item `by`/`from`/`kills`) — the
+# chronicler also reads the save directly and divergent names would create friction.
+# Pipeline-derived stats are split between `snapshot` (instant-T) and `cumulative`
+# (strictly-growing counters).
+#
 # ─── Maintenance / algorithm reference ───
 # Full algorithm spec: `chronicler.md § VI` ("Annexe technique — Génétique et stats de base").
 # All numeric tables (GENE_VALUES, GENE_INDEX, ceil-on-bad exceptions, synergy-always genes)
@@ -43,7 +50,7 @@ _LANGUAGE_TRAITS_DATA = _DATAS_DIR / 'language-traits.json'
 _SPECIES_DATA = _DATAS_DIR / 'species.json'
 _SUBSPECIES_TRAITS_DATA = _DATAS_DIR / 'subspecies-traits.json'
 
-ALL_SECTIONS = ('creature_traits', 'equipment', 'metadata', 'ranks', 'stats')
+ALL_SECTIONS = ('creature_traits', 'cumulative', 'equipment', 'metadata', 'ranks', 'snapshot')
 
 GRID_COLS = 6
 LEVEL_RE = re.compile(r'(\d+)$')
@@ -112,11 +119,6 @@ KEEP_DECIMAL = {'damage_range'}
 # stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
 DROP = {'accuracy', 'cities', 'critical_damage_multiplier', 'knockback',
         'loyalty_traits', 'mass', 'mass_2', 'range', 'targets'}
-
-
-def load_save() -> dict:
-    with CURRENT_SAVE.open('rb') as f:
-        return json.loads(zlib.decompress(f.read()))
 
 
 # Mirrors C# int32 wrap-around — required because the game's SystemRandom relies on it.
@@ -361,10 +363,10 @@ def _build_context(save: dict) -> dict:
     }
 
 
-# Aggregate one actor's stats through the full pipeline. `subspecies_base_cache` is optional;
-# when provided, the heavy (species + chromosomes + subspecies traits) base is computed once
-# per subspecies and reused across actors — a 5× speedup when ranking.
-def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
+# Aggregate one actor's instant-T stats through the full pipeline. `subspecies_base_cache`
+# is optional; when provided, the heavy (species + chromosomes + subspecies traits) base is
+# computed once per subspecies and reused across actors — a 5× speedup when ranking.
+def _compute_snapshot(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
     sub_id = actor.get('subspecies')
     sub = ctx['subspecies_by_id'].get(sub_id) if sub_id is not None else None
     if sub is None: return {}
@@ -382,32 +384,41 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
     _add_trait_stats(totals, (ctx['languages_by_id'].get(actor.get('language')) or {}).get('saved_traits') or [], ctx['language_traits'])
     _add_equipment_stats(totals, actor.get('saved_items') or [], ctx['items_by_id'], ctx['equipment']['items'], ctx['equipment']['modifiers'])
     _add_custom_data_float(totals, actor.get('custom_data_float'))
-    level = int(actor.get('level') or 0)
-    _apply_level_scaling(totals, level)
+    _apply_level_scaling(totals, int(actor.get('level') or 0))
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
     age_months = ctx['world_time'] - float(actor.get('created_time') or 0)
     lifespan_months = totals.get('lifespan', 0) * MONTHS_PER_YEAR
     _apply_offspring_age_scaling(totals, age_months / lifespan_months if lifespan_months else 0)
-    # Surface actor-level attributes (not derived) so they appear and get ranked.
-    totals['level'] = level
-    totals['renown'] = int(actor.get('renown') or 0)
-    totals['births'] = int(actor.get('births') or 0)
-    totals['children'] = ctx['children_by_parent'].get(actor.get('id'), 0)
-    totals['generation'] = int(actor.get('generation') or 1)
-    totals['kills'] = int(actor.get('kills') or 0)
-    # `earnings` = WB `loot` — value accumulated by work/kills/theft, pending conversion to coins.
-    totals['earnings'] = int(actor.get('loot') or 0)
-    totals['money'] = int(actor.get('money') or 0)
+    # Surface actor-level snapshot attributes that aren't derived from the pipeline.
+    totals['children'] = ctx['children_by_parent'].get(actor.get('id'), 0)  # can decrease when a child dies
+    totals['money'] = int(actor.get('money') or 0)                          # spent vs earned — fluctuates
     return _cleanup_stats(totals)
 
 
-# Standard competition rank (1,2,2,4) for the actor's stats among same-`asset_id` peers.
+# Strictly-growing counters surfaced as their own section so the chronicler can show
+# per-chapter deltas (current - previous) rather than absolute values.
+def _build_cumulative(actor: dict) -> dict:
+    return {
+        'births': int(actor.get('births') or 0),
+        'kills':  int(actor.get('kills') or 0),
+        'level':  int(actor.get('level') or 0),
+        # `loot` = value accumulated by work/kills/theft, pending conversion to coins. Name
+        # kept aligned with the raw save field — the chronicler also reads it from the save.
+        'loot':   int(actor.get('loot') or 0),
+        'renown': int(actor.get('renown') or 0),
+    }
+
+
+# Standard competition rank (1,2,2,4) for every snapshot + cumulative key, among the actor's
+# same-`asset_id` peers. Returned as a flat dict (no snapshot/cumulative split — the
+# chronicler already has that distinction via the other sections).
 def _compute_ranks(actor: dict, ctx: dict, save: dict) -> dict:
     asset_id = actor.get('asset_id', '')
     cache: dict = {}
-    peers = [(a['id'], _compute_stats(a, ctx, cache)) for a in save['actors_data'] if a.get('asset_id') == asset_id]
+    peers = [(a['id'], {**_compute_snapshot(a, ctx, cache), **_build_cumulative(a)})
+             for a in save['actors_data'] if a.get('asset_id') == asset_id]
     own = next(s for aid, s in peers if aid == actor['id'])
     return {stat: sum(1 for _, s in peers if s.get(stat, 0) > value) + 1 for stat, value in sorted(own.items())}
 
@@ -502,11 +513,9 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
 
 
 def _parse_sections(arg: str | None) -> tuple[str, ...]:
-    if not arg or arg == 'full':
-        return ALL_SECTIONS
+    if not arg or arg == 'full': return ALL_SECTIONS
     requested = tuple(s.strip() for s in arg.split(',') if s.strip())
-    unknown = [s for s in requested if s not in ALL_SECTIONS]
-    if unknown:
+    if unknown := [s for s in requested if s not in ALL_SECTIONS]:
         raise ValueError(f'unknown section(s): {",".join(unknown)} — valid: full,{",".join(ALL_SECTIONS)}')
     return requested
 
@@ -526,7 +535,8 @@ def main(argv: list[str]) -> int:
     if not CURRENT_SAVE.exists():
         print(f'no save found at {CURRENT_SAVE}', file=sys.stderr)
         return 2
-    save = load_save()
+    with CURRENT_SAVE.open('rb') as f:
+        save = json.loads(zlib.decompress(f.read()))
     actor = next((a for a in save['actors_data'] if a.get('id') == actor_id), None)
     if actor is None:
         print(f'unknown actor: {actor_id}', file=sys.stderr)
@@ -540,14 +550,16 @@ def main(argv: list[str]) -> int:
     out: dict = {}
     if 'creature_traits' in sections:
         out['creature_traits'] = _build_trait_list(actor.get('saved_traits') or [], ctx['creature_traits'], narrative=True)
+    if 'cumulative' in sections:
+        out['cumulative'] = _build_cumulative(actor)
     if 'equipment' in sections:
         out['equipment'] = _build_equipment_list(actor, ctx)
     if 'metadata' in sections:
         out['metadata'] = _build_metadata(actor, ctx, save)
     if 'ranks' in sections:
         out['ranks'] = _compute_ranks(actor, ctx, save)
-    if 'stats' in sections:
-        out['stats'] = _compute_stats(actor, ctx)
+    if 'snapshot' in sections:
+        out['snapshot'] = _compute_snapshot(actor, ctx)
 
     print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0

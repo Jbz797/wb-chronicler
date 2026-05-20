@@ -6,5 +6,5 @@ Invoquer chaque script via `python3 tools/<commande>`. Sortie : objet JSON sur `
 
 | Commande | Sections |
 |----------|----------|
-| `actor/overview.py <id> [sections]` | `full`, `creature_traits`, `equipment`, `metadata`, `ranks`, `stats` |
+| `actor/overview.py <id> [sections]` | `full`, `creature_traits`, `cumulative`, `equipment`, `metadata`, `ranks`, `snapshot` |
 | `world/overview.py [sections]` | `full`, `cumulative`, `metadata`, `snapshot` |

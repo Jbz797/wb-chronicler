@@ -5,10 +5,10 @@
 # tiles, relations). User-facing docs live in `tools/tools.md`.
 #
 # ⚠️ Output keys must stay self-descriptive — the chronicler reads them with no other
-# context. Prefer disambiguated names (e.g. `wild_creatures` over `creatures`,
-# `diplomatic_relations` over `relations`). Exception: keep the WB-native name when
-# the chronicler also reads it from the raw save (e.g. `world_time`) to avoid
-# friction between our output and the save.
+# context. Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
+# Exception: keep the WB-native name verbatim for anything sourced from the raw save
+# (e.g. `relations`, `world_time`) — the chronicler also reads the save directly and
+# divergent names would create friction.
 
 import json
 import sys
@@ -56,10 +56,10 @@ def _build_snapshot(meta: dict, map_stats: dict) -> dict:
         save = json.loads(zlib.decompress(f.read()))
     return dict(sorted({
         **{k: int(meta.get(v, 0)) for k, v in _SNAPSHOT_KEYS.items()},
-        'armies':                int(map_stats.get('armiesCreated', 0)) - int(map_stats.get('armiesDestroyed', 0)),
-        'diplomatic_relations':  len(save.get('relations') or []),
-        'frozen_tiles':          len(save.get('frozen_tiles') or []),
-        'houses':                int(map_stats.get('housesBuilt', 0)) - int(map_stats.get('housesDestroyed', 0)),  # current city-buildings (matches `world_statistics_houses`)
+        'armies':       int(map_stats.get('armiesCreated', 0)) - int(map_stats.get('armiesDestroyed', 0)),
+        'frozen_tiles': len(save.get('frozen_tiles') or []),
+        'houses':       int(map_stats.get('housesBuilt', 0)) - int(map_stats.get('housesDestroyed', 0)),  # current city-buildings (matches `world_statistics_houses`)
+        'relations':    len(save.get('relations') or []),
     }.items()))
 
 
