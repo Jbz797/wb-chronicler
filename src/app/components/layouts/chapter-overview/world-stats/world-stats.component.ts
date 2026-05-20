@@ -14,11 +14,14 @@ import { DeltaComponent } from '../../../misc';
 })
 export class WorldStatsComponent {
 
+  protected readonly cumulativeStats = CUMULATIVE_STATS;
+  protected readonly deathCauses = DEATH_CAUSES;
+  protected readonly snapshotStats = SNAPSHOT_STATS;
+
   private readonly _chronicler = inject(ChroniclerService);
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  protected readonly cumulativeStats = CUMULATIVE_STATS;
   // Per-cumulative-stat delta vs previous chapter — at C1 the baseline is 0 so we get the cumulative count instead.
   protected readonly cumulativeDeltas = computed(() => {
     const current = this.currentChapter()?.meta.world.cumulative;
@@ -26,7 +29,6 @@ export class WorldStatsComponent {
     const previous = this._chronicler.previousChapter()?.meta.world.cumulative;
     return Object.fromEntries(this.cumulativeStats.map(({ key }) => [key, current[key] - (previous?.[key] ?? 0)]));
   });
-  protected readonly deathCauses = DEATH_CAUSES;
   // Per-cause death count between previous chapter and current — at C1 the baseline is 0 so we get the cumulative count instead.
   protected readonly deathsSincePrevious = computed(() => {
     const current = this.currentChapter()?.meta.world.cumulative.deaths;
@@ -34,7 +36,6 @@ export class WorldStatsComponent {
     const previous = this._chronicler.previousChapter()?.meta.world.cumulative.deaths;
     return Object.fromEntries(this.deathCauses.map(({ key }) => [key, current[key] - (previous?.[key] ?? 0)]));
   });
-  protected readonly snapshotStats = SNAPSHOT_STATS;
   // Per-snapshot-stat delta vs previous chapter — `null` when no previous chapter to compare.
   protected readonly snapshotDeltas = computed(() => {
     const current = this.currentChapter()?.meta.world.snapshot;

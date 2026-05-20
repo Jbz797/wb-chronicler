@@ -16,11 +16,13 @@ import { RankedStatComponent, RarityStatsComponent } from '../../../misc';
 })
 export class FavoriteComponent {
 
+  protected readonly combatStats = COMBAT_STATS;
+  protected readonly skillStats = SKILL_STATS;
+
   private readonly _chronicler = inject(ChroniclerService);
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  protected readonly combatStats = COMBAT_STATS;
   // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — ranked stats handle their own deltas.
   protected readonly deltas = computed(() => {
     const current = this.currentChapter()?.meta.favorite;
@@ -39,6 +41,5 @@ export class FavoriteComponent {
       traits: diffCounts(current.traits, previous.traits),
     };
   });
-  protected readonly skillStats = SKILL_STATS;
 
 }

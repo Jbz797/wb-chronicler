@@ -50,10 +50,10 @@
     "@angular/language-service": "^21.2.13",
     "chokidar": "^5.0.0",
     "concurrently": "^9.2.1",
-    "eslint-config-angular-strict": "^2.3.89",
+    "eslint-config-angular-strict": "^2.3.91",
     "less": "^4.6.4",
     "prettier": "^3.8.3",
-    "stylelint": "^17.11.1",
+    "stylelint": "^17.12.0",
     "stylelint-config-standard-scss": "^17.0.0",
     "stylelint-prettier": "^5.0.3",
     "typescript": "~5.9.3"
