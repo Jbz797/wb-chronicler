@@ -11,8 +11,8 @@ export const COMBAT_STATS: { key: RankedStatKind; label: string }[] = [
 
 // Cumulative world stats — UI surfaces the delta vs previous chapter (per-chapter activity).
 export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
-  { key: 'books_read', label: 'Livres lus' },
   { key: 'plots_succeeded', label: 'Complots réussis' },
+  { key: 'books_read', label: 'Livres lus' },
 ];
 
 // Death causes — display order by descending magnitude on current save (most-frequent first).

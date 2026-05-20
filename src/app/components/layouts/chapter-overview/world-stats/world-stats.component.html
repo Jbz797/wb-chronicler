@@ -11,6 +11,9 @@
         <app-delta [value]="snapshotDeltas()?.[stat.key]" />
       </nz-descriptions-item>
     }
+  </nz-descriptions>
+
+  <nz-descriptions nzBordered nzSize="small" nzTitle="Activité récente" [nzColumn]="1">
     @for (stat of cumulativeStats; track stat.key) {
       <ng-template #titleRef>
         <img [src]="`assets/img/world/${stat.key}.png`" />
