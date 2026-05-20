@@ -1,0 +1,35 @@
+@let c = currentChapter();
+@if (c) {
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
+    @for (stat of snapshotStats; track stat.key) {
+      <ng-template #titleRef>
+        <img [src]="`assets/img/world/${stat.key}.png`" />
+        <span>{{ stat.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="titleRef">
+        <span>{{ c.meta.world.snapshot[stat.key] | compact }}</span>
+        <app-delta [value]="snapshotDeltas()?.[stat.key]" />
+      </nz-descriptions-item>
+    }
+    @for (stat of cumulativeStats; track stat.key) {
+      <ng-template #titleRef>
+        <img [src]="`assets/img/world/${stat.key}.png`" />
+        <span>{{ stat.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="titleRef">
+        {{ cumulativeDeltas()?.[stat.key] ?? c.meta.world.cumulative[stat.key] | compact }}
+      </nz-descriptions-item>
+    }
+  </nz-descriptions>
+
+  <nz-descriptions nzBordered nzSize="small" nzTitle="Causes de mortalité" [nzColumn]="2">
+    @for (cause of deathCauses; track cause.key) {
+      <nz-descriptions-item [nzTitle]="cause.label">
+        {{ deathsSincePrevious()?.[cause.key] ?? 0 | compact }}
+      </nz-descriptions-item>
+    }
+    <nz-descriptions-item nzTitle="Total">
+      {{ totalDeathsSincePrevious() ?? 0 | compact }}
+    </nz-descriptions-item>
+  </nz-descriptions>
+}

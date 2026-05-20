@@ -1,0 +1,106 @@
+@let c = currentChapter();
+@if (c && c.meta.favorite; as fav) {
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
+    <nz-descriptions-item nzTitle="Favoris">
+      <img class="species-icon" [src]="`assets/img/species/${fav.metadata.asset_id}.png`" />
+      {{ fav.metadata.name }}
+      <img [src]="`assets/img/sex/${fav.metadata.sex}.png`" />
+    </nz-descriptions-item>
+    <nz-descriptions-item nzTitle="Descripteur">{{ fav.descriptor }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="ageTitle">{{ fav.metadata.age }} ans</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="lifespanTitle">
+      <app-ranked-stat stat="lifespan" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="levelTitle">
+      <app-ranked-stat stat="level" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="renownTitle">
+      <app-ranked-stat stat="renown" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="childrenTitle">
+      {{ fav.snapshot.children }} / {{ fav.snapshot.max_children }}
+      @if (fav.snapshot.births !== fav.snapshot.children) {
+        <em>({{ fav.snapshot.births }} naissances)</em>
+      }
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="birthRateTitle">
+      <app-ranked-stat stat="birth_rate" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="killsTitle">
+      <app-ranked-stat stat="kills" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="lootTitle">
+      <app-ranked-stat stat="loot" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="moneyTitle">
+      <app-ranked-stat stat="money" />
+    </nz-descriptions-item>
+  </nz-descriptions>
+
+  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
+  <ng-template #birthRateTitle><img src="assets/img/stats/birth_rate.png" /><span>Natalité</span></ng-template>
+  <ng-template #childrenTitle><img src="assets/img/stats/children.png" /><span>Enfants</span></ng-template>
+  <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
+  <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
+  <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
+  <ng-template #lootTitle><img src="assets/img/stats/loot.png" /><span>Pécule</span></ng-template>
+  <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
+  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
+
+  <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
+    <nz-descriptions-item [nzSpan]="2" [nzTitle]="healthTitle">
+      <app-ranked-stat stat="health" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzSpan]="2" [nzTitle]="manaTitle">
+      <app-ranked-stat stat="mana" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzSpan]="2" [nzTitle]="staminaTitle">
+      <app-ranked-stat stat="stamina" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzSpan]="2" [nzTitle]="happinessTitle">
+      <span [class]="fav.stats.happiness | tier: 100">{{ fav.stats.happiness }}</span>
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzSpan]="2" [nzTitle]="nutritionTitle">
+      <span [class]="fav.stats.nutrition | tier: 100">{{ fav.stats.nutrition }}</span>
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzSpan]="2" [nzTitle]="speedTitle">
+      <app-ranked-stat stat="speed" />
+    </nz-descriptions-item>
+  </nz-descriptions>
+
+  <ng-template #healthTitle><img src="assets/img/stats/health.png" /><span>Santé</span></ng-template>
+  <ng-template #happinessTitle><img src="assets/img/stats/happiness.png" /><span>Bonheur</span></ng-template>
+  <ng-template #manaTitle><img src="assets/img/stats/mana.png" /><span>Mana</span></ng-template>
+  <ng-template #nutritionTitle><img src="assets/img/stats/nutrition.png" /><span>Satiété</span></ng-template>
+  <ng-template #speedTitle><img src="assets/img/stats/speed.png" /><span>Vitesse</span></ng-template>
+  <ng-template #staminaTitle><img src="assets/img/stats/stamina.png" /><span>Vigueur</span></ng-template>
+
+  <app-rarity-stats title="Nombre de traits" [counts]="fav.traits" [deltas]="deltas()?.traits ?? null" />
+  <app-rarity-stats title="Équipement" [counts]="fav.equipment" [deltas]="deltas()?.equipment ?? null" />
+
+  <nz-descriptions nzBordered nzSize="small" nzTitle="Compétences" [nzColumn]="1">
+    @for (s of skillStats; track s.key) {
+      <ng-template #titleRef>
+        <img [src]="`assets/img/stats/${s.key}.png`" />
+        <span>{{ s.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="titleRef">
+        <app-ranked-stat [stat]="s.key" />
+      </nz-descriptions-item>
+    }
+  </nz-descriptions>
+
+  <nz-descriptions nzBordered nzSize="small" nzTitle="Combat" [nzColumn]="1">
+    @for (s of combatStats; track s.key) {
+      <ng-template #titleRef>
+        <img [src]="`assets/img/stats/${s.key}.png`" />
+        <span>{{ s.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="titleRef">
+        <app-ranked-stat [stat]="s.key" />
+      </nz-descriptions-item>
+    }
+  </nz-descriptions>
+} @else {
+  <nz-empty nzNotFoundContent="Aucun favoris pour l'instant" nzNotFoundImage="assets/img/empty/no-favorite.png" />
+}

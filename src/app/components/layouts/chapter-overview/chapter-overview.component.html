@@ -1,0 +1,31 @@
+@let w = world();
+@let c = currentChapter();
+@if (w && c) {
+  @let ageId = c.meta.world.metadata.age_id.replace('age_', '');
+  <h2 class="section-title">{{ w.name }}</h2>
+  <p class="world-age">
+    <img class="age-icon" [src]="`assets/img/ages/${ageId}.png`" />
+    {{ c.meta.age_label }}
+  </p>
+  <nz-divider />
+
+  <ng-template #worldStatsHeader>
+    <img class="panel-icon" src="assets/img/world/_panels/world_stats.png" />
+    <span>Statistiques sur le Monde</span>
+  </ng-template>
+  <ng-template #favoritesHeader>
+    <img class="panel-icon" src="assets/img/world/_panels/favorites.png" />
+    <span>Favoris</span>
+  </ng-template>
+
+  <nz-collapse nzAccordion>
+    <nz-collapse-panel [nzActive]="true" [nzHeader]="worldStatsHeader">
+      <app-world-stats />
+    </nz-collapse-panel>
+    <nz-collapse-panel [nzHeader]="favoritesHeader">
+      <app-favorite />
+    </nz-collapse-panel>
+  </nz-collapse>
+} @else {
+  <nz-empty nzNotFoundContent="Aucune donnée à afficher" nzNotFoundImage="assets/img/empty/no-data.png" />
+}
