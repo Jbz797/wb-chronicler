@@ -6,6 +6,15 @@ export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 export interface ChapterMeta {
   age_label: string;
   favorite: {
+    best_friend: {
+      age: number;
+      health_max: number;
+      level: number;
+      money: number;
+      name: string;
+      renown: number;
+      sex: 'female' | 'male';
+    } | null;
     descriptor: string;
     equipment: RarityCounts;
     inventory: Record<string, number>;

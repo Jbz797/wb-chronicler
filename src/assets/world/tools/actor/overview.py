@@ -44,7 +44,7 @@ _LANGUAGE_TRAITS_DATA = _DATAS_DIR / "language-traits.json"
 _SPECIES_DATA = _DATAS_DIR / "species.json"
 _SUBSPECIES_TRAITS_DATA = _DATAS_DIR / "subspecies-traits.json"
 
-ALL_SECTIONS = ("creature_traits", "equipment", "inventory", "lover", "metadata", "ranks", "stats")
+ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "ranks", "stats")
 
 GRID_COLS = 6
 LEVEL_RE = re.compile(r"(\d+)$")
@@ -555,24 +555,24 @@ def _build_inventory(actor: dict) -> dict:
     return dict(sorted((iid, entry.get("amount", 0)) for iid, entry in items))
 
 
-def _build_lover(actor: dict, ctx: dict, save: dict) -> dict | None:
-    lover_id = actor.get("lover")
-    if lover_id is None:
+def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict | None:
+    companion_id = actor.get(id_field)
+    if companion_id is None:
         return None
-    lover = next((a for a in save["actors_data"] if a.get("id") == lover_id), None)
-    if lover is None:
+    companion = next((a for a in save["actors_data"] if a.get("id") == companion_id), None)
+    if companion is None:
         return None
-    snap = _compute_stats(lover, ctx)
-    age_months = ctx["world_time"] - float(lover.get("created_time") or 0)
+    snap = _compute_stats(companion, ctx)
+    age_months = ctx["world_time"] - float(companion.get("created_time") or 0)
     return {
-        "age": round(age_months / MONTHS_PER_YEAR) + (lover.get("age_overgrowth") or 0),
+        "age": round(age_months / MONTHS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
         "health_max": snap.get("health_max", 0),
-        "id": lover_id,
+        "id": companion_id,
         "level": snap.get("level", 0),
         "money": snap.get("money", 0),
-        "name": lover.get("name"),
+        "name": companion.get("name"),
         "renown": snap.get("renown", 0),
-        "sex": "female" if lover.get("sex") == 1 else "male",
+        "sex": "female" if companion.get("sex") == 1 else "male",
     }
 
 
@@ -656,6 +656,8 @@ def main(argv: list[str]) -> int:
         return 1
 
     out: dict = {}
+    if "best_friend" in sections:
+        out["best_friend"] = _build_companion(actor, ctx, save, "best_friend_id")
     if "creature_traits" in sections:
         out["creature_traits"] = _build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"], narrative=True)
     if "equipment" in sections:
@@ -663,7 +665,7 @@ def main(argv: list[str]) -> int:
     if "inventory" in sections:
         out["inventory"] = _build_inventory(actor)
     if "lover" in sections:
-        out["lover"] = _build_lover(actor, ctx, save)
+        out["lover"] = _build_companion(actor, ctx, save, "lover")
     if "metadata" in sections:
         out["metadata"] = _build_metadata(actor, ctx, save)
     if "ranks" in sections:
