@@ -19,10 +19,10 @@
   </ng-template>
 
   <nz-collapse nzAccordion>
-    <nz-collapse-panel [nzActive]="true" [nzHeader]="worldStatsHeader">
+    <nz-collapse-panel [nzActive]="activePanel() === 'world-stats'" [nzHeader]="worldStatsHeader" (nzActiveChange)="onPanelToggle('world-stats', $event)">
       <app-world-stats />
     </nz-collapse-panel>
-    <nz-collapse-panel [nzHeader]="favoritesHeader">
+    <nz-collapse-panel [nzActive]="activePanel() === 'favorite'" [nzHeader]="favoritesHeader" (nzActiveChange)="onPanelToggle('favorite', $event)">
       <app-favorite />
     </nz-collapse-panel>
   </nz-collapse>

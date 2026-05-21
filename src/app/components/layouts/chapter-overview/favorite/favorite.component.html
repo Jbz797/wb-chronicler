@@ -101,6 +101,24 @@
       </nz-descriptions-item>
     }
   </nz-descriptions>
+
+  @if (fav.lover; as lover) {
+    <nz-descriptions nzBordered nzSize="small" nzTitle="Amoureux" [nzColumn]="2">
+      <nz-descriptions-item [nzTitle]="loverSexIcon">{{ lover.name }}</nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="loverAgeIcon">{{ lover.age }} ans</nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="loverLevelIcon">{{ lover.level }}</nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="loverRenownIcon">{{ lover.renown }}</nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="loverMoneyIcon">{{ lover.money }}</nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="loverHealthIcon">{{ lover.health_max }}</nz-descriptions-item>
+    </nz-descriptions>
+
+    <ng-template #loverAgeIcon><img src="assets/img/stats/age.png" /></ng-template>
+    <ng-template #loverHealthIcon><img src="assets/img/stats/health.png" /></ng-template>
+    <ng-template #loverLevelIcon><img src="assets/img/stats/level.png" /></ng-template>
+    <ng-template #loverMoneyIcon><img src="assets/img/stats/money.png" /></ng-template>
+    <ng-template #loverRenownIcon><img src="assets/img/stats/renown.png" /></ng-template>
+    <ng-template #loverSexIcon><img [src]="`assets/img/sex/${lover.sex}.png`" /></ng-template>
+  }
 } @else {
   <nz-empty nzNotFoundContent="Aucun favoris pour l'instant" nzNotFoundImage="assets/img/empty/no-favorite.png" />
 }

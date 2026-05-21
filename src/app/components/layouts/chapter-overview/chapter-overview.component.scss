@@ -118,8 +118,16 @@
             margin-right: 0.3rem;
           }
 
-          &:not(:first-child) {
+          &:last-child {
             margin-left: 0.3rem;
+          }
+        }
+
+        &:has(> img:only-child) {
+          text-align: center;
+
+          img {
+            margin: 0;
           }
         }
       }

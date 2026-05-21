@@ -44,7 +44,7 @@ _LANGUAGE_TRAITS_DATA = _DATAS_DIR / "language-traits.json"
 _SPECIES_DATA = _DATAS_DIR / "species.json"
 _SUBSPECIES_TRAITS_DATA = _DATAS_DIR / "subspecies-traits.json"
 
-ALL_SECTIONS = ("creature_traits", "equipment", "metadata", "ranks", "snapshot")
+ALL_SECTIONS = ("creature_traits", "equipment", "lover", "metadata", "ranks", "snapshot")
 
 GRID_COLS = 6
 LEVEL_RE = re.compile(r"(\d+)$")
@@ -456,7 +456,8 @@ def _compute_snapshot(actor: dict, ctx: dict, subspecies_base_cache: dict | None
     _add_trait_stats(totals, (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits") or [], ctx["language_traits"])
     _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
     _add_custom_data_float(totals, actor.get("custom_data_float"))
-    _apply_level_scaling(totals, int(actor.get("level") or 0))
+    # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
+    _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
@@ -471,7 +472,8 @@ def _compute_snapshot(actor: dict, ctx: dict, subspecies_base_cache: dict | None
             "births": int(actor.get("births") or 0),
             "children": ctx["children_by_parent"].get(actor.get("id"), 0),
             "kills": int(actor.get("kills") or 0),
-            "level": int(actor.get("level") or 0),
+            # WB displays level 1 as the floor, even when the raw save field is absent / 0.
+            "level": max(int(actor.get("level") or 0), 1),
             "loot": int(actor.get("loot") or 0),
             "money": int(actor.get("money") or 0),
             "renown": int(actor.get("renown") or 0),
@@ -528,20 +530,42 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     religions_by_id = {r["id"]: r for r in save.get("religions", [])}
     age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
     return {
-        "age": round(age_months / MONTHS_PER_YEAR),
+        # `age_overgrowth` (years past the actor's lifespan cap) is added on top of the natural
+        # age — WB tooltips show the sum, so we mirror that to match what the chronicler sees.
+        "age": round(age_months / MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
         "asset_id": actor.get("asset_id"),
-        "city": (cities_by_id.get(actor.get("city")) or {}).get("data", {}).get("name"),
+        "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
         "clan": clan.get("name"),
         "culture": (cultures_by_id.get(actor.get("culture")) or {}).get("name"),
         "family": (families_by_id.get(actor.get("family")) or {}).get("name"),
         "generation": int(actor.get("generation") or 1),
-        "id": actor.get("id"),
-        "kingdom": (kingdoms_by_id.get(actor.get("kingdom")) or {}).get("data", {}).get("name"),
+        "kingdom": (kingdoms_by_id.get(actor.get("civ_kingdom_id")) or {}).get("name"),
         "language": language.get("name"),
         "name": actor.get("name"),
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
-        "sex": "female" if actor.get("isFemale") else "male",
+        "sex": "female" if actor.get("sex") == 1 else "male",
         "subspecies": sub.get("name") or actor.get("subspecies"),
+    }
+
+
+def _build_lover(actor: dict, ctx: dict, save: dict) -> dict | None:
+    lover_id = actor.get("lover")
+    if lover_id is None:
+        return None
+    lover = next((a for a in save["actors_data"] if a.get("id") == lover_id), None)
+    if lover is None:
+        return None
+    snap = _compute_snapshot(lover, ctx)
+    age_months = ctx["world_time"] - float(lover.get("created_time") or 0)
+    return {
+        "age": round(age_months / MONTHS_PER_YEAR) + (lover.get("age_overgrowth") or 0),
+        "health_max": snap.get("health_max", 0),
+        "id": lover_id,
+        "level": snap.get("level", 0),
+        "money": snap.get("money", 0),
+        "name": lover.get("name"),
+        "renown": snap.get("renown", 0),
+        "sex": "female" if lover.get("sex") == 1 else "male",
     }
 
 
@@ -629,6 +653,8 @@ def main(argv: list[str]) -> int:
         out["creature_traits"] = _build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"], narrative=True)
     if "equipment" in sections:
         out["equipment"] = _build_equipment_list(actor, ctx)
+    if "lover" in sections:
+        out["lover"] = _build_lover(actor, ctx, save)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(actor, ctx, save)
     if "ranks" in sections:

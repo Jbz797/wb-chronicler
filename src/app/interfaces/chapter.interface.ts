@@ -8,6 +8,15 @@ export interface ChapterMeta {
   favorite: {
     descriptor: string;
     equipment: RarityCounts;
+    lover: {
+      age: number;
+      health_max: number;
+      level: number;
+      money: number;
+      name: string;
+      renown: number;
+      sex: 'female' | 'male';
+    } | null;
     metadata: {
       age: number;
       asset_id: string;
