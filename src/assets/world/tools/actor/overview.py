@@ -44,7 +44,7 @@ _LANGUAGE_TRAITS_DATA = _DATAS_DIR / "language-traits.json"
 _SPECIES_DATA = _DATAS_DIR / "species.json"
 _SUBSPECIES_TRAITS_DATA = _DATAS_DIR / "subspecies-traits.json"
 
-ALL_SECTIONS = ("creature_traits", "equipment", "inventory", "lover", "metadata", "ranks", "snapshot")
+ALL_SECTIONS = ("creature_traits", "equipment", "inventory", "lover", "metadata", "ranks", "stats")
 
 GRID_COLS = 6
 LEVEL_RE = re.compile(r"(\d+)$")
@@ -99,8 +99,7 @@ GENE_VALUES = {
 CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}
 SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
 
-# Gene index_id used to seed SystemRandom — order in `GeneLibrary`
-# (`addSpecial` → `addBaseStats` → `addFightStats` → `addBonusStats` → `addAttributes`).
+# Gene index_id used to seed SystemRandom — order in `GeneLibrary` (`addSpecial` → `addBaseStats` → `addFightStats` → `addBonusStats` → `addAttributes`).
 GENE_INDEX = {
     "empty": 1,
     "temp_for_generation": 2,
@@ -163,8 +162,7 @@ LEVEL_VETERAN_SKILL_BONUS = 0.1
 MANA_PER_INTELLIGENCE = 10
 
 RENAMES = {"health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
-# Stats kept as 1-decimal floats — integer truncate would lose meaningful precision
-# (damage_range is typically `damage × ratio` where ratio < 1).
+# Stats kept as 1-decimal floats — integer truncate would lose meaningful precision (damage_range is typically `damage × ratio` where ratio < 1).
 KEEP_DECIMAL = {"damage_range"}
 # Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
 # stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
@@ -385,8 +383,7 @@ def _apply_offspring_age_scaling(totals: dict, age_ratio: float) -> None:
     totals["offspring"] = math.ceil(totals["offspring"] * mult)
 
 
-# Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat
-# +0.1 to skill_combat / skill_spell when level > 5.
+# Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat +0.1 to skill_combat / skill_spell when level > 5.
 def _apply_level_scaling(totals: dict, level: int) -> None:
     for stat, mult in LEVEL_MOD.items():
         if stat in totals:
@@ -437,7 +434,7 @@ def _build_context(save: dict) -> dict:
 # Aggregate one actor's instant-T stats through the full pipeline. `subspecies_base_cache`
 # is optional; when provided, the heavy (species + chromosomes + subspecies traits) base is
 # computed once per subspecies and reused across actors — a 5× speedup when ranking.
-def _compute_snapshot(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
+def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
     if sub is None:
@@ -471,23 +468,28 @@ def _compute_snapshot(actor: dict, ctx: dict, subspecies_base_cache: dict | None
         {
             "births": int(actor.get("births") or 0),
             "children": ctx["children_by_parent"].get(actor.get("id"), 0),
+            # Current `health`/`mana`/`stamina` (vs pipeline `*_max`); `happiness`/`nutrition` are live gauges with no max.
+            "happiness": int(actor.get("happiness") or 0),
+            "health": int(actor.get("health") or 0),
             "kills": int(actor.get("kills") or 0),
             # WB displays level 1 as the floor, even when the raw save field is absent / 0.
             "level": max(int(actor.get("level") or 0), 1),
             "loot": int(actor.get("loot") or 0),
+            "mana": int(actor.get("mana") or 0),
             "money": int(actor.get("money") or 0),
+            "nutrition": int(actor.get("nutrition") or 0),
             "renown": int(actor.get("renown") or 0),
+            "stamina": int(actor.get("stamina") or 0),
         }
     )
     return dict(sorted(cleaned.items()))
 
 
-# Standard competition rank (1,2,2,4) for every snapshot key, among the actor's same-`asset_id`
-# peers.
+# Standard competition rank (1,2,2,4) for every stats key, among the actor's same-`asset_id` peers.
 def _compute_ranks(actor: dict, ctx: dict, save: dict) -> dict:
     asset_id = actor.get("asset_id", "")
     cache: dict = {}
-    peers = [(a["id"], _compute_snapshot(a, ctx, cache)) for a in save["actors_data"] if a.get("asset_id") == asset_id]
+    peers = [(a["id"], _compute_stats(a, ctx, cache)) for a in save["actors_data"] if a.get("asset_id") == asset_id]
     own = next(s for aid, s in peers if aid == actor["id"])
     return {stat: sum(1 for _, s in peers if s.get(stat, 0) > value) + 1 for stat, value in sorted(own.items())}
 
@@ -560,7 +562,7 @@ def _build_lover(actor: dict, ctx: dict, save: dict) -> dict | None:
     lover = next((a for a in save["actors_data"] if a.get("id") == lover_id), None)
     if lover is None:
         return None
-    snap = _compute_snapshot(lover, ctx)
+    snap = _compute_stats(lover, ctx)
     age_months = ctx["world_time"] - float(lover.get("created_time") or 0)
     return {
         "age": round(age_months / MONTHS_PER_YEAR) + (lover.get("age_overgrowth") or 0),
@@ -666,8 +668,8 @@ def main(argv: list[str]) -> int:
         out["metadata"] = _build_metadata(actor, ctx, save)
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(actor, ctx, save)
-    if "snapshot" in sections:
-        out["snapshot"] = _compute_snapshot(actor, ctx)
+    if "stats" in sections:
+        out["stats"] = _compute_stats(actor, ctx)
 
     print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0

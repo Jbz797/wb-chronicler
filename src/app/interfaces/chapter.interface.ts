@@ -46,7 +46,7 @@ export interface ChapterMeta {
       stewardship: number;
       warfare: number;
     };
-    snapshot: {
+    stats: {
       armor: number;
       attack_speed: number;
       birth_rate: number;
@@ -56,22 +56,26 @@ export interface ChapterMeta {
       damage: number;
       damage_range: number;
       diplomacy: number;
+      happiness: number;
+      health: number;
       health_max: number;
       intelligence: number;
       kills: number;
       level: number;
       lifespan: number;
       loot: number;
+      mana: number;
       mana_max: number;
       max_children: number;
       money: number;
+      nutrition: number;
       renown: number;
       speed: number;
+      stamina: number;
       stamina_max: number;
       stewardship: number;
       warfare: number;
     };
-    stats: { happiness: number; health: number; mana: number; nutrition: number; stamina: number };
     traits: RarityCounts;
   } | null;
   tags: string[];

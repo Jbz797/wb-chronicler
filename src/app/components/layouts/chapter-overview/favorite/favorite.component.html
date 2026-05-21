@@ -18,9 +18,9 @@
       <app-ranked-stat stat="renown" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="childrenTitle">
-      {{ fav.snapshot.children }} / {{ fav.snapshot.max_children }}
-      @if (fav.snapshot.births !== fav.snapshot.children) {
-        <em>({{ fav.snapshot.births }} naissances)</em>
+      {{ fav.stats.children }} / {{ fav.stats.max_children }}
+      @if (fav.stats.births !== fav.stats.children) {
+        <em>({{ fav.stats.births }} naissances)</em>
       }
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="birthRateTitle">
