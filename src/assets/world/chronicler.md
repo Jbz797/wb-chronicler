@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 20/05/26 09:44</p>
+<p class="metadata">Date de mise à jour : 21/05/26 11:29</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -405,10 +405,10 @@ Chaque type de nom propre a un rendu visuel distinct dans le markdown du chapitr
 | Langue                 | `🪶 **gras**`                                                                                                             |
 | Religion               | `🕯 **gras**`                                                                                                             |
 | Famille                | `👨‍👩‍👧 **gras**`                                                                                                             |
-| Personnage             | `:asset_id **gras**:`                                                                                                     |
-| Espèce                 | `:asset_id Nom:` (cf. [Espèces intelligentes](#espèces-intelligentes))                                                    |
+| Personnage             | `[s asset_id **gras**]`                                                                                                   |
+| Espèce                 | `[s asset_id Nom]` (cf. [Espèces intelligentes](#espèces-intelligentes))                                                  |
 | Sous-espèce            | `` `monospace` ``                                                                                                         |
-| Ressource / minerai    | emoji + nom                                                                                                               |
+| Ressource / minerai    | `[r resource_id Nom]`                                                                                                     |
 | Âge du monde           | `*italique*`                                                                                                              |
 | Devise                 | `*italique*`                                                                                                              |
 
@@ -447,28 +447,19 @@ La colonne _Jouable_ indique les espèces parmi lesquelles le chroniqueur doit c
 | Elfe              | ✅      | Nécromancien       | ❌      |
 | Évocateur du Mal  | ❌      | Orc                | ✅      |
 
-### Minerais
-
-| Minerai      | Emoji | Minerai | Emoji |
-| ------------ | ----- | ------- | ----- |
-| Pierre       | 🪨    | Gemmes  | 💎    |
-| Métal commun | ⚒️    | Adamant | ⬛    |
-| Argent       | 🪙    | Mithril | 💠    |
-| Or           | 🟡    | Os      | 🦴    |
-
-### Autres ressources
-
-(Bois, viande, pain, cuir, livres, etc.) : le chroniqueur se débrouille — emoji cohérent à la première mention, conservé ensuite.
-
 ### Règles d'usage des codes dans le récit
 
-**Syntaxe** : `:asset_id Texte:` où `asset_id` est l'identifiant in-game de l'espèce (consultable dans `actors_data[].asset_id` du `map.wbox`). Le site Angular remplace le code par l'icône `src/assets/img/species/<asset_id>.png` accolée au `Texte`, le tout dans un `<span>` coloré pour les **espèces intelligentes** (couleur définie dans `SPECIES_COLORS`, cf. `src/app/constants/species-color.constant.ts`) et non coloré pour les **espèces non-intelligentes** (animaux, créatures de fond).
+**Syntaxe** :
 
-- **Première mention d'une espèce** (intelligente, animale, monstrueuse — peu importe) → code obligatoire englobant le nom (_« les `:dwarf Nains:` »_, _« un `:necromancer Nécromancien:` »_, _« les `:crab crabes:` »_). Si l'icône manque dans `src/assets/img/species/`, l'extraire depuis les assets WorldBox puis l'ajouter ; même chose pour la couleur dans `SPECIES_COLORS` si l'espèce est intelligente.
-- **Première mention d'un personnage** → code englobant son nom (_« `:dwarf **Mul Moahl**:` »_), puis simplement `**Mul Moahl**` aux mentions suivantes.
-- **Mention descriptive générique** après qu'un individu est nommé → code facultatif (_« le nain »_, _« la femelle elfe »_ vont bien, pas besoin de répéter le code à chaque fois).
-- **Forme courte `:asset_id:`** (icône seule, sans texte englobé) reste valide pour les cas où on veut juste l'icône sans coloration — usage exceptionnel.
-- **Cohérence** : vérifier que l'`asset_id` correspond bien à l'espèce. Attention en particulier à ne pas confondre 👑 **capitale** et ⚔ **royaume**.
+- `[s <asset_id> <texte>]` — code **espèce**. `asset_id` est l'identifiant in-game (consultable dans `actors_data[].asset_id` du `map.wbox`). Le site Angular remplace le code par le texte coloré (si l'espèce est listée comme intelligente) suivi de l'icône de l'espèce. La forme courte `[s <asset_id>]` (sans texte) reste valide pour l'icône seule.
+- `[r <resource_id> <texte>]` — code **ressource/minerai**. `resource_id` est l'identifiant in-game de la ressource (consultable dans `actors_data[].inventory.dict.*.id`). Le site Angular remplace le code par le texte suivi de l'icône de la ressource. Pas de coloration (contrairement à `[s ...]`). La forme courte `[r <resource_id>]` (sans texte) reste valide pour l'icône seule.
+
+- **Première mention d'une espèce** (intelligente, animale, monstrueuse — peu importe) → code obligatoire englobant le nom (_« les `[s dwarf Nains]` »_, _« un `[s necromancer Nécromancien]` »_, _« les `[s crab crabes]` »_).
+- **Première mention d'un personnage** → code englobant son nom (_« `[s dwarf **Mul Moahl**]` »_), puis simplement `**Mul Moahl**` aux mentions suivantes.
+- **Première mention d'une ressource / minerai** → code englobant le nom (_« l'`[r adamantine adamantine]` »_, _« `[r berries trois baies]` »_).
+- **Mention descriptive générique** après qu'un individu / une ressource est nommé → code facultatif (_« le nain »_, _« quelques baies »_), pas besoin de répéter à chaque fois.
+- **Forme courte `[s asset_id]`** (icône seule, sans texte) reste valide pour les cas où on veut juste l'icône sans coloration — usage exceptionnel.
+- **Cohérence** : vérifier que les IDs correspondent bien aux entités. Attention en particulier à ne pas confondre 👑 **capitale** et ⚔ **royaume**.
 
 ## Granularité du récit — ne pas tout citer
 

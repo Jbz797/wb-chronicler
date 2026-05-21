@@ -6,11 +6,12 @@ import { NavigationEnd, Router } from '@angular/router';
 import { catchError, EMPTY, expand, filter, map, scan } from 'rxjs';
 
 import { SAVES_DIR } from '../constants';
-import { ChroniclerHelpers } from '../helpers';
 import { Chapter, ChapterMeta } from '../interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class ChroniclerService {
+
+  private readonly _yearFromWorldTime = (worldTime: number): number => Math.floor(worldTime / 60) + 1;
 
   // Chapter list, dynamically discovered by probing C1, C2, ... until 404. Each chapter's chapter.json is captured during probing.
   public readonly chapters = (() => {
@@ -23,7 +24,7 @@ export class ChroniclerService {
         scan((accumulator: Chapter[], { meta, n }) => [
           ...accumulator,
           {
-            label: `C${n} — An ${ChroniclerHelpers.yearFromWorldTime(meta.world.metadata.world_time)}`,
+            label: `C${n} — An ${this._yearFromWorldTime(meta.world.metadata.world_time)}`,
             mdUrl: `${SAVES_DIR}/C${n}/chapter.md`,
             meta,
             previewUrl: `${SAVES_DIR}/C${n}/preview.png`,

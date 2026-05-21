@@ -1,6 +1,7 @@
 export type ChapterOverviewPanel = 'favorite' | 'world-stats';
 export type CumulativeStat = 'books_read' | 'plots_succeeded';
 export type DeathCause = 'eaten' | 'explosion' | 'fire' | 'hunger' | 'old_age' | 'water' | 'weapon';
+export type IconKind = 'resources' | 'species';
 
 export type RankedStatKind = 'armor' | 'attack_speed' | 'birth_rate' | 'critical_chance'
   | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'intelligence' | 'kills' | 'level'
