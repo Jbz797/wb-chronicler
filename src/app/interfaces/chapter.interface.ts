@@ -8,6 +8,7 @@ export interface ChapterMeta {
   favorite: {
     descriptor: string;
     equipment: RarityCounts;
+    inventory: Record<string, number>;
     lover: {
       age: number;
       health_max: number;

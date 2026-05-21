@@ -41,5 +41,10 @@ export class FavoriteComponent {
       traits: diffCounts(current.traits, previous.traits),
     };
   });
+  // Flatten the inventory dict into a list for the template — Python emits it already sorted alphabetically.
+  protected readonly inventoryEntries = computed(() => {
+    const inv = this.currentChapter()?.meta.favorite?.inventory ?? {};
+    return Object.entries(inv).map(([key, amount]) => ({ amount, key }));
+  });
 
 }

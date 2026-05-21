@@ -17,6 +17,10 @@
     justify-content: center;
   }
 
+  em {
+    color: $text-secondary;
+  }
+
   .section-title {
     margin-bottom: 0;
     text-align: center;
@@ -128,6 +132,28 @@
 
           img {
             margin: 0;
+          }
+        }
+
+        .inventory {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+
+          span {
+            align-items: center;
+            background: rgb(255 255 255 / 4%);
+            border-radius: $radius;
+            display: inline-flex;
+            gap: 0.25rem;
+            padding: 0 4.5px;
+
+            img {
+              margin: 0;
+              max-height: 12px;
+              max-width: 12px;
+              top: 0;
+            }
           }
         }
       }

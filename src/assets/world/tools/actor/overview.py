@@ -44,7 +44,7 @@ _LANGUAGE_TRAITS_DATA = _DATAS_DIR / "language-traits.json"
 _SPECIES_DATA = _DATAS_DIR / "species.json"
 _SUBSPECIES_TRAITS_DATA = _DATAS_DIR / "subspecies-traits.json"
 
-ALL_SECTIONS = ("creature_traits", "equipment", "lover", "metadata", "ranks", "snapshot")
+ALL_SECTIONS = ("creature_traits", "equipment", "inventory", "lover", "metadata", "ranks", "snapshot")
 
 GRID_COLS = 6
 LEVEL_RE = re.compile(r"(\d+)$")
@@ -548,6 +548,11 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     }
 
 
+def _build_inventory(actor: dict) -> dict:
+    items = ((actor.get("inventory") or {}).get("dict") or {}).items()
+    return dict(sorted((iid, entry.get("amount", 0)) for iid, entry in items))
+
+
 def _build_lover(actor: dict, ctx: dict, save: dict) -> dict | None:
     lover_id = actor.get("lover")
     if lover_id is None:
@@ -653,6 +658,8 @@ def main(argv: list[str]) -> int:
         out["creature_traits"] = _build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"], narrative=True)
     if "equipment" in sections:
         out["equipment"] = _build_equipment_list(actor, ctx)
+    if "inventory" in sections:
+        out["inventory"] = _build_inventory(actor)
     if "lover" in sections:
         out["lover"] = _build_lover(actor, ctx, save)
     if "metadata" in sections:

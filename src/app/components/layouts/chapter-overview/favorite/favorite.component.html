@@ -35,11 +35,21 @@
     <nz-descriptions-item [nzTitle]="moneyTitle">
       <app-ranked-stat stat="money" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="inventoryTitle">
+      <div class="inventory">
+        @for (item of inventoryEntries(); track item.key) {
+          <span><img [src]="`assets/img/resources/${item.key}.png`" />x{{ item.amount }}</span>
+        } @empty {
+          <em>vide</em>
+        }
+      </div>
+    </nz-descriptions-item>
   </nz-descriptions>
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
   <ng-template #birthRateTitle><img src="assets/img/stats/birth_rate.png" /><span>Natalité</span></ng-template>
   <ng-template #childrenTitle><img src="assets/img/stats/children.png" /><span>Enfants</span></ng-template>
+  <ng-template #inventoryTitle><img src="assets/img/stats/inventory.png" /><span>Inventaire</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
   <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
   <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
