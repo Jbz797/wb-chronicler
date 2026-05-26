@@ -5,7 +5,7 @@
 #
 # ─── Maintenance / algorithm reference ───
 # Full algorithm spec: `chronicler.md § VI` ("Annexe technique — Génétique et stats de base").
-# All numeric tables (GENE_VALUES, GENE_INDEX, ceil-on-bad exceptions, synergy-always genes)
+# All numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad exceptions, synergy-always genes)
 # are sourced from that section + observation of WorldBox in-game tooltips.
 #
 # Pipeline per chromosome:
@@ -18,7 +18,7 @@
 #        d. Accumulate per stat name.
 #   2. Round any float result to 4 decimals, cast integer-equivalents to int, drop zeros.
 #
-# Color synergy uses .NET `System.Random` seeded with `life_dna + gene.GENE_INDEX` to derive
+# Color synergy uses .NET `System.Random` seeded with `life_dna + gene._GENE_INDEX` to derive
 # each gene's 4-side color signature. The port mirrors .NET's int32 overflow semantics — see
 # `_to_int32()` and `_SystemRandom`. Color positions per chronicler.md spec use indices on a
 # *spaced* text (`"XXX XXX XXX XXX XXX"`, 19 chars) at 0/8/10/18 → in our unspaced 15-char
@@ -29,29 +29,29 @@ import json
 import math
 import re
 import sys
-import zlib
 from functools import cache
 from pathlib import Path
 
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from shared import CURRENT_SAVE, load_save, parse_sections  # noqa: E402
+
+_ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "ranks", "stats")
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
+_GRID_COLS = 6
+_LEVEL_RE = re.compile(r"(\d+)$")
+_MONTHS_PER_YEAR = 60
 
 _CLAN_TRAITS_DATA = _DATAS_DIR / "clan-traits.json"
 _CREATURE_TRAITS_DATA = _DATAS_DIR / "creature-traits.json"
-_CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
 _EQUIPMENT_DATA = _DATAS_DIR / "equipment.json"
 _LANGUAGE_TRAITS_DATA = _DATAS_DIR / "language-traits.json"
 _SPECIES_DATA = _DATAS_DIR / "species.json"
 _SUBSPECIES_TRAITS_DATA = _DATAS_DIR / "subspecies-traits.json"
 
-ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "ranks", "stats")
-
-GRID_COLS = 6
-LEVEL_RE = re.compile(r"(\d+)$")
-MONTHS_PER_YEAR = 60
 
 # Per chronicler.md § VI — gene -> (stat name, value contribution).
-GENE_VALUES = {
+_GENE_VALUES = {
     "armor_1": ("armor", 1),
     "armor_2": ("armor", 6),
     "armor_3": ("armor", 10),
@@ -96,11 +96,11 @@ GENE_VALUES = {
 }
 
 # Genes that round UP on BAD (instead of down).
-CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}
-SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
+_CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}
+_SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
 
 # Gene index_id used to seed SystemRandom — order in `GeneLibrary` (`addSpecial` → `addBaseStats` → `addFightStats` → `addBonusStats` → `addAttributes`).
-GENE_INDEX = {
+_GENE_INDEX = {
     "empty": 1,
     "temp_for_generation": 2,
     "bad": 3,
@@ -150,23 +150,25 @@ GENE_INDEX = {
     "intelligence_3": 47,
 }
 
-COLOR_MAP = {"T": "red", "G": "yellow", "A": "green", "C": "blue"}
-DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
-OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
-SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
+_COLOR_MAP = {"T": "red", "G": "yellow", "A": "green", "C": "blue"}
+_DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
+_OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
+_SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 
-# Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / MANA_PER_INTELLIGENCE constants.
-LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}
-LEVEL_VETERAN_SKILL_BONUS = 0.1
-LEVEL_VETERAN_THRESHOLD = 5
-MANA_PER_INTELLIGENCE = 10
+# Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / _MANA_PER_INTELLIGENCE constants.
+_LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}
+_LEVEL_VETERAN_SKILL_BONUS = 0.1
+_LEVEL_VETERAN_THRESHOLD = 5
+_MANA_PER_INTELLIGENCE = 10
 
-RENAMES = {"health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
+_RENAMES = {"health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
+
 # Stats kept as 1-decimal floats — integer truncate would lose meaningful precision (damage_range is typically `damage × ratio` where ratio < 1).
-KEEP_DECIMAL = {"damage_range"}
+_KEEP_DECIMAL = {"damage_range"}
+
 # Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
 # stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
-DROP = {"accuracy", "cities", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "range", "targets"}
+_DROP = {"accuracy", "cities", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "range", "targets"}
 
 
 # Mirrors C# int32 wrap-around — required because the game's SystemRandom relies on it.
@@ -221,21 +223,21 @@ class _SystemRandom:
 # colors only depend on (gene, life_dna), and life_dna is constant for one run.
 @cache
 def _gene_colors(gene: str, life_dna: int) -> dict:
-    idx = GENE_INDEX.get(gene)
+    idx = _GENE_INDEX.get(gene)
     if idx is None:
         return {}
     rnd = _SystemRandom(_to_int32(life_dna + idx))
     text = "".join("ACGT"[rnd.Next(4)] for _ in range(15))
-    return {"left": COLOR_MAP[text[0]], "up": COLOR_MAP[text[6]], "down": COLOR_MAP[text[8]], "right": COLOR_MAP[text[14]]}
+    return {"left": _COLOR_MAP[text[0]], "up": _COLOR_MAP[text[6]], "down": _COLOR_MAP[text[8]], "right": _COLOR_MAP[text[14]]}
 
 
 def _neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) -> tuple[str | None, int]:
-    rows = len(loci) // GRID_COLS
-    x, y = idx % GRID_COLS, idx // GRID_COLS
+    rows = len(loci) // _GRID_COLS
+    x, y = idx % _GRID_COLS, idx // _GRID_COLS
     nx, ny = x + dx, y + dy
-    if nx < 0 or nx >= GRID_COLS or ny < 0 or ny >= rows:
+    if nx < 0 or nx >= _GRID_COLS or ny < 0 or ny >= rows:
         return None, -1
-    nidx = nx + ny * GRID_COLS
+    nidx = nx + ny * _GRID_COLS
     if nidx in void_set:
         return None, nidx
     return loci[nidx], nidx
@@ -248,19 +250,19 @@ def _synergizes(gene: str, ngene: str, dx: int, dy: int, super_set: set[int], my
         return False  # two amplifiers don't synergize with each other
     if my_super or n_super:
         return True  # amplifier synergizes with anything
-    if gene in SYNERGY_ALWAYS or ngene in SYNERGY_ALWAYS:
+    if gene in _SYNERGY_ALWAYS or ngene in _SYNERGY_ALWAYS:
         return True
     if gene == "empty" or ngene == "empty":
         return False
-    return _gene_colors(gene, life_dna).get(SIDE[dx, dy]) == _gene_colors(ngene, life_dna).get(OPPOSITE[dx, dy])
+    return _gene_colors(gene, life_dna).get(_SIDE[dx, dy]) == _gene_colors(ngene, life_dna).get(_OPPOSITE[dx, dy])
 
 
 def _is_bad(loci: list[str], idx: int) -> bool:
-    rows = len(loci) // GRID_COLS
-    x, y = idx % GRID_COLS, idx // GRID_COLS
-    for dx, dy in DIRECTIONS:
+    rows = len(loci) // _GRID_COLS
+    x, y = idx % _GRID_COLS, idx // _GRID_COLS
+    for dx, dy in _DIRECTIONS:
         nx, ny = x + dx, y + dy
-        if 0 <= nx < GRID_COLS and 0 <= ny < rows and loci[nx + ny * GRID_COLS] == "bad":
+        if 0 <= nx < _GRID_COLS and 0 <= ny < rows and loci[nx + ny * _GRID_COLS] == "bad":
             return True
     return False
 
@@ -268,7 +270,7 @@ def _is_bad(loci: list[str], idx: int) -> bool:
 def _is_golden(loci: list[str], idx: int, void_set: set[int], super_set: set[int], life_dna: int) -> bool:
     gene = loci[idx]
     non_border = synergized = 0
-    for dx, dy in DIRECTIONS:
+    for dx, dy in _DIRECTIONS:
         ngene, nidx = _neighbor(loci, void_set, idx, dx, dy)
         if ngene is None:
             continue
@@ -278,10 +280,10 @@ def _is_golden(loci: list[str], idx: int, void_set: set[int], super_set: set[int
     return synergized >= 1 and synergized == non_border
 
 
-# BAD → floor(v/2) (or ceil for the few `_1`-tier genes listed in CEIL_ON_BAD); GOLDEN → v×2.
+# BAD → floor(v/2) (or ceil for the few `_1`-tier genes listed in _CEIL_ON_BAD); GOLDEN → v×2.
 def _apply_tier(gene: str, value: float, bad: bool, golden: bool) -> float:
     if bad:
-        return -(-value // 2) if gene in CEIL_ON_BAD else value // 2
+        return -(-value // 2) if gene in _CEIL_ON_BAD else value // 2
     return value * 2 if golden else value
 
 
@@ -293,7 +295,7 @@ def _add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> None:
         for idx, gene in enumerate(loci):
             if idx in void_set:
                 continue
-            entry = GENE_VALUES.get(gene)
+            entry = _GENE_VALUES.get(gene)
             if entry is None:
                 continue
             stat, value = entry
@@ -328,11 +330,11 @@ def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, i
 
 
 # Flat additive bonuses applied late in `Actor.updateStats`:
-#   stats["mana"] += int(stats["intelligence"] × MANA_PER_INTELLIGENCE)
+#   stats["mana"] += int(stats["intelligence"] × _MANA_PER_INTELLIGENCE)
 def _apply_intelligence_bonus(totals: dict) -> None:
     intel = totals.get("intelligence", 0)
     if intel:
-        totals["mana"] = totals.get("mana", 0) + int(intel * MANA_PER_INTELLIGENCE)
+        totals["mana"] = totals.get("mana", 0) + int(intel * _MANA_PER_INTELLIGENCE)
 
 
 # Civil progression accumulator (`actor.custom_data_float`) — diplomacy / warfare / stewardship
@@ -385,12 +387,12 @@ def _apply_offspring_age_scaling(totals: dict, age_ratio: float) -> None:
 
 # Apply Actor.updateStats end-of-method level scaling: stat *= (1 + level × mult), and a flat +0.1 to skill_combat / skill_spell when level > 5.
 def _apply_level_scaling(totals: dict, level: int) -> None:
-    for stat, mult in LEVEL_MOD.items():
+    for stat, mult in _LEVEL_MOD.items():
         if stat in totals:
             totals[stat] = totals[stat] * (1 + level * mult)
-    if level > LEVEL_VETERAN_THRESHOLD:
+    if level > _LEVEL_VETERAN_THRESHOLD:
         for stat in ("skill_combat", "skill_spell"):
-            totals[stat] = totals.get(stat, 0) + LEVEL_VETERAN_SKILL_BONUS
+            totals[stat] = totals.get(stat, 0) + _LEVEL_VETERAN_SKILL_BONUS
 
 
 # Floor floats to int (game stores most stats as int32). `health` / `mana` are renamed to
@@ -398,12 +400,12 @@ def _apply_level_scaling(totals: dict, level: int) -> None:
 def _cleanup_stats(totals: dict) -> dict:
     result = {}
     for k, v in totals.items():
-        if k in DROP:
+        if k in _DROP:
             continue
         if isinstance(v, float):
-            v = round(v, 1) if k in KEEP_DECIMAL else int(v)
+            v = round(v, 1) if k in _KEEP_DECIMAL else int(v)
         if v:
-            result[RENAMES.get(k, k)] = v
+            result[_RENAMES.get(k, k)] = v
     return dict(sorted(result.items()))
 
 
@@ -459,7 +461,7 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
     age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
-    lifespan_months = totals.get("lifespan", 0) * MONTHS_PER_YEAR
+    lifespan_months = totals.get("lifespan", 0) * _MONTHS_PER_YEAR
     _apply_offspring_age_scaling(totals, age_months / lifespan_months if lifespan_months else 0)
     cleaned = _cleanup_stats(totals)
     # Always-surface actor counters (kept verbatim even at 0 — the chronicler expects them).
@@ -495,7 +497,7 @@ def _compute_ranks(actor: dict, ctx: dict, save: dict) -> dict:
 
 
 def _equipment_rarity(modifiers: list[str]) -> str:
-    max_level = max((int(m.group(1)) for m in (LEVEL_RE.search(x) for x in modifiers) if m), default=0)
+    max_level = max((int(m.group(1)) for m in (_LEVEL_RE.search(x) for x in modifiers) if m), default=0)
     if max_level >= 5:
         return "Legendary"
     if max_level >= 4:
@@ -534,7 +536,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     return {
         # `age_overgrowth` (years past the actor's lifespan cap) is added on top of the natural
         # age — WB tooltips show the sum, so we mirror that to match what the chronicler sees.
-        "age": round(age_months / MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
+        "age": round(age_months / _MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
         "asset_id": actor.get("asset_id"),
         "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
         "clan": clan.get("name"),
@@ -652,7 +654,7 @@ def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict 
     snap = _compute_stats(companion, ctx)
     age_months = ctx["world_time"] - float(companion.get("created_time") or 0)
     return {
-        "age": round(age_months / MONTHS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
+        "age": round(age_months / _MONTHS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
         "health_max": snap.get("health_max", 0),
         "id": companion_id,
         "level": snap.get("level", 0),
@@ -689,7 +691,7 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
         ct = item.get("created_time")
         out.append(
             {
-                "age": round((world_time - ct) / MONTHS_PER_YEAR) if ct is not None else None,
+                "age": round((world_time - ct) / _MONTHS_PER_YEAR) if ct is not None else None,
                 "asset_id": item["asset_id"],
                 "by": item.get("by"),
                 "durability": item.get("durability"),
@@ -704,15 +706,6 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
     return sorted(out, key=lambda i: i["id"])
 
 
-def _parse_sections(arg: str | None) -> tuple[str, ...]:
-    if not arg or arg == "full":
-        return ALL_SECTIONS
-    requested = tuple(s.strip() for s in arg.split(",") if s.strip())
-    if unknown := [s for s in requested if s not in ALL_SECTIONS]:
-        raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: full,{','.join(ALL_SECTIONS)}")
-    return requested
-
-
 def main(argv: list[str]) -> int:
     if not argv:
         print("usage: overview.py <id> [sections] — see tools/tools.md", file=sys.stderr)
@@ -723,15 +716,14 @@ def main(argv: list[str]) -> int:
         print(f"invalid id: {argv[0]}", file=sys.stderr)
         return 1
     try:
-        sections = _parse_sections(argv[1] if len(argv) > 1 else None)
+        sections = parse_sections(argv[1] if len(argv) > 1 else None, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    if not _CURRENT_SAVE.exists():
-        print(f"no save found at {_CURRENT_SAVE}", file=sys.stderr)
+    if not CURRENT_SAVE.exists():
+        print(f"no save found at {CURRENT_SAVE}", file=sys.stderr)
         return 2
-    with _CURRENT_SAVE.open("rb") as f:
-        save = json.loads(zlib.decompress(f.read()))
+    save = load_save()
     actor = next((a for a in save["actors_data"] if a.get("id") == actor_id), None)
     if actor is None:
         print(f"unknown actor: {actor_id}", file=sys.stderr)
