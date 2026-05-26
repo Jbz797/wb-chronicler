@@ -7,6 +7,13 @@
       <img [src]="`assets/img/sex/${fav.metadata.sex}.png`" />
     </nz-descriptions-item>
     <nz-descriptions-item nzTitle="Descripteur">{{ fav.descriptor }}</nz-descriptions-item>
+    <nz-descriptions-item nzTitle="Rôles">
+      @for (tag of roleTags(); track tag.label) {
+        <nz-tag [nzColor]="tag.color">{{ tag.label }}</nz-tag>
+      } @empty {
+        <em>—</em>
+      }
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">{{ fav.metadata.age }} ans</nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="lifespanTitle">
       <app-ranked-stat stat="lifespan" />

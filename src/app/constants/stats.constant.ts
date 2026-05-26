@@ -1,5 +1,30 @@
 import { CumulativeStat, DeathCause, RankedStatKind, SnapshotStat } from '../interfaces';
 
+// French labels for `metadata.personality` (mirrors the IDs WB stores). `null` means commoner (no role).
+export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
+  administrator: 'Administrateur',
+  balanced: 'Équilibré',
+  diplomat: 'Diplomate',
+  militarist: 'Militariste',
+  wildcard: 'Imprévisible',
+};
+
+// French labels for `metadata.roles` (active = current position, !active = historical foundation) — Python emits the canonical order, do not re-sort here.
+export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: string }>> = {
+  alliance_founder: { active: false, label: "Fondateur d'alliance" },
+  army_captain: { active: true, label: "Capitaine d'armée" },
+  clan_chief: { active: true, label: 'Chef de clan' },
+  clan_founder: { active: false, label: 'Fondateur de clan' },
+  culture_creator: { active: false, label: 'Créateur de culture' },
+  family_alpha: { active: true, label: 'Chef de famille' },
+  family_founder: { active: false, label: 'Fondateur de famille' },
+  king: { active: true, label: 'Roi' },
+  language_creator: { active: false, label: 'Créateur de langue' },
+  religion_creator: { active: false, label: 'Créateur de religion' },
+  village_founder: { active: false, label: 'Fondateur de village' },
+  village_leader: { active: true, label: 'Chef de village' },
+};
+
 // Favorite combat stats — damage / defense / attack rhythm.
 export const COMBAT_STATS: { key: RankedStatKind; label: string }[] = [
   { key: 'damage', label: 'Dommages' },

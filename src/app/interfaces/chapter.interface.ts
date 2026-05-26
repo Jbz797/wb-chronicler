@@ -31,6 +31,8 @@ export interface ChapterMeta {
       age: number;
       asset_id: string;
       name: string;
+      personality: string | null;
+      roles: string[];
       sex: 'female' | 'male';
     };
     ranks: {

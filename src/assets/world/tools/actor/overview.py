@@ -33,12 +33,12 @@ import zlib
 from functools import cache
 from pathlib import Path
 
-# macOS path — mirror chronicler.md § "Emplacement source des saves WorldBox".
-CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
 
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
+
 _CLAN_TRAITS_DATA = _DATAS_DIR / "clan-traits.json"
 _CREATURE_TRAITS_DATA = _DATAS_DIR / "creature-traits.json"
+_CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
 _EQUIPMENT_DATA = _DATAS_DIR / "equipment.json"
 _LANGUAGE_TRAITS_DATA = _DATAS_DIR / "language-traits.json"
 _SPECIES_DATA = _DATAS_DIR / "species.json"
@@ -152,13 +152,13 @@ GENE_INDEX = {
 
 COLOR_MAP = {"T": "red", "G": "yellow", "A": "green", "C": "blue"}
 DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
-SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
+SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 
 # Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / MANA_PER_INTELLIGENCE constants.
 LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}
-LEVEL_VETERAN_THRESHOLD = 5
 LEVEL_VETERAN_SKILL_BONUS = 0.1
+LEVEL_VETERAN_THRESHOLD = 5
 MANA_PER_INTELLIGENCE = 10
 
 RENAMES = {"health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
@@ -545,10 +545,71 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "kingdom": (kingdoms_by_id.get(actor.get("civ_kingdom_id")) or {}).get("name"),
         "language": language.get("name"),
         "name": actor.get("name"),
+        "personality": _compute_personality(actor, ctx, save),
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
+        "roles": _compute_roles(actor, save),
         "sex": "female" if actor.get("sex") == 1 else "male",
         "subspecies": sub.get("name") or actor.get("subspecies"),
     }
+
+
+# Active roles (king/village_leader/clan_chief/army_captain/family_alpha — can be lost) and
+# historical foundations (alliance/clan/village/family founders, culture/language/religion
+# creators — irrevocable). Returns a sorted list of role IDs, empty when the actor has none.
+# Roles in canonical display order: active positions first (by hierarchical rank), then
+# historical foundations (creators before founders). The UI iterates in this exact order.
+_ROLE_ORDER = (
+    "king",
+    "village_leader",
+    "clan_chief",
+    "family_alpha",
+    "army_captain",
+    "culture_creator",
+    "language_creator",
+    "religion_creator",
+    "alliance_founder",
+    "clan_founder",
+    "village_founder",
+    "family_founder",
+)
+
+
+def _compute_roles(actor: dict, save: dict) -> list[str]:
+    actor_id = actor.get("id")
+    checks = {
+        "alliance_founder": any(a.get("founder_actor_id") == actor_id for a in save.get("alliances", [])),
+        "army_captain": any(army.get("id_captain") == actor_id for army in save.get("armies", [])),
+        "clan_chief": any(c.get("chief_id") == actor_id for c in save.get("clans", [])),
+        "clan_founder": any(c.get("founder_actor_id") == actor_id for c in save.get("clans", [])),
+        "culture_creator": any(c.get("creator_id") == actor_id for c in save.get("cultures", [])),
+        "family_alpha": any(f.get("alpha_id") == actor_id for f in save.get("families", [])),
+        "family_founder": any(f.get("main_founder_id_1") == actor_id or f.get("main_founder_id_2") == actor_id for f in save.get("families", [])),
+        "king": any(k.get("kingID") == actor_id for k in save.get("kingdoms", [])),
+        "language_creator": any(lang.get("creator_id") == actor_id for lang in save.get("languages", [])),
+        "religion_creator": any(r.get("creator_id") == actor_id for r in save.get("religions", [])),
+        "village_founder": any(c.get("founder_id") == actor_id for c in save.get("cities", [])),
+        "village_leader": any(c.get("leaderID") == actor_id for c in save.get("cities", [])),
+    }
+    return [role for role in _ROLE_ORDER if checks[role]]
+
+
+# Reproduces `Actor.updateStats` personality selection from the WB DLL: only city leaders and
+# kings get a personality, picked among diplomat/administrator/militarist/balanced based on
+# aggregated diplomacy/stewardship/warfare stats. `wildcard` is defined but never selected here.
+def _compute_personality(actor: dict, ctx: dict, save: dict) -> str | None:
+    roles = _compute_roles(actor, save)
+    if "king" not in roles and "village_leader" not in roles:
+        return None
+    snap = _compute_stats(actor, ctx)
+    diplo, stew, war = snap.get("diplomacy", 0), snap.get("stewardship", 0), snap.get("warfare", 0)
+    p, max_val = "balanced", diplo
+    if diplo > stew:
+        p, max_val = "diplomat", diplo
+    elif diplo < stew:
+        p, max_val = "administrator", stew
+    if war > max_val:
+        p = "militarist"
+    return p
 
 
 def _build_inventory(actor: dict) -> dict:
@@ -641,10 +702,10 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    if not CURRENT_SAVE.exists():
-        print(f"no save found at {CURRENT_SAVE}", file=sys.stderr)
+    if not _CURRENT_SAVE.exists():
+        print(f"no save found at {_CURRENT_SAVE}", file=sys.stderr)
         return 2
-    with CURRENT_SAVE.open("rb") as f:
+    with _CURRENT_SAVE.open("rb") as f:
         save = json.loads(zlib.decompress(f.read()))
     actor = next((a for a in save["actors_data"] if a.get("id") == actor_id), None)
     if actor is None:

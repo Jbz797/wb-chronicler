@@ -15,9 +15,8 @@ import sys
 import zlib
 from pathlib import Path
 
-CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
-
-ALL_SECTIONS = ("cumulative", "metadata", "snapshot")
+_ALL_SECTIONS = ("cumulative", "metadata", "snapshot")
+_CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
 
 # Chronicler key => map.meta top-level key. Most match 1:1; `wild_creatures` aliases `mobs`.
 _SNAPSHOT_KEYS = {
@@ -52,7 +51,7 @@ _DEATH_CAUSES = {
 
 def _build_snapshot(meta: dict, map_stats: dict) -> dict:
     # `frozen_tiles` / `relations` aren't in `map.meta` — decompress the save.
-    with CURRENT_SAVE.open("rb") as f:
+    with _CURRENT_SAVE.open("rb") as f:
         save = json.loads(zlib.decompress(f.read()))
     return dict(
         sorted(
@@ -85,10 +84,10 @@ def _build_metadata(map_stats: dict) -> dict:
 
 def _parse_sections(arg: str | None) -> tuple[str, ...]:
     if not arg or arg == "full":
-        return ALL_SECTIONS
+        return _ALL_SECTIONS
     requested = tuple(s.strip() for s in arg.split(",") if s.strip())
-    if unknown := [s for s in requested if s not in ALL_SECTIONS]:
-        raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: full,{','.join(ALL_SECTIONS)}")
+    if unknown := [s for s in requested if s not in _ALL_SECTIONS]:
+        raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: full,{','.join(_ALL_SECTIONS)}")
     return requested
 
 
@@ -98,9 +97,9 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    meta_path = CURRENT_SAVE.with_name("map.meta")
+    meta_path = _CURRENT_SAVE.with_name("map.meta")
     if not meta_path.exists():
-        print(f"no map.meta found next to {CURRENT_SAVE}", file=sys.stderr)
+        print(f"no map.meta found next to {_CURRENT_SAVE}", file=sys.stderr)
         return 2
     meta = json.loads(meta_path.read_text())
     map_stats = meta.get("mapStats") or {}

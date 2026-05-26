@@ -2,8 +2,9 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { COMBAT_STATS, SKILL_STATS } from '../../../../constants';
+import { COMBAT_STATS, PERSONALITY_LABELS, ROLE_LABELS, SKILL_STATS } from '../../../../constants';
 import { RarityCounts } from '../../../../interfaces';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services/chronicler.service';
@@ -11,7 +12,7 @@ import { RankedStatComponent, RarityStatsComponent } from '../../../misc';
 
 @Component({
   selector: 'app-favorite',
-  imports: [NzDescriptionsModule, NzEmptyModule, RankedStatComponent, RarityStatsComponent, TierPipe],
+  imports: [NzDescriptionsModule, NzEmptyModule, NzTagModule, RankedStatComponent, RarityStatsComponent, TierPipe],
   templateUrl: './favorite.component.html',
 })
 export class FavoriteComponent {
@@ -45,6 +46,21 @@ export class FavoriteComponent {
   protected readonly inventoryEntries = computed(() => {
     const inv = this.currentChapter()?.meta.favorite?.inventory ?? {};
     return Object.entries(inv).map(([key, amount]) => ({ amount, key }));
+  });
+  // Personality (magenta) first, then active roles only (green) — historical foundations stay in the JSON for the chronicler but are hidden in the UI.
+  protected readonly roleTags = computed(() => {
+    const meta = this.currentChapter()?.meta.favorite?.metadata;
+    if (!meta) return [];
+
+    const tags: { color: string; label: string }[] = [];
+    if (meta.personality) tags.push({ color: 'magenta', label: PERSONALITY_LABELS[meta.personality] ?? meta.personality });
+
+    for (const role of meta.roles) {
+      const definition = ROLE_LABELS[role];
+      if (definition?.active) tags.push({ color: 'green', label: definition.label });
+    }
+
+    return tags;
   });
 
 }
