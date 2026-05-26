@@ -540,6 +540,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "clan": clan.get("name"),
         "culture": (cultures_by_id.get(actor.get("culture")) or {}).get("name"),
         "family": (families_by_id.get(actor.get("family")) or {}).get("name"),
+        "favorite_food": actor.get("favorite_food"),
         "generation": int(actor.get("generation") or 1),
         "kingdom": (kingdoms_by_id.get(actor.get("civ_kingdom_id")) or {}).get("name"),
         "language": language.get("name"),

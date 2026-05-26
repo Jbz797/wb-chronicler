@@ -50,7 +50,7 @@
     "@angular/language-service": "^21.2.14",
     "chokidar": "^5.0.0",
     "concurrently": "^9.2.1",
-    "eslint-config-angular-strict": "^2.3.91",
+    "eslint-config-angular-strict": "^2.3.92",
     "less": "^4.6.4",
     "prettier": "^3.8.3",
     "stylelint": "^17.12.0",
