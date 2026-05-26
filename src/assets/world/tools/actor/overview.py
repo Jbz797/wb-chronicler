@@ -488,12 +488,26 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
 
 
 # Standard competition rank (1,2,2,4) for every stats key, among the actor's same-`asset_id` peers.
+# Ranks kept in the JSON. Most align with `RankedStatKind` in src/app/interfaces/types.ts (UI
+# consumers via RankedStatComponent). `births` is kept solely for the editorial chronicler — a
+# cumulative stat that produces useful narrative hooks ("most prolific of his generation").
+_RANKED_STATS = {
+    "armor", "attack_speed", "birth_rate", "births", "critical_chance", "damage", "damage_range",
+    "diplomacy", "health_max", "intelligence", "kills", "level", "lifespan", "loot",
+    "mana_max", "money", "renown", "speed", "stamina_max", "stewardship", "warfare",
+}
+
+
 def _compute_ranks(actor: dict, ctx: dict, save: dict) -> dict:
     asset_id = actor.get("asset_id", "")
     cache: dict = {}
     peers = [(a["id"], _compute_stats(a, ctx, cache)) for a in save["actors_data"] if a.get("asset_id") == asset_id]
     own = next(s for aid, s in peers if aid == actor["id"])
-    return {stat: sum(1 for _, s in peers if s.get(stat, 0) > value) + 1 for stat, value in sorted(own.items())}
+    return {
+        stat: sum(1 for _, s in peers if s.get(stat, 0) > value) + 1
+        for stat, value in sorted(own.items())
+        if stat in _RANKED_STATS
+    }
 
 
 def _equipment_rarity(modifiers: list[str]) -> str:
