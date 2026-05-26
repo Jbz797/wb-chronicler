@@ -544,6 +544,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "generation": int(actor.get("generation") or 1),
         "kingdom": (kingdoms_by_id.get(actor.get("civ_kingdom_id")) or {}).get("name"),
         "language": language.get("name"),
+        "mass": _compute_mass(actor),
         "name": actor.get("name"),
         "personality": _compute_personality(actor, ctx, save),
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
@@ -591,6 +592,30 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
         "village_leader": any(c.get("leaderID") == actor_id for c in save.get("cities", [])),
     }
     return [role for role in _ROLE_ORDER if checks[role]]
+
+
+# Reproduces `Actor.getMassKG` from the WB DLL: mass = (target_scale / 0.1) × mass_2 × (1 + Σ multiplier_mass).
+# `target_scale` and `mass_2` aren't persisted in the save — we rebuild them from asset_id + saved_traits.
+# Mass deltas applied by traits are the only ones found in the DLL (`fat`, `giant`, `tiny`, `agile`).
+_MASS_BASE = {"dwarf": 75, "elf": 25, "humanoid": 65, "orc": 85}
+_TRAIT_MASS_MODS = {
+    "agile": {"scale": -0.01},
+    "fat": {"multiplier_mass": 0.30, "scale": 0.02},
+    "giant": {"scale": 0.05},
+    "tiny": {"scale": -0.02},
+}
+
+
+def _compute_mass(actor: dict) -> int | None:
+    base = _MASS_BASE.get(actor.get("asset_id") or "")
+    if base is None:
+        return None
+    scale, mult_mass = 0.10, 0.0
+    for trait in actor.get("saved_traits") or []:
+        mods = _TRAIT_MASS_MODS.get(trait, {})
+        scale += mods.get("scale", 0)
+        mult_mass += mods.get("multiplier_mass", 0)
+    return int((scale / 0.1) * base * (1 + mult_mass))
 
 
 # Reproduces `Actor.updateStats` personality selection from the WB DLL: only city leaders and
