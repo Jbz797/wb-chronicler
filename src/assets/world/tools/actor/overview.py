@@ -161,14 +161,14 @@ _LEVEL_VETERAN_SKILL_BONUS = 0.1
 _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
 
-_RENAMES = {"health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
+_RENAMES = {"cities": "max_cities", "health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
 
 # Stats kept as 1-decimal floats — integer truncate would lose meaningful precision (damage_range is typically `damage × ratio` where ratio < 1).
 _KEEP_DECIMAL = {"damage_range"}
 
 # Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
 # stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
-_DROP = {"accuracy", "cities", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "range", "targets"}
+_DROP = {"accuracy", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "range", "targets"}
 
 
 # Mirrors C# int32 wrap-around — required because the game's SystemRandom relies on it.
@@ -436,7 +436,7 @@ def _build_context(save: dict) -> dict:
 # Aggregate one actor's instant-T stats through the full pipeline. `subspecies_base_cache`
 # is optional; when provided, the heavy (species + chromosomes + subspecies traits) base is
 # computed once per subspecies and reused across actors — a 5× speedup when ranking.
-def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
+def _compute_stats(actor: dict, ctx: dict, save: dict | None = None, subspecies_base_cache: dict | None = None) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
     if sub is None:
@@ -464,6 +464,9 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
     lifespan_months = totals.get("lifespan", 0) * _MONTHS_PER_YEAR
     _apply_offspring_age_scaling(totals, age_months / lifespan_months if lifespan_months else 0)
     cleaned = _cleanup_stats(totals)
+    # `max_cities` (Kingdom.getMaxCities) only matters for kings — strip it elsewhere.
+    if save is not None and "king" not in _compute_roles(actor, save):
+        cleaned.pop("max_cities", None)
     # Always-surface actor counters (kept verbatim even at 0 — the chronicler expects them).
     # `loot` keeps the WB-native name (the chronicler also reads it from the raw save).
     cleaned.update(
@@ -492,9 +495,27 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
 # consumers via RankedStatComponent). `births` is kept solely for the editorial chronicler — a
 # cumulative stat that produces useful narrative hooks ("most prolific of his generation").
 _RANKED_STATS = {
-    "armor", "attack_speed", "birth_rate", "births", "critical_chance", "damage", "damage_range",
-    "diplomacy", "health_max", "intelligence", "kills", "level", "lifespan", "loot",
-    "mana_max", "money", "renown", "speed", "stamina_max", "stewardship", "warfare",
+    "armor",
+    "attack_speed",
+    "birth_rate",
+    "births",
+    "critical_chance",
+    "damage",
+    "damage_range",
+    "diplomacy",
+    "health_max",
+    "intelligence",
+    "kills",
+    "level",
+    "lifespan",
+    "loot",
+    "mana_max",
+    "money",
+    "renown",
+    "speed",
+    "stamina_max",
+    "stewardship",
+    "warfare",
 }
 
 
@@ -503,11 +524,7 @@ def _compute_ranks(actor: dict, ctx: dict, save: dict) -> dict:
     cache: dict = {}
     peers = [(a["id"], _compute_stats(a, ctx, cache)) for a in save["actors_data"] if a.get("asset_id") == asset_id]
     own = next(s for aid, s in peers if aid == actor["id"])
-    return {
-        stat: sum(1 for _, s in peers if s.get(stat, 0) > value) + 1
-        for stat, value in sorted(own.items())
-        if stat in _RANKED_STATS
-    }
+    return {stat: sum(1 for _, s in peers if s.get(stat, 0) > value) + 1 for stat, value in sorted(own.items()) if stat in _RANKED_STATS}
 
 
 def _equipment_rarity(modifiers: list[str]) -> str:
@@ -764,7 +781,7 @@ def main(argv: list[str]) -> int:
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(actor, ctx, save)
     if "stats" in sections:
-        out["stats"] = _compute_stats(actor, ctx)
+        out["stats"] = _compute_stats(actor, ctx, save)
 
     print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0
