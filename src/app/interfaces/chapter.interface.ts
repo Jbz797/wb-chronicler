@@ -45,6 +45,7 @@ export interface ChapterMeta {
       type_id: string;
     } | null;
     ranks_in_species: {
+      age?: number;
       armor?: number;
       attack_speed?: number;
       birth_rate?: number;

@@ -12,9 +12,11 @@
         <nz-tag [nzColor]="tag.color">{{ tag.label }}</nz-tag>
       }
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="ageTitle">{{ fav.metadata.age }} ans</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="ageTitle">
+      <app-ranked-stat stat="age" suffix=" ans" [hideDelta]="true" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="lifespanTitle">
-      <app-ranked-stat stat="lifespan" />
+      <app-ranked-stat stat="lifespan" suffix=" ans" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="levelTitle">
       <app-ranked-stat stat="level" />
@@ -107,7 +109,13 @@
         <span>{{ s.label }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
-        <app-ranked-stat [stat]="s.key" />
+        <app-ranked-stat
+          [deltaSuffix]="s.deltaSuffix ?? ''"
+          [numberFormat]="s.numberFormat ?? '1.0-0'"
+          [showRank]="s.showRank ?? true"
+          [stat]="s.key"
+          [suffix]="s.suffix ?? ''"
+        />
       </nz-descriptions-item>
     }
   </nz-descriptions>
@@ -119,7 +127,13 @@
         <span>{{ s.label }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
-        <app-ranked-stat [stat]="s.key" />
+        <app-ranked-stat
+          [deltaSuffix]="s.deltaSuffix ?? ''"
+          [numberFormat]="s.numberFormat ?? '1.0-0'"
+          [showRank]="s.showRank ?? true"
+          [stat]="s.key"
+          [suffix]="s.suffix ?? ''"
+        />
       </nz-descriptions-item>
     }
   </nz-descriptions>

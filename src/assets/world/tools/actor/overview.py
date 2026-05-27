@@ -525,7 +525,8 @@ _RANKED_STATS = {
 def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
     asset_id = actor.get("asset_id", "")
     cache: dict = {}
-    peers = [(a["id"], _compute_stats(a, ctx, cache)) for a in save["actors_data"] if a.get("asset_id") == asset_id]
+    same_species = [a for a in save["actors_data"] if a.get("asset_id") == asset_id]
+    peers = [(a["id"], _compute_stats(a, ctx, cache)) for a in same_species]
     own = next(s for aid, s in peers if aid == actor["id"])
     ranks = {}
     for stat, value in sorted(own.items()):
@@ -534,7 +535,16 @@ def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
         rank = sum(1 for _, s in peers if s.get(stat, 0) > value) + 1
         if rank <= 3:
             ranks[stat] = rank
-    return ranks
+
+    # Age is not in _compute_stats (it's derived from created_time) — rank it separately.
+    def actor_age(a: dict) -> int:
+        return round((ctx["world_time"] - float(a.get("created_time") or 0)) / _MONTHS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+
+    own_age = actor_age(actor)
+    age_rank = sum(1 for a in same_species if actor_age(a) > own_age) + 1
+    if age_rank <= 3:
+        ranks["age"] = age_rank
+    return dict(sorted(ranks.items()))
 
 
 def _equipment_rarity(modifiers: list[str]) -> str:

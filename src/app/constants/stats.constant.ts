@@ -1,4 +1,4 @@
-import { CumulativeStat, DeathCause, RankedStatKind, SnapshotStat } from '../interfaces';
+import { CumulativeStat, DeathCause, SnapshotStat, StatConfig } from '../interfaces';
 
 // French labels for `plot.type_id` — sourced from WB's `PlotsLibrary`. Unknown ids fall back to the raw id at render time.
 export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -58,11 +58,11 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
 };
 
 // Favorite combat stats — damage / defense / attack rhythm.
-export const COMBAT_STATS: { key: RankedStatKind; label: string }[] = [
+export const COMBAT_STATS: StatConfig[] = [
   { key: 'damage', label: 'Dommages' },
-  { key: 'damage_range', label: 'Aléa' },
+  { key: 'damage_range', label: 'Aléa', numberFormat: '1.1-1', showRank: false },
   { key: 'armor', label: 'Armure' },
-  { key: 'critical_chance', label: 'Critiques' },
+  { deltaSuffix: '%', key: 'critical_chance', label: 'Critiques', suffix: '%' },
   { key: 'attack_speed', label: 'Cadence' },
 ];
 
@@ -84,7 +84,7 @@ export const DEATH_CAUSES: { key: DeathCause; label: string }[] = [
 ];
 
 // Favorite social skills — diplomacy / military / governance / intellect.
-export const SKILL_STATS: { key: RankedStatKind; label: string }[] = [
+export const SKILL_STATS: StatConfig[] = [
   { key: 'diplomacy', label: 'Diplomatie' },
   { key: 'warfare', label: 'Martial' },
   { key: 'stewardship', label: 'Intendance' },

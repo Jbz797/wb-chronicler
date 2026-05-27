@@ -14,7 +14,12 @@ import { DeltaComponent } from '../delta/delta.component';
 })
 export class RankedStatComponent {
 
+  public readonly deltaSuffix = input<string>('');
+  public readonly hideDelta = input<boolean>(false);
+  public readonly numberFormat = input<string>('1.0-0');
+  public readonly showRank = input<boolean>(true);
   public readonly stat = input.required<RankedStatKind>();
+  public readonly suffix = input<string>('');
 
   private readonly _chronicler = inject(ChroniclerService);
 
@@ -26,10 +31,9 @@ export class RankedStatComponent {
     const c = this._resolve(current);
     const p = previous ? this._resolve(previous) : null;
 
-    return { ...c, rankStatus: this._rankStatus(c.rank_in_species, p?.rank_in_species, !!p), valueDelta: p ? c.value - p.value : undefined };
+    const valueDelta = this.hideDelta() ? undefined : (p ? c.value - p.value : undefined);
+    return { ...c, rankStatus: this._rankStatus(c.rank_in_species, p?.rank_in_species, !!p), valueDelta };
   });
-  // Suffix propagated to the delta tag — only kept for non-unit suffixes (`%`).
-  protected readonly deltaSuffix = computed(() => this.stat() === 'critical_chance' ? '%' : '');
   // Live gauge value for stats that have a cap (health/mana/stamina). `null` for all others.
   protected readonly gaugeValue = computed(() => {
     const k = this.stat();
@@ -39,23 +43,8 @@ export class RankedStatComponent {
     if (k === 'stamina') return s?.stamina;
     return null;
   });
-  // 1-decimal precision for stats stored as floats (damage_range); integer otherwise.
-  protected readonly numberFormat = computed(() => this.stat() === 'damage_range' ? '1.1-1' : '1.0-0');
-  // Stats where a high value is neither good nor bad (just stylistic) — the rank is hidden.
-  protected readonly showRank = computed(() => this.stat() !== 'damage_range');
-  // Trailing suffix for the headline value (percentages, units, etc).
-  protected readonly suffix = computed(() => {
-    const k = this.stat();
-    if (k === 'critical_chance') return '%';
-    if (k === 'lifespan') return ' ans';
-    return '';
-  });
 
   // Status dot color shown next to the podium icon:
-  //   top→top: green if rank improved, red if it regressed, null if equal
-  //   top→non-top: red (dropped out of the species top 3)
-  //   non-top→top: green (entered the top)
-  //   non-top→non-top OR no previous chapter: null
   private _rankStatus(current: number | undefined, previous: number | undefined, hasPrevious: boolean): 'error' | 'success' | null {
     if (!hasPrevious) return null;
     if (current !== undefined && previous !== undefined) {
@@ -70,6 +59,7 @@ export class RankedStatComponent {
   // Per-kind field accessor — pulls value/rank from the favorite's stats/ranks dict.
   private _resolve(f: NonNullable<ChapterMeta['favorite']>): RankedStatSnapshot {
     const k = this.stat();
+    if (k === 'age') return this._snap(f.metadata.age, f.ranks_in_species.age);
     if (k === 'armor') return this._snap(f.stats.armor, f.ranks_in_species.armor);
     if (k === 'attack_speed') return this._snap(f.stats.attack_speed, f.ranks_in_species.attack_speed);
     if (k === 'birth_rate') return this._snap(f.stats.birth_rate, f.ranks_in_species.birth_rate);
