@@ -67,14 +67,14 @@ export class FavoriteComponent {
 
     if (meta.personality) {
       const isNew = !!previousMeta && previousMeta.personality !== meta.personality;
-      tags.push({ color: 'gold', isNew, label: PERSONALITY_LABELS[meta.personality] ?? meta.personality });
+      tags.push({ color: 'yellow', isNew, label: PERSONALITY_LABELS[meta.personality] ?? meta.personality });
     }
 
     for (const role of meta.roles) {
       const definition = ROLE_LABELS[role];
       if (definition?.active) {
         const isNew = !!previousMeta && !previousRoles.has(role);
-        tags.push({ color: 'green', isNew, label: definition.label });
+        tags.push({ color: 'lime', isNew, label: definition.label });
       }
     }
 

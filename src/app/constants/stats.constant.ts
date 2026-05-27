@@ -61,7 +61,7 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
 export const COMBAT_STATS: StatConfig[] = [
   { key: 'damage', label: 'Dommages' },
   { key: 'damage_range', label: 'Aléa', numberFormat: '1.1-1', showRank: false },
-  { key: 'armor', label: 'Armure' },
+  { key: 'armor', label: 'Armure', suffix: '%' },
   { deltaSuffix: '%', key: 'critical_chance', label: 'Critiques', suffix: '%' },
   { key: 'attack_speed', label: 'Cadence' },
 ];

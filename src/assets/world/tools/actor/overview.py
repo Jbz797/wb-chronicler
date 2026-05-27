@@ -474,7 +474,8 @@ def _compute_stats(actor: dict, ctx: dict, save: dict | None = None, subspecies_
             "births": int(actor.get("births") or 0),
             "children": ctx["children_by_parent"].get(actor.get("id"), 0),
             # Current `health`/`mana`/`stamina` (vs pipeline `*_max`); `happiness`/`nutrition` are live gauges with no max.
-            "happiness": int(actor.get("happiness") or 0),
+            # WB stores happiness as -100→+100; UI displays (raw + 100) / 2 as a 0–100% value.
+            "happiness": (int(actor.get("happiness") or 0) + 100) * 100 // 200,
             "health": int(actor.get("health") or 0),
             "kills": int(actor.get("kills") or 0),
             # WB displays level 1 as the floor, even when the raw save field is absent / 0.
