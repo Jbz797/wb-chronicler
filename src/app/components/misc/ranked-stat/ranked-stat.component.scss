@@ -2,3 +2,17 @@
   display: flex;
   justify-content: space-between;
 }
+
+.rank {
+  &:last-child {
+    margin-right: 3px;
+  }
+
+  &.rank-down {
+    color: #ff4d4f;
+  }
+
+  &.rank-up {
+    color: #52c41a;
+  }
+}

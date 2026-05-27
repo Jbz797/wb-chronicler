@@ -36,7 +36,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared import CURRENT_SAVE, load_save, parse_sections  # noqa: E402
 
-_ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "ranks", "stats")
+_ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _GRID_COLS = 6
 _LEVEL_RE = re.compile(r"(\d+)$")
@@ -519,12 +519,22 @@ _RANKED_STATS = {
 }
 
 
-def _compute_ranks(actor: dict, ctx: dict, save: dict) -> dict:
+# Standard competition rank (1,2,2,4) for each stat among same-`asset_id` peers (i.e. ranks
+# within the species). Only top 3 emitted — UI hides anything beyond, and the chronicler has
+# no narrative use for "34th out of 114".
+def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
     asset_id = actor.get("asset_id", "")
     cache: dict = {}
     peers = [(a["id"], _compute_stats(a, ctx, cache)) for a in save["actors_data"] if a.get("asset_id") == asset_id]
     own = next(s for aid, s in peers if aid == actor["id"])
-    return {stat: sum(1 for _, s in peers if s.get(stat, 0) > value) + 1 for stat, value in sorted(own.items()) if stat in _RANKED_STATS}
+    ranks = {}
+    for stat, value in sorted(own.items()):
+        if stat not in _RANKED_STATS:
+            continue
+        rank = sum(1 for _, s in peers if s.get(stat, 0) > value) + 1
+        if rank <= 3:
+            ranks[stat] = rank
+    return ranks
 
 
 def _equipment_rarity(modifiers: list[str]) -> str:
@@ -696,6 +706,27 @@ def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict 
     }
 
 
+# Plot the actor is currently driving — `actor.plot` points into `save.plots`. Returns `None`
+# if the actor isn't involved in any plot (most actors). Targets resolved to kingdom/alliance names.
+def _build_plot(actor: dict, save: dict) -> dict | None:
+    plot_id = actor.get("plot")
+    if plot_id is None:
+        return None
+    plot = next((p for p in save.get("plots", []) if p.get("id") == plot_id), None)
+    if plot is None:
+        return None
+    kingdoms_by_id = {k["id"]: k for k in save.get("kingdoms", [])}
+    alliances_by_id = {a["id"]: a for a in save.get("alliances", [])}
+    return {
+        "name": plot.get("name"),
+        "progress": round(float(plot.get("progress_current", 0)), 1),
+        "started_at": round(float(plot.get("created_time", 0)), 2),
+        "target_alliance": (alliances_by_id.get(plot.get("id_target_alliance")) or {}).get("name"),
+        "target_kingdom": (kingdoms_by_id.get(plot.get("id_target_kingdom")) or {}).get("name"),
+        "type_id": plot.get("plot_type_id"),
+    }
+
+
 def _build_trait_list(trait_ids: list[str], traits_data: dict, narrative: bool) -> list:
     out = []
     for tid in trait_ids or []:
@@ -778,8 +809,10 @@ def main(argv: list[str]) -> int:
         out["lover"] = _build_companion(actor, ctx, save, "lover")
     if "metadata" in sections:
         out["metadata"] = _build_metadata(actor, ctx, save)
-    if "ranks" in sections:
-        out["ranks"] = _compute_ranks(actor, ctx, save)
+    if "plot" in sections:
+        out["plot"] = _build_plot(actor, save)
+    if "ranks_in_species" in sections:
+        out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx, save)
     if "stats" in sections:
         out["stats"] = _compute_stats(actor, ctx, save)
 

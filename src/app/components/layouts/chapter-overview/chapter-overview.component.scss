@@ -17,6 +17,11 @@
     justify-content: center;
   }
 
+  ::ng-deep nz-tag.ant-tag-gold {
+    line-height: 16px;
+    margin-right: 4px;
+  }
+
   em {
     color: $text-secondary;
   }
@@ -86,13 +91,20 @@
         margin-bottom: 2px;
 
         .ant-descriptions-title {
+          align-items: center;
           color: $accent;
+          display: flex;
           font-size: 0.9rem;
           font-weight: 500;
+          justify-content: center;
           letter-spacing: $letter-spacing-wide;
           margin-top: 1rem;
           text-align: center;
           text-transform: uppercase;
+
+          nz-tag {
+            padding-right: 4px;
+          }
         }
       }
 
@@ -110,6 +122,10 @@
           margin-left: 4px;
           margin-right: 0;
           vertical-align: center;
+        }
+
+        & > nz-tag {
+          margin: 0 2px 0 0;
         }
 
         img {

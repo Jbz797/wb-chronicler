@@ -1,0 +1,23 @@
+@if (data(); as companion) {
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="cardTitle">
+    <nz-descriptions-item [nzTitle]="sexIcon">{{ companion.name }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="ageIcon">{{ companion.age }} ans</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="levelIcon">{{ companion.level }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="renownIcon">{{ companion.renown }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="moneyIcon">{{ companion.money }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="healthIcon">{{ companion.health_max }}</nz-descriptions-item>
+  </nz-descriptions>
+
+  <ng-template #ageIcon><img src="assets/img/stats/age.png" /></ng-template>
+  <ng-template #cardTitle>
+    @if (isNew()) {
+      <nz-tag nzColor="gold">NEW</nz-tag>
+    }
+    {{ title() }}
+  </ng-template>
+  <ng-template #healthIcon><img src="assets/img/stats/health.png" /></ng-template>
+  <ng-template #levelIcon><img src="assets/img/stats/level.png" /></ng-template>
+  <ng-template #moneyIcon><img src="assets/img/stats/money.png" /></ng-template>
+  <ng-template #renownIcon><img src="assets/img/stats/renown.png" /></ng-template>
+  <ng-template #sexIcon><img [src]="`assets/img/sex/${companion.sex}.png`" /></ng-template>
+}

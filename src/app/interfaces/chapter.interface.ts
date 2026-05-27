@@ -1,5 +1,5 @@
 import { Page } from './page.interface';
-import { RarityCounts } from './rarity-counts.interface';
+import { RarityCounts } from './stats.interface';
 
 export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 
@@ -9,6 +9,7 @@ export interface ChapterMeta {
     best_friend: {
       age: number;
       health_max: number;
+      id: number;
       level: number;
       money: number;
       name: string;
@@ -21,6 +22,7 @@ export interface ChapterMeta {
     lover: {
       age: number;
       health_max: number;
+      id: number;
       level: number;
       money: number;
       name: string;
@@ -35,27 +37,35 @@ export interface ChapterMeta {
       roles: string[];
       sex: 'female' | 'male';
     };
-    ranks: {
-      armor: number;
-      attack_speed: number;
-      birth_rate: number;
-      critical_chance: number;
-      damage: number;
-      damage_range: number;
-      diplomacy: number;
-      health_max: number;
-      intelligence: number;
-      kills: number;
-      level: number;
-      lifespan: number;
-      loot: number;
-      mana_max: number;
-      money: number;
-      renown: number;
-      speed: number;
-      stamina_max: number;
-      stewardship: number;
-      warfare: number;
+    plot: {
+      name: string;
+      progress: number;
+      target_alliance: string | null;
+      target_kingdom: string | null;
+      type_id: string;
+    } | null;
+    ranks_in_species: {
+      armor?: number;
+      attack_speed?: number;
+      birth_rate?: number;
+      births?: number;
+      critical_chance?: number;
+      damage?: number;
+      damage_range?: number;
+      diplomacy?: number;
+      health_max?: number;
+      intelligence?: number;
+      kills?: number;
+      level?: number;
+      lifespan?: number;
+      loot?: number;
+      mana_max?: number;
+      money?: number;
+      renown?: number;
+      speed?: number;
+      stamina_max?: number;
+      stewardship?: number;
+      warfare?: number;
     };
     stats: {
       armor: number;
@@ -90,7 +100,6 @@ export interface ChapterMeta {
     traits: RarityCounts;
   } | null;
   tags: string[];
-  title: string;
   world: {
     cumulative: {
       books_read: number;
@@ -122,6 +131,7 @@ export interface ChapterMeta {
       houses: number;
       kingdoms: number;
       languages: number;
+      plots_active: number;
       population: number;
       relations: number;
       religions: number;

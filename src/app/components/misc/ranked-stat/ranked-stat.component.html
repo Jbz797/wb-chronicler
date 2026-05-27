@@ -1,17 +1,24 @@
 @if (data(); as d) {
   <div class="stat-row">
     <span>
-      @if (d.current !== undefined) {
-        <span [class]="d.current | tier: d.max">{{ d.current | number: numberFormat() }}</span> / {{ d.max | number: numberFormat() }}{{ suffix() }}
+      @if (gaugeValue(); as c) {
+        <span [class]="c | tier: d.value">{{ c | number: numberFormat() }}</span> / {{ d.value | number: numberFormat() }}{{ suffix() }}
       } @else {
-        <span>{{ d.max | number: numberFormat() }}{{ suffix() }}</span>
+        <span>{{ d.value | number: numberFormat() }}{{ suffix() }}</span>
       }
       <app-delta [suffix]="deltaSuffix()" [value]="d.valueDelta" />
     </span>
-    @if (showRank() && d.rank <= 5) {
+    @if (showRank() && (d.rank_in_species !== undefined || d.rankStatus)) {
       <span>
-        <app-delta [inverted]="true" [value]="d.rankDelta" />
-        #{{ d.rank }}
+        @if (d.rankStatus === 'success') {
+          <span class="rank rank-up">↑</span>
+        }
+        @if (d.rankStatus === 'error') {
+          <span class="rank rank-down">↓</span>
+        }
+        @if (d.rank_in_species !== undefined) {
+          <img [src]="`assets/img/podium/${d.rank_in_species}.png`" />
+        }
       </span>
     }
   </div>

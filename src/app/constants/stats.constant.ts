@@ -1,5 +1,37 @@
 import { CumulativeStat, DeathCause, RankedStatKind, SnapshotStat } from '../interfaces';
 
+// French labels for `plot.type_id` — sourced from WB's `PlotsLibrary`. Unknown ids fall back to the raw id at render time.
+export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
+  alliance_create: "Création d'alliance",
+  alliance_destroy: "Destruction d'alliance",
+  alliance_join: 'Rejoindre une alliance',
+  attacker_stop_war: 'Cessez-le-feu',
+  big_cast_bubble_shield: 'Bouclier de bulles',
+  big_cast_coffee: 'Rite du café',
+  big_cast_madness: 'Rite de folie',
+  big_cast_slowness: 'Rite de lenteur',
+  cause_rebellion: 'Provocation de rébellion',
+  clan_ascension: 'Ascension de clan',
+  culture_divide: 'Schisme culturel',
+  language_divergence: 'Divergence linguistique',
+  new_book: "Écriture d'un livre",
+  new_culture: 'Création de culture',
+  new_language: 'Création de langue',
+  new_religion: 'Création de religion',
+  new_war: 'Déclaration de guerre',
+  rebellion: 'Rébellion',
+  religion_schism: 'Schisme religieux',
+  summon_angles: "Invocation d'anges",
+  summon_demons: 'Invocation de démons',
+  summon_earthquake: "Invocation d'un séisme",
+  summon_hellstorm: "Invocation d'une tempête infernale",
+  summon_living_plants: 'Invocation de plantes vivantes',
+  summon_meteor_rain: 'Invocation de météores',
+  summon_skeletons: 'Invocation de squelettes',
+  summon_stormfront: "Invocation d'une tempête",
+  summon_thunderstorm: "Invocation d'un orage",
+};
+
 // French labels for `metadata.personality` (mirrors the IDs WB stores). `null` means commoner (no role).
 export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
   administrator: 'Administrateur',
@@ -36,8 +68,8 @@ export const COMBAT_STATS: { key: RankedStatKind; label: string }[] = [
 
 // Cumulative world stats — UI surfaces the delta vs previous chapter (per-chapter activity).
 export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
-  { key: 'plots_succeeded', label: 'Complots réussis' },
   { key: 'books_read', label: 'Livres lus' },
+  { key: 'plots_succeeded', label: 'Complots réussis' },
 ];
 
 // Death causes — display order by descending magnitude on current save (most-frequent first).

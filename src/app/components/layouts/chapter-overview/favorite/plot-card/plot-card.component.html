@@ -1,0 +1,16 @@
+@if (plot(); as p) {
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="plotTitle">
+    <nz-descriptions-item nzTitle="Type">{{ typeLabel(p.type_id) }}</nz-descriptions-item>
+    <nz-descriptions-item nzTitle="Cible">{{ target() }}</nz-descriptions-item>
+    <nz-descriptions-item nzTitle="Progression">
+      <nz-progress nzSize="small" nzStatus="active" [nzPercent]="p.progress" [nzShowInfo]="false" [nzStrokeColor]="progressColor()" />
+    </nz-descriptions-item>
+  </nz-descriptions>
+
+  <ng-template #plotTitle>
+    @if (isNew()) {
+      <nz-tag nzColor="gold">NEW</nz-tag>
+    }
+    Complot en cours
+  </ng-template>
+}

@@ -8,8 +8,6 @@ export type RankedStatKind = 'armor' | 'attack_speed' | 'birth_rate' | 'critical
   | 'lifespan' | 'loot' | 'mana' | 'money' | 'renown' | 'speed' | 'stamina' | 'stewardship'
   | 'warfare';
 
-export type RankedStatSnapshot = Partial<Record<'current', number>> & Record<'max' | 'rank', number>;
-
 export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'cities' | 'clans'
   | 'cultures' | 'equipment' | 'families' | 'frozen_tiles' | 'houses' | 'kingdoms'
   | 'languages' | 'population' | 'relations' | 'religions' | 'subspecies' | 'vegetation'

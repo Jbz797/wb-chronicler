@@ -42,9 +42,9 @@ Identité du monde, choisie par le chroniqueur au C1 (cf. [Cas du premier chapit
 
 ```json
 {
-  "description": "",      // Description du monde
-  "name": "",             // Nom du monde
-  "triggered_alerts": []  // Codes des alertes déjà déclenchées dans la partie (cf. `history/tags.md`)
+  "description": "", // Description du monde
+  "name": "", // Nom du monde
+  "triggered_alerts": [] // Codes des alertes déjà déclenchées dans la partie (cf. `history/tags.md`)
 }
 ```
 
@@ -105,7 +105,7 @@ Ce dossier contient toujours **la save la plus récente** — WorldBox l'écrase
 1. Le joueur sauvegarde dans WorldBox puis signale au chroniqueur qu'une nouvelle save est prête.
 2. Le chroniqueur :
    1. Lit `map.wbox` depuis le dossier source et le décode partiellement pour extraire le `world_time` courant.
-   2. Détermine le numéro du nouveau chapitre : `<n> = (nombre de dossiers `C*` existants dans `saves/`) + 1`.
+   2. Détermine le numéro du nouveau chapitre : `<n> = (nombre de dossiers `C\*`existants dans`saves/`) + 1`.
    3. Crée le dossier `saves/C<n>/` et **copie** les trois fichiers depuis le dossier source vers ce nouveau dossier (les fichiers gardent leurs noms d'origine).
    4. Écrase `saves/current.s3db` avec la nouvelle SQLite (`map_stats.s3db`).
    5. Effectue la phase d'analyse obligatoire (§ III).

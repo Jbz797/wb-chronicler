@@ -6,12 +6,10 @@
       {{ fav.metadata.name }}
       <img [src]="`assets/img/sex/${fav.metadata.sex}.png`" />
     </nz-descriptions-item>
-    <nz-descriptions-item nzTitle="Descripteur">{{ fav.descriptor }}</nz-descriptions-item>
-    <nz-descriptions-item nzTitle="Rôles">
+    <nz-descriptions-item [nzTitle]="descriptorTitle">{{ fav.descriptor }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="rolesTitle">
       @for (tag of roleTags(); track tag.label) {
         <nz-tag [nzColor]="tag.color">{{ tag.label }}</nz-tag>
-      } @empty {
-        <em>—</em>
       }
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">{{ fav.metadata.age }} ans</nz-descriptions-item>
@@ -24,12 +22,7 @@
     <nz-descriptions-item [nzTitle]="renownTitle">
       <app-ranked-stat stat="renown" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="childrenTitle">
-      {{ fav.stats.children }} / {{ fav.stats.max_children }}
-      @if (fav.stats.births !== fav.stats.children) {
-        <em>({{ fav.stats.births }} naissances)</em>
-      }
-    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="childrenTitle">{{ childrenLabel() }}</nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="birthRateTitle">
       <app-ranked-stat stat="birth_rate" />
     </nz-descriptions-item>
@@ -56,6 +49,12 @@
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
   <ng-template #birthRateTitle><img src="assets/img/stats/birth_rate.png" /><span>Natalité</span></ng-template>
   <ng-template #childrenTitle><img src="assets/img/stats/children.png" /><span>Enfants</span></ng-template>
+  <ng-template #descriptorTitle>
+    @if (isNewDescriptor()) {
+      <nz-tag nzColor="gold">NEW</nz-tag>
+    }
+    Titre
+  </ng-template>
   <ng-template #inventoryTitle><img src="assets/img/stats/inventory.png" /><span>Inventaire</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
   <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
@@ -63,6 +62,12 @@
   <ng-template #lootTitle><img src="assets/img/stats/loot.png" /><span>Pécule</span></ng-template>
   <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
+  <ng-template #rolesTitle>
+    @if (hasNewRole()) {
+      <nz-tag nzColor="gold">NEW</nz-tag>
+    }
+    Rôles
+  </ng-template>
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
     <nz-descriptions-item [nzSpan]="2" [nzTitle]="healthTitle">
@@ -119,37 +124,10 @@
     }
   </nz-descriptions>
 
-  @if (fav.lover; as lover) {
-    <nz-descriptions nzBordered nzSize="small" nzTitle="Amoureux" [nzColumn]="2">
-      <nz-descriptions-item [nzTitle]="loverSexIcon">{{ lover.name }}</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="ageIcon">{{ lover.age }} ans</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="levelIcon">{{ lover.level }}</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="renownIcon">{{ lover.renown }}</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="moneyIcon">{{ lover.money }}</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="healthIcon">{{ lover.health_max }}</nz-descriptions-item>
-    </nz-descriptions>
+  <app-plot-card />
 
-    <ng-template #loverSexIcon><img [src]="`assets/img/sex/${lover.sex}.png`" /></ng-template>
-  }
-
-  @if (fav.best_friend; as bestFriend) {
-    <nz-descriptions nzBordered nzSize="small" nzTitle="Meilleur ami" [nzColumn]="2">
-      <nz-descriptions-item [nzTitle]="bestFriendSexIcon">{{ bestFriend.name }}</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="ageIcon">{{ bestFriend.age }} ans</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="levelIcon">{{ bestFriend.level }}</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="renownIcon">{{ bestFriend.renown }}</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="moneyIcon">{{ bestFriend.money }}</nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="healthIcon">{{ bestFriend.health_max }}</nz-descriptions-item>
-    </nz-descriptions>
-
-    <ng-template #bestFriendSexIcon><img [src]="`assets/img/sex/${bestFriend.sex}.png`" /></ng-template>
-  }
-
-  <ng-template #ageIcon><img src="assets/img/stats/age.png" /></ng-template>
-  <ng-template #healthIcon><img src="assets/img/stats/health.png" /></ng-template>
-  <ng-template #levelIcon><img src="assets/img/stats/level.png" /></ng-template>
-  <ng-template #moneyIcon><img src="assets/img/stats/money.png" /></ng-template>
-  <ng-template #renownIcon><img src="assets/img/stats/renown.png" /></ng-template>
+  <app-companion-card field="lover" title="Amoureux" [data]="fav.lover" />
+  <app-companion-card field="best_friend" title="Meilleur ami" [data]="fav.best_friend" />
 } @else {
   <nz-empty nzNotFoundContent="Aucun favoris pour l'instant" nzNotFoundImage="assets/img/empty/no-favorite.png" />
 }

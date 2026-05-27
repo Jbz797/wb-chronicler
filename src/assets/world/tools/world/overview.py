@@ -62,6 +62,7 @@ def _build_snapshot(meta: dict, map_stats: dict) -> dict:
                 "frozen_tiles": len(save.get("frozen_tiles") or []),
                 "houses": int(map_stats.get("housesBuilt", 0))
                 - int(map_stats.get("housesDestroyed", 0)),  # current city-buildings (matches `world_statistics_houses`)
+                "plots_active": len(save.get("plots") or []),
                 "relations": len(save.get("relations") or []),
             }.items()
         )
