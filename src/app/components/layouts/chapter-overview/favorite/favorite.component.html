@@ -24,7 +24,9 @@
     <nz-descriptions-item [nzTitle]="renownTitle">
       <app-ranked-stat stat="renown" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="childrenTitle">{{ childrenLabel() }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="childrenTitle">
+      <app-ranked-stat stat="children" [suffix]="`/ ${fav.stats.max_children}`" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="birthRateTitle">
       <app-ranked-stat stat="birth_rate" />
     </nz-descriptions-item>

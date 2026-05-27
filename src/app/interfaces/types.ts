@@ -3,7 +3,7 @@ export type CumulativeStat = 'books_read' | 'plots_succeeded';
 export type DeathCause = 'eaten' | 'explosion' | 'fire' | 'hunger' | 'old_age' | 'water' | 'weapon';
 export type IconKind = 'resources' | 'species';
 
-export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'critical_chance'
+export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'children' | 'critical_chance'
   | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'intelligence' | 'kills' | 'level'
   | 'lifespan' | 'loot' | 'mana' | 'money' | 'renown' | 'speed' | 'stamina' | 'stewardship'
   | 'warfare';

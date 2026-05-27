@@ -61,6 +61,7 @@ export class RankedStatComponent {
     const k = this.stat();
     if (k === 'age') return this._snap(f.metadata.age, f.ranks_in_species.age);
     if (k === 'armor') return this._snap(f.stats.armor, f.ranks_in_species.armor);
+    if (k === 'children') return this._snap(f.stats.children, f.ranks_in_species.children);
     if (k === 'attack_speed') return this._snap(f.stats.attack_speed, f.ranks_in_species.attack_speed);
     if (k === 'birth_rate') return this._snap(f.stats.birth_rate, f.ranks_in_species.birth_rate);
     if (k === 'critical_chance') return this._snap(f.stats.critical_chance, f.ranks_in_species.critical_chance);

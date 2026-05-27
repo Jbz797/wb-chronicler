@@ -38,14 +38,6 @@ export class FavoriteComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  // Children counter formatted for the template — appends "(N naissances)" only when total births exceed living children.
-  protected readonly childrenLabel = computed(() => {
-    const s = this.currentChapter()?.meta.favorite?.stats;
-    if (!s) return '';
-    let label = `${s.children} / ${s.max_children}`;
-    if (s.births !== s.children) label += ` (${s.births} naissances)`;
-    return label;
-  });
   // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — ranked stats handle their own deltas.
   protected readonly deltas = computed(() => {
     const current = this.currentChapter()?.meta.favorite;
@@ -75,14 +67,14 @@ export class FavoriteComponent {
 
     if (meta.personality) {
       const isNew = !!previousMeta && previousMeta.personality !== meta.personality;
-      tags.push({ color: 'magenta', isNew, label: PERSONALITY_LABELS[meta.personality] ?? meta.personality });
+      tags.push({ color: 'gold', isNew, label: PERSONALITY_LABELS[meta.personality] ?? meta.personality });
     }
 
     for (const role of meta.roles) {
       const definition = ROLE_LABELS[role];
       if (definition?.active) {
         const isNew = !!previousMeta && !previousRoles.has(role);
-        tags.push({ color: 'blue', isNew, label: definition.label });
+        tags.push({ color: 'green', isNew, label: definition.label });
       }
     }
 

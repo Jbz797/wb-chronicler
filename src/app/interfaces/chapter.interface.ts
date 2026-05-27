@@ -49,7 +49,7 @@ export interface ChapterMeta {
       armor?: number;
       attack_speed?: number;
       birth_rate?: number;
-      births?: number;
+      children?: number;
       critical_chance?: number;
       damage?: number;
       damage_range?: number;

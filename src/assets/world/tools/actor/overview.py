@@ -492,13 +492,13 @@ def _compute_stats(actor: dict, ctx: dict, save: dict | None = None, subspecies_
 
 # Standard competition rank (1,2,2,4) for every stats key, among the actor's same-`asset_id` peers.
 # Ranks kept in the JSON. Most align with `RankedStatKind` in src/app/interfaces/types.ts (UI
-# consumers via RankedStatComponent). `births` is kept solely for the editorial chronicler — a
-# cumulative stat that produces useful narrative hooks ("most prolific of his generation").
+# consumers via RankedStatComponent). `births` is emitted for the editorial chronicler but not declared in the TS interface.
 _RANKED_STATS = {
     "armor",
     "attack_speed",
     "birth_rate",
     "births",
+    "children",
     "critical_chance",
     "damage",
     "damage_range",
