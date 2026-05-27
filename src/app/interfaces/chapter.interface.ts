@@ -35,7 +35,7 @@ export interface ChapterMeta {
       kingdom: { id: number; name: string } | null;
       name: string;
       personality: string | null;
-      profession: string | null;
+      profession: string;
       roles: string[];
       sex: 'female' | 'male';
     };
@@ -104,6 +104,8 @@ export interface ChapterMeta {
   } | null;
   kingdom: {
     metadata: {
+      banner_icon: number | null;
+      color: string;
       name: string;
     };
   } | null;

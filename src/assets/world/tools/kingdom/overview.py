@@ -2,6 +2,7 @@
 
 import json
 import sys
+from functools import cache
 from pathlib import Path
 
 
@@ -9,10 +10,21 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared import load_save, parse_sections  # noqa: E402
 
 _ALL_SECTIONS = ("metadata",)
+_DATAS_DIR = Path(__file__).parent.parent / "datas"
+
+
+@cache
+def _load_json(name: str) -> dict:
+    path = _DATAS_DIR / name
+    return json.loads(path.read_text()) if path.exists() else {}
 
 
 def _build_metadata(kingdom: dict) -> dict:
+    color_id = str(kingdom.get("color_id", ""))
+    icon_id = str(kingdom.get("banner_icon_id", ""))
     return {
+        "banner_icon": _load_json("banner-icons.json").get(icon_id),
+        "color": _load_json("colors.json").get(color_id),
         "name": kingdom.get("name"),
     }
 
