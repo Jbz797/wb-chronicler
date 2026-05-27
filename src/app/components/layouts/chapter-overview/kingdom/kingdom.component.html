@@ -1,0 +1,5 @@
+@if (kingdom(); as k) {
+  <h3>{{ k.metadata.name }}</h3>
+} @else {
+  <nz-empty nzNotFoundContent="Aucun royaume" nzNotFoundImage="assets/img/empty/no-kingdom.png" />
+}

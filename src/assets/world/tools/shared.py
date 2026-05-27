@@ -5,6 +5,7 @@
 # bootstraps before `from shared import ...`.
 
 import json
+import sys
 import zlib
 from pathlib import Path
 
@@ -13,6 +14,9 @@ CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/sav
 
 
 def load_save() -> dict:
+    if not CURRENT_SAVE.exists():
+        print(f"no save found at {CURRENT_SAVE}", file=sys.stderr)
+        sys.exit(2)
     with CURRENT_SAVE.open("rb") as f:
         return json.loads(zlib.decompress(f.read()))
 

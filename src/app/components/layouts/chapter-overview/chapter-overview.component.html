@@ -11,11 +11,15 @@
 
   <ng-template #worldStatsHeader>
     <img class="panel-icon" src="assets/img/world/world_stats.png" />
-    <span>Statistiques sur le Monde</span>
+    <span>Monde</span>
   </ng-template>
   <ng-template #favoritesHeader>
     <img class="panel-icon" src="assets/img/world/favorites.png" />
     <span>Favoris</span>
+  </ng-template>
+  <ng-template #kingdomHeader>
+    <img class="panel-icon" src="assets/img/world/kingdom.png" />
+    <span>Royaume</span>
   </ng-template>
 
   <nz-collapse nzAccordion>
@@ -24,6 +28,9 @@
     </nz-collapse-panel>
     <nz-collapse-panel [nzActive]="activePanel() === 'favorite'" [nzHeader]="favoritesHeader" (nzActiveChange)="onPanelToggle('favorite', $event)">
       <app-favorite />
+    </nz-collapse-panel>
+    <nz-collapse-panel [nzActive]="activePanel() === 'kingdom'" [nzHeader]="kingdomHeader" (nzActiveChange)="onPanelToggle('kingdom', $event)">
+      <app-kingdom />
     </nz-collapse-panel>
   </nz-collapse>
 } @else {

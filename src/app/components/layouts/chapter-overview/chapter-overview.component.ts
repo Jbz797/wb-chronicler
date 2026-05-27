@@ -11,11 +11,12 @@ import { ChapterOverviewPanel, World } from '../../../interfaces';
 import { ChroniclerService } from '../../../services/chronicler.service';
 
 import { FavoriteComponent } from './favorite/favorite.component';
+import { KingdomComponent } from './kingdom/kingdom.component';
 import { WorldStatsComponent } from './world-stats/world-stats.component';
 
 @Component({
   selector: 'app-chapter-overview',
-  imports: [FavoriteComponent, NzCollapseModule, NzDividerModule, NzEmptyModule, WorldStatsComponent],
+  imports: [FavoriteComponent, KingdomComponent, NzCollapseModule, NzDividerModule, NzEmptyModule, WorldStatsComponent],
   templateUrl: './chapter-overview.component.html',
   styleUrl: './chapter-overview.component.scss',
 })
@@ -34,7 +35,8 @@ export class ChapterOverviewComponent {
   }
 
   private _isPanel(v: string | null): v is ChapterOverviewPanel {
-    return v === 'favorite' || v === 'world-stats';
+    const panels: string[] = ['favorite', 'kingdom', 'world-stats'];
+    return panels.includes(v ?? '');
   }
 
   // Read the stored panel and fall back to `world-stats` when nothing valid is found.

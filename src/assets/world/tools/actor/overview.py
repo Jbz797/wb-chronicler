@@ -34,7 +34,7 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import CURRENT_SAVE, load_save, parse_sections  # noqa: E402
+from shared import load_save, parse_sections  # noqa: E402
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
@@ -802,9 +802,6 @@ def main(argv: list[str]) -> int:
         sections = parse_sections(argv[1] if len(argv) > 1 else None, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
-        return 2
-    if not CURRENT_SAVE.exists():
-        print(f"no save found at {CURRENT_SAVE}", file=sys.stderr)
         return 2
     save = load_save()
     actor = next((a for a in save["actors_data"] if a.get("id") == actor_id), None)

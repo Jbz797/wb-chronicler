@@ -32,6 +32,7 @@ export interface ChapterMeta {
     metadata: {
       age: number;
       asset_id: string;
+      kingdom: { id: number; name: string } | null;
       name: string;
       personality: string | null;
       profession: string | null;
@@ -100,6 +101,11 @@ export interface ChapterMeta {
       warfare: number;
     };
     traits: RarityCounts;
+  } | null;
+  kingdom: {
+    metadata: {
+      name: string;
+    };
   } | null;
   tags: string[];
   world: {

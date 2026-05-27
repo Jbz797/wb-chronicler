@@ -1,4 +1,4 @@
-export type ChapterOverviewPanel = 'favorite' | 'world-stats';
+export type ChapterOverviewPanel = 'favorite' | 'kingdom' | 'world-stats';
 export type CumulativeStat = 'books_read' | 'plots_succeeded';
 export type DeathCause = 'eaten' | 'explosion' | 'fire' | 'hunger' | 'old_age' | 'water' | 'weapon';
 export type IconKind = 'resources' | 'species';
