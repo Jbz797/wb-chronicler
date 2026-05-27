@@ -436,7 +436,7 @@ def _build_context(save: dict) -> dict:
 # Aggregate one actor's instant-T stats through the full pipeline. `subspecies_base_cache`
 # is optional; when provided, the heavy (species + chromosomes + subspecies traits) base is
 # computed once per subspecies and reused across actors — a 5× speedup when ranking.
-def _compute_stats(actor: dict, ctx: dict, save: dict | None = None, subspecies_base_cache: dict | None = None) -> dict:
+def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
     if sub is None:
@@ -464,8 +464,8 @@ def _compute_stats(actor: dict, ctx: dict, save: dict | None = None, subspecies_
     lifespan_months = totals.get("lifespan", 0) * _MONTHS_PER_YEAR
     _apply_offspring_age_scaling(totals, age_months / lifespan_months if lifespan_months else 0)
     cleaned = _cleanup_stats(totals)
-    # `max_cities` (Kingdom.getMaxCities) only matters for kings — strip it elsewhere.
-    if save is not None and "king" not in _compute_roles(actor, save):
+    # `max_cities` (Kingdom.getMaxCities) only matters for kings (profession=3).
+    if actor.get("profession") != _PROFESSION_KING:
         cleaned.pop("max_cities", None)
     # Always-surface actor counters (kept verbatim even at 0 — the chronicler expects them).
     # `loot` keeps the WB-native name (the chronicler also reads it from the raw save).
@@ -575,6 +575,20 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
     return dict(sorted(result.items()))
 
 
+_PROFESSION_KING = 3
+_PROFESSION_LEADER = 4
+_PROFESSIONS = {2: "unit", _PROFESSION_KING: "king", _PROFESSION_LEADER: "leader", 5: "warrior"}
+
+
+def _resolve_kingdom(kingdom_id: int | None, kingdoms_by_id: dict) -> dict | None:
+    if kingdom_id is None:
+        return None
+    kingdom = kingdoms_by_id.get(kingdom_id)
+    if kingdom is None:
+        return None
+    return {"id": kingdom_id, "name": kingdom.get("name")}
+
+
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}
     clan = ctx["clans_by_id"].get(actor.get("clan")) or {}
@@ -596,11 +610,12 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "family": (families_by_id.get(actor.get("family")) or {}).get("name"),
         "favorite_food": actor.get("favorite_food"),
         "generation": int(actor.get("generation") or 1),
-        "kingdom": (kingdoms_by_id.get(actor.get("civ_kingdom_id")) or {}).get("name"),
+        "kingdom": _resolve_kingdom(actor.get("civ_kingdom_id"), kingdoms_by_id),
         "language": language.get("name"),
         "mass": _compute_mass(actor),
         "name": actor.get("name"),
-        "personality": _compute_personality(actor, ctx, save),
+        "personality": _compute_personality(actor, ctx),
+        "profession": _PROFESSIONS.get(actor.get("profession") or 0),
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
         "roles": _compute_roles(actor, save),
         "sex": "female" if actor.get("sex") == 1 else "male",
@@ -614,8 +629,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
 # Roles in canonical display order: active positions first (by hierarchical rank), then
 # historical foundations (creators before founders). The UI iterates in this exact order.
 _ROLE_ORDER = (
-    "king",
-    "village_leader",
     "clan_chief",
     "family_alpha",
     "army_captain",
@@ -639,11 +652,9 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
         "culture_creator": any(c.get("creator_id") == actor_id for c in save.get("cultures", [])),
         "family_alpha": any(f.get("alpha_id") == actor_id for f in save.get("families", [])),
         "family_founder": any(f.get("main_founder_id_1") == actor_id or f.get("main_founder_id_2") == actor_id for f in save.get("families", [])),
-        "king": any(k.get("kingID") == actor_id for k in save.get("kingdoms", [])),
         "language_creator": any(lang.get("creator_id") == actor_id for lang in save.get("languages", [])),
         "religion_creator": any(r.get("creator_id") == actor_id for r in save.get("religions", [])),
         "village_founder": any(c.get("founder_id") == actor_id for c in save.get("cities", [])),
-        "village_leader": any(c.get("leaderID") == actor_id for c in save.get("cities", [])),
     }
     return [role for role in _ROLE_ORDER if checks[role]]
 
@@ -675,9 +686,8 @@ def _compute_mass(actor: dict) -> int | None:
 # Reproduces `Actor.updateStats` personality selection from the WB DLL: only city leaders and
 # kings get a personality, picked among diplomat/administrator/militarist/balanced based on
 # aggregated diplomacy/stewardship/warfare stats. `wildcard` is defined but never selected here.
-def _compute_personality(actor: dict, ctx: dict, save: dict) -> str | None:
-    roles = _compute_roles(actor, save)
-    if "king" not in roles and "village_leader" not in roles:
+def _compute_personality(actor: dict, ctx: dict) -> str | None:
+    if actor.get("profession") not in (_PROFESSION_KING, _PROFESSION_LEADER):
         return None
     snap = _compute_stats(actor, ctx)
     diplo, stew, war = snap.get("diplomacy", 0), snap.get("stewardship", 0), snap.get("warfare", 0)
@@ -825,7 +835,7 @@ def main(argv: list[str]) -> int:
     if "ranks_in_species" in sections:
         out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx, save)
     if "stats" in sections:
-        out["stats"] = _compute_stats(actor, ctx, save)
+        out["stats"] = _compute_stats(actor, ctx)
 
     print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0

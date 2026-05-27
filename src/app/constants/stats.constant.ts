@@ -41,6 +41,14 @@ export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
   wildcard: 'Imprévisible',
 };
 
+// French labels for `metadata.profession` — mapped from the save's int field (2=unit, 3=king, 4=leader, 5=warrior).
+export const PROFESSION_LABELS: Readonly<Record<string, string>> = {
+  king: 'Roi',
+  leader: 'Chef de village',
+  unit: 'Civil',
+  warrior: 'Guerrier',
+};
+
 // French labels for `metadata.roles` (active = current position, !active = historical foundation) — Python emits the canonical order, do not re-sort here.
 export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: string }>> = {
   alliance_founder: { active: false, label: "Fondateur d'alliance" },
@@ -50,11 +58,9 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
   culture_creator: { active: false, label: 'Créateur de culture' },
   family_alpha: { active: true, label: 'Chef de famille' },
   family_founder: { active: false, label: 'Fondateur de famille' },
-  king: { active: true, label: 'Roi' },
   language_creator: { active: false, label: 'Créateur de langue' },
   religion_creator: { active: false, label: 'Créateur de religion' },
   village_founder: { active: false, label: 'Fondateur de village' },
-  village_leader: { active: true, label: 'Chef de village' },
 };
 
 // Favorite combat stats — damage / defense / attack rhythm.

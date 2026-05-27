@@ -7,6 +7,10 @@
       <img [src]="`assets/img/sex/${fav.metadata.sex}.png`" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="descriptorTitle">{{ fav.descriptor }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="professionTitle">
+      <img [hidden]="!fav.metadata.profession" [src]="`assets/img/professions/${fav.metadata.profession ?? ''}.png`" />
+      <span>{{ professionLabel(fav.metadata.profession) }}</span>
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="rolesTitle">
       @for (tag of roleTags(); track tag.label) {
         <nz-tag [nzColor]="tag.color">{{ tag.label }}</nz-tag>
@@ -54,7 +58,7 @@
   <ng-template #birthRateTitle><img src="assets/img/stats/birth_rate.png" /><span>Natalité</span></ng-template>
   <ng-template #childrenTitle><img src="assets/img/stats/children.png" /><span>Enfants</span></ng-template>
   <ng-template #descriptorTitle>
-    @if (isNewDescriptor()) {
+    @if (changedFields().descriptor) {
       <nz-tag nzColor="gold">NEW</nz-tag>
     }
     Titre
@@ -65,9 +69,15 @@
   <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
   <ng-template #lootTitle><img src="assets/img/stats/loot.png" /><span>Pécule</span></ng-template>
   <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
+  <ng-template #professionTitle>
+    @if (changedFields().profession) {
+      <nz-tag nzColor="gold">NEW</nz-tag>
+    }
+    Profession
+  </ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #rolesTitle>
-    @if (hasNewRole()) {
+    @if (changedFields().role) {
       <nz-tag nzColor="gold">NEW</nz-tag>
     }
     Rôles
@@ -140,10 +150,10 @@
     }
   </nz-descriptions>
 
-  <app-plot-card />
+  <app-plot-card [isNew]="changedFields().plot" />
 
-  <app-companion-card field="lover" title="Amoureux" [data]="fav.lover" />
-  <app-companion-card field="best_friend" title="Meilleur ami" [data]="fav.best_friend" />
+  <app-companion-card title="Amoureux" [data]="fav.lover" [isNew]="changedFields().lover" />
+  <app-companion-card title="Meilleur ami" [data]="fav.best_friend" [isNew]="changedFields().bestFriend" />
 } @else {
   <nz-empty nzNotFoundContent="Aucun favoris pour l'instant" nzNotFoundImage="assets/img/empty/no-favorite.png" />
 }

@@ -34,6 +34,7 @@ export interface ChapterMeta {
       asset_id: string;
       name: string;
       personality: string | null;
+      profession: string | null;
       roles: string[];
       sex: 'female' | 'male';
     };
