@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import CURRENT_SAVE, load_save, parse_sections  # noqa: E402
+from shared import CURRENT_SAVE, emit, load_save, parse_sections  # noqa: E402
 
 _ALL_SECTIONS = ("cumulative", "metadata", "snapshot")
 
@@ -103,7 +103,7 @@ def main(argv: list[str]) -> int:
         out["metadata"] = _build_metadata(map_stats)
     if "snapshot" in sections:
         out["snapshot"] = _build_snapshot(meta, map_stats)
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    emit(out)
     return 0
 
 

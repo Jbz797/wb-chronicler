@@ -25,7 +25,6 @@
 # text those map to 0/6/8/14. ⚠️ If you ever rewrite the DNA generator to keep the spaces,
 # remember to shift the indices back.
 
-import json
 import math
 import re
 import sys
@@ -34,20 +33,12 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import load_save, parse_sections  # noqa: E402
+from shared import emit, index_by_id, load_data, load_save, parse_sections  # noqa: E402
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
-_DATAS_DIR = Path(__file__).parent.parent / "datas"
 _GRID_COLS = 6
 _LEVEL_RE = re.compile(r"(\d+)$")
 _MONTHS_PER_YEAR = 60
-
-_CLAN_TRAITS_DATA = _DATAS_DIR / "clan-traits.json"
-_CREATURE_TRAITS_DATA = _DATAS_DIR / "creature-traits.json"
-_EQUIPMENT_DATA = _DATAS_DIR / "equipment.json"
-_LANGUAGE_TRAITS_DATA = _DATAS_DIR / "language-traits.json"
-_SPECIES_DATA = _DATAS_DIR / "species.json"
-_SUBSPECIES_TRAITS_DATA = _DATAS_DIR / "subspecies-traits.json"
 
 
 # Per chronicler.md § VI — gene -> (stat name, value contribution).
@@ -418,17 +409,17 @@ def _build_context(save: dict) -> dict:
                 children_by_parent[parent_id] = children_by_parent.get(parent_id, 0) + 1
     return {
         "children_by_parent": children_by_parent,
-        "clan_traits": json.load(_CLAN_TRAITS_DATA.open()),
-        "clans_by_id": {c["id"]: c for c in save.get("clans", [])},
-        "creature_traits": json.load(_CREATURE_TRAITS_DATA.open()),
-        "equipment": json.load(_EQUIPMENT_DATA.open()),
-        "items_by_id": {it["id"]: it for it in save["items"]},
-        "language_traits": json.load(_LANGUAGE_TRAITS_DATA.open()),
-        "languages_by_id": {lang["id"]: lang for lang in save.get("languages", [])},
+        "clan_traits": load_data("clan-traits.json"),
+        "clans_by_id": index_by_id(save.get("clans", [])),
+        "creature_traits": load_data("creature-traits.json"),
+        "equipment": load_data("equipment.json"),
+        "items_by_id": index_by_id(save["items"]),
+        "language_traits": load_data("language-traits.json"),
+        "languages_by_id": index_by_id(save.get("languages", [])),
         "life_dna": int(save["mapStats"].get("life_dna") or 0),
-        "species_data": json.load(_SPECIES_DATA.open()),
-        "subspecies_by_id": {s["id"]: s for s in save.get("subspecies", [])},
-        "subspecies_traits": json.load(_SUBSPECIES_TRAITS_DATA.open()),
+        "species_data": load_data("species.json"),
+        "subspecies_by_id": index_by_id(save.get("subspecies", [])),
+        "subspecies_traits": load_data("subspecies-traits.json"),
         "world_time": float(save["mapStats"].get("world_time") or 0),
     }
 
@@ -593,11 +584,11 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}
     clan = ctx["clans_by_id"].get(actor.get("clan")) or {}
     language = ctx["languages_by_id"].get(actor.get("language")) or {}
-    cities_by_id = {c["id"]: c for c in save.get("cities", [])}
-    kingdoms_by_id = {k["id"]: k for k in save.get("kingdoms", [])}
-    cultures_by_id = {c["id"]: c for c in save.get("cultures", [])}
-    families_by_id = {f["id"]: f for f in save.get("families", [])}
-    religions_by_id = {r["id"]: r for r in save.get("religions", [])}
+    cities_by_id = index_by_id(save.get("cities", []))
+    kingdoms_by_id = index_by_id(save.get("kingdoms", []))
+    cultures_by_id = index_by_id(save.get("cultures", []))
+    families_by_id = index_by_id(save.get("families", []))
+    religions_by_id = index_by_id(save.get("religions", []))
     age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
     return {
         # `age_overgrowth` (years past the actor's lifespan cap) is added on top of the natural
@@ -736,8 +727,8 @@ def _build_plot(actor: dict, save: dict) -> dict | None:
     plot = next((p for p in save.get("plots", []) if p.get("id") == plot_id), None)
     if plot is None:
         return None
-    kingdoms_by_id = {k["id"]: k for k in save.get("kingdoms", [])}
-    alliances_by_id = {a["id"]: a for a in save.get("alliances", [])}
+    kingdoms_by_id = index_by_id(save.get("kingdoms", []))
+    alliances_by_id = index_by_id(save.get("alliances", []))
     return {
         "name": plot.get("name"),
         "progress": round(float(plot.get("progress_current", 0)), 1),
@@ -834,7 +825,7 @@ def main(argv: list[str]) -> int:
     if "stats" in sections:
         out["stats"] = _compute_stats(actor, ctx)
 
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    emit(out)
     return 0
 
 
