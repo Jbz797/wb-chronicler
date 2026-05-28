@@ -111,6 +111,14 @@
       .ant-descriptions-item-label {
         text-align: right;
         white-space: nowrap;
+
+        img {
+          margin-right: 0.25rem;
+        }
+      }
+
+      .ant-descriptions-item-content img {
+        margin-left: 0.25rem;
       }
 
       .ant-descriptions-item-label,
@@ -133,14 +141,6 @@
           max-width: 18px;
           position: relative;
           top: -1px;
-
-          &:not(:last-child) {
-            margin-right: 0.25rem;
-          }
-
-          &:last-child {
-            margin-left: 0.25rem;
-          }
         }
 
         &:has(> img:only-child) {

@@ -45,11 +45,11 @@
     "zone.js": "~0.16.2"
   },
   "devDependencies": {
-    "@angular/build": "^21.2.12",
+    "@angular/build": "^21.2.13",
     "@angular/compiler-cli": "^21.2.14",
     "@angular/language-service": "^21.2.14",
     "chokidar": "^5.0.0",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.0",
     "eslint-config-angular-strict": "^2.3.93",
     "less": "^4.6.4",
     "prettier": "^3.8.3",
