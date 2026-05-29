@@ -1,0 +1,530 @@
+{
+  "0": {
+    "color_banner": "#FFBDCD",
+    "color_main": "#C51540",
+    "color_main_2": "#E6194B",
+    "color_text": "#E6194B"
+  },
+  "1": {
+    "color_banner": "#B8FFC0",
+    "color_main": "#4DE860",
+    "color_main_2": "#3CB44B",
+    "color_text": "#3CB44B"
+  },
+  "2": {
+    "color_banner": "#FFFEF9",
+    "color_main": "#FFE119",
+    "color_main_2": "#FFE119",
+    "color_text": "#FFE06D"
+  },
+  "3": {
+    "color_banner": "#00F4FF",
+    "color_main": "#5C98E1",
+    "color_main_2": "#6C89F6",
+    "color_text": "#8AA3FF"
+  },
+  "4": {
+    "color_banner": "#FFE4D0",
+    "color_main": "#F58231",
+    "color_main_2": "#F58231",
+    "color_text": "#FF8C45"
+  },
+  "5": {
+    "color_banner": "#E58FFF",
+    "color_main": "#911EB4",
+    "color_main_2": "#911EB4",
+    "color_text": "#AF5EF6"
+  },
+  "6": {
+    "color_banner": "#C9F5FF",
+    "color_main": "#42D4F4",
+    "color_main_2": "#5BE1FF",
+    "color_text": "#42D4F4"
+  },
+  "7": {
+    "color_banner": "#FFA2FA",
+    "color_main": "#F032E6",
+    "color_main_2": "#F032E6",
+    "color_text": "#F032E6"
+  },
+  "8": {
+    "color_banner": "#FFFFA0",
+    "color_main": "#BFEF45",
+    "color_main_2": "#BFEF45",
+    "color_text": "#BFEF45"
+  },
+  "9": {
+    "color_banner": "#FFFFFF",
+    "color_main": "#FABED4",
+    "color_main_2": "#FFC0D7",
+    "color_text": "#FABED4"
+  },
+  "10": {
+    "color_banner": "#AAFFF6",
+    "color_main": "#00675C",
+    "color_main_2": "#469990",
+    "color_text": "#AAFFF6"
+  },
+  "11": {
+    "color_banner": "#FBF7FF",
+    "color_main": "#DCBEFF",
+    "color_main_2": "#DCBEFF",
+    "color_text": "#DCBEFF"
+  },
+  "12": {
+    "color_banner": "#3A5742",
+    "color_main": "#95E0AB",
+    "color_main_2": "#AAFFC3",
+    "color_text": "#AAFFC3"
+  },
+  "13": {
+    "color_banner": "#91FF00",
+    "color_main": "#808000",
+    "color_main_2": "#CFCF14",
+    "color_text": "#C3C300"
+  },
+  "14": {
+    "color_banner": "#E9AA5E",
+    "color_main": "#9A6324",
+    "color_main_2": "#9A6324",
+    "color_text": "#E9AA5E"
+  },
+  "15": {
+    "color_banner": "#5997EE",
+    "color_main": "#1158BC",
+    "color_main_2": "#1158BC",
+    "color_text": "#5997EE"
+  },
+  "16": {
+    "color_banner": "#5E5E5E",
+    "color_main": "#FFFFFF",
+    "color_main_2": "#FFFFFF",
+    "color_text": "#FFFFFF"
+  },
+  "17": {
+    "color_banner": "#D4D4D4",
+    "color_main": "#949494",
+    "color_main_2": "#A9A9A9",
+    "color_text": "#A9A9A9"
+  },
+  "18": {
+    "color_banner": "#A4A4A4",
+    "color_main": "#262626",
+    "color_main_2": "#353535",
+    "color_text": "#737373"
+  },
+  "19": {
+    "color_banner": "#FF7575",
+    "color_main": "#C92525",
+    "color_main_2": "#A32525",
+    "color_text": "#CF5F5F"
+  },
+  "20": {
+    "color_banner": "#484848",
+    "color_main": "#F4F6AD",
+    "color_main_2": "#F4F6AD",
+    "color_text": "#F4F6AD"
+  },
+  "21": {
+    "color_banner": "#FFFFFF",
+    "color_main": "#FFD8B1",
+    "color_main_2": "#EDA761",
+    "color_text": "#FFD8B1"
+  },
+  "22": {
+    "color_banner": "#7DFD8C",
+    "color_main": "#7DFD8C",
+    "color_main_2": "#F32D5D",
+    "color_text": "#E6194B"
+  },
+  "23": {
+    "color_banner": "#FF517B",
+    "color_main": "#FF83A1",
+    "color_main_2": "#14EE00",
+    "color_text": "#14EE00"
+  },
+  "24": {
+    "color_banner": "#4760EE",
+    "color_main": "#4760EE",
+    "color_main_2": "#FFE119",
+    "color_text": "#FFE119"
+  },
+  "25": {
+    "color_banner": "#FDAE42",
+    "color_main": "#FDAE42",
+    "color_main_2": "#6878ED",
+    "color_text": "#8AA3FF"
+  },
+  "26": {
+    "color_banner": "#C5D6FF",
+    "color_main": "#7CA2FF",
+    "color_main_2": "#D6681B",
+    "color_text": "#F58231"
+  },
+  "27": {
+    "color_banner": "#E5E05C",
+    "color_main": "#E5E05C",
+    "color_main_2": "#911EB4",
+    "color_text": "#AF5EF6"
+  },
+  "28": {
+    "color_banner": "#FF72B6",
+    "color_main": "#FF72B6",
+    "color_main_2": "#19BEE2",
+    "color_text": "#42D4F4"
+  },
+  "29": {
+    "color_banner": "#C3FF57",
+    "color_main": "#C3FF57",
+    "color_main_2": "#F032E6",
+    "color_text": "#F032E6"
+  },
+  "30": {
+    "color_banner": "#9F25B7",
+    "color_main": "#9F25B7",
+    "color_main_2": "#BFEF45",
+    "color_text": "#BFEF45"
+  },
+  "31": {
+    "color_banner": "#B2F858",
+    "color_main": "#B2F858",
+    "color_main_2": "#FABED4",
+    "color_text": "#FABED4"
+  },
+  "32": {
+    "color_banner": "#FF727E",
+    "color_main": "#FF727E",
+    "color_main_2": "#53D0C2",
+    "color_text": "#54B8AD"
+  },
+  "33": {
+    "color_banner": "#FFD055",
+    "color_main": "#FFD055",
+    "color_main_2": "#9C83BA",
+    "color_text": "#DCBEFF"
+  },
+  "34": {
+    "color_banner": "#F5BDE5",
+    "color_main": "#F58ED7",
+    "color_main_2": "#AAFFC3",
+    "color_text": "#AAFFC3"
+  },
+  "35": {
+    "color_banner": "#AD7EFF",
+    "color_main": "#AD7EFF",
+    "color_main_2": "#5E7B00",
+    "color_text": "#DBDB64"
+  },
+  "36": {
+    "color_banner": "#44B2B1",
+    "color_main": "#44B2B1",
+    "color_main_2": "#C2751D",
+    "color_text": "#E9AA5E"
+  },
+  "37": {
+    "color_banner": "#BCCA47",
+    "color_main": "#BCCA47",
+    "color_main_2": "#2665BF",
+    "color_text": "#5997EE"
+  },
+  "38": {
+    "color_banner": "#F032E7",
+    "color_main": "#F032E7",
+    "color_main_2": "#FFFFFF",
+    "color_text": "#FFFFFF"
+  },
+  "39": {
+    "color_banner": "#000000",
+    "color_main": "#000000",
+    "color_main_2": "#A9A9A9",
+    "color_text": "#A2AAC8"
+  },
+  "40": {
+    "color_banner": "#E6194B",
+    "color_main": "#EE0002",
+    "color_main_2": "#333333",
+    "color_text": "#C3385A"
+  },
+  "41": {
+    "color_banner": "#DABDFC",
+    "color_main": "#9D60E5",
+    "color_main_2": "#B33030",
+    "color_text": "#CF5F5F"
+  },
+  "42": {
+    "color_banner": "#336EB7",
+    "color_main": "#336EB7",
+    "color_main_2": "#DADD72",
+    "color_text": "#EBEDA7"
+  },
+  "43": {
+    "color_banner": "#E41B4C",
+    "color_main": "#E41B4C",
+    "color_main_2": "#FFB1B2",
+    "color_text": "#FFD8B1"
+  },
+  "44": {
+    "color_banner": "#0024B6",
+    "color_main": "#0024B6",
+    "color_main_2": "#E6196E",
+    "color_text": "#E6194B"
+  },
+  "45": {
+    "color_banner": "#123C00",
+    "color_main": "#507638",
+    "color_main_2": "#52F600",
+    "color_text": "#52F600"
+  },
+  "46": {
+    "color_banner": "#635E1F",
+    "color_main": "#D7BD5C",
+    "color_main_2": "#EBD377",
+    "color_text": "#FFE06D"
+  },
+  "47": {
+    "color_banner": "#E26EE1",
+    "color_main": "#E26EE1",
+    "color_main_2": "#586FC9",
+    "color_text": "#869EF7"
+  },
+  "48": {
+    "color_banner": "#FFF047",
+    "color_main": "#FFF047",
+    "color_main_2": "#F58231",
+    "color_text": "#FF8C45"
+  },
+  "49": {
+    "color_banner": "#FF61E2",
+    "color_main": "#FF61E2",
+    "color_main_2": "#911EB4",
+    "color_text": "#AE5EF5"
+  },
+  "50": {
+    "color_banner": "#34439F",
+    "color_main": "#34439F",
+    "color_main_2": "#5EE2FF",
+    "color_text": "#42D4F4"
+  },
+  "51": {
+    "color_banner": "#FF977E",
+    "color_main": "#FF977E",
+    "color_main_2": "#F032E6",
+    "color_text": "#F032E6"
+  },
+  "52": {
+    "color_banner": "#293822",
+    "color_main": "#6BCA3D",
+    "color_main_2": "#96FF67",
+    "color_text": "#4FFF00"
+  },
+  "53": {
+    "color_banner": "#FF00AF",
+    "color_main": "#F526BA",
+    "color_main_2": "#FABED4",
+    "color_text": "#FABED4"
+  },
+  "54": {
+    "color_banner": "#DBE9FF",
+    "color_main": "#6890D2",
+    "color_main_2": "#1DC7B5",
+    "color_text": "#16998B"
+  },
+  "55": {
+    "color_banner": "#AB396F",
+    "color_main": "#AB396F",
+    "color_main_2": "#DCBEFF",
+    "color_text": "#DCBEFF"
+  },
+  "56": {
+    "color_banner": "#345E98",
+    "color_main": "#345E98",
+    "color_main_2": "#AAFFC3",
+    "color_text": "#AAFFC3"
+  },
+  "57": {
+    "color_banner": "#45D487",
+    "color_main": "#45D487",
+    "color_main_2": "#984100",
+    "color_text": "#C3C300"
+  },
+  "58": {
+    "color_banner": "#F8E14E",
+    "color_main": "#F8E14E",
+    "color_main_2": "#9A6324",
+    "color_text": "#E9AA5E"
+  },
+  "59": {
+    "color_banner": "#AC83FF",
+    "color_main": "#AC83FF",
+    "color_main_2": "#2665BF",
+    "color_text": "#5997EE"
+  },
+  "60": {
+    "color_banner": "#D94E3E",
+    "color_main": "#D94E3E",
+    "color_main_2": "#FFFFFF",
+    "color_text": "#FFFFFF"
+  },
+  "61": {
+    "color_banner": "#00DBFF",
+    "color_main": "#00FFFF",
+    "color_main_2": "#505050",
+    "color_text": "#A9A9A9"
+  },
+  "62": {
+    "color_banner": "#3CB44B",
+    "color_main": "#3CB44B",
+    "color_main_2": "#0B220E",
+    "color_text": "#3CB44B"
+  },
+  "63": {
+    "color_banner": "#00FF48",
+    "color_main": "#00FF48",
+    "color_main_2": "#CA3C3C",
+    "color_text": "#CA7B7B"
+  },
+  "64": {
+    "color_banner": "#26FE86",
+    "color_main": "#26FE86",
+    "color_main_2": "#E3E5A1",
+    "color_text": "#E3E5A1"
+  },
+  "65": {
+    "color_banner": "#FFD294",
+    "color_main": "#935A0F",
+    "color_main_2": "#FFAD5B",
+    "color_text": "#FFD8B1"
+  },
+  "66": {
+    "color_banner": "#333333",
+    "color_main": "#333333",
+    "color_main_2": "#E6194B",
+    "color_text": "#E6194B"
+  },
+  "67": {
+    "color_banner": "#000000",
+    "color_main": "#0C1F08",
+    "color_main_2": "#3CB44B",
+    "color_text": "#3CB44B"
+  },
+  "68": {
+    "color_banner": "#000000",
+    "color_main": "#211F09",
+    "color_main_2": "#FFE119",
+    "color_text": "#FFE119"
+  },
+  "69": {
+    "color_banner": "#7BD668",
+    "color_main": "#7BD668",
+    "color_main_2": "#647FE5",
+    "color_text": "#A6B7F5"
+  },
+  "70": {
+    "color_banner": "#481B00",
+    "color_main": "#FF6000",
+    "color_main_2": "#FF6000",
+    "color_text": "#FF6000"
+  },
+  "71": {
+    "color_banner": "#52F600",
+    "color_main": "#52F600",
+    "color_main_2": "#911EB4",
+    "color_text": "#AF5EF6"
+  },
+  "72": {
+    "color_banner": "#E2E524",
+    "color_main": "#E2E524",
+    "color_main_2": "#00A9CE",
+    "color_text": "#42D4F4"
+  },
+  "73": {
+    "color_banner": "#3F2151",
+    "color_main": "#4D2863",
+    "color_main_2": "#F032E6",
+    "color_text": "#F032E6"
+  },
+  "74": {
+    "color_banner": "#325359",
+    "color_main": "#4DE6FF",
+    "color_main_2": "#2AFF23",
+    "color_text": "#2AFF23"
+  },
+  "75": {
+    "color_banner": "#5A3CAB",
+    "color_main": "#5A3CAB",
+    "color_main_2": "#FABED4",
+    "color_text": "#FABED4"
+  },
+  "76": {
+    "color_banner": "#FDAD63",
+    "color_main": "#FDAD63",
+    "color_main_2": "#3DB2A5",
+    "color_text": "#72F9EA"
+  },
+  "77": {
+    "color_banner": "#482D89",
+    "color_main": "#482D89",
+    "color_main_2": "#DCBEFF",
+    "color_text": "#DCBEFF"
+  },
+  "78": {
+    "color_banner": "#FFF464",
+    "color_main": "#FFF464",
+    "color_main_2": "#AAFFC3",
+    "color_text": "#AAFFC3"
+  },
+  "79": {
+    "color_banner": "#EC7575",
+    "color_main": "#EC7575",
+    "color_main_2": "#2E8000",
+    "color_text": "#40B100"
+  },
+  "80": {
+    "color_banner": "#FAB3A9",
+    "color_main": "#FAB3A9",
+    "color_main_2": "#BE625E",
+    "color_text": "#D98C33"
+  },
+  "81": {
+    "color_banner": "#FAFAFF",
+    "color_main": "#FAFAFF",
+    "color_main_2": "#2665BF",
+    "color_text": "#5997EE"
+  },
+  "82": {
+    "color_banner": "#396CB4",
+    "color_main": "#396CB4",
+    "color_main_2": "#FFFFFF",
+    "color_text": "#FFFFFF"
+  },
+  "83": {
+    "color_banner": "#92BBFF",
+    "color_main": "#5092FF",
+    "color_main_2": "#595858",
+    "color_text": "#92BBFF"
+  },
+  "84": {
+    "color_banner": "#FFE120",
+    "color_main": "#FFE120",
+    "color_main_2": "#262204",
+    "color_text": "#FFE120"
+  },
+  "85": {
+    "color_banner": "#42D4F3",
+    "color_main": "#42D4F3",
+    "color_main_2": "#BC4F4F",
+    "color_text": "#EF6C5A"
+  },
+  "86": {
+    "color_banner": "#913579",
+    "color_main": "#913579",
+    "color_main_2": "#FFFAC8",
+    "color_text": "#FFFAC8"
+  },
+  "87": {
+    "color_banner": "#13295C",
+    "color_main": "#20469F",
+    "color_main_2": "#B5997D",
+    "color_text": "#FFD8B1"
+  }
+}

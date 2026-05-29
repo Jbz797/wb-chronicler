@@ -1,5 +1,480 @@
 {
-  "2": 3,
-  "3": 138,
-  "7": 6
+  "banner_id_icons": {
+    "civ_acid_gentleman": [
+      26,
+      229,
+      244,
+      254,
+      160
+    ],
+    "civ_alien": [
+      23,
+      159,
+      250,
+      104,
+      268
+    ],
+    "civ_alpaca": [
+      80,
+      242,
+      38,
+      40,
+      207
+    ],
+    "civ_angle": [
+      76,
+      171,
+      126,
+      84,
+      168
+    ],
+    "civ_armadillo": [
+      239,
+      152,
+      223,
+      114,
+      206
+    ],
+    "civ_bandit": [
+      12,
+      10,
+      3,
+      138,
+      173
+    ],
+    "civ_bear": [
+      204,
+      111,
+      188,
+      121,
+      264
+    ],
+    "civ_bee": [
+      8,
+      215,
+      78,
+      79,
+      14
+    ],
+    "civ_beetle": [
+      113,
+      21,
+      216,
+      251,
+      16
+    ],
+    "civ_buffalo": [
+      211,
+      45,
+      27,
+      155,
+      30
+    ],
+    "civ_candy_man": [
+      166,
+      46,
+      108,
+      263,
+      258
+    ],
+    "civ_capybara": [
+      226,
+      137,
+      257,
+      213,
+      180
+    ],
+    "civ_cat": [
+      43,
+      35,
+      208,
+      193,
+      149
+    ],
+    "civ_chicken": [
+      70,
+      20,
+      196,
+      177,
+      54
+    ],
+    "civ_cold_one": [
+      132,
+      72,
+      145,
+      4,
+      19
+    ],
+    "civ_cow": [
+      175,
+      90,
+      217,
+      127,
+      123
+    ],
+    "civ_crab": [
+      112,
+      32,
+      59,
+      260,
+      234
+    ],
+    "civ_crocodile": [
+      68,
+      225,
+      205,
+      212,
+      58
+    ],
+    "civ_crystal_golem": [
+      174,
+      269,
+      148,
+      187,
+      31
+    ],
+    "civ_demon": [
+      102,
+      133,
+      179,
+      61,
+      71
+    ],
+    "civ_dog": [
+      101,
+      165,
+      116,
+      94,
+      202
+    ],
+    "civ_druid": [
+      93,
+      233,
+      44,
+      182,
+      69
+    ],
+    "civ_evil_mage": [
+      201,
+      227,
+      144,
+      140,
+      167
+    ],
+    "civ_fairy": [
+      142,
+      163,
+      29,
+      245,
+      1
+    ],
+    "civ_fox": [
+      24,
+      248,
+      107,
+      266,
+      238
+    ],
+    "civ_frog": [
+      158,
+      194,
+      143,
+      192,
+      270
+    ],
+    "civ_garlic_man": [
+      41,
+      63,
+      199,
+      92,
+      131
+    ],
+    "civ_ghost": [
+      190,
+      261,
+      57,
+      105,
+      185
+    ],
+    "civ_goat": [
+      134,
+      73,
+      110,
+      209,
+      156
+    ],
+    "civ_hyena": [
+      172,
+      67,
+      22,
+      106,
+      232
+    ],
+    "civ_lemon_man": [
+      51,
+      267,
+      136,
+      259,
+      87
+    ],
+    "civ_liliar": [
+      99,
+      141,
+      52,
+      50,
+      100
+    ],
+    "civ_monkey": [
+      230,
+      65,
+      256,
+      210,
+      195
+    ],
+    "civ_necromancer": [
+      74,
+      49,
+      122,
+      271,
+      253
+    ],
+    "civ_penguin": [
+      219,
+      162,
+      151,
+      64,
+      224
+    ],
+    "civ_piranha": [
+      86,
+      139,
+      146,
+      9,
+      56
+    ],
+    "civ_rabbit": [
+      252,
+      147,
+      200,
+      81,
+      0
+    ],
+    "civ_rat": [
+      48,
+      186,
+      128,
+      125,
+      17
+    ],
+    "civ_rhino": [
+      135,
+      203,
+      66,
+      18,
+      249
+    ],
+    "civ_scorpion": [
+      28,
+      36,
+      75,
+      157,
+      214
+    ],
+    "civ_seal": [
+      236,
+      109,
+      221,
+      231,
+      170
+    ],
+    "civ_sheep": [
+      130,
+      91,
+      115,
+      262,
+      220
+    ],
+    "civ_snake": [
+      218,
+      120,
+      246,
+      247,
+      98
+    ],
+    "civ_snowman": [
+      83,
+      129,
+      117,
+      15,
+      178
+    ],
+    "civ_turtle": [
+      55,
+      150,
+      47,
+      5,
+      255
+    ],
+    "civ_unicorn": [
+      60,
+      124,
+      88,
+      103,
+      240
+    ],
+    "civ_white_mage": [
+      235,
+      2,
+      34,
+      11,
+      39
+    ],
+    "civ_wolf": [
+      62,
+      95,
+      33,
+      97,
+      181
+    ],
+    "dwarf": [
+      161,
+      25,
+      153,
+      85,
+      241,
+      89,
+      7,
+      6
+    ],
+    "elf": [
+      237,
+      53,
+      197,
+      13,
+      265,
+      243,
+      228,
+      96
+    ],
+    "human": [
+      189,
+      191,
+      222,
+      169,
+      77,
+      37,
+      118,
+      119
+    ],
+    "orc": [
+      164,
+      82,
+      183,
+      184,
+      176,
+      198,
+      42,
+      154
+    ]
+  },
+  "species_to_banner_id": {
+    "acid_blob": "civ_acid_gentleman",
+    "alien": "civ_alien",
+    "alpaca": "civ_alpaca",
+    "angle": "civ_angle",
+    "armadillo": "civ_armadillo",
+    "bandit": "civ_bandit",
+    "bear": "civ_bear",
+    "bee": "civ_bee",
+    "beetle": "civ_beetle",
+    "buffalo": "civ_buffalo",
+    "butterfly": "civ_druid",
+    "capybara": "civ_capybara",
+    "cat": "civ_cat",
+    "chicken": "civ_chicken",
+    "civ_acid_gentleman": "civ_acid_gentleman",
+    "civ_alpaca": "civ_alpaca",
+    "civ_armadillo": "civ_armadillo",
+    "civ_bear": "civ_bear",
+    "civ_beetle": "civ_beetle",
+    "civ_buffalo": "civ_buffalo",
+    "civ_candy_man": "civ_candy_man",
+    "civ_capybara": "civ_capybara",
+    "civ_cat": "civ_cat",
+    "civ_chicken": "civ_chicken",
+    "civ_cow": "civ_cow",
+    "civ_crab": "civ_crab",
+    "civ_crocodile": "civ_crocodile",
+    "civ_crystal_golem": "civ_crystal_golem",
+    "civ_dog": "civ_dog",
+    "civ_fox": "civ_fox",
+    "civ_frog": "civ_frog",
+    "civ_garlic_man": "civ_garlic_man",
+    "civ_goat": "civ_goat",
+    "civ_hyena": "civ_hyena",
+    "civ_lemon_man": "civ_lemon_man",
+    "civ_liliar": "civ_liliar",
+    "civ_monkey": "civ_monkey",
+    "civ_penguin": "civ_penguin",
+    "civ_piranha": "civ_piranha",
+    "civ_rabbit": "civ_rabbit",
+    "civ_rat": "civ_rat",
+    "civ_rhino": "civ_rhino",
+    "civ_scorpion": "civ_scorpion",
+    "civ_seal": "civ_seal",
+    "civ_sheep": "civ_sheep",
+    "civ_snake": "civ_snake",
+    "civ_turtle": "civ_turtle",
+    "civ_unicorn": "civ_unicorn",
+    "civ_wolf": "civ_wolf",
+    "cold_one": "civ_cold_one",
+    "cow": "civ_cow",
+    "crab": "civ_crab",
+    "crocodile": "civ_crocodile",
+    "crystal_sword": "civ_crystal_golem",
+    "demon": "civ_demon",
+    "dog": "civ_dog",
+    "druid": "civ_druid",
+    "dwarf": "dwarf",
+    "elf": "elf",
+    "evil_mage": "civ_evil_mage",
+    "fairy": "civ_fairy",
+    "fire_elemental": "civ_demon",
+    "fire_skull": "civ_demon",
+    "flower_bud": "civ_liliar",
+    "fly": "civ_druid",
+    "fox": "civ_fox",
+    "frog": "civ_frog",
+    "garl": "civ_garlic_man",
+    "ghost": "civ_ghost",
+    "goat": "civ_goat",
+    "grasshopper": "civ_druid",
+    "greg": "human",
+    "human": "human",
+    "hyena": "civ_hyena",
+    "jumpy_skull": "civ_necromancer",
+    "lemon_snail": "civ_lemon_man",
+    "monkey": "civ_monkey",
+    "necromancer": "civ_necromancer",
+    "orc": "orc",
+    "ostrich": "civ_druid",
+    "penguin": "civ_penguin",
+    "piranha": "civ_piranha",
+    "plague_doctor": "civ_bandit",
+    "rabbit": "civ_rabbit",
+    "raccoon": "civ_bandit",
+    "rat": "civ_rat",
+    "rhino": "civ_rhino",
+    "scorpion": "civ_scorpion",
+    "seal": "civ_seal",
+    "sheep": "civ_sheep",
+    "skeleton": "civ_necromancer",
+    "smore": "civ_candy_man",
+    "snake": "civ_snake",
+    "snowman": "civ_snowman",
+    "turtle": "civ_turtle",
+    "unicorn": "civ_unicorn",
+    "white_mage": "civ_white_mage",
+    "wolf": "civ_wolf"
+  }
 }

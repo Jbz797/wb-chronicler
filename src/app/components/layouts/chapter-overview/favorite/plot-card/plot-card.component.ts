@@ -5,7 +5,7 @@ import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { PLOT_TYPE_LABELS } from '../../../../../constants';
-import { ChroniclerService } from '../../../../../services/chronicler.service';
+import { ChroniclerService } from '../../../../../services';
 
 @Component({
   selector: 'app-plot-card',

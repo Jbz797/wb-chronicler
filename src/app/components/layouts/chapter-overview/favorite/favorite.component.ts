@@ -8,7 +8,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { COMBAT_STATS, PERSONALITY_LABELS, PROFESSION_LABELS, ROLE_LABELS, SKILL_STATS } from '../../../../constants';
 import { RarityCounts } from '../../../../interfaces';
 import { TierPipe } from '../../../../pipes';
-import { ChroniclerService } from '../../../../services/chronicler.service';
+import { ChroniclerService } from '../../../../services';
 import { RankedStatComponent, RarityStatsComponent } from '../../../misc';
 
 import { CompanionCardComponent } from './companion-card/companion-card.component';

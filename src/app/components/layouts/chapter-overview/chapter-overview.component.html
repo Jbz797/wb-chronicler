@@ -21,6 +21,11 @@
     <img class="panel-icon" src="assets/img/world/kingdom.png" />
     <span>Royaume</span>
   </ng-template>
+  <ng-template #kingdomExtra>
+    @if (c.meta.kingdom; as k) {
+      <app-kingdom-tag [id]="k.metadata.id" />
+    }
+  </ng-template>
 
   <nz-collapse nzAccordion>
     <nz-collapse-panel [nzActive]="activePanel() === 'world-stats'" [nzHeader]="worldStatsHeader" (nzActiveChange)="onPanelToggle('world-stats', $event)">
@@ -29,7 +34,12 @@
     <nz-collapse-panel [nzActive]="activePanel() === 'favorite'" [nzHeader]="favoritesHeader" (nzActiveChange)="onPanelToggle('favorite', $event)">
       <app-favorite />
     </nz-collapse-panel>
-    <nz-collapse-panel [nzActive]="activePanel() === 'kingdom'" [nzHeader]="kingdomHeader" (nzActiveChange)="onPanelToggle('kingdom', $event)">
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'kingdom'"
+      [nzExtra]="kingdomExtra"
+      [nzHeader]="kingdomHeader"
+      (nzActiveChange)="onPanelToggle('kingdom', $event)"
+    >
       <app-kingdom />
     </nz-collapse-panel>
   </nz-collapse>

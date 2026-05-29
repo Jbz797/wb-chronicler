@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 
-import { ChroniclerService } from '../../../services/chronicler.service';
+import { ChroniclerService } from '../../../services';
 
 @Component({
   selector: 'app-map-preview',

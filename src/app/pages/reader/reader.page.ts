@@ -6,7 +6,7 @@ import { MarkdownComponent } from 'ngx-markdown';
 import { map } from 'rxjs';
 
 import { PAGES } from '../../constants';
-import { ChroniclerService } from '../../services/chronicler.service';
+import { ChroniclerService } from '../../services';
 
 @Component({
   selector: 'app-reader',
@@ -20,9 +20,11 @@ export class ReaderPage {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });
 
+  // `undefined` while a chapter slug is still being discovered — avoids flashing/locking onto the Chronicler fallback on refresh.
   protected readonly src = computed(() => {
     const slug = this._slug();
-    return (PAGES.find(p => p.slug === slug) ?? this._chronicler.chapters().find(c => c.slug === slug) ?? PAGES[0]!).mdUrl;
+    const page = PAGES.find(p => p.slug === slug) ?? this._chronicler.chapters().find(c => c.slug === slug);
+    return page?.mdUrl;
   });
 
   // Scroll to internal anchors programmatically (bypasses <base href> redirect; suffix match handles invisible-char prefixes like emoji VS-16).

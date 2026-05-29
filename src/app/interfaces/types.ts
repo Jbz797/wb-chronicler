@@ -1,7 +1,10 @@
+import { KingdomInfo } from './world.interface';
+
 export type ChapterOverviewPanel = 'favorite' | 'kingdom' | 'world-stats';
 export type CumulativeStat = 'books_read' | 'plots_succeeded';
 export type DeathCause = 'eaten' | 'explosion' | 'fire' | 'hunger' | 'old_age' | 'water' | 'weapon';
-export type IconKind = 'resources' | 'species';
+export type IconKind = 'kingdoms' | 'resources' | 'species';
+export type KingdomRegistry = Record<string, KingdomInfo>;
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'children' | 'critical_chance'
   | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'intelligence' | 'kills' | 'level'

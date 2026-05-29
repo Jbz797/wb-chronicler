@@ -5,7 +5,7 @@ import { NzLayoutModule } from 'ng-zorro-antd/layout';
 
 import { ChapterOverviewComponent, MapPreviewComponent, NavComponent } from './components/layouts';
 import { GithubStarsComponent } from './components/misc';
-import { ChroniclerService } from './services/chronicler.service';
+import { ChroniclerService } from './services';
 
 @Component({
   selector: 'app-root',

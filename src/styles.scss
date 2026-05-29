@@ -19,6 +19,52 @@ img {
   image-rendering: pixelated;
 }
 
+// Tinted variant (light tint of a single hue) — kept for other entity tags later.
+// .ant-tag.kingdom-tag {
+//   align-items: center;
+//   background-color: color-mix(in srgb, var(--kingdom-color), $dark-warm 88%);
+//   border: none;
+//   color: color-mix(in srgb, var(--kingdom-color), white 75%);
+//   display: inline-flex;
+//   font-family: $font-body;
+//   font-size: 12.5px;
+//   font-variant-caps: small-caps;
+//   font-weight: 500;
+//   gap: 0.25rem;
+//   margin-right: 0;
+//   .glyph {
+//     background-color: color-mix(in srgb, var(--kingdom-color), white 25%);
+//     height: 11.5px;
+//     mask-position: center;
+//     mask-repeat: no-repeat;
+//     mask-size: contain;
+//     width: 11.5px;
+//   }
+// }
+
+.ant-tag.kingdom-tag {
+  align-items: center;
+  background-color: color-mix(in srgb, var(--kingdom-color), black 40%);
+  border: none;
+  color: color-mix(in srgb, var(--kingdom-ink), white 40%);
+  display: inline-flex;
+  font-family: $font-body;
+  font-size: 12.5px;
+  font-variant-caps: small-caps;
+  font-weight: 500;
+  gap: 0.25rem;
+  margin-right: 0;
+
+  .glyph {
+    background-color: color-mix(in srgb, var(--kingdom-ink), white 40%);
+    height: 11.5px;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    width: 11.5px;
+  }
+}
+
 .tier-full {
   color: $success;
 }

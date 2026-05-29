@@ -1,13 +1,6 @@
 @if (kingdom(); as k) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    <nz-descriptions-item nzTitle="Nom">
-      {{ k.metadata.name }}
-      <span
-        class="banner-icon"
-        [style.background-color]="k.metadata.banner_icon !== null ? k.metadata.color : ''"
-        [style.mask-image]="`url(assets/img/banners/${k.metadata.banner_icon ?? 'missing'}.png)`"
-      ></span>
-    </nz-descriptions-item>
+    <nz-descriptions-item nzTitle="TEST">TEST</nz-descriptions-item>
   </nz-descriptions>
 } @else {
   <nz-empty nzNotFoundContent="Aucun royaume" nzNotFoundImage="assets/img/empty/no-kingdom.png" />

@@ -3,7 +3,7 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { ChapterMeta, RankedStatKind, RankedStatSnapshot } from '../../../interfaces';
 import { TierPipe } from '../../../pipes';
-import { ChroniclerService } from '../../../services/chronicler.service';
+import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
 
 @Component({

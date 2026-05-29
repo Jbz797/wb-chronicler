@@ -4,7 +4,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { CUMULATIVE_STATS, DEATH_CAUSES, SNAPSHOT_STATS } from '../../../../constants';
 import { CompactPipe } from '../../../../pipes';
-import { ChroniclerService } from '../../../../services/chronicler.service';
+import { ChroniclerService } from '../../../../services';
 import { DeltaComponent } from '../../../misc';
 
 @Component({

@@ -1,5 +1,7 @@
 <div class="reader-page">
   <article class="ant-typography">
-    <markdown [disableSanitizer]="true" [src]="src()" />
+    @if (src(); as s) {
+      <markdown [disableSanitizer]="true" [src]="s" />
+    }
   </article>
 </div>

@@ -104,8 +104,7 @@ export interface ChapterMeta {
   } | null;
   kingdom: {
     metadata: {
-      banner_icon: number | null;
-      color: string;
+      id: number;
       name: string;
     };
   } | null;

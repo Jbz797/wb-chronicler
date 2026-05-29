@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
 
 import { PAGES } from '../../../constants';
-import { ChroniclerService } from '../../../services/chronicler.service';
+import { ChroniclerService } from '../../../services';
 
 @Component({
   selector: 'app-nav',
