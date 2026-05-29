@@ -12,6 +12,7 @@ import { KingdomRegistryService } from '../../../../services';
 export class KingdomTagComponent {
 
   public readonly id = input.required<number>();
+  public readonly name = input.required<string>();
 
   protected readonly kingdom = (() => {
     const { registry } = inject(KingdomRegistryService);

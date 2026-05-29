@@ -23,7 +23,7 @@
   </ng-template>
   <ng-template #kingdomExtra>
     @if (c.meta.kingdom; as k) {
-      <app-kingdom-tag [id]="k.metadata.id" />
+      <app-kingdom-tag [id]="k.metadata.id" [name]="k.metadata.name" />
     }
   </ng-template>
 

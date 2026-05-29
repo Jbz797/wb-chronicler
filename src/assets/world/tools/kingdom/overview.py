@@ -38,9 +38,9 @@ def _luminance(color: str) -> float:
     return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
 
 
-# Incrementally enrich the reader's registry, adding this kingdom only if absent. The name is kept
-# here (alongside the immutable colour + icon) so the UI can render any kingdom from its id alone —
-# tags reference kingdoms beyond the current chapter.
+# Incrementally enrich the reader's registry, adding this kingdom only if absent — just the
+# per-kingdom visuals (icon + colours). The display name is passed by the caller (markdown token or
+# chapter.json), not stored here.
 def _register_kingdom(kingdom: dict, save: dict) -> None:
     registry = json.loads(_REGISTRY.read_text()) if _REGISTRY.exists() else {}
     key = str(kingdom.get("id"))
@@ -53,7 +53,6 @@ def _register_kingdom(kingdom: dict, save: dict) -> None:
         "banner_icon": _resolve_banner_sprite(kingdom, save),
         "color": min(palette, key=_luminance) if palette else None,
         "ink": max(palette, key=_luminance) if palette else None,
-        "name": kingdom.get("name"),
     }
     _REGISTRY.write_text(_format_registry(registry))
 
