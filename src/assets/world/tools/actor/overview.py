@@ -25,12 +25,11 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
+from shared import MONTHS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
 _GRID_COLS = 6
 _LEVEL_RE = re.compile(r"(\d+)$")
-_MONTHS_PER_YEAR = 60
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "persons.json"
 
 
@@ -433,7 +432,7 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
     age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
-    lifespan_months = totals.get("lifespan", 0) * _MONTHS_PER_YEAR
+    lifespan_months = totals.get("lifespan", 0) * MONTHS_PER_YEAR
     _apply_offspring_age_scaling(totals, age_months / lifespan_months if lifespan_months else 0)
     cleaned = _cleanup_stats(totals)
     # `max_cities` (Kingdom.getMaxCities) only matters for kings (profession=3).
@@ -505,7 +504,7 @@ def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
 
     # Age is not in _compute_stats (it's derived from created_time) — rank it separately.
     def actor_age(a: dict) -> int:
-        return round((ctx["world_time"] - float(a.get("created_time") or 0)) / _MONTHS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+        return round((ctx["world_time"] - float(a.get("created_time") or 0)) / MONTHS_PER_YEAR) + (a.get("age_overgrowth") or 0)
 
     own_age = actor_age(actor)
     age_rank = sum(1 for a in same_species if actor_age(a) > own_age) + 1
@@ -567,7 +566,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
     return {
         # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
-        "age": round(age_months / _MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
+        "age": round(age_months / MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
         "asset_id": actor.get("asset_id"),
         "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
         "clan": clan.get("name"),
@@ -676,7 +675,7 @@ def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict 
     snap = _compute_stats(companion, ctx)
     age_months = ctx["world_time"] - float(companion.get("created_time") or 0)
     return {
-        "age": round(age_months / _MONTHS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
+        "age": round(age_months / MONTHS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
         "health_max": snap.get("health_max", 0),
         "id": companion_id,
         "level": snap.get("level", 0),
@@ -733,7 +732,7 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
         ct = item.get("created_time")
         out.append(
             {
-                "age": round((world_time - ct) / _MONTHS_PER_YEAR) if ct is not None else None,
+                "age": round((world_time - ct) / MONTHS_PER_YEAR) if ct is not None else None,
                 "asset_id": item["asset_id"],
                 "by": item.get("by"),
                 "durability": item.get("durability"),

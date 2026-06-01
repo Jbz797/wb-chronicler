@@ -5,14 +5,17 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
+from shared import MONTHS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
 _ALL_SECTIONS = ("metadata",)
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
 
 
-def _build_metadata(kingdom: dict) -> dict:
+def _build_metadata(kingdom: dict, save: dict) -> dict:
+    world_time = save.get("mapStats", {}).get("world_time", 0)
+    age_months = max(0, world_time - kingdom.get("created_time", 0))
     return {
+        "age": int(age_months / MONTHS_PER_YEAR),
         "id": kingdom.get("id"),
         "name": kingdom.get("name"),
     }
@@ -75,7 +78,7 @@ def main(argv: list[str]) -> int:
 
     out: dict = {}
     if "metadata" in sections:
-        out["metadata"] = _build_metadata(kingdom)
+        out["metadata"] = _build_metadata(kingdom, save)
 
     emit(out)
     return 0

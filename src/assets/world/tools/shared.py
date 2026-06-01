@@ -11,6 +11,7 @@ from pathlib import Path
 
 CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
 DATAS_DIR = Path(__file__).parent / "datas"
+MONTHS_PER_YEAR = 60
 
 
 def emit(out: dict) -> None:

@@ -104,6 +104,7 @@ export interface ChapterMeta {
   } | null;
   kingdom: {
     metadata: {
+      age: number;
       id: number;
       name: string;
     };
