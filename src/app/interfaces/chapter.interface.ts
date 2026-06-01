@@ -110,6 +110,7 @@ export interface ChapterMeta {
       name: string;
       population: number;
       renown: number;
+      territory: number;
       warriors: number;
     };
     ranks: {
@@ -117,6 +118,7 @@ export interface ChapterMeta {
       cities?: number;
       population?: number;
       renown?: number;
+      territory?: number;
       warriors?: number;
     };
   } | null;

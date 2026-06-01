@@ -23,13 +23,17 @@ def _build_context(save: dict) -> dict:
         if actor.get("profession") == 5:
             warriors_by_kingdom[kid] = warriors_by_kingdom.get(kid, 0) + 1
     cities_by_kingdom: dict[int, int] = {}
+    territory_by_kingdom: dict[int, int] = {}
     for city in save.get("cities", []):
         kid = city.get("kingdomID")
-        if kid:
-            cities_by_kingdom[kid] = cities_by_kingdom.get(kid, 0) + 1
+        if not kid:
+            continue
+        cities_by_kingdom[kid] = cities_by_kingdom.get(kid, 0) + 1
+        territory_by_kingdom[kid] = territory_by_kingdom.get(kid, 0) + len(city.get("zones") or [])
     return {
         "cities_by_kingdom": cities_by_kingdom,
         "populations_by_kingdom": populations_by_kingdom,
+        "territory_by_kingdom": territory_by_kingdom,
         "warriors_by_kingdom": warriors_by_kingdom,
         "world_time": float(save["mapStats"].get("world_time") or 0),
     }
@@ -44,6 +48,7 @@ def _build_metadata(kingdom: dict, ctx: dict) -> dict:
         "name": kingdom.get("name"),
         "population": ctx["populations_by_kingdom"].get(kingdom.get("id"), 0),
         "renown": kingdom.get("renown", 0),
+        "territory": ctx["territory_by_kingdom"].get(kingdom.get("id"), 0),
         "warriors": ctx["warriors_by_kingdom"].get(kingdom.get("id"), 0),
     }
 
@@ -53,6 +58,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     kingdoms = save.get("kingdoms", [])
     cities = ctx["cities_by_kingdom"]
     populations = ctx["populations_by_kingdom"]
+    territory = ctx["territory_by_kingdom"]
     warriors = ctx["warriors_by_kingdom"]
 
     def kingdom_age(k: dict) -> int:
@@ -63,6 +69,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
         "cities": lambda k: cities.get(k.get("id"), 0),
         "population": lambda k: populations.get(k.get("id"), 0),
         "renown": lambda k: k.get("renown", 0),
+        "territory": lambda k: territory.get(k.get("id"), 0),
         "warriors": lambda k: warriors.get(k.get("id"), 0),
     }
     ranks = {}
