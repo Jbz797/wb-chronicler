@@ -1,0 +1,7 @@
+@if (color(); as c) {
+  <nz-tag class="entity-tag person-tag" [style.--person-color]="c">
+    <img [src]="`assets/img/species/${assetId()}.png`" />
+    {{ name() }}
+    <img [src]="`assets/img/sex/${sex()}.png`" />
+  </nz-tag>
+}

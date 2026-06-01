@@ -1,11 +1,6 @@
 @let c = currentChapter();
 @if (c && c.meta.favorite; as fav) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    <nz-descriptions-item nzTitle="Nom">
-      {{ fav.metadata.name }}
-      <img class="species-icon" [src]="`assets/img/species/${fav.metadata.asset_id}.png`" />
-      <img [src]="`assets/img/sex/${fav.metadata.sex}.png`" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="descriptorTitle">{{ fav.descriptor }}</nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="professionTitle">
       <span>{{ professionLabel(fav.metadata.profession) }}</span>

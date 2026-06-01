@@ -9,15 +9,24 @@ import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { HISTORY_DIR } from '../../../constants';
 import { ChapterOverviewPanel, World } from '../../../interfaces';
 import { ChroniclerService } from '../../../services';
+import { KingdomTagComponent, PersonTagComponent } from '../../tags';
 
 import { FavoriteComponent } from './favorite/favorite.component';
-import { KingdomTagComponent } from './kingdom/kingdom-tag.component';
 import { KingdomComponent } from './kingdom/kingdom.component';
 import { WorldStatsComponent } from './world-stats/world-stats.component';
 
 @Component({
   selector: 'app-chapter-overview',
-  imports: [FavoriteComponent, KingdomComponent, KingdomTagComponent, NzCollapseModule, NzDividerModule, NzEmptyModule, WorldStatsComponent],
+  imports: [
+    FavoriteComponent,
+    KingdomComponent,
+    KingdomTagComponent,
+    NzCollapseModule,
+    NzDividerModule,
+    NzEmptyModule,
+    PersonTagComponent,
+    WorldStatsComponent,
+  ],
   templateUrl: './chapter-overview.component.html',
   styleUrl: './chapter-overview.component.scss',
 })

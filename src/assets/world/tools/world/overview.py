@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 
-# Primary source: `map.meta` (sibling of `map.wbox`). Falls back to the compressed
-# save only for live-only collections not exposed in `map.meta` (armies, frozen
-# tiles, relations). User-facing docs live in `tools/tools.md`.
+# Source: `map.meta` (sibling of `map.wbox`), fallback raw save for live-only collections (armies, frozen tiles, relations). User-facing docs: `tools/tools.md`.
 #
-# ⚠️ Output keys must stay self-descriptive — the chronicler reads them with no other
-# context. Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
-# Exception: keep the WB-native name verbatim for anything sourced from the raw save
-# (e.g. `relations`, `world_time`) — the chronicler also reads the save directly and
-# divergent names would create friction.
+# ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
+# Exception: WB-native names verbatim for raw-save fields (e.g. `relations`, `world_time`) — chronicler reads save directly, divergent names would cause friction.
 
 import json
 import sys

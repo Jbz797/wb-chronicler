@@ -17,6 +17,11 @@
     <img class="panel-icon" src="assets/img/world/favorites.png" />
     <span>Favoris</span>
   </ng-template>
+  <ng-template #favoriteExtra>
+    @if (c.meta.favorite; as fav) {
+      <app-person-tag [assetId]="fav.metadata.asset_id" [name]="fav.metadata.name" [sex]="fav.metadata.sex" />
+    }
+  </ng-template>
   <ng-template #kingdomHeader>
     <img class="panel-icon" src="assets/img/world/kingdom.png" />
     <span>Royaume</span>
@@ -31,7 +36,12 @@
     <nz-collapse-panel [nzActive]="activePanel() === 'world-stats'" [nzHeader]="worldStatsHeader" (nzActiveChange)="onPanelToggle('world-stats', $event)">
       <app-world-stats />
     </nz-collapse-panel>
-    <nz-collapse-panel [nzActive]="activePanel() === 'favorite'" [nzHeader]="favoritesHeader" (nzActiveChange)="onPanelToggle('favorite', $event)">
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'favorite'"
+      [nzExtra]="favoriteExtra"
+      [nzHeader]="favoritesHeader"
+      (nzActiveChange)="onPanelToggle('favorite', $event)"
+    >
       <app-favorite />
     </nz-collapse-panel>
     <nz-collapse-panel

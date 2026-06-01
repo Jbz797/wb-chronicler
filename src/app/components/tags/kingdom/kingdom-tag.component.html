@@ -1,5 +1,5 @@
 @if (kingdom(); as k) {
-  <nz-tag class="kingdom-tag" [style.--kingdom-color]="k.color" [style.--kingdom-ink]="k.ink">
+  <nz-tag class="entity-tag kingdom-tag" [style.--kingdom-color]="k.color" [style.--kingdom-ink]="k.ink">
     <span class="glyph" [style.mask-image]="'url(assets/img/world/kingdom.png)'"></span>
     {{ name() }}
     <span class="glyph" [style.mask-image]="`url(assets/img/banners/${k.banner_icon}.png)`"></span>

@@ -16,7 +16,7 @@ import 'prismjs/components/prism-python';
 import { App } from './app/app';
 import { MarkedHelpers } from './app/helpers';
 import { ROUTES } from './app/routes';
-import { KingdomRegistryService } from './app/services';
+import { RegistryService } from './app/services';
 
 registerLocaleData(fr);
 
@@ -24,7 +24,7 @@ MarkedHelpers.configure();
 
 bootstrapApplication(App, {
   providers: [
-    provideAppInitializer(() => inject(KingdomRegistryService).load()),
+    provideAppInitializer(() => inject(RegistryService).loadAll()),
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(),
     provideMarkdown(),

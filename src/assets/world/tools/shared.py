@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
-# Shared constants + helpers reused by `actor/overview.py`, `kingdom/overview.py` and `world/overview.py`.
-# Importable via `sys.path` injection from the parent dir — see how each script
-# bootstraps before `from shared import ...`.
+# Shared constants/helpers reused by `actor/overview.py`, `kingdom/overview.py` and `world/overview.py` — `sys.path`-injected from parent dir; see each bootstrap.
 
 import json
 import sys
@@ -46,3 +44,16 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...]) -> tuple[str,
     if unknown := [s for s in requested if s not in all_sections]:
         raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: full,{','.join(all_sections)}")
     return requested
+
+
+# Upsert an entry into a JSON registry keyed by numeric id; write only on value change. One line per entry, sorted by id, fields alphabetical — single-line diffs.
+def register_entity(path: Path, key: str, value: dict) -> None:
+    registry = json.loads(path.read_text()) if path.exists() else {}
+    if registry.get(key) == value:
+        return
+    registry[key] = value
+    rows = []
+    for entry_key, entry_value in sorted(registry.items(), key=lambda item: int(item[0])):
+        fields = ", ".join(f"{json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}" for k, v in sorted(entry_value.items()))
+        rows.append(f"  {json.dumps(entry_key)}: {{ {fields} }}")
+    path.write_text("{\n" + ",\n".join(rows) + "\n}\n")

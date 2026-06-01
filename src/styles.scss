@@ -19,50 +19,50 @@ img {
   image-rendering: pixelated;
 }
 
-// Tinted variant (light tint of a single hue) — kept for other entity tags later.
-// .ant-tag.kingdom-tag {
-//   align-items: center;
-//   background-color: color-mix(in srgb, var(--kingdom-color), $dark-warm 88%);
-//   border: none;
-//   color: color-mix(in srgb, var(--kingdom-color), white 75%);
-//   display: inline-flex;
-//   font-family: $font-body;
-//   font-size: 12.5px;
-//   font-variant-caps: small-caps;
-//   font-weight: 500;
-//   gap: 0.25rem;
-//   margin-right: 0;
-//   .glyph {
-//     background-color: color-mix(in srgb, var(--kingdom-color), white 25%);
-//     height: 11.5px;
-//     mask-position: center;
-//     mask-repeat: no-repeat;
-//     mask-size: contain;
-//     width: 11.5px;
-//   }
-// }
-
-.ant-tag.kingdom-tag {
+.ant-tag.entity-tag {
   align-items: center;
-  background-color: color-mix(in srgb, var(--kingdom-color), black 40%);
   border: none;
-  color: color-mix(in srgb, var(--kingdom-ink), white 40%);
   display: inline-flex;
   font-family: $font-body;
   font-size: 12.5px;
   font-variant-caps: small-caps;
   font-weight: 500;
   gap: 0.25rem;
+  line-height: 18px;
   margin-right: 0;
+  padding: 0 5px;
 
   .glyph {
-    background-color: color-mix(in srgb, var(--kingdom-ink), white 40%);
     height: 11.5px;
+    image-rendering: pixelated;
     mask-position: center;
     mask-repeat: no-repeat;
     mask-size: contain;
     width: 11.5px;
   }
+
+  img {
+    image-rendering: auto;
+    max-height: 12px;
+    max-width: 12px;
+  }
+}
+
+.ant-tag.kingdom-tag {
+  background-color: color-mix(in srgb, var(--kingdom-color), black 40%);
+  color: color-mix(in srgb, var(--kingdom-ink), white 40%);
+
+  .glyph {
+    background-color: color-mix(in srgb, var(--kingdom-ink), white 40%);
+  }
+}
+
+// Icons keep their original sprite colours; only the name + background take the species hue.
+.ant-tag.person-tag {
+  box-shadow: inset 0 0 0 1px var(--person-color);
+  background-color: $paper;
+  color: color-mix(in srgb, var(--person-color), black 30%);
+  font-weight: 600;
 }
 
 .tier-full {

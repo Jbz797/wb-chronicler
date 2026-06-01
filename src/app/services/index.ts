@@ -1,2 +1,2 @@
 export * from './chronicler.service';
-export * from './kingdom-registry.service';
+export * from './registry.service';

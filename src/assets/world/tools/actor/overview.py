@@ -1,29 +1,21 @@
 #!/usr/bin/env python3
 
-# User-facing docs (usage, available sections) live in `tools/tools.md`. The notes
-# below are for maintainers — algorithm references, gotchas, source pointers.
+# User-facing docs (usage, available sections) live in `tools/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 #
 # ─── Maintenance / algorithm reference ───
-# Full algorithm spec: `chronicler.md § VI` ("Annexe technique — Génétique et stats de base").
-# All numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad exceptions, synergy-always genes)
-# are sourced from that section + observation of WorldBox in-game tooltips.
+# Full algorithm spec: `chronicler.md § VI`. Numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad, synergy-always) come from that section + WorldBox in-game tooltips.
 #
 # Pipeline per chromosome:
 #   1. For each locus (skipping `void_loci`):
 #        a. Detect BAD: at least one cardinal neighbor (N/S/E/W) contains the `bad` gene.
-#        b. Detect GOLDEN: every non-border side synergizes (≥1 synergized side, all of them
-#           synergized). BAD has priority over GOLDEN.
-#        c. Apply tier: BAD → floor(v/2) (or ceil for `attack_speed`/`damage_1`/`health_1`/
-#           `speed_1`); GOLDEN → v×2; else v as-is.
+#        b. Detect GOLDEN: every non-border side synergizes (≥1 synergized side, all of them synergized). BAD has priority over GOLDEN.
+#        c. Apply tier: BAD → floor(v/2) (ceil for `attack_speed`/`damage_1`/`health_1`/`speed_1`); GOLDEN → v×2; else v as-is.
 #        d. Accumulate per stat name.
 #   2. Round any float result to 4 decimals, cast integer-equivalents to int, drop zeros.
 #
-# Color synergy uses .NET `System.Random` seeded with `life_dna + gene._GENE_INDEX` to derive
-# each gene's 4-side color signature. The port mirrors .NET's int32 overflow semantics — see
-# `_to_int32()` and `_SystemRandom`. Color positions per chronicler.md spec use indices on a
-# *spaced* text (`"XXX XXX XXX XXX XXX"`, 19 chars) at 0/8/10/18 → in our unspaced 15-char
-# text those map to 0/6/8/14. ⚠️ If you ever rewrite the DNA generator to keep the spaces,
-# remember to shift the indices back.
+# Color synergy: .NET `System.Random` (seed `life_dna + gene._GENE_INDEX`) → 4-side color signature/gene; int32 overflow mirrored (`_to_int32()`/`_SystemRandom`).
+# Color positions (per chronicler.md): indices target *spaced* text (`"XXX XXX XXX XXX XXX"`, 19 chars) at 0/8/10/18 → unspaced 15-char text at 0/6/8/14.
+# ⚠️ If you ever rewrite the DNA generator to keep the spaces, shift the indices back.
 
 import math
 import re
@@ -33,12 +25,13 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import emit, index_by_id, load_data, load_save, parse_sections  # noqa: E402
+from shared import emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
 _GRID_COLS = 6
 _LEVEL_RE = re.compile(r"(\d+)$")
 _MONTHS_PER_YEAR = 60
+_REGISTRY = Path(__file__).parent.parent.parent / "saves" / "persons.json"
 
 
 # Per chronicler.md § VI — gene -> (stat name, value contribution).
@@ -157,8 +150,7 @@ _RENAMES = {"cities": "max_cities", "health": "health_max", "mana": "mana_max", 
 # Stats kept as 1-decimal floats — integer truncate would lose meaningful precision (damage_range is typically `damage × ratio` where ratio < 1).
 _KEEP_DECIMAL = {"damage_range"}
 
-# Stats dropped from the output — never consumed by the chronicler UI or fixtures. Add new
-# stats here when they enter the pipeline but aren't surfaced (audit via chapter.interface.ts).
+# Stats dropped from output — not consumed by chronicler UI or fixtures. Add new stats here when entering the pipeline but not surfaced (see chapter.interface.ts).
 _DROP = {"accuracy", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "range", "targets"}
 
 
@@ -168,8 +160,7 @@ def _to_int32(x: int) -> int:
     return x - 0x100000000 if x >= 0x80000000 else x
 
 
-# Faithful port of .NET `System.Random` (subtractive generator). Constants and seed loop
-# match the reference .NET implementation — do not "simplify" without verifying outputs.
+# Faithful port of .NET `System.Random` (subtractive generator). Constants and seed loop match the .NET reference — do not "simplify" without verifying outputs.
 class _SystemRandom:
     MBIG = 2147483647
     MSEED = 161803398
@@ -210,8 +201,7 @@ class _SystemRandom:
         return int((self._internal_sample() / self.MBIG) * mv)
 
 
-# Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's
-# colors only depend on (gene, life_dna), and life_dna is constant for one run.
+# Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's colors only depend on (gene, life_dna), and life_dna is constant per run.
 @cache
 def _gene_colors(gene: str, life_dna: int) -> dict:
     idx = _GENE_INDEX.get(gene)
@@ -320,16 +310,14 @@ def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, i
                 totals[k] = totals.get(k, 0) + v
 
 
-# Flat additive bonuses applied late in `Actor.updateStats`:
-#   stats["mana"] += int(stats["intelligence"] × _MANA_PER_INTELLIGENCE)
+# Flat additive bonuses applied late in `Actor.updateStats`: stats["mana"] += int(stats["intelligence"] × _MANA_PER_INTELLIGENCE)
 def _apply_intelligence_bonus(totals: dict) -> None:
     intel = totals.get("intelligence", 0)
     if intel:
         totals["mana"] = totals.get("mana", 0) + int(intel * _MANA_PER_INTELLIGENCE)
 
 
-# Civil progression accumulator (`actor.custom_data_float`) — diplomacy / warfare / stewardship
-# / intelligence each gain +1 per conversation / event / aging tick over the actor's life.
+# Civil progression accumulator (`actor.custom_data_float`) — diplomacy/warfare/stewardship/intelligence +1 per conversation/event/aging tick over actor's life.
 def _add_custom_data_float(totals: dict, custom: dict | None) -> None:
     for k, v in (custom or {}).items():
         totals[k] = totals.get(k, 0) + v
@@ -345,10 +333,7 @@ def _apply_multipliers(totals: dict) -> None:
             del totals[k]
 
 
-# Final adjustments per `Actor.updateStats` + tooltip render:
-#   • damage += warfare / 5                         (DLL: stats["damage"] += stats["warfare"] / 5)
-#   • damage_range becomes the amplitude in raw hp  (DLL tooltip: int(damage * damage_range))
-#   • critical_chance promoted to integer percent   (tooltip displays `28%`, raw is 0.28)
+# Per `Actor.updateStats` + tooltip: damage += warfare/5; damage_range → raw-hp amplitude (int(damage*damage_range)); critical_chance → int percent (0.28 → 28%).
 def _apply_damage_finalize(totals: dict) -> None:
     if "damage" in totals:
         totals["damage"] = totals["damage"] + totals.get("warfare", 0) / 5
@@ -358,8 +343,7 @@ def _apply_damage_finalize(totals: dict) -> None:
         totals["critical_chance"] = totals["critical_chance"] * 100
 
 
-# Per `Actor.calculateOffspringBasedOnAge`: scale `offspring` by an age-bracket multiplier
-# so the displayed max matches the in-game tooltip (e.g. raw 3 → 2 for a mature actor).
+# Per `Actor.calculateOffspringBasedOnAge`: scale `offspring` by an age-bracket multiplier to match the in-game tooltip (e.g. raw 3 → 2 for a mature actor).
 def _apply_offspring_age_scaling(totals: dict, age_ratio: float) -> None:
     if "offspring" not in totals:
         return
@@ -386,8 +370,7 @@ def _apply_level_scaling(totals: dict, level: int) -> None:
             totals[stat] = totals.get(stat, 0) + _LEVEL_VETERAN_SKILL_BONUS
 
 
-# Floor floats to int (game stores most stats as int32). `health` / `mana` are renamed to
-# `health_max` / `mana_max` — the values represent the actor's post-pipeline maximum.
+# Floor floats to int (game stores most stats as int32). `health`/`mana` renamed to `health_max`/`mana_max` — values represent actor's post-pipeline maximum.
 def _cleanup_stats(totals: dict) -> dict:
     result = {}
     for k, v in totals.items():
@@ -424,9 +407,7 @@ def _build_context(save: dict) -> dict:
     }
 
 
-# Aggregate one actor's instant-T stats through the full pipeline. `subspecies_base_cache`
-# is optional; when provided, the heavy (species + chromosomes + subspecies traits) base is
-# computed once per subspecies and reused across actors — a 5× speedup when ranking.
+# Aggregate one actor's instant-T stats. `subspecies_base_cache` (optional) caches heavy species+chromosomes+traits base per subspecies — 5× speedup when ranking.
 def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
@@ -458,14 +439,12 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
     # `max_cities` (Kingdom.getMaxCities) only matters for kings (profession=3).
     if actor.get("profession") != _PROFESSION_KING:
         cleaned.pop("max_cities", None)
-    # Always-surface actor counters (kept verbatim even at 0 — the chronicler expects them).
-    # `loot` keeps the WB-native name (the chronicler also reads it from the raw save).
+    # Always-surface actor counters (kept even at 0 — chronicler expects them). `loot` keeps the WB-native name (chronicler also reads it from the raw save).
     cleaned.update(
         {
             "births": int(actor.get("births") or 0),
             "children": ctx["children_by_parent"].get(actor.get("id"), 0),
-            # Current `health`/`mana`/`stamina` (vs pipeline `*_max`); `happiness`/`nutrition` are live gauges with no max.
-            # WB stores happiness as -100→+100; UI displays (raw + 100) / 2 as a 0–100% value.
+            # Current `health`/`mana`/`stamina` (vs `*_max`); `happiness`/`nutrition` live (no max). WB happiness: -100→+100, UI shows (raw+100)/2 as 0–100%.
             "happiness": (int(actor.get("happiness") or 0) + 100) * 100 // 200,
             "health": int(actor.get("health") or 0),
             "kills": int(actor.get("kills") or 0),
@@ -482,9 +461,7 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
     return dict(sorted(cleaned.items()))
 
 
-# Standard competition rank (1,2,2,4) for every stats key, among the actor's same-`asset_id` peers.
-# Ranks kept in the JSON. Most align with `RankedStatKind` in src/app/interfaces/types.ts (UI
-# consumers via RankedStatComponent). `births` is emitted for the editorial chronicler but not declared in the TS interface.
+# Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
 _RANKED_STATS = {
     "armor",
     "attack_speed",
@@ -511,9 +488,7 @@ _RANKED_STATS = {
 }
 
 
-# Standard competition rank (1,2,2,4) for each stat among same-`asset_id` peers (i.e. ranks
-# within the species). Only top 3 emitted — UI hides anything beyond, and the chronicler has
-# no narrative use for "34th out of 114".
+# Standard competition rank (1,2,2,4) per stat among `asset_id` peers (species ranks). Top 3 only — UI hides the rest, no narrative use for "34th out of 114".
 def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
     asset_id = actor.get("asset_id", "")
     cache: dict = {}
@@ -591,8 +566,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     religions_by_id = index_by_id(save.get("religions", []))
     age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
     return {
-        # `age_overgrowth` (years past the actor's lifespan cap) is added on top of the natural
-        # age — WB tooltips show the sum, so we mirror that to match what the chronicler sees.
+        # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
         "age": round(age_months / _MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
         "asset_id": actor.get("asset_id"),
         "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
@@ -614,11 +588,9 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     }
 
 
-# Active roles (king/village_leader/clan_chief/army_captain/family_alpha — can be lost) and
-# historical foundations (alliance/clan/village/family founders, culture/language/religion
-# creators — irrevocable). Returns a sorted list of role IDs, empty when the actor has none.
-# Roles in canonical display order: active positions first (by hierarchical rank), then
-# historical foundations (creators before founders). The UI iterates in this exact order.
+# Active roles (king/village_leader/clan_chief/army_captain/family_alpha — can be lost).
+# Historical foundations (alliance/clan/village/family founders, culture/language/religion creators — irrevocable).
+# Returns sorted role IDs (empty when none), in canonical UI order: active first (by hierarchical rank), then historical (creators before founders).
 _ROLE_ORDER = (
     "clan_chief",
     "family_alpha",
@@ -650,9 +622,8 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
     return [role for role in _ROLE_ORDER if checks[role]]
 
 
-# Reproduces `Actor.getMassKG` from the WB DLL: mass = (target_scale / 0.1) × mass_2 × (1 + Σ multiplier_mass).
-# `target_scale` and `mass_2` aren't persisted in the save — we rebuild them from asset_id + saved_traits.
-# Mass deltas applied by traits are the only ones found in the DLL (`fat`, `giant`, `tiny`, `agile`).
+# `Actor.getMassKG`: mass = (target_scale / 0.1) × mass_2 × (1 + Σ multiplier_mass). `target_scale`/`mass_2` not persisted, rebuilt from asset_id + saved_traits.
+# Mass deltas from traits — only `fat`, `giant`, `tiny`, `agile` in the DLL.
 _MASS_BASE = {"dwarf": 75, "elf": 25, "humanoid": 65, "orc": 85}
 _TRAIT_MASS_MODS = {
     "agile": {"scale": -0.01},
@@ -674,9 +645,7 @@ def _compute_mass(actor: dict) -> int | None:
     return int((scale / 0.1) * base * (1 + mult_mass))
 
 
-# Reproduces `Actor.updateStats` personality selection from the WB DLL: only city leaders and
-# kings get a personality, picked among diplomat/administrator/militarist/balanced based on
-# aggregated diplomacy/stewardship/warfare stats. `wildcard` is defined but never selected here.
+# `Actor.updateStats` personality: city leaders/kings only → diplomat/administrator/militarist/balanced (diplomacy/stewardship/warfare); `wildcard` never used.
 def _compute_personality(actor: dict, ctx: dict) -> str | None:
     if actor.get("profession") not in (_PROFESSION_KING, _PROFESSION_LEADER):
         return None
@@ -718,8 +687,7 @@ def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict 
     }
 
 
-# Plot the actor is currently driving — `actor.plot` points into `save.plots`. Returns `None`
-# if the actor isn't involved in any plot (most actors). Targets resolved to kingdom/alliance names.
+# Actor's current plot — `actor.plot` points into `save.plots`. Returns `None` when no plot (most actors). Targets → kingdom/alliance names.
 def _build_plot(actor: dict, save: dict) -> dict | None:
     plot_id = actor.get("plot")
     if plot_id is None:
@@ -780,6 +748,18 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
     return sorted(out, key=lambda i: i["id"])
 
 
+# Register this actor (species + sex) in the reader's person registry, for the `[p id Nom]` tag.
+def _register_person(actor: dict) -> None:
+    register_entity(
+        _REGISTRY,
+        str(actor.get("id")),
+        {
+            "asset_id": actor.get("asset_id"),
+            "sex": "female" if actor.get("sex") == 1 else "male",
+        },
+    )
+
+
 def main(argv: list[str]) -> int:
     if not argv:
         print("usage: overview.py <id> [sections] — see tools/tools.md", file=sys.stderr)
@@ -799,6 +779,7 @@ def main(argv: list[str]) -> int:
     if actor is None:
         print(f"unknown actor: {actor_id}", file=sys.stderr)
         return 1
+    _register_person(actor)
     ctx = _build_context(save)
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     if sub is None:
