@@ -18,21 +18,22 @@ export class RankedStatComponent {
   public readonly hideDelta = input<boolean>(false);
   public readonly numberFormat = input<string>('1.0-0');
   public readonly showRank = input<boolean>(true);
+  public readonly source = input<'favorite' | 'kingdom'>('favorite');
   public readonly stat = input.required<RankedStatKind>();
   public readonly suffix = input<string>('');
 
   private readonly _chronicler = inject(ChroniclerService);
 
   protected readonly data = computed(() => {
-    const current = this._chronicler.currentChapter()?.meta.favorite;
-    const previous = this._chronicler.previousChapter()?.meta.favorite;
+    const current = this._sourceOf(this._chronicler.currentChapter()?.meta);
+    const previous = this._sourceOf(this._chronicler.previousChapter()?.meta);
     if (!current) return null;
 
     const c = this._resolve(current);
     const p = previous ? this._resolve(previous) : null;
 
     const valueDelta = this.hideDelta() ? undefined : (p ? c.value - p.value : undefined);
-    return { ...c, rankStatus: this._rankStatus(c.rank_in_species, p?.rank_in_species, !!p), valueDelta };
+    return { ...c, rankStatus: this._rankStatus(c.rank, p?.rank, !!p), valueDelta };
   });
   // Live gauge value for stats that have a cap (health/mana/stamina). `null` for all others.
   protected readonly gaugeValue = computed(() => {
@@ -56,8 +57,18 @@ export class RankedStatComponent {
     return null;
   }
 
+  // Branches on `source()` to pull value + rank either from the favorite or the kingdom snapshot.
+  private _resolve(entity: NonNullable<ChapterMeta['favorite'] | ChapterMeta['kingdom']>): RankedStatSnapshot {
+    if (this.source() === 'kingdom') {
+      const k = entity as NonNullable<ChapterMeta['kingdom']>;
+      const key = this.stat() as 'age' | 'renown';
+      return this._snap(k.metadata[key], k.ranks[key]);
+    }
+    return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
+  }
+
   // Per-kind field accessor — pulls value/rank from the favorite's stats/ranks dict.
-  private _resolve(f: NonNullable<ChapterMeta['favorite']>): RankedStatSnapshot {
+  private _resolveFavorite(f: NonNullable<ChapterMeta['favorite']>): RankedStatSnapshot {
     const k = this.stat();
     if (k === 'age') return this._snap(f.metadata.age, f.ranks_in_species.age);
     if (k === 'armor') return this._snap(f.stats.armor, f.ranks_in_species.armor);
@@ -83,11 +94,17 @@ export class RankedStatComponent {
     return this._snap(f.stats.warfare, f.ranks_in_species.warfare);
   }
 
-  // Omits `rank_in_species` when undefined — required by `exactOptionalPropertyTypes`.
-  private _snap(value: number, rankInSpecies: number | undefined): RankedStatSnapshot {
+  // Omits `rank` when undefined — required by `exactOptionalPropertyTypes`.
+  private _snap(value: number, rank: number | undefined): RankedStatSnapshot {
     const out: RankedStatSnapshot = { value };
-    if (rankInSpecies !== undefined) out.rank_in_species = rankInSpecies;
+    if (rank !== undefined) out.rank = rank;
     return out;
+  }
+
+  // Picks the favorite or kingdom block from a chapter's meta based on the configured source.
+  private _sourceOf(meta: ChapterMeta | undefined): ChapterMeta['favorite'] | ChapterMeta['kingdom'] {
+    if (!meta) return null;
+    return this.source() === 'kingdom' ? meta.kingdom : meta.favorite;
   }
 
 }

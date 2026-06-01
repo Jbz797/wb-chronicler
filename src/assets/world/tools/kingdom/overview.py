@@ -7,18 +7,43 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared import MONTHS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
-_ALL_SECTIONS = ("metadata",)
+_ALL_SECTIONS = ("metadata", "ranks")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
 
 
-def _build_metadata(kingdom: dict, save: dict) -> dict:
-    world_time = save.get("mapStats", {}).get("world_time", 0)
-    age_months = max(0, world_time - kingdom.get("created_time", 0))
+def _build_context(save: dict) -> dict:
     return {
-        "age": int(age_months / MONTHS_PER_YEAR),
+        "world_time": float(save["mapStats"].get("world_time") or 0),
+    }
+
+
+def _build_metadata(kingdom: dict, ctx: dict) -> dict:
+    age_months = ctx["world_time"] - float(kingdom.get("created_time") or 0)
+    return {
+        "age": round(age_months / MONTHS_PER_YEAR),
         "id": kingdom.get("id"),
         "name": kingdom.get("name"),
+        "renown": kingdom.get("renown", 0),
     }
+
+
+# Standard competition rank (1,2,2,4) per stat among all kingdoms. Top 3 only — UI hides the rest.
+def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
+    kingdoms = save.get("kingdoms", [])
+
+    def kingdom_age(k: dict) -> int:
+        return round((ctx["world_time"] - float(k.get("created_time") or 0)) / MONTHS_PER_YEAR)
+
+    own_age = kingdom_age(kingdom)
+    own_renown = kingdom.get("renown", 0)
+    age_rank = sum(1 for k in kingdoms if kingdom_age(k) > own_age) + 1
+    renown_rank = sum(1 for k in kingdoms if k.get("renown", 0) > own_renown) + 1
+    ranks = {}
+    if age_rank <= 3:
+        ranks["age"] = age_rank
+    if renown_rank <= 3:
+        ranks["renown"] = renown_rank
+    return dict(sorted(ranks.items()))
 
 
 # Relative luminance (WCAG) of a "#RRGGBB" colour — used to pick the darkest / lightest of a palette.
@@ -75,10 +100,13 @@ def main(argv: list[str]) -> int:
         print(f"unknown kingdom: {kingdom_id}", file=sys.stderr)
         return 1
     _register_kingdom(kingdom, save)
+    ctx = _build_context(save)
 
     out: dict = {}
     if "metadata" in sections:
-        out["metadata"] = _build_metadata(kingdom, save)
+        out["metadata"] = _build_metadata(kingdom, ctx)
+    if "ranks" in sections:
+        out["ranks"] = _compute_ranks(kingdom, ctx, save)
 
     emit(out)
     return 0

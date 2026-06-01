@@ -1,7 +1,13 @@
 @if (kingdom(); as k) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    <nz-descriptions-item [nzTitle]="ageTitle">{{ k.metadata.age }} ans</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="ageTitle">
+      <app-ranked-stat source="kingdom" stat="age" suffix=" ans" [hideDelta]="true" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="renownTitle">
+      <app-ranked-stat source="kingdom" stat="renown" />
+    </nz-descriptions-item>
   </nz-descriptions>
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
+  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
 }

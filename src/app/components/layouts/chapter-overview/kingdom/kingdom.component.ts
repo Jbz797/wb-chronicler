@@ -3,10 +3,11 @@ import { Component, computed, inject } from '@angular/core';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { ChroniclerService } from '../../../../services';
+import { RankedStatComponent } from '../../../misc';
 
 @Component({
   selector: 'app-kingdom',
-  imports: [NzDescriptionsModule],
+  imports: [NzDescriptionsModule, RankedStatComponent],
   templateUrl: './kingdom.component.html',
 })
 export class KingdomComponent {

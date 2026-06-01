@@ -107,6 +107,11 @@ export interface ChapterMeta {
       age: number;
       id: number;
       name: string;
+      renown: number;
+    };
+    ranks: {
+      age?: number;
+      renown?: number;
     };
   } | null;
   tags: string[];

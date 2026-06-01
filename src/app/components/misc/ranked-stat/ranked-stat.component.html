@@ -8,7 +8,7 @@
       }
       <app-delta [suffix]="deltaSuffix()" [value]="d.valueDelta" />
     </span>
-    @if (showRank() && (d.rank_in_species !== undefined || d.rankStatus)) {
+    @if (showRank() && (d.rank !== undefined || d.rankStatus)) {
       <span>
         @if (d.rankStatus === 'success') {
           <span class="rank rank-up">↑</span>
@@ -16,8 +16,8 @@
         @if (d.rankStatus === 'error') {
           <span class="rank rank-down">↓</span>
         }
-        @if (d.rank_in_species !== undefined) {
-          <img [src]="`assets/img/podium/${d.rank_in_species}.png`" />
+        @if (d.rank !== undefined) {
+          <img [src]="`assets/img/podium/${d.rank}.png`" />
         }
       </span>
     }
