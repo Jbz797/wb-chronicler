@@ -2,7 +2,6 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
-import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { COMBAT_STATS, PERSONALITY_LABELS, PROFESSION_LABELS, ROLE_LABELS, SKILL_STATS } from '../../../../constants';
@@ -20,7 +19,6 @@ import { PlotCardComponent } from './plot-card/plot-card.component';
     CompanionCardComponent,
     NzBadgeModule,
     NzDescriptionsModule,
-    NzEmptyModule,
     NzTagModule,
     PlotCardComponent,
     RankedStatComponent,

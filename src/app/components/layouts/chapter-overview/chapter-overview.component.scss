@@ -71,6 +71,10 @@
         }
       }
 
+      .ant-collapse-item-disabled .panel-icon {
+        filter: grayscale(1);
+      }
+
       .ant-collapse-title {
         position: relative;
         text-transform: uppercase;

@@ -38,6 +38,7 @@
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'favorite'"
+      [nzDisabled]="!c.meta.favorite"
       [nzExtra]="favoriteExtra"
       [nzHeader]="favoritesHeader"
       (nzActiveChange)="onPanelToggle('favorite', $event)"
@@ -46,6 +47,7 @@
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'kingdom'"
+      [nzDisabled]="!c.meta.kingdom"
       [nzExtra]="kingdomExtra"
       [nzHeader]="kingdomHeader"
       (nzActiveChange)="onPanelToggle('kingdom', $event)"
