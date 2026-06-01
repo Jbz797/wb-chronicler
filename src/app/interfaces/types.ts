@@ -13,7 +13,7 @@ export type PersonRegistry = Record<string, PersonInfo>;
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'children' | 'critical_chance'
   | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'intelligence' | 'kills' | 'level'
   | 'lifespan' | 'loot' | 'mana' | 'money' | 'population' | 'renown' | 'speed' | 'stamina' | 'stewardship'
-  | 'warfare';
+  | 'warfare' | 'warriors';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'cities' | 'clans'
   | 'cultures' | 'equipment' | 'families' | 'frozen_tiles' | 'houses' | 'kingdoms'

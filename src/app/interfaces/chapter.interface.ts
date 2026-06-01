@@ -109,11 +109,13 @@ export interface ChapterMeta {
       name: string;
       population: number;
       renown: number;
+      warriors: number;
     };
     ranks: {
       age?: number;
       population?: number;
       renown?: number;
+      warriors?: number;
     };
   } | null;
   tags: string[];
