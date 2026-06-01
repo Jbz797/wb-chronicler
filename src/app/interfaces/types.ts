@@ -10,7 +10,7 @@ export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 export type KingdomRegistry = Record<string, KingdomInfo>;
 export type PersonRegistry = Record<string, PersonInfo>;
 
-export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'children' | 'critical_chance'
+export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'children' | 'cities' | 'critical_chance'
   | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'intelligence' | 'kills' | 'level'
   | 'lifespan' | 'loot' | 'mana' | 'money' | 'population' | 'renown' | 'speed' | 'stamina' | 'stewardship'
   | 'warfare' | 'warriors';

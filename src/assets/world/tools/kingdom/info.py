@@ -22,7 +22,13 @@ def _build_context(save: dict) -> dict:
         populations_by_kingdom[kid] = populations_by_kingdom.get(kid, 0) + 1
         if actor.get("profession") == 5:
             warriors_by_kingdom[kid] = warriors_by_kingdom.get(kid, 0) + 1
+    cities_by_kingdom: dict[int, int] = {}
+    for city in save.get("cities", []):
+        kid = city.get("kingdomID")
+        if kid:
+            cities_by_kingdom[kid] = cities_by_kingdom.get(kid, 0) + 1
     return {
+        "cities_by_kingdom": cities_by_kingdom,
         "populations_by_kingdom": populations_by_kingdom,
         "warriors_by_kingdom": warriors_by_kingdom,
         "world_time": float(save["mapStats"].get("world_time") or 0),
@@ -32,7 +38,8 @@ def _build_context(save: dict) -> dict:
 def _build_metadata(kingdom: dict, ctx: dict) -> dict:
     age_months = ctx["world_time"] - float(kingdom.get("created_time") or 0)
     return {
-        "age": round(age_months / MONTHS_PER_YEAR),
+        "age": int(age_months / MONTHS_PER_YEAR),
+        "cities": ctx["cities_by_kingdom"].get(kingdom.get("id"), 0),
         "id": kingdom.get("id"),
         "name": kingdom.get("name"),
         "population": ctx["populations_by_kingdom"].get(kingdom.get("id"), 0),
@@ -44,14 +51,16 @@ def _build_metadata(kingdom: dict, ctx: dict) -> dict:
 # Standard competition rank (1,2,2,4) per stat among all kingdoms. Top 3 only — UI hides the rest.
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     kingdoms = save.get("kingdoms", [])
+    cities = ctx["cities_by_kingdom"]
     populations = ctx["populations_by_kingdom"]
     warriors = ctx["warriors_by_kingdom"]
 
     def kingdom_age(k: dict) -> int:
-        return round((ctx["world_time"] - float(k.get("created_time") or 0)) / MONTHS_PER_YEAR)
+        return int((ctx["world_time"] - float(k.get("created_time") or 0)) / MONTHS_PER_YEAR)
 
     getters = {
         "age": kingdom_age,
+        "cities": lambda k: cities.get(k.get("id"), 0),
         "population": lambda k: populations.get(k.get("id"), 0),
         "renown": lambda k: k.get("renown", 0),
         "warriors": lambda k: warriors.get(k.get("id"), 0),
@@ -101,7 +110,7 @@ def _resolve_banner_sprite(kingdom: dict, save: dict) -> int:
 
 def main(argv: list[str]) -> int:
     if not argv:
-        print("usage: overview.py <id> [sections] — see tools/tools.md", file=sys.stderr)
+        print("usage: info.py <id> [sections] — see tools/tools.md", file=sys.stderr)
         return 2
     try:
         kingdom_id = int(argv[0])

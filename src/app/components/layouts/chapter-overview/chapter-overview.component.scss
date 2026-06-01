@@ -66,7 +66,8 @@
           }
         }
 
-        .panel-icon {
+        .panel-icon,
+        .ant-collapse-extra nz-tag {
           opacity: 1;
         }
       }
@@ -84,16 +85,16 @@
       .ant-collapse-extra nz-tag {
         position: relative;
         top: 1px;
+        opacity: 0.6;
       }
 
       .panel-icon {
         margin-right: 0.4rem;
-        max-height: 20px;
-        max-width: 20px;
-        opacity: 0.5;
+        opacity: 0.6;
         position: relative;
         top: -2px;
         transition: opacity $transition;
+        width: 18px;
       }
 
       .ant-descriptions-header {

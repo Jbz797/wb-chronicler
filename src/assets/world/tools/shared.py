@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Shared constants/helpers reused by `actor/overview.py`, `kingdom/overview.py` and `world/overview.py` — `sys.path`-injected from parent dir; see each bootstrap.
+# Shared constants/helpers reused by `actor/info.py`, `kingdom/info.py` and `world/info.py` — `sys.path`-injected from parent dir; see each bootstrap.
 
 import json
 import sys

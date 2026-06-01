@@ -106,7 +106,7 @@ export const SNAPSHOT_STATS: { key: SnapshotStat; label: string }[] = [
   { key: 'frozen_tiles', label: 'Tuiles gelées' },
   { key: 'houses', label: 'Maisons' },
   { key: 'kingdoms', label: 'Royaumes' },
-  { key: 'cities', label: 'Villes' },
+  { key: 'cities', label: 'Cités' },
   { key: 'clans', label: 'Clans' },
   { key: 'families', label: 'Familles' },
   { key: 'relations', label: 'Relations' },

@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 30/05/26 12:06</p>
+<p class="metadata">Date de mise à jour : 01/06/26 16:53</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -34,7 +34,7 @@ Le présent document — règles de la chronique.
 
 ### `tags.md`
 
-Liste vivante des codes événementiels utilisés dans les `chapter.json.tags`. Le chroniqueur peut l'enrichir librement quand un nouveau type d'événement important émerge.
+Liste vivante des codes événementiels utilisés dans les `chapter.json.tags` — enrichie au fil des chapitres (cf. [_Après livraison_](#après-livraison--remarques-optionnelles)).
 
 ### `world.json`
 
@@ -59,11 +59,11 @@ Méta-données du chapitre — utilisées par le site pour l'affichage et par le
 ```json
 {
   "age_label": "",     // Libellé de l'âge en cours choisi par le chroniqueur (`age_id` vit dans `world`)
-  "favorite": { ... }, // Sortie de `python3 tools/actor/overview.py <id> full` (`null` tant qu'aucun favori n'a été désigné)
-  "kingdom": { ... },  // Sortie de `python3 tools/kingdom/overview.py <id> full` (`null` si pas de royaume)
+  "favorite": { ... }, // Sortie de `python3 tools/actor/info.py <id> full` (`null` tant qu'aucun favori n'a été désigné)
+  "kingdom": { ... },  // Sortie de `python3 tools/kingdom/info.py <id> full` (`null` si pas de royaume)
   "tags": [],          // Liste de codes événementiels (cf. `history/tags.md`)
   "title": "",         // Titre forgé par le chroniqueur et utilisé dans le chapitre
-  "world": { ... }     // Sortie de `python3 tools/world/overview.py full`
+  "world": { ... }     // Sortie de `python3 tools/world/info.py full`
 }
 ```
 
@@ -269,6 +269,18 @@ Le chroniqueur livre le chapitre en **trois temps** :
 - Verdict : soit _« non applicable »_, soit `✓` (avec le nombre de corrections entre parenthèses quand il y en a eu, ex : `✓` ou `✓ (2 corrections)`).
 - Pour chaque section, le chroniqueur doit **parcourir chaque sous-section individuellement** avant de donner son verdict global.
 
+## Après livraison — remarques optionnelles
+
+Une fois le chapitre livré, le chroniqueur **peut** (jamais obligatoire) ajouter une brève note de fin pour signaler ce qui mériterait d'évoluer dans l'outillage ou les conventions :
+
+- **Nouveau tag** à enregistrer dans `tags.md` quand un type d'événement important a émergé pendant le chapitre sans qu'aucun code existant ne le couvre — le chroniqueur édite directement `tags.md` (datestamp bumpé) et le mentionne dans sa note.
+- **Amélioration script** repérée pendant l'analyse : bug, donnée mal extraite, formule fausse, sortie peu pratique. Pointer le fichier (`tools/<dossier>/info.py`) et la ligne si possible. **Pas de modification de code** à l'initiative du chroniqueur.
+- **Ajustement de doc** : passage de `chronicler.md` / `tools.md` peu clair, contradiction, exemple obsolète, terme à harmoniser. La règle [_Mise à jour de ce document_](#règles-de-robustesse) autorise le chroniqueur à éditer `chronicler.md` quand le fix est évident.
+- **Outil manquant** : analyse récurrente qui mériterait son propre script (cf. [§ II Innovation](#-ii-innovation)).
+- **Autre observation** dans son périmètre : convention de format d'un `.md`, terminologie incohérente entre docs, sortie de script à harmoniser, etc.
+
+Format libre, une à trois puces suffisent. **Pas de remarque = pas de bloc.** L'objectif est de capter les frictions au moment où elles sont fraîches, pas de produire un rapport à chaque chapitre.
+
 ---
 
 # ⚙️ IV. Informations techniques
@@ -375,7 +387,7 @@ Quand le chroniqueur veut comprendre d'où vient la valeur d'une stat (notamment
 8. **Bonus dérivés** appliqués en fin de pipeline : level scaling (`× (1 + level × mult)` pour health/mana/stamina) + `mana += int(intelligence × 10)` (MANA_PER_INTELLIGENCE)
 9. **Sources non modélisées** — statuts, culture, religion, profession, era. À enrichir si écart constaté avec l'in-game.
 
-`tools/actor/overview.py <id>` agrège les sources **1 → 8** et restitue les stats finales (health_max, mana_max, stamina_max, intelligence, etc.). Les `multiplier_X` (ex. `fat` → `multiplier_stamina=-0.5`) sont résolus en fin de pipeline via `final = base × (1 + multiplier)`. La source **9** reste à lire manuellement si besoin.
+`tools/actor/info.py <id>` agrège les sources **1 → 8** et restitue les stats finales (health_max, mana_max, stamina_max, intelligence, etc.). Les `multiplier_X` (ex. `fat` → `multiplier_stamina=-0.5`) sont résolus en fin de pipeline via `final = base × (1 + multiplier)`. La source **9** reste à lire manuellement si besoin.
 
 ---
 
@@ -455,7 +467,7 @@ La colonne _Jouable_ indique les espèces parmi lesquelles le chroniqueur doit c
 ### Règles d'usage des codes dans le récit
 
 - **Première mention d'une espèce** (intelligente, animale, monstrueuse — peu importe) → code obligatoire englobant le nom (_« les `[s dwarf Nains]` »_, _« un `[s necromancer Nécromancien]` »_, _« les `[s crab crabes]` »_).
-- **Personnage intelligent** → toujours `[p id Nom]` à **chaque mention**, avec l'**id d'acteur** (celui passé à `actor/overview.py`) (_« `[p 7 Mul Moahl]` »_). L'icône d'espèce et le sexe sont déduits automatiquement.
+- **Personnage intelligent** → toujours `[p id Nom]` à **chaque mention**, avec l'**id d'acteur** (celui passé à `actor/info.py`) (_« `[p 7 Mul Moahl]` »_). L'icône d'espèce et le sexe sont déduits automatiquement.
 - **Ne pas préfixer le tag par l'espèce** : `[p id Nom]` affiche déjà l'icône d'espèce. Écrire _« `[p 7 Mul Moahl]` administre le village »_, et non _« le `[s dwarf Nain]` `[p 7 Mul Moahl]` administre… »_ (icône doublée). Si la mention `[s dwarf Nains]` doit apparaître, la placer ailleurs (description générale de l'espèce, première apparition d'autres membres).
 - **Première mention d'une ressource / minerai** → code englobant le nom (_« l'`[r adamantine adamantine]` »_, _« `[r berries trois baies]` »_).
 - **Mention descriptive générique** après qu'un individu / une ressource est nommé → code facultatif (_« le nain »_, _« quelques baies »_), pas besoin de répéter à chaque fois.

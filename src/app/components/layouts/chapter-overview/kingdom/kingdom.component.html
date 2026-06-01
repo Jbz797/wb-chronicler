@@ -12,9 +12,13 @@
     <nz-descriptions-item [nzTitle]="warriorsTitle">
       <app-ranked-stat source="kingdom" stat="warriors" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="citiesTitle">
+      <app-ranked-stat source="kingdom" stat="cities" />
+    </nz-descriptions-item>
   </nz-descriptions>
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
+  <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>

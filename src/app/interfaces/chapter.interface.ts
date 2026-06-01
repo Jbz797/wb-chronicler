@@ -105,6 +105,7 @@ export interface ChapterMeta {
   kingdom: {
     metadata: {
       age: number;
+      cities: number;
       id: number;
       name: string;
       population: number;
@@ -113,6 +114,7 @@ export interface ChapterMeta {
     };
     ranks: {
       age?: number;
+      cities?: number;
       population?: number;
       renown?: number;
       warriors?: number;

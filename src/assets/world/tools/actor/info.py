@@ -504,7 +504,7 @@ def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
 
     # Age is not in _compute_stats (it's derived from created_time) — rank it separately.
     def actor_age(a: dict) -> int:
-        return round((ctx["world_time"] - float(a.get("created_time") or 0)) / MONTHS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+        return int((ctx["world_time"] - float(a.get("created_time") or 0)) / MONTHS_PER_YEAR) + (a.get("age_overgrowth") or 0)
 
     own_age = actor_age(actor)
     age_rank = sum(1 for a in same_species if actor_age(a) > own_age) + 1
@@ -566,7 +566,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
     return {
         # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
-        "age": round(age_months / MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
+        "age": int(age_months / MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
         "asset_id": actor.get("asset_id"),
         "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
         "clan": clan.get("name"),
@@ -584,6 +584,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "roles": _compute_roles(actor, save),
         "sex": "female" if actor.get("sex") == 1 else "male",
         "subspecies": sub.get("name") or actor.get("subspecies"),
+        "x": actor.get("x"),
+        "y": actor.get("y"),
     }
 
 
@@ -675,7 +677,7 @@ def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict 
     snap = _compute_stats(companion, ctx)
     age_months = ctx["world_time"] - float(companion.get("created_time") or 0)
     return {
-        "age": round(age_months / MONTHS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
+        "age": int(age_months / MONTHS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
         "health_max": snap.get("health_max", 0),
         "id": companion_id,
         "level": snap.get("level", 0),
@@ -732,7 +734,7 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
         ct = item.get("created_time")
         out.append(
             {
-                "age": round((world_time - ct) / MONTHS_PER_YEAR) if ct is not None else None,
+                "age": int((world_time - ct) / MONTHS_PER_YEAR) if ct is not None else None,
                 "asset_id": item["asset_id"],
                 "by": item.get("by"),
                 "durability": item.get("durability"),
@@ -761,7 +763,7 @@ def _register_person(actor: dict) -> None:
 
 def main(argv: list[str]) -> int:
     if not argv:
-        print("usage: overview.py <id> [sections] — see tools/tools.md", file=sys.stderr)
+        print("usage: info.py <id> [sections] — see tools/tools.md", file=sys.stderr)
         return 2
     try:
         actor_id = int(argv[0])
