@@ -12,7 +12,14 @@ _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
 
 
 def _build_context(save: dict) -> dict:
+    # Index of living actors per kingdom — mirrors `Kingdom.getPopulation`.
+    populations_by_kingdom: dict[int, int] = {}
+    for actor in save.get("actors_data", []):
+        kid = actor.get("civ_kingdom_id")
+        if kid:
+            populations_by_kingdom[kid] = populations_by_kingdom.get(kid, 0) + 1
     return {
+        "populations_by_kingdom": populations_by_kingdom,
         "world_time": float(save["mapStats"].get("world_time") or 0),
     }
 
@@ -23,6 +30,7 @@ def _build_metadata(kingdom: dict, ctx: dict) -> dict:
         "age": round(age_months / MONTHS_PER_YEAR),
         "id": kingdom.get("id"),
         "name": kingdom.get("name"),
+        "population": ctx["populations_by_kingdom"].get(kingdom.get("id"), 0),
         "renown": kingdom.get("renown", 0),
     }
 
@@ -30,17 +38,22 @@ def _build_metadata(kingdom: dict, ctx: dict) -> dict:
 # Standard competition rank (1,2,2,4) per stat among all kingdoms. Top 3 only — UI hides the rest.
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     kingdoms = save.get("kingdoms", [])
+    populations = ctx["populations_by_kingdom"]
 
     def kingdom_age(k: dict) -> int:
         return round((ctx["world_time"] - float(k.get("created_time") or 0)) / MONTHS_PER_YEAR)
 
     own_age = kingdom_age(kingdom)
+    own_pop = populations.get(kingdom.get("id"), 0)
     own_renown = kingdom.get("renown", 0)
     age_rank = sum(1 for k in kingdoms if kingdom_age(k) > own_age) + 1
+    pop_rank = sum(1 for k in kingdoms if populations.get(k.get("id"), 0) > own_pop) + 1
     renown_rank = sum(1 for k in kingdoms if k.get("renown", 0) > own_renown) + 1
     ranks = {}
     if age_rank <= 3:
         ranks["age"] = age_rank
+    if pop_rank <= 3:
+        ranks["population"] = pop_rank
     if renown_rank <= 3:
         ranks["renown"] = renown_rank
     return dict(sorted(ranks.items()))

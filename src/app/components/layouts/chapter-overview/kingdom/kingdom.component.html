@@ -6,8 +6,12 @@
     <nz-descriptions-item [nzTitle]="renownTitle">
       <app-ranked-stat source="kingdom" stat="renown" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="populationTitle">
+      <app-ranked-stat source="kingdom" stat="population" />
+    </nz-descriptions-item>
   </nz-descriptions>
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
+  <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
 }
