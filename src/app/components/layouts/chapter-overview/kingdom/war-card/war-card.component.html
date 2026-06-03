@@ -1,0 +1,45 @@
+@let w = war();
+<nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="warTitle">
+  <nz-descriptions-item [nzTitle]="sideTitle">
+    {{ sideLabel(w) }}
+    @if (!w.is_main) {
+      <nz-tag>allié</nz-tag>
+    }
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="opponentsTitle">
+    @for (opp of w.opponents; track opp.id) {
+      <app-kingdom-tag [id]="opp.id" [name]="opp.name" />
+    }
+  </nz-descriptions-item>
+  @if (w.attacker_alliance) {
+    <nz-descriptions-item [nzTitle]="allianceAtkTitle">{{ w.attacker_alliance.name }}</nz-descriptions-item>
+  }
+  @if (w.defender_alliance) {
+    <nz-descriptions-item [nzTitle]="allianceDefTitle">{{ w.defender_alliance.name }}</nz-descriptions-item>
+  }
+  @if (w.deaths.attackers + w.deaths.defenders) {
+    <nz-descriptions-item [nzTitle]="deathsTitle">{{ w.deaths.attackers }} / {{ w.deaths.defenders }}</nz-descriptions-item>
+  }
+  @if (w.duration_years > 0) {
+    <nz-descriptions-item [nzTitle]="durationTitle">{{ w.duration_years }} ans</nz-descriptions-item>
+  }
+  <nz-descriptions-item [nzTitle]="renownTitle">{{ w.renown_at_stake }}</nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="declaredByTitle">
+    <app-kingdom-tag [id]="w.started_by.kingdom.id" [name]="w.started_by.kingdom.name" />
+  </nz-descriptions-item>
+</nz-descriptions>
+
+<ng-template #warTitle>
+  @if (isNew()) {
+    <app-new-badge />
+  }
+  <span>{{ w.name }}</span>
+</ng-template>
+<ng-template #allianceAtkTitle><img src="assets/img/world/alliances.png" /><span>Coalition (atk)</span></ng-template>
+<ng-template #allianceDefTitle><img src="assets/img/world/alliances.png" /><span>Coalition (déf)</span></ng-template>
+<ng-template #deathsTitle><img src="assets/img/stats/kills.png" /><span>Morts (atk / déf)</span></ng-template>
+<ng-template #declaredByTitle><img src="assets/img/professions/king.png" /><span>Déclarée par</span></ng-template>
+<ng-template #durationTitle><img src="assets/img/world/duration.png" /><span>Durée</span></ng-template>
+<ng-template #opponentsTitle><img src="assets/img/world/wars.png" /><span>Opposants</span></ng-template>
+<ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée en jeu</span></ng-template>
+<ng-template #sideTitle><img src="assets/img/stats/warfare.png" /><span>Côté</span></ng-template>

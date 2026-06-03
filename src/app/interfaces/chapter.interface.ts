@@ -74,7 +74,6 @@ export interface ChapterMeta {
       armor: number;
       attack_speed: number;
       birth_rate: number;
-      births: number;
       children: number;
       critical_chance: number;
       damage: number;
@@ -121,6 +120,7 @@ export interface ChapterMeta {
       territory?: number;
       warriors?: number;
     };
+    wars: KingdomWar[];
   } | null;
   tags: string[];
   world: {
@@ -164,4 +164,18 @@ export interface ChapterMeta {
       wild_creatures: number;
     };
   };
+}
+
+export interface KingdomWar {
+  attacker_alliance: { id: number; name: string } | null;
+  deaths: { attackers: number; defenders: number };
+  defender_alliance: { id: number; name: string } | null;
+  duration_years: number;
+  id: number;
+  is_main: boolean;
+  name: string;
+  opponents: { id: number; name: string }[];
+  renown_at_stake: number;
+  side: 'attacker' | 'defender';
+  started_by: { kingdom: { id: number; name: string } };
 }

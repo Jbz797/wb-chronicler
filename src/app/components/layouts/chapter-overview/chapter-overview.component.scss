@@ -19,7 +19,7 @@
 
   ::ng-deep nz-tag.ant-tag-gold {
     line-height: 16px;
-    margin-right: 4px;
+    margin-right: 0.25rem;
   }
 
   em {
@@ -109,7 +109,6 @@
           justify-content: center;
           letter-spacing: $letter-spacing-wide;
           margin-top: 1rem;
-          text-align: center;
           text-transform: uppercase;
 
           nz-tag {

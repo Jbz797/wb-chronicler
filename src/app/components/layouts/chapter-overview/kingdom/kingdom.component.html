@@ -20,6 +20,10 @@
     </nz-descriptions-item>
   </nz-descriptions>
 
+  @for (war of k.wars; track war.id) {
+    <app-war-card [isNew]="startedWarIds().has(war.id)" [war]="war" />
+  }
+
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
   <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
