@@ -24,6 +24,28 @@
     <app-war-card [isNew]="startedWarIds().has(war.id)" [war]="war" />
   }
 
+  @if (k.relations.length) {
+    <h3 class="relations-title">Relations</h3>
+    <nz-table nzBordered nzSize="small" [nzData]="sortedRelations()" [nzShowPagination]="false">
+      <thead>
+        <tr>
+          <th>Royaume</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of sortedRelations(); track r.kingdom.id) {
+          <tr>
+            <td><app-kingdom-tag [id]="r.kingdom.id" [name]="r.kingdom.name" /></td>
+            <td>
+              <nz-tag [nzColor]="statusColor[r.status]">{{ statusLabel[r.status] }}</nz-tag>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  }
+
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
   <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>

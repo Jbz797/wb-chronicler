@@ -99,21 +99,22 @@
 
       .ant-descriptions-header {
         margin-bottom: 2px;
+      }
 
-        .ant-descriptions-title {
-          align-items: center;
-          color: $accent;
-          display: flex;
-          font-size: 0.9rem;
-          font-weight: 500;
-          justify-content: center;
-          letter-spacing: $letter-spacing-wide;
-          margin-top: 1rem;
-          text-transform: uppercase;
+      .ant-descriptions-title,
+      .relations-title {
+        align-items: center;
+        color: $accent;
+        display: flex;
+        font-size: 0.9rem;
+        font-weight: 500;
+        justify-content: center;
+        letter-spacing: $letter-spacing-wide;
+        margin: 1rem 0 0;
+        text-transform: uppercase;
 
-          nz-tag {
-            padding-right: 4px;
-          }
+        nz-tag {
+          padding-right: 4px;
         }
       }
 
@@ -131,18 +132,18 @@
           margin-left: 0.25rem;
         }
 
-        nz-tag {
-          margin: 0 !important;
+        .entity-tag {
+          margin: 0;
         }
       }
 
-      .ant-descriptions-item-label[colspan='2'] {
-        background: $dark-warm;
+      .ant-descriptions-item-label.section-header {
+        background: $background;
         color: $primary;
         font-size: 0.85rem;
         letter-spacing: $letter-spacing-wide;
         line-height: 0.75;
-        padding: 8px 0 4px !important;
+        padding: 6px 0 !important;
         text-align: center;
         text-transform: uppercase;
       }
@@ -199,6 +200,10 @@
           }
         }
       }
+    }
+
+    .ant-table-tbody nz-tag {
+      margin: 0;
     }
 
     .ant-empty-image {

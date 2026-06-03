@@ -13,8 +13,11 @@ export class SectionRowDirective implements AfterViewInit {
     const content = tr.querySelector('.ant-descriptions-item-content');
     const label = tr.querySelector('.ant-descriptions-item-label');
     if (label && content) {
+      // Sum label+content colspans so the label fills the full row regardless of `nzColumn`.
+      const span = (Number(label.getAttribute('colspan')) || 1) + (Number(content.getAttribute('colspan')) || 1);
       this._renderer.removeChild(content.parentNode, content);
-      this._renderer.setAttribute(label, 'colspan', '2');
+      this._renderer.setAttribute(label, 'colspan', String(span));
+      this._renderer.addClass(label, 'section-header');
     }
   }
 

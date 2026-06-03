@@ -97,6 +97,29 @@ export const SKILL_STATS: StatConfig[] = [
   { key: 'intelligence', label: 'Intelligence' },
 ];
 
+// French labels for kingdom diplomatic relation statuses (ally / enemy / neutral) — mirrors WB's runtime relation state derived from alliances + ongoing wars.
+export const RELATION_STATUS_LABELS = {
+  ally: 'Allié',
+  enemy: 'Ennemi',
+  neutral: 'Neutre',
+} as const;
+
+// ng-zorro nz-tag colors per relation status — green for allies, red for active enemies, default for everything else.
+export const RELATION_STATUS_NZ_COLORS = {
+  ally: 'green',
+  enemy: 'red',
+  neutral: 'default',
+} as const;
+
+// French labels for `war.war_type` — sourced from WB's `meta_wars` locale (war_type_*).
+export const WAR_TYPE_LABELS = {
+  conquest: 'Conquête',
+  inspire: 'Inspirée',
+  rebellion: 'Rébellion',
+  spite: 'Dépit',
+  whisper: 'Murmure',
+} as const;
+
 // Snapshot world stats — display order: demography → environment → society → conflict → culture → activity.
 export const SNAPSHOT_STATS: { key: SnapshotStat; label: string }[] = [
   { key: 'population', label: 'Population' },
@@ -109,7 +132,6 @@ export const SNAPSHOT_STATS: { key: SnapshotStat; label: string }[] = [
   { key: 'cities', label: 'Cités' },
   { key: 'clans', label: 'Clans' },
   { key: 'families', label: 'Familles' },
-  { key: 'relations', label: 'Relations' },
   { key: 'alliances', label: 'Alliances' },
   { key: 'wars', label: 'Guerres' },
   { key: 'armies', label: 'Armées' },

@@ -1,22 +1,39 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { WAR_TYPE_LABELS } from '../../../../../constants';
 import { SectionRowDirective } from '../../../../../directives';
 import { KingdomWar } from '../../../../../interfaces';
-import { NewBadgeComponent } from '../../../../misc';
+import { ChroniclerService } from '../../../../../services';
+import { DeltaComponent, NewBadgeComponent } from '../../../../misc';
 import { KingdomTagComponent } from '../../../../tags';
 
 @Component({
   selector: 'app-war-card',
-  imports: [KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, NzTagModule, SectionRowDirective],
+  imports: [DeltaComponent, KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, NzTagModule, SectionRowDirective],
   templateUrl: './war-card.component.html',
 })
 export class WarCardComponent {
 
   public readonly isNew = input.required<boolean>();
   public readonly war = input.required<KingdomWar>();
+
+  protected readonly chronicler = inject(ChroniclerService);
+  // Per-stat delta (both sides) vs the same war in the previous chapter — `null` when no previous chapter or war absent.
+  protected readonly deltas = computed(() => {
+    const w = this.war();
+    const previous = this.chronicler.previousChapter()?.meta.kingdom?.wars.find(x => x.id === w.id);
+    if (!previous) return null;
+    const diff = (side: 'attackers' | 'defenders') => ({
+      cities: w.cities[side] - previous.cities[side],
+      deaths: w.deaths[side] - previous.deaths[side],
+      populations: w.populations[side] - previous.populations[side],
+      warriors: w.warriors[side] - previous.warriors[side],
+    });
+    return { attackers: diff('attackers'), defenders: diff('defenders') };
+  });
 
   protected ourAlliance = (war: KingdomWar): { id: number; name: string } | null => war.side === 'attacker' ? war.attacker_alliance : war.defender_alliance;
 
@@ -40,5 +57,7 @@ export class WarCardComponent {
 
   // Field key on the war's `populations`/`warriors`/`deaths` for the opposing side.
   protected theirSide = (war: KingdomWar): 'attackers' | 'defenders' => war.side === 'attacker' ? 'defenders' : 'attackers';
+
+  protected typeLabel = (war: KingdomWar): string => WAR_TYPE_LABELS[war.war_type];
 
 }

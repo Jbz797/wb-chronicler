@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared import MONTHS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
-_ALL_SECTIONS = ("metadata", "ranks", "wars")
+_ALL_SECTIONS = ("metadata", "ranks", "relations", "wars")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
 
 
@@ -126,12 +126,54 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                     "name": w.get("started_by_kingdom_name"),
                 },
             },
+            "war_type": w.get("war_type"),
             "warriors": {
                 "attackers": sum(warriors.get(aid, 0) for aid in attackers),
                 "defenders": sum(warriors.get(did, 0) for did in defenders),
             },
         })
     return sorted(out, key=lambda x: x["id"])
+
+
+# Diplomatic ties involving this kingdom. Status derived from alliances/wars cross-ref (WB only persists pair + timestamps).
+def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
+    kid = kingdom.get("id")
+    kingdoms_by_id = index_by_id(save.get("kingdoms", []))
+    alliances = save.get("alliances", [])
+    ongoing_wars = [w for w in save.get("wars", []) if not w.get("winner")]
+
+    # Other kingdom is an ally if both share an alliance.
+    def is_ally(other_id: int) -> bool:
+        return any(kid in (a.get("kingdoms") or []) and other_id in (a.get("kingdoms") or []) for a in alliances)
+
+    # Other kingdom is an enemy if both stand on opposite sides of an ongoing war.
+    def is_enemy(other_id: int) -> bool:
+        for w in ongoing_wars:
+            attackers = ({w.get("main_attacker")} | set(w.get("list_attackers") or [])) - {None}
+            defenders = ({w.get("main_defender")} | set(w.get("list_defenders") or [])) - {None}
+            if (kid in attackers and other_id in defenders) or (kid in defenders and other_id in attackers):
+                return True
+        return False
+
+    out = []
+    for r in save.get("relations", []):
+        k1, k2 = r.get("kingdom1_id"), r.get("kingdom2_id")
+        if kid not in (k1, k2):
+            continue
+        other_id = k2 if k1 == kid else k1
+        other = kingdoms_by_id.get(other_id)
+        if other is None:
+            continue
+        _register_kingdom(other, save)
+        status = "ally" if is_ally(other_id) else "enemy" if is_enemy(other_id) else "neutral"
+        last_war_end = r.get("timestamp_last_war_ended")
+        out.append({
+            "age_years": int((ctx["world_time"] - float(r.get("created_time") or 0)) / MONTHS_PER_YEAR),
+            "kingdom": {"id": other_id, "name": other.get("name") or f"#{other_id}"},
+            "status": status,
+            "years_since_last_war": int((ctx["world_time"] - float(last_war_end)) / MONTHS_PER_YEAR) if last_war_end else None,
+        })
+    return sorted(out, key=lambda x: x["kingdom"]["id"])
 
 
 # Standard competition rank (1,2,2,4) per stat among all kingdoms. Top 3 only — UI hides the rest.
@@ -223,6 +265,8 @@ def main(argv: list[str]) -> int:
         out["metadata"] = _build_metadata(kingdom, ctx)
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(kingdom, ctx, save)
+    if "relations" in sections:
+        out["relations"] = _build_relations(kingdom, ctx, save)
     if "wars" in sections:
         out["wars"] = _build_wars(kingdom, ctx, save)
 

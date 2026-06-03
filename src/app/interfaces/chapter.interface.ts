@@ -120,6 +120,7 @@ export interface ChapterMeta {
       territory?: number;
       warriors?: number;
     };
+    relations: KingdomRelation[];
     wars: KingdomWar[];
   } | null;
   tags: string[];
@@ -166,6 +167,13 @@ export interface ChapterMeta {
   };
 }
 
+export interface KingdomRelation {
+  age_years: number;
+  kingdom: { id: number; name: string };
+  status: 'ally' | 'enemy' | 'neutral';
+  years_since_last_war: number | null;
+}
+
 export interface KingdomWar {
   allies: { id: number; name: string }[];
   attacker_alliance: { id: number; name: string } | null;
@@ -181,5 +189,6 @@ export interface KingdomWar {
   renown_at_stake: number;
   side: 'attacker' | 'defender';
   started_by: { kingdom: { id: number; name: string } };
+  war_type: 'conquest' | 'inspire' | 'rebellion' | 'spite' | 'whisper';
   warriors: { attackers: number; defenders: number };
 }

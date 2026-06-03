@@ -1,8 +1,10 @@
 @let w = war();
 @let our = ourSide(w);
 @let their = theirSide(w);
+@let d = deltas();
 
 <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="warTitle">
+  <nz-descriptions-item [nzTitle]="typeTitle">{{ typeLabel(w) }}</nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="declaredByTitle">
     <app-kingdom-tag [id]="w.started_by.kingdom.id" [name]="w.started_by.kingdom.name" />
   </nz-descriptions-item>
@@ -26,15 +28,19 @@
   }
   <nz-descriptions-item [nzTitle]="populationTitle">
     <span [class]="sideClass(w.populations, our)">{{ w.populations[our] }}</span>
+    <app-delta [value]="d?.[our]?.populations" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="warriorsTitle">
     <span [class]="sideClass(w.warriors, our)">{{ w.warriors[our] }}</span>
+    <app-delta [value]="d?.[our]?.warriors" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="citiesTitle">
     <span [class]="sideClass(w.cities, our)">{{ w.cities[our] }}</span>
+    <app-delta [value]="d?.[our]?.cities" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="deathsTitle">
     <span [class]="sideClass(w.deaths, our, true)">{{ w.deaths[our] }}</span>
+    <app-delta [inverted]="true" [value]="d?.[our]?.deaths" />
   </nz-descriptions-item>
 
   <nz-descriptions-item [nzTitle]="theirSectionTitle(w)">
@@ -50,15 +56,19 @@
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="populationTitle">
     <span [class]="sideClass(w.populations, their)">{{ w.populations[their] }}</span>
+    <app-delta [value]="d?.[their]?.populations" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="warriorsTitle">
     <span [class]="sideClass(w.warriors, their)">{{ w.warriors[their] }}</span>
+    <app-delta [value]="d?.[their]?.warriors" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="citiesTitle">
     <span [class]="sideClass(w.cities, their)">{{ w.cities[their] }}</span>
+    <app-delta [value]="d?.[their]?.cities" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="deathsTitle">
     <span [class]="sideClass(w.deaths, their, true)">{{ w.deaths[their] }}</span>
+    <app-delta [inverted]="true" [value]="d?.[their]?.deaths" />
   </nz-descriptions-item>
 </nz-descriptions>
 
@@ -74,7 +84,8 @@
 <ng-template #deathsTitle><img src="assets/img/world/deaths.png" /><span>Morts</span></ng-template>
 <ng-template #declaredByTitle><img src="assets/img/professions/king.png" /><span>Déclarée par</span></ng-template>
 <ng-template #durationTitle><img src="assets/img/world/duration.png" /><span>Durée</span></ng-template>
-<ng-template #opponentsTitle><img src="assets/img/world/wars.png" /><span>Opposants</span></ng-template>
+<ng-template #opponentsTitle><img src="assets/img/world/war-type.png" /><span>Opposants</span></ng-template>
 <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
 <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée en jeu</span></ng-template>
+<ng-template #typeTitle><img src="assets/img/world/wars.png" /><span>Type de guerre</span></ng-template>
 <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>

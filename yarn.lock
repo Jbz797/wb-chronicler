@@ -317,6 +317,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@angular/forms@npm:21.2.15":
+  version: 21.2.15
+  resolution: "@angular/forms@npm:21.2.15"
+  dependencies:
+    "@standard-schema/spec": "npm:^1.0.0"
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/common": 21.2.15
+    "@angular/core": 21.2.15
+    "@angular/platform-browser": 21.2.15
+    rxjs: ^6.5.3 || ^7.4.0
+  checksum: 10c0/ebda161c06db8efa8a7f033b28e89ae496fd46d90b1d53ac39a39b362dc23dff9ca886b5f19fcfe75d9667e790803c125f8a44ce7120b1f1496831d75800dd89
+  languageName: node
+  linkType: hard
+
 "@angular/language-service@npm:^21.2.15":
   version: 21.2.15
   resolution: "@angular/language-service@npm:21.2.15"
@@ -2124,6 +2139,13 @@ __metadata:
   version: 4.0.0
   resolution: "@sindresorhus/merge-streams@npm:4.0.0"
   checksum: 10c0/482ee543629aa1933b332f811a1ae805a213681ecdd98c042b1c1b89387df63e7812248bb4df3910b02b3cc5589d3d73e4393f30e197c9dde18046ccd471fc6b
+  languageName: node
+  linkType: hard
+
+"@standard-schema/spec@npm:^1.0.0":
+  version: 1.1.0
+  resolution: "@standard-schema/spec@npm:1.1.0"
+  checksum: 10c0/d90f55acde4b2deb983529c87e8025fa693de1a5e8b49ecc6eb84d1fd96328add0e03d7d551442156c7432fd78165b2c26ff561b970a9a881f046abb78d6a526
   languageName: node
   linkType: hard
 
@@ -7866,6 +7888,7 @@ __metadata:
     "@angular/compiler": "npm:21.2.15"
     "@angular/compiler-cli": "npm:^21.2.15"
     "@angular/core": "npm:21.2.15"
+    "@angular/forms": "npm:21.2.15"
     "@angular/language-service": "npm:^21.2.15"
     "@angular/platform-browser": "npm:21.2.15"
     "@angular/router": "npm:^21.2.15"
