@@ -180,4 +180,5 @@ export interface KingdomWar {
   renown_at_stake: number;
   side: 'attacker' | 'defender';
   started_by: { kingdom: { id: number; name: string } };
+  warriors: { attackers: number; defenders: number };
 }

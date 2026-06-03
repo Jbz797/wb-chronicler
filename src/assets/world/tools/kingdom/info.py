@@ -87,6 +87,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         for k in [*opponent_kingdoms, *ally_kingdoms, *([starter_kingdom] if starter_kingdom else [])]:
             _register_kingdom(k, save)
         populations = ctx["populations_by_kingdom"]
+        warriors = ctx["warriors_by_kingdom"]
         duration_months = ctx["world_time"] - float(w.get("created_time") or 0)
         out.append({
             "allies": sorted(
@@ -119,6 +120,10 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                     "id": w.get("started_by_kingdom_id"),
                     "name": w.get("started_by_kingdom_name"),
                 },
+            },
+            "warriors": {
+                "attackers": sum(warriors.get(aid, 0) for aid in attackers),
+                "defenders": sum(warriors.get(did, 0) for did in defenders),
             },
         })
     return sorted(out, key=lambda x: x["id"])

@@ -126,8 +126,25 @@
         }
       }
 
-      .ant-descriptions-item-content img {
-        margin-left: 0.25rem;
+      .ant-descriptions-item-content {
+        img {
+          margin-left: 0.25rem;
+        }
+
+        nz-tag {
+          margin: 0 !important;
+        }
+      }
+
+      .ant-descriptions-item-label[colspan='2'] {
+        background: $dark-warm;
+        color: $primary;
+        font-size: 0.85rem;
+        letter-spacing: $letter-spacing-wide;
+        line-height: 0.75;
+        padding: 8px 0 4px !important;
+        text-align: center;
+        text-transform: uppercase;
       }
 
       .ant-descriptions-item-label,

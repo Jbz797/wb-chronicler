@@ -1,16 +1,22 @@
 @let w = war();
+@let our = ourSide(w);
+@let their = theirSide(w);
+
 <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="warTitle">
-  <nz-descriptions-item [nzTitle]="sideTitle">
-    {{ sideLabel(w) }}
-    @if (!w.is_main) {
-      <nz-tag>allié</nz-tag>
-    }
+  <nz-descriptions-item [nzTitle]="declaredByTitle">
+    <app-kingdom-tag [id]="w.started_by.kingdom.id" [name]="w.started_by.kingdom.name" />
   </nz-descriptions-item>
-  <nz-descriptions-item [nzTitle]="opponentsTitle">
-    @for (opp of w.opponents; track opp.id) {
-      <app-kingdom-tag [id]="opp.id" [name]="opp.name" />
-    }
+  <nz-descriptions-item [nzTitle]="renownTitle">{{ w.renown_at_stake }}</nz-descriptions-item>
+  @if (w.duration_years > 0) {
+    <nz-descriptions-item [nzTitle]="durationTitle">{{ w.duration_years }} ans</nz-descriptions-item>
+  }
+
+  <nz-descriptions-item [nzTitle]="ourSectionTitle(w)">
+    <span appSectionRow class="section-marker"></span>
   </nz-descriptions-item>
+  @if (ourAlliance(w); as a) {
+    <nz-descriptions-item [nzTitle]="coalitionTitle">{{ a.name }}</nz-descriptions-item>
+  }
   @if (w.allies.length) {
     <nz-descriptions-item [nzTitle]="alliesTitle">
       @for (ally of w.allies; track ally.id) {
@@ -18,19 +24,35 @@
       }
     </nz-descriptions-item>
   }
-  <nz-descriptions-item [nzTitle]="populationsTitle">{{ w.populations.attackers }} / {{ w.populations.defenders }}</nz-descriptions-item>
-  @for (c of coalitions(w); track c.side) {
-    <nz-descriptions-item [nzTitle]="c.side === 'atk' ? allianceAtkTitle : allianceDefTitle">{{ c.name }}</nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="populationTitle">
+    <span [class]="sideClass(w.populations, our)">{{ w.populations[our] }}</span>
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="warriorsTitle">
+    <span [class]="sideClass(w.warriors, our)">{{ w.warriors[our] }}</span>
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="deathsTitle">
+    <span [class]="sideClass(w.deaths, our, true)">{{ w.deaths[our] }}</span>
+  </nz-descriptions-item>
+
+  <nz-descriptions-item [nzTitle]="theirSectionTitle(w)">
+    <span appSectionRow class="section-marker"></span>
+  </nz-descriptions-item>
+  @if (theirAlliance(w); as a) {
+    <nz-descriptions-item [nzTitle]="coalitionTitle">{{ a.name }}</nz-descriptions-item>
   }
-  @if (w.deaths.attackers + w.deaths.defenders) {
-    <nz-descriptions-item [nzTitle]="deathsTitle">{{ w.deaths.attackers }} / {{ w.deaths.defenders }}</nz-descriptions-item>
-  }
-  @if (w.duration_years > 0) {
-    <nz-descriptions-item [nzTitle]="durationTitle">{{ w.duration_years }} ans</nz-descriptions-item>
-  }
-  <nz-descriptions-item [nzTitle]="renownTitle">{{ w.renown_at_stake }}</nz-descriptions-item>
-  <nz-descriptions-item [nzTitle]="declaredByTitle">
-    <app-kingdom-tag [id]="w.started_by.kingdom.id" [name]="w.started_by.kingdom.name" />
+  <nz-descriptions-item [nzTitle]="opponentsTitle">
+    @for (opp of w.opponents; track opp.id) {
+      <app-kingdom-tag [id]="opp.id" [name]="opp.name" />
+    }
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="populationTitle">
+    <span [class]="sideClass(w.populations, their)">{{ w.populations[their] }}</span>
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="warriorsTitle">
+    <span [class]="sideClass(w.warriors, their)">{{ w.warriors[their] }}</span>
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="deathsTitle">
+    <span [class]="sideClass(w.deaths, their, true)">{{ w.deaths[their] }}</span>
   </nz-descriptions-item>
 </nz-descriptions>
 
@@ -41,12 +63,11 @@
   <span>{{ w.name }}</span>
 </ng-template>
 <ng-template #alliesTitle><img src="assets/img/world/alliances.png" /><span>Alliés</span></ng-template>
-<ng-template #allianceAtkTitle><img src="assets/img/world/alliances.png" /><span>Coalition (atk)</span></ng-template>
-<ng-template #allianceDefTitle><img src="assets/img/world/alliances.png" /><span>Coalition (déf)</span></ng-template>
-<ng-template #deathsTitle><img src="assets/img/stats/kills.png" /><span>Morts (atk / déf)</span></ng-template>
+<ng-template #coalitionTitle><img src="assets/img/world/alliances.png" /><span>Coalition</span></ng-template>
+<ng-template #deathsTitle><img src="assets/img/stats/kills.png" /><span>Morts</span></ng-template>
 <ng-template #declaredByTitle><img src="assets/img/professions/king.png" /><span>Déclarée par</span></ng-template>
 <ng-template #durationTitle><img src="assets/img/world/duration.png" /><span>Durée</span></ng-template>
 <ng-template #opponentsTitle><img src="assets/img/world/wars.png" /><span>Opposants</span></ng-template>
-<ng-template #populationsTitle><img src="assets/img/world/population.png" /><span>Pop (atk / déf)</span></ng-template>
+<ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
 <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée en jeu</span></ng-template>
-<ng-template #sideTitle><img src="assets/img/stats/warfare.png" /><span>Côté</span></ng-template>
+<ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
