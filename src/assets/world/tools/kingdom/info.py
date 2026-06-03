@@ -13,11 +13,12 @@ _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
 
 def _build_context(save: dict) -> dict:
     # Index of living actors per kingdom — mirrors `Kingdom.getPopulation`. `profession == 5` = warrior.
+    # `boat_*` actors (fishing/trading/transport boats) are transient PNJs WB excludes from the kingdom population stat.
     populations_by_kingdom: dict[int, int] = {}
     warriors_by_kingdom: dict[int, int] = {}
     for actor in save.get("actors_data", []):
         kid = actor.get("civ_kingdom_id")
-        if not kid:
+        if not kid or (actor.get("asset_id") or "").startswith("boat_"):
             continue
         populations_by_kingdom[kid] = populations_by_kingdom.get(kid, 0) + 1
         if actor.get("profession") == 5:
@@ -80,12 +81,18 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
             continue
         side = "attacker" if kid in attackers else "defender"
         opponent_kingdoms = [kingdoms_by_id[oid] for oid in (defenders if side == "attacker" else attackers) if oid in kingdoms_by_id]
+        ally_kingdoms = [kingdoms_by_id[aid] for aid in (attackers if side == "attacker" else defenders) - {kid} if aid in kingdoms_by_id]
         starter_kingdom = kingdoms_by_id.get(w.get("started_by_kingdom_id"))
-        # Register opposing kingdoms (and the war's instigator) so the UI's `app-kingdom-tag` can resolve their banner + colours.
-        for k in [*opponent_kingdoms, *([starter_kingdom] if starter_kingdom else [])]:
+        # Register opposing/ally kingdoms (and the war's instigator) so the UI's `app-kingdom-tag` can resolve their banner + colours.
+        for k in [*opponent_kingdoms, *ally_kingdoms, *([starter_kingdom] if starter_kingdom else [])]:
             _register_kingdom(k, save)
+        populations = ctx["populations_by_kingdom"]
         duration_months = ctx["world_time"] - float(w.get("created_time") or 0)
         out.append({
+            "allies": sorted(
+                ({"id": a["id"], "name": a.get("name") or f"#{a['id']}"} for a in ally_kingdoms),
+                key=lambda o: o["id"],
+            ),
             "attacker_alliance": alliance_for(w.get("main_attacker"), w.get("list_attackers") or []),
             "deaths": {
                 "attackers": w.get("dead_attackers", 0),
@@ -100,6 +107,10 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                 ({"id": opp["id"], "name": opp.get("name") or f"#{opp['id']}"} for opp in opponent_kingdoms),
                 key=lambda o: o["id"],
             ),
+            "populations": {
+                "attackers": sum(populations.get(aid, 0) for aid in attackers),
+                "defenders": sum(populations.get(did, 0) for did in defenders),
+            },
             "renown_at_stake": w.get("renown", 0),
             "side": side,
             "started_by": {

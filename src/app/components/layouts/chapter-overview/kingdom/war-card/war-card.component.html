@@ -11,11 +11,16 @@
       <app-kingdom-tag [id]="opp.id" [name]="opp.name" />
     }
   </nz-descriptions-item>
-  @if (w.attacker_alliance) {
-    <nz-descriptions-item [nzTitle]="allianceAtkTitle">{{ w.attacker_alliance.name }}</nz-descriptions-item>
+  @if (w.allies.length) {
+    <nz-descriptions-item [nzTitle]="alliesTitle">
+      @for (ally of w.allies; track ally.id) {
+        <app-kingdom-tag [id]="ally.id" [name]="ally.name" />
+      }
+    </nz-descriptions-item>
   }
-  @if (w.defender_alliance) {
-    <nz-descriptions-item [nzTitle]="allianceDefTitle">{{ w.defender_alliance.name }}</nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="populationsTitle">{{ w.populations.attackers }} / {{ w.populations.defenders }}</nz-descriptions-item>
+  @for (c of coalitions(w); track c.side) {
+    <nz-descriptions-item [nzTitle]="c.side === 'atk' ? allianceAtkTitle : allianceDefTitle">{{ c.name }}</nz-descriptions-item>
   }
   @if (w.deaths.attackers + w.deaths.defenders) {
     <nz-descriptions-item [nzTitle]="deathsTitle">{{ w.deaths.attackers }} / {{ w.deaths.defenders }}</nz-descriptions-item>
@@ -35,11 +40,13 @@
   }
   <span>{{ w.name }}</span>
 </ng-template>
+<ng-template #alliesTitle><img src="assets/img/world/alliances.png" /><span>Alliés</span></ng-template>
 <ng-template #allianceAtkTitle><img src="assets/img/world/alliances.png" /><span>Coalition (atk)</span></ng-template>
 <ng-template #allianceDefTitle><img src="assets/img/world/alliances.png" /><span>Coalition (déf)</span></ng-template>
 <ng-template #deathsTitle><img src="assets/img/stats/kills.png" /><span>Morts (atk / déf)</span></ng-template>
 <ng-template #declaredByTitle><img src="assets/img/professions/king.png" /><span>Déclarée par</span></ng-template>
 <ng-template #durationTitle><img src="assets/img/world/duration.png" /><span>Durée</span></ng-template>
 <ng-template #opponentsTitle><img src="assets/img/world/wars.png" /><span>Opposants</span></ng-template>
+<ng-template #populationsTitle><img src="assets/img/world/population.png" /><span>Pop (atk / déf)</span></ng-template>
 <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée en jeu</span></ng-template>
 <ng-template #sideTitle><img src="assets/img/stats/warfare.png" /><span>Côté</span></ng-template>

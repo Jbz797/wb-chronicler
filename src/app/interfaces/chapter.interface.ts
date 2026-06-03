@@ -167,6 +167,7 @@ export interface ChapterMeta {
 }
 
 export interface KingdomWar {
+  allies: { id: number; name: string }[];
   attacker_alliance: { id: number; name: string } | null;
   deaths: { attackers: number; defenders: number };
   defender_alliance: { id: number; name: string } | null;
@@ -175,6 +176,7 @@ export interface KingdomWar {
   is_main: boolean;
   name: string;
   opponents: { id: number; name: string }[];
+  populations: { attackers: number; defenders: number };
   renown_at_stake: number;
   side: 'attacker' | 'defender';
   started_by: { kingdom: { id: number; name: string } };

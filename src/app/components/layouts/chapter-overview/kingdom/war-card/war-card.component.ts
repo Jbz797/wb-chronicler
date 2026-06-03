@@ -17,6 +17,12 @@ export class WarCardComponent {
   public readonly isNew = input.required<boolean>();
   public readonly war = input.required<KingdomWar>();
 
+  // Flattens the (up to two) alliances of a war into one list — lets the template iterate once instead of branching on each side.
+  protected coalitions = (war: KingdomWar): { name: string; side: 'atk' | 'def' }[] => [
+    ...war.attacker_alliance ? [{ name: war.attacker_alliance.name, side: 'atk' as const }] : [],
+    ...war.defender_alliance ? [{ name: war.defender_alliance.name, side: 'def' as const }] : [],
+  ];
+
   protected sideLabel = (war: KingdomWar): string => war.side === 'attacker' ? 'Attaquants' : 'Défenseurs';
 
 }
