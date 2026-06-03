@@ -30,6 +30,9 @@
   <nz-descriptions-item [nzTitle]="warriorsTitle">
     <span [class]="sideClass(w.warriors, our)">{{ w.warriors[our] }}</span>
   </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="citiesTitle">
+    <span [class]="sideClass(w.cities, our)">{{ w.cities[our] }}</span>
+  </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="deathsTitle">
     <span [class]="sideClass(w.deaths, our, true)">{{ w.deaths[our] }}</span>
   </nz-descriptions-item>
@@ -51,6 +54,9 @@
   <nz-descriptions-item [nzTitle]="warriorsTitle">
     <span [class]="sideClass(w.warriors, their)">{{ w.warriors[their] }}</span>
   </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="citiesTitle">
+    <span [class]="sideClass(w.cities, their)">{{ w.cities[their] }}</span>
+  </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="deathsTitle">
     <span [class]="sideClass(w.deaths, their, true)">{{ w.deaths[their] }}</span>
   </nz-descriptions-item>
@@ -63,8 +69,9 @@
   <span>{{ w.name }}</span>
 </ng-template>
 <ng-template #alliesTitle><img src="assets/img/world/alliances.png" /><span>Alliés</span></ng-template>
+<ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
 <ng-template #coalitionTitle><img src="assets/img/world/alliances.png" /><span>Coalition</span></ng-template>
-<ng-template #deathsTitle><img src="assets/img/stats/kills.png" /><span>Morts</span></ng-template>
+<ng-template #deathsTitle><img src="assets/img/world/deaths.png" /><span>Morts</span></ng-template>
 <ng-template #declaredByTitle><img src="assets/img/professions/king.png" /><span>Déclarée par</span></ng-template>
 <ng-template #durationTitle><img src="assets/img/world/duration.png" /><span>Durée</span></ng-template>
 <ng-template #opponentsTitle><img src="assets/img/world/wars.png" /><span>Opposants</span></ng-template>

@@ -169,6 +169,7 @@ export interface ChapterMeta {
 export interface KingdomWar {
   allies: { id: number; name: string }[];
   attacker_alliance: { id: number; name: string } | null;
+  cities: { attackers: number; defenders: number };
   deaths: { attackers: number; defenders: number };
   defender_alliance: { id: number; name: string } | null;
   duration_years: number;

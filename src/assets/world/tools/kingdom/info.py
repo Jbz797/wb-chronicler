@@ -86,6 +86,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         # Register opposing/ally kingdoms (and the war's instigator) so the UI's `app-kingdom-tag` can resolve their banner + colours.
         for k in [*opponent_kingdoms, *ally_kingdoms, *([starter_kingdom] if starter_kingdom else [])]:
             _register_kingdom(k, save)
+        cities = ctx["cities_by_kingdom"]
         populations = ctx["populations_by_kingdom"]
         warriors = ctx["warriors_by_kingdom"]
         duration_months = ctx["world_time"] - float(w.get("created_time") or 0)
@@ -95,6 +96,10 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                 key=lambda o: o["id"],
             ),
             "attacker_alliance": alliance_for(w.get("main_attacker"), w.get("list_attackers") or []),
+            "cities": {
+                "attackers": sum(cities.get(aid, 0) for aid in attackers),
+                "defenders": sum(cities.get(did, 0) for did in defenders),
+            },
             "deaths": {
                 "attackers": w.get("dead_attackers", 0),
                 "defenders": w.get("dead_defenders", 0),
