@@ -53,7 +53,7 @@ export class MarkedHelpers {
 
   // Inline-code regex: numeric id for kingdoms/persons (else `[_a-z]+`), name optional per caller.
   private static readonly _iconPattern = (letter: InlineMarker, { nameOptional }: { nameOptional: boolean }): RegExp => {
-    const id = letter === INLINE_MARKER.Kingdom || letter === INLINE_MARKER.Person ? String.raw`\d+` : String.raw`[_a-z]+`;
+    const id = letter === INLINE_MARKER.Kingdom || letter === INLINE_MARKER.Person ? String.raw`\d+` : '[_a-z]+';
     const name = nameOptional ? String.raw`(?: ([^\n\]]+))?` : String.raw` ([^\n\]]+)`;
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };

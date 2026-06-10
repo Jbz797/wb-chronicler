@@ -1,15 +1,11 @@
 {
   "compilerOptions": {
     "allowUnusedLabels": false,
-    "declaration": false,
-    "esModuleInterop": true,
     "exactOptionalPropertyTypes": true,
     "experimentalDecorators": true,
     "importHelpers": true,
     "incremental": true,
-    "lib": ["es2024", "dom"],
-    "module": "es2022",
-    "moduleResolution": "bundler",
+    "module": "preserve",
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
@@ -17,16 +13,13 @@
     "outDir": "./dist/out-tsc",
     "rootDir": "./src",
     "sourceMap": true,
-    "strict": true,
-    "target": "es2024",
-    "types": []
+    "target": "es2025"
   },
   "angularCompilerOptions": {
     "extendedDiagnostics": { "defaultCategory": "error" },
     "strictInjectionParameters": true,
     "strictStandalone": true,
-    "strictTemplates": true,
-    "typeCheckHostBindings": true
+    "strictTemplates": true
   },
   "files": ["src/main.ts"],
   "include": ["src/**/*.ts"]

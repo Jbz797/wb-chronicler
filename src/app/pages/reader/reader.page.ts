@@ -37,7 +37,7 @@ export class ReaderPage {
     event.preventDefault();
 
     const slug = decodeURIComponent(href.slice(1));
-    document.querySelector(`[id$="${slug}"]`)?.scrollIntoView({ behavior: 'smooth' });
+    document.querySelector(`[id$="${CSS.escape(slug)}"]`)?.scrollIntoView({ behavior: 'smooth' });
   }
 
 }
