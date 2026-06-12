@@ -2,14 +2,17 @@
 @if (c) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
     @for (stat of snapshotStats; track stat.key) {
-      <ng-template #titleRef>
-        <img [src]="`assets/img/world/${stat.key}.png`" />
-        <span>{{ stat.label }}</span>
-      </ng-template>
-      <nz-descriptions-item [nzTitle]="titleRef">
-        <span>{{ c.meta.world.snapshot[stat.key] | compact }}</span>
-        <app-delta [value]="snapshotDeltas()?.[stat.key]" />
-      </nz-descriptions-item>
+      @let value = c.meta.world.snapshot[stat.key];
+      @if (!stat.hideIfZero || value > 0) {
+        <ng-template #titleRef>
+          <img [src]="`assets/img/world/${stat.key}.png`" />
+          <span>{{ stat.label }}</span>
+        </ng-template>
+        <nz-descriptions-item [nzTitle]="titleRef">
+          <span>{{ value | compact }}</span>
+          <app-delta [value]="snapshotDeltas()?.[stat.key]" />
+        </nz-descriptions-item>
+      }
     }
   </nz-descriptions>
 

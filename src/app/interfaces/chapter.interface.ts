@@ -153,6 +153,7 @@ export interface ChapterMeta {
       families: number;
       frozen_tiles: number;
       houses: number;
+      infected: number;
       kingdoms: number;
       languages: number;
       plots_active: number;

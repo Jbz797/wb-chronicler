@@ -120,9 +120,10 @@ export const WAR_TYPE_LABELS = {
   whisper: 'Murmure',
 } as const;
 
-// Snapshot world stats — display order: demography → environment → society → conflict → culture → activity.
-export const SNAPSHOT_STATS: { key: SnapshotStat; label: string }[] = [
-  { key: 'population', label: 'Population' },
+// Snapshot world stats — display order: demography → environment → society → conflict → culture → activity. `hideIfZero` hides outbreak-style rows when idle.
+export const SNAPSHOT_STATS: { hideIfZero?: boolean; key: SnapshotStat; label: string }[] = [
+  { key: 'population', label: 'Population pensante' },
+  { hideIfZero: true, key: 'infected', label: 'Infectés' },
   { key: 'wild_creatures', label: 'Créatures' },
   { key: 'subspecies', label: 'Sous-espèces' },
   { key: 'vegetation', label: 'Végétation' },

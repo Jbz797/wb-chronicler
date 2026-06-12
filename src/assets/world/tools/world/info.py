@@ -47,7 +47,7 @@ _DEATH_CAUSES = {
 
 
 def _build_snapshot(meta: dict, map_stats: dict) -> dict:
-    # `frozen_tiles` / `relations` aren't in `map.meta` — decompress the save.
+    # `frozen_tiles` / `relations` / `infected` aren't in `map.meta` — decompress the save. `infected` mirrors WB's `current_infected` (runtime-only).
     save = load_save()
     return dict(
         sorted(
@@ -57,6 +57,7 @@ def _build_snapshot(meta: dict, map_stats: dict) -> dict:
                 "frozen_tiles": len(save.get("frozen_tiles") or []),
                 "houses": int(map_stats.get("housesBuilt", 0))
                 - int(map_stats.get("housesDestroyed", 0)),  # current city-buildings (matches `world_statistics_houses`)
+                "infected": sum(1 for a in save.get("actors_data", []) if "infected" in (a.get("saved_traits") or [])),
                 "plots_active": len(save.get("plots") or []),
                 "relations": len(save.get("relations") or []),
             }.items()
