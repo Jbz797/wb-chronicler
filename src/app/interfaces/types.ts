@@ -17,5 +17,5 @@ export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | '
 
 export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'cities' | 'clans'
   | 'cultures' | 'equipment' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'
-  | 'languages' | 'population' | 'relations' | 'religions' | 'subspecies' | 'vegetation'
+  | 'languages' | 'population' | 'relations' | 'religions' | 'subspecies' | 'trees' | 'vegetation'
   | 'wars' | 'wild_creatures';

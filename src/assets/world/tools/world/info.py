@@ -60,6 +60,8 @@ def _build_snapshot(meta: dict, map_stats: dict) -> dict:
                 "infected": sum(1 for a in save.get("actors_data", []) if "infected" in (a.get("saved_traits") or [])),
                 "plots_active": len(save.get("plots") or []),
                 "relations": len(save.get("relations") or []),
+                # `tree` substring catches every `Building_Tree` asset_id (pine/swamp/birch/…). ≤1% drift vs WB UI — counter moves between snapshots.
+                "trees": sum(1 for b in save.get("buildings", []) if "tree" in (b.get("asset_id") or "")),
             }.items()
         )
     )

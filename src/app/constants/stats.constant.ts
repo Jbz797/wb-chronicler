@@ -124,11 +124,12 @@ export const WAR_TYPE_LABELS = {
 export const SNAPSHOT_STATS: { hideIfZero?: boolean; key: SnapshotStat; label: string }[] = [
   { key: 'population', label: 'Population pensante' },
   { hideIfZero: true, key: 'infected', label: 'Infectés' },
+  { key: 'houses', label: 'Maisons' },
   { key: 'wild_creatures', label: 'Créatures' },
   { key: 'subspecies', label: 'Sous-espèces' },
   { key: 'vegetation', label: 'Végétation' },
+  { key: 'trees', label: 'Arbres' },
   { key: 'frozen_tiles', label: 'Tuiles gelées' },
-  { key: 'houses', label: 'Maisons' },
   { key: 'kingdoms', label: 'Royaumes' },
   { key: 'cities', label: 'Cités' },
   { key: 'clans', label: 'Clans' },

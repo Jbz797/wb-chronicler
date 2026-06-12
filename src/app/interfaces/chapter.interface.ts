@@ -161,6 +161,7 @@ export interface ChapterMeta {
       relations: number;
       religions: number;
       subspecies: number;
+      trees: number;
       vegetation: number;
       wars: number;
       wild_creatures: number;
