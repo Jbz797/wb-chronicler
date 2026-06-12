@@ -1,0 +1,36 @@
+{
+  "minimum_years_between_wars": 5,
+  "world_age_bonus_opinion": {
+    "age_hope": 15,
+    "age_sun": 5,
+    "age_dark": -5,
+    "age_tears": -35,
+    "age_moon": -10,
+    "age_chaos": -10
+  },
+  "actor_trait_opinion_mods": {
+    "agile": { "same": 5, "opposite": 0, "opposite_trait": null },
+    "ambitious": { "same": -10, "opposite": 0, "opposite_trait": null },
+    "attractive": { "same": 10, "opposite": 0, "opposite_trait": "ugly" },
+    "content": { "same": 15, "opposite": 0, "opposite_trait": null },
+    "crippled": { "same": 10, "opposite": 0, "opposite_trait": null },
+    "deceitful": { "same": -15, "opposite": -5, "opposite_trait": "honest" },
+    "eyepatch": { "same": 20, "opposite": 0, "opposite_trait": null },
+    "fat": { "same": 10, "opposite": -10, "opposite_trait": "skinny" },
+    "genius": { "same": 20, "opposite": -20, "opposite_trait": "stupid" },
+    "gluttonous": { "same": 5, "opposite": 0, "opposite_trait": null },
+    "golden_tooth": { "same": 5, "opposite": 0, "opposite_trait": null },
+    "honest": { "same": 10, "opposite": -10, "opposite_trait": "deceitful" },
+    "hotheaded": { "same": -10, "opposite": 0, "opposite_trait": null },
+    "immortal": { "same": -20, "opposite": 0, "opposite_trait": null },
+    "savage": { "same": 5, "opposite": 0, "opposite_trait": null },
+    "skin_burns": { "same": 40, "opposite": 0, "opposite_trait": null },
+    "strong": { "same": 5, "opposite": -10, "opposite_trait": "weak" },
+    "stupid": { "same": 30, "opposite": 0, "opposite_trait": "genius" },
+    "thief": { "same": 10, "opposite": 0, "opposite_trait": null },
+    "tough": { "same": -5, "opposite": 0, "opposite_trait": null },
+    "ugly": { "same": 5, "opposite": -15, "opposite_trait": "attractive" },
+    "veteran": { "same": 5, "opposite": 0, "opposite_trait": null },
+    "weak": { "same": 0, "opposite": -10, "opposite_trait": "strong" }
+  }
+}

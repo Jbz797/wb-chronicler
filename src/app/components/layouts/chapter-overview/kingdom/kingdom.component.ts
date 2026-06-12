@@ -25,11 +25,10 @@ export class KingdomComponent {
   private readonly _chronicler = inject(ChroniclerService);
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
-  // Relations sorted by status (enemies first, then allies, neutrals last), then by age desc within status.
+  // Relations sorted by opinion total (favourable first, hostile last).
   protected readonly sortedRelations = computed<KingdomRelation[]>(() => {
-    const weight: Record<KingdomRelation['status'], number> = { ally: 1, enemy: 0, neutral: 2 };
     const relations = this.kingdom()?.relations ?? [];
-    return relations.toSorted((a, b) => weight[a.status] - weight[b.status] || b.age_years - a.age_years);
+    return relations.toSorted((a, b) => b.opinion.total - a.opinion.total);
   });
   // Set of war ids that surfaced this chapter (not present in the previous chapter's wars list).
   protected readonly startedWarIds = computed(() => {
@@ -38,5 +37,13 @@ export class KingdomComponent {
     const previousIds = new Set<number>(previousWars.map(w => w.id));
     return new Set<number>(wars.filter(w => !previousIds.has(w.id)).map(w => w.id));
   });
+
+  // 4-tier coloring: ≥+50 = `.tier-full` (vert), ≥0 = `.tier-high` (or), ≥-50 = `.tier-mid` (info), < -50 = `.tier-low` (rouge).
+  protected opinionClass = (total: number): string => {
+    if (total >= 50) return 'tier-full';
+    if (total >= 0) return 'tier-high';
+    if (total >= -50) return 'tier-mid';
+    return 'tier-low';
+  };
 
 }

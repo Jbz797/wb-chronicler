@@ -4,7 +4,9 @@
 @let d = deltas();
 
 <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="warTitle">
-  <nz-descriptions-item [nzTitle]="typeTitle">{{ typeLabel(w) }}</nz-descriptions-item>
+  @if (w.war_type) {
+    <nz-descriptions-item [nzTitle]="typeTitle">{{ typeLabel(w) }}</nz-descriptions-item>
+  }
   <nz-descriptions-item [nzTitle]="declaredByTitle">
     <app-kingdom-tag [id]="w.started_by.kingdom.id" [name]="w.started_by.kingdom.name" />
   </nz-descriptions-item>

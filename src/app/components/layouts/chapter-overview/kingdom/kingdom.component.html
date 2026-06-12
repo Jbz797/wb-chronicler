@@ -31,6 +31,7 @@
         <tr>
           <th>Royaume</th>
           <th>Statut</th>
+          <th>Opinion</th>
         </tr>
       </thead>
       <tbody>
@@ -40,6 +41,7 @@
             <td>
               <nz-tag [nzColor]="statusColor[r.status]">{{ statusLabel[r.status] }}</nz-tag>
             </td>
+            <td [class]="opinionClass(r.opinion.total)">{{ r.opinion.total > 0 ? '+' : '' }}{{ r.opinion.total }}</td>
           </tr>
         }
       </tbody>

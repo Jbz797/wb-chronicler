@@ -58,6 +58,7 @@ export class WarCardComponent {
   // Field key on the war's `populations`/`warriors`/`deaths` for the opposing side.
   protected theirSide = (war: KingdomWar): 'attackers' | 'defenders' => war.side === 'attacker' ? 'defenders' : 'attackers';
 
-  protected typeLabel = (war: KingdomWar): string => WAR_TYPE_LABELS[war.war_type];
+  // Caller (`war-card.component.html`) gates the call behind `@if (w.war_type)`.
+  protected typeLabel = (war: KingdomWar): string => WAR_TYPE_LABELS[war.war_type!];
 
 }
