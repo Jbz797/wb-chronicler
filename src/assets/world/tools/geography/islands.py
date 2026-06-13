@@ -41,6 +41,14 @@ def _cache_key(save_path: Path) -> str | None:
     return f"{int(stat.st_mtime)}_{stat.st_size}"
 
 
+# 3×3 sector label from the centroid: `N/NE/E/SE/S/SW/W/NW` or `center` (middle third of both axes). `tileArray[0]` is the north edge, so small `grid_y` = north.
+def _cardinal(grid_x: int, grid_y: int, width: int, height: int) -> str:
+    third_w, third_h = width / 3, height / 3
+    horizontal = "W" if grid_x < third_w else "E" if grid_x >= 2 * third_w else ""
+    vertical = "N" if grid_y < third_h else "S" if grid_y >= 2 * third_h else ""
+    return vertical + horizontal or "center"
+
+
 # Build the islands list and a tile-to-island lookup keyed by WB actor coordinates (y axis grows north, so `actor_y = H - 1 - row`).
 def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]]:
     tile_map = save.get("tileMap") or []
@@ -126,7 +134,18 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
     tile_to_id: dict[tuple[int, int], int] = {}
     seeds: deque[tuple[int, int]] = deque()
     for idx, (size, biomes, tiles) in enumerate(kept, start=1):
-        islands.append({"biome": biomes.most_common(1)[0][0] if biomes else None, "id": idx, "size": size})
+        cx = sum(t[0] for t in tiles) // size
+        cy_grid = sum(t[1] for t in tiles) // size
+        top_biomes = [{"count": n, "name": name} for name, n in biomes.most_common(3)]
+        islands.append(
+            {
+                "biomes": top_biomes,
+                "cardinal": _cardinal(cx, cy_grid, width, height),
+                "centroid": {"x": cx, "y": height - 1 - cy_grid},
+                "id": idx,
+                "size": size,
+            }
+        )
         for gx, gy in tiles:
             tile_to_id[(gx, height - 1 - gy)] = idx
             seeds.append((gx, gy))
@@ -180,7 +199,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], dic
     key = _cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = _CACHE_DIR / f"islands_{key}.pkl"
+    cache_file = _CACHE_DIR / f"islands_v3_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:

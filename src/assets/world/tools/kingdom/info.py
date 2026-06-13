@@ -8,8 +8,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "actor"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
-from shared import MONTHS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
+from islands import compute_islands_cached  # noqa: E402
+from shared import CURRENT_SAVE, MONTHS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
 _ALL_SECTIONS = ("metadata", "ranks", "relations", "wars")
 _BABY_AGE_THRESHOLD_MONTHS = 16 * MONTHS_PER_YEAR  # WB considers actors « baby » below ~16 in-game years.
@@ -70,18 +72,23 @@ def _build_context(save: dict) -> dict:
     }
 
 
-def _build_metadata(kingdom: dict, ctx: dict) -> dict:
+def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
+    kid = kingdom.get("id")
     age_months = ctx["world_time"] - float(kingdom.get("created_time") or 0)
+    _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
+    # Chronicler-only: distinct island ids touched by the kingdom's city zones, sorted asc (1 = biggest). Zones are WB `TileZone`s of 8 tiles — probe centre.
+    islands = sorted({iid for zx, zy in ctx["zones_by_kingdom"].get(kid, []) if (iid := island_lookup.get((zx * 8 + 4, zy * 8 + 4))) is not None})
     return {
         "age": int(age_months / MONTHS_PER_YEAR),
-        "cities": ctx["cities_by_kingdom"].get(kingdom.get("id"), 0),
-        "id": kingdom.get("id"),
+        "cities": ctx["cities_by_kingdom"].get(kid, 0),
+        "id": kid,
+        "islands": islands,
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
-        "population": ctx["populations_by_kingdom"].get(kingdom.get("id"), 0),
+        "population": ctx["populations_by_kingdom"].get(kid, 0),
         "renown": kingdom.get("renown", 0),
-        "territory": ctx["territory_by_kingdom"].get(kingdom.get("id"), 0),
-        "warriors": ctx["warriors_by_kingdom"].get(kingdom.get("id"), 0),
+        "territory": ctx["territory_by_kingdom"].get(kid, 0),
+        "warriors": ctx["warriors_by_kingdom"].get(kid, 0),
     }
 
 
@@ -482,7 +489,7 @@ def main(argv: list[str]) -> int:
 
     out: dict = {}
     if "metadata" in sections:
-        out["metadata"] = _build_metadata(kingdom, ctx)
+        out["metadata"] = _build_metadata(kingdom, ctx, save)
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(kingdom, ctx, save)
     if "relations" in sections:
