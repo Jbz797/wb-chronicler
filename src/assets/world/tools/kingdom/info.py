@@ -393,7 +393,12 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
     if "xenophiles" in culture_traits and same_species:
         mod["xenophiles"] = 20
 
-    return {"breakdown": {k: v for k, v in sorted(mod.items()) if v}, "total": sum(mod.values())}
+    # Chronicler-only: top + and top - drivers — the « pourquoi » is enough, full ledger bloats tokens.
+    non_zero = [(k, v) for k, v in mod.items() if v]
+    top_pos = max((kv for kv in non_zero if kv[1] > 0), key=lambda kv: kv[1], default=None)
+    top_neg = min((kv for kv in non_zero if kv[1] < 0), key=lambda kv: kv[1], default=None)
+    drivers = dict(sorted([kv for kv in (top_pos, top_neg) if kv is not None]))
+    return {"drivers": drivers, "total": sum(mod.values())}
 
 
 # Standard competition rank (1,2,2,4) per stat among all kingdoms. Top 3 only — UI hides the rest.
