@@ -37,13 +37,14 @@ def load_save() -> dict:
         return json.loads(zlib.decompress(f.read()))
 
 
-# Parses a comma-separated section list — `None` / "full" expand to all known sections.
-def parse_sections(arg: str | None, all_sections: tuple[str, ...]) -> tuple[str, ...]:
-    if not arg or arg == "full":
+# Parses a comma-separated section list — `None` expands to all known sections; `full` is an alias for "all" iff the caller opts in.
+def parse_sections(arg: str | None, all_sections: tuple[str, ...], accept_full: bool = True) -> tuple[str, ...]:
+    if not arg or (accept_full and arg == "full"):
         return all_sections
     requested = tuple(s.strip() for s in arg.split(",") if s.strip())
     if unknown := [s for s in requested if s not in all_sections]:
-        raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: full,{','.join(all_sections)}")
+        valid = ("full", *all_sections) if accept_full else all_sections
+        raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: {','.join(valid)}")
     return requested
 
 

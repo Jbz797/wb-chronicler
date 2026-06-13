@@ -8,8 +8,10 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
-from shared import MONTHS_PER_YEAR, emit, index_by_id, load_save, parse_sections, register_entity  # noqa: E402
+from islands import compute_islands_cached  # noqa: E402
+from shared import CURRENT_SAVE, MONTHS_PER_YEAR, emit, index_by_id, load_save, parse_sections, register_entity  # noqa: E402
 
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
@@ -147,6 +149,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     families_by_id = index_by_id(save.get("families", []))
     religions_by_id = index_by_id(save.get("religions", []))
     age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
+    ax, ay = actor.get("x"), actor.get("y")
+    _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
     return {
         # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
         "age": int(age_months / MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
@@ -157,6 +161,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "family": (families_by_id.get(actor.get("family")) or {}).get("name"),
         "favorite_food": actor.get("favorite_food"),
         "generation": int(actor.get("generation") or 1),
+        # Chronicler-only: id of the land mass (per `geography/info.py`) the actor stands on. `None` on open water, lava or unassigned sand patches.
+        "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,
         "kingdom": _resolve_kingdom(actor.get("civ_kingdom_id"), kingdoms_by_id),
         "language": language.get("name"),
         "mass": _compute_mass(actor),
@@ -167,8 +173,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "roles": _compute_roles(actor, save),
         "sex": "female" if actor.get("sex") == 1 else "male",
         "subspecies": sub.get("name") or actor.get("subspecies"),
-        "x": actor.get("x"),
-        "y": actor.get("y"),
+        "x": ax,
+        "y": ay,
     }
 
 
