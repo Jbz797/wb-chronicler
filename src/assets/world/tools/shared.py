@@ -10,12 +10,21 @@ from pathlib import Path
 
 
 CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
-DATAS_DIR = Path(__file__).parent / "datas"
+_DATAS_DIR = Path(__file__).parent / "datas"
 MONTHS_PER_YEAR = 60
 
 
+# Drop `None` values from a nested JSON-like structure — chronicler tokens optimisation. Empty lists/dicts/`0`/`""`/`False` are preserved (semantically meaningful).
+def _strip_none(value):
+    if isinstance(value, dict):
+        return {k: _strip_none(v) for k, v in value.items() if v is not None}
+    if isinstance(value, list):
+        return [_strip_none(v) for v in value if v is not None]
+    return value
+
+
 def emit(out: dict) -> None:
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    print(json.dumps(_strip_none(out), ensure_ascii=False, indent=2))
 
 
 def index_by_id(records: list[dict], key: str = "id") -> dict:
@@ -25,7 +34,7 @@ def index_by_id(records: list[dict], key: str = "id") -> dict:
 # Loads (and caches) a JSON file from the datas dir — `{}` if it doesn't exist.
 @cache
 def load_data(name: str) -> dict:
-    path = DATAS_DIR / name
+    path = _DATAS_DIR / name
     return json.loads(path.read_text()) if path.exists() else {}
 
 

@@ -118,6 +118,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         if kid in (r.get("kingdom1_id"), r.get("kingdom2_id"))
     }
 
+    kid_zones = ctx["zones_by_kingdom"].get(kid, [])
     out = []
     for other in save.get("kingdoms", []):
         other_id = other.get("id")
@@ -130,6 +131,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         out.append(
             {
                 "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / MONTHS_PER_YEAR) if r else None,
+                "borders": _min_zone_distance(kid_zones, ctx["zones_by_kingdom"].get(other_id, [])) <= _BORDERS_ZONE_DISTANCE,
                 "kingdom": {"id": other_id, "name": other.get("name") or f"#{other_id}"},
                 "opinion": _compute_opinion(kingdom, other, save, ctx, alliances, ongoing_wars, r),
                 "status": status,

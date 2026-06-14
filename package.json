@@ -52,7 +52,7 @@
     "chokidar": "5.0.0",
     "concurrently": "10.0.3",
     "eslint-config-angular-strict": "22.0.2",
-    "less": "4.6.4",
+    "less": "4.6.6",
     "prettier": "3.8.4",
     "stylelint": "17.13.0",
     "stylelint-config-standard-scss": "17.0.0",
