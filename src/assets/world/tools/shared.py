@@ -14,12 +14,12 @@ _DATAS_DIR = Path(__file__).parent / "datas"
 MONTHS_PER_YEAR = 60
 
 
-# Drop `None` values from a nested JSON-like structure — chronicler tokens optimisation. Empty lists/dicts/`0`/`""`/`False` are preserved (semantically meaningful).
+# Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
 def _strip_none(value):
     if isinstance(value, dict):
-        return {k: _strip_none(v) for k, v in value.items() if v is not None}
+        return {k: stripped for k, v in value.items() if (stripped := _strip_none(v)) not in (None, [], {})}
     if isinstance(value, list):
-        return [_strip_none(v) for v in value if v is not None]
+        return [stripped for v in value if (stripped := _strip_none(v)) not in (None, [], {})]
     return value
 
 
