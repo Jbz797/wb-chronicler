@@ -44,11 +44,10 @@ export class ChroniclerService {
 
     return computed(() => this.chapters().find(c => c.slug === slug()));
   })();
-  // Chapter just before the current one (by discovery order). `undefined` when current is C1 or not a chapter page.
+  // Chapter just before the current one — `undefined` on C1 or non-chapter pages (negative index → `all[-1 or -2]` returns `undefined`).
   public readonly previousChapter = computed(() => {
     const all = this.chapters();
-    const index = all.findIndex(c => c.slug === this.currentChapter()?.slug);
-    return index > 0 ? all[index - 1] : undefined;
+    return all[all.findIndex(c => c.slug === this.currentChapter()?.slug) - 1];
   });
 
 }

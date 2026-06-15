@@ -10,8 +10,8 @@ export class SectionRowDirective implements AfterViewInit {
   public ngAfterViewInit(): void {
     const tr = (this._elementRef.nativeElement as HTMLElement).closest('tr');
     if (!tr) return;
-    const content = tr.querySelector('.ant-descriptions-item-content');
-    const label = tr.querySelector('.ant-descriptions-item-label');
+    const content = tr.querySelector(':scope .ant-descriptions-item-content');
+    const label = tr.querySelector(':scope .ant-descriptions-item-label');
     if (label && content) {
       // Sum label+content colspans so the label fills the full row regardless of `nzColumn`.
       const span = (Number(label.getAttribute('colspan')) || 1) + (Number(content.getAttribute('colspan')) || 1);

@@ -26,9 +26,9 @@ export class RankedStatComponent {
 
   protected readonly data = computed(() => {
     const current = this._sourceOf(this._chronicler.currentChapter()?.meta);
-    const previous = this._sourceOf(this._chronicler.previousChapter()?.meta);
     if (!current) return null;
 
+    const previous = this._sourceOf(this._chronicler.previousChapter()?.meta);
     const c = this._resolve(current);
     const p = previous ? this._resolve(previous) : null;
 
@@ -104,7 +104,7 @@ export class RankedStatComponent {
   // Picks the favorite or kingdom block from a chapter's meta based on the configured source.
   private _sourceOf(meta: ChapterMeta | undefined): ChapterMeta['favorite'] | ChapterMeta['kingdom'] {
     if (!meta) return null;
-    return this.source() === 'kingdom' ? meta.kingdom : meta.favorite;
+    return meta[this.source()];
   }
 
 }

@@ -35,23 +35,23 @@ export class WarCardComponent {
     return { attackers: diff('attackers'), defenders: diff('defenders') };
   });
 
-  protected ourAlliance = (war: KingdomWar): { id: number; name: string } | null => war.side === 'attacker' ? war.attacker_alliance : war.defender_alliance;
+  protected ourAlliance = (war: KingdomWar): KingdomWar['attacker_alliance'] => war[`${war.side}_alliance`];
 
   protected ourSectionTitle = (war: KingdomWar): string => `Notre camp (${war.side === 'attacker' ? 'atk' : 'def'})`;
 
   // Field key on the war's `populations`/`warriors`/`deaths` for the kingdom's own side.
-  protected ourSide = (war: KingdomWar): 'attackers' | 'defenders' => war.side === 'attacker' ? 'attackers' : 'defenders';
+  protected ourSide = (war: KingdomWar): 'attackers' | 'defenders' => `${war.side}s`;
 
   // `.tier-full` (vert) on the winning side, `.tier-low` (rouge) on the losing side; empty when equal. `inverted=true` when lower is better (e.g. deaths).
   protected sideClass = (stat: { attackers: number; defenders: number }, side: 'attackers' | 'defenders', inverted = false): string => {
     const own = stat[side];
-    const other = side === 'attackers' ? stat.defenders : stat.attackers;
+    const other = stat[side === 'attackers' ? 'defenders' : 'attackers'];
     if (own === other) return '';
     const wins = inverted ? own < other : own > other;
     return wins ? 'tier-full' : 'tier-low';
   };
 
-  protected theirAlliance = (war: KingdomWar): { id: number; name: string } | null => war.side === 'attacker' ? war.defender_alliance : war.attacker_alliance;
+  protected theirAlliance = (war: KingdomWar): KingdomWar['attacker_alliance'] => war[war.side === 'attacker' ? 'defender_alliance' : 'attacker_alliance'];
 
   protected theirSectionTitle = (war: KingdomWar): string => `Adversaires (${war.side === 'attacker' ? 'def' : 'atk'})`;
 
