@@ -74,6 +74,8 @@ export const COMBAT_STATS: StatConfig[] = [
 
 // Cumulative world stats — UI surfaces the delta vs previous chapter (per-chapter activity).
 export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
+  { key: 'cities_conquered', label: 'Villes conquises' },
+  { key: 'cities_rebelled', label: 'Villes révoltées' },
   { key: 'books_read', label: 'Livres lus' },
   { key: 'plots_succeeded', label: 'Complots réussis' },
 ];

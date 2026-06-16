@@ -72,6 +72,8 @@ def _build_cumulative(map_stats: dict) -> dict:
         # Chronicler-only: not surfaced in the UI's `CumulativeStat` union, just available in chapter.json for narrative use.
         "books_burnt": int(map_stats.get("booksBurnt", 0)),
         "books_read": int(map_stats.get("booksRead", 0)),
+        "cities_conquered": int(map_stats.get("citiesConquered", 0)),
+        "cities_rebelled": int(map_stats.get("citiesRebelled", 0)),
         "deaths": dict(sorted((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())),
         "plots_succeeded": int(map_stats.get("plotsSucceeded", 0)),
     }

@@ -182,6 +182,8 @@ interface World {
 
 interface WorldCumulative {
   books_read: number;
+  cities_conquered: number;
+  cities_rebelled: number;
   deaths: DeathBreakdown;
   plots_succeeded: number;
 }
