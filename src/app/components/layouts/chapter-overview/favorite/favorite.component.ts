@@ -66,14 +66,14 @@ export class FavoriteComponent {
     const current = this.currentChapter()?.meta.favorite;
     if (!previous || !current) return { bestFriend: false, descriptor: false, lover: false, plot: false, profession: false, role: false };
 
-    let plotChanged = false;
-    if (current.plot) plotChanged = previous.plot ? previous.plot.type_id !== current.plot.type_id || previous.plot.name !== current.plot.name : true;
+    let hasPlotChanged = false;
+    if (current.plot) hasPlotChanged = previous.plot ? previous.plot.type_id !== current.plot.type_id : true;
 
     return {
       bestFriend: !!current.best_friend && current.best_friend.id !== previous.best_friend?.id,
       descriptor: current.descriptor !== previous.descriptor,
       lover: !!current.lover && current.lover.id !== previous.lover?.id,
-      plot: plotChanged,
+      plot: hasPlotChanged,
       profession: current.metadata.profession !== previous.metadata.profession,
       role: this.roleTags().some(tag => tag.isNew),
     };

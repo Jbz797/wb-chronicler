@@ -43,4 +43,18 @@
       {{ totalDeathsSincePrevious() ?? 0 | compact }}
     </nz-descriptions-item>
   </nz-descriptions>
+
+  @if (leaderRows().length) {
+    <nz-descriptions nzBordered nzSize="small" nzTitle="Palmarès" [nzColumn]="1">
+      @for (row of leaderRows(); track row.data.key) {
+        <ng-template #titleRef>
+          <img [src]="`assets/img/world/${row.data.key}.png`" />
+          <span>{{ row.label }}</span>
+        </ng-template>
+        <nz-descriptions-item [nzTitle]="titleRef">
+          <app-leader-row [row]="row.data" />
+        </nz-descriptions-item>
+      }
+    </nz-descriptions>
+  }
 }

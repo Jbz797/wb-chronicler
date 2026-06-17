@@ -124,16 +124,38 @@
 
         img {
           margin-right: 0.25rem;
+          max-height: 18px;
+          max-width: 18px;
+          position: relative;
+          top: -1px;
         }
       }
 
       .ant-descriptions-item-content {
+        white-space: nowrap;
+
         img {
           margin-left: 0.25rem;
+
+          &.podium {
+            position: relative;
+            top: -1px;
+          }
         }
 
         .entity-tag {
           margin: 0;
+        }
+      }
+
+      .ant-descriptions-item-content:has(.entity-tag):has(app-new-badge) {
+        .entity-tag {
+          max-width: 100px;
+
+          .entity-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
         }
       }
 
@@ -161,13 +183,6 @@
 
         & > nz-tag {
           margin: 0 2px 0 0;
-        }
-
-        img {
-          max-height: 18px;
-          max-width: 18px;
-          position: relative;
-          top: -1px;
         }
 
         &:has(> img:only-child) {

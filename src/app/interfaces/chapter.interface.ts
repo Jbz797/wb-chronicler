@@ -1,5 +1,6 @@
 import { Page } from './page.interface';
 import { RarityCounts } from './stats.interface';
+import { LeaderKind } from './types';
 
 export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 
@@ -34,6 +35,8 @@ export interface KingdomWar {
   war_type: 'conquest' | 'inspire' | 'rebellion' | 'spite' | 'whisper' | null;
   warriors: SideStats;
 }
+
+export interface LeaderRow extends Omit<Leader, 'value'> { isNew: boolean; key: LeaderKind }
 
 interface Companion {
   age: number;
@@ -164,6 +167,8 @@ interface KingdomRanks {
 
 interface KingdomReference { id: number; name: string }
 
+interface Leader { asset_id?: string; id?: number; name: string; sex?: 'female' | 'male'; value: number }
+
 interface Plot {
   name: string;
   progress: number;
@@ -176,6 +181,7 @@ interface SideStats { attackers: number; defenders: number }
 
 interface World {
   cumulative: WorldCumulative;
+  leaders?: Partial<Record<LeaderKind, Leader>>;
   metadata: WorldMetadata;
   snapshot: WorldSnapshot;
 }

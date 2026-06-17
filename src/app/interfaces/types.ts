@@ -8,6 +8,10 @@ export type DeathCause = 'eaten' | 'explosion' | 'fire' | 'hunger' | 'old_age' |
 export type IconKind = 'kingdoms' | 'persons' | 'resources' | 'species';
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 export type KingdomRegistry = Record<string, KingdomInfo>;
+
+export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_religion' | 'dominant_subspecies'
+  | 'most_populous_kingdom' | 'most_populous_village' | 'most_renowned_clan' | 'most_renowned_person';
+
 export type PersonRegistry = Record<string, PersonInfo>;
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'children' | 'cities' | 'critical_chance'

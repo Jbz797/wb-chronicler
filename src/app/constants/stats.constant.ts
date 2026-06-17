@@ -1,4 +1,4 @@
-import { CumulativeStat, DeathCause, SnapshotStat, StatConfig } from '../interfaces';
+import { CumulativeStat, DeathCause, LeaderKind, SnapshotStat, StatConfig } from '../interfaces';
 
 // French labels for `plot.type_id` — sourced from WB's `PlotsLibrary`. Unknown ids fall back to the raw id at render time.
 export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -78,6 +78,18 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
   { key: 'cities_rebelled', label: 'Villes révoltées' },
   { key: 'books_read', label: 'Livres lus' },
   { key: 'plots_succeeded', label: 'Complots réussis' },
+];
+
+// Top entity per category (mirrors WB's « Records » panel) — short labels to keep the column narrow; the « Palmarès » panel title carries the « top-1 » implicit.
+export const LEADERS: { key: LeaderKind; label: string }[] = [
+  { key: 'most_populous_village', label: 'Village peuplé' },
+  { key: 'most_populous_kingdom', label: 'Roy. peuplé' },
+  { key: 'most_renowned_person', label: 'Perso. illustre' },
+  { key: 'most_renowned_clan', label: 'Clan illustre' },
+  { key: 'dominant_culture', label: 'Culture' },
+  { key: 'dominant_language', label: 'Langue' },
+  { key: 'dominant_religion', label: 'Religion' },
+  { key: 'dominant_subspecies', label: 'Sous-espèce' },
 ];
 
 // Death causes — display order by descending magnitude on current save (most-frequent first).

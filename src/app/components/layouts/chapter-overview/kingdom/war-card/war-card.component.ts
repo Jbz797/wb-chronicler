@@ -42,13 +42,13 @@ export class WarCardComponent {
   // Field key on the war's `populations`/`warriors`/`deaths` for the kingdom's own side.
   protected ourSide = (war: KingdomWar): 'attackers' | 'defenders' => `${war.side}s`;
 
-  // `.tier-full` (vert) on the winning side, `.tier-low` (rouge) on the losing side; empty when equal. `inverted=true` when lower is better (e.g. deaths).
-  protected sideClass = (stat: { attackers: number; defenders: number }, side: 'attackers' | 'defenders', inverted = false): string => {
+  // `.tier-full` (vert) on the winning side, `.tier-low` (rouge) on the losing side; empty when equal. `isInverted=true` when lower is better (e.g. deaths).
+  protected sideClass = (stat: { attackers: number; defenders: number }, side: 'attackers' | 'defenders', isInverted = false): string => {
     const own = stat[side];
     const other = stat[side === 'attackers' ? 'defenders' : 'attackers'];
     if (own === other) return '';
-    const wins = inverted ? own < other : own > other;
-    return wins ? 'tier-full' : 'tier-low';
+    const hasWon = isInverted ? own < other : own > other;
+    return hasWon ? 'tier-full' : 'tier-low';
   };
 
   protected theirAlliance = (war: KingdomWar): KingdomWar['attacker_alliance'] => war[war.side === 'attacker' ? 'defender_alliance' : 'attacker_alliance'];

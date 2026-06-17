@@ -7,14 +7,24 @@
 
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import CURRENT_SAVE, emit, load_save, parse_sections  # noqa: E402
+from shared import CURRENT_SAVE, emit, index_by_id, load_save, parse_sections  # noqa: E402
 
-_ALL_SECTIONS = ("cumulative", "metadata", "snapshot")
-
+_ALL_SECTIONS = ("cumulative", "leaders", "metadata", "snapshot")
+# `water` aggregates `deaths_water` (hydrophobic damage) + `deaths_drowning` (suffocation).
+_DEATH_CAUSES = {
+    "eaten": ("deaths_eaten",),
+    "explosion": ("deaths_explosion",),
+    "fire": ("deaths_fire",),
+    "hunger": ("deaths_hunger",),
+    "old_age": ("deaths_age",),
+    "water": ("deaths_water", "deaths_drowning"),
+    "weapon": ("deaths_weapon",),
+}
 # Chronicler key => map.meta top-level key. Most match 1:1; `wild_creatures` aliases `mobs`.
 _SNAPSHOT_KEYS = {
     "alliances": "alliances",
@@ -34,21 +44,83 @@ _SNAPSHOT_KEYS = {
     "wild_creatures": "mobs",
 }
 
-# `water` aggregates `deaths_water` (hydrophobic damage) + `deaths_drowning` (suffocation).
-_DEATH_CAUSES = {
-    "eaten": ("deaths_eaten",),
-    "explosion": ("deaths_explosion",),
-    "fire": ("deaths_fire",),
-    "hunger": ("deaths_hunger",),
-    "old_age": ("deaths_age",),
-    "water": ("deaths_water", "deaths_drowning"),
-    "weapon": ("deaths_weapon",),
-}
+
+def _build_cumulative(map_stats: dict) -> dict:
+    return {
+        # Chronicler-only: not surfaced in the UI's `CumulativeStat` union, just available in chapter.json for narrative use.
+        "books_burnt": int(map_stats.get("booksBurnt", 0)),
+        "books_read": int(map_stats.get("booksRead", 0)),
+        "cities_conquered": int(map_stats.get("citiesConquered", 0)),
+        "cities_rebelled": int(map_stats.get("citiesRebelled", 0)),
+        "deaths": dict(sorted((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())),
+        "plots_succeeded": int(map_stats.get("plotsSucceeded", 0)),
+    }
 
 
-def _build_snapshot(meta: dict, map_stats: dict) -> dict:
-    # `frozen_tiles` / `relations` / `infected` aren't in `map.meta` — decompress the save. `infected` mirrors WB's `current_infected` (runtime-only).
-    save = load_save()
+# Top entity per category (populous village/kingdom, dominant culture/language/religion/subspecies, top renown) — mirrors WB's « Records » panel.
+def _build_leaders(save: dict) -> dict:
+    actors = save.get("actors_data") or []
+    cities_by_id = index_by_id(save.get("cities") or [])
+    kingdoms_by_id = index_by_id(save.get("kingdoms") or [])
+    cultures_by_id = index_by_id(save.get("cultures") or [])
+    languages_by_id = index_by_id(save.get("languages") or [])
+    religions_by_id = index_by_id(save.get("religions") or [])
+    subspecies_by_id = index_by_id(save.get("subspecies") or [])
+    counts: dict[str, Counter] = {k: Counter() for k in ("city", "kingdom", "culture", "language", "religion", "subspecies")}
+    for a in actors:
+        if (a.get("asset_id") or "").startswith("boat_"):
+            continue
+        for key, field in (
+            ("city", "cityID"),
+            ("kingdom", "civ_kingdom_id"),
+            ("culture", "culture"),
+            ("language", "language"),
+            ("religion", "religion"),
+            ("subspecies", "subspecies"),
+        ):
+            if (v := a.get(field)) is not None:
+                counts[key][v] += 1
+    out: dict[str, dict] = {}
+    for key, registry, dest in (
+        ("city", cities_by_id, "most_populous_village"),
+        ("kingdom", kingdoms_by_id, "most_populous_kingdom"),
+        ("culture", cultures_by_id, "dominant_culture"),
+        ("language", languages_by_id, "dominant_language"),
+        ("religion", religions_by_id, "dominant_religion"),
+        ("subspecies", subspecies_by_id, "dominant_subspecies"),
+    ):
+        if not counts[key]:
+            continue
+        top_id, value = counts[key].most_common(1)[0]
+        entry = registry.get(top_id) or {}
+        out[dest] = {"id": top_id, "name": entry.get("name") or f"#{top_id}", "value": value}
+    # Most renowned civilian actor (excludes boats + creatures via `civ_kingdom_id` presence). Carries `asset_id` + `sex` so the UI can render the `<app-person-tag>`.
+    civilians = [a for a in actors if a.get("civ_kingdom_id") and not (a.get("asset_id") or "").startswith("boat_")]
+    if civilians:
+        top = max(civilians, key=lambda a: int(a.get("renown") or 0))
+        out["most_renowned_person"] = {
+            "asset_id": top.get("asset_id"),
+            "id": top.get("id"),
+            "name": top.get("name") or f"#{top.get('id')}",
+            "sex": "female" if top.get("sex") == 1 else "male",
+            "value": int(top.get("renown") or 0),
+        }
+    clans = save.get("clans") or []
+    if clans:
+        top_clan = max(clans, key=lambda c: int(c.get("renown") or 0))
+        out["most_renowned_clan"] = {"id": top_clan.get("id"), "name": top_clan.get("name") or f"#{top_clan.get('id')}", "value": int(top_clan.get("renown") or 0)}
+    return dict(sorted(out.items()))
+
+
+def _build_metadata(map_stats: dict) -> dict:
+    return {
+        "age_id": map_stats.get("world_age_id") or "",  # WorldAgeLibrary key (e.g. `stone_age`)
+        "world_time": round(float(map_stats.get("world_time", 0)), 2),  # months elapsed; 60 = 1 year — name kept aligned with the raw save field
+    }
+
+
+# `frozen_tiles` / `relations` / `infected` aren't in `map.meta` — read from the decompressed save. `infected` mirrors WB's runtime `current_infected`.
+def _build_snapshot(meta: dict, map_stats: dict, save: dict) -> dict:
     return dict(
         sorted(
             {
@@ -65,25 +137,6 @@ def _build_snapshot(meta: dict, map_stats: dict) -> dict:
             }.items()
         )
     )
-
-
-def _build_cumulative(map_stats: dict) -> dict:
-    return {
-        # Chronicler-only: not surfaced in the UI's `CumulativeStat` union, just available in chapter.json for narrative use.
-        "books_burnt": int(map_stats.get("booksBurnt", 0)),
-        "books_read": int(map_stats.get("booksRead", 0)),
-        "cities_conquered": int(map_stats.get("citiesConquered", 0)),
-        "cities_rebelled": int(map_stats.get("citiesRebelled", 0)),
-        "deaths": dict(sorted((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())),
-        "plots_succeeded": int(map_stats.get("plotsSucceeded", 0)),
-    }
-
-
-def _build_metadata(map_stats: dict) -> dict:
-    return {
-        "age_id": map_stats.get("world_age_id") or "",  # WorldAgeLibrary key (e.g. `stone_age`)
-        "world_time": round(float(map_stats.get("world_time", 0)), 2),  # months elapsed; 60 = 1 year — name kept aligned with the raw save field
-    }
 
 
 def main(argv: list[str]) -> int:
@@ -103,8 +156,13 @@ def main(argv: list[str]) -> int:
         out["cumulative"] = _build_cumulative(map_stats)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)
-    if "snapshot" in sections:
-        out["snapshot"] = _build_snapshot(meta, map_stats)
+    # Decompress once and share between `leaders` + `snapshot`; `cumulative`/`metadata` read from `map.meta` alone.
+    if {"leaders", "snapshot"} & set(sections):
+        save = load_save()
+        if "leaders" in sections:
+            out["leaders"] = _build_leaders(save)
+        if "snapshot" in sections:
+            out["snapshot"] = _build_snapshot(meta, map_stats, save)
     emit(out)
     return 0
 

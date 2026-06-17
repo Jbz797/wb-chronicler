@@ -38,8 +38,8 @@ export class ChapterOverviewComponent {
   protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
 
   // Persist the active panel to sessionStorage so it survives reloads and page changes.
-  protected onPanelToggle(panel: ChapterOverviewPanel, active: boolean): void {
-    const next = active ? panel : 'world-stats';
+  protected onPanelToggle(panel: ChapterOverviewPanel, isActive: boolean): void {
+    const next = isActive ? panel : 'world-stats';
     this.activePanel.set(next);
     sessionStorage.setItem('chapter-overview.active-panel', next);
   }

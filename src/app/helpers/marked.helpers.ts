@@ -27,10 +27,10 @@ export class MarkedHelpers {
   private static _extension(
     marker: InlineMarker,
     kind: IconKind,
-    nameOptional: boolean,
+    isNameOptional: boolean,
     renderer: (this: ParserThis, token: Tokens.Generic) => string,
   ): TokenizerAndRendererExtension {
-    const pattern = this._iconPattern(marker, { nameOptional });
+    const pattern = this._iconPattern(marker, { isNameOptional });
     return {
       level: 'inline',
       name: kind,
@@ -52,9 +52,9 @@ export class MarkedHelpers {
   }
 
   // Inline-code regex: numeric id for kingdoms/persons (else `[_a-z]+`), name optional per caller.
-  private static readonly _iconPattern = (letter: InlineMarker, { nameOptional }: { nameOptional: boolean }): RegExp => {
+  private static readonly _iconPattern = (letter: InlineMarker, { isNameOptional }: { isNameOptional: boolean }): RegExp => {
     const id = letter === INLINE_MARKER.Kingdom || letter === INLINE_MARKER.Person ? String.raw`\d+` : '[_a-z]+';
-    const name = nameOptional ? String.raw`(?: ([^\n\]]+))?` : String.raw` ([^\n\]]+)`;
+    const name = isNameOptional ? String.raw`(?: ([^\n\]]+))?` : String.raw` ([^\n\]]+)`;
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };
 

@@ -2,20 +2,24 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
-import { CUMULATIVE_STATS, DEATH_CAUSES, SNAPSHOT_STATS } from '../../../../constants';
+import { CUMULATIVE_STATS, DEATH_CAUSES, LEADERS, SNAPSHOT_STATS } from '../../../../constants';
+import { LeaderRow } from '../../../../interfaces';
 import { CompactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { DeltaComponent } from '../../../misc';
 
+import { LeaderRowComponent } from './leader-row/leader-row.component';
+
 @Component({
   selector: 'app-world-stats',
-  imports: [CompactPipe, DeltaComponent, NzDescriptionsModule],
+  imports: [CompactPipe, DeltaComponent, LeaderRowComponent, NzDescriptionsModule],
   templateUrl: './world-stats.component.html',
 })
 export class WorldStatsComponent {
 
   protected readonly cumulativeStats = CUMULATIVE_STATS;
   protected readonly deathCauses = DEATH_CAUSES;
+  protected readonly leaders = LEADERS;
   protected readonly snapshotStats = SNAPSHOT_STATS;
 
   private readonly _chronicler = inject(ChroniclerService);
@@ -35,6 +39,19 @@ export class WorldStatsComponent {
     if (!current) return null;
     const previous = this._chronicler.previousChapter()?.meta.world.cumulative.deaths;
     return Object.fromEntries(this.deathCauses.map(({ key }) => [key, current[key] - (previous?.[key] ?? 0)]));
+  });
+  // Flattened leader rows ready for the template — only present entries, each tagged with `isNew` when the top entity changed since the previous chapter.
+  protected readonly leaderRows = computed<{ data: LeaderRow; label: string }[]>(() => {
+    const current = this.currentChapter()?.meta.world.leaders;
+    if (!current) return [];
+    const previous = this._chronicler.previousChapter()?.meta.world.leaders;
+    return this.leaders.flatMap(({ key, label }) => {
+      const entry = current[key];
+      if (!entry) return [];
+      const p = previous?.[key];
+      const isNew = !!previous && !!p && (entry.id !== p.id);
+      return [{ data: { ...entry, isNew, key }, label }];
+    });
   });
   // Per-snapshot-stat delta vs previous chapter — `null` when no previous chapter to compare.
   protected readonly snapshotDeltas = computed(() => {
