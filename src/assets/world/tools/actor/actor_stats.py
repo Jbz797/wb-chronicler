@@ -20,7 +20,7 @@
 import math
 from functools import cache
 
-from shared import MONTHS_PER_YEAR, index_by_id, load_data
+from shared import UNITS_PER_YEAR, index_by_id, load_data
 
 
 # Genes that round UP on BAD (instead of down).
@@ -417,9 +417,9 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
-    age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
-    lifespan_months = totals.get("lifespan", 0) * MONTHS_PER_YEAR
-    _apply_offspring_age_scaling(totals, age_months / lifespan_months if lifespan_months else 0)
+    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
+    lifespan_units = totals.get("lifespan", 0) * UNITS_PER_YEAR
+    _apply_offspring_age_scaling(totals, age_units / lifespan_units if lifespan_units else 0)
     cleaned = _cleanup_stats(totals)
     # `max_cities` (Kingdom.getMaxCities) only matters for kings (profession=3).
     if actor.get("profession") != _PROFESSION_KING:

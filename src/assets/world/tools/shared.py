@@ -10,8 +10,9 @@ from pathlib import Path
 
 
 CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
+UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
+
 _DATAS_DIR = Path(__file__).parent / "datas"
-MONTHS_PER_YEAR = 60
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).

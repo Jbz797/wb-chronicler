@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
 from islands import compute_islands_cached  # noqa: E402
-from shared import CURRENT_SAVE, MONTHS_PER_YEAR, emit, index_by_id, load_save, parse_sections, register_entity  # noqa: E402
+from shared import CURRENT_SAVE, UNITS_PER_YEAR, emit, index_by_id, load_save, parse_sections, register_entity  # noqa: E402
 
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
@@ -83,9 +83,9 @@ def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict 
     if companion is None:
         return None
     snap = compute_actor_stats(companion, ctx)
-    age_months = ctx["world_time"] - float(companion.get("created_time") or 0)
+    age_units = ctx["world_time"] - float(companion.get("created_time") or 0)
     return {
-        "age": int(age_months / MONTHS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
+        "age": int(age_units / UNITS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
         "health_max": snap.get("health_max", 0),
         "id": companion_id,
         "level": snap.get("level", 0),
@@ -119,7 +119,7 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
         ct = item.get("created_time")
         out.append(
             {
-                "age": int((world_time - ct) / MONTHS_PER_YEAR) if ct is not None else None,
+                "age": int((world_time - ct) / UNITS_PER_YEAR) if ct is not None else None,
                 "asset_id": item["asset_id"],
                 "by": item.get("by"),
                 "durability": item.get("durability"),
@@ -148,12 +148,12 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     cultures_by_id = index_by_id(save.get("cultures", []))
     families_by_id = index_by_id(save.get("families", []))
     religions_by_id = index_by_id(save.get("religions", []))
-    age_months = ctx["world_time"] - float(actor.get("created_time") or 0)
+    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
     ax, ay = actor.get("x"), actor.get("y")
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
     return {
         # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
-        "age": int(age_months / MONTHS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
+        "age": int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
         "asset_id": actor.get("asset_id"),
         "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
         "clan": clan.get("name"),
@@ -256,7 +256,7 @@ def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
 
     # Age is not in _compute_stats (it's derived from created_time) — rank it separately.
     def actor_age(a: dict) -> int:
-        return int((ctx["world_time"] - float(a.get("created_time") or 0)) / MONTHS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+        return int((ctx["world_time"] - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
 
     own_age = actor_age(actor)
     age_rank = sum(1 for a in same_species if actor_age(a) > own_age) + 1

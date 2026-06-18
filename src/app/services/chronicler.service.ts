@@ -11,7 +11,12 @@ import { Chapter, ChapterMeta } from '../interfaces';
 @Injectable({ providedIn: 'root' })
 export class ChroniclerService {
 
-  private readonly _yearFromWorldTime = (worldTime: number): number => Math.floor(worldTime / 60) + 1;
+  // WB convention: 60 `world_time` units = 1 year = 12 in-game months (5 units per month). Returns `month/year` (1-indexed).
+  private readonly _dateFromWorldTime = (worldTime: number): string => {
+    const year = Math.floor(worldTime / 60) + 1;
+    const month = Math.floor((worldTime - (year - 1) * 60) / 5) + 1;
+    return `${month}/${year}`;
+  };
 
   // Chapter list, dynamically discovered by probing C1, C2, ... until 404. Each chapter's chapter.json is captured during probing.
   public readonly chapters = (() => {
@@ -24,7 +29,7 @@ export class ChroniclerService {
         scan((accumulator: Chapter[], { meta, n }) => [
           ...accumulator,
           {
-            label: `C${n} — An ${this._yearFromWorldTime(meta.world.metadata.world_time)}`,
+            label: `C${n} — ${this._dateFromWorldTime(meta.world.metadata.world_time)}`,
             mdUrl: `${SAVES_DIR}/C${n}/chapter.md`,
             meta,
             previewUrl: `${SAVES_DIR}/C${n}/preview.png`,

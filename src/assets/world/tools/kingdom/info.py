@@ -11,10 +11,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "actor"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
 from islands import compute_islands_cached  # noqa: E402
-from shared import CURRENT_SAVE, MONTHS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
+from shared import CURRENT_SAVE, UNITS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
 _ALL_SECTIONS = ("metadata", "ranks", "relations", "wars")
-_BABY_AGE_THRESHOLD_MONTHS = 16 * MONTHS_PER_YEAR  # WB considers actors « baby » below ~16 in-game years.
+_BABY_AGE_THRESHOLD_UNITS = 16 * UNITS_PER_YEAR  # WB considers actors « baby » below ~16 in-game years (expressed in world_time units).
 _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close » if any pair of their zones are within this Manhattan distance.
 _FAR_LANDS_CAPITAL_DISTANCE = 18  # `!isSameIsland` proxy: capitals further apart than this are treated as on different lands.
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
@@ -74,12 +74,12 @@ def _build_context(save: dict) -> dict:
 
 def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     kid = kingdom.get("id")
-    age_months = ctx["world_time"] - float(kingdom.get("created_time") or 0)
+    age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
     # Chronicler-only: distinct island ids touched by the kingdom's city zones, sorted asc (1 = biggest). Zones are WB `TileZone`s of 8 tiles — probe centre.
     islands = sorted({iid for zx, zy in ctx["zones_by_kingdom"].get(kid, []) if (iid := island_lookup.get((zx * 8 + 4, zy * 8 + 4))) is not None})
     return {
-        "age": int(age_months / MONTHS_PER_YEAR),
+        "age": int(age_units / UNITS_PER_YEAR),
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
         "id": kid,
         "islands": islands,
@@ -130,12 +130,12 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         last_war_end = (r or {}).get("timestamp_last_war_ended")
         out.append(
             {
-                "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / MONTHS_PER_YEAR) if r else None,
+                "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / UNITS_PER_YEAR) if r else None,
                 "borders": _min_zone_distance(kid_zones, ctx["zones_by_kingdom"].get(other_id, [])) <= _BORDERS_ZONE_DISTANCE,
                 "kingdom": {"id": other_id, "name": other.get("name") or f"#{other_id}"},
                 "opinion": _compute_opinion(kingdom, other, save, ctx, alliances, ongoing_wars, r),
                 "status": status,
-                "years_since_last_war": int((ctx["world_time"] - float(last_war_end)) / MONTHS_PER_YEAR) if last_war_end else None,
+                "years_since_last_war": int((ctx["world_time"] - float(last_war_end)) / UNITS_PER_YEAR) if last_war_end else None,
             }
         )
     return sorted(out, key=lambda x: x["kingdom"]["id"])
@@ -175,7 +175,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         cities = ctx["cities_by_kingdom"]
         populations = ctx["populations_by_kingdom"]
         warriors = ctx["warriors_by_kingdom"]
-        duration_months = ctx["world_time"] - float(w.get("created_time") or 0)
+        duration_units = ctx["world_time"] - float(w.get("created_time") or 0)
         out.append(
             {
                 "allies": sorted(
@@ -192,7 +192,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                     "defenders": w.get("dead_defenders", 0),
                 },
                 "defender_alliance": alliance_for(w.get("main_defender"), w.get("list_defenders") or []),
-                "duration_years": int(duration_months / MONTHS_PER_YEAR),
+                "duration_years": int(duration_units / UNITS_PER_YEAR),
                 "id": w.get("id"),
                 "is_main": kid == w.get(f"main_{side}"),
                 "name": w.get("name"),
@@ -309,7 +309,7 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
 
     # 10. peace_time: years since last war > minimum_years_between_wars → min(years, 20). WB treats absent `timestamp_last_war_ended` as 0 (= « forever ago »).
     last_war_end = float(relation.get("timestamp_last_war_ended") or 0) if relation else None
-    years_since = (ctx["world_time"] - last_war_end) / MONTHS_PER_YEAR if last_war_end is not None else None
+    years_since = (ctx["world_time"] - last_war_end) / UNITS_PER_YEAR if last_war_end is not None else None
     minimum_years = _OPINION_CONSTANTS.get("minimum_years_between_wars", 5)
     if not enemy and years_since is not None and years_since > minimum_years:
         mod["peace_time"] = min(int(years_since), 20)
@@ -381,7 +381,7 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
     if main_king and target_king:
         main_age = ctx["world_time"] - float(main_king.get("created_time") or 0)
         target_age = ctx["world_time"] - float(target_king.get("created_time") or 0)
-        if main_age >= _BABY_AGE_THRESHOLD_MONTHS and target_age < _BABY_AGE_THRESHOLD_MONTHS:
+        if main_age >= _BABY_AGE_THRESHOLD_UNITS and target_age < _BABY_AGE_THRESHOLD_UNITS:
             mod["baby_king"] = -50
 
     # 22-24. ethnocentric_guard / xenophobic / xenophiles: need main.culture.saved_traits. Check below.
@@ -412,7 +412,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     warriors = ctx["warriors_by_kingdom"]
 
     def kingdom_age(k: dict) -> int:
-        return int((ctx["world_time"] - float(k.get("created_time") or 0)) / MONTHS_PER_YEAR)
+        return int((ctx["world_time"] - float(k.get("created_time") or 0)) / UNITS_PER_YEAR)
 
     getters = {
         "age": kingdom_age,

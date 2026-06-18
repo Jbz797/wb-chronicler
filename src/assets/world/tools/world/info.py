@@ -128,9 +128,13 @@ def _build_leaders(save: dict) -> dict:
 
 
 def _build_metadata(map_stats: dict) -> dict:
+    age_duration = float(map_stats.get("current_world_ages_duration") or 0)
+    age_progress = float(map_stats.get("current_age_progress") or 0)
     return {
         "age_id": map_stats.get("world_age_id") or "",  # WorldAgeLibrary key (e.g. `stone_age`)
-        "world_time": round(float(map_stats.get("world_time", 0)), 2),  # months elapsed; 60 = 1 year — name kept aligned with the raw save field
+        # Chronicler-only narrative hint, matches WB's UI counter « Lunes jusqu'au prochain âge ». Omitted when 0 / no current age.
+        "months_until_next_age": int(age_duration * (1 - age_progress) / 5) if age_duration > 0 else 0,
+        "world_time": round(float(map_stats.get("world_time", 0)), 2),
     }
 
 
