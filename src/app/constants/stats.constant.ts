@@ -78,6 +78,8 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
   { key: 'cities_rebelled', label: 'Villes révoltées' },
   { key: 'books_read', label: 'Livres lus' },
   { key: 'plots_succeeded', label: 'Complots réussis' },
+  { key: 'metamorphosis', label: 'Métamorphoses' },
+  { key: 'evolutions', label: 'Évolutions' },
 ];
 
 // Top entity per category (mirrors WB's « Records » panel). `icon` overrides the default `<key>.png` lookup so `dominant_*` reuses the snapshot icons.

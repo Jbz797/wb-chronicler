@@ -201,6 +201,8 @@ interface WorldCumulative {
   cities_conquered?: number;
   cities_rebelled?: number;
   deaths: DeathBreakdown;
+  evolutions?: number;
+  metamorphosis?: number;
   plots_succeeded?: number;
 }
 

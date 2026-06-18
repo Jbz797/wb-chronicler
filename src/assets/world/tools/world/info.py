@@ -63,6 +63,8 @@ def _build_cumulative(map_stats: dict) -> dict:
         "books_read": int(map_stats.get("booksRead", 0)),
         "cities_conquered": int(map_stats.get("citiesConquered", 0)),
         "cities_rebelled": int(map_stats.get("citiesRebelled", 0)),
+        "evolutions": int(map_stats.get("evolutions") or 0),
+        "metamorphosis": int(map_stats.get("metamorphosis") or 0),
         "plots_succeeded": int(map_stats.get("plotsSucceeded", 0)),
     }
     out: dict = {k: v for k, v in counters.items() if v > 0}
