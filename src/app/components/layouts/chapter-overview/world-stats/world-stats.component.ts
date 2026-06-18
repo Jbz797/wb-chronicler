@@ -26,12 +26,16 @@ export class WorldStatsComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  // Per-cumulative-stat delta vs previous chapter — at C1 the baseline is 0 so we get the cumulative count instead.
-  protected readonly cumulativeDeltas = computed(() => {
-    const current = this.currentChapter()?.meta.world.cumulative;
-    if (!current) return null;
+  // « Activité récente » rows: cumulative deltas (>0 only) + live `plots_active` (>0 only) — single list so the template stays under the cyclomatic limit.
+  protected readonly activityRows = computed<{ icon: string; label: string; value: number }[]>(() => {
+    const current = this.currentChapter()?.meta.world;
+    if (!current) return [];
     const previous = this._chronicler.previousChapter()?.meta.world.cumulative;
-    return Object.fromEntries(this.cumulativeStats.map(({ key }) => [key, current[key] - (previous?.[key] ?? 0)]));
+    const rows: { icon: string; label: string; value: number }[] = this.cumulativeStats
+      .map(({ key, label }) => ({ icon: key, label, value: (current.cumulative[key] ?? 0) - (previous?.[key] ?? 0) }))
+      .filter(r => r.value > 0);
+    if (current.snapshot.plots_active > 0) rows.push({ icon: 'plots_active', label: 'Complots en cours', value: current.snapshot.plots_active });
+    return rows;
   });
   // Per-cause death delta vs previous chapter — Python omits 0-counts, so missing keys default to 0.
   protected readonly deathsSincePrevious = computed(() => {

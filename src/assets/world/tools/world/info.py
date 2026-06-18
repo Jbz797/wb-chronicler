@@ -55,17 +55,19 @@ _SNAPSHOT_KEYS = {
 
 
 def _build_cumulative(map_stats: dict) -> dict:
-    # 0-count causes are dropped — UI treats missing keys as 0 (16 categories incl. peste/poison/etc. are idle most chapters).
+    # 0-count entries (counters + per-cause deaths) are dropped — UI treats missing keys as 0.
     deaths = ((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())
-    return {
-        # Chronicler-only: not surfaced in the UI's `CumulativeStat` union, just available in chapter.json for narrative use.
+    counters = {
+        # `books_burnt` is chronicler-only (not in the UI's `CumulativeStat` union), kept available for narrative use.
         "books_burnt": int(map_stats.get("booksBurnt", 0)),
         "books_read": int(map_stats.get("booksRead", 0)),
         "cities_conquered": int(map_stats.get("citiesConquered", 0)),
         "cities_rebelled": int(map_stats.get("citiesRebelled", 0)),
-        "deaths": dict(sorted((k, v) for k, v in deaths if v > 0)),
         "plots_succeeded": int(map_stats.get("plotsSucceeded", 0)),
     }
+    out: dict = {k: v for k, v in counters.items() if v > 0}
+    out["deaths"] = dict(sorted((k, v) for k, v in deaths if v > 0))
+    return dict(sorted(out.items()))
 
 
 # Top entity per category (populous village/kingdom, dominant culture/language/religion/subspecies, top renown) — mirrors WB's « Records » panel.
