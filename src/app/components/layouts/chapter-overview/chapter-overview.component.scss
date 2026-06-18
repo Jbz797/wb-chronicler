@@ -132,8 +132,6 @@
       }
 
       .ant-descriptions-item-content {
-        white-space: nowrap;
-
         img {
           margin-left: 0.25rem;
 
@@ -149,6 +147,8 @@
       }
 
       .ant-descriptions-item-content:has(.entity-tag):has(app-new-badge) {
+        white-space: nowrap;
+
         .entity-tag {
           max-width: 100px;
 
