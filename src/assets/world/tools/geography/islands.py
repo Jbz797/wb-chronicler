@@ -64,13 +64,15 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
                     region_id = len(regions)
                     tiles: list[tuple[int, int]] = []
                     biomes: Counter[str] = Counter()
+                    tile_kinds: Counter[str] = Counter()
                     queue = deque([(sx, sy)])
                     region_grid[sy][sx] = region_id
                     while queue:
                         x, y = queue.popleft()
                         tiles.append((x, y))
-                        if layer == "Ground":
-                            biomes[_tile_biome(tile_map[grid[y][x]])] += 1
+                        tile_kinds[_tile_kind(tile_map[grid[y][x]])] += 1
+                        if layer == "Ground" and (biome := _tile_biome(tile_map[grid[y][x]])):
+                            biomes[biome] += 1
                         for dx, dy in _DELTAS_8:
                             nx, ny = x + dx, y + dy
                             if not (cx0 <= nx < cx1 and cy0 <= ny < cy1):
@@ -85,7 +87,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
                                     continue
                             region_grid[ny][nx] = region_id
                             queue.append((nx, ny))
-                    regions.append({"layer": layer, "tiles": tiles, "biomes": biomes})
+                    regions.append({"biomes": biomes, "layer": layer, "tile_kinds": tile_kinds, "tiles": tiles})
     # Phase 2: merge regions into TileIslands via cross-chunk neighbours of the same layer (4-conn between tiles).
     island_of_region: list[int] = [-1] * len(regions)
     component_regions: list[list[int]] = []
@@ -111,24 +113,28 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
                     island_of_region[other] = cid
                     queue.append(other)
     # Phase 3: keep only Ground islands with ≥ `_GROUND_REGIONS_THRESHOLD` regions (mirrors `countLandIslands`).
-    kept: list[tuple[int, Counter[str], list[tuple[int, int]]]] = []
+    kept: list[tuple[int, Counter[str], Counter[str], list[tuple[int, int]]]] = []
     for r_indices in component_regions:
         if regions[r_indices[0]]["layer"] != "Ground" or len(r_indices) < _GROUND_REGIONS_THRESHOLD:
             continue
         biomes = Counter()
+        tile_kinds = Counter()
         tiles = []
         for r_idx in r_indices:
             biomes.update(regions[r_idx]["biomes"])
+            tile_kinds.update(regions[r_idx]["tile_kinds"])
             tiles.extend(regions[r_idx]["tiles"])
-        kept.append((len(tiles), biomes, tiles))
+        kept.append((len(tiles), biomes, tile_kinds, tiles))
     kept.sort(key=lambda c: -c[0])
     islands = []
+    island_tile_kinds: dict[int, Counter[str]] = {}
     tile_to_id: dict[tuple[int, int], int] = {}
     seeds: deque[tuple[int, int]] = deque()
-    for idx, (size, biomes, tiles) in enumerate(kept, start=1):
+    for idx, (size, biomes, tile_kinds, tiles) in enumerate(kept, start=1):
         cx = sum(t[0] for t in tiles) // size
         cy_grid = sum(t[1] for t in tiles) // size
-        top_biomes = " | ".join(f"{round(n / size * 100)}% {name}" for name, n in biomes.most_common(3))
+        top_biomes = " | ".join(f"{pct}% {name}" for name, n in biomes.most_common(3) if (pct := round(n / size * 100)) > 0)
+        island_tile_kinds[idx] = Counter(tile_kinds)
         islands.append({"biomes": top_biomes, "centroid": {"x": cx, "y": height - 1 - cy_grid}, "id": idx, "size": size})
         for gx, gy in tiles:
             tile_to_id[(gx, height - 1 - gy)] = idx
@@ -144,7 +150,13 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
             if (nx, height - 1 - ny) in tile_to_id or layer_by_id[grid[ny][nx]] not in ("Block", "Lava"):
                 continue
             tile_to_id[(nx, height - 1 - ny)] = iid
+            island_tile_kinds[iid][_tile_kind(tile_map[grid[ny][nx]])] += 1
             seeds.append((nx, ny))
+    # Phase 4: finalize per-island `tiles` field — same `% kind` format as `biomes`, includes Block/Lava propagated in Phase 4.
+    for island in islands:
+        counter = island_tile_kinds[island["id"]]
+        total = sum(counter.values())
+        island["tiles"] = " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / total * 100)) > 0)
     return islands, tile_to_id
 
 
@@ -159,13 +171,37 @@ def _decode_tile_grid(save: dict) -> list[list[int]]:
     return grid
 
 
-# Reduce a tileMap entry to its semantic biome: drops the `soil_low:` / `soil_high:` elevation prefix and the trailing `_low`/`_high` suffix.
-def _tile_biome(tile_name: str) -> str:
-    name = tile_name.split(":", 1)[-1]
-    for suffix in ("_high", "_low"):
-        if name.endswith(suffix):
-            return name[: -len(suffix)]
-    return name
+# Vegetation biome only (jungle/savanna/swamp/…). Returns `None` for terrain-only tiles (sand/hills/mountains/lava/ocean) and overlays (`*:road`, `*:field`).
+def _tile_biome(tile_name: str) -> str | None:
+    if ":" not in tile_name:
+        return None
+    suffix = tile_name.split(":", 1)[1]
+    for marker in ("_high", "_low"):
+        if suffix.endswith(marker):
+            return suffix[: -len(marker)]
+    return None
+
+
+# Structural terrain kind — mirrors WB's UI panel (plain/hill/mountain/summit/lava/sand/road/field). Overlay suffixes (`*:road`, `*:field`) win over the base.
+def _tile_kind(tile_name: str) -> str:
+    base, _, suffix = tile_name.partition(":")
+    if suffix == "road":
+        return "road"
+    if suffix == "field":
+        return "field"
+    if base.startswith("lava"):
+        return "lava"
+    if base == "mountains":
+        return "mountain"
+    if base == "summit":
+        return "summit"
+    if base == "hills":
+        return "hill"
+    if base.startswith("soil_"):
+        return "plain"
+    if base == "sand":
+        return "sand"
+    return base
 
 
 # Map a tileMap entry to its WB `TileLayerType`. Lava (`lava0`..`lava3`+) lumps under "Lava"; everything not flagged is Ground.
@@ -183,7 +219,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], dic
     key = _cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = _CACHE_DIR / f"islands_v5_{key}.pkl"
+    cache_file = _CACHE_DIR / f"islands_v7_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:
