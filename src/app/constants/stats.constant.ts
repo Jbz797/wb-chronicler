@@ -80,27 +80,36 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
   { key: 'plots_succeeded', label: 'Complots réussis' },
 ];
 
-// Top entity per category (mirrors WB's « Records » panel) — short labels to keep the column narrow; the « Palmarès » panel title carries the « top-1 » implicit.
-export const LEADERS: { key: LeaderKind; label: string }[] = [
+// Top entity per category (mirrors WB's « Records » panel). `icon` overrides the default `<key>.png` lookup so `dominant_*` reuses the snapshot icons.
+export const LEADERS: { icon?: string; key: LeaderKind; label: string }[] = [
   { key: 'most_populous_village', label: 'Village peuplé' },
   { key: 'most_populous_kingdom', label: 'Roy. peuplé' },
   { key: 'most_renowned_person', label: 'Perso. illustre' },
   { key: 'most_renowned_clan', label: 'Clan illustre' },
-  { key: 'dominant_culture', label: 'Culture' },
-  { key: 'dominant_language', label: 'Langue' },
-  { key: 'dominant_religion', label: 'Religion' },
-  { key: 'dominant_subspecies', label: 'Sous-espèce' },
+  { icon: 'cultures', key: 'dominant_culture', label: 'Culture' },
+  { icon: 'languages', key: 'dominant_language', label: 'Langue' },
+  { icon: 'religions', key: 'dominant_religion', label: 'Religion' },
+  { icon: 'subspecies', key: 'dominant_subspecies', label: 'Sous-espèce' },
 ];
 
-// Death causes — display order by descending magnitude on current save (most-frequent first).
+// Death causes — runtime-sorted by per-chapter count desc and 0-count rows hidden in `world-stats.component`. Icons at `assets/img/world/deaths/<key>.png`.
 export const DEATH_CAUSES: { key: DeathCause; label: string }[] = [
-  { key: 'weapon', label: 'Armes' },
-  { key: 'old_age', label: 'Âge' },
+  { key: 'acid', label: 'Acide' },
+  { key: 'divine', label: 'Divine' },
+  { key: 'drowning', label: 'Noyade' },
   { key: 'eaten', label: 'Dévorés' },
-  { key: 'fire', label: 'Feu' },
-  { key: 'water', label: 'Eau' },
   { key: 'explosion', label: 'Explosion' },
+  { key: 'fire', label: 'Feu' },
+  { key: 'gravity', label: 'Gravité' },
   { key: 'hunger', label: 'Faim' },
+  { key: 'infection', label: 'Infection' },
+  { key: 'old_age', label: 'Naturelle' },
+  { key: 'other', label: 'Autres' },
+  { key: 'plague', label: 'Peste' },
+  { key: 'poison', label: 'Poison' },
+  { key: 'tumor', label: 'Tumeur' },
+  { key: 'water', label: 'Eau' },
+  { key: 'weapon', label: 'Conflit' },
 ];
 
 // Favorite social skills — diplomacy / military / governance / intellect.

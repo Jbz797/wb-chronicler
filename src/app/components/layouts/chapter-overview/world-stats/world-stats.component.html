@@ -34,12 +34,20 @@
   </nz-descriptions>
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Causes de mortalité" [nzColumn]="2">
-    @for (cause of deathCauses; track cause.key) {
-      <nz-descriptions-item [nzTitle]="cause.label">
+    @for (cause of sortedDeathCauses(); track cause.key) {
+      <ng-template #titleRef>
+        <img [src]="`assets/img/world/deaths/${cause.key}.png`" />
+        <span>{{ cause.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="titleRef">
         {{ deathsSincePrevious()?.[cause.key] ?? 0 | compact }}
       </nz-descriptions-item>
     }
-    <nz-descriptions-item nzTitle="Total">
+    <ng-template #totalTitle>
+      <img src="assets/img/world/deaths.png" />
+      <span>Total</span>
+    </ng-template>
+    <nz-descriptions-item [nzTitle]="totalTitle">
       {{ totalDeathsSincePrevious() ?? 0 | compact }}
     </nz-descriptions-item>
   </nz-descriptions>
@@ -48,7 +56,7 @@
     <nz-descriptions nzBordered nzSize="small" nzTitle="Palmarès" [nzColumn]="1">
       @for (row of leaderRows(); track row.data.key) {
         <ng-template #titleRef>
-          <img [src]="`assets/img/world/${row.data.key}.png`" />
+          <img [src]="`assets/img/world/${row.icon}.png`" />
           <span>{{ row.label }}</span>
         </ng-template>
         <nz-descriptions-item [nzTitle]="titleRef">

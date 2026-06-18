@@ -49,14 +49,24 @@ interface Companion {
   sex: 'female' | 'male';
 }
 
+// Per-cause death counts since world start — Python omits 0-counts, so UI must treat absent keys as 0.
 interface DeathBreakdown {
-  eaten: number;
-  explosion: number;
-  fire: number;
-  hunger: number;
-  old_age: number;
-  water: number;
-  weapon: number;
+  acid?: number;
+  divine?: number;
+  drowning?: number;
+  eaten?: number;
+  explosion?: number;
+  fire?: number;
+  gravity?: number;
+  hunger?: number;
+  infection?: number;
+  old_age?: number;
+  other?: number;
+  plague?: number;
+  poison?: number;
+  tumor?: number;
+  water?: number;
+  weapon?: number;
 }
 
 interface Favorite {

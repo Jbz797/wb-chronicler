@@ -15,14 +15,23 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared import CURRENT_SAVE, emit, index_by_id, load_save, parse_sections  # noqa: E402
 
 _ALL_SECTIONS = ("cumulative", "leaders", "metadata", "snapshot")
-# `water` aggregates `deaths_water` (hydrophobic damage) + `deaths_drowning` (suffocation).
+# Chronicler key => WB save fields (sum). Mirrors the 16 rows of WB's « Deaths » panel; `water` is hydrophobic damage (separate from `drowning`).
 _DEATH_CAUSES = {
+    "acid": ("deaths_acid",),
+    "divine": ("deaths_divine",),
+    "drowning": ("deaths_drowning",),
     "eaten": ("deaths_eaten",),
     "explosion": ("deaths_explosion",),
     "fire": ("deaths_fire",),
+    "gravity": ("deaths_gravity",),
     "hunger": ("deaths_hunger",),
+    "infection": ("deaths_infection",),
     "old_age": ("deaths_age",),
-    "water": ("deaths_water", "deaths_drowning"),
+    "other": ("deaths_other",),
+    "plague": ("deaths_plague",),
+    "poison": ("deaths_poison",),
+    "tumor": ("deaths_tumor",),
+    "water": ("deaths_water",),
     "weapon": ("deaths_weapon",),
 }
 # Chronicler key => map.meta top-level key. Most match 1:1; `wild_creatures` aliases `mobs`.
@@ -46,13 +55,15 @@ _SNAPSHOT_KEYS = {
 
 
 def _build_cumulative(map_stats: dict) -> dict:
+    # 0-count causes are dropped — UI treats missing keys as 0 (16 categories incl. peste/poison/etc. are idle most chapters).
+    deaths = ((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())
     return {
         # Chronicler-only: not surfaced in the UI's `CumulativeStat` union, just available in chapter.json for narrative use.
         "books_burnt": int(map_stats.get("booksBurnt", 0)),
         "books_read": int(map_stats.get("booksRead", 0)),
         "cities_conquered": int(map_stats.get("citiesConquered", 0)),
         "cities_rebelled": int(map_stats.get("citiesRebelled", 0)),
-        "deaths": dict(sorted((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())),
+        "deaths": dict(sorted((k, v) for k, v in deaths if v > 0)),
         "plots_succeeded": int(map_stats.get("plotsSucceeded", 0)),
     }
 
