@@ -1,12 +1,17 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 12/06/26 23:42</p>
+<p class="metadata">Date de mise à jour : 19/06/26 11:29</p>
 
-Invoquer chaque script via `python3 tools/<commande>`. Sortie : objet JSON sur `stdout`. `sections` accepte une liste séparée par des virgules (ex. `stats,ranks`) — `full` (défaut) renvoie toutes les sections.
+Invoquer chaque script via `python3 tools/<commande> [sections]`. Sortie : objet JSON sur `stdout`. `sections` accepte une liste séparée par des virgules — `full` (défaut) renvoie toutes les sections.
 
-| Commande                          | Sections                                                                                                                     |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `actor/info.py <id> [sections]`   | `full`, `best_friend`, `creature_traits`, `equipment`, `inventory`, `lover`, `metadata`, `plot`, `ranks_in_species`, `stats` |
-| `geography/info.py [sections]`    | `islands`                                                                                                                    |
-| `kingdom/info.py <id> [sections]` | `full`, `metadata`, `ranks`, `relations`, `wars`                                                                             |
-| `world/info.py [sections]`        | `full`, `cumulative`, `metadata`, `snapshot`                                                                                 |
+| Commande                           | Sections                                                                                                                     |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `actor/info.py <id>`               | `full`, `best_friend`, `creature_traits`, `equipment`, `inventory`, `lover`, `metadata`, `plot`, `ranks_in_species`, `stats` |
+| `geography/info.py`                | `islands`, `natural_features`                                                                                                |
+| `kingdom/info.py <id>`             | `full`, `metadata`, `ranks`, `relations`, `wars`                                                                             |
+| `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                           |
+| `world/info.py`                    | `full`, `cumulative`, `metadata`, `snapshot`                                                                                 |
+
+##### Options :
+
+- `r` : rayon

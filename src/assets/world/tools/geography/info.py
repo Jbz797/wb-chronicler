@@ -10,7 +10,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared import CURRENT_SAVE, emit, load_save, parse_sections  # noqa: E402
 from islands import compute_islands_cached  # noqa: E402
 
-_ALL_SECTIONS = ("islands",)
+_ALL_SECTIONS = ("islands", "natural_features")
+# Rare geological/mineral landmarks. Common minerals (stone/metals/silver/mythril) and vegetation excluded — too noisy narratively.
+_NATURAL_ASSETS = frozenset(
+    {
+        "geyser",
+        "mineral_adamantine",
+        "mineral_bones",
+        "mineral_gems",
+        "volcano",
+    }
+)
+
+
+# Sorted by asset_id alpha then (y, x) for stable output across saves.
+def _build_natural_features(save: dict) -> list[dict]:
+    out = []
+    for b in save.get("buildings") or []:
+        asset = b.get("asset_id")
+        if asset in _NATURAL_ASSETS and (bx := b.get("mainX")) is not None and (by := b.get("mainY")) is not None:
+            out.append({"asset_id": asset, "x": int(bx), "y": int(by)})
+    return sorted(out, key=lambda b: (b["asset_id"], b["y"], b["x"]))
 
 
 def main(argv: list[str]) -> int:
@@ -24,6 +44,8 @@ def main(argv: list[str]) -> int:
     if "islands" in sections:
         islands, _ = compute_islands_cached(save, CURRENT_SAVE)
         out["islands"] = islands
+    if "natural_features" in sections:
+        out["natural_features"] = _build_natural_features(save)
     emit(out)
     return 0
 
