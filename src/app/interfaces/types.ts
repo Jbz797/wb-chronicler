@@ -3,7 +3,7 @@ import { INLINE_MARKER } from '../constants/inline-marker.constant';
 import { KingdomInfo, PersonInfo } from './world.interface';
 
 export type ChapterOverviewPanel = 'favorite' | 'kingdom' | 'world-stats';
-export type CumulativeStat = 'books_read' | 'cities_conquered' | 'cities_rebelled' | 'evolutions' | 'metamorphosis' | 'plots_succeeded';
+export type CumulativeStat = 'books_burnt' | 'books_read' | 'cities_conquered' | 'cities_rebelled' | 'evolutions' | 'metamorphosis' | 'plots_succeeded';
 export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' | 'fire' | 'gravity' | 'hunger'
   | 'infection' | 'old_age' | 'other' | 'plague' | 'poison' | 'tumor' | 'water' | 'weapon';
 export type IconKind = 'kingdoms' | 'persons' | 'resources' | 'species';

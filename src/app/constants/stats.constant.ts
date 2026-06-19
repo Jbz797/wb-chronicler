@@ -77,6 +77,7 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
   { key: 'cities_conquered', label: 'Villes conquises' },
   { key: 'cities_rebelled', label: 'Villes révoltées' },
   { key: 'books_read', label: 'Livres lus' },
+  { key: 'books_burnt', label: 'Livres brûlés' },
   { key: 'plots_succeeded', label: 'Complots réussis' },
   { key: 'metamorphosis', label: 'Métamorphoses' },
   { key: 'evolutions', label: 'Évolutions' },

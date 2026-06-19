@@ -57,15 +57,25 @@ _SNAPSHOT_KEYS = {
 def _build_cumulative(map_stats: dict) -> dict:
     # 0-count entries (counters + per-cause deaths) are dropped — UI treats missing keys as 0.
     deaths = ((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())
+    # Mix UI-driven (`CUMULATIVE_STATS`) + chronicler-only keys. Chronicler-only ones expose churn that net snapshots hide (e.g. 5 kingdoms fall + 5 rise → net 0).
     counters = {
-        # `books_burnt` is chronicler-only (not in the UI's `CumulativeStat` union), kept available for narrative use.
+        "alliances_dissolved": int(map_stats.get("alliancesDissolved", 0)),
+        "alliances_made": int(map_stats.get("alliancesMade", 0)),
         "books_burnt": int(map_stats.get("booksBurnt", 0)),
         "books_read": int(map_stats.get("booksRead", 0)),
         "cities_conquered": int(map_stats.get("citiesConquered", 0)),
+        "cities_created": int(map_stats.get("citiesCreated", 0)),
+        "cities_destroyed": int(map_stats.get("citiesDestroyed", 0)),
         "cities_rebelled": int(map_stats.get("citiesRebelled", 0)),
         "evolutions": int(map_stats.get("evolutions") or 0),
+        "kingdoms_created": int(map_stats.get("kingdomsCreated", 0)),
+        "kingdoms_destroyed": int(map_stats.get("kingdomsDestroyed", 0)),
         "metamorphosis": int(map_stats.get("metamorphosis") or 0),
+        "peaces_made": int(map_stats.get("peacesMade", 0)),
         "plots_succeeded": int(map_stats.get("plotsSucceeded", 0)),
+        "subspecies_created": int(map_stats.get("subspeciesCreated", 0)),
+        "subspecies_extinct": int(map_stats.get("subspeciesExtinct", 0)),
+        "wars_started": int(map_stats.get("warsStarted", 0)),
     }
     out: dict = {k: v for k, v in counters.items() if v > 0}
     out["deaths"] = dict(sorted((k, v) for k, v in deaths if v > 0))

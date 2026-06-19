@@ -197,6 +197,7 @@ interface World {
 }
 
 interface WorldCumulative {
+  books_burnt?: number;
   books_read?: number;
   cities_conquered?: number;
   cities_rebelled?: number;
