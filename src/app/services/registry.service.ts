@@ -33,7 +33,7 @@ export class RegistryService {
         sig.set(data);
       }),
       catchError((error: unknown) => {
-        const reason = error instanceof Error ? error.message : 'unknown error';
+        const reason = Error.isError(error) ? error.message : 'unknown error';
         this._message.error(`Failed to load ${file} — ${reason}`);
         return of(null);
       }),
