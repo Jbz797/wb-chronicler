@@ -159,6 +159,7 @@ interface KingdomMetadata {
   age: number;
   cities: number;
   id: number;
+  king?: { asset_id: string; id: number; name: string; sex: 'female' | 'male' };
   name: string;
   population: number;
   renown: number;

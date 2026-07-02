@@ -7,14 +7,14 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { RELATION_STATUS_LABELS, RELATION_STATUS_NZ_COLORS } from '../../../../constants';
 import { KingdomRelation, KingdomWar } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
-import { RankedStatComponent } from '../../../misc';
-import { KingdomTagComponent } from '../../../tags';
+import { NewBadgeComponent, RankedStatComponent } from '../../../misc';
+import { KingdomTagComponent, PersonTagComponent } from '../../../tags';
 
 import { WarCardComponent } from './war-card/war-card.component';
 
 @Component({
   selector: 'app-kingdom',
-  imports: [KingdomTagComponent, NzDescriptionsModule, NzTableModule, NzTagModule, RankedStatComponent, WarCardComponent],
+  imports: [KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, NzTableModule, NzTagModule, PersonTagComponent, RankedStatComponent, WarCardComponent],
   templateUrl: './kingdom.component.html',
 })
 export class KingdomComponent {
@@ -25,6 +25,13 @@ export class KingdomComponent {
   private readonly _chronicler = inject(ChroniclerService);
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
+  // NEW badge on the king when the same featured kingdom crowned a different ruler since the previous chapter.
+  protected readonly isNewKing = computed(() => {
+    const current = this.kingdom()?.metadata;
+    const previous = this._chronicler.previousChapter()?.meta.kingdom?.metadata;
+    if (!current?.king || !previous?.king || current.id !== previous.id) return false;
+    return current.king.id !== previous.king.id;
+  });
   // Relations sorted by opinion total (favourable first, hostile last).
   protected readonly sortedRelations = computed<KingdomRelation[]>(() => {
     const relations = this.kingdom()?.relations ?? [];

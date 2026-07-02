@@ -78,11 +78,22 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
     # Chronicler-only: distinct island ids touched by the kingdom's city zones, sorted asc (1 = biggest). Zones are WB `TileZone`s of 8 tiles — probe centre.
     islands = sorted({iid for zx, zy in ctx["zones_by_kingdom"].get(kid, []) if (iid := island_lookup.get((zx * 8 + 4, zy * 8 + 4))) is not None})
+    # Reigning king via `kingID` — carries `asset_id` + `sex` so the UI renders it as an `<app-person-tag>`. Omitted if the ruler actor is gone (interregnum).
+    king_actor = next((a for a in save.get("actors_data", []) if a.get("id") == kingdom.get("kingID")), None)
+    king = None
+    if king_actor:
+        king = {
+            "asset_id": king_actor.get("asset_id"),
+            "id": king_actor.get("id"),
+            "name": king_actor.get("name") or f"#{king_actor.get('id')}",
+            "sex": "female" if king_actor.get("sex") == 1 else "male",
+        }
     return {
         "age": int(age_units / UNITS_PER_YEAR),
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
         "id": kid,
         "islands": islands,
+        "king": king,
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
         "population": ctx["populations_by_kingdom"].get(kid, 0),
