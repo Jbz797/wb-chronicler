@@ -43,6 +43,7 @@ export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
 
 // French labels for `metadata.profession` — mapped from the save's int field (2=unit, 3=king, 4=leader, 5=warrior).
 export const PROFESSION_LABELS: Readonly<Record<string, string>> = {
+  army_captain: "Capitaine d'armée",
   king: 'Roi',
   leader: 'Chef de village',
   unit: 'Civil',

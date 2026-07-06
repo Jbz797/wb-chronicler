@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
+ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 
 _DATAS_DIR = Path(__file__).parent / "datas"

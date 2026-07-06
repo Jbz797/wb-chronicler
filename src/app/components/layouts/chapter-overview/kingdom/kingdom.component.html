@@ -24,6 +24,17 @@
     <nz-descriptions-item [nzTitle]="warriorsTitle">
       <app-ranked-stat source="kingdom" stat="warriors" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="noblesTitle">
+      <app-ranked-stat source="kingdom" stat="nobles" />
+    </nz-descriptions-item>
+    @for (o of optionalStats(); track o.stat) {
+      <ng-template #optionalTitle
+        ><img [src]="o.icon" /><span>{{ o.label }}</span></ng-template
+      >
+      <nz-descriptions-item [nzTitle]="optionalTitle">
+        <app-ranked-stat source="kingdom" [stat]="o.stat" />
+      </nz-descriptions-item>
+    }
     <nz-descriptions-item [nzTitle]="citiesTitle">
       <app-ranked-stat source="kingdom" stat="cities" />
     </nz-descriptions-item>
@@ -62,6 +73,7 @@
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du royaume</span></ng-template>
   <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
+  <ng-template #noblesTitle><img src="assets/img/world/nobles.png" /><span>Nobles</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #territoryTitle><img src="assets/img/world/territory.png" /><span>Territoire</span></ng-template>

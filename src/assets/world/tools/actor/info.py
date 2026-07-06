@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
 from islands import compute_islands_cached  # noqa: E402
-from shared import CURRENT_SAVE, UNITS_PER_YEAR, emit, index_by_id, load_save, parse_sections, register_entity  # noqa: E402
+from shared import CURRENT_SAVE, ELDER_AGE_RATIO, UNITS_PER_YEAR, emit, index_by_id, load_save, parse_sections, register_entity  # noqa: E402
 
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
@@ -75,6 +75,14 @@ _TRAIT_MASS_MODS = {
 }
 
 
+# WB `Subspecies.calculateAgeRelatedStats`: lifespan > 30 → adult 16 / breeding 18; else `Pow(lifespan, 0.55) × 1.1` (capped 16/18, breeding == adult). Civilized species all sit in the > 30 branch.
+def _age_thresholds(lifespan: float) -> tuple[float, float]:
+    if lifespan > 30:
+        return 16.0, 18.0
+    adult = min((lifespan**0.55) * 1.1, 16.0)
+    return adult, min(adult, 18.0)
+
+
 def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict | None:
     companion_id = actor.get(id_field)
     if companion_id is None:
@@ -82,7 +90,7 @@ def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict 
     companion = next((a for a in save["actors_data"] if a.get("id") == companion_id), None)
     if companion is None:
         return None
-    snap = compute_actor_stats(companion, ctx)
+    snap = compute_actor_stats(companion, ctx, ctx["subspecies_base_cache"])
     age_units = ctx["world_time"] - float(companion.get("created_time") or 0)
     return {
         "age": int(age_units / UNITS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
@@ -103,7 +111,8 @@ def _build_context(save: dict) -> dict:
         for parent_id in (actor.get("parent_id_1"), actor.get("parent_id_2")):
             if parent_id:
                 children_by_parent[parent_id] = children_by_parent.get(parent_id, 0) + 1
-    return {**build_actor_stats_context(save), "children_by_parent": children_by_parent}
+    # `subspecies_base_cache`: heavy `compute_actor_stats` base computed once per subspecies, reused run-wide.
+    return {**build_actor_stats_context(save), "children_by_parent": children_by_parent, "subspecies_base_cache": {}}
 
 
 def _build_equipment_list(actor: dict, ctx: dict) -> list:
@@ -149,12 +158,20 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     families_by_id = index_by_id(save.get("families", []))
     religions_by_id = index_by_id(save.get("religions", []))
     age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
+    # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
+    age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)
+    lifespan = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0)
+    age_adult, age_breeding = _age_thresholds(lifespan)
+    # `canBreed` gate (`isBreedingAge` + not the `infertile` trait). Transient blockers (pregnancy, afterglow, nutrition) aren't in the save.
+    can_reproduce = age >= age_breeding and "infertile" not in (actor.get("saved_traits") or [])
+    # `army_captain` isn't a `profession` int — it's a warrior (5) leading an army. Overrides the base profession label when this actor captains one.
+    is_captain = any(army.get("id_captain") == actor.get("id") for army in save.get("armies", []))
     ax, ay = actor.get("x"), actor.get("y")
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
     return {
-        # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
-        "age": int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
+        "age": age,
         "asset_id": actor.get("asset_id"),
+        "can_reproduce": can_reproduce,
         "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
         "clan": clan.get("name"),
         "culture": (cultures_by_id.get(actor.get("culture")) or {}).get("name"),
@@ -165,10 +182,11 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,
         "kingdom": _resolve_kingdom(actor.get("civ_kingdom_id"), kingdoms_by_id),
         "language": language.get("name"),
+        "life_stage": _life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor),
         "name": actor.get("name"),
         "personality": _compute_personality(actor, ctx),
-        "profession": _PROFESSIONS.get(actor.get("profession") or 0),
+        "profession": "army_captain" if is_captain else _PROFESSIONS.get(actor.get("profession") or 0),
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
         "roles": _compute_roles(actor, save),
         "sex": "female" if actor.get("sex") == 1 else "male",
@@ -227,7 +245,7 @@ def _compute_mass(actor: dict) -> int | None:
 def _compute_personality(actor: dict, ctx: dict) -> str | None:
     if actor.get("profession") not in (_PROFESSION_KING, _PROFESSION_LEADER):
         return None
-    snap = compute_actor_stats(actor, ctx)
+    snap = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
     diplo, stew, war = snap.get("diplomacy", 0), snap.get("stewardship", 0), snap.get("warfare", 0)
     p, max_val = "balanced", diplo
     if diplo > stew:
@@ -242,9 +260,8 @@ def _compute_personality(actor: dict, ctx: dict) -> str | None:
 # Top 3 only — UI hides the rest, no narrative use for "34th out of 114".
 def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
     asset_id = actor.get("asset_id", "")
-    cache: dict = {}
     same_species = [a for a in save["actors_data"] if a.get("asset_id") == asset_id]
-    peers = [(a["id"], _compute_stats(a, ctx, cache)) for a in same_species]
+    peers = [(a["id"], _compute_stats(a, ctx, ctx["subspecies_base_cache"])) for a in same_species]
     own = next(s for aid, s in peers if aid == actor["id"])
     ranks = {}
     for stat, value in sorted(own.items()):
@@ -335,6 +352,20 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
     return dict(sorted(result.items()))
 
 
+# Narrative tier from `age` (years). baby/child/teen scale with `age_adult` (age_adult/8, /2, ·1) so they always nest below adulthood.
+# `elder` mirrors WB's `isPrettyOld` = age/lifespan > 0.7 (the `age ≥ age_adult` guard is implied — 0.7·lifespan ≫ age_adult for every civ species).
+def _life_stage(age: int, age_adult: float, lifespan: float) -> str:
+    if age < age_adult / 8:
+        return "baby"
+    if age < age_adult / 2:
+        return "child"
+    if age < age_adult:
+        return "teen"
+    if lifespan and age > lifespan * ELDER_AGE_RATIO:
+        return "elder"
+    return "adult"
+
+
 # Register this actor (species + sex) in the reader's person registry, for the `[p id Nom]` tag.
 def _register_person(actor: dict) -> None:
     register_entity(
@@ -400,7 +431,7 @@ def main(argv: list[str]) -> int:
     if "ranks_in_species" in sections:
         out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx, save)
     if "stats" in sections:
-        out["stats"] = _compute_stats(actor, ctx)
+        out["stats"] = _compute_stats(actor, ctx, ctx["subspecies_base_cache"])
 
     emit(out)
     return 0

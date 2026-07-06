@@ -150,6 +150,7 @@ interface FavoriteStats {
 
 interface Kingdom {
   metadata: KingdomMetadata;
+  population: KingdomPopulation;
   ranks: KingdomRanks;
   relations: KingdomRelation[];
   wars: KingdomWar[];
@@ -161,17 +162,28 @@ interface KingdomMetadata {
   id: number;
   king?: { asset_id: string; id: number; name: string; sex: 'female' | 'male' };
   name: string;
-  population: number;
   renown: number;
   territory: number;
+}
+
+interface KingdomPopulation {
+  immortals?: number;
+  infected?: number;
+  nobles: number;
+  sick?: number;
+  total: number;
   warriors: number;
 }
 
 interface KingdomRanks {
   age?: number;
   cities?: number;
+  immortals?: number;
+  infected?: number;
+  nobles?: number;
   population?: number;
   renown?: number;
+  sick?: number;
   territory?: number;
   warriors?: number;
 }

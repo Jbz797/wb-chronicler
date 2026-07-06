@@ -16,8 +16,8 @@ export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_re
 export type PersonRegistry = Record<string, PersonInfo>;
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'children' | 'cities' | 'critical_chance'
-  | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'intelligence' | 'kills' | 'level'
-  | 'lifespan' | 'loot' | 'mana' | 'money' | 'population' | 'renown' | 'speed' | 'stamina' | 'stewardship'
+  | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level'
+  | 'lifespan' | 'loot' | 'mana' | 'money' | 'nobles' | 'population' | 'renown' | 'sick' | 'speed' | 'stamina' | 'stewardship'
   | 'territory' | 'warfare' | 'warriors';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'cities' | 'clans'

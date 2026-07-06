@@ -5,7 +5,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { RELATION_STATUS_LABELS, RELATION_STATUS_NZ_COLORS } from '../../../../constants';
-import { KingdomRelation, KingdomWar } from '../../../../interfaces';
+import { KingdomRelation, KingdomWar, RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
 import { NewBadgeComponent, RankedStatComponent } from '../../../misc';
 import { KingdomTagComponent, PersonTagComponent } from '../../../tags';
@@ -31,6 +31,17 @@ export class KingdomComponent {
     const previous = this._chronicler.previousChapter()?.meta.kingdom?.metadata;
     if (!current?.king || !previous?.king || current.id !== previous.id) return false;
     return current.king.id !== previous.king.id;
+  });
+  // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
+  protected readonly optionalStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
+    const p = this.kingdom()?.population;
+    if (!p) return [];
+    const rows = [
+      { icon: 'assets/img/world/sick.png', label: 'Malades', stat: 'sick' as const },
+      { icon: 'assets/img/world/infected.png', label: 'Infectés', stat: 'infected' as const },
+      { icon: 'assets/img/world/immortals.png', label: 'Immortels', stat: 'immortals' as const },
+    ];
+    return rows.filter(r => (p[r.stat] ?? 0) > 0);
   });
   // Relations sorted by opinion total (favourable first, hostile last).
   protected readonly sortedRelations = computed<KingdomRelation[]>(() => {

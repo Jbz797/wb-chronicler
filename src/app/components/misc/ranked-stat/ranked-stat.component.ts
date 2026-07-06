@@ -61,8 +61,10 @@ export class RankedStatComponent {
   private _resolve(entity: NonNullable<ChapterMeta['favorite'] | ChapterMeta['kingdom']>): RankedStatSnapshot {
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
-      const key = this.stat() as 'age' | 'cities' | 'population' | 'renown' | 'territory' | 'warriors';
-      return this._snap(k.metadata[key], k.ranks[key]);
+      const key = this.stat() as 'age' | 'cities' | 'immortals' | 'infected' | 'nobles' | 'population' | 'renown' | 'sick' | 'territory' | 'warriors';
+      if (key === 'population') return this._snap(k.population.total, k.ranks.population);
+      if (key === 'age' || key === 'cities' || key === 'renown' || key === 'territory') return this._snap(k.metadata[key], k.ranks[key]);
+      return this._snap(k.population[key] ?? 0, k.ranks[key]);
     }
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
   }

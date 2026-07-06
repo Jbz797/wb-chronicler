@@ -51,7 +51,7 @@
     "@angular/language-service": "22.0.5",
     "chokidar": "5.0.0",
     "concurrently": "10.0.3",
-    "eslint-config-angular-strict": "22.0.20",
+    "eslint-config-angular-strict": "22.0.21",
     "less": "4.6.7",
     "prettier": "3.9.4",
     "stylelint": "17.14.0",

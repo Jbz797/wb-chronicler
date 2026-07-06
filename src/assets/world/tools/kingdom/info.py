@@ -3,6 +3,7 @@
 # User-facing docs (usage, available sections) live in `tools/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
 import sys
+from collections import Counter
 from pathlib import Path
 
 
@@ -11,30 +12,52 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "actor"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
 from islands import compute_islands_cached  # noqa: E402
-from shared import CURRENT_SAVE, UNITS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
+from shared import CURRENT_SAVE, ELDER_AGE_RATIO, UNITS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
-_ALL_SECTIONS = ("metadata", "ranks", "relations", "wars")
-_BABY_AGE_THRESHOLD_UNITS = 16 * UNITS_PER_YEAR  # WB considers actors « baby » below ~16 in-game years (expressed in world_time units).
+_ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
+_ALL_SECTIONS = ("metadata", "population", "ranks", "relations", "wars")
+_BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close » if any pair of their zones are within this Manhattan distance.
 _FAR_LANDS_CAPITAL_DISTANCE = 18  # `!isSameIsland` proxy: capitals further apart than this are treated as on different lands.
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
+_SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits (`mush_spores`/`tumor_infection` negligible).
 
 
 def _build_context(save: dict) -> dict:
-    # Index of living actors per kingdom (mirrors `Kingdom.getPopulation`, excludes `boat_*` transient PNJs). `profession == 5` = warrior.
-    populations_by_kingdom: dict[int, int] = {}
-    warriors_by_kingdom: dict[int, int] = {}
-    subspecies_counts: dict[int, dict[int, int]] = {}
+    # Army captains (warriors leading an army) — a distinct rank, counted as nobles + surfaced as the `army_captain` profession.
+    captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}
+
+    # Per-kingdom tallies (mirrors `Kingdom.getPopulation`, excludes `boat_*` transient PNJs). Nobles = kings (3) + village leaders (4) + army captains.
+    populations_by_kingdom: Counter[int] = Counter()
+
     actors_by_id: dict[int, dict] = {}
+    actors_by_kingdom: dict[int, list[dict]] = {}
+    immortals_by_kingdom: Counter[int] = Counter()
+    infected_by_kingdom: Counter[int] = Counter()
+    nobles_by_kingdom: Counter[int] = Counter()
+    sick_by_kingdom: Counter[int] = Counter()
+    subspecies_counts: dict[int, dict[int, int]] = {}
+    warriors_by_kingdom: Counter[int] = Counter()
+
     for actor in save.get("actors_data", []):
         actors_by_id[actor["id"]] = actor
         kid = actor.get("civ_kingdom_id")
         if not kid or (actor.get("asset_id") or "").startswith("boat_"):
             continue
-        populations_by_kingdom[kid] = populations_by_kingdom.get(kid, 0) + 1
+        actors_by_kingdom.setdefault(kid, []).append(actor)
+        populations_by_kingdom[kid] += 1
         if actor.get("profession") == 5:
-            warriors_by_kingdom[kid] = warriors_by_kingdom.get(kid, 0) + 1
+            warriors_by_kingdom[kid] += 1
+        if actor.get("profession") in (3, 4) or actor["id"] in captain_ids:
+            nobles_by_kingdom[kid] += 1
+        traits = actor.get("saved_traits") or []
+        if "infected" in traits:
+            infected_by_kingdom[kid] += 1
+        if not _SICK_TRAITS.isdisjoint(traits):
+            sick_by_kingdom[kid] += 1
+        if "immortal" in traits:
+            immortals_by_kingdom[kid] += 1
         sub_id = actor.get("subspecies")
         if sub_id is not None:
             subspecies_counts.setdefault(kid, {})
@@ -60,10 +83,16 @@ def _build_context(save: dict) -> dict:
     return {
         **build_actor_stats_context(save),
         "actors_by_id": actors_by_id,
+        "actors_by_kingdom": actors_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
         "cities_by_kingdom": cities_by_kingdom,
+        "immortals_by_kingdom": immortals_by_kingdom,
+        "infected_by_kingdom": infected_by_kingdom,
         "main_subspecies": main_subspecies,
+        "nobles_by_kingdom": nobles_by_kingdom,
         "populations_by_kingdom": populations_by_kingdom,
+        "sick_by_kingdom": sick_by_kingdom,
+        "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors (≈8×).
         "supreme_kingdom_id": supreme_kingdom_id,
         "territory_by_kingdom": territory_by_kingdom,
         "warriors_by_kingdom": warriors_by_kingdom,
@@ -79,7 +108,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     # Chronicler-only: distinct island ids touched by the kingdom's city zones, sorted asc (1 = biggest). Zones are WB `TileZone`s of 8 tiles — probe centre.
     islands = sorted({iid for zx, zy in ctx["zones_by_kingdom"].get(kid, []) if (iid := island_lookup.get((zx * 8 + 4, zy * 8 + 4))) is not None})
     # Reigning king via `kingID` — carries `asset_id` + `sex` so the UI renders it as an `<app-person-tag>`. Omitted if the ruler actor is gone (interregnum).
-    king_actor = next((a for a in save.get("actors_data", []) if a.get("id") == kingdom.get("kingID")), None)
+    king_actor = ctx["actors_by_id"].get(kingdom.get("kingID"))
     king = None
     if king_actor:
         king = {
@@ -96,10 +125,52 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "king": king,
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
-        "population": ctx["populations_by_kingdom"].get(kid, 0),
         "renown": kingdom.get("renown", 0),
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
-        "warriors": ctx["warriors_by_kingdom"].get(kid, 0),
+    }
+
+
+# `adults`/`children` split at WB `age_adult` (16); `elders` = adults past `isPrettyOld` (age/lifespan > 0.7); `couples` = mutual in-kingdom `lover` pairs.
+# `nobles` = kings + village leaders + army captains; `sick`/`infected` = WB `calculateIsSick` traits (`infected` ⊂ `sick`).
+def _build_population(kingdom: dict, ctx: dict) -> dict:
+    kid = kingdom.get("id")
+    world_time = ctx["world_time"]
+    by_id = ctx["actors_by_id"]
+    actors = ctx["actors_by_kingdom"].get(kid, [])
+    ids = {a["id"] for a in actors}
+    adults = elders = men = couples = 0
+    paired: set[int] = set()
+    for a in actors:
+        age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+        if age >= _ADULT_AGE:
+            adults += 1
+        lifespan = compute_actor_stats(a, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0)
+        if lifespan and age > lifespan * ELDER_AGE_RATIO:
+            elders += 1
+        if a.get("sex") != 1:
+            men += 1
+        lover = a.get("lover")
+        if lover in ids and a["id"] not in paired and by_id.get(lover, {}).get("lover") == a["id"]:
+            couples += 1
+            paired.update((a["id"], lover))
+    total = len(actors)
+    # `immortals`/`infected`/`sick` omitted when 0 (UI-gated on > 0; absence = none). The rest always emitted — an explicit 0 is a meaningful demographic signal.
+    immortals = ctx["immortals_by_kingdom"][kid]
+    infected = ctx["infected_by_kingdom"][kid]
+    sick = ctx["sick_by_kingdom"][kid]
+    return {
+        "adults": adults,
+        "children": total - adults,
+        "couples": couples,
+        "elders": elders,
+        **({"immortals": immortals} if immortals else {}),
+        **({"infected": infected} if infected else {}),
+        "men": men,
+        "nobles": ctx["nobles_by_kingdom"][kid],
+        **({"sick": sick} if sick else {}),
+        "total": total,
+        "warriors": ctx["warriors_by_kingdom"][kid],
+        "women": total - men,
     }
 
 
@@ -139,10 +210,11 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         r = relations_by_other.get(other_id)
         status = "ally" if is_ally(other_id) else "enemy" if is_enemy(other_id) else "neutral"
         last_war_end = (r or {}).get("timestamp_last_war_ended")
+        borders = _min_zone_distance(kid_zones, ctx["zones_by_kingdom"].get(other_id, [])) <= _BORDERS_ZONE_DISTANCE
         out.append(
             {
                 "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / UNITS_PER_YEAR) if r else None,
-                "borders": _min_zone_distance(kid_zones, ctx["zones_by_kingdom"].get(other_id, [])) <= _BORDERS_ZONE_DISTANCE,
+                **({"borders": True} if borders else {}),  # Chronicler-only, omitted when False: absence = kingdoms don't share a border.
                 "kingdom": {"id": other_id, "name": other.get("name") or f"#{other_id}"},
                 "opinion": _compute_opinion(kingdom, other, save, ctx, alliances, ongoing_wars, r),
                 "status": status,
@@ -205,7 +277,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                 "defender_alliance": alliance_for(w.get("main_defender"), w.get("list_defenders") or []),
                 "duration_years": int(duration_units / UNITS_PER_YEAR),
                 "id": w.get("id"),
-                "is_main": kid == w.get(f"main_{side}"),
+                **({"is_main": True} if kid == w.get(f"main_{side}") else {}),  # Omitted when False (absence = secondary ally, not this side's leader).
                 "name": w.get("name"),
                 "opponents": sorted(
                     ({"id": opp["id"], "name": opp.get("name") or f"#{opp['id']}"} for opp in opponent_kingdoms),
@@ -246,7 +318,7 @@ def _city_centroid(city: dict | None) -> tuple[float, float] | None:
 
 # Reconstructs `Actor.stats["diplomacy"]` via the full `actor_stats` pipeline (species + chromosome tiers + traits + equipment + custom_data_float + multipliers + level scaling).
 def _compute_king_diplomacy(king: dict, ctx: dict) -> int:
-    return int(compute_actor_stats(king, ctx).get("diplomacy", 0))
+    return int(compute_actor_stats(king, ctx, ctx["subspecies_base_cache"]).get("diplomacy", 0))
 
 
 # Mirror `DiplomacyRelation.recalculate` IL: each numbered modifier = a WB `OpinionAsset`. Runtime stats reconstructed via `actor_stats.compute_actor_stats`.
@@ -418,7 +490,11 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     kingdoms = save.get("kingdoms", [])
     cities = ctx["cities_by_kingdom"]
+    immortals = ctx["immortals_by_kingdom"]
+    infected = ctx["infected_by_kingdom"]
+    nobles = ctx["nobles_by_kingdom"]
     populations = ctx["populations_by_kingdom"]
+    sick = ctx["sick_by_kingdom"]
     territory = ctx["territory_by_kingdom"]
     warriors = ctx["warriors_by_kingdom"]
 
@@ -428,14 +504,21 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     getters = {
         "age": kingdom_age,
         "cities": lambda k: cities.get(k.get("id"), 0),
+        "immortals": lambda k: immortals.get(k.get("id"), 0),
+        "infected": lambda k: infected.get(k.get("id"), 0),
+        "nobles": lambda k: nobles.get(k.get("id"), 0),
         "population": lambda k: populations.get(k.get("id"), 0),
         "renown": lambda k: k.get("renown", 0),
+        "sick": lambda k: sick.get(k.get("id"), 0),
         "territory": lambda k: territory.get(k.get("id"), 0),
         "warriors": lambda k: warriors.get(k.get("id"), 0),
     }
     ranks = {}
     for stat, getter in sorted(getters.items()):
         own = getter(kingdom)
+        # No podium for a metric the kingdom has none of (avoids a meaningless « rank 1 » when every kingdom sits at 0).
+        if own == 0:
+            continue
         rank = sum(1 for k in kingdoms if getter(k) > own) + 1
         if rank <= 3:
             ranks[stat] = rank
@@ -508,6 +591,8 @@ def main(argv: list[str]) -> int:
     out: dict = {}
     if "metadata" in sections:
         out["metadata"] = _build_metadata(kingdom, ctx, save)
+    if "population" in sections:
+        out["population"] = _build_population(kingdom, ctx)
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(kingdom, ctx, save)
     if "relations" in sections:

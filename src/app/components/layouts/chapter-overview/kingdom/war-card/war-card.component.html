@@ -16,7 +16,7 @@
   }
 
   <nz-descriptions-item [nzTitle]="ourSectionTitle(w)">
-    <span appSectionRow class="section-marker"></span>
+    <span appSectionRow></span>
   </nz-descriptions-item>
   @if (ourAlliance(w); as a) {
     <nz-descriptions-item [nzTitle]="coalitionTitle">{{ a.name }}</nz-descriptions-item>
@@ -46,7 +46,7 @@
   </nz-descriptions-item>
 
   <nz-descriptions-item [nzTitle]="theirSectionTitle(w)">
-    <span appSectionRow class="section-marker"></span>
+    <span appSectionRow></span>
   </nz-descriptions-item>
   @if (theirAlliance(w); as a) {
     <nz-descriptions-item [nzTitle]="coalitionTitle">{{ a.name }}</nz-descriptions-item>
