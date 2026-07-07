@@ -1,7 +1,8 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 
-import { ChapterMeta, RankedStatKind, RankedStatSnapshot } from '../../../interfaces';
+import { KINGDOM_META_STATS } from '../../../constants';
+import { ChapterMeta, KingdomMetaStat, RankedStatKind, RankedStatSnapshot } from '../../../interfaces';
 import { TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
@@ -61,10 +62,11 @@ export class RankedStatComponent {
   private _resolve(entity: NonNullable<ChapterMeta['favorite'] | ChapterMeta['kingdom']>): RankedStatSnapshot {
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
-      const key = this.stat() as 'age' | 'cities' | 'immortals' | 'infected' | 'nobles' | 'population' | 'renown' | 'sick' | 'territory' | 'warriors';
+      const key = this.stat();
       if (key === 'population') return this._snap(k.population.total, k.ranks.population);
-      if (key === 'age' || key === 'cities' || key === 'renown' || key === 'territory') return this._snap(k.metadata[key], k.ranks[key]);
-      return this._snap(k.population[key] ?? 0, k.ranks[key]);
+      if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat], k.ranks[key as KingdomMetaStat]);
+      const pk = key as 'immortals' | 'infected' | 'nobles' | 'sick' | 'warriors';
+      return this._snap(k.population[pk] ?? 0, k.ranks[pk]);
     }
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
   }

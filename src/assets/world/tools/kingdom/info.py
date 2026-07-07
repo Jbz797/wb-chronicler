@@ -12,7 +12,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "actor"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
 from islands import compute_islands_cached  # noqa: E402
-from shared import CURRENT_SAVE, UNITS_PER_YEAR, age_thresholds, emit, index_by_id, life_stage, load_data, load_save, parse_sections, register_entity  # noqa: E402
+
+from shared import (
+    CURRENT_SAVE,
+    UNITS_PER_YEAR,
+    age_thresholds,
+    civic_building_ids,
+    emit,
+    index_by_id,
+    life_stage,
+    load_data,
+    load_save,
+    parse_sections,
+    register_entity,
+)  # noqa: E402
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
 _ALL_SECTIONS = ("metadata", "population", "ranks", "relations", "wars")
@@ -81,19 +94,41 @@ def _build_context(save: dict) -> dict:
         zones = city.get("zones") or []
         territory_by_kingdom[kid] = territory_by_kingdom.get(kid, 0) + len(zones)
         zones_by_kingdom.setdefault(kid, []).extend((z["x"], z["y"]) for z in zones)
+
+    # Civic buildings per kingdom: those whose tile falls in one of its city zones (8-tile `TileZone`s). `houses` = the dwelling subset.
+    zone_to_kingdom = {zone: kid for kid, zone_list in zones_by_kingdom.items() for zone in zone_list}
+    civic = civic_building_ids()
+    buildings_by_kingdom: Counter[int] = Counter()
+    houses_by_kingdom: Counter[int] = Counter()
+    for b in save.get("buildings", []):
+        bx, by = b.get("mainX"), b.get("mainY")
+        if bx is None or by is None:
+            continue
+        kid = zone_to_kingdom.get((bx // 8, by // 8))
+        asset_id = b.get("asset_id")
+        if kid is not None and asset_id in civic:
+            buildings_by_kingdom[kid] += 1
+            if asset_id.startswith("house"):
+                houses_by_kingdom[kid] += 1
+
     capitals_by_kingdom = {k["id"]: cities_by_id[k["capitalID"]] for k in save.get("kingdoms", []) if k.get("capitalID") in cities_by_id}
+
     # Main subspecies = the most-counted one per kingdom (fallback used by `Kingdom.getMainSubspecies`).
     main_subspecies = {kid: max(counts.items(), key=lambda kv: kv[1])[0] for kid, counts in subspecies_counts.items()}
+
     # Supreme kingdom = the one with the largest adult population. WB picks the « most powerful » kingdom — population is the most consistent metric across screens.
     supreme_kingdom_id = max(populations_by_kingdom.items(), key=lambda kv: kv[1])[0] if populations_by_kingdom else None
+
     return {
         **build_actor_stats_context(save),
         "actors_by_id": actors_by_id,
         "actors_by_kingdom": actors_by_kingdom,
+        "buildings_by_kingdom": buildings_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
         "cities_by_kingdom": cities_by_kingdom,
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
+        "houses_by_kingdom": houses_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
         "infected_by_kingdom": infected_by_kingdom,
         "main_subspecies": main_subspecies,
@@ -113,8 +148,10 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     kid = kingdom.get("id")
     age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
+
     # Chronicler-only: distinct island ids touched by the kingdom's city zones, sorted asc (1 = biggest). Zones are WB `TileZone`s of 8 tiles — probe centre.
     islands = sorted({iid for zx, zy in ctx["zones_by_kingdom"].get(kid, []) if (iid := island_lookup.get((zx * 8 + 4, zy * 8 + 4))) is not None})
+
     king_actor = ctx["actors_by_id"].get(kingdom.get("kingID"))  # Reigning king (`kingID`): `asset_id`+`sex` feed the UI `<app-person-tag>`. `None` at interregnum.
     king = None
     if king_actor:
@@ -126,8 +163,10 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         }
     return {
         "age": int(age_units / UNITS_PER_YEAR),
+        "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
+        "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).
         "id": kid,
         "islands": islands,
         "king": king,
@@ -159,10 +198,12 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
             couples += 1
             paired.update((a["id"], lover))
     total = len(actors)
+
     # `immortals`/`infected`/`sick` omitted when 0 (UI-gated on > 0; absence = none). The rest always emitted — an explicit 0 is a meaningful demographic signal.
     immortals = ctx["immortals_by_kingdom"][kid]
     infected = ctx["infected_by_kingdom"][kid]
     sick = ctx["sick_by_kingdom"][kid]
+
     return {
         "adults": stages["adult"],
         "babies": stages["baby"],
@@ -218,7 +259,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         r = relations_by_other.get(other_id)
         status = "ally" if is_ally(other_id) else "enemy" if is_enemy(other_id) else "neutral"
         last_war_end = (r or {}).get("timestamp_last_war_ended")
-        borders = _min_zone_distance(kid_zones, ctx["zones_by_kingdom"].get(other_id, [])) <= _BORDERS_ZONE_DISTANCE
+        borders = _zones_within(kid_zones, ctx["zones_by_kingdom"].get(other_id, []), _BORDERS_ZONE_DISTANCE)
         out.append(
             {
                 "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / UNITS_PER_YEAR) if r else None,
@@ -260,6 +301,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         opponent_kingdoms = [kingdoms_by_id[oid] for oid in (defenders if side == "attacker" else attackers) if oid in kingdoms_by_id]
         ally_kingdoms = [kingdoms_by_id[aid] for aid in (attackers if side == "attacker" else defenders) - {kid} if aid in kingdoms_by_id]
         starter_kingdom = kingdoms_by_id.get(w.get("started_by_kingdom_id"))
+
         # Register opposing/ally kingdoms (and the war's instigator) so the UI's `app-kingdom-tag` can resolve their banner + colours.
         for k in [*opponent_kingdoms, *ally_kingdoms, *([starter_kingdom] if starter_kingdom else [])]:
             _register_kingdom(k, save)
@@ -267,6 +309,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         populations = ctx["populations_by_kingdom"]
         warriors = ctx["warriors_by_kingdom"]
         duration_units = ctx["world_time"] - float(w.get("created_time") or 0)
+
         out.append(
             {
                 "allies": sorted(
@@ -369,8 +412,8 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
     if tid == ctx.get("supreme_kingdom_id") and len(save.get("kingdoms") or []) >= 3:
         mod["is_supreme"] = -100
 
-    # 4. borders: ±25. WB checks `areKingdomsClose` (any city pair within adjacency threshold). Proxy: min zone-pair Manhattan distance ≤ _BORDERS_ZONE_DISTANCE.
-    close = _min_zone_distance(main_zones, target_zones) <= _BORDERS_ZONE_DISTANCE
+    # 4. borders: ±25. WB checks `areKingdomsClose` (any city pair within adjacency threshold). Proxy: any zone pair within _BORDERS_ZONE_DISTANCE (Manhattan).
+    close = _zones_within(main_zones, target_zones, _BORDERS_ZONE_DISTANCE)
     mod["borders"] = -25 if close else 25
 
     # 5. far_lands: +60 if not « close » and both capitals exist and are « on different islands ». Proxy: capital Manhattan distance > _FAR_LANDS_CAPITAL_DISTANCE.
@@ -497,7 +540,9 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
 # Standard competition rank (1,2,2,4) per stat among all kingdoms. Top 3 only — UI hides the rest.
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     kingdoms = save.get("kingdoms", [])
+    buildings = ctx["buildings_by_kingdom"]
     cities = ctx["cities_by_kingdom"]
+    houses = ctx["houses_by_kingdom"]
     immortals = ctx["immortals_by_kingdom"]
     infected = ctx["infected_by_kingdom"]
     nobles = ctx["nobles_by_kingdom"]
@@ -511,7 +556,9 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     getters = {
         "age": kingdom_age,
+        "buildings": lambda k: buildings.get(k.get("id"), 0),
         "cities": lambda k: cities.get(k.get("id"), 0),
+        "houses": lambda k: houses.get(k.get("id"), 0),
         "immortals": lambda k: immortals.get(k.get("id"), 0),
         "infected": lambda k: infected.get(k.get("id"), 0),
         "nobles": lambda k: nobles.get(k.get("id"), 0),
@@ -540,13 +587,6 @@ def _luminance(color: str) -> float:
     return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
 
 
-# Min Manhattan distance between any pair of zones from two kingdoms. Returns `inf` when either side has no zones.
-def _min_zone_distance(zones_a: list[tuple[int, int]], zones_b: list[tuple[int, int]]) -> float:
-    if not zones_a or not zones_b:
-        return float("inf")
-    return min(abs(a[0] - b[0]) + abs(a[1] - b[1]) for a in zones_a for b in zones_b)
-
-
 # Upsert reader registry with per-kingdom visuals (icon + colours). Display name comes from the caller (markdown token or chapter.json), not stored here.
 def _register_kingdom(kingdom: dict, save: dict) -> None:
     # Background = darkest of colour's 4 game hues, ink (icon/text/border) = lightest — max contrast within kingdom's real palette (colors-all.json).
@@ -572,6 +612,21 @@ def _resolve_banner_sprite(kingdom: dict, save: dict) -> int:
     icons = banners["banner_id_icons"][banners["species_to_banner_id"][species]]
     index = kingdom.get("banner_icon_id") or 0
     return icons[index if index < len(icons) else 0]
+
+
+# True if any zone pair is within `max_distance` (Manhattan). Set-probe the distance diamond + early-exit — avoids the O(len_a × len_b) all-pairs min.
+def _zones_within(zones_a: list[tuple[int, int]], zones_b: list[tuple[int, int]], max_distance: int) -> bool:
+    if not zones_a or not zones_b:
+        return False
+    if len(zones_a) > len(zones_b):
+        zones_a, zones_b = zones_b, zones_a
+    b_set = set(zones_b)
+    for ax, ay in zones_a:
+        for dx in range(-max_distance, max_distance + 1):
+            reach = max_distance - abs(dx)
+            if any((ax + dx, ay + dy) in b_set for dy in range(-reach, reach + 1)):
+                return True
+    return False
 
 
 def main(argv: list[str]) -> int:

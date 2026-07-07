@@ -158,7 +158,9 @@ interface Kingdom {
 
 interface KingdomMetadata {
   age: number;
+  buildings: number;
   cities: number;
+  houses: number;
   id: number;
   king?: { asset_id: string; id: number; name: string; sex: 'female' | 'male' };
   name: string;
@@ -177,7 +179,9 @@ interface KingdomPopulation {
 
 interface KingdomRanks {
   age?: number;
+  buildings?: number;
   cities?: number;
+  houses?: number;
   immortals?: number;
   infected?: number;
   nobles?: number;
@@ -229,6 +233,7 @@ interface WorldSnapshot {
   alliances: number;
   armies: number;
   books: number;
+  buildings: number;
   cities: number;
   clans: number;
   cultures: number;

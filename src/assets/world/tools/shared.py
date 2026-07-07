@@ -3,17 +3,20 @@
 # Shared constants/helpers reused by `actor/info.py`, `kingdom/info.py` and `world/info.py` — `sys.path`-injected from parent dir; see each bootstrap.
 
 import json
+import os
 import sys
 import zlib
 from functools import cache
 from pathlib import Path
 
 
-CURRENT_SAVE = Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox"
-ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
+# Live game save by default; `WB_SAVE` env var overrides it to regenerate a past chapter from its archived `map.wbox`.
+CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
+
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 
 _DATAS_DIR = Path(__file__).parent / "datas"
+_ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
@@ -33,6 +36,11 @@ def age_thresholds(lifespan: float) -> tuple[float, float]:
     return adult, min(adult, 18.0)
 
 
+# Asset ids of built structures (ResourceManager path `buildings/civ_*`) — excludes nature. Source: `datas/building-categories.json`.
+def civic_building_ids() -> frozenset[str]:
+    return frozenset(asset for asset, category in load_data("building-categories.json").items() if category.startswith("civ_"))
+
+
 def emit(out: dict) -> None:
     print(json.dumps(_strip_none(out), ensure_ascii=False, indent=2))
 
@@ -49,7 +57,7 @@ def life_stage(age: int, age_adult: float, lifespan: float) -> str:
         return "child"
     if age < age_adult:
         return "teen"
-    if lifespan and age > lifespan * ELDER_AGE_RATIO:
+    if lifespan and age > lifespan * _ELDER_AGE_RATIO:
         return "elder"
     return "adult"
 

@@ -12,9 +12,10 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import CURRENT_SAVE, emit, index_by_id, load_save, parse_sections  # noqa: E402
+from shared import CURRENT_SAVE, civic_building_ids, emit, index_by_id, load_save, parse_sections  # noqa: E402
 
 _ALL_SECTIONS = ("cumulative", "leaders", "metadata", "snapshot")
+
 # Chronicler key => WB save fields (sum). Mirrors the 16 rows of WB's « Deaths » panel; `water` is hydrophobic damage (separate from `drowning`).
 _DEATH_CAUSES = {
     "acid": ("deaths_acid",),
@@ -34,6 +35,7 @@ _DEATH_CAUSES = {
     "water": ("deaths_water",),
     "weapon": ("deaths_weapon",),
 }
+
 # Chronicler key => map.meta top-level key. Most match 1:1; `wild_creatures` aliases `mobs`.
 _SNAPSHOT_KEYS = {
     "alliances": "alliances",
@@ -157,19 +159,21 @@ def _build_metadata(map_stats: dict) -> dict:
 
 # `frozen_tiles` / `relations` / `infected` aren't in `map.meta` — read from the decompressed save. `infected` mirrors WB's runtime `current_infected`.
 def _build_snapshot(meta: dict, map_stats: dict, save: dict) -> dict:
+    civic = civic_building_ids()
+    asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings", []))  # Count `asset_id`s once, classify distinct keys — avoids 3 scans.
     return dict(
         sorted(
             {
                 **{k: int(meta.get(v, 0)) for k, v in _SNAPSHOT_KEYS.items()},
                 "armies": int(map_stats.get("armiesCreated", 0)) - int(map_stats.get("armiesDestroyed", 0)),
+                "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
                 "frozen_tiles": len(save.get("frozen_tiles") or []),
-                "houses": int(map_stats.get("housesBuilt", 0))
-                - int(map_stats.get("housesDestroyed", 0)),  # current city-buildings (matches `world_statistics_houses`)
+                "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
                 "infected": sum(1 for a in save.get("actors_data", []) if "infected" in (a.get("saved_traits") or [])),
                 "plots_active": len(save.get("plots") or []),
                 "relations": len(save.get("relations") or []),
                 # `tree` substring catches every `Building_Tree` asset_id (pine/swamp/birch/…). ≤1% drift vs WB UI — counter moves between snapshots.
-                "trees": sum(1 for b in save.get("buildings", []) if "tree" in (b.get("asset_id") or "")),
+                "trees": sum(n for aid, n in asset_counts.items() if "tree" in aid),
             }.items()
         )
     )

@@ -1,4 +1,4 @@
-import { CumulativeStat, DeathCause, LeaderKind, SnapshotStat, StatConfig } from '../interfaces';
+import { CumulativeStat, DeathCause, LeaderKind, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
 
 // French labels for `plot.type_id` — sourced from WB's `PlotsLibrary`. Unknown ids fall back to the raw id at render time.
 export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -63,6 +63,9 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
   religion_creator: { active: false, label: 'Créateur de religion' },
   village_founder: { active: false, label: 'Fondateur de village' },
 };
+
+// Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
+export const KINGDOM_META_STATS = new Set<RankedStatKind>(['age', 'buildings', 'cities', 'houses', 'renown', 'territory']);
 
 // Favorite combat stats — damage / defense / attack rhythm.
 export const COMBAT_STATS: StatConfig[] = [
@@ -158,6 +161,7 @@ export const SNAPSHOT_STATS: { hideIfZero?: boolean; key: SnapshotStat; label: s
   { key: 'frozen_tiles', label: 'Tuiles gelées' },
   { key: 'kingdoms', label: 'Royaumes' },
   { key: 'cities', label: 'Cités' },
+  { key: 'buildings', label: 'Bâtiments' },
   { key: 'houses', label: 'Maisons' },
   { key: 'families', label: 'Familles' },
   { key: 'clans', label: 'Clans' },
