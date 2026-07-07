@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
 from islands import compute_islands_cached  # noqa: E402
-from shared import CURRENT_SAVE, ELDER_AGE_RATIO, UNITS_PER_YEAR, emit, index_by_id, load_save, parse_sections, register_entity  # noqa: E402
+from shared import CURRENT_SAVE, UNITS_PER_YEAR, age_thresholds, emit, index_by_id, life_stage, load_save, parse_sections, register_entity  # noqa: E402
 
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
@@ -73,14 +73,6 @@ _TRAIT_MASS_MODS = {
     "giant": {"scale": 0.05},
     "tiny": {"scale": -0.02},
 }
-
-
-# WB `Subspecies.calculateAgeRelatedStats`: lifespan > 30 → adult 16 / breeding 18; else `Pow(lifespan, 0.55) × 1.1` (capped 16/18, breeding == adult). Civilized species all sit in the > 30 branch.
-def _age_thresholds(lifespan: float) -> tuple[float, float]:
-    if lifespan > 30:
-        return 16.0, 18.0
-    adult = min((lifespan**0.55) * 1.1, 16.0)
-    return adult, min(adult, 18.0)
 
 
 def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict | None:
@@ -161,7 +153,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
     age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)
     lifespan = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0)
-    age_adult, age_breeding = _age_thresholds(lifespan)
+    age_adult, age_breeding = age_thresholds(lifespan)
     # `canBreed` gate (`isBreedingAge` + not the `infertile` trait). Transient blockers (pregnancy, afterglow, nutrition) aren't in the save.
     can_reproduce = age >= age_breeding and "infertile" not in (actor.get("saved_traits") or [])
     # `army_captain` isn't a `profession` int — it's a warrior (5) leading an army. Overrides the base profession label when this actor captains one.
@@ -182,7 +174,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,
         "kingdom": _resolve_kingdom(actor.get("civ_kingdom_id"), kingdoms_by_id),
         "language": language.get("name"),
-        "life_stage": _life_stage(age, age_adult, lifespan),
+        "life_stage": life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor),
         "name": actor.get("name"),
         "personality": _compute_personality(actor, ctx),
@@ -350,20 +342,6 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
         if v:
             result[k] = v
     return dict(sorted(result.items()))
-
-
-# Narrative tier from `age` (years). baby/child/teen scale with `age_adult` (age_adult/8, /2, ·1) so they always nest below adulthood.
-# `elder` mirrors WB's `isPrettyOld` = age/lifespan > 0.7 (the `age ≥ age_adult` guard is implied — 0.7·lifespan ≫ age_adult for every civ species).
-def _life_stage(age: int, age_adult: float, lifespan: float) -> str:
-    if age < age_adult / 8:
-        return "baby"
-    if age < age_adult / 2:
-        return "child"
-    if age < age_adult:
-        return "teen"
-    if lifespan and age > lifespan * ELDER_AGE_RATIO:
-        return "elder"
-    return "adult"
 
 
 # Register this actor (species + sex) in the reader's person registry, for the `[p id Nom]` tag.

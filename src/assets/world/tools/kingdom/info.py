@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "actor"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
 from islands import compute_islands_cached  # noqa: E402
-from shared import CURRENT_SAVE, ELDER_AGE_RATIO, UNITS_PER_YEAR, emit, index_by_id, load_data, load_save, parse_sections, register_entity  # noqa: E402
+from shared import CURRENT_SAVE, UNITS_PER_YEAR, age_thresholds, emit, index_by_id, life_stage, load_data, load_save, parse_sections, register_entity  # noqa: E402
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
 _ALL_SECTIONS = ("metadata", "population", "ranks", "relations", "wars")
@@ -33,6 +33,8 @@ def _build_context(save: dict) -> dict:
 
     actors_by_id: dict[int, dict] = {}
     actors_by_kingdom: dict[int, list[dict]] = {}
+    families_by_kingdom: dict[int, set[int]] = {}
+    familyless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
     infected_by_kingdom: Counter[int] = Counter()
     nobles_by_kingdom: Counter[int] = Counter()
@@ -58,6 +60,10 @@ def _build_context(save: dict) -> dict:
             sick_by_kingdom[kid] += 1
         if "immortal" in traits:
             immortals_by_kingdom[kid] += 1
+        if fid := actor.get("family"):
+            families_by_kingdom.setdefault(kid, set()).add(fid)
+        else:
+            familyless_by_kingdom[kid] += 1
         sub_id = actor.get("subspecies")
         if sub_id is not None:
             subspecies_counts.setdefault(kid, {})
@@ -86,6 +92,8 @@ def _build_context(save: dict) -> dict:
         "actors_by_kingdom": actors_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
         "cities_by_kingdom": cities_by_kingdom,
+        "families_by_kingdom": families_by_kingdom,
+        "familyless_by_kingdom": familyless_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
         "infected_by_kingdom": infected_by_kingdom,
         "main_subspecies": main_subspecies,
@@ -107,8 +115,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
     # Chronicler-only: distinct island ids touched by the kingdom's city zones, sorted asc (1 = biggest). Zones are WB `TileZone`s of 8 tiles — probe centre.
     islands = sorted({iid for zx, zy in ctx["zones_by_kingdom"].get(kid, []) if (iid := island_lookup.get((zx * 8 + 4, zy * 8 + 4))) is not None})
-    # Reigning king via `kingID` — carries `asset_id` + `sex` so the UI renders it as an `<app-person-tag>`. Omitted if the ruler actor is gone (interregnum).
-    king_actor = ctx["actors_by_id"].get(kingdom.get("kingID"))
+    king_actor = ctx["actors_by_id"].get(kingdom.get("kingID"))  # Reigning king (`kingID`): `asset_id`+`sex` feed the UI `<app-person-tag>`. `None` at interregnum.
     king = None
     if king_actor:
         king = {
@@ -120,6 +127,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     return {
         "age": int(age_units / UNITS_PER_YEAR),
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
+        "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "id": kid,
         "islands": islands,
         "king": king,
@@ -130,23 +138,20 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     }
 
 
-# `adults`/`children` split at WB `age_adult` (16); `elders` = adults past `isPrettyOld` (age/lifespan > 0.7); `couples` = mutual in-kingdom `lover` pairs.
-# `nobles` = kings + village leaders + army captains; `sick`/`infected` = WB `calculateIsSick` traits (`infected` ⊂ `sick`).
+# Age tiers from `life_stage`; `couples` = mutual lovers; `nobles` = kings + leaders + captains; `sick`/`infected` from WB `calculateIsSick` (`infected` ⊂ `sick`).
 def _build_population(kingdom: dict, ctx: dict) -> dict:
     kid = kingdom.get("id")
     world_time = ctx["world_time"]
     by_id = ctx["actors_by_id"]
     actors = ctx["actors_by_kingdom"].get(kid, [])
     ids = {a["id"] for a in actors}
-    adults = elders = men = couples = 0
+    stages: Counter[str] = Counter()
+    men = couples = 0
     paired: set[int] = set()
     for a in actors:
         age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
-        if age >= _ADULT_AGE:
-            adults += 1
         lifespan = compute_actor_stats(a, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0)
-        if lifespan and age > lifespan * ELDER_AGE_RATIO:
-            elders += 1
+        stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
         if a.get("sex") != 1:
             men += 1
         lover = a.get("lover")
@@ -159,15 +164,18 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
     infected = ctx["infected_by_kingdom"][kid]
     sick = ctx["sick_by_kingdom"][kid]
     return {
-        "adults": adults,
-        "children": total - adults,
+        "adults": stages["adult"],
+        "babies": stages["baby"],
+        "children": stages["child"],
         "couples": couples,
-        "elders": elders,
+        "elders": stages["elder"],
+        "familyless": ctx["familyless_by_kingdom"][kid],
         **({"immortals": immortals} if immortals else {}),
         **({"infected": infected} if infected else {}),
         "men": men,
         "nobles": ctx["nobles_by_kingdom"][kid],
         **({"sick": sick} if sick else {}),
+        "teens": stages["teen"],
         "total": total,
         "warriors": ctx["warriors_by_kingdom"][kid],
         "women": total - men,

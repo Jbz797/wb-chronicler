@@ -25,12 +25,33 @@ def _strip_none(value):
     return value
 
 
+# WB `Subspecies.calculateAgeRelatedStats`: lifespan > 30 → (16, 18); else `Pow(lifespan, 0.55)×1.1` capped 16/18 (civ species always > 30).
+def age_thresholds(lifespan: float) -> tuple[float, float]:
+    if lifespan > 30:
+        return 16.0, 18.0
+    adult = min((lifespan**0.55) * 1.1, 16.0)
+    return adult, min(adult, 18.0)
+
+
 def emit(out: dict) -> None:
     print(json.dumps(_strip_none(out), ensure_ascii=False, indent=2))
 
 
 def index_by_id(records: list[dict], key: str = "id") -> dict:
     return {record[key]: record for record in records}
+
+
+# Narrative age tier (exact tally source for kingdom demographics): baby/child/teen scale with `age_adult` (÷8, ÷2, ·1); `elder` = WB `isPrettyOld` (age/lifespan > 0.7).
+def life_stage(age: int, age_adult: float, lifespan: float) -> str:
+    if age < age_adult / 8:
+        return "baby"
+    if age < age_adult / 2:
+        return "child"
+    if age < age_adult:
+        return "teen"
+    if lifespan and age > lifespan * ELDER_AGE_RATIO:
+        return "elder"
+    return "adult"
 
 
 # Loads (and caches) a JSON file from the datas dir — `{}` if it doesn't exist.
