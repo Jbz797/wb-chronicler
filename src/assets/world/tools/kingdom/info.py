@@ -48,6 +48,7 @@ def _build_context(save: dict) -> dict:
     actors_by_kingdom: dict[int, list[dict]] = {}
     families_by_kingdom: dict[int, set[int]] = {}
     familyless_by_kingdom: Counter[int] = Counter()
+    homeless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
     infected_by_kingdom: Counter[int] = Counter()
     nobles_by_kingdom: Counter[int] = Counter()
@@ -73,6 +74,8 @@ def _build_context(save: dict) -> dict:
             sick_by_kingdom[kid] += 1
         if "immortal" in traits:
             immortals_by_kingdom[kid] += 1
+        if not actor.get("homeBuildingID"):
+            homeless_by_kingdom[kid] += 1
         if fid := actor.get("family"):
             families_by_kingdom.setdefault(kid, set()).add(fid)
         else:
@@ -128,6 +131,7 @@ def _build_context(save: dict) -> dict:
         "cities_by_kingdom": cities_by_kingdom,
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
+        "homeless_by_kingdom": homeless_by_kingdom,
         "houses_by_kingdom": houses_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
         "infected_by_kingdom": infected_by_kingdom,
@@ -211,6 +215,7 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
         "couples": couples,
         "elders": stages["elder"],
         "familyless": ctx["familyless_by_kingdom"][kid],
+        "homeless": ctx["homeless_by_kingdom"][kid],
         **({"immortals": immortals} if immortals else {}),
         **({"infected": infected} if infected else {}),
         "men": men,
