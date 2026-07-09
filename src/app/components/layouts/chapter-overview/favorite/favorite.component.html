@@ -38,6 +38,9 @@
     <nz-descriptions-item [nzTitle]="moneyTitle">
       <app-ranked-stat stat="money" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="equipmentPowerTitle">
+      <app-ranked-stat stat="equipment_power" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="inventoryTitle">
       <div class="inventory">
         @for (item of inventoryEntries(); track item.key) {
@@ -58,6 +61,7 @@
     }
     Titre
   </ng-template>
+  <ng-template #equipmentPowerTitle><img src="assets/img/stats/equipment_power.png" /><span>Panoplie</span></ng-template>
   <ng-template #inventoryTitle><img src="assets/img/stats/inventory.png" /><span>Inventaire</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
   <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
@@ -107,7 +111,6 @@
   <ng-template #staminaTitle><img src="assets/img/stats/stamina.png" /><span>Vigueur</span></ng-template>
 
   <app-rarity-stats title="Nombre de traits" [counts]="fav.traits" [deltas]="deltas()?.traits ?? null" />
-  <app-rarity-stats title="Équipement" [counts]="fav.equipment" [deltas]="deltas()?.equipment ?? null" />
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Compétences" [nzColumn]="1">
     @for (s of skillStats; track s.key) {

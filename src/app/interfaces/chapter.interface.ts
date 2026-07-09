@@ -72,7 +72,6 @@ interface DeathBreakdown {
 interface Favorite {
   best_friend: Companion | null;
   descriptor: string;
-  equipment: RarityCounts;
   inventory: Record<string, number>;
   lover: Companion | null;
   metadata: FavoriteMetadata;
@@ -103,6 +102,7 @@ interface FavoriteRanks {
   damage?: number;
   damage_range?: number;
   diplomacy?: number;
+  equipment_power?: number;
   health_max?: number;
   intelligence?: number;
   kills?: number;
@@ -127,6 +127,7 @@ interface FavoriteStats {
   damage: number;
   damage_range: number;
   diplomacy: number;
+  equipment_power: number;
   happiness: number;
   health: number;
   health_max: number;

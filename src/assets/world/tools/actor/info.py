@@ -16,10 +16,7 @@ from shared import CURRENT_SAVE, UNITS_PER_YEAR, age_thresholds, emit, index_by_
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
 _LEVEL_RE = re.compile(r"(\d+)$")
-
-# `Actor.getMassKG`: mass = (target_scale / 0.1) × mass_2 × (1 + Σ multiplier_mass). `target_scale`/`mass_2` not persisted, rebuilt from asset_id + saved_traits.
-_MASS_BASE = {"dwarf": 75, "elf": 25, "humanoid": 65, "orc": 85}
-
+_MASS_BASE = {"dwarf": 75, "elf": 25, "humanoid": 65, "orc": 85}  # `Actor.getMassKG` base per species: (scale / 0.1) × mass_2 × (1 + Σ multiplier_mass).
 _PROFESSION_KING = 3
 _PROFESSION_LEADER = 4
 _PROFESSIONS = {2: "unit", _PROFESSION_KING: "king", _PROFESSION_LEADER: "leader", 5: "warrior"}
@@ -35,6 +32,7 @@ _RANKED_STATS = {
     "damage",
     "damage_range",
     "diplomacy",
+    "equipment_power",
     "health_max",
     "intelligence",
     "kills",
@@ -50,6 +48,7 @@ _RANKED_STATS = {
     "warfare",
 }
 
+_RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # Rarity weights for equipment power (Normal 1 → Legendary 4).
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "persons.json"
 
 # UI order: active roles first (can be lost — chief/alpha/captain by hierarchical rank), then historical foundations (irrevocable — creators before founders).
@@ -75,11 +74,11 @@ _TRAIT_MASS_MODS = {
 }
 
 
-def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict | None:
+def _build_companion(actor: dict, ctx: dict, id_field: str) -> dict | None:
     companion_id = actor.get(id_field)
     if companion_id is None:
         return None
-    companion = next((a for a in save["actors_data"] if a.get("id") == companion_id), None)
+    companion = ctx["actors_by_id"].get(companion_id)
     if companion is None:
         return None
     snap = compute_actor_stats(companion, ctx, ctx["subspecies_base_cache"])
@@ -96,15 +95,25 @@ def _build_companion(actor: dict, ctx: dict, save: dict, id_field: str) -> dict 
     }
 
 
+# Single pass over actors: id / asset_id lookups + children-per-parent (matches `Actor.get_current_children_count`).
 def _build_context(save: dict) -> dict:
-    # Index of living children per parent — matches `Actor.get_current_children_count`.
+    actors_by_asset: dict[str, list[dict]] = {}
+    actors_by_id: dict[int, dict] = {}
     children_by_parent: dict[int, int] = {}
     for actor in save.get("actors_data", []):
+        actors_by_id[actor["id"]] = actor
+        actors_by_asset.setdefault(actor.get("asset_id"), []).append(actor)
         for parent_id in (actor.get("parent_id_1"), actor.get("parent_id_2")):
             if parent_id:
                 children_by_parent[parent_id] = children_by_parent.get(parent_id, 0) + 1
     # `subspecies_base_cache`: heavy `compute_actor_stats` base computed once per subspecies, reused run-wide.
-    return {**build_actor_stats_context(save), "children_by_parent": children_by_parent, "subspecies_base_cache": {}}
+    return {
+        **build_actor_stats_context(save),
+        "actors_by_asset": actors_by_asset,
+        "actors_by_id": actors_by_id,
+        "children_by_parent": children_by_parent,
+        "subspecies_base_cache": {},
+    }
 
 
 def _build_equipment_list(actor: dict, ctx: dict) -> list:
@@ -250,9 +259,8 @@ def _compute_personality(actor: dict, ctx: dict) -> str | None:
 
 
 # Top 3 only — UI hides the rest, no narrative use for "34th out of 114".
-def _compute_ranks_in_species(actor: dict, ctx: dict, save: dict) -> dict:
-    asset_id = actor.get("asset_id", "")
-    same_species = [a for a in save["actors_data"] if a.get("asset_id") == asset_id]
+def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
+    same_species = ctx["actors_by_asset"].get(actor.get("asset_id"), [])
     peers = [(a["id"], _compute_stats(a, ctx, ctx["subspecies_base_cache"])) for a in same_species]
     own = next(s for aid, s in peers if aid == actor["id"])
     ranks = {}
@@ -300,8 +308,8 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
         {
             "births": int(actor.get("births") or 0),
             "children": ctx["children_by_parent"].get(actor.get("id"), 0),
-            # Current `health`/`mana`/`stamina` (vs `*_max`); `happiness`/`nutrition` live (no max). WB happiness: -100→+100, UI shows (raw+100)/2 as 0–100%.
-            "happiness": (int(actor.get("happiness") or 0) + 100) * 100 // 200,
+            "equipment_power": _equipment_power(actor, ctx),
+            "happiness": (int(actor.get("happiness") or 0) + 100) * 100 // 200,  # WB happiness: -100→+100, UI shows (raw+100)/2 as 0–100%.
             "health": int(actor.get("health") or 0),
             "kills": int(actor.get("kills") or 0),
             # WB displays level 1 as the floor, even when the raw save field is absent / 0.
@@ -315,6 +323,16 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
         }
     )
     return dict(sorted(cleaned.items()))
+
+
+def _equipment_power(actor: dict, ctx: dict) -> int:
+    items = ctx["items_by_id"]
+    total = 0
+    for iid in actor.get("saved_items") or []:
+        item = items.get(iid)
+        if item:
+            total += _RARITY_POINTS[_equipment_rarity(item.get("modifiers") or [])]
+    return total
 
 
 def _equipment_rarity(modifiers: list[str]) -> str:
@@ -380,12 +398,12 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
     save = load_save()
-    actor = next((a for a in save["actors_data"] if a.get("id") == actor_id), None)
+    ctx = _build_context(save)
+    actor = ctx["actors_by_id"].get(actor_id)
     if actor is None:
         print(f"unknown actor: {actor_id}", file=sys.stderr)
         return 1
     _register_person(actor)
-    ctx = _build_context(save)
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     if sub is None:
         print(f"no subspecies for actor {actor_id}", file=sys.stderr)
@@ -393,7 +411,7 @@ def main(argv: list[str]) -> int:
 
     out: dict = {}
     if "best_friend" in sections:
-        out["best_friend"] = _build_companion(actor, ctx, save, "best_friend_id")
+        out["best_friend"] = _build_companion(actor, ctx, "best_friend_id")
     if "creature_traits" in sections:
         out["creature_traits"] = _build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"], narrative=True)
     if "equipment" in sections:
@@ -401,13 +419,13 @@ def main(argv: list[str]) -> int:
     if "inventory" in sections:
         out["inventory"] = _build_inventory(actor)
     if "lover" in sections:
-        out["lover"] = _build_companion(actor, ctx, save, "lover")
+        out["lover"] = _build_companion(actor, ctx, "lover")
     if "metadata" in sections:
         out["metadata"] = _build_metadata(actor, ctx, save)
     if "plot" in sections:
         out["plot"] = _build_plot(actor, save)
     if "ranks_in_species" in sections:
-        out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx, save)
+        out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx)
     if "stats" in sections:
         out["stats"] = _compute_stats(actor, ctx, ctx["subspecies_base_cache"])
 

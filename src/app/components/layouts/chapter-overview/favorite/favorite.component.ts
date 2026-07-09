@@ -91,10 +91,7 @@ export class FavoriteComponent {
       rare: a.rare - b.rare,
     });
 
-    return {
-      equipment: diffCounts(current.equipment, previous.equipment),
-      traits: diffCounts(current.traits, previous.traits),
-    };
+    return { traits: diffCounts(current.traits, previous.traits) };
   });
   // Flatten the inventory dict into a list for the template — Python emits it already sorted alphabetically.
   protected readonly inventoryEntries = computed(() => {
