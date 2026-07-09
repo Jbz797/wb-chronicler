@@ -30,12 +30,12 @@
     "start": "concurrently --kill-others --names \"ng,watch\" -c \"green,cyan\" \"ng serve\" \"node scripts/watch-saves.mjs\""
   },
   "dependencies": {
-    "@angular/common": "22.0.5",
-    "@angular/compiler": "22.0.5",
-    "@angular/core": "22.0.5",
-    "@angular/forms": "22.0.5",
-    "@angular/platform-browser": "22.0.5",
-    "@angular/router": "22.0.5",
+    "@angular/common": "22.0.6",
+    "@angular/compiler": "22.0.6",
+    "@angular/core": "22.0.6",
+    "@angular/forms": "22.0.6",
+    "@angular/platform-browser": "22.0.6",
+    "@angular/router": "22.0.6",
     "marked": "18.0.5",
     "marked-gfm-heading-id": "4.1.4",
     "ng-zorro-antd": "21.3.2",
@@ -47,8 +47,8 @@
   },
   "devDependencies": {
     "@angular/build": "22.0.5",
-    "@angular/compiler-cli": "22.0.5",
-    "@angular/language-service": "22.0.5",
+    "@angular/compiler-cli": "22.0.6",
+    "@angular/language-service": "22.0.6",
     "chokidar": "5.0.0",
     "concurrently": "10.0.3",
     "eslint-config-angular-strict": "22.0.22",
@@ -59,5 +59,5 @@
     "stylelint-prettier": "5.0.3",
     "typescript": "6.0.3"
   },
-  "packageManager": "yarn@4.17.0+sha512.c2957de2f9025ab14d63b24d0d8be1f1655810e22c341042c27f7ecd017b180ec12db73d69ac366d71b304ef9f069349ce462de96f04f8f1da317f4f762c95ae"
+  "packageManager": "yarn@4.17.1+sha512.ccbfabf7d7b6b32075088be9386fb9a2e00bb6887ef07fa56effabc890a56d53da1ccc4128d62db245fcbd3961b236d75335bdf7d5320ed6eafb7588b7ad4697"
 }

@@ -44,6 +44,9 @@
     <nz-descriptions-item [nzTitle]="housesTitle">
       <app-ranked-stat source="kingdom" stat="houses" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="housedPctTitle">
+      <app-ranked-stat deltaSuffix="%" source="kingdom" stat="housed_pct" suffix="%" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="territoryTitle">
       <app-ranked-stat source="kingdom" stat="territory" />
     </nz-descriptions-item>
@@ -80,6 +83,7 @@
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du royaume</span></ng-template>
   <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
   <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
+  <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
   <ng-template #noblesTitle><img src="assets/img/world/nobles.png" /><span>Nobles</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>

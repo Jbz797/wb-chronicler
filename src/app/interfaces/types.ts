@@ -19,7 +19,7 @@ export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_re
 export type PersonRegistry = Record<string, PersonInfo>;
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'buildings' | 'children' | 'cities' | 'critical_chance'
-  | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level'
+  | 'damage' | 'damage_range' | 'diplomacy' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level'
   | 'lifespan' | 'loot' | 'mana' | 'money' | 'nobles' | 'population' | 'renown' | 'sick' | 'speed' | 'stamina' | 'stewardship'
   | 'territory' | 'warfare' | 'warriors';
 

@@ -169,6 +169,7 @@ interface KingdomMetadata {
 }
 
 interface KingdomPopulation {
+  housed_pct: number;
   immortals?: number;
   infected?: number;
   nobles: number;
@@ -181,6 +182,7 @@ interface KingdomRanks {
   age?: number;
   buildings?: number;
   cities?: number;
+  housed_pct?: number;
   houses?: number;
   immortals?: number;
   infected?: number;

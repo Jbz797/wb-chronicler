@@ -32,6 +32,7 @@ _ALL_SECTIONS = ("metadata", "population", "ranks", "relations", "wars")
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close » if any pair of their zones are within this Manhattan distance.
 _FAR_LANDS_CAPITAL_DISTANCE = 18  # `!isSameIsland` proxy: capitals further apart than this are treated as on different lands.
+_HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20. (Emotionless non-civ actors also count — ignored.)
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
 _SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits (`mush_spores`/`tumor_infection` negligible).
@@ -48,6 +49,7 @@ def _build_context(save: dict) -> dict:
     actors_by_kingdom: dict[int, list[dict]] = {}
     families_by_kingdom: dict[int, set[int]] = {}
     familyless_by_kingdom: Counter[int] = Counter()
+    happy_by_kingdom: Counter[int] = Counter()
     homeless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
     infected_by_kingdom: Counter[int] = Counter()
@@ -74,6 +76,8 @@ def _build_context(save: dict) -> dict:
             sick_by_kingdom[kid] += 1
         if "immortal" in traits:
             immortals_by_kingdom[kid] += 1
+        if int(actor.get("happiness") or 0) >= _HAPPY_MIN_HAPPINESS:
+            happy_by_kingdom[kid] += 1
         if not actor.get("homeBuildingID"):
             homeless_by_kingdom[kid] += 1
         if fid := actor.get("family"):
@@ -131,6 +135,7 @@ def _build_context(save: dict) -> dict:
         "cities_by_kingdom": cities_by_kingdom,
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
+        "happy_by_kingdom": happy_by_kingdom,
         "homeless_by_kingdom": homeless_by_kingdom,
         "houses_by_kingdom": houses_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
@@ -215,7 +220,8 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
         "couples": couples,
         "elders": stages["elder"],
         "familyless": ctx["familyless_by_kingdom"][kid],
-        "homeless": ctx["homeless_by_kingdom"][kid],
+        "happy": ctx["happy_by_kingdom"][kid],
+        "housed_pct": round((total - ctx["homeless_by_kingdom"][kid]) / total * 100) if total else 0,
         **({"immortals": immortals} if immortals else {}),
         **({"infected": infected} if infected else {}),
         "men": men,
@@ -545,8 +551,10 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
 # Standard competition rank (1,2,2,4) per stat among all kingdoms. Top 3 only — UI hides the rest.
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     kingdoms = save.get("kingdoms", [])
+
     buildings = ctx["buildings_by_kingdom"]
     cities = ctx["cities_by_kingdom"]
+    homeless = ctx["homeless_by_kingdom"]
     houses = ctx["houses_by_kingdom"]
     immortals = ctx["immortals_by_kingdom"]
     infected = ctx["infected_by_kingdom"]
@@ -559,10 +567,15 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     def kingdom_age(k: dict) -> int:
         return int((ctx["world_time"] - float(k.get("created_time") or 0)) / UNITS_PER_YEAR)
 
+    def housed_ratio(k: dict) -> float:
+        pop = populations.get(k.get("id"), 0)
+        return (pop - homeless.get(k.get("id"), 0)) / pop if pop else 0.0
+
     getters = {
         "age": kingdom_age,
         "buildings": lambda k: buildings.get(k.get("id"), 0),
         "cities": lambda k: cities.get(k.get("id"), 0),
+        "housed_pct": housed_ratio,
         "houses": lambda k: houses.get(k.get("id"), 0),
         "immortals": lambda k: immortals.get(k.get("id"), 0),
         "infected": lambda k: infected.get(k.get("id"), 0),
