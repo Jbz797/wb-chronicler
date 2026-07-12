@@ -12,7 +12,7 @@
       }
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">
-      <app-ranked-stat stat="age" suffix=" ans" [hideDelta]="true" />
+      <app-ranked-stat stat="age" [hideDelta]="true" [suffix]="ageSuffix()" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="lifespanTitle">
       <app-ranked-stat stat="lifespan" suffix=" ans" />

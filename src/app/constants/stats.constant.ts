@@ -1,4 +1,4 @@
-import { CumulativeStat, DeathCause, LeaderKind, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
+import { CumulativeStat, DeathCause, LeaderKind, LifeStage, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
 
 // French labels for `plot.type_id` — sourced from WB's `PlotsLibrary`. Unknown ids fall back to the raw id at render time.
 export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -30,6 +30,15 @@ export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
   summon_skeletons: 'Invocation de squelettes',
   summon_stormfront: "Invocation d'une tempête",
   summon_thunderstorm: "Invocation d'un orage",
+};
+
+// French labels for `metadata.life_stage` — WB age tiers (baby → elder), shown lowercase next to the age.
+export const LIFE_STAGE_LABELS: Readonly<Record<LifeStage, string>> = {
+  adult: 'adulte',
+  baby: 'bébé',
+  child: 'enfant',
+  elder: 'aîné',
+  teen: 'adolescent',
 };
 
 // French labels for `metadata.personality` (mirrors the IDs WB stores). `null` means commoner (no role).

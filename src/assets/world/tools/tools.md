@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 09/07/26 09:41</p>
+<p class="metadata">Date de mise à jour : 11/07/26 20:16</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections]`. Sortie : objet JSON sur `stdout`. `sections` accepte une liste séparée par des virgules — `full` (défaut) renvoie toutes les sections.
 
@@ -56,7 +56,7 @@ Invoquer chaque script via `python3 tools/<commande> [sections]`. Sortie : objet
 | `metadata`            | `island_id`       | ❌   | ❌  | —           | —     | —       |
 | `metadata`            | `kingdom`         | ❌   | ❌  | —           | —     | —       |
 | `metadata`            | `language`        | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `life_stage`      | ❌   | ❌  | —           | —     | —       |
+| `metadata`            | `life_stage`      | ❌   | ✅  | —           | —     | —       |
 | `metadata`            | `mass`            | ❌   | ❌  | —           | —     | —       |
 | `metadata`            | `name`            | ❌   | ✅  | —           | ❌    | ❌      |
 | `metadata`            | `personality`     | ❌   | ✅  | —           | ❌    | ❌      |

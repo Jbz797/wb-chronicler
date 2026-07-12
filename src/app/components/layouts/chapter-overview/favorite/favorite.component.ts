@@ -4,7 +4,7 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { COMBAT_STATS, PERSONALITY_LABELS, PROFESSION_LABELS, ROLE_LABELS, SKILL_STATS } from '../../../../constants';
+import { COMBAT_STATS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, PROFESSION_LABELS, ROLE_LABELS, SKILL_STATS } from '../../../../constants';
 import { RarityCounts } from '../../../../interfaces';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
@@ -36,6 +36,11 @@ export class FavoriteComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
+  // Age suffix « ans (<stage>) » — appends the life-stage label to the ranked age value.
+  protected readonly ageSuffix = computed(() => {
+    const stage = this.currentChapter()?.meta.favorite?.metadata.life_stage;
+    return stage ? ` ans (${LIFE_STAGE_LABELS[stage]})` : ' ans';
+  });
   // Tags: personality + active roles. Each one carries `isNew` (true if absent from the previous chapter).
   protected readonly roleTags = computed(() => {
     const meta = this.currentChapter()?.meta.favorite?.metadata;

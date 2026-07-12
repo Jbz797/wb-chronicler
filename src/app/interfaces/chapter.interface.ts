@@ -1,6 +1,6 @@
 import { Page } from './page.interface';
 import { RarityCounts } from './stats.interface';
-import { LeaderKind } from './types';
+import { LeaderKind, LifeStage } from './types';
 
 export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 
@@ -85,6 +85,7 @@ interface FavoriteMetadata {
   age: number;
   asset_id: string;
   kingdom: KingdomReference | null;
+  life_stage: LifeStage;
   name: string;
   personality: string | null;
   profession: string;

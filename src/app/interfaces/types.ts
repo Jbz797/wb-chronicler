@@ -16,6 +16,8 @@ export type KingdomRegistry = Record<string, KingdomInfo>;
 export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_religion' | 'dominant_subspecies'
   | 'most_populous_kingdom' | 'most_populous_village' | 'most_renowned_clan' | 'most_renowned_person';
 
+export type LifeStage = 'adult' | 'baby' | 'child' | 'elder' | 'teen';
+
 export type PersonRegistry = Record<string, PersonInfo>;
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'buildings' | 'children' | 'cities' | 'critical_chance'
