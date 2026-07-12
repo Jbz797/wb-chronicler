@@ -30,7 +30,6 @@ _RANKED_STATS = {
     "children",
     "critical_chance",
     "damage",
-    "damage_range",
     "diplomacy",
     "equipment_power",
     "health_max",

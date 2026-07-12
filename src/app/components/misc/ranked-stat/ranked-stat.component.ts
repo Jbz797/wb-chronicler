@@ -81,7 +81,6 @@ export class RankedStatComponent {
     if (k === 'birth_rate') return this._snap(f.stats.birth_rate, f.ranks_in_species.birth_rate);
     if (k === 'critical_chance') return this._snap(f.stats.critical_chance, f.ranks_in_species.critical_chance);
     if (k === 'damage') return this._snap(f.stats.damage, f.ranks_in_species.damage);
-    if (k === 'damage_range') return this._snap(f.stats.damage_range, f.ranks_in_species.damage_range);
     if (k === 'diplomacy') return this._snap(f.stats.diplomacy, f.ranks_in_species.diplomacy);
     if (k === 'equipment_power') return this._snap(f.stats.equipment_power, f.ranks_in_species.equipment_power);
     if (k === 'health') return this._snap(f.stats.health_max, f.ranks_in_species.health_max);

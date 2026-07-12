@@ -101,7 +101,6 @@ interface FavoriteRanks {
   children?: number;
   critical_chance?: number;
   damage?: number;
-  damage_range?: number;
   diplomacy?: number;
   equipment_power?: number;
   health_max?: number;
@@ -126,7 +125,6 @@ interface FavoriteStats {
   children: number;
   critical_chance: number;
   damage: number;
-  damage_range: number;
   diplomacy: number;
   equipment_power: number;
   happiness: number;

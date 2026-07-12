@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 11/07/26 20:16</p>
+<p class="metadata">Date de mise à jour : 12/07/26 16:42</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections]`. Sortie : objet JSON sur `stdout`. `sections` accepte une liste séparée par des virgules — `full` (défaut) renvoie toutes les sections.
 
@@ -80,7 +80,7 @@ Invoquer chaque script via `python3 tools/<commande> [sections]`. Sortie : objet
 | `stats`               | `children`        | ✅   | ✅  | ✅          | ✅    | ✅      |
 | `stats`               | `critical_chance` | ✅   | ✅  | ✅          | ✅    | ✅      |
 | `stats`               | `damage`          | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `damage_range`    | ✅   | ✅  | ✅          | ✅    | ❌      |
+| `stats`               | `damage_range`    | ❌   | ❌  | —           | —     | —       |
 | `stats`               | `diplomacy`       | ✅   | ✅  | ✅          | ✅    | ✅      |
 | `stats`               | `equipment_power` | ✅   | ✅  | ✅          | ✅    | ✅      |
 | `stats`               | `happiness`       | ❌   | ✅  | ✅          | ❌    | ❌      |
