@@ -72,6 +72,8 @@ _TRAIT_MASS_MODS = {
     "tiny": {"scale": -0.02},
 }
 
+_UNDEAD_SPECIES = frozenset({"skeleton"})  # Fail `isAlive`/`needsFood`: never breed, never hunger (no diet).
+
 
 def _build_companion(actor: dict, ctx: dict, id_field: str) -> dict | None:
     companion_id = actor.get(id_field)
@@ -149,25 +151,36 @@ def _build_inventory(actor: dict) -> dict:
 
 
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
-    sub = ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}
-    clan = ctx["clans_by_id"].get(actor.get("clan")) or {}
-    language = ctx["languages_by_id"].get(actor.get("language")) or {}
+    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
+    snap = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
+
+    lifespan = snap.get("lifespan", 0)
+
+    age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)  # `age_overgrowth` (years past the lifespan cap) added on top, like the WB tooltip.
+    age_adult, age_breeding = age_thresholds(lifespan)
     cities_by_id = index_by_id(save.get("cities", []))
-    kingdoms_by_id = index_by_id(save.get("kingdoms", []))
+    clan = ctx["clans_by_id"].get(actor.get("clan")) or {}
     cultures_by_id = index_by_id(save.get("cultures", []))
     families_by_id = index_by_id(save.get("families", []))
+    kingdoms_by_id = index_by_id(save.get("kingdoms", []))
+    language = ctx["languages_by_id"].get(actor.get("language")) or {}
     religions_by_id = index_by_id(save.get("religions", []))
-    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
-    # `age_overgrowth` (years past lifespan cap) added on top of natural age — WB tooltip shows the sum, mirrored so chronicler sees the same.
-    age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)
-    lifespan = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0)
-    age_adult, age_breeding = age_thresholds(lifespan)
-    # `canBreed` gate (`isBreedingAge` + not the `infertile` trait). Transient blockers (pregnancy, afterglow, nutrition) aren't in the save.
-    can_reproduce = age >= age_breeding and "infertile" not in (actor.get("saved_traits") or [])
+    sub = ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}
+
+    # `canBreed`/`canMakeBabies` gates: alive, breeding age, not infertile, below offspring cap, fed. Transients (pregnancy, afterglow) aren't in the save.
+    can_reproduce = (
+        actor.get("asset_id") not in _UNDEAD_SPECIES
+        and age >= age_breeding
+        and "infertile" not in (actor.get("saved_traits") or [])
+        and ctx["children_by_parent"].get(actor.get("id"), 0) < int(snap.get("max_children") or 0)
+        and int(actor.get("nutrition") or 0) > 0
+    )
+
     # `army_captain` isn't a `profession` int — it's a warrior (5) leading an army. Overrides the base profession label when this actor captains one.
     is_captain = any(army.get("id_captain") == actor.get("id") for army in save.get("armies", []))
     ax, ay = actor.get("x"), actor.get("y")
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
+
     return {
         "age": age,
         "asset_id": actor.get("asset_id"),
