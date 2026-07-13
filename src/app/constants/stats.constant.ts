@@ -74,7 +74,9 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
 };
 
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
-export const KINGDOM_META_STATS = new Set<RankedStatKind>(['age', 'buildings', 'cities', 'food', 'gold', 'goods', 'houses', 'renown', 'territory']);
+export const KINGDOM_META_STATS = new Set<RankedStatKind>([
+  'age', 'buildings', 'cities', 'deaths', 'food', 'gold', 'goods', 'houses', 'kills', 'renown', 'territory',
+]);
 
 // Kingdom ranked stats shown raw (age in years, `%`, per-capita ratio) — every other kingdom stat compacts to `X.X K` above 100, like the world panel.
 export const NON_COMPACT_KINGDOM_STATS = new Set<RankedStatKind>(['age', 'fed_pct', 'food_per_capita', 'housed_pct']);

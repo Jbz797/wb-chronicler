@@ -212,6 +212,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": (ctx["capitals_by_kingdom"].get(kid) or {}).get("name"),
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
+        "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
         "gold": ctx["gold_by_kingdom"][kid],  # Gold currency stocked across the kingdom's buildings.
@@ -220,6 +221,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "id": kid,
         "islands": islands,
         "king": king,
+        "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
         "renown": kingdom.get("renown", 0),
@@ -637,6 +639,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
         "age": kingdom_age,
         "buildings": lambda k: buildings.get(k.get("id"), 0),
         "cities": lambda k: cities.get(k.get("id"), 0),
+        "deaths": lambda k: k.get("total_deaths", 0),
         "fed_pct": fed_ratio,
         "food": lambda k: food.get(k.get("id"), 0),
         "food_per_capita": food_per_capita,
@@ -646,6 +649,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
         "houses": lambda k: houses.get(k.get("id"), 0),
         "immortals": lambda k: immortals.get(k.get("id"), 0),
         "infected": lambda k: infected.get(k.get("id"), 0),
+        "kills": lambda k: k.get("total_kills", 0),
         "money": lambda k: money.get(k.get("id"), 0),
         "nobles": lambda k: nobles.get(k.get("id"), 0),
         "population": lambda k: populations.get(k.get("id"), 0),
