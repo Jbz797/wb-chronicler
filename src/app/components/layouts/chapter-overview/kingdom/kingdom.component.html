@@ -65,6 +65,9 @@
     <nz-descriptions-item [nzTitle]="foodPerCapitaTitle">
       <app-ranked-stat numberFormat="1.1-1" source="kingdom" stat="food_per_capita" suffix="/hab" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="fedPctTitle">
+      <app-ranked-stat source="kingdom" stat="fed_pct" suffix="%" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="goldTitle">
       <app-ranked-stat source="kingdom" stat="gold" />
     </nz-descriptions-item>
@@ -105,6 +108,7 @@
   <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
   <ng-template #capitalTitle><img src="assets/img/world/capital.png" /><span>Capitale</span></ng-template>
   <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
+  <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>
   <ng-template #foodTitle><img src="assets/img/world/food.png" /><span>Nourriture</span></ng-template>
   <ng-template #foodPerCapitaTitle><img src="assets/img/world/food_per_capita.png" /><span>Réserves</span></ng-template>
   <ng-template #goldTitle><img src="assets/img/world/gold.png" /><span>Or</span></ng-template>

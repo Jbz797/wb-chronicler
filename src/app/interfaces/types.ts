@@ -21,7 +21,7 @@ export type LifeStage = 'adult' | 'baby' | 'child' | 'elder' | 'teen';
 export type PersonRegistry = Record<string, PersonInfo>;
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'buildings' | 'children' | 'cities' | 'critical_chance'
-  | 'damage' | 'diplomacy' | 'equipment_power' | 'food' | 'food_per_capita' | 'gold' | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals'
+  | 'damage' | 'diplomacy' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'gold' | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals'
   | 'infected' | 'intelligence' | 'kills' | 'level'
   | 'lifespan' | 'loot' | 'mana' | 'money' | 'nobles' | 'population' | 'renown' | 'renown_total' | 'sick' | 'speed' | 'stamina' | 'stewardship'
   | 'territory' | 'warfare' | 'warriors';

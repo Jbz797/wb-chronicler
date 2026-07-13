@@ -67,7 +67,7 @@ export class RankedStatComponent {
       const key = this.stat();
       if (key === 'population') return this._snap(k.population.total, k.ranks.population);
       if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat], k.ranks[key as KingdomMetaStat]);
-      const pk = key as 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'money' | 'nobles' | 'renown_total' | 'sick' | 'warriors';
+      const pk = key as 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'money' | 'nobles' | 'renown_total' | 'sick' | 'warriors';
       return this._snap(k.population[pk] ?? 0, k.ranks[pk]);
     }
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);

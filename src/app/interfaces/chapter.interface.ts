@@ -173,6 +173,7 @@ interface KingdomMetadata {
 }
 
 interface KingdomPopulation {
+  fed_pct: number;
   food_per_capita: number;
   housed_pct: number;
   immortals?: number;
@@ -189,6 +190,7 @@ interface KingdomRanks {
   age?: number;
   buildings?: number;
   cities?: number;
+  fed_pct?: number;
   food?: number;
   food_per_capita?: number;
   gold?: number;

@@ -34,8 +34,10 @@ _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close »
 _FAR_LANDS_CAPITAL_DISTANCE = 18  # `!isSameIsland` proxy: capitals further apart than this are treated as on different lands.
 _FOOD_RESOURCES = frozenset(load_data("food-resources.json"))  # WB eatable resource ids (`initFood` + `initFoodRecipes`) — raw + cooked/drinks.
 _HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20. (Emotionless non-civ actors also count — ignored.)
+_NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
+_SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 _SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits (`mush_spores`/`tumor_infection` negligible).
 
 
@@ -48,8 +50,10 @@ def _build_context(save: dict) -> dict:
 
     actors_by_id: dict[int, dict] = {}
     actors_by_kingdom: dict[int, list[dict]] = {}
+    eaters_by_kingdom: Counter[int] = Counter()
     families_by_kingdom: dict[int, set[int]] = {}
     familyless_by_kingdom: Counter[int] = Counter()
+    fed_by_kingdom: Counter[int] = Counter()
     happy_by_kingdom: Counter[int] = Counter()
     homeless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
@@ -70,6 +74,10 @@ def _build_context(save: dict) -> dict:
         populations_by_kingdom[kid] += 1
         money_by_kingdom[kid] += int(actor.get("money") or 0)
         renown_by_kingdom[kid] += int(actor.get("renown") or 0)
+        if actor.get("asset_id") not in _NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
+            eaters_by_kingdom[kid] += 1
+            if int(actor.get("nutrition") or 0) >= _SATED_MIN_NUTRITION:
+                fed_by_kingdom[kid] += 1
         if actor.get("profession") == 5:
             warriors_by_kingdom[kid] += 1
         if actor.get("profession") in (3, 4) or actor["id"] in captain_ids:
@@ -155,8 +163,10 @@ def _build_context(save: dict) -> dict:
         "buildings_by_kingdom": buildings_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
         "cities_by_kingdom": cities_by_kingdom,
+        "eaters_by_kingdom": eaters_by_kingdom,
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
+        "fed_by_kingdom": fed_by_kingdom,
         "food_by_kingdom": food_by_kingdom,
         "gold_by_kingdom": gold_by_kingdom,
         "goods_by_kingdom": goods_by_kingdom,
@@ -239,6 +249,8 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
             paired.update((a["id"], lover))
     total = len(actors)
 
+    eaters = ctx["eaters_by_kingdom"][kid]  # food-needing pop (undead excluded); denominator for `fed_pct`
+
     # `immortals`/`infected`/`sick` omitted when 0 (UI-gated on > 0; absence = none). The rest always emitted — an explicit 0 is a meaningful demographic signal.
     immortals = ctx["immortals_by_kingdom"][kid]
     infected = ctx["infected_by_kingdom"][kid]
@@ -251,6 +263,7 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
         "couples": couples,
         "elders": stages["elder"],
         "familyless": ctx["familyless_by_kingdom"][kid],
+        "fed_pct": round(100 * ctx["fed_by_kingdom"][kid] / eaters) if eaters else 0,  # % of food-needing pop sated (nutrition ≥ 60).
         "food_per_capita": round(ctx["food_by_kingdom"][kid] / total, 1) if total else 0,  # Eatable stock ÷ population — food security.
         "happy": ctx["happy_by_kingdom"][kid],
         "housed_pct": round((total - ctx["homeless_by_kingdom"][kid]) / total * 100) if total else 0,
@@ -588,6 +601,8 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     buildings = ctx["buildings_by_kingdom"]
     cities = ctx["cities_by_kingdom"]
+    eaters = ctx["eaters_by_kingdom"]
+    fed = ctx["fed_by_kingdom"]
     food = ctx["food_by_kingdom"]
     gold = ctx["gold_by_kingdom"]
     goods = ctx["goods_by_kingdom"]
@@ -606,6 +621,10 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     def kingdom_age(k: dict) -> int:
         return int((ctx["world_time"] - float(k.get("created_time") or 0)) / UNITS_PER_YEAR)
 
+    def fed_ratio(k: dict) -> float:
+        eat = eaters.get(k.get("id"), 0)
+        return fed.get(k.get("id"), 0) / eat if eat else 0.0
+
     def food_per_capita(k: dict) -> float:
         pop = populations.get(k.get("id"), 0)
         return food.get(k.get("id"), 0) / pop if pop else 0.0
@@ -618,6 +637,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
         "age": kingdom_age,
         "buildings": lambda k: buildings.get(k.get("id"), 0),
         "cities": lambda k: cities.get(k.get("id"), 0),
+        "fed_pct": fed_ratio,
         "food": lambda k: food.get(k.get("id"), 0),
         "food_per_capita": food_per_capita,
         "gold": lambda k: gold.get(k.get("id"), 0),
