@@ -32,6 +32,7 @@ _ALL_SECTIONS = ("metadata", "population", "ranks", "relations", "wars")
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close » if any pair of their zones are within this Manhattan distance.
 _FAR_LANDS_CAPITAL_DISTANCE = 18  # `!isSameIsland` proxy: capitals further apart than this are treated as on different lands.
+_FOOD_RESOURCES = frozenset(load_data("food-resources.json"))  # WB eatable resource ids (`initFood` + `initFoodRecipes`) — raw + cooked/drinks.
 _HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20. (Emotionless non-civ actors also count — ignored.)
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
@@ -102,15 +103,30 @@ def _build_context(save: dict) -> dict:
         territory_by_kingdom[kid] = territory_by_kingdom.get(kid, 0) + len(zones)
         zones_by_kingdom.setdefault(kid, []).extend((z["x"], z["y"]) for z in zones)
 
-    # Civic buildings per kingdom: those whose tile falls in one of its city zones (8-tile `TileZone`s). `houses` = the dwelling subset.
-    zone_to_kingdom = {zone: kid for kid, zone_list in zones_by_kingdom.items() for zone in zone_list}
-    civic = civic_building_ids()
     buildings_by_kingdom: Counter[int] = Counter()
+    civic = civic_building_ids()  # Tallied per kingdom below (tile inside a city zone); `houses` = the dwelling subset.
+    food_by_kingdom: Counter[int] = Counter()
+    gold_by_kingdom: Counter[int] = Counter()
+    goods_by_kingdom: Counter[int] = Counter()
     houses_by_kingdom: Counter[int] = Counter()
+    zone_to_kingdom = {zone: kid for kid, zone_list in zones_by_kingdom.items() for zone in zone_list}
+
     for b in save.get("buildings", []):
         bx, by = b.get("mainX"), b.get("mainY")
         if bx is None or by is None:
             continue
+        # Building-storage resources summed per city's kingdom: `food` (eatable, mirrors WB's `_current_total_food`), `gold` (currency), `goods` (other materials/gems).
+        city = cities_by_id.get(b.get("cityID"))
+        if city and (fkid := city.get("kingdomID")):
+            for r in (b.get("resources") or {}).get("saved_resources") or []:
+                rid = r.get("id")
+                amount = r.get("amount", 0)
+                if rid in _FOOD_RESOURCES:
+                    food_by_kingdom[fkid] += amount
+                elif rid == "gold":
+                    gold_by_kingdom[fkid] += amount
+                else:
+                    goods_by_kingdom[fkid] += amount
         kid = zone_to_kingdom.get((bx // 8, by // 8))
         asset_id = b.get("asset_id")
         if kid is not None and asset_id in civic:
@@ -135,6 +151,9 @@ def _build_context(save: dict) -> dict:
         "cities_by_kingdom": cities_by_kingdom,
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
+        "food_by_kingdom": food_by_kingdom,
+        "gold_by_kingdom": gold_by_kingdom,
+        "goods_by_kingdom": goods_by_kingdom,
         "happy_by_kingdom": happy_by_kingdom,
         "homeless_by_kingdom": homeless_by_kingdom,
         "houses_by_kingdom": houses_by_kingdom,
@@ -173,8 +192,12 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     return {
         "age": int(age_units / UNITS_PER_YEAR),
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
+        "capital": (ctx["capitals_by_kingdom"].get(kid) or {}).get("name"),
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
+        "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
+        "gold": ctx["gold_by_kingdom"][kid],  # Gold currency stocked across the kingdom's buildings.
+        "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
         "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).
         "id": kid,
         "islands": islands,
@@ -220,6 +243,7 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
         "couples": couples,
         "elders": stages["elder"],
         "familyless": ctx["familyless_by_kingdom"][kid],
+        "food_per_capita": round(ctx["food_by_kingdom"][kid] / total, 1) if total else 0,  # Eatable stock ÷ population — food security.
         "happy": ctx["happy_by_kingdom"][kid],
         "housed_pct": round((total - ctx["homeless_by_kingdom"][kid]) / total * 100) if total else 0,
         **({"immortals": immortals} if immortals else {}),
@@ -266,7 +290,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         other_id = other.get("id")
         if other_id == kid:
             continue
-        _register_kingdom(other, save)
+        _register_kingdom(other, ctx)
         r = relations_by_other.get(other_id)
         status = "ally" if is_ally(other_id) else "enemy" if is_enemy(other_id) else "neutral"
         last_war_end = (r or {}).get("timestamp_last_war_ended")
@@ -300,6 +324,9 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                 return {"id": a["id"], "name": a["name"]}
         return None
 
+    cities = ctx["cities_by_kingdom"]
+    populations = ctx["populations_by_kingdom"]
+    warriors = ctx["warriors_by_kingdom"]
     out = []
     for w in save.get("wars", []):
         if w.get("winner"):
@@ -315,10 +342,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
 
         # Register opposing/ally kingdoms (and the war's instigator) so the UI's `app-kingdom-tag` can resolve their banner + colours.
         for k in [*opponent_kingdoms, *ally_kingdoms, *([starter_kingdom] if starter_kingdom else [])]:
-            _register_kingdom(k, save)
-        cities = ctx["cities_by_kingdom"]
-        populations = ctx["populations_by_kingdom"]
-        warriors = ctx["warriors_by_kingdom"]
+            _register_kingdom(k, ctx)
         duration_units = ctx["world_time"] - float(w.get("created_time") or 0)
 
         out.append(
@@ -554,6 +578,9 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     buildings = ctx["buildings_by_kingdom"]
     cities = ctx["cities_by_kingdom"]
+    food = ctx["food_by_kingdom"]
+    gold = ctx["gold_by_kingdom"]
+    goods = ctx["goods_by_kingdom"]
     homeless = ctx["homeless_by_kingdom"]
     houses = ctx["houses_by_kingdom"]
     immortals = ctx["immortals_by_kingdom"]
@@ -567,6 +594,10 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     def kingdom_age(k: dict) -> int:
         return int((ctx["world_time"] - float(k.get("created_time") or 0)) / UNITS_PER_YEAR)
 
+    def food_per_capita(k: dict) -> float:
+        pop = populations.get(k.get("id"), 0)
+        return food.get(k.get("id"), 0) / pop if pop else 0.0
+
     def housed_ratio(k: dict) -> float:
         pop = populations.get(k.get("id"), 0)
         return (pop - homeless.get(k.get("id"), 0)) / pop if pop else 0.0
@@ -575,6 +606,10 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
         "age": kingdom_age,
         "buildings": lambda k: buildings.get(k.get("id"), 0),
         "cities": lambda k: cities.get(k.get("id"), 0),
+        "food": lambda k: food.get(k.get("id"), 0),
+        "food_per_capita": food_per_capita,
+        "gold": lambda k: gold.get(k.get("id"), 0),
+        "goods": lambda k: goods.get(k.get("id"), 0),
         "housed_pct": housed_ratio,
         "houses": lambda k: houses.get(k.get("id"), 0),
         "immortals": lambda k: immortals.get(k.get("id"), 0),
@@ -606,14 +641,14 @@ def _luminance(color: str) -> float:
 
 
 # Upsert reader registry with per-kingdom visuals (icon + colours). Display name comes from the caller (markdown token or chapter.json), not stored here.
-def _register_kingdom(kingdom: dict, save: dict) -> None:
+def _register_kingdom(kingdom: dict, ctx: dict) -> None:
     # Background = darkest of colour's 4 game hues, ink (icon/text/border) = lightest — max contrast within kingdom's real palette (colors-all.json).
     palette = [h for h in load_data("colors-all.json").get(str(kingdom.get("color_id", "")), {}).values() if h]
     register_entity(
         _REGISTRY,
         str(kingdom.get("id")),
         {
-            "banner_icon": _resolve_banner_sprite(kingdom, save),
+            "banner_icon": _resolve_banner_sprite(kingdom, ctx),
             "color": min(palette, key=_luminance) if palette else None,
             "ink": max(palette, key=_luminance) if palette else None,
         },
@@ -622,9 +657,9 @@ def _register_kingdom(kingdom: dict, save: dict) -> None:
 
 # Mirrors `Kingdom.getElementIcon`: index `banner_icon_id` (null → 0, out-of-range → 0) into the king's species banner set (founder species if no living king).
 # CLAUDE: `banner-icons.json` is generated from *BannerLibrary assets, covers every species — don't hand-patch, regenerate from game files for new species.
-def _resolve_banner_sprite(kingdom: dict, save: dict) -> int:
-    king = next((a for a in save.get("actors_data", []) if a.get("id") == kingdom.get("kingID")), None)
-    subspecies = index_by_id(save.get("subspecies", [])).get(king.get("subspecies")) if king else None
+def _resolve_banner_sprite(kingdom: dict, ctx: dict) -> int:
+    king = ctx["actors_by_id"].get(kingdom.get("kingID"))
+    subspecies = ctx["subspecies_by_id"].get(king.get("subspecies")) if king else None
     species = (subspecies or {}).get("species_id") or kingdom.get("original_actor_asset")
     banners = load_data("banner-icons.json")
     icons = banners["banner_id_icons"][banners["species_to_banner_id"][species]]
@@ -666,8 +701,8 @@ def main(argv: list[str]) -> int:
     if kingdom is None:
         print(f"unknown kingdom: {kingdom_id}", file=sys.stderr)
         return 1
-    _register_kingdom(kingdom, save)
     ctx = _build_context(save)
+    _register_kingdom(kingdom, ctx)
 
     out: dict = {}
     if "metadata" in sections:

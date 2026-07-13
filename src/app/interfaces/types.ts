@@ -10,7 +10,7 @@ export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' 
 
 export type IconKind = 'kingdoms' | 'persons' | 'resources' | 'species';
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
-export type KingdomMetaStat = 'age' | 'buildings' | 'cities' | 'houses' | 'renown' | 'territory';
+export type KingdomMetaStat = 'age' | 'buildings' | 'cities' | 'food' | 'gold' | 'goods' | 'houses' | 'renown' | 'territory';
 export type KingdomRegistry = Record<string, KingdomInfo>;
 
 export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_religion' | 'dominant_subspecies'
@@ -21,7 +21,8 @@ export type LifeStage = 'adult' | 'baby' | 'child' | 'elder' | 'teen';
 export type PersonRegistry = Record<string, PersonInfo>;
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'buildings' | 'children' | 'cities' | 'critical_chance'
-  | 'damage' | 'diplomacy' | 'equipment_power' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level'
+  | 'damage' | 'diplomacy' | 'equipment_power' | 'food' | 'food_per_capita' | 'gold' | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals'
+  | 'infected' | 'intelligence' | 'kills' | 'level'
   | 'lifespan' | 'loot' | 'mana' | 'money' | 'nobles' | 'population' | 'renown' | 'sick' | 'speed' | 'stamina' | 'stewardship'
   | 'territory' | 'warfare' | 'warriors';
 

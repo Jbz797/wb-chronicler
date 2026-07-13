@@ -74,7 +74,7 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
 };
 
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
-export const KINGDOM_META_STATS = new Set<RankedStatKind>(['age', 'buildings', 'cities', 'houses', 'renown', 'territory']);
+export const KINGDOM_META_STATS = new Set<RankedStatKind>(['age', 'buildings', 'cities', 'food', 'gold', 'goods', 'houses', 'renown', 'territory']);
 
 // Favorite combat stats — damage / defense / attack rhythm.
 export const COMBAT_STATS: StatConfig[] = [

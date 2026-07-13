@@ -159,7 +159,11 @@ interface Kingdom {
 interface KingdomMetadata {
   age: number;
   buildings: number;
+  capital?: string;
   cities: number;
+  food: number;
+  gold: number;
+  goods: number;
   houses: number;
   id: number;
   king?: { asset_id: string; id: number; name: string; sex: 'female' | 'male' };
@@ -169,6 +173,7 @@ interface KingdomMetadata {
 }
 
 interface KingdomPopulation {
+  food_per_capita: number;
   housed_pct: number;
   immortals?: number;
   infected?: number;
@@ -182,6 +187,10 @@ interface KingdomRanks {
   age?: number;
   buildings?: number;
   cities?: number;
+  food?: number;
+  food_per_capita?: number;
+  gold?: number;
+  goods?: number;
   housed_pct?: number;
   houses?: number;
   immortals?: number;
