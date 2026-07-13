@@ -30,6 +30,12 @@
     <nz-descriptions-item [nzTitle]="noblesTitle">
       <app-ranked-stat source="kingdom" stat="nobles" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="moneyTitle">
+      <app-ranked-stat source="kingdom" stat="money" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="renownTotalTitle">
+      <app-ranked-stat source="kingdom" stat="renown_total" />
+    </nz-descriptions-item>
     @for (o of optionalStats(); track o.stat) {
       <ng-template #optionalTitle
         ><img [src]="o.icon" /><span>{{ o.label }}</span></ng-template
@@ -105,9 +111,11 @@
   <ng-template #goodsTitle><img src="assets/img/world/goods.png" /><span>Biens</span></ng-template>
   <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
+  <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
   <ng-template #noblesTitle><img src="assets/img/world/nobles.png" /><span>Nobles</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
+  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renommée cumulée</span></ng-template>
   <ng-template #territoryTitle><img src="assets/img/world/territory.png" /><span>Territoire</span></ng-template>
   <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
 }

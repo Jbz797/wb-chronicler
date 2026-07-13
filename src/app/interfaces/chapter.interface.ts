@@ -177,7 +177,9 @@ interface KingdomPopulation {
   housed_pct: number;
   immortals?: number;
   infected?: number;
+  money: number;
   nobles: number;
+  renown_total: number;
   sick?: number;
   total: number;
   warriors: number;
@@ -195,9 +197,11 @@ interface KingdomRanks {
   houses?: number;
   immortals?: number;
   infected?: number;
+  money?: number;
   nobles?: number;
   population?: number;
   renown?: number;
+  renown_total?: number;
   sick?: number;
   territory?: number;
   warriors?: number;

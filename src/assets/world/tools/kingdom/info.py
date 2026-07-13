@@ -54,7 +54,9 @@ def _build_context(save: dict) -> dict:
     homeless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
     infected_by_kingdom: Counter[int] = Counter()
+    money_by_kingdom: Counter[int] = Counter()
     nobles_by_kingdom: Counter[int] = Counter()
+    renown_by_kingdom: Counter[int] = Counter()
     sick_by_kingdom: Counter[int] = Counter()
     subspecies_counts: dict[int, dict[int, int]] = {}
     warriors_by_kingdom: Counter[int] = Counter()
@@ -66,6 +68,8 @@ def _build_context(save: dict) -> dict:
             continue
         actors_by_kingdom.setdefault(kid, []).append(actor)
         populations_by_kingdom[kid] += 1
+        money_by_kingdom[kid] += int(actor.get("money") or 0)
+        renown_by_kingdom[kid] += int(actor.get("renown") or 0)
         if actor.get("profession") == 5:
             warriors_by_kingdom[kid] += 1
         if actor.get("profession") in (3, 4) or actor["id"] in captain_ids:
@@ -89,10 +93,12 @@ def _build_context(save: dict) -> dict:
         if sub_id is not None:
             subspecies_counts.setdefault(kid, {})
             subspecies_counts[kid][sub_id] = subspecies_counts[kid].get(sub_id, 0) + 1
+
     cities_by_id: dict[int, dict] = {}
     cities_by_kingdom: dict[int, int] = {}
     territory_by_kingdom: dict[int, int] = {}
     zones_by_kingdom: dict[int, list[tuple[int, int]]] = {}
+
     for city in save.get("cities", []):
         cities_by_id[city["id"]] = city
         kid = city.get("kingdomID")
@@ -160,8 +166,10 @@ def _build_context(save: dict) -> dict:
         "immortals_by_kingdom": immortals_by_kingdom,
         "infected_by_kingdom": infected_by_kingdom,
         "main_subspecies": main_subspecies,
+        "money_by_kingdom": money_by_kingdom,
         "nobles_by_kingdom": nobles_by_kingdom,
         "populations_by_kingdom": populations_by_kingdom,
+        "renown_by_kingdom": renown_by_kingdom,
         "sick_by_kingdom": sick_by_kingdom,
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors (≈8×).
         "supreme_kingdom_id": supreme_kingdom_id,
@@ -249,7 +257,9 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
         **({"immortals": immortals} if immortals else {}),
         **({"infected": infected} if infected else {}),
         "men": men,
+        "money": ctx["money_by_kingdom"][kid],  # Total coins held across the kingdom's population.
         "nobles": ctx["nobles_by_kingdom"][kid],
+        "renown_total": ctx["renown_by_kingdom"][kid],  # Summed renown of all inhabitants (distinct from the kingdom's own `metadata.renown`).
         **({"sick": sick} if sick else {}),
         "teens": stages["teen"],
         "total": total,
@@ -585,8 +595,10 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     houses = ctx["houses_by_kingdom"]
     immortals = ctx["immortals_by_kingdom"]
     infected = ctx["infected_by_kingdom"]
+    money = ctx["money_by_kingdom"]
     nobles = ctx["nobles_by_kingdom"]
     populations = ctx["populations_by_kingdom"]
+    renown_total = ctx["renown_by_kingdom"]
     sick = ctx["sick_by_kingdom"]
     territory = ctx["territory_by_kingdom"]
     warriors = ctx["warriors_by_kingdom"]
@@ -614,9 +626,11 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
         "houses": lambda k: houses.get(k.get("id"), 0),
         "immortals": lambda k: immortals.get(k.get("id"), 0),
         "infected": lambda k: infected.get(k.get("id"), 0),
+        "money": lambda k: money.get(k.get("id"), 0),
         "nobles": lambda k: nobles.get(k.get("id"), 0),
         "population": lambda k: populations.get(k.get("id"), 0),
         "renown": lambda k: k.get("renown", 0),
+        "renown_total": lambda k: renown_total.get(k.get("id"), 0),
         "sick": lambda k: sick.get(k.get("id"), 0),
         "territory": lambda k: territory.get(k.get("id"), 0),
         "warriors": lambda k: warriors.get(k.get("id"), 0),

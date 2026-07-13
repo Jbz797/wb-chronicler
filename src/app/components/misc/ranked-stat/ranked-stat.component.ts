@@ -1,15 +1,15 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 
-import { KINGDOM_META_STATS } from '../../../constants';
+import { KINGDOM_META_STATS, NON_COMPACT_KINGDOM_STATS } from '../../../constants';
 import { ChapterMeta, KingdomMetaStat, RankedStatKind, RankedStatSnapshot } from '../../../interfaces';
-import { TierPipe } from '../../../pipes';
+import { CompactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
 
 @Component({
   selector: 'app-ranked-stat',
-  imports: [DecimalPipe, DeltaComponent, TierPipe],
+  imports: [CompactPipe, DecimalPipe, DeltaComponent, TierPipe],
   templateUrl: './ranked-stat.component.html',
   styleUrl: './ranked-stat.component.scss',
 })
@@ -45,6 +45,8 @@ export class RankedStatComponent {
     if (k === 'stamina') return s?.stamina;
     return null;
   });
+  // Kingdom quantities render compact (`X.X K` above 100), like the world panel — except age/`%`/per-capita stats.
+  protected readonly useCompact = computed(() => this.source() === 'kingdom' && !NON_COMPACT_KINGDOM_STATS.has(this.stat()));
 
   // Status dot color shown next to the podium icon:
   private _rankStatus(current: number | undefined, previous: number | undefined, hasPrevious: boolean): 'error' | 'success' | null {
@@ -65,7 +67,7 @@ export class RankedStatComponent {
       const key = this.stat();
       if (key === 'population') return this._snap(k.population.total, k.ranks.population);
       if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat], k.ranks[key as KingdomMetaStat]);
-      const pk = key as 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'nobles' | 'sick' | 'warriors';
+      const pk = key as 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'money' | 'nobles' | 'renown_total' | 'sick' | 'warriors';
       return this._snap(k.population[pk] ?? 0, k.ranks[pk]);
     }
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
