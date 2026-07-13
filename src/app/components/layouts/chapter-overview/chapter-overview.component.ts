@@ -32,10 +32,13 @@ import { WorldStatsComponent } from './world-stats/world-stats.component';
 })
 export class ChapterOverviewComponent {
 
-  protected currentChapter = inject(ChroniclerService).currentChapter;
+  private readonly _chronicler = inject(ChroniclerService);
+  private readonly _http = inject(HttpClient);
+
+  protected currentChapter = this._chronicler.currentChapter;
 
   protected readonly activePanel = signal<ChapterOverviewPanel>(this._restoreActivePanel());
-  protected readonly world = toSignal(inject(HttpClient).get<World>(`${HISTORY_DIR}/world.json`));
+  protected readonly world = toSignal(this._http.get<World>(`${HISTORY_DIR}/world.json`));
 
   // Persist the active panel to sessionStorage so it survives reloads and page changes.
   protected onPanelToggle(panel: ChapterOverviewPanel, isActive: boolean): void {

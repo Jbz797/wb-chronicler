@@ -17,10 +17,11 @@ import { KingdomTagComponent } from '../../../../tags';
 })
 export class WarCardComponent {
 
+  protected readonly chronicler = inject(ChroniclerService);
+
   public readonly isNew = input.required<boolean>();
   public readonly war = input.required<KingdomWar>();
 
-  protected readonly chronicler = inject(ChroniclerService);
   // Per-stat delta (both sides) vs the same war in the previous chapter — `null` when no previous chapter or war absent.
   protected readonly deltas = computed(() => {
     const w = this.war();

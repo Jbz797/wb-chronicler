@@ -17,12 +17,12 @@ import { LeaderRowComponent } from './leader-row/leader-row.component';
 })
 export class WorldStatsComponent {
 
+  private readonly _chronicler = inject(ChroniclerService);
+
   protected readonly cumulativeStats = CUMULATIVE_STATS;
   protected readonly deathCauses = DEATH_CAUSES;
   protected readonly leaders = LEADERS;
   protected readonly snapshotStats = SNAPSHOT_STATS;
-
-  private readonly _chronicler = inject(ChroniclerService);
 
   protected currentChapter = this._chronicler.currentChapter;
 

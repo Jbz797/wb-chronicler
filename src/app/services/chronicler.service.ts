@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, inject, Service } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 
@@ -8,8 +8,11 @@ import { catchError, EMPTY, expand, filter, map, scan } from 'rxjs';
 import { SAVES_DIR } from '../constants';
 import { Chapter, ChapterMeta } from '../interfaces';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ChroniclerService {
+
+  private readonly _http = inject(HttpClient);
+  private readonly _router = inject(Router);
 
   // WB convention: 60 `world_time` units = 1 year = 12 in-game months (5 units per month). Returns `month/year` (1-indexed).
   private readonly _dateFromWorldTime = (worldTime: number): string => {
@@ -20,8 +23,7 @@ export class ChroniclerService {
 
   // Chapter list, dynamically discovered by probing C1, C2, ... until 404. Each chapter's chapter.json is captured during probing.
   public readonly chapters = (() => {
-    const http = inject(HttpClient);
-    const probeChapter = (n: number) => http.get<ChapterMeta>(`${SAVES_DIR}/C${n}/chapter.json`).pipe(map(meta => ({ meta, n })), catchError(() => EMPTY));
+    const probeChapter = (n: number) => this._http.get<ChapterMeta>(`${SAVES_DIR}/C${n}/chapter.json`).pipe(map(meta => ({ meta, n })), catchError(() => EMPTY));
 
     return toSignal(
       probeChapter(1).pipe(
@@ -42,10 +44,9 @@ export class ChroniclerService {
   })();
   // Active chapter resolved from the route — re-evaluated on every NavigationEnd.
   public readonly currentChapter = (() => {
-    const router = inject(Router);
     const slugFromUrl = (url: string) => (url.split('?')[0] ?? '').replace(/^\//, '');
 
-    const slug = toSignal(router.events.pipe(filter(event => event instanceof NavigationEnd), map(() => slugFromUrl(router.url))));
+    const slug = toSignal(this._router.events.pipe(filter(event => event instanceof NavigationEnd), map(() => slugFromUrl(this._router.url))));
 
     return computed(() => this.chapters().find(c => c.slug === slug()));
   })();

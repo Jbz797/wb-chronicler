@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, signal, WritableSignal } from '@angular/core';
+import { inject, Service, signal, WritableSignal } from '@angular/core';
 
 import { NzMessageService } from 'ng-zorro-antd/message';
 
@@ -8,13 +8,13 @@ import { catchError, forkJoin, Observable, of, tap } from 'rxjs';
 import { KINGDOM_REGISTRY, PERSON_REGISTRY, SAVES_DIR } from '../constants';
 import { KingdomRegistry, PersonRegistry } from '../interfaces';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class RegistryService {
-
-  public readonly kingdoms = signal<KingdomRegistry>({});
 
   private readonly _http = inject(HttpClient);
   private readonly _message = inject(NzMessageService);
+
+  public readonly kingdoms = signal<KingdomRegistry>({});
 
   // Fetches every registry JSON at app init and bridges them to the globals used by the marked renderer.
   public loadAll(): Observable<unknown> {

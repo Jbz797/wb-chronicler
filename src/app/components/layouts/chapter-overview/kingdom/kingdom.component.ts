@@ -19,10 +19,10 @@ import { WarCardComponent } from './war-card/war-card.component';
 })
 export class KingdomComponent {
 
+  private readonly _chronicler = inject(ChroniclerService);
+
   protected readonly statusColor = RELATION_STATUS_NZ_COLORS;
   protected readonly statusLabel = RELATION_STATUS_LABELS;
-
-  private readonly _chronicler = inject(ChroniclerService);
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
   // NEW badge on the king when the same featured kingdom crowned a different ruler since the previous chapter.

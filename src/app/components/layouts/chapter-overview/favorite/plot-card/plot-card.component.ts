@@ -14,9 +14,9 @@ import { ChroniclerService } from '../../../../../services';
 })
 export class PlotCardComponent {
 
-  public readonly isNew = input.required<boolean>();
-
   private readonly _chronicler = inject(ChroniclerService);
+
+  public readonly isNew = input.required<boolean>();
 
   protected readonly plot = computed(() => this._chronicler.currentChapter()?.meta.favorite?.plot ?? null);
   protected readonly progressColor = computed(() => (this.plot()?.progress ?? 0) >= 75 ? '#7a9b3a' : '#e6b94a');

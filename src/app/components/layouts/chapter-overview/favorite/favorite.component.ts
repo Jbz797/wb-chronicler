@@ -29,10 +29,10 @@ import { PlotCardComponent } from './plot-card/plot-card.component';
 })
 export class FavoriteComponent {
 
+  private readonly _chronicler = inject(ChroniclerService);
+
   protected readonly combatStats = COMBAT_STATS;
   protected readonly skillStats = SKILL_STATS;
-
-  private readonly _chronicler = inject(ChroniclerService);
 
   protected currentChapter = this._chronicler.currentChapter;
 

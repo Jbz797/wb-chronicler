@@ -11,12 +11,11 @@ import { RegistryService } from '../../../services';
 })
 export class KingdomTagComponent {
 
+  private readonly _registry = inject(RegistryService);
+
   public readonly id = input.required<number>();
   public readonly name = input.required<string>();
 
-  protected readonly kingdom = (() => {
-    const { kingdoms } = inject(RegistryService);
-    return computed(() => kingdoms()[String(this.id())] ?? null);
-  })();
+  protected readonly kingdom = computed(() => this._registry.kingdoms()[String(this.id())] ?? null);
 
 }

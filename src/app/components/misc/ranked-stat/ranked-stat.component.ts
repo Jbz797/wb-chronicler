@@ -15,6 +15,8 @@ import { DeltaComponent } from '../delta/delta.component';
 })
 export class RankedStatComponent {
 
+  private readonly _chronicler = inject(ChroniclerService);
+
   public readonly deltaSuffix = input<string>('');
   public readonly hideDelta = input<boolean>(false);
   public readonly numberFormat = input<string>('1.0-0');
@@ -22,8 +24,6 @@ export class RankedStatComponent {
   public readonly source = input<'favorite' | 'kingdom'>('favorite');
   public readonly stat = input.required<RankedStatKind>();
   public readonly suffix = input<string>('');
-
-  private readonly _chronicler = inject(ChroniclerService);
 
   protected readonly data = computed(() => {
     const current = this._sourceOf(this._chronicler.currentChapter()?.meta);

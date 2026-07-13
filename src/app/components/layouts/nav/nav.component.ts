@@ -15,6 +15,7 @@ import { ChroniclerService } from '../../../services';
 export class NavComponent {
 
   protected chapters = inject(ChroniclerService).chapters;
+
   protected pages = PAGES;
 
   protected tagIconUrl = (tag: string): string => `assets/img/tags/${tag.toLowerCase().replaceAll('_', '-')}.png`;

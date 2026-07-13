@@ -18,6 +18,7 @@ import { ChroniclerService } from '../../services';
 export class ReaderPage {
 
   private readonly _chronicler = inject(ChroniclerService);
+
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });
 
   // `undefined` while a chapter slug is still being discovered — avoids flashing/locking onto the Chronicler fallback on refresh.
