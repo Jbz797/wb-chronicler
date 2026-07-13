@@ -161,6 +161,7 @@ def _build_metadata(map_stats: dict) -> dict:
 def _build_snapshot(meta: dict, map_stats: dict, save: dict) -> dict:
     civic = civic_building_ids()
     asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings", []))  # Count `asset_id`s once, classify distinct keys — avoids 3 scans.
+    infected = sum(1 for a in save.get("actors_data", []) if "infected" in (a.get("saved_traits") or []))  # Omitted when 0 (outbreak-style, idle most chapters).
     return dict(
         sorted(
             {
@@ -169,7 +170,7 @@ def _build_snapshot(meta: dict, map_stats: dict, save: dict) -> dict:
                 "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
                 "frozen_tiles": len(save.get("frozen_tiles") or []),
                 "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
-                "infected": sum(1 for a in save.get("actors_data", []) if "infected" in (a.get("saved_traits") or [])),
+                **({"infected": infected} if infected else {}),
                 "plots_active": len(save.get("plots") or []),
                 "relations": len(save.get("relations") or []),
                 # `tree` substring catches every `Building_Tree` asset_id (pine/swamp/birch/…). ≤1% drift vs WB UI — counter moves between snapshots.

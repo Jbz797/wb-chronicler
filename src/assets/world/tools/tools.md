@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 12/07/26 16:42</p>
+<p class="metadata">Date de mise à jour : 13/07/26 11:44</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections]`. Sortie : objet JSON sur `stdout`. `sections` accepte une liste séparée par des virgules — `full` (défaut) renvoie toutes les sections.
 
@@ -10,97 +10,75 @@ Invoquer chaque script via `python3 tools/<commande> [sections]`. Sortie : objet
 | `geography/info.py`                | `islands`, `natural_features`                                                                                                |
 | `kingdom/info.py <id>`             | `full`, `metadata`, `population`, `ranks`, `relations`, `wars`                                                               |
 | `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                           |
-| `world/info.py`                    | `full`, `cumulative`, `metadata`, `snapshot`                                                                                 |
+| `world/info.py`                    | `full`, `cumulative`, `leaders`, `metadata`, `snapshot`                                                                      |
 
 ##### Options :
 
 - `r` : rayon
 
-##### Sorties de `actor/info.py full` :
+##### Sorties de `world/info.py full` :
 
-| Section               | Champ             | Rank | UI  | Visible à 0 | Delta | UI Rank |
-| --------------------- | ----------------- | ---- | --- | ----------- | ----- | ------- |
-| `best_friend`/`lover` | `age`             | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `best_friend`/`lover` | `health_max`      | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `best_friend`/`lover` | `id`              | ❌   | ❌  | —           | —     | —       |
-| `best_friend`/`lover` | `level`           | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `best_friend`/`lover` | `money`           | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `best_friend`/`lover` | `name`            | ❌   | ✅  | —           | ❌    | ❌      |
-| `best_friend`/`lover` | `renown`          | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `best_friend`/`lover` | `sex`             | ❌   | ✅  | —           | ❌    | ❌      |
-| `creature_traits`     | `id`              | ❌   | ❌  | —           | —     | —       |
-| `creature_traits`     | `description`     | ❌   | ❌  | —           | —     | —       |
-| `creature_traits`     | `flavor`          | ❌   | ❌  | —           | —     | —       |
-| `creature_traits`     | `rarity`          | ❌   | 🔶  | ✅          | ✅    | ❌      |
-| `creature_traits`     | `stats`           | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `age`             | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `asset_id`        | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `by`              | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `durability`      | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `from`            | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `id`              | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `kills`           | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `modifiers`       | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `rarity`          | ❌   | ❌  | —           | —     | —       |
-| `equipment`           | `stats`           | ❌   | ❌  | —           | —     | —       |
-| `inventory`           | `{ item_id: n }`  | ❌   | ✅  | —           | ❌    | ❌      |
-| `metadata`            | `age`             | ✅   | ✅  | ✅          | ❌    | ✅      |
-| `metadata`            | `asset_id`        | ❌   | ✅  | —           | ❌    | ❌      |
-| `metadata`            | `can_reproduce`   | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `city`            | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `clan`            | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `culture`         | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `family`          | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `favorite_food`   | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `generation`      | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `island_id`       | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `kingdom`         | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `language`        | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `life_stage`      | ❌   | ✅  | —           | —     | —       |
-| `metadata`            | `mass`            | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `name`            | ❌   | ✅  | —           | ❌    | ❌      |
-| `metadata`            | `personality`     | ❌   | ✅  | —           | ❌    | ❌      |
-| `metadata`            | `profession`      | ❌   | ✅  | —           | ❌    | ❌      |
-| `metadata`            | `religion`        | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `roles`           | ❌   | ✅  | —           | ❌    | ❌      |
-| `metadata`            | `sex`             | ❌   | ✅  | —           | ❌    | ❌      |
-| `metadata`            | `subspecies`      | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `x`               | ❌   | ❌  | —           | —     | —       |
-| `metadata`            | `y`               | ❌   | ❌  | —           | —     | —       |
-| `plot`                | `name`            | ❌   | ❌  | —           | —     | —       |
-| `plot`                | `progress`        | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `plot`                | `started_at`      | ❌   | ❌  | —           | —     | —       |
-| `plot`                | `target_alliance` | ❌   | ✅  | —           | ❌    | ❌      |
-| `plot`                | `target_kingdom`  | ❌   | ✅  | —           | ❌    | ❌      |
-| `plot`                | `type_id`         | ❌   | ✅  | —           | ❌    | ❌      |
-| `stats`               | `armor`           | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `attack_speed`    | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `birth_rate`      | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `births`          | ✅   | ❌  | —           | —     | —       |
-| `stats`               | `children`        | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `critical_chance` | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `damage`          | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `damage_range`    | ❌   | ❌  | —           | —     | —       |
-| `stats`               | `diplomacy`       | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `equipment_power` | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `happiness`       | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `stats`               | `health`          | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `stats`               | `health_max`      | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `intelligence`    | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `kills`           | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `level`           | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `lifespan`        | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `loot`            | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `mana`            | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `stats`               | `mana_max`        | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `max_children`    | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `stats`               | `money`           | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `nutrition`       | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `stats`               | `renown`          | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `speed`           | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `stamina`         | ❌   | ✅  | ✅          | ❌    | ❌      |
-| `stats`               | `stamina_max`     | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `stewardship`     | ✅   | ✅  | ✅          | ✅    | ✅      |
-| `stats`               | `warfare`         | ✅   | ✅  | ✅          | ✅    | ✅      |
+| Section        | Champ                    | UI  | Visible à 0 | Delta |
+| -------------- | ------------------------ | --- | ----------- | ----- |
+| `cumulative`   | `alliances_made`         | ❌  | —           | —     |
+| `cumulative`   | `armies_created`         | ❌  | —           | —     |
+| `cumulative`   | `books_burnt`            | ✅  | ❌          | ✅    |
+| `cumulative`   | `books_read`             | ✅  | ❌          | ✅    |
+| `cumulative`   | `cities_conquered`       | ✅  | ❌          | ✅    |
+| `cumulative`   | `cities_created`         | ❌  | —           | —     |
+| `cumulative`   | `cities_rebelled`        | ✅  | ❌          | ✅    |
+| `cumulative`   | `clans_created`          | ❌  | —           | —     |
+| `cumulative`   | `creatures_born`         | ❌  | —           | —     |
+| `cumulative`   | `creatures_created`      | ❌  | —           | —     |
+| `cumulative`   | `cultures_created`       | ❌  | —           | —     |
+| `cumulative`   | `deaths`                 | ✅  | ❌          | ✅    |
+| `cumulative`   | `evolutions`             | ✅  | ❌          | ✅    |
+| `cumulative`   | `families_created`       | ❌  | —           | —     |
+| `cumulative`   | `houses_built`           | ❌  | —           | —     |
+| `cumulative`   | `kingdoms_created`       | ❌  | —           | —     |
+| `cumulative`   | `languages_created`      | ❌  | —           | —     |
+| `cumulative`   | `metamorphosis`          | ✅  | ❌          | ✅    |
+| `cumulative`   | `peaces_made`            | ❌  | —           | —     |
+| `cumulative`   | `plots_started`          | ❌  | —           | —     |
+| `cumulative`   | `plots_succeeded`        | ✅  | ❌          | ✅    |
+| `cumulative`   | `religions_created`      | ❌  | —           | —     |
+| `cumulative`   | `subspecies_created`     | ❌  | —           | —     |
+| `cumulative`   | `wars_started`           | ❌  | —           | —     |
+| `leaders`      | `dominant_culture`       | ✅  | —           | ❌    |
+| `leaders`      | `dominant_language`      | ✅  | —           | ❌    |
+| `leaders`      | `dominant_religion`      | ✅  | —           | ❌    |
+| `leaders`      | `dominant_subspecies`    | ✅  | —           | ❌    |
+| `leaders`      | `most_populous_kingdom`  | ✅  | —           | ❌    |
+| `leaders`      | `most_populous_village`  | ✅  | —           | ❌    |
+| `leaders`      | `most_renowned_clan`     | ✅  | —           | ❌    |
+| `leaders`      | `most_renowned_person`   | ✅  | —           | ❌    |
+| `metadata`     | `age_id`                 | ✅  | —           | ❌    |
+| `metadata`     | `months_until_next_age`  | ❌  | —           | —     |
+| `metadata`     | `world_time`             | ✅  | ✅          | ❌    |
+| `snapshot`     | `alliances`              | ✅  | ✅          | ✅    |
+| `snapshot`     | `armies`                 | ✅  | ✅          | ✅    |
+| `snapshot`     | `books`                  | ✅  | ✅          | ✅    |
+| `snapshot`     | `buildings`              | ✅  | ✅          | ✅    |
+| `snapshot`     | `cities`                 | ✅  | ✅          | ✅    |
+| `snapshot`     | `clans`                  | ✅  | ✅          | ✅    |
+| `snapshot`     | `cultures`               | ✅  | ✅          | ✅    |
+| `snapshot`     | `equipment`              | ✅  | ✅          | ✅    |
+| `snapshot`     | `families`               | ✅  | ✅          | ✅    |
+| `snapshot`     | `frozen_tiles`           | ✅  | ✅          | ✅    |
+| `snapshot`     | `houses`                 | ✅  | ✅          | ✅    |
+| `snapshot`     | `infected`               | ✅  | ❌          | ✅    |
+| `snapshot`     | `kingdoms`               | ✅  | ✅          | ✅    |
+| `snapshot`     | `languages`              | ✅  | ✅          | ✅    |
+| `snapshot`     | `plots_active`           | ✅  | ❌          | ❌    |
+| `snapshot`     | `population`             | ✅  | ✅          | ✅    |
+| `snapshot`     | `relations`              | ❌  | —           | —     |
+| `snapshot`     | `religions`              | ✅  | ✅          | ✅    |
+| `snapshot`     | `subspecies`             | ✅  | ✅          | ✅    |
+| `snapshot`     | `trees`                  | ✅  | ✅          | ✅    |
+| `snapshot`     | `vegetation`             | ✅  | ✅          | ✅    |
+| `snapshot`     | `wars`                   | ✅  | ✅          | ✅    |
+| `snapshot`     | `wild_creatures`         | ✅  | ✅          | ✅    |
 
-- `🔶` = agrégé puis affiché
+- `Visible à 0` = affiché même à 0. `cumulative`, `deaths`, `infected` et `plots_active` ne s'affichent qu'à > 0.
+- `Delta` = l'UI montre la variation vs chapitre précédent : `cumulative` + `deaths` sont rendus **en tant que** delta (« Activité récente » / « Causes de mortalité »), `snapshot` affiche valeur + delta.
+- `leaders` = entités `{ id, name, value }` (« Palmarès »), badge NEW si le n°1 change. `—` = non applicable (non affiché ou non numérique).
