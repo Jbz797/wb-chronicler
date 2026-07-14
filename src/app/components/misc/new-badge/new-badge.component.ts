@@ -1,10 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, input } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 @Component({
   selector: 'app-new-badge',
   imports: [NzTagModule],
-  template: '<nz-tag nzColor="gold">NEW</nz-tag>',
+  template: '@if (show()) { <nz-tag nzColor="gold">NEW</nz-tag> }',
 })
-export class NewBadgeComponent {}
+export class NewBadgeComponent {
+
+  public readonly show = input<boolean>(true);
+
+}

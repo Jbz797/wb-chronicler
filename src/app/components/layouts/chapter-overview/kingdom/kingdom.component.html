@@ -7,9 +7,12 @@
       </ng-template>
       <nz-descriptions-item [nzTitle]="kingTitle">
         <app-person-tag profession="king" [assetId]="king.asset_id" [name]="king.name" [sex]="king.sex" />
-        @if (isNewKing()) {
-          <app-new-badge />
-        }
+        <app-new-badge [show]="isNewKing()" />
+      </nz-descriptions-item>
+    }
+    @if (k.metadata.founder; as founder) {
+      <nz-descriptions-item [nzTitle]="founderTitle">
+        <app-person-tag [assetId]="founder.asset_id" [dead]="founder.dead" [name]="founder.name" [profession]="founder.profession ?? ''" [sex]="founderSex()" />
       </nz-descriptions-item>
     }
     @if (k.metadata.capital; as capital) {
@@ -118,6 +121,7 @@
   <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>
   <ng-template #foodTitle><img src="assets/img/world/food.png" /><span>Nourriture</span></ng-template>
   <ng-template #foodPerCapitaTitle><img src="assets/img/world/food_per_capita.png" /><span>Réserves</span></ng-template>
+  <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
   <ng-template #goldTitle><img src="assets/img/world/gold.png" /><span>Or</span></ng-template>
   <ng-template #goodsTitle><img src="assets/img/world/goods.png" /><span>Biens</span></ng-template>
   <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>

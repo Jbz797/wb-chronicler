@@ -6,7 +6,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { RELATION_STATUS_LABELS, RELATION_STATUS_NZ_COLORS } from '../../../../constants';
 import { KingdomRelation, KingdomWar, RankedStatKind } from '../../../../interfaces';
-import { ChroniclerService } from '../../../../services';
+import { ChroniclerService, RegistryService } from '../../../../services';
 import { NewBadgeComponent, RankedStatComponent } from '../../../misc';
 import { KingdomTagComponent, PersonTagComponent } from '../../../tags';
 
@@ -20,11 +20,17 @@ import { WarCardComponent } from './war-card/war-card.component';
 export class KingdomComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _registry = inject(RegistryService);
 
   protected readonly statusColor = RELATION_STATUS_NZ_COLORS;
   protected readonly statusLabel = RELATION_STATUS_LABELS;
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
+  // Founder sex: from the save when alive, else fall back to the person registry (registered in a past chapter), else '' → the tag drops the sex icon.
+  protected readonly founderSex = computed(() => {
+    const f = this.kingdom()?.metadata.founder;
+    return f ? (f.sex ?? this._registry.persons()[String(f.id)]?.sex ?? '') : '';
+  });
   // NEW badge on the king when the same featured kingdom crowned a different ruler since the previous chapter.
   protected readonly isNewKing = computed(() => {
     const current = this.kingdom()?.metadata;

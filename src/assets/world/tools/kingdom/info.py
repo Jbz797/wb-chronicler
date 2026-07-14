@@ -25,6 +25,7 @@ from shared import (
     load_save,
     parse_sections,
     register_entity,
+    resolve_profession,
 )
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
@@ -207,6 +208,25 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
             "name": king_actor.get("name") or f"#{king_actor.get('id')}",
             "sex": "female" if king_actor.get("sex") == 1 else "male",
         }
+
+    # Founder = first ruler (`past_rulers[0]`). Alive → live actor (may have abdicated/mutated); dead → name + founding species only, UI shows a tombstone.
+    founder = None
+    past_rulers = kingdom.get("past_rulers") or []
+    if past_rulers:
+        fid = past_rulers[0].get("id")
+        founder_actor = ctx["actors_by_id"].get(fid)
+        if founder_actor is not None:
+            founder = {
+                "asset_id": founder_actor.get("asset_id"),
+                "dead": False,
+                "id": fid,
+                "name": founder_actor.get("name") or f"#{fid}",
+                "profession": resolve_profession(founder_actor, save),
+                "sex": "female" if founder_actor.get("sex") == 1 else "male",
+            }
+        else:
+            founder = {"asset_id": kingdom.get("original_actor_asset"), "dead": True, "id": fid, "name": past_rulers[0].get("name") or f"#{fid}"}
+
     return {
         "age": int(age_units / UNITS_PER_YEAR),
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
@@ -215,6 +235,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
+        "founder": founder,
         "gold": ctx["gold_by_kingdom"][kid],  # Gold currency stocked across the kingdom's buildings.
         "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
         "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).

@@ -77,9 +77,11 @@ export class MarkedHelpers {
     const color = info && SPECIES_COLORS[info.asset_id];
     if (!info || !color) return name;
     const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';
+    const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : profession;
     const species = `<img src="assets/img/species/${info.asset_id}.png" />`;
     const sex = `<img src="assets/img/sex/${info.sex}.png" />`;
-    return `<span class="ant-tag entity-tag person-tag" style="--person-color: ${color}">${profession}${species}${name}${sex}</span>`;
+    const label = `<span class="entity-name">${name}</span>`;
+    return `<span class="ant-tag entity-tag person-tag${info.dead ? ' dead' : ''}" style="--person-color: ${color}">${badge}${species}${label}${sex}</span>`;
   }
 
   // Resource: icon + optional inline text, never coloured.

@@ -1,10 +1,14 @@
 @if (color(); as c) {
-  <nz-tag class="entity-tag person-tag" [style.--person-color]="c" [title]="name()">
-    @if (profession() && profession() !== 'unit') {
+  <nz-tag class="entity-tag person-tag" [class.dead]="dead()" [style.--person-color]="c" [title]="name()">
+    @if (dead()) {
+      <img src="assets/img/world/deaths.png" />
+    } @else if (profession() && profession() !== 'unit') {
       <img [src]="`assets/img/professions/${profession()}.png`" />
     }
     <img [src]="`assets/img/species/${assetId()}.png`" />
     <span class="entity-name">{{ name() }}</span>
-    <img [src]="`assets/img/sex/${sex()}.png`" />
+    @if (sex(); as s) {
+      <img [src]="`assets/img/sex/${s}.png`" />
+    }
   </nz-tag>
 }

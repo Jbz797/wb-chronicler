@@ -62,6 +62,12 @@ img {
   background-color: $paper;
   color: color-mix(in srgb, var(--person-color), black 30%);
   font-weight: 600;
+
+  // Deceased: name struck through + drained toward gray (the tombstone icon replaces the profession badge).
+  &.dead .entity-name {
+    color: color-mix(in srgb, var(--person-color), gray 70%);
+    text-decoration: line-through;
+  }
 }
 
 .tier-full {

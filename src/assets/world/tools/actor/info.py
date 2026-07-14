@@ -11,7 +11,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats
 from islands import compute_islands_cached
-from shared import CURRENT_SAVE, UNITS_PER_YEAR, age_thresholds, emit, index_by_id, life_stage, load_save, parse_sections, register_entity, resolve_profession
+from shared import (
+    CURRENT_SAVE,
+    UNITS_PER_YEAR,
+    age_thresholds,
+    emit,
+    index_by_id,
+    life_stage,
+    load_save,
+    parse_sections,
+    reconcile_deaths,
+    register_entity,
+    resolve_profession,
+)
 
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
@@ -368,8 +380,12 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
 
 # Register this actor (species + sex + non-civilian profession) in the reader's person registry, for the `[p id Nom]` tag.
 def _register_person(actor: dict, profession: str | None) -> None:
+    # `[p id]` tags are civ-only (intelligent, kingdom-bound) — skip wild creatures / boats so they never get a person badge.
+    if not actor.get("civ_kingdom_id") or (actor.get("asset_id") or "").startswith("boat_"):
+        return
     entry = {
         "asset_id": actor.get("asset_id"),
+        "dead": False,  # Alive at registration; `reconcile_deaths` flips it when the id later leaves the save.
         "sex": "female" if actor.get("sex") == 1 else "male",
     }
     if profession and profession != "unit":  # Civilians carry no badge — keep the registry lean.
@@ -407,6 +423,7 @@ def main(argv: list[str]) -> int:
         print(f"unknown actor: {actor_id}", file=sys.stderr)
         return 1
     _register_person(actor, resolve_profession(actor, save))
+    reconcile_deaths(_REGISTRY, set(ctx["actors_by_id"]))
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     if sub is None:
         print(f"no subspecies for actor {actor_id}", file=sys.stderr)

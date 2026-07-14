@@ -163,6 +163,7 @@ interface KingdomMetadata {
   cities: number;
   deaths: number;
   food: number;
+  founder?: { asset_id: string; dead: boolean; id: number; name: string; profession?: string; sex?: 'female' | 'male' };
   gold: number;
   goods: number;
   houses: number;

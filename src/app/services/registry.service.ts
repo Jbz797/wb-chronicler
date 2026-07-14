@@ -15,12 +15,13 @@ export class RegistryService {
   private readonly _message = inject(NzMessageService);
 
   public readonly kingdoms = signal<KingdomRegistry>({});
+  public readonly persons = signal<PersonRegistry>({});
 
   // Fetches every registry JSON at app init and bridges them to the globals used by the marked renderer.
   public loadAll(): Observable<unknown> {
     return forkJoin([
       this._load<KingdomRegistry>('kingdoms.json', KINGDOM_REGISTRY, this.kingdoms),
-      this._load<PersonRegistry>('persons.json', PERSON_REGISTRY),
+      this._load<PersonRegistry>('persons.json', PERSON_REGISTRY, this.persons),
     ]);
   }
 

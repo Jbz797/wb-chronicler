@@ -29,6 +29,15 @@ def _strip_none(value):
     return value
 
 
+# Serialize a registry to disk: one line per entry, sorted by numeric id, fields alphabetical — single-line diffs.
+def _write_registry(path: Path, registry: dict) -> None:
+    rows = []
+    for entry_key, entry_value in sorted(registry.items(), key=lambda item: int(item[0])):
+        fields = ", ".join(f"{json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}" for k, v in sorted(entry_value.items()))
+        rows.append(f"  {json.dumps(entry_key)}: {{ {fields} }}")
+    path.write_text("{\n" + ",\n".join(rows) + "\n}\n")
+
+
 # WB `Subspecies.calculateAgeRelatedStats`: lifespan > 30 → (16, 18); else `Pow(lifespan, 0.55)×1.1` capped 16/18 (civ species always > 30).
 def age_thresholds(lifespan: float) -> tuple[float, float]:
     if lifespan > 30:
@@ -88,17 +97,27 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], accept_full: 
     return requested
 
 
-# Upsert an entry into a JSON registry keyed by numeric id; write only on value change. One line per entry, sorted by id, fields alphabetical — single-line diffs.
+# Global registry: flip « dead » for `dead`-keyed persons absent from the save. Re-swept each run (resurrections clear it); keyless demo entries ignored.
+def reconcile_deaths(path: Path, alive_ids: set[int]) -> None:
+    if not path.exists():
+        return
+    registry = json.loads(path.read_text())
+    changed = False
+    for pid, entry in registry.items():
+        if "dead" in entry and (dead := int(pid) not in alive_ids) != entry["dead"]:
+            entry["dead"] = dead
+            changed = True
+    if changed:
+        _write_registry(path, registry)
+
+
+# Upsert an entry into a JSON registry keyed by numeric id; write only on value change.
 def register_entity(path: Path, key: str, value: dict) -> None:
     registry = json.loads(path.read_text()) if path.exists() else {}
     if registry.get(key) == value:
         return
     registry[key] = value
-    rows = []
-    for entry_key, entry_value in sorted(registry.items(), key=lambda item: int(item[0])):
-        fields = ", ".join(f"{json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}" for k, v in sorted(entry_value.items()))
-        rows.append(f"  {json.dumps(entry_key)}: {{ {fields} }}")
-    path.write_text("{\n" + ",\n".join(rows) + "\n}\n")
+    _write_registry(path, registry)
 
 
 # `army_captain` isn't a `profession` int — it's a warrior (5) leading an army, so it overrides the base label when this actor captains one.
