@@ -10,8 +10,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "actor"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
-from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
-from islands import compute_islands_cached  # noqa: E402
+from actor_stats import build_actor_stats_context, compute_actor_stats
+from islands import compute_islands_cached
 
 from shared import (
     CURRENT_SAVE,
@@ -25,7 +25,7 @@ from shared import (
     load_save,
     parse_sections,
     register_entity,
-)  # noqa: E402
+)
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
 _ALL_SECTIONS = ("metadata", "population", "ranks", "relations", "wars")

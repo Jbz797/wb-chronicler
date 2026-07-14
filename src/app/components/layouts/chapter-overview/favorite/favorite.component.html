@@ -2,10 +2,6 @@
 @if (c && c.meta.favorite; as fav) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
     <nz-descriptions-item [nzTitle]="descriptorTitle">{{ fav.descriptor }}</nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="professionTitle">
-      <span>{{ professionLabel(fav.metadata.profession) }}</span>
-      <img [src]="`assets/img/professions/${fav.metadata.profession}.png`" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="rolesTitle">
       @for (tag of roleTags(); track tag.label) {
         <nz-tag [nzColor]="tag.color">{{ tag.label }}</nz-tag>
@@ -68,12 +64,6 @@
   <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
   <ng-template #lootTitle><img src="assets/img/stats/loot.png" /><span>Pécule</span></ng-template>
   <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
-  <ng-template #professionTitle>
-    @if (changedFields().profession) {
-      <nz-tag nzColor="gold">NEW</nz-tag>
-    }
-    Profession
-  </ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #rolesTitle>
     @if (changedFields().role) {

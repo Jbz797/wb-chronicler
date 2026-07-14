@@ -6,7 +6,7 @@
         <span>{{ king.sex === 'female' ? 'Reine' : 'Roi' }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="kingTitle">
-        <app-person-tag [assetId]="king.asset_id" [name]="king.name" [sex]="king.sex" />
+        <app-person-tag profession="king" [assetId]="king.asset_id" [name]="king.name" [sex]="king.sex" />
         @if (isNewKing()) {
           <app-new-badge />
         }

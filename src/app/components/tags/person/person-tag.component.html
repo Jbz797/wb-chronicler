@@ -1,5 +1,8 @@
 @if (color(); as c) {
   <nz-tag class="entity-tag person-tag" [style.--person-color]="c" [title]="name()">
+    @if (profession() && profession() !== 'unit') {
+      <img [src]="`assets/img/professions/${profession()}.png`" />
+    }
     <img [src]="`assets/img/species/${assetId()}.png`" />
     <span class="entity-name">{{ name() }}</span>
     <img [src]="`assets/img/sex/${sex()}.png`" />

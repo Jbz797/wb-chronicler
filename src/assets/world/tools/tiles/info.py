@@ -12,9 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
-from shared import CURRENT_SAVE, emit, index_by_id, load_save, parse_sections  # noqa: E402
-from grid import decode_tile_grid, tile_biome, tile_elevation, tile_kind, tile_layer  # noqa: E402
-from islands import compute_islands_cached  # noqa: E402
+from shared import CURRENT_SAVE, emit, index_by_id, load_save, parse_sections
+from grid import decode_tile_grid, tile_biome, tile_elevation, tile_kind, tile_layer
+from islands import compute_islands_cached
 
 _ALL_SECTIONS = ("actors", "buildings", "context", "distances", "tile_info")
 _DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))

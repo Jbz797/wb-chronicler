@@ -7,7 +7,7 @@
   }
   @case ('most_renowned_person') {
     @if (r.asset_id && r.sex) {
-      <app-person-tag [assetId]="r.asset_id" [name]="r.name" [sex]="r.sex" />
+      <app-person-tag [assetId]="r.asset_id" [name]="r.name" [profession]="r.profession ?? ''" [sex]="r.sex" />
     }
   }
   @default {

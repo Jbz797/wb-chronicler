@@ -13,6 +13,7 @@ export class PersonTagComponent {
 
   public readonly assetId = input.required<string>();
   public readonly name = input.required<string>();
+  public readonly profession = input<string>('');
   public readonly sex = input.required<string>();
 
   protected readonly color = computed(() => SPECIES_COLORS[this.assetId()] ?? null);

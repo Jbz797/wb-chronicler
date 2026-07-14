@@ -7,8 +7,8 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import CURRENT_SAVE, emit, load_save, parse_sections  # noqa: E402
-from islands import compute_islands_cached  # noqa: E402
+from shared import CURRENT_SAVE, emit, load_save, parse_sections
+from islands import compute_islands_cached
 
 _ALL_SECTIONS = ("islands", "natural_features")
 # Rare geological/mineral landmarks. Common minerals (stone/metals/silver/mythril) and vegetation excluded — too noisy narratively.

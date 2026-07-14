@@ -17,6 +17,7 @@ UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 
 _DATAS_DIR = Path(__file__).parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
+_PROFESSIONS = {2: "unit", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label.
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
@@ -62,7 +63,6 @@ def life_stage(age: int, age_adult: float, lifespan: float) -> str:
     return "adult"
 
 
-# Loads (and caches) a JSON file from the datas dir — `{}` if it doesn't exist.
 @cache
 def load_data(name: str) -> dict:
     path = _DATAS_DIR / name
@@ -99,3 +99,10 @@ def register_entity(path: Path, key: str, value: dict) -> None:
         fields = ", ".join(f"{json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}" for k, v in sorted(entry_value.items()))
         rows.append(f"  {json.dumps(entry_key)}: {{ {fields} }}")
     path.write_text("{\n" + ",\n".join(rows) + "\n}\n")
+
+
+# `army_captain` isn't a `profession` int — it's a warrior (5) leading an army, so it overrides the base label when this actor captains one.
+def resolve_profession(actor: dict, save: dict) -> str | None:
+    if any(army.get("id_captain") == actor.get("id") for army in save.get("armies", [])):
+        return "army_captain"
+    return _PROFESSIONS.get(actor.get("profession") or 0)

@@ -132,13 +132,10 @@
       }
 
       .ant-descriptions-item-content {
-        img {
+        img.podium {
           margin-left: 0.25rem;
-
-          &.podium {
-            position: relative;
-            top: -1px;
-          }
+          position: relative;
+          top: -1px;
         }
 
         .entity-tag {

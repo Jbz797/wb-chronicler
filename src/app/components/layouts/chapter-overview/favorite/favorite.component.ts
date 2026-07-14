@@ -4,7 +4,7 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { COMBAT_STATS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, PROFESSION_LABELS, ROLE_LABELS, SKILL_STATS } from '../../../../constants';
+import { COMBAT_STATS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, ROLE_LABELS, SKILL_STATS } from '../../../../constants';
 import { RarityCounts } from '../../../../interfaces';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
@@ -69,7 +69,7 @@ export class FavoriteComponent {
   protected readonly changedFields = computed(() => {
     const previous = this._chronicler.previousChapter()?.meta.favorite;
     const current = this.currentChapter()?.meta.favorite;
-    if (!previous || !current) return { bestFriend: false, descriptor: false, lover: false, plot: false, profession: false, role: false };
+    if (!previous || !current) return { bestFriend: false, descriptor: false, lover: false, plot: false, role: false };
 
     let hasPlotChanged = false;
     if (current.plot) hasPlotChanged = previous.plot ? previous.plot.type_id !== current.plot.type_id : true;
@@ -79,7 +79,6 @@ export class FavoriteComponent {
       descriptor: current.descriptor !== previous.descriptor,
       lover: !!current.lover && current.lover.id !== previous.lover?.id,
       plot: hasPlotChanged,
-      profession: current.metadata.profession !== previous.metadata.profession,
       role: this.roleTags().some(tag => tag.isNew),
     };
   });
@@ -103,7 +102,5 @@ export class FavoriteComponent {
     const inv = this.currentChapter()?.meta.favorite?.inventory ?? {};
     return Object.entries(inv).map(([key, amount]) => ({ amount, key }));
   });
-
-  protected professionLabel = (id: string | null): string => id ? PROFESSION_LABELS[id] ?? id : '—';
 
 }

@@ -9,9 +9,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
-from actor_stats import build_actor_stats_context, compute_actor_stats  # noqa: E402
-from islands import compute_islands_cached  # noqa: E402
-from shared import CURRENT_SAVE, UNITS_PER_YEAR, age_thresholds, emit, index_by_id, life_stage, load_save, parse_sections, register_entity  # noqa: E402
+from actor_stats import build_actor_stats_context, compute_actor_stats
+from islands import compute_islands_cached
+from shared import CURRENT_SAVE, UNITS_PER_YEAR, age_thresholds, emit, index_by_id, life_stage, load_save, parse_sections, register_entity, resolve_profession
 
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
@@ -19,7 +19,6 @@ _LEVEL_RE = re.compile(r"(\d+)$")
 _MASS_BASE = {"dwarf": 75, "elf": 25, "humanoid": 65, "orc": 85}  # `Actor.getMassKG` base per species: (scale / 0.1) × mass_2 × (1 + Σ multiplier_mass).
 _PROFESSION_KING = 3
 _PROFESSION_LEADER = 4
-_PROFESSIONS = {2: "unit", _PROFESSION_KING: "king", _PROFESSION_LEADER: "leader", 5: "warrior"}
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
 _RANKED_STATS = {
@@ -153,9 +152,7 @@ def _build_inventory(actor: dict) -> dict:
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
     snap = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
-
     lifespan = snap.get("lifespan", 0)
-
     age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)  # `age_overgrowth` (years past the lifespan cap) added on top, like the WB tooltip.
     age_adult, age_breeding = age_thresholds(lifespan)
     cities_by_id = index_by_id(save.get("cities", []))
@@ -176,8 +173,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         and int(actor.get("nutrition") or 0) > 0
     )
 
-    # `army_captain` isn't a `profession` int — it's a warrior (5) leading an army. Overrides the base profession label when this actor captains one.
-    is_captain = any(army.get("id_captain") == actor.get("id") for army in save.get("armies", []))
     ax, ay = actor.get("x"), actor.get("y")
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
 
@@ -198,8 +193,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "life_stage": life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor),
         "name": actor.get("name"),
-        "personality": _compute_personality(actor, ctx),
-        "profession": "army_captain" if is_captain else _PROFESSIONS.get(actor.get("profession") or 0),
+        "personality": _compute_personality(actor, snap),
+        "profession": resolve_profession(actor, save),
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
         "roles": _compute_roles(actor, save),
         "sex": "female" if actor.get("sex") == 1 else "male",
@@ -255,10 +250,9 @@ def _compute_mass(actor: dict) -> int | None:
 
 
 # `Actor.updateStats` personality: city leaders/kings only → diplomat/administrator/militarist/balanced (diplomacy/stewardship/warfare); `wildcard` never used.
-def _compute_personality(actor: dict, ctx: dict) -> str | None:
+def _compute_personality(actor: dict, snap: dict) -> str | None:
     if actor.get("profession") not in (_PROFESSION_KING, _PROFESSION_LEADER):
         return None
-    snap = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
     diplo, stew, war = snap.get("diplomacy", 0), snap.get("stewardship", 0), snap.get("warfare", 0)
     p, max_val = "balanced", diplo
     if diplo > stew:
@@ -374,16 +368,15 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
     return dict(sorted(result.items()))
 
 
-# Register this actor (species + sex) in the reader's person registry, for the `[p id Nom]` tag.
-def _register_person(actor: dict) -> None:
-    register_entity(
-        _REGISTRY,
-        str(actor.get("id")),
-        {
-            "asset_id": actor.get("asset_id"),
-            "sex": "female" if actor.get("sex") == 1 else "male",
-        },
-    )
+# Register this actor (species + sex + non-civilian profession) in the reader's person registry, for the `[p id Nom]` tag.
+def _register_person(actor: dict, profession: str | None) -> None:
+    entry = {
+        "asset_id": actor.get("asset_id"),
+        "sex": "female" if actor.get("sex") == 1 else "male",
+    }
+    if profession and profession != "unit":  # Civilians carry no badge — keep the registry lean.
+        entry["profession"] = profession
+    register_entity(_REGISTRY, str(actor.get("id")), entry)
 
 
 def _resolve_kingdom(kingdom_id: int | None, kingdoms_by_id: dict) -> dict | None:
@@ -415,7 +408,7 @@ def main(argv: list[str]) -> int:
     if actor is None:
         print(f"unknown actor: {actor_id}", file=sys.stderr)
         return 1
-    _register_person(actor)
+    _register_person(actor, resolve_profession(actor, save))
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     if sub is None:
         print(f"no subspecies for actor {actor_id}", file=sys.stderr)

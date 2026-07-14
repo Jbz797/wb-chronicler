@@ -76,9 +76,10 @@ export class MarkedHelpers {
     const info = PERSON_REGISTRY[id];
     const color = info && SPECIES_COLORS[info.asset_id];
     if (!info || !color) return name;
+    const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';
     const species = `<img src="assets/img/species/${info.asset_id}.png" />`;
     const sex = `<img src="assets/img/sex/${info.sex}.png" />`;
-    return `<span class="ant-tag entity-tag person-tag" style="--person-color: ${color}">${species}${name}${sex}</span>`;
+    return `<span class="ant-tag entity-tag person-tag" style="--person-color: ${color}">${profession}${species}${name}${sex}</span>`;
   }
 
   // Resource: icon + optional inline text, never coloured.

@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import CURRENT_SAVE, civic_building_ids, emit, index_by_id, load_save, parse_sections  # noqa: E402
+from shared import CURRENT_SAVE, civic_building_ids, emit, index_by_id, load_save, parse_sections, resolve_profession
 
 _ALL_SECTIONS = ("cumulative", "leaders", "metadata", "snapshot")
 
@@ -136,6 +136,7 @@ def _build_leaders(save: dict) -> dict:
             "asset_id": top.get("asset_id"),
             "id": top.get("id"),
             "name": top.get("name") or f"#{top.get('id')}",
+            "profession": resolve_profession(top, save),
             "sex": "female" if top.get("sex") == 1 else "male",
             "value": int(top.get("renown") or 0),
         }

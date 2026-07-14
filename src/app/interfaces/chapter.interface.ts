@@ -215,7 +215,7 @@ interface KingdomRanks {
 
 interface KingdomReference { id: number; name: string }
 
-interface Leader { asset_id?: string; id?: number; name: string; sex?: 'female' | 'male'; value: number }
+interface Leader { asset_id?: string; id?: number; name: string; profession?: string; sex?: 'female' | 'male'; value: number }
 
 interface Plot {
   name: string;
