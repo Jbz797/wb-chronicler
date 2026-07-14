@@ -53,7 +53,6 @@ export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
 // French labels for `metadata.roles` (active = current position, !active = historical foundation) — Python emits the canonical order, do not re-sort here.
 export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: string }>> = {
   alliance_founder: { active: false, label: "Fondateur d'alliance" },
-  army_captain: { active: true, label: "Capitaine d'armée" },
   clan_chief: { active: true, label: 'Chef de clan' },
   clan_founder: { active: false, label: 'Fondateur de clan' },
   culture_creator: { active: false, label: 'Créateur de culture' },

@@ -16,7 +16,6 @@ from shared import CURRENT_SAVE, UNITS_PER_YEAR, age_thresholds, emit, index_by_
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
 _LEVEL_RE = re.compile(r"(\d+)$")
-_MASS_BASE = {"dwarf": 75, "elf": 25, "humanoid": 65, "orc": 85}  # `Actor.getMassKG` base per species: (scale / 0.1) × mass_2 × (1 + Σ multiplier_mass).
 _PROFESSION_KING = 3
 _PROFESSION_LEADER = 4
 
@@ -49,11 +48,10 @@ _RANKED_STATS = {
 _RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # Rarity weights for equipment power (Normal 1 → Legendary 4).
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "persons.json"
 
-# UI order: active roles first (can be lost — chief/alpha/captain by hierarchical rank), then historical foundations (irrevocable — creators before founders).
+# UI order: active roles (chief, alpha) before historical foundations (creators before founders). `army_captain` is a `profession`, not a role.
 _ROLE_ORDER = (
     "clan_chief",
     "family_alpha",
-    "army_captain",
     "culture_creator",
     "language_creator",
     "religion_creator",
@@ -191,7 +189,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "kingdom": _resolve_kingdom(actor.get("civ_kingdom_id"), kingdoms_by_id),
         "language": language.get("name"),
         "life_stage": life_stage(age, age_adult, lifespan),
-        "mass": _compute_mass(actor),
+        "mass": _compute_mass(actor, ctx),
         "name": actor.get("name"),
         "personality": _compute_personality(actor, snap),
         "profession": resolve_profession(actor, save),
@@ -237,8 +235,9 @@ def _build_trait_list(trait_ids: list[str], traits_data: dict, narrative: bool) 
     return sorted(out, key=lambda t: t["id"])
 
 
-def _compute_mass(actor: dict) -> int | None:
-    base = _MASS_BASE.get(actor.get("asset_id") or "")
+# `Actor.getMassKG`: (target_scale / 0.1) × base mass × (1 + Σ trait multiplier_mass). Base mass = the asset's `mass_2` (kg) from `species.json`; `None` if massless.
+def _compute_mass(actor: dict, ctx: dict) -> int | None:
+    base = ((ctx["species_data"].get(actor.get("asset_id")) or {}).get("stats") or {}).get("mass_2")
     if base is None:
         return None
     scale, mult_mass = 0.10, 0.0
@@ -292,7 +291,6 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
     actor_id = actor.get("id")
     checks = {
         "alliance_founder": any(a.get("founder_actor_id") == actor_id for a in save.get("alliances", [])),
-        "army_captain": any(army.get("id_captain") == actor_id for army in save.get("armies", [])),
         "clan_chief": any(c.get("chief_id") == actor_id for c in save.get("clans", [])),
         "clan_founder": any(c.get("founder_actor_id") == actor_id for c in save.get("clans", [])),
         "culture_creator": any(c.get("creator_id") == actor_id for c in save.get("cultures", [])),
