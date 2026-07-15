@@ -1,0 +1,23 @@
+@if (relations().length) {
+  <h3 class="relations-title">Relations</h3>
+  <nz-table nzBordered nzSize="small" [nzData]="sorted()" [nzShowPagination]="false">
+    <thead>
+      <tr>
+        <th>Royaume</th>
+        <th>Statut</th>
+        <th>Opinion</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of sorted(); track r.kingdom.id) {
+        <tr>
+          <td><app-kingdom-tag [id]="r.kingdom.id" [name]="r.kingdom.name" /></td>
+          <td>
+            <nz-tag [nzColor]="statusColor[r.status]">{{ statusLabel[r.status] }}</nz-tag>
+          </td>
+          <td [class]="opinionClass(r.opinion.total)">{{ r.opinion.total > 0 ? '+' : '' }}{{ r.opinion.total }}</td>
+        </tr>
+      }
+    </tbody>
+  </nz-table>
+}

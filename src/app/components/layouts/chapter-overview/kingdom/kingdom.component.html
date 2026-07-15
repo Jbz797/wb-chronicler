@@ -10,14 +10,23 @@
         <app-new-badge [show]="isNewKing()" />
       </nz-descriptions-item>
     }
+
+    @if (k.metadata.heir; as heir) {
+      <nz-descriptions-item [nzTitle]="heirTitle">
+        <app-person-tag [assetId]="heir.asset_id" [name]="heir.name" [profession]="heir.profession ?? ''" [sex]="heir.sex" />
+      </nz-descriptions-item>
+    }
+
     @if (k.metadata.founder; as founder) {
       <nz-descriptions-item [nzTitle]="founderTitle">
         <app-person-tag [assetId]="founder.asset_id" [dead]="founder.dead" [name]="founder.name" [profession]="founder.profession ?? ''" [sex]="founderSex()" />
       </nz-descriptions-item>
     }
+
     @if (k.metadata.capital; as capital) {
       <nz-descriptions-item [nzTitle]="capitalTitle">{{ capital }}</nz-descriptions-item>
     }
+
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat source="kingdom" stat="age" suffix=" ans" [hideDelta]="true" />
     </nz-descriptions-item>
@@ -75,7 +84,7 @@
       <app-ranked-stat numberFormat="1.1-1" source="kingdom" stat="food_per_capita" suffix="/hab" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="fedPctTitle">
-      <app-ranked-stat source="kingdom" stat="fed_pct" suffix="%" />
+      <app-ranked-stat deltaSuffix="%" source="kingdom" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="goldTitle">
       <app-ranked-stat source="kingdom" stat="gold" />
@@ -89,29 +98,7 @@
     <app-war-card [isNew]="startedWarIds().has(war.id)" [war]="war" />
   }
 
-  @if (k.relations.length) {
-    <h3 class="relations-title">Relations</h3>
-    <nz-table nzBordered nzSize="small" [nzData]="sortedRelations()" [nzShowPagination]="false">
-      <thead>
-        <tr>
-          <th>Royaume</th>
-          <th>Statut</th>
-          <th>Opinion</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (r of sortedRelations(); track r.kingdom.id) {
-          <tr>
-            <td><app-kingdom-tag [id]="r.kingdom.id" [name]="r.kingdom.name" /></td>
-            <td>
-              <nz-tag [nzColor]="statusColor[r.status]">{{ statusLabel[r.status] }}</nz-tag>
-            </td>
-            <td [class]="opinionClass(r.opinion.total)">{{ r.opinion.total > 0 ? '+' : '' }}{{ r.opinion.total }}</td>
-          </tr>
-        }
-      </tbody>
-    </nz-table>
-  }
+  <app-kingdom-relations [relations]="k.relations" />
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du royaume</span></ng-template>
   <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
@@ -124,6 +111,7 @@
   <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
   <ng-template #goldTitle><img src="assets/img/world/gold.png" /><span>Or</span></ng-template>
   <ng-template #goodsTitle><img src="assets/img/world/goods.png" /><span>Biens</span></ng-template>
+  <ng-template #heirTitle><img src="assets/img/world/heir.png" /><span>Héritier</span></ng-template>
   <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
@@ -131,7 +119,7 @@
   <ng-template #noblesTitle><img src="assets/img/world/nobles.png" /><span>Nobles</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
-  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renommée cumulée</span></ng-template>
+  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
   <ng-template #territoryTitle><img src="assets/img/world/territory.png" /><span>Territoire</span></ng-template>
   <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
 }

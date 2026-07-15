@@ -166,6 +166,7 @@ interface KingdomMetadata {
   founder?: { asset_id: string; dead: boolean; id: number; name: string; profession?: string; sex?: 'female' | 'male' };
   gold: number;
   goods: number;
+  heir?: { asset_id: string; id: number; name: string; profession?: string; sex: 'female' | 'male' };
   houses: number;
   id: number;
   kills: number;

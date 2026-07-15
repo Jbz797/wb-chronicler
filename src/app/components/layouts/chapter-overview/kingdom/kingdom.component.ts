@@ -1,29 +1,24 @@
 import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
-import { NzTableModule } from 'ng-zorro-antd/table';
-import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { RELATION_STATUS_LABELS, RELATION_STATUS_NZ_COLORS } from '../../../../constants';
-import { KingdomRelation, KingdomWar, RankedStatKind } from '../../../../interfaces';
+import { KingdomWar, RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { NewBadgeComponent, RankedStatComponent } from '../../../misc';
-import { KingdomTagComponent, PersonTagComponent } from '../../../tags';
+import { PersonTagComponent } from '../../../tags';
 
+import { KingdomRelationsComponent } from './kingdom-relations/kingdom-relations.component';
 import { WarCardComponent } from './war-card/war-card.component';
 
 @Component({
   selector: 'app-kingdom',
-  imports: [KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, NzTableModule, NzTagModule, PersonTagComponent, RankedStatComponent, WarCardComponent],
+  imports: [KingdomRelationsComponent, NewBadgeComponent, NzDescriptionsModule, PersonTagComponent, RankedStatComponent, WarCardComponent],
   templateUrl: './kingdom.component.html',
 })
 export class KingdomComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _registry = inject(RegistryService);
-
-  protected readonly statusColor = RELATION_STATUS_NZ_COLORS;
-  protected readonly statusLabel = RELATION_STATUS_LABELS;
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
   // Founder sex: from the save when alive, else fall back to the person registry (registered in a past chapter), else '' → the tag drops the sex icon.
@@ -49,11 +44,6 @@ export class KingdomComponent {
     ];
     return rows.filter(r => (p[r.stat] ?? 0) > 0);
   });
-  // Relations sorted by opinion total (favourable first, hostile last).
-  protected readonly sortedRelations = computed<KingdomRelation[]>(() => {
-    const relations = this.kingdom()?.relations ?? [];
-    return relations.toSorted((a, b) => b.opinion.total - a.opinion.total);
-  });
   // Set of war ids that surfaced this chapter (not present in the previous chapter's wars list).
   protected readonly startedWarIds = computed(() => {
     const wars: KingdomWar[] = this.kingdom()?.wars ?? [];
@@ -61,13 +51,5 @@ export class KingdomComponent {
     const previousIds = new Set<number>(previousWars.map(w => w.id));
     return new Set<number>(wars.filter(w => !previousIds.has(w.id)).map(w => w.id));
   });
-
-  // 4-tier coloring: ≥+50 = `.tier-full` (vert), ≥0 = `.tier-high` (or), ≥-50 = `.tier-mid` (info), < -50 = `.tier-low` (rouge).
-  protected opinionClass = (total: number): string => {
-    if (total >= 50) return 'tier-full';
-    if (total >= 0) return 'tier-high';
-    if (total >= -50) return 'tier-mid';
-    return 'tier-low';
-  };
 
 }

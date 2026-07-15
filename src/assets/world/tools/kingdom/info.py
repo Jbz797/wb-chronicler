@@ -30,6 +30,7 @@ from shared import (
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
 _ALL_SECTIONS = ("metadata", "population", "ranks", "relations", "wars")
+_ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else age/money/renown/sex).
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close » if any pair of their zones are within this Manhattan distance.
 _FAR_LANDS_CAPITAL_DISTANCE = 18  # `!isSameIsland` proxy: capitals further apart than this are treated as on different lands.
@@ -164,6 +165,7 @@ def _build_context(save: dict) -> dict:
         "buildings_by_kingdom": buildings_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
         "cities_by_kingdom": cities_by_kingdom,
+        "cultures_by_id": index_by_id(save.get("cultures", [])),
         "eaters_by_kingdom": eaters_by_kingdom,
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
@@ -227,6 +229,8 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         else:
             founder = {"asset_id": kingdom.get("original_actor_asset"), "dead": True, "id": fid, "name": past_rulers[0].get("name") or f"#{fid}"}
 
+    heir = _resolve_heir(kingdom, ctx, save)
+
     return {
         "age": int(age_units / UNITS_PER_YEAR),
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
@@ -238,6 +242,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "founder": founder,
         "gold": ctx["gold_by_kingdom"][kid],  # Gold currency stocked across the kingdom's buildings.
         "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
+        "heir": heir,
         "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).
         "id": kid,
         "islands": islands,
@@ -600,8 +605,7 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
             mod["baby_king"] = -50
 
     # 22-24. ethnocentric_guard / xenophobic / xenophiles: need main.culture.saved_traits. Check below.
-    main_culture = next((c for c in save.get("cultures", []) if c.get("id") == main.get("id_culture")), None)
-    culture_traits = set((main_culture or {}).get("saved_traits") or [])
+    culture_traits = set((ctx["cultures_by_id"].get(main.get("id_culture")) or {}).get("saved_traits") or [])
     same_species = mod.get("species") == 15
     if "ethnocentric_guard" in culture_traits and not same_species and main.get("id_culture") != target.get("id_culture"):
         mod["ethnocentric_guard"] = -50
@@ -724,6 +728,46 @@ def _resolve_banner_sprite(kingdom: dict, ctx: dict) -> int:
     icons = banners["banner_id_icons"][banners["species_to_banner_id"][species]]
     index = kingdom.get("banner_icon_id") or 0
     return icons[index if index < len(icons) else 0]
+
+
+# Next in line = eligible royal-clan member (alive civ, not the king), ranked by the culture's succession rule (WB `getKingFromRoyalClan`).
+def _resolve_heir(kingdom: dict, ctx: dict, save: dict) -> dict | None:
+    royal_clan = kingdom.get("royal_clan_id")
+    if not royal_clan:
+        return None
+    king_id = kingdom.get("kingID")
+    candidates = [a for a in save.get("actors_data", []) if a.get("clan") == royal_clan and a.get("civ_kingdom_id") and a.get("id") != king_id]
+    if not candidates:
+        return None
+    traits = set((ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}).get("saved_traits") or [])
+    stat = next((s for t, s in _ASCENSION_STATS.items() if t in traits), None)
+
+    def score(actor: dict) -> float:
+        if stat is not None:
+            return compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"]).get(stat, 0)
+        if "golden_rule" in traits:
+            return int(actor.get("money") or 0)
+        if "fames_crown" in traits:
+            return int(actor.get("renown") or 0)
+        age = ctx["world_time"] - float(actor.get("created_time") or 0)
+        return -age if "ultimogeniture" in traits else age  # `ultimogeniture` = youngest inherits, else eldest
+
+    def preferred_sex(actor: dict) -> int:
+        if "patriarchy" in traits:
+            return 0 if actor.get("sex") == 1 else 1
+        if "matriarchy" in traits:
+            return 1 if actor.get("sex") == 1 else 0
+        return 0
+
+    # Rank desc: preferred sex, then succession score, then lowest id (WB's stable tie-break among equals).
+    heir = max(candidates, key=lambda a: (preferred_sex(a), score(a), -a.get("id", 0)))
+    return {
+        "asset_id": heir.get("asset_id"),
+        "id": heir.get("id"),
+        "name": heir.get("name") or f"#{heir.get('id')}",
+        "profession": resolve_profession(heir, save),
+        "sex": "female" if heir.get("sex") == 1 else "male",
+    }
 
 
 # True if any zone pair is within `max_distance` (Manhattan). Set-probe the distance diamond + early-exit — avoids the O(len_a × len_b) all-pairs min.
