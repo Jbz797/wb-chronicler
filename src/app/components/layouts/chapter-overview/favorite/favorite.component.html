@@ -10,6 +10,9 @@
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat stat="age" [hideDelta]="true" [suffix]="ageSuffix()" />
     </nz-descriptions-item>
+    @if (fav.metadata.tenure_years; as tenure) {
+      <nz-descriptions-item [nzTitle]="tenureTitle">{{ tenure }} ans</nz-descriptions-item>
+    }
     <nz-descriptions-item [nzTitle]="lifespanTitle">
       <app-ranked-stat stat="lifespan" suffix=" ans" />
     </nz-descriptions-item>
@@ -71,6 +74,7 @@
     }
     Rôles
   </ng-template>
+  <ng-template #tenureTitle><img src="assets/img/stats/tenure.png" /><span>{{ tenureLabel() }}</span></ng-template>
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
     <nz-descriptions-item [nzSpan]="2" [nzTitle]="healthTitle">

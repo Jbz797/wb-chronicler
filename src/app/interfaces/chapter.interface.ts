@@ -91,6 +91,7 @@ interface FavoriteMetadata {
   profession: string;
   roles: string[];
   sex: 'female' | 'male';
+  tenure_years?: number;
 }
 
 interface FavoriteRanks {

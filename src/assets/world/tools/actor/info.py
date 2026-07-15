@@ -27,6 +27,7 @@ from shared import (
 
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
+_CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _LEVEL_RE = re.compile(r"(\d+)$")
 _PROFESSION_KING = 3
 _PROFESSION_LEADER = 4
@@ -72,6 +73,13 @@ _ROLE_ORDER = (
     "village_founder",
     "family_founder",
 )
+
+# Profession → (current-holder field, save collection, history list). Every post keeps a `past_*` history whose last entry is the sitting holder's start.
+_TENURE_ROLES = {
+    "army_captain": ("id_captain", "armies", "past_captains"),
+    "king": ("kingID", "kingdoms", "past_rulers"),
+    "leader": ("leaderID", "cities", "past_rulers"),
+}
 
 # Mass deltas from traits — only `fat`, `giant`, `tiny`, `agile` in the DLL.
 _TRAIT_MASS_MODS = {
@@ -160,17 +168,21 @@ def _build_inventory(actor: dict) -> dict:
 
 
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
-    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
     snap = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
+
+    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
     lifespan = snap.get("lifespan", 0)
+
     age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)  # `age_overgrowth` (years past the lifespan cap) added on top, like the WB tooltip.
     age_adult, age_breeding = age_thresholds(lifespan)
+    ax, ay = actor.get("x"), actor.get("y")
     cities_by_id = index_by_id(save.get("cities", []))
     clan = ctx["clans_by_id"].get(actor.get("clan")) or {}
     cultures_by_id = index_by_id(save.get("cultures", []))
     families_by_id = index_by_id(save.get("families", []))
     kingdoms_by_id = index_by_id(save.get("kingdoms", []))
     language = ctx["languages_by_id"].get(actor.get("language")) or {}
+    profession = resolve_profession(actor, save)
     religions_by_id = index_by_id(save.get("religions", []))
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}
 
@@ -183,7 +195,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         and int(actor.get("nutrition") or 0) > 0
     )
 
-    ax, ay = actor.get("x"), actor.get("y")
     _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
 
     return {
@@ -192,23 +203,24 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "can_reproduce": can_reproduce,
         "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
         "clan": clan.get("name"),
+        "clan_chief_years": _resolve_tenure(actor, _CLAN_CHIEF_ROLE, save, ctx["world_time"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
         "culture": (cultures_by_id.get(actor.get("culture")) or {}).get("name"),
         "family": (families_by_id.get(actor.get("family")) or {}).get("name"),
         "favorite_food": actor.get("favorite_food"),
         "generation": int(actor.get("generation") or 1),
-        # Chronicler-only: id of the land mass (per `geography/info.py`) the actor stands on. `None` on open water, lava or unassigned sand patches.
-        "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,
+        "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,  # Chronicler-only: land mass (geography/info.py).
         "kingdom": _resolve_kingdom(actor.get("civ_kingdom_id"), kingdoms_by_id),
         "language": language.get("name"),
         "life_stage": life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor, ctx),
         "name": actor.get("name"),
         "personality": _compute_personality(actor, snap),
-        "profession": resolve_profession(actor, save),
+        "profession": profession,
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
         "roles": _compute_roles(actor, save),
         "sex": "female" if actor.get("sex") == 1 else "male",
         "subspecies": sub.get("name") or actor.get("subspecies"),
+        "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
         "x": ax,
         "y": ay,
     }
@@ -400,6 +412,21 @@ def _resolve_kingdom(kingdom_id: int | None, kingdoms_by_id: dict) -> dict | Non
     if kingdom is None:
         return None
     return {"id": kingdom_id, "name": kingdom.get("name")}
+
+
+# Years the actor has held `role` = (holder field, collection, history). `None` unless the history's last entry still names them.
+def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, world_time: float) -> int | None:
+    if role is None:
+        return None
+    holder_field, collection, history = role
+    actor_id = actor.get("id")
+    for record in save.get(collection, []):
+        if record.get(holder_field) != actor_id:
+            continue
+        entries = record.get(history) or []
+        if entries and entries[-1].get("id") == actor_id:
+            return int((world_time - float(entries[-1].get("timestamp_ago") or 0)) / UNITS_PER_YEAR)
+    return None
 
 
 def main(argv: list[str]) -> int:

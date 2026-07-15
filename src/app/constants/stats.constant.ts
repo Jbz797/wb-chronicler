@@ -33,13 +33,7 @@ export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
 };
 
 // French labels for `metadata.life_stage` — WB age tiers (baby → elder), shown lowercase next to the age.
-export const LIFE_STAGE_LABELS: Readonly<Record<LifeStage, string>> = {
-  adult: 'adulte',
-  baby: 'bébé',
-  child: 'enfant',
-  elder: 'aîné',
-  teen: 'adolescent',
-};
+export const LIFE_STAGE_LABELS: Readonly<Record<LifeStage, string>> = { adult: 'adulte', baby: 'bébé', child: 'enfant', elder: 'aîné', teen: 'adolescent' };
 
 // French labels for `metadata.personality` (mirrors the IDs WB stores). `null` means commoner (no role).
 export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
@@ -49,6 +43,9 @@ export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
   militarist: 'Militariste',
   wildcard: 'Imprévisible',
 };
+
+// French labels for `metadata.tenure_years` — names the post the years are counted for. Only these professions hold one.
+export const TENURE_LABELS: Readonly<Record<string, string>> = { army_captain: 'Commandement', king: 'Règne', leader: 'Direction' };
 
 // French labels for `metadata.roles` (active = current position, !active = historical foundation) — Python emits the canonical order, do not re-sort here.
 export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: string }>> = {
@@ -131,27 +128,13 @@ export const SKILL_STATS: StatConfig[] = [
 ];
 
 // French labels for kingdom diplomatic relation statuses (ally / enemy / neutral) — mirrors WB's runtime relation state derived from alliances + ongoing wars.
-export const RELATION_STATUS_LABELS = {
-  ally: 'Allié',
-  enemy: 'Ennemi',
-  neutral: 'Neutre',
-} as const;
+export const RELATION_STATUS_LABELS = { ally: 'Allié', enemy: 'Ennemi', neutral: 'Neutre' } as const;
 
 // ng-zorro nz-tag colors per relation status — green for allies, red for active enemies, default for everything else.
-export const RELATION_STATUS_NZ_COLORS = {
-  ally: 'green',
-  enemy: 'red',
-  neutral: 'default',
-} as const;
+export const RELATION_STATUS_NZ_COLORS = { ally: 'green', enemy: 'red', neutral: 'default' } as const;
 
 // French labels for `war.war_type` — sourced from WB's `meta_wars` locale (war_type_*).
-export const WAR_TYPE_LABELS = {
-  conquest: 'Conquête',
-  inspire: 'Inspirée',
-  rebellion: 'Rébellion',
-  spite: 'Dépit',
-  whisper: 'Murmure',
-} as const;
+export const WAR_TYPE_LABELS = { conquest: 'Conquête', inspire: 'Inspirée', rebellion: 'Rébellion', spite: 'Dépit', whisper: 'Murmure' } as const;
 
 // Snapshot world stats — display order: demography → environment → society → conflict → culture → activity. `hideIfZero` hides outbreak-style rows when idle.
 export const SNAPSHOT_STATS: { hideIfZero?: boolean; key: SnapshotStat; label: string }[] = [
