@@ -107,7 +107,7 @@ def _build_companion(actor: dict, ctx: dict, id_field: str) -> dict | None:
         "id": companion_id,
         "level": snap.get("level", 0),
         "money": snap.get("money", 0),
-        "name": companion.get("name"),
+        "name": companion.get("name") or f"#{companion_id}",
         "renown": snap.get("renown", 0),
         "sex": "female" if companion.get("sex") == 1 else "male",
     }
@@ -213,7 +213,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "language": language.get("name"),
         "life_stage": life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor, ctx),
-        "name": actor.get("name"),
+        "name": actor.get("name") or f"#{actor.get('id')}",  # `#id` fallback like every other name field — WB leaves plenty of actors unnamed.
         "personality": _compute_personality(actor, snap),
         "profession": profession,
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),

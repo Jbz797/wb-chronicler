@@ -18,12 +18,13 @@ export interface KingdomRelation {
   status: 'ally' | 'enemy' | 'neutral';
 }
 
+// `allies` is absent when a kingdom fights alone, both `*_alliance` when no alliance backs that side, `war_type` when WB never set one — `emit` strips them all.
 export interface KingdomWar {
-  allies: KingdomReference[];
-  attacker_alliance: KingdomReference | null;
+  allies?: KingdomReference[];
+  attacker_alliance?: KingdomReference;
   cities: SideStats;
   deaths: SideStats;
-  defender_alliance: KingdomReference | null;
+  defender_alliance?: KingdomReference;
   duration_years: number;
   id: number;
   name: string;
@@ -32,7 +33,7 @@ export interface KingdomWar {
   renown_at_stake: number;
   side: 'attacker' | 'defender';
   started_by: { kingdom: KingdomReference };
-  war_type: 'conquest' | 'inspire' | 'rebellion' | 'spite' | 'whisper' | null;
+  war_type?: 'conquest' | 'inspire' | 'rebellion' | 'spite' | 'whisper';
   warriors: SideStats;
 }
 
@@ -69,14 +70,15 @@ interface DeathBreakdown {
   weapon?: number;
 }
 
+// Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key. `descriptor` is authored by the chronicler.
 interface Favorite {
-  best_friend: Companion | null;
+  best_friend?: Companion;
   descriptor: string;
-  inventory: Record<string, number>;
-  lover: Companion | null;
+  inventory?: Record<string, number>;
+  lover?: Companion;
   metadata: FavoriteMetadata;
-  plot: Plot | null;
-  ranks_in_species: FavoriteRanks;
+  plot?: Plot;
+  ranks_in_species?: FavoriteRanks;
   stats: FavoriteStats;
   traits: RarityCounts;
 }
@@ -84,12 +86,12 @@ interface Favorite {
 interface FavoriteMetadata {
   age: number;
   asset_id: string;
-  kingdom: KingdomReference | null;
+  kingdom?: KingdomReference;
   life_stage: LifeStage;
   name: string;
-  personality: string | null;
+  personality?: string;
   profession: string;
-  roles: string[];
+  roles?: string[];
   sex: 'female' | 'male';
   tenure_years?: number;
 }
@@ -149,12 +151,13 @@ interface FavoriteStats {
   warfare: number;
 }
 
+// Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium, no neighbour or no ongoing war means no key at all.
 interface Kingdom {
   metadata: KingdomMetadata;
   population: KingdomPopulation;
-  ranks: KingdomRanks;
-  relations: KingdomRelation[];
-  wars: KingdomWar[];
+  ranks?: KingdomRanks;
+  relations?: KingdomRelation[];
+  wars?: KingdomWar[];
 }
 
 interface KingdomMetadata {
@@ -171,10 +174,11 @@ interface KingdomMetadata {
   houses: number;
   id: number;
   kills: number;
-  king?: { asset_id: string; id: number; name: string; sex: 'female' | 'male' };
+  king?: { asset_id: string; id: number; money: number; name: string; sex: 'female' | 'male' };
   name: string;
   renown: number;
   territory: number;
+  wealth: number;
 }
 
 interface KingdomPopulation {
@@ -185,10 +189,13 @@ interface KingdomPopulation {
   infected?: number;
   money: number;
   nobles: number;
+  nobles_money: number;
   renown_total: number;
   sick?: number;
+  subjects_money: number;
   total: number;
   warriors: number;
+  wealth_per_capita: number;
 }
 
 interface KingdomRanks {
@@ -206,14 +213,19 @@ interface KingdomRanks {
   immortals?: number;
   infected?: number;
   kills?: number;
+  king_money?: number;
   money?: number;
   nobles?: number;
+  nobles_money?: number;
   population?: number;
   renown?: number;
   renown_total?: number;
   sick?: number;
+  subjects_money?: number;
   territory?: number;
   warriors?: number;
+  wealth?: number;
+  wealth_per_capita?: number;
 }
 
 interface KingdomReference { id: number; name: string }
@@ -223,8 +235,8 @@ interface Leader { asset_id?: string; id?: number; name: string; profession?: st
 interface Plot {
   name: string;
   progress: number;
-  target_alliance: string | null;
-  target_kingdom: string | null;
+  target_alliance?: string;
+  target_kingdom?: string;
   type_id: string;
 }
 
@@ -242,7 +254,7 @@ interface WorldCumulative {
   books_read?: number;
   cities_conquered?: number;
   cities_rebelled?: number;
-  deaths: DeathBreakdown;
+  deaths?: DeathBreakdown;
   evolutions?: number;
   metamorphosis?: number;
   plots_succeeded?: number;
@@ -265,13 +277,14 @@ interface WorldSnapshot {
   families: number;
   frozen_tiles: number;
   houses: number;
-  infected: number;
+  infected?: number;
   kingdoms: number;
   languages: number;
   plots_active: number;
   population: number;
   relations: number;
   religions: number;
+  sick?: number;
   subspecies: number;
   trees: number;
   vegetation: number;

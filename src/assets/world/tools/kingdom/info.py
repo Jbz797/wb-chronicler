@@ -15,6 +15,7 @@ from islands import compute_islands_cached
 
 from shared import (
     CURRENT_SAVE,
+    SICK_TRAITS,
     UNITS_PER_YEAR,
     age_thresholds,
     civic_building_ids,
@@ -40,18 +41,14 @@ _NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
 _SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
-_SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits (`mush_spores`/`tumor_infection` negligible).
 
 
 def _build_context(save: dict) -> dict:
-    # Army captains (warriors leading an army) — a distinct rank, counted as nobles + surfaced as the `army_captain` profession.
-    captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}
 
-    # Per-kingdom tallies (mirrors `Kingdom.getPopulation`, excludes `boat_*` transient PNJs). Nobles = kings (3) + village leaders (4) + army captains.
-    populations_by_kingdom: Counter[int] = Counter()
-
+    actors_by_clan: dict[int, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
     actors_by_kingdom: dict[int, list[dict]] = {}
+    captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
     eaters_by_kingdom: Counter[int] = Counter()
     families_by_kingdom: dict[int, set[int]] = {}
     familyless_by_kingdom: Counter[int] = Counter()
@@ -60,8 +57,11 @@ def _build_context(save: dict) -> dict:
     homeless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
     infected_by_kingdom: Counter[int] = Counter()
+    king_ids = {kid for k in save.get("kingdoms", []) if (kid := k.get("kingID"))}  # Reigning kings: nobles too, but their purse is reported on its own.
     money_by_kingdom: Counter[int] = Counter()
     nobles_by_kingdom: Counter[int] = Counter()
+    nobles_money_by_kingdom: Counter[int] = Counter()
+    populations_by_kingdom: Counter[int] = Counter()  # Mirrors `Kingdom.getPopulation`; `boat_*` PNJs are transient. Nobles = kings (3) + leaders (4) + captains.
     renown_by_kingdom: Counter[int] = Counter()
     sick_by_kingdom: Counter[int] = Counter()
     subspecies_counts: dict[int, dict[int, int]] = {}
@@ -73,6 +73,8 @@ def _build_context(save: dict) -> dict:
         if not kid or (actor.get("asset_id") or "").startswith("boat_"):
             continue
         actors_by_kingdom.setdefault(kid, []).append(actor)
+        if clan_id := actor.get("clan"):
+            actors_by_clan.setdefault(clan_id, []).append(actor)  # Heir lookup: a royal clan spans kingdoms, so `actors_by_kingdom` can't serve it.
         populations_by_kingdom[kid] += 1
         money_by_kingdom[kid] += int(actor.get("money") or 0)
         renown_by_kingdom[kid] += int(actor.get("renown") or 0)
@@ -84,10 +86,12 @@ def _build_context(save: dict) -> dict:
             warriors_by_kingdom[kid] += 1
         if actor.get("profession") in (3, 4) or actor["id"] in captain_ids:
             nobles_by_kingdom[kid] += 1
+            if actor["id"] not in king_ids:
+                nobles_money_by_kingdom[kid] += int(actor.get("money") or 0)
         traits = actor.get("saved_traits") or []
         if "infected" in traits:
             infected_by_kingdom[kid] += 1
-        if not _SICK_TRAITS.isdisjoint(traits):
+        if not SICK_TRAITS.isdisjoint(traits):
             sick_by_kingdom[kid] += 1
         if "immortal" in traits:
             immortals_by_kingdom[kid] += 1
@@ -131,7 +135,7 @@ def _build_context(save: dict) -> dict:
         bx, by = b.get("mainX"), b.get("mainY")
         if bx is None or by is None:
             continue
-        # Building-storage resources summed per city's kingdom: `food` (eatable, mirrors WB's `_current_total_food`), `gold` (currency), `goods` (other materials/gems).
+        # Building-storage resources summed per city's kingdom: `food` (eatable, mirrors WB's `_current_total_food`), `gold` (ore), `goods` (other materials/gems).
         city = cities_by_id.get(b.get("cityID"))
         if city and (fkid := city.get("kingdomID")):
             for r in (b.get("resources") or {}).get("saved_resources") or []:
@@ -160,6 +164,7 @@ def _build_context(save: dict) -> dict:
 
     return {
         **build_actor_stats_context(save),
+        "actors_by_clan": actors_by_clan,
         "actors_by_id": actors_by_id,
         "actors_by_kingdom": actors_by_kingdom,
         "buildings_by_kingdom": buildings_by_kingdom,
@@ -181,6 +186,7 @@ def _build_context(save: dict) -> dict:
         "main_subspecies": main_subspecies,
         "money_by_kingdom": money_by_kingdom,
         "nobles_by_kingdom": nobles_by_kingdom,
+        "nobles_money_by_kingdom": nobles_money_by_kingdom,
         "populations_by_kingdom": populations_by_kingdom,
         "renown_by_kingdom": renown_by_kingdom,
         "sick_by_kingdom": sick_by_kingdom,
@@ -207,6 +213,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         king = {
             "asset_id": king_actor.get("asset_id"),
             "id": king_actor.get("id"),
+            "money": int(king_actor.get("money") or 0),  # His own purse: inside `population.money`, and netted out of `subjects_money` so both can be shown apart.
             "name": king_actor.get("name") or f"#{king_actor.get('id')}",
             "sex": "female" if king_actor.get("sex") == 1 else "male",
         }
@@ -240,7 +247,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
         "founder": founder,
-        "gold": ctx["gold_by_kingdom"][kid],  # Gold currency stocked across the kingdom's buildings.
+        "gold": ctx["gold_by_kingdom"][kid],  # Gold ore in the kingdom's buildings: mined from `mineral_gold` + half of each taxpayer's loot. Not coins.
         "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
         "heir": heir,
         "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).
@@ -252,19 +259,22 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "name": kingdom.get("name"),
         "renown": kingdom.get("renown", 0),
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
+        "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
     }
 
 
 # Age tiers from `life_stage`; `couples` = mutual lovers; `nobles` = kings + leaders + captains; `sick`/`infected` from WB `calculateIsSick` (`infected` ⊂ `sick`).
 def _build_population(kingdom: dict, ctx: dict) -> dict:
     kid = kingdom.get("id")
-    world_time = ctx["world_time"]
-    by_id = ctx["actors_by_id"]
+
     actors = ctx["actors_by_kingdom"].get(kid, [])
+    by_id = ctx["actors_by_id"]
     ids = {a["id"] for a in actors}
-    stages: Counter[str] = Counter()
     men = couples = 0
     paired: set[int] = set()
+    stages: Counter[str] = Counter()
+    world_time = ctx["world_time"]
+
     for a in actors:
         age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
         lifespan = compute_actor_stats(a, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0)
@@ -278,6 +288,7 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
     total = len(actors)
 
     eaters = ctx["eaters_by_kingdom"][kid]  # food-needing pop (undead excluded); denominator for `fed_pct`
+    king_money = int((by_id.get(kingdom.get("kingID")) or {}).get("money") or 0)  # Netted out of `subjects_money`; the value itself rides in `metadata.king`.
 
     # `immortals`/`infected`/`sick` omitted when 0 (UI-gated on > 0; absence = none). The rest always emitted — an explicit 0 is a meaningful demographic signal.
     immortals = ctx["immortals_by_kingdom"][kid]
@@ -300,11 +311,14 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
         "men": men,
         "money": ctx["money_by_kingdom"][kid],  # Total coins held across the kingdom's population.
         "nobles": ctx["nobles_by_kingdom"][kid],
+        "nobles_money": ctx["nobles_money_by_kingdom"][kid],  # Coins of the leaders/captains, king excluded — his own purse sits in `metadata.king`.
         "renown_total": ctx["renown_by_kingdom"][kid],  # Summed renown of all inhabitants (distinct from the kingdom's own `metadata.renown`).
         **({"sick": sick} if sick else {}),
+        "subjects_money": ctx["money_by_kingdom"][kid] - king_money - ctx["nobles_money_by_kingdom"][kid],  # Commoners' coins: `money` minus crown and nobility.
         "teens": stages["teen"],
         "total": total,
         "warriors": ctx["warriors_by_kingdom"][kid],
+        "wealth_per_capita": round((ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid]) / total, 1) if total else 0,  # `metadata.wealth` ÷ population.
         "women": total - men,
     }
 
@@ -328,7 +342,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                 return True
         return False
 
-    # Optional pair record (`save.relations` only persists pairs WB has explicitly tracked) — drives `age_years`, `years_since_last_war`, and the `peace_time`/`truce` modifiers via `_compute_opinion`. WB still computes opinion for every other kingdom regardless, so we iterate ALL kingdoms here.
+    # `save.relations` only persists pairs WB tracked, yet WB scores every kingdom regardless — hence the loop over all below and the `r or {}` fallbacks.
     relations_by_other = {
         (r.get("kingdom2_id") if r.get("kingdom1_id") == kid else r.get("kingdom1_id")): r
         for r in save.get("relations", [])
@@ -639,14 +653,12 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     infected = ctx["infected_by_kingdom"]
     money = ctx["money_by_kingdom"]
     nobles = ctx["nobles_by_kingdom"]
+    nobles_money = ctx["nobles_money_by_kingdom"]
     populations = ctx["populations_by_kingdom"]
     renown_total = ctx["renown_by_kingdom"]
     sick = ctx["sick_by_kingdom"]
     territory = ctx["territory_by_kingdom"]
     warriors = ctx["warriors_by_kingdom"]
-
-    def kingdom_age(k: dict) -> int:
-        return int((ctx["world_time"] - float(k.get("created_time") or 0)) / UNITS_PER_YEAR)
 
     def fed_ratio(k: dict) -> float:
         eat = eaters.get(k.get("id"), 0)
@@ -659,6 +671,19 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     def housed_ratio(k: dict) -> float:
         pop = populations.get(k.get("id"), 0)
         return (pop - homeless.get(k.get("id"), 0)) / pop if pop else 0.0
+
+    def king_money(k: dict) -> int:
+        return int((ctx["actors_by_id"].get(k.get("kingID")) or {}).get("money") or 0)
+
+    def kingdom_age(k: dict) -> int:
+        return int((ctx["world_time"] - float(k.get("created_time") or 0)) / UNITS_PER_YEAR)
+
+    def subjects_money(k: dict) -> int:
+        return money.get(k.get("id"), 0) - king_money(k) - nobles_money.get(k.get("id"), 0)
+
+    def wealth_per_capita(k: dict) -> float:
+        pop = populations.get(k.get("id"), 0)
+        return (money.get(k.get("id"), 0) + gold.get(k.get("id"), 0)) / pop if pop else 0.0
 
     getters = {
         "age": kingdom_age,
@@ -675,14 +700,19 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
         "immortals": lambda k: immortals.get(k.get("id"), 0),
         "infected": lambda k: infected.get(k.get("id"), 0),
         "kills": lambda k: k.get("total_kills", 0),
+        "king_money": king_money,
         "money": lambda k: money.get(k.get("id"), 0),
         "nobles": lambda k: nobles.get(k.get("id"), 0),
+        "nobles_money": lambda k: nobles_money.get(k.get("id"), 0),
         "population": lambda k: populations.get(k.get("id"), 0),
         "renown": lambda k: k.get("renown", 0),
         "renown_total": lambda k: renown_total.get(k.get("id"), 0),
         "sick": lambda k: sick.get(k.get("id"), 0),
+        "subjects_money": subjects_money,
         "territory": lambda k: territory.get(k.get("id"), 0),
         "warriors": lambda k: warriors.get(k.get("id"), 0),
+        "wealth": lambda k: money.get(k.get("id"), 0) + gold.get(k.get("id"), 0),
+        "wealth_per_capita": wealth_per_capita,
     }
     ranks = {}
     for stat, getter in sorted(getters.items()):
@@ -736,7 +766,7 @@ def _resolve_heir(kingdom: dict, ctx: dict, save: dict) -> dict | None:
     if not royal_clan:
         return None
     king_id = kingdom.get("kingID")
-    candidates = [a for a in save.get("actors_data", []) if a.get("clan") == royal_clan and a.get("civ_kingdom_id") and a.get("id") != king_id]
+    candidates = [a for a in ctx["actors_by_clan"].get(royal_clan, ()) if a.get("id") != king_id]
     if not candidates:
         return None
     traits = set((ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}).get("saved_traits") or [])

@@ -25,7 +25,7 @@ export class WarCardComponent {
   // Per-stat delta (both sides) vs the same war in the previous chapter — `null` when no previous chapter or war absent.
   protected readonly deltas = computed(() => {
     const w = this.war();
-    const previous = this.chronicler.previousChapter()?.meta.kingdom?.wars.find(x => x.id === w.id);
+    const previous = this.chronicler.previousChapter()?.meta.kingdom?.wars?.find(x => x.id === w.id);
     if (!previous) return null;
     const diff = (side: 'attackers' | 'defenders') => ({
       cities: w.cities[side] - previous.cities[side],

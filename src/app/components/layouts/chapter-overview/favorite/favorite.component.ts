@@ -48,6 +48,7 @@ export class FavoriteComponent {
 
     const previousMeta = this._chronicler.previousChapter()?.meta.favorite?.metadata;
     const previousRoles = new Set(previousMeta?.roles);
+    const roles = meta.roles ?? []; // Absent when the favorite holds none — `emit` strips the empty list.
     const tags: { color: string; isNew: boolean; label: string }[] = [];
 
     if (meta.personality) {
@@ -55,7 +56,7 @@ export class FavoriteComponent {
       tags.push({ color: 'yellow', isNew, label: PERSONALITY_LABELS[meta.personality] ?? meta.personality });
     }
 
-    for (const role of meta.roles) {
+    for (const role of roles) {
       const definition = ROLE_LABELS[role];
       if (definition?.active) {
         const isNew = !!previousMeta && !previousRoles.has(role);

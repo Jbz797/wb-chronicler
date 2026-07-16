@@ -13,6 +13,8 @@ from pathlib import Path
 # Live game save by default; `WB_SAVE` env var overrides it to regenerate a past chapter from its archived `map.wbox`.
 CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
 
+SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
+
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 
 _DATAS_DIR = Path(__file__).parent / "datas"

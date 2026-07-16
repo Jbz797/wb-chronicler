@@ -1,0 +1,17 @@
+<nz-descriptions nzBordered nzSize="small" nzTitle="Richesse" [nzColumn]="2">
+  @for (s of shares(); track s.label) {
+    <ng-template #shareTitle>
+      <img [src]="`assets/img/${s.icon}.png`" /><span>{{ s.label }}</span>
+    </ng-template>
+    <nz-descriptions-item [nzTitle]="shareTitle">{{ s.value === undefined ? '—' : (s.value | compact) }}</nz-descriptions-item>
+  }
+  <nz-descriptions-item [nzSpan]="2" [nzTitle]="totalTitle">
+    <app-ranked-stat source="kingdom" stat="wealth" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzSpan]="2" [nzTitle]="perCapitaTitle">
+    <app-ranked-stat numberFormat="1.1-1" source="kingdom" stat="wealth_per_capita" suffix="/hab" />
+  </nz-descriptions-item>
+</nz-descriptions>
+
+<ng-template #perCapitaTitle><img src="assets/img/stats/loot.png" /><span>Par hab.</span></ng-template>
+<ng-template #totalTitle><img src="assets/img/stats/money.png" /><span>Total</span></ng-template>

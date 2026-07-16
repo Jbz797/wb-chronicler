@@ -74,7 +74,9 @@
     }
     Rôles
   </ng-template>
-  <ng-template #tenureTitle><img src="assets/img/stats/tenure.png" /><span>{{ tenureLabel() }}</span></ng-template>
+  <ng-template #tenureTitle>
+    <img src="assets/img/stats/tenure.png" /><span>{{ tenureLabel() }}</span>
+  </ng-template>
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="2">
     <nz-descriptions-item [nzSpan]="2" [nzTitle]="healthTitle">
@@ -144,6 +146,6 @@
 
   <app-plot-card [isNew]="changedFields().plot" />
 
-  <app-companion-card title="Amoureux" [data]="fav.lover" [isNew]="changedFields().lover" />
-  <app-companion-card title="Meilleur ami" [data]="fav.best_friend" [isNew]="changedFields().bestFriend" />
+  <app-companion-card title="Amoureux" [data]="fav.lover ?? null" [isNew]="changedFields().lover" />
+  <app-companion-card title="Meilleur ami" [data]="fav.best_friend ?? null" [isNew]="changedFields().bestFriend" />
 }

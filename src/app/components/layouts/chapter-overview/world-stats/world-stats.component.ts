@@ -62,7 +62,8 @@ export class WorldStatsComponent {
     const current = this.currentChapter()?.meta.world.snapshot;
     const previous = this._chronicler.previousChapter()?.meta.world.snapshot;
     if (!current || !previous) return null;
-    return Object.fromEntries(this.snapshotStats.map(({ key }) => [key, current[key] - previous[key]]));
+    // `infected` is omitted at 0 (outbreak-style), so an absent count reads as 0 on either side.
+    return Object.fromEntries(this.snapshotStats.map(({ key }) => [key, (current[key] ?? 0) - (previous[key] ?? 0)]));
   });
   // Causes with > 0 deaths this chapter, sorted by count desc — 0-rows are hidden (16 categories incl. peste/poison/etc. that stay idle most chapters).
   protected readonly sortedDeathCauses = computed(() => {

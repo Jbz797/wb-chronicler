@@ -8,11 +8,20 @@ import { NewBadgeComponent, RankedStatComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
 
 import { KingdomRelationsComponent } from './kingdom-relations/kingdom-relations.component';
+import { KingdomWealthComponent } from './kingdom-wealth/kingdom-wealth.component';
 import { WarCardComponent } from './war-card/war-card.component';
 
 @Component({
   selector: 'app-kingdom',
-  imports: [KingdomRelationsComponent, NewBadgeComponent, NzDescriptionsModule, PersonTagComponent, RankedStatComponent, WarCardComponent],
+  imports: [
+    KingdomRelationsComponent,
+    KingdomWealthComponent,
+    NewBadgeComponent,
+    NzDescriptionsModule,
+    PersonTagComponent,
+    RankedStatComponent,
+    WarCardComponent,
+  ],
   templateUrl: './kingdom.component.html',
 })
 export class KingdomComponent {

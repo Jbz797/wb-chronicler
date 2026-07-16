@@ -39,25 +39,19 @@
     <nz-descriptions-item [nzTitle]="warriorsTitle">
       <app-ranked-stat source="kingdom" stat="warriors" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="noblesTitle">
-      <app-ranked-stat source="kingdom" stat="nobles" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="deathsTitle">
       <app-ranked-stat source="kingdom" stat="deaths" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="killsTitle">
       <app-ranked-stat source="kingdom" stat="kills" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="moneyTitle">
-      <app-ranked-stat source="kingdom" stat="money" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="kingdom" stat="renown_total" />
     </nz-descriptions-item>
     @for (o of optionalStats(); track o.stat) {
-      <ng-template #optionalTitle
-        ><img [src]="o.icon" /><span>{{ o.label }}</span></ng-template
-      >
+      <ng-template #optionalTitle>
+        <img [src]="o.icon" /><span>{{ o.label }}</span>
+      </ng-template>
       <nz-descriptions-item [nzTitle]="optionalTitle">
         <app-ranked-stat source="kingdom" [stat]="o.stat" />
       </nz-descriptions-item>
@@ -86,19 +80,18 @@
     <nz-descriptions-item [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="kingdom" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="goldTitle">
-      <app-ranked-stat source="kingdom" stat="gold" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="goodsTitle">
       <app-ranked-stat source="kingdom" stat="goods" />
     </nz-descriptions-item>
   </nz-descriptions>
 
-  @for (war of k.wars; track war.id) {
+  <app-kingdom-wealth />
+
+  @for (war of k.wars ?? []; track war.id) {
     <app-war-card [isNew]="startedWarIds().has(war.id)" [war]="war" />
   }
 
-  <app-kingdom-relations [relations]="k.relations" />
+  <app-kingdom-relations [relations]="k.relations ?? []" />
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du royaume</span></ng-template>
   <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
@@ -109,14 +102,11 @@
   <ng-template #foodTitle><img src="assets/img/world/food.png" /><span>Nourriture</span></ng-template>
   <ng-template #foodPerCapitaTitle><img src="assets/img/world/food_per_capita.png" /><span>Réserves</span></ng-template>
   <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
-  <ng-template #goldTitle><img src="assets/img/world/gold.png" /><span>Or</span></ng-template>
   <ng-template #goodsTitle><img src="assets/img/world/goods.png" /><span>Biens</span></ng-template>
   <ng-template #heirTitle><img src="assets/img/world/heir.png" /><span>Héritier</span></ng-template>
   <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
-  <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
-  <ng-template #noblesTitle><img src="assets/img/world/nobles.png" /><span>Nobles</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>

@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import CURRENT_SAVE, civic_building_ids, emit, index_by_id, load_save, parse_sections, resolve_profession
+from shared import CURRENT_SAVE, SICK_TRAITS, civic_building_ids, emit, index_by_id, load_save, parse_sections, resolve_profession
 
 _ALL_SECTIONS = ("cumulative", "leaders", "metadata", "snapshot")
 
@@ -162,7 +162,14 @@ def _build_metadata(map_stats: dict) -> dict:
 def _build_snapshot(meta: dict, map_stats: dict, save: dict) -> dict:
     civic = civic_building_ids()
     asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings", []))  # Count `asset_id`s once, classify distinct keys — avoids 3 scans.
-    infected = sum(1 for a in save.get("actors_data", []) if "infected" in (a.get("saved_traits") or []))  # Omitted when 0 (outbreak-style, idle most chapters).
+
+    # Both omitted when 0 (outbreak-style, idle most chapters). `infected` ⊂ `sick`: a plague never shows up in `infected`, hence the two counters.
+    infected = sick = 0
+    for a in save.get("actors_data", []):
+        traits = a.get("saved_traits") or []
+        infected += "infected" in traits
+        sick += not SICK_TRAITS.isdisjoint(traits)
+
     return dict(
         sorted(
             {
@@ -174,6 +181,7 @@ def _build_snapshot(meta: dict, map_stats: dict, save: dict) -> dict:
                 **({"infected": infected} if infected else {}),
                 "plots_active": len(save.get("plots") or []),
                 "relations": len(save.get("relations") or []),
+                **({"sick": sick} if sick else {}),
                 # `tree` substring catches every `Building_Tree` asset_id (pine/swamp/birch/…). ≤1% drift vs WB UI — counter moves between snapshots.
                 "trees": sum(n for aid, n in asset_counts.items() if "tree" in aid),
             }.items()
