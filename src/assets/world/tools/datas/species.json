@@ -1,327 +1,7 @@
 {
-  "$animal$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$animal_base$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$animal_civ$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$animal_fur$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$animal_skin$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$basic_unit$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$basic_unit_colored$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$boat$": {
-    "stats": {
-      "mass": 1000,
-      "scale": 0.25,
-      "size": 1
-    }
-  },
-  "$boat_trading$": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "$boat_transport$": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "$carnivore$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$civ_advanced_unit$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$civ_unit$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$creep_mob$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "speed": 10,
-      "targets": 1
-    }
-  },
-  "$flying_insect$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "damage": 1,
-      "health": 1,
-      "knockback": 1.5,
-      "mass": 1,
-      "mass_2": 0.015,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "speed": 5,
-      "targets": 1
-    }
-  },
-  "$herbivore$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$insect$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "damage": 1,
-      "health": 1,
-      "knockback": 1.5,
-      "mass": 1,
-      "mass_2": 0.015,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "speed": 5,
-      "targets": 1
-    }
-  },
-  "$mob$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$mob_no_genes$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$omnivore$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "$peaceful_animal$": {
-    "stats": {
-      "accuracy": 1,
-      "area_of_effect": 0.1,
-      "attack_speed": 1,
-      "critical_damage_multiplier": 2,
-      "damage": 1,
-      "knockback": 1.5,
-      "mass": 1,
-      "multiplier_supply_timer": 1,
-      "range": 1,
-      "scale": 0.1,
-      "size": 0.5,
-      "targets": 1
-    }
-  },
-  "UFO": {
-    "stats": {
-      "armor": 5,
-      "damage": 80,
-      "health": 1000,
-      "lifespan": 0,
-      "mass": 5,
-      "mass_2": 2500,
-      "scale": 0.3,
-      "size": 2,
-      "speed": 20
-    }
-  },
   "acid_blob": {
+    "description": "A roiling mass of acidic slime",
+    "name": "Blob d'acide",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -338,6 +18,8 @@
     }
   },
   "alien": {
+    "description": "Out of this World",
+    "name": "Extraterrestre",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -355,6 +37,8 @@
     }
   },
   "alpaca": {
+    "description": "Alpacas are social animals, always sticking close to their herd",
+    "name": "Alpaga",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -371,6 +55,8 @@
     }
   },
   "angle": {
+    "description": "Their razor-thin bodies cutting through flesh and sanity alike",
+    "name": "Angle",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -455,6 +141,8 @@
     }
   },
   "armadillo": {
+    "description": "Living tanks that curl into impenetrable spheres",
+    "name": "Tatou",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -471,6 +159,8 @@
     }
   },
   "assimilator": {
+    "description": "A self-replicating machine that assimilates mass to build an army",
+    "name": "Assimilateur",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -488,6 +178,7 @@
     }
   },
   "bandit": {
+    "name": "Bandit",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -504,6 +195,8 @@
     }
   },
   "bear": {
+    "description": "Large and hairy animal",
+    "name": "Ours",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -520,6 +213,8 @@
     }
   },
   "bee": {
+    "description": "Small but busy pollinators",
+    "name": "Abeille",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -539,6 +234,8 @@
     }
   },
   "beetle": {
+    "description": "Tiny insect",
+    "name": "Scarabée",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -558,6 +255,8 @@
     }
   },
   "bioblob": {
+    "description": "A blob of shifting biological matter with eyes that stare into your soul",
+    "name": "Bioblob",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1750,6 +1449,8 @@
     }
   },
   "buffalo": {
+    "description": "Shaggy behemoth of the Great Plains",
+    "name": "Buffle",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1766,6 +1467,8 @@
     }
   },
   "butterfly": {
+    "description": "Beautiful flying insect that likes flowers",
+    "name": "Papillon",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1785,6 +1488,8 @@
     }
   },
   "capybara": {
+    "description": "This water-loving rodent is as relaxed as it is large",
+    "name": "Capybara",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1801,6 +1506,8 @@
     }
   },
   "cat": {
+    "description": "Cute little carnivore",
+    "name": "Chat",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1817,6 +1524,8 @@
     }
   },
   "chicken": {
+    "description": "Have you heard about this bird?",
+    "name": "Poulet",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1833,6 +1542,8 @@
     }
   },
   "civ_acid_gentleman": {
+    "description": "You'll be drawn in by their manners, only to be eaten away by their nature",
+    "name": "Gentleman acide",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1849,6 +1560,8 @@
     }
   },
   "civ_alpaca": {
+    "description": "Soft, fluffy, and always ready to charm their way out of trouble",
+    "name": "Charmaca",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1865,6 +1578,8 @@
     }
   },
   "civ_armadillo": {
+    "description": "Born to rock, built to roll",
+    "name": "Armaldar",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1881,6 +1596,8 @@
     }
   },
   "civ_bear": {
+    "description": "Fierce on the battlefield, but soft enough to help their cubs bake cookies",
+    "name": "Grranth",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1897,6 +1614,8 @@
     }
   },
   "civ_beetle": {
+    "description": "Rolling to their future one ball at a time, always aiming for the top",
+    "name": "Dunglord",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1913,6 +1632,8 @@
     }
   },
   "civ_buffalo": {
+    "description": "Horns may be for fighting, but those hooves? They're all about dancing the night away",
+    "name": "Buffolon",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1929,6 +1650,8 @@
     }
   },
   "civ_candy_man": {
+    "description": "Behind those sugary smiles lies a hunger for blood and flesh",
+    "name": "Homme Bonbon",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1945,6 +1668,8 @@
     }
   },
   "civ_capybara": {
+    "description": "They make your mom laugh",
+    "name": "Chillbara",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1961,6 +1686,8 @@
     }
   },
   "civ_cat": {
+    "description": "They may look adorable, but those claws say otherwise",
+    "name": "Meowmorph",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1977,6 +1704,8 @@
     }
   },
   "civ_chicken": {
+    "description": "Top of the pecking order",
+    "name": "Pecklord",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1993,6 +1722,8 @@
     }
   },
   "civ_cow": {
+    "description": "They're calm, until someone looks at them wrong - then it's time to mooooove",
+    "name": "Mootaur",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2009,6 +1740,8 @@
     }
   },
   "civ_crab": {
+    "description": "They might walk funny, but when it comes to battle, they're deadly serious",
+    "name": "Crablin",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2025,6 +1758,8 @@
     }
   },
   "civ_crocodile": {
+    "description": "They spend most of their time plotting domination, and the rest pretending they're not",
+    "name": "Reptiloïde",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2041,6 +1776,7 @@
     }
   },
   "civ_crystal_golem": {
+    "description": "They've got that cool, calm, ocean vibe - right until you upset them",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2057,6 +1793,8 @@
     }
   },
   "civ_dog": {
+    "description": "Their loyalty is legendary, their bite is worse",
+    "name": "Barkfolk",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2073,6 +1811,8 @@
     }
   },
   "civ_fox": {
+    "description": "In the game of life, they never play fair - and that's why they always win",
+    "name": "Slypaw",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2089,6 +1829,8 @@
     }
   },
   "civ_frog": {
+    "description": "Quick as the wind, deadly as a lily pad to the face",
+    "name": "Ribbit",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2105,6 +1847,8 @@
     }
   },
   "civ_garlic_man": {
+    "description": "Smell that? That's the scent of victory",
+    "name": "Homme d'ail",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2121,6 +1865,8 @@
     }
   },
   "civ_goat": {
+    "description": "Stubborn as a rock, but just as reliable",
+    "name": "Herdor",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2137,6 +1883,8 @@
     }
   },
   "civ_hyena": {
+    "description": "The bigger the chaos, the louder they laugh",
+    "name": "Lulclaw",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2153,6 +1901,8 @@
     }
   },
   "civ_lemon_man": {
+    "description": "Tough on the outside, sour on the inside",
+    "name": "Homme Citron",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2169,6 +1919,8 @@
     }
   },
   "civ_liliar": {
+    "description": "Rain isn't enough for these flowers - they prefer to drink the tears of their defeated foes",
+    "name": "Lulliar",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2185,6 +1937,8 @@
     }
   },
   "civ_monkey": {
+    "description": "Silent as shadows, deadly as a well-placed banana peel",
+    "name": "Monke",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2201,6 +1955,8 @@
     }
   },
   "civ_penguin": {
+    "description": "They dream in warm hues, where they paint with the blood of their fallen foes",
+    "name": "Coolbeak",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2217,6 +1973,8 @@
     }
   },
   "civ_piranha": {
+    "description": "On land or sea, their hunger knows no bounds",
+    "name": "Gnapkin",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2233,6 +1991,8 @@
     }
   },
   "civ_rabbit": {
+    "description": "When in doubt, hop it out",
+    "name": "Hopper",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2249,6 +2009,8 @@
     }
   },
   "civ_rat": {
+    "description": "They steal hearts... and a few other things",
+    "name": "Nibling",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2265,6 +2027,8 @@
     }
   },
   "civ_rhino": {
+    "description": "They do not always hit, but when they do, they hit hard",
+    "name": "Armoroc",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2281,6 +2045,8 @@
     }
   },
   "civ_scorpion": {
+    "description": "The guardians of the desert's deepest secrets",
+    "name": "Scorp",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2297,6 +2063,8 @@
     }
   },
   "civ_seal": {
+    "description": "Most elite warriors of the sea, trained to fight in any conditions",
+    "name": "Navy Seal",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2312,6 +2080,8 @@
     }
   },
   "civ_sheep": {
+    "description": "Where others see grass, they see potential profit",
+    "name": "Baakin",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2328,6 +2098,8 @@
     }
   },
   "civ_snake": {
+    "description": "Their sarcasm's so sharp, it's basically venom - and it stings more than their bite ever could",
+    "name": "Snok",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2344,6 +2116,8 @@
     }
   },
   "civ_turtle": {
+    "description": "They live long enough to see their enemies become dust",
+    "name": "Turtok",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2360,6 +2134,8 @@
     }
   },
   "civ_unicorn": {
+    "description": "Even demons find them too loud",
+    "name": "Punkcorn",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2376,6 +2152,8 @@
     }
   },
   "civ_wolf": {
+    "description": "The howl isn't just a warning - it's a promise that blood will be spilled tonight",
+    "name": "Howleer",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2392,6 +2170,7 @@
     }
   },
   "cold_one": {
+    "name": "Les Froids",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2408,6 +2187,8 @@
     }
   },
   "cow": {
+    "description": "It goes moo, doesn't say meow",
+    "name": "Vache",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2424,6 +2205,8 @@
     }
   },
   "crab": {
+    "description": "A tiny animal that loves to rave",
+    "name": "Crabe",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2440,6 +2223,8 @@
     }
   },
   "crabzilla": {
+    "description": "Become an enormous Crab, the destroyer of worlds",
+    "name": "Crabzilla",
     "stats": {
       "damage": 10,
       "health": 10000,
@@ -2450,6 +2235,8 @@
     }
   },
   "crocodile": {
+    "description": "The boring dinosaur",
+    "name": "Crocodile",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2466,6 +2253,8 @@
     }
   },
   "crystal_sword": {
+    "description": "Sharp as the sea and twice as salty",
+    "name": "Épée en cristal",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2482,6 +2271,8 @@
     }
   },
   "demon": {
+    "description": "Hellish creature. Red and hot",
+    "name": "Démon",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2498,6 +2289,8 @@
     }
   },
   "dog": {
+    "description": "Woof woof",
+    "name": "Chien",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2515,6 +2308,8 @@
     }
   },
   "dragon": {
+    "description": "Scary flying lizard that brings destruction to your world. Fun!",
+    "name": "Dragon",
     "stats": {
       "damage": 100,
       "health": 1000,
@@ -2528,6 +2323,8 @@
     }
   },
   "druid": {
+    "description": "She likes to watch the grass grow",
+    "name": "Druidesse",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2544,6 +2341,8 @@
     }
   },
   "dwarf": {
+    "description": "Master craftsmen who never forget a grudge",
+    "name": "Nain",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2560,6 +2359,8 @@
     }
   },
   "elf": {
+    "description": "Mystical beings with a superiority complex and great hair",
+    "name": "Elfe",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2576,6 +2377,8 @@
     }
   },
   "evil_mage": {
+    "description": "Fighter of the white mage",
+    "name": "Mage diabolique",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2592,6 +2395,8 @@
     }
   },
   "fairy": {
+    "description": "Peaceful creature, that heals everyone around it",
+    "name": "Fée",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2609,6 +2414,8 @@
     }
   },
   "fire_elemental": {
+    "description": "A demonic being born from flames, turning everything to ash in its path",
+    "name": "Élémentaire de Feu",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2693,6 +2500,8 @@
     }
   },
   "fire_skull": {
+    "description": "A demonic spirit, imprisoned within a fiery skull",
+    "name": "Crâne enflammé",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2709,6 +2518,8 @@
     }
   },
   "flower_bud": {
+    "description": "It may look pretty, but it has the personality of a cactus",
+    "name": "Bourgeon de Fleur",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2726,6 +2537,8 @@
     }
   },
   "fly": {
+    "description": "Tiny flying insect",
+    "name": "Mouche",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2745,6 +2558,8 @@
     }
   },
   "fox": {
+    "description": "What does the fox say?",
+    "name": "Renard",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2761,6 +2576,8 @@
     }
   },
   "frog": {
+    "description": "Fun fact. Frog eat bug",
+    "name": "Grenouille",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2778,6 +2595,8 @@
     }
   },
   "garl": {
+    "description": "Has a bite as strong as its smell",
+    "name": "Garl",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2794,6 +2613,8 @@
     }
   },
   "ghost": {
+    "description": "A whisper on the wind, a shadow in the corner of your eye",
+    "name": "Fantôme",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2810,6 +2631,8 @@
     }
   },
   "goat": {
+    "description": "Known for its playful headbutts and endless curiosity",
+    "name": "Chèvre",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2826,6 +2649,8 @@
     }
   },
   "god_finger": {
+    "description": "Multiplayer Simulator",
+    "name": "Doigt Divin",
     "stats": {
       "armor": 5,
       "damage": 80,
@@ -2839,6 +2664,8 @@
     }
   },
   "grasshopper": {
+    "description": "Tiny insect that likes to jump around happily",
+    "name": "Sauterelle",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2858,6 +2685,8 @@
     }
   },
   "greg": {
+    "description": "This is Greg",
+    "name": "Greg",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2873,6 +2702,8 @@
     }
   },
   "human": {
+    "description": "Masters of adaptation and bad decisions",
+    "name": "Humain",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2889,6 +2720,8 @@
     }
   },
   "hyena": {
+    "description": "Known for laughing at their prey",
+    "name": "Hyène",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2937,6 +2770,8 @@
     }
   },
   "lil_pumpkin": {
+    "description": "Always up to somethin",
+    "name": "Petite citrouille",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2953,6 +2788,7 @@
     }
   },
   "living_house": {
+    "name": "Maison vivante",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2973,6 +2809,7 @@
     }
   },
   "living_plants": {
+    "description": "Make plants and trees come to life",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2993,6 +2830,8 @@
     }
   },
   "monkey": {
+    "description": "It can throw rocks. What next?",
+    "name": "Singe",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3044,6 +2883,8 @@
     }
   },
   "necromancer": {
+    "description": "Champion of the skeletons",
+    "name": "Nécromancien",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3060,6 +2901,8 @@
     }
   },
   "orc": {
+    "description": "Warriors with a heart of gold and a head of stone",
+    "name": "Orc",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3076,6 +2919,8 @@
     }
   },
   "ostrich": {
+    "description": "Who needs flying when you can sprint like the wind?",
+    "name": "Autruche",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3092,6 +2937,8 @@
     }
   },
   "penguin": {
+    "description": "A bird that was built for swimming",
+    "name": "Manchot",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3108,6 +2955,8 @@
     }
   },
   "piranha": {
+    "description": "Predatory fish. Swimming & killing",
+    "name": "Piranhas",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3124,6 +2973,8 @@
     }
   },
   "plague_doctor": {
+    "description": "Trust her, she is a doctor in a cool mask",
+    "name": "Docteur de la peste",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3140,6 +2991,8 @@
     }
   },
   "printer": {
+    "description": "Use this printer-ant that will create a brand new landscape for you with zero effort",
+    "name": "Imprimante",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3158,6 +3011,8 @@
     }
   },
   "rabbit": {
+    "description": "Small animal with huge ears",
+    "name": "Lapin",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3174,6 +3029,8 @@
     }
   },
   "raccoon": {
+    "description": "A furry bandit, sneaking through the lands in search of treasures (or snacks)",
+    "name": "Raton laveur",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3190,6 +3047,8 @@
     }
   },
   "rat": {
+    "description": "Small rat",
+    "name": "Rat",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3206,6 +3065,8 @@
     }
   },
   "rhino": {
+    "description": "It can't see very well",
+    "name": "Rhinocéros",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3222,6 +3083,8 @@
     }
   },
   "sand_spider": {
+    "description": "Creates sand and then dies",
+    "name": "Araignée de sable",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3239,6 +3102,8 @@
     }
   },
   "scorpion": {
+    "description": "Silent and swift, the scorpion uses its venomous sting to defend and attack",
+    "name": "Scorpion",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3255,6 +3120,8 @@
     }
   },
   "seal": {
+    "description": "Children of storm and sea",
+    "name": "Phoque",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3271,6 +3138,7 @@
     }
   },
   "sheep": {
+    "name": "Moutons",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3287,6 +3155,8 @@
     }
   },
   "skeleton": {
+    "description": "Spooky scary skeleton that can fight",
+    "name": "Squelette",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3303,6 +3173,8 @@
     }
   },
   "smore": {
+    "description": "A terrifying creature that spreads death and destruction purely for fun",
+    "name": "Smore",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3319,6 +3191,8 @@
     }
   },
   "snake": {
+    "description": "Cute little venomous snek",
+    "name": "Serpent",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3335,6 +3209,8 @@
     }
   },
   "snowman": {
+    "description": "He knows nothing",
+    "name": "Bonhomme de neige",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3383,6 +3259,8 @@
     }
   },
   "turtle": {
+    "description": "Living shield on tiny legs",
+    "name": "Tortue",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3398,7 +3276,22 @@
       "targets": 1
     }
   },
+  "UFO": {
+    "stats": {
+      "armor": 5,
+      "damage": 80,
+      "health": 1000,
+      "lifespan": 0,
+      "mass": 5,
+      "mass_2": 2500,
+      "scale": 0.3,
+      "size": 2,
+      "speed": 20
+    }
+  },
   "unicorn": {
+    "description": "Magic included, sparkles optional",
+    "name": "Licorne",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3415,6 +3308,8 @@
     }
   },
   "white_mage": {
+    "description": "Fighter of the evil mage",
+    "name": "Mage blanc",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3447,6 +3342,8 @@
     }
   },
   "worm": {
+    "description": "Crawls underground and messes up the landscape",
+    "name": "Ver",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,

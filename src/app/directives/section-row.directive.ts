@@ -7,7 +7,7 @@ export class SectionRowDirective implements AfterViewInit {
   private readonly _elementRef = inject(ElementRef);
   private readonly _renderer = inject(Renderer2);
 
-  public ngAfterViewInit(): void {
+  ngAfterViewInit(): void {
     const tr = (this._elementRef.nativeElement as HTMLElement).closest('tr');
     if (!tr) return;
     const content = tr.querySelector(':scope .ant-descriptions-item-content');

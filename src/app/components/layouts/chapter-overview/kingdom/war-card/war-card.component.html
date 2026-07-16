@@ -18,9 +18,6 @@
   <nz-descriptions-item [nzTitle]="ourSectionTitle(w)">
     <span appSectionRow></span>
   </nz-descriptions-item>
-  @if (ourAlliance(w); as a) {
-    <nz-descriptions-item [nzTitle]="coalitionTitle">{{ a.name }}</nz-descriptions-item>
-  }
   @if (w.allies; as allies) {
     <nz-descriptions-item [nzTitle]="alliesTitle">
       @for (ally of allies; track ally.id) {

@@ -3,15 +3,10 @@
 - Pas de commentaires au-dessus des `constructor`, hooks `ng*` et méthodes `init`
 - Pas de commentaires dans `app.component.ts`
 
-## Décorateurs
-
-- `@Pipe` sur une seule ligne : `@Pipe({ name: 'xxx', standalone: true })`
-- `pure: true` est le défaut Angular, ne pas l'écrire explicitement
-
 ## ESLint
 
 - `max-lines` est configuré avec `skipBlankLines: true` et `skipComments: true`
-- Vérifier les erreurs avec `yarn lint && yarn build`
+- Vérifier les erreurs avec `yarn lint:fix && yarn build`
 
 ## Méthodes
 

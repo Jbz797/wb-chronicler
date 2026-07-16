@@ -30,7 +30,7 @@ from shared import (
 )
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
-_ALL_SECTIONS = ("metadata", "population", "ranks", "relations", "wars")
+_ALL_SECTIONS = ("alliance", "metadata", "population", "ranks", "relations", "wars")
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else age/money/renown/sex).
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close » if any pair of their zones are within this Manhattan distance.
@@ -50,6 +50,73 @@ _NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
 _SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
+_SPECIES = load_data("species.json")  # asset_id → {stats, name, description}. Here for the French `name`; falls back to the asset_id.
+
+
+# Alliance civ population per dimension: each one's top-3 shares (like `geography/islands.py`). Species = `asset_id` (icon) + French name; the rest a registry name.
+def _alliance_breakdown(members: list[int], ctx: dict, save: dict) -> dict:
+    species, cultures, languages, religions = Counter(), Counter(), Counter(), Counter()
+    for m in members:
+        for a in ctx["actors_by_kingdom"].get(m, []):  # boats already excluded when the context was built
+            species[a.get("asset_id")] += 1
+            for counter, field in ((cultures, "culture"), (languages, "language"), (religions, "religion")):
+                if (v := a.get(field)) is not None:
+                    counter[v] += 1
+
+    def top3(counter: Counter, names: dict) -> list[dict]:
+        total = sum(counter.values())
+        return [
+            {"name": (names.get(k) or {}).get("name") or f"#{k}", "pct": pct} for k, n in counter.most_common(3) if total and (pct := round(n / total * 100)) > 0
+        ]
+
+    species_total = sum(species.values())
+
+    return {
+        "cultures": top3(cultures, index_by_id(save.get("cultures", []))),
+        "languages": top3(languages, index_by_id(save.get("languages", []))),
+        "religions": top3(religions, index_by_id(save.get("religions", []))),
+        "species": [  # Species carries `asset_id` (icon key) alongside the French `name`; the others need only their registry name.
+            {"asset_id": k, "name": (_SPECIES.get(k) or {}).get("name") or k, "pct": pct}
+            for k, n in species.most_common(3)
+            if species_total and (pct := round(n / species_total * 100)) > 0
+        ],
+    }
+
+
+# The kingdom's alliance and its other members (`None` if unaligned). `population`/`renown` sum the members (WB tracks neither), ranked top-3; `motto` often absent.
+def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
+    kid = kingdom.get("id")
+    alliance = next((a for a in save.get("alliances", []) if kid in (a.get("kingdoms") or [])), None)
+
+    if alliance is None:
+        return None
+
+    kingdoms_by_id = {k["id"]: k for k in save.get("kingdoms", [])}
+    populations = ctx["populations_by_kingdom"]
+
+    def totals(members: list[int]) -> tuple[int, int]:
+        return (sum(populations.get(m, 0) for m in members), sum(int((kingdoms_by_id.get(m) or {}).get("renown") or 0) for m in members))
+
+    own = totals(alliance.get("kingdoms") or [])
+    others = [totals(a.get("kingdoms") or []) for a in save.get("alliances", [])]
+    ranks = {}
+    for key, value, idx in (("population", own[0], 0), ("renown", own[1], 1)):
+        if value:
+            rank = sum(1 for o in others if o[idx] > value) + 1
+            if rank <= 3:
+                ranks[key] = rank
+
+    return {
+        "allies": sorted(
+            ({"id": i, "name": kingdoms_by_id.get(i, {}).get("name") or f"#{i}"} for i in alliance.get("kingdoms") or [] if i != kid), key=lambda o: o["id"]
+        ),
+        "breakdown": _alliance_breakdown(alliance.get("kingdoms") or [], ctx, save),
+        "motto": alliance.get("motto"),
+        "name": alliance.get("name"),
+        "population": own[0],
+        "ranks": ranks,
+        "renown": own[1],
+    }
 
 
 def _build_context(save: dict) -> dict:
@@ -344,19 +411,15 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
     kid = kingdom.get("id")
     alliances = save.get("alliances", [])
     ongoing_wars = [w for w in save.get("wars", []) if not w.get("winner")]
+    war_sides = [_war_sides(w) for w in ongoing_wars]  # Built once, reused by `is_enemy` + every `_compute_opinion` below.
 
     # Other kingdom is an ally if both share an alliance.
     def is_ally(other_id: int) -> bool:
         return any(kid in (a.get("kingdoms") or []) and other_id in (a.get("kingdoms") or []) for a in alliances)
 
-    # Other kingdom is an enemy if both stand on opposite sides of an ongoing war.
+    # Other kingdom is an enemy when it stands on the opposite side of an ongoing war.
     def is_enemy(other_id: int) -> bool:
-        for w in ongoing_wars:
-            attackers = ({w.get("main_attacker")} | set(w.get("list_attackers") or [])) - {None}
-            defenders = ({w.get("main_defender")} | set(w.get("list_defenders") or [])) - {None}
-            if (kid in attackers and other_id in defenders) or (kid in defenders and other_id in attackers):
-                return True
-        return False
+        return any((kid in att and other_id in dfd) or (kid in dfd and other_id in att) for att, dfd in war_sides)
 
     # `save.relations` only persists pairs WB tracked, yet WB scores every kingdom regardless — hence the loop over all below and the `r or {}` fallbacks.
     relations_by_other = {
@@ -381,7 +444,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                 "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / UNITS_PER_YEAR) if r else None,
                 **({"borders": True} if borders else {}),  # Chronicler-only, omitted when False: absence = kingdoms don't share a border.
                 "kingdom": {"id": other_id, "name": other.get("name") or f"#{other_id}"},
-                "opinion": _compute_opinion(kingdom, other, save, ctx, alliances, ongoing_wars, r),
+                "opinion": _compute_opinion(kingdom, other, save, ctx, alliances, war_sides, r),
                 "status": status,
                 "years_since_last_war": int((ctx["world_time"] - float(last_war_end)) / UNITS_PER_YEAR) if last_war_end else None,
             }
@@ -412,8 +475,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
     for w in save.get("wars", []):
         if w.get("winner"):
             continue
-        attackers = ({w.get("main_attacker")} | set(w.get("list_attackers") or [])) - {None}
-        defenders = ({w.get("main_defender")} | set(w.get("list_defenders") or [])) - {None}
+        attackers, defenders = _war_sides(w)
         if kid not in attackers and kid not in defenders:
             continue
         side = "attacker" if kid in attackers else "defender"
@@ -489,7 +551,7 @@ def _compute_king_diplomacy(king: dict, ctx: dict) -> int:
 
 
 # Mirror `DiplomacyRelation.recalculate` IL: each numbered modifier = a WB `OpinionAsset`. Runtime stats reconstructed via `actor_stats.compute_actor_stats`.
-def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances: list, ongoing_wars: list, relation: dict | None) -> dict:
+def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances: list, war_sides: list, relation: dict | None) -> dict:
     mod: dict[str, int] = {}
     mid, tid = main["id"], target["id"]
 
@@ -501,20 +563,10 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
     target_zones = ctx["zones_by_kingdom"].get(tid, [])
 
     def is_enemy() -> bool:
-        for w in ongoing_wars:
-            a = ({w.get("main_attacker")} | set(w.get("list_attackers") or [])) - {None}
-            d = ({w.get("main_defender")} | set(w.get("list_defenders") or [])) - {None}
-            if (mid in a and tid in d) or (mid in d and tid in a):
-                return True
-        return False
+        return any((mid in att and tid in dfd) or (mid in dfd and tid in att) for att, dfd in war_sides)
 
     def is_in_war_on_same_side() -> bool:
-        for w in ongoing_wars:
-            a = ({w.get("main_attacker")} | set(w.get("list_attackers") or [])) - {None}
-            d = ({w.get("main_defender")} | set(w.get("list_defenders") or [])) - {None}
-            if (mid in a and tid in a) or (mid in d and tid in d):
-                return True
-        return False
+        return any((mid in att and tid in att) or (mid in dfd and tid in dfd) for att, dfd in war_sides)
 
     enemy = is_enemy()
 
@@ -816,6 +868,13 @@ def _resolve_heir(kingdom: dict, ctx: dict, save: dict) -> dict | None:
     }
 
 
+# Both sides of a war as id sets (main + listed, `None` dropped). Precompute once when scoring many kingdoms against the same wars.
+def _war_sides(war: dict) -> tuple[set, set]:
+    attackers = ({war.get("main_attacker")} | set(war.get("list_attackers") or [])) - {None}
+    defenders = ({war.get("main_defender")} | set(war.get("list_defenders") or [])) - {None}
+    return attackers, defenders
+
+
 # True if any zone pair is within `max_distance` (Manhattan). Set-probe the distance diamond + early-exit — avoids the O(len_a × len_b) all-pairs min.
 def _zones_within(zones_a: list[tuple[int, int]], zones_b: list[tuple[int, int]], max_distance: int) -> bool:
     if not zones_a or not zones_b:
@@ -854,6 +913,8 @@ def main(argv: list[str]) -> int:
     _register_kingdom(kingdom, ctx)
 
     out: dict = {}
+    if "alliance" in sections:
+        out["alliance"] = _build_alliance(kingdom, ctx, save)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(kingdom, ctx, save)
     if "population" in sections:

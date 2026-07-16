@@ -97,6 +97,17 @@
         width: 18px;
       }
 
+      .species-icon {
+        height: 16px;
+        left: -1px;
+        position: relative;
+        top: -1px;
+      }
+
+      .ant-descriptions-item-content app-kingdom-tag {
+        display: block;
+      }
+
       .ant-descriptions-header {
         margin-bottom: 2px;
       }
@@ -180,14 +191,6 @@
 
         & > nz-tag {
           margin: 0 2px 0 0;
-        }
-
-        &:has(> img:only-child) {
-          text-align: center;
-
-          img {
-            margin: 0;
-          }
         }
 
         .inventory {

@@ -17,8 +17,8 @@ export type KingdomPopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct'
 
 export type KingdomRegistry = Record<string, KingdomInfo>;
 
-export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_religion' | 'dominant_subspecies'
-  | 'most_populous_kingdom' | 'most_populous_village' | 'most_renowned_clan' | 'most_renowned_person';
+export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_religion' | 'dominant_species' | 'dominant_subspecies'
+  | 'most_populous_kingdom' | 'most_populous_village' | 'most_renowned_clan' | 'most_renowned_family' | 'most_renowned_person';
 
 export type LifeStage = 'adult' | 'baby' | 'child' | 'elder' | 'teen';
 

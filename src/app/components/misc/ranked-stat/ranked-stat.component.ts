@@ -2,7 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 
 import { KINGDOM_META_STATS, NON_COMPACT_KINGDOM_STATS } from '../../../constants';
-import { ChapterMeta, KingdomMetaStat, KingdomPopulationStat, RankedStatKind, RankedStatSnapshot } from '../../../interfaces';
+import { ChapterMeta, KingdomAlliance, KingdomMetaStat, KingdomPopulationStat, RankedStatKind, RankedStatSnapshot } from '../../../interfaces';
 import { CompactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
@@ -21,7 +21,7 @@ export class RankedStatComponent {
   public readonly hideDelta = input<boolean>(false);
   public readonly numberFormat = input<string>('1.0-0');
   public readonly showRank = input<boolean>(true);
-  public readonly source = input<'favorite' | 'kingdom'>('favorite');
+  public readonly source = input<'alliance' | 'favorite' | 'kingdom'>('favorite');
   public readonly stat = input.required<RankedStatKind>();
   public readonly suffix = input<string>('');
 
@@ -45,8 +45,8 @@ export class RankedStatComponent {
     if (k === 'stamina') return s?.stamina;
     return null;
   });
-  // Kingdom quantities render compact (`X.X K` above 100), like the world panel — except age/`%`/per-capita stats.
-  protected readonly useCompact = computed(() => this.source() === 'kingdom' && !NON_COMPACT_KINGDOM_STATS.has(this.stat()));
+  // Kingdom + alliance quantities render compact (`X.X K` above 100), like the world panel — except age/`%`/per-capita stats.
+  protected readonly useCompact = computed(() => this.source() !== 'favorite' && !NON_COMPACT_KINGDOM_STATS.has(this.stat()));
 
   // Status dot color shown next to the podium icon:
   private _rankStatus(current: number | undefined, previous: number | undefined, hasPrevious: boolean): 'error' | 'success' | null {
@@ -60,8 +60,14 @@ export class RankedStatComponent {
     return null;
   }
 
-  // Branches on `source()` to pull value + rank either from the favorite or the kingdom snapshot.
-  private _resolve(entity: NonNullable<ChapterMeta['favorite'] | ChapterMeta['kingdom']>): RankedStatSnapshot {
+  // Branches on `source()` to pull value + rank from the favorite, the kingdom snapshot, or its alliance.
+  private _resolve(entity: KingdomAlliance | NonNullable<ChapterMeta['favorite'] | ChapterMeta['kingdom']>): RankedStatSnapshot {
+    if (this.source() === 'alliance') {
+      const a = entity as KingdomAlliance;
+      const key = this.stat() as 'population' | 'renown';
+      return this._snap(a[key], a.ranks?.[key]);
+    }
+
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
       const key = this.stat();
@@ -109,10 +115,11 @@ export class RankedStatComponent {
     return out;
   }
 
-  // Picks the favorite or kingdom block from a chapter's meta based on the configured source.
-  private _sourceOf(meta: ChapterMeta | undefined): ChapterMeta['favorite'] | ChapterMeta['kingdom'] {
+  // Picks the favorite, kingdom, or (nested) alliance block from a chapter's meta based on the configured source.
+  private _sourceOf(meta: ChapterMeta | undefined): ChapterMeta['favorite'] | ChapterMeta['kingdom'] | KingdomAlliance {
     if (!meta) return null;
-    return meta[this.source()];
+    if (this.source() === 'alliance') return meta.kingdom?.alliance ?? null;
+    return meta[this.source() as 'favorite' | 'kingdom'];
   }
 
 }

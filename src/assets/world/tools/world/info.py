@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import CURRENT_SAVE, SICK_TRAITS, civic_building_ids, emit, index_by_id, load_save, parse_sections, resolve_profession
+from shared import CURRENT_SAVE, SICK_TRAITS, civic_building_ids, emit, index_by_id, load_data, load_save, parse_sections, resolve_profession
 
 _ALL_SECTIONS = ("cumulative", "leaders", "metadata", "snapshot")
 
@@ -54,6 +54,8 @@ _SNAPSHOT_KEYS = {
     "wars": "wars",
     "wild_creatures": "mobs",
 }
+
+_SPECIES = load_data("species.json")  # asset_id → {stats, name, description}. Here for the French `name`; falls back to the asset_id when absent.
 
 
 def _build_cumulative(map_stats: dict) -> dict:
@@ -100,10 +102,22 @@ def _build_leaders(save: dict) -> dict:
     languages_by_id = index_by_id(save.get("languages") or [])
     religions_by_id = index_by_id(save.get("religions") or [])
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
-    counts: dict[str, Counter] = {k: Counter() for k in ("city", "kingdom", "culture", "language", "religion", "subspecies")}
+
+    # Single pass over actors feeds every leader: category counts, top-renown civilian, and family renown sums (all gated the same way, no need to re-scan).
+    counts: dict[str, Counter] = {k: Counter() for k in ("city", "kingdom", "culture", "language", "religion", "species", "subspecies")}
+    family_renown: Counter[int] = Counter()
+    top_person, top_renown = None, -1
+
     for a in actors:
         if (a.get("asset_id") or "").startswith("boat_"):
             continue
+        if a.get("civ_kingdom_id"):  # civilian: non-boat, kingdom-bound. `species` is the « thinking population », not wild creatures.
+            renown = int(a.get("renown") or 0)
+            counts["species"][a.get("asset_id")] += 1
+            if renown > top_renown:
+                top_person, top_renown = a, renown
+            if fid := a.get("family"):
+                family_renown[fid] += renown
         for key, field in (
             ("city", "cityID"),
             ("kingdom", "civ_kingdom_id"),
@@ -128,22 +142,32 @@ def _build_leaders(save: dict) -> dict:
         top_id, value = counts[key].most_common(1)[0]
         entry = registry.get(top_id) or {}
         out[dest] = {"id": top_id, "name": entry.get("name") or f"#{top_id}", "value": value}
-    # Most renowned civilian actor (excludes boats + creatures via `civ_kingdom_id` presence). Carries `asset_id` + `sex` so the UI can render the `<app-person-tag>`.
-    civilians = [a for a in actors if a.get("civ_kingdom_id") and not (a.get("asset_id") or "").startswith("boat_")]
-    if civilians:
-        top = max(civilians, key=lambda a: int(a.get("renown") or 0))
+
+    if counts["species"]:  # `asset_id` is the UI icon key; `name` is its French label (falls back to the asset_id).
+        top_species, value = counts["species"].most_common(1)[0]
+        out["dominant_species"] = {"asset_id": top_species, "name": (_SPECIES.get(top_species) or {}).get("name") or top_species, "value": value}
+
+    if top_person is not None:  # Top-renown civilian — carries `asset_id` + `sex` so the UI can render the `<app-person-tag>`.
         out["most_renowned_person"] = {
-            "asset_id": top.get("asset_id"),
-            "id": top.get("id"),
-            "name": top.get("name") or f"#{top.get('id')}",
-            "profession": resolve_profession(top, save),
-            "sex": "female" if top.get("sex") == 1 else "male",
-            "value": int(top.get("renown") or 0),
+            "asset_id": top_person.get("asset_id"),
+            "id": top_person.get("id"),
+            "name": top_person.get("name") or f"#{top_person.get('id')}",
+            "profession": resolve_profession(top_person, save),
+            "sex": "female" if top_person.get("sex") == 1 else "male",
+            "value": top_renown,
         }
+
     clans = save.get("clans") or []
+
     if clans:
         top_clan = max(clans, key=lambda c: int(c.get("renown") or 0))
         out["most_renowned_clan"] = {"id": top_clan.get("id"), "name": top_clan.get("name") or f"#{top_clan.get('id')}", "value": int(top_clan.get("renown") or 0)}
+
+    if family_renown:  # Families carry no native renown (unlike clans) — rank by their members' summed renown, tallied in the pass above.
+        top_fid, value = family_renown.most_common(1)[0]
+        family = index_by_id(save.get("families", [])).get(top_fid) or {}
+        out["most_renowned_family"] = {"id": top_fid, "name": family.get("name") or f"#{top_fid}", "value": value}
+
     return dict(sorted(out.items()))
 
 

@@ -2,8 +2,10 @@ import { Page } from './page.interface';
 import { RarityCounts } from './stats.interface';
 import { LeaderKind, LifeStage } from './types';
 
+// One chronicle chapter: a nav Page plus its parsed chapter.json `meta` and preview image.
 export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 
+// A parsed chapter.json: the three overview panels (favorite/kingdom/world) plus the age label and prose tags.
 export interface ChapterMeta {
   age_label: string;
   favorite: Favorite | null;
@@ -12,6 +14,17 @@ export interface ChapterMeta {
   world: World;
 }
 
+// `allies` is absent, not empty, if the kingdom is the alliance's last member. `population`/`renown` sum its members. `motto` is chronicler-only (omitted from TS).
+export interface KingdomAlliance {
+  allies?: KingdomReference[];
+  breakdown: AllianceBreakdown;
+  name: string;
+  population: number;
+  ranks?: { population?: number; renown?: number };
+  renown: number;
+}
+
+// This kingdom's diplomatic tie to one other — ally/enemy/neutral, with the net opinion score driving the tag colour.
 export interface KingdomRelation {
   kingdom: KingdomReference;
   opinion: { total: number };
@@ -37,8 +50,18 @@ export interface KingdomWar {
   warriors: SideStats;
 }
 
+// A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
 export interface LeaderRow extends Omit<Leader, 'value'> { isNew: boolean; key: LeaderKind }
 
+// Top-3 demographic shares of the alliance's civ pop (whole percents). `species` carries `asset_id` (icon key) + French `name`; the rest carry a registry name.
+interface AllianceBreakdown {
+  cultures: { name: string; pct: number }[];
+  languages: { name: string; pct: number }[];
+  religions: { name: string; pct: number }[];
+  species: { asset_id: string; name: string; pct: number }[];
+}
+
+// A favorite's lover or best friend — the minimal actor fields the companion card renders.
 interface Companion {
   age: number;
   health_max: number;
@@ -83,6 +106,7 @@ interface Favorite {
   traits: RarityCounts;
 }
 
+// The favorite's identity and civic standing (species, kingdom, roles…); optional fields are dropped by Python when the actor has none.
 interface FavoriteMetadata {
   age: number;
   asset_id: string;
@@ -96,6 +120,7 @@ interface FavoriteMetadata {
   tenure_years?: number;
 }
 
+// The favorite's rank (1-3) per stat among its species peers — all optional: a stat is absent when the favorite isn't on its podium.
 interface FavoriteRanks {
   age?: number;
   armor?: number;
@@ -121,6 +146,7 @@ interface FavoriteRanks {
   warfare?: number;
 }
 
+// The favorite's raw combat / social / vital stats — WB runtime values, always present.
 interface FavoriteStats {
   armor: number;
   attack_speed: number;
@@ -153,6 +179,7 @@ interface FavoriteStats {
 
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium, no neighbour or no ongoing war means no key at all.
 interface Kingdom {
+  alliance?: KingdomAlliance;
   metadata: KingdomMetadata;
   population: KingdomPopulation;
   ranks?: KingdomRanks;
@@ -160,6 +187,7 @@ interface Kingdom {
   wars?: KingdomWar[];
 }
 
+// The kingdom's own attributes (age, capital, king/heir/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
 interface KingdomMetadata {
   age: number;
   buildings: number;
@@ -181,6 +209,7 @@ interface KingdomMetadata {
   wealth: number;
 }
 
+// Aggregates over the kingdom's inhabitants (demographics, wealth split, food/housing ratios) — distinct from the kingdom's own `metadata`.
 interface KingdomPopulation {
   fed_pct: number;
   food_per_capita: number;
@@ -198,6 +227,7 @@ interface KingdomPopulation {
   wealth_per_capita: number;
 }
 
+// The kingdom's rank (1-3) per stat among all kingdoms — all optional: present only when the kingdom is on that stat's podium.
 interface KingdomRanks {
   age?: number;
   buildings?: number;
@@ -228,10 +258,13 @@ interface KingdomRanks {
   wealth_per_capita?: number;
 }
 
+// A minimal id + name pointer to a kingdom, for tags and cross-links.
 interface KingdomReference { id: number; name: string }
 
+// The winner of a « Records » category; shape varies by kind (person carries asset_id/sex, the rest just id + name).
 interface Leader { asset_id?: string; id?: number; name: string; profession?: string; sex?: 'female' | 'male'; value: number }
 
+// The favorite's active scheme (WB `Plot`); `target_*` are absent when the plot has no such target.
 interface Plot {
   name: string;
   progress: number;
@@ -240,8 +273,10 @@ interface Plot {
   type_id: string;
 }
 
+// A per-side tally (attackers vs defenders) — reused for a war's population, warriors, cities and deaths.
 interface SideStats { attackers: number; defenders: number }
 
+// The world panel's four blocks: live snapshot, cumulative counters, « Records » leaders, and metadata.
 interface World {
   cumulative: WorldCumulative;
   leaders?: Partial<Record<LeaderKind, Leader>>;
@@ -249,6 +284,7 @@ interface World {
   snapshot: WorldSnapshot;
 }
 
+// Since-world-start counters the UI diffs per chapter; Python omits 0-counts, so an absent key means 0.
 interface WorldCumulative {
   books_burnt?: number;
   books_read?: number;
@@ -260,11 +296,13 @@ interface WorldCumulative {
   plots_succeeded?: number;
 }
 
+// The world's current age id and its `world_time` clock (the two fields the chapter header needs).
 interface WorldMetadata {
   age_id: string;
   world_time: number;
 }
 
+// Live counts of every world entity at this chapter (population, buildings, cultures…); `infected`/`sick` are omitted when 0.
 interface WorldSnapshot {
   alliances: number;
   armies: number;

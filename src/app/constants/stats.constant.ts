@@ -93,6 +93,8 @@ export const LEADERS: { icon?: string; key: LeaderKind; label: string }[] = [
   { key: 'most_populous_kingdom', label: 'Roy. peuplé' },
   { key: 'most_renowned_person', label: 'Perso. illustre' },
   { key: 'most_renowned_clan', label: 'Clan illustre' },
+  { icon: 'families', key: 'most_renowned_family', label: 'Famille illustre' },
+  { icon: 'population', key: 'dominant_species', label: 'Espèce' },
   { icon: 'cultures', key: 'dominant_culture', label: 'Culture' },
   { icon: 'languages', key: 'dominant_language', label: 'Langue' },
   { icon: 'religions', key: 'dominant_religion', label: 'Religion' },

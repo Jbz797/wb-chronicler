@@ -87,6 +87,8 @@
 
   <app-kingdom-wealth />
 
+  <app-kingdom-alliance />
+
   @for (war of k.wars ?? []; track war.id) {
     <app-war-card [isNew]="startedWarIds().has(war.id)" [war]="war" />
   }

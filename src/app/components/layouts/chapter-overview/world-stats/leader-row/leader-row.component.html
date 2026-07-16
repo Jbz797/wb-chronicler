@@ -10,6 +10,11 @@
       <app-person-tag [assetId]="r.asset_id" [name]="r.name" [profession]="r.profession ?? ''" [sex]="r.sex" />
     }
   }
+  @case ('dominant_species') {
+    @if (r.asset_id) {
+      <img class="species-icon" [src]="`assets/img/species/${r.asset_id}.png`" /> {{ r.name }}
+    }
+  }
   @default {
     {{ r.name }}
   }

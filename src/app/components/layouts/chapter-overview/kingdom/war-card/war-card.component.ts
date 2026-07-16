@@ -36,8 +36,6 @@ export class WarCardComponent {
     return { attackers: diff('attackers'), defenders: diff('defenders') };
   });
 
-  protected ourAlliance = (war: KingdomWar): KingdomWar['attacker_alliance'] => war[`${war.side}_alliance`];
-
   protected ourSectionTitle = (war: KingdomWar): string => `Notre camp (${war.side === 'attacker' ? 'atk' : 'def'})`;
 
   // Field key on the war's `populations`/`warriors`/`deaths` for the kingdom's own side.
