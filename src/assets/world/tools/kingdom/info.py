@@ -37,6 +37,15 @@ _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close »
 _FAR_LANDS_CAPITAL_DISTANCE = 18  # `!isSameIsland` proxy: capitals further apart than this are treated as on different lands.
 _FOOD_RESOURCES = frozenset(load_data("food-resources.json"))  # WB eatable resource ids (`initFood` + `initFoodRecipes`) — raw + cooked/drinks.
 _HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20. (Emotionless non-civ actors also count — ignored.)
+
+# WB `KingdomTraitLibrary`: a tax trait overrides the base rate (`Kingdom.recalcBaseStats`). Emitted as a tier — the rates themselves are WB's to change, the tier isn't.
+_KINGDOM_TAX_TRAITS = {
+    "tax_rate_local_high": ("tax_local", "high"),
+    "tax_rate_local_low": ("tax_local", "low"),
+    "tax_rate_tribute_high": ("tax_tribute", "high"),
+    "tax_rate_tribute_low": ("tax_tribute", "low"),
+}
+
 _NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _REGISTRY = Path(__file__).parent.parent.parent / "saves" / "kingdoms.json"
@@ -238,6 +247,12 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     heir = _resolve_heir(kingdom, ctx, save)
 
+    # Chronicler-only: what WB shows as « Hommage » (to the crown) and the local tax. `normal` = no tax trait, i.e. 15 of the 16 kingdoms here.
+    taxes = {"tax_local": "normal", "tax_tribute": "normal"}
+    for trait in kingdom.get("saved_traits") or []:
+        if spec := _KINGDOM_TAX_TRAITS.get(trait):
+            taxes[spec[0]] = spec[1]
+
     return {
         "age": int(age_units / UNITS_PER_YEAR),
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
@@ -258,6 +273,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
         "renown": kingdom.get("renown", 0),
+        **taxes,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
         "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
     }
