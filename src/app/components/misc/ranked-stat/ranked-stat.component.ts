@@ -19,6 +19,7 @@ export class RankedStatComponent {
 
   public readonly deltaSuffix = input<string>('');
   public readonly hideDelta = input<boolean>(false);
+  public readonly inverted = input<boolean>(false); // Flips the delta colour — for stats where a rise is bad (deaths).
   public readonly numberFormat = input<string>('1.0-0');
   public readonly showRank = input<boolean>(true);
   public readonly source = input<'alliance' | 'favorite' | 'kingdom'>('favorite');

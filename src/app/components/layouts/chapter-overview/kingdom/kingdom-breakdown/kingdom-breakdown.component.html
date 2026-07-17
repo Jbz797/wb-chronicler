@@ -1,19 +1,5 @@
-@if (alliance(); as a) {
-  <nz-descriptions nzBordered nzSize="small" nzTitle="Alliance" [nzColumn]="1">
-    <nz-descriptions-item [nzTitle]="nameTitle">{{ a.name }}</nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="alliesTitle">
-      @for (ally of a.allies ?? []; track ally.id) {
-        <app-kingdom-tag [id]="ally.id" [name]="ally.name" />
-      } @empty {
-        <em>aucun</em>
-      }
-    </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="populationTitle">
-      <app-ranked-stat source="alliance" stat="population" />
-    </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTitle">
-      <app-ranked-stat source="alliance" stat="renown" />
-    </nz-descriptions-item>
+@if (breakdown()) {
+  <nz-descriptions nzBordered nzSize="small" nzTitle="Composition" [nzColumn]="1">
     @if (tops().species; as s) {
       <nz-descriptions-item [nzTitle]="speciesTitle">
         <span><img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" /> {{ s.name }} — {{ s.pct }}%</span>
@@ -33,13 +19,9 @@
     }
   </nz-descriptions>
 
-  <ng-template #alliesTitle><img src="assets/img/world/kingdoms.png" /><span>Alliés</span></ng-template>
   <ng-template #cultureTitle><img src="assets/img/world/cultures.png" /><span>Culture</span></ng-template>
   <ng-template #languageTitle><img src="assets/img/world/languages.png" /><span>Langage</span></ng-template>
-  <ng-template #nameTitle><img src="assets/img/world/alliances.png" /><span>Nom</span></ng-template>
-  <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #religionTitle><img src="assets/img/world/religions.png" /><span>Religion</span></ng-template>
-  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #speciesTitle><img src="assets/img/world/species.png" /><span>Espèce</span></ng-template>
   <ng-template #subspeciesTitle><img src="assets/img/world/subspecies.png" /><span>Sous-espèce</span></ng-template>
 }

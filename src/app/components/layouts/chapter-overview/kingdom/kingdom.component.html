@@ -40,7 +40,7 @@
       <app-ranked-stat source="kingdom" stat="warriors" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="deathsTitle">
-      <app-ranked-stat source="kingdom" stat="deaths" />
+      <app-ranked-stat source="kingdom" stat="deaths" [inverted]="true" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="killsTitle">
       <app-ranked-stat source="kingdom" stat="kills" />
@@ -84,6 +84,8 @@
       <app-ranked-stat source="kingdom" stat="goods" />
     </nz-descriptions-item>
   </nz-descriptions>
+
+  <app-kingdom-breakdown />
 
   <app-kingdom-wealth />
 

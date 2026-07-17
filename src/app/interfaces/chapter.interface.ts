@@ -17,7 +17,7 @@ export interface ChapterMeta {
 // `allies` is absent, not empty, if the kingdom is the alliance's last member. `population`/`renown` sum its members. `motto` is chronicler-only (omitted from TS).
 export interface KingdomAlliance {
   allies?: KingdomReference[];
-  breakdown: AllianceBreakdown;
+  breakdown: PopulationBreakdown;
   name: string;
   population: number;
   ranks?: { population?: number; renown?: number };
@@ -52,15 +52,6 @@ export interface KingdomWar {
 
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
 export interface LeaderRow extends Omit<Leader, 'value'> { isNew: boolean; key: LeaderKind }
-
-// Top-3 demographic shares of the alliance's civ pop (whole percents). `species` carries `asset_id` (icon key) + French `name`; the rest carry a registry name.
-interface AllianceBreakdown {
-  cultures: { name: string; pct: number }[];
-  languages: { name: string; pct: number }[];
-  religions: { name: string; pct: number }[];
-  species: { asset_id: string; name: string; pct: number }[];
-  subspecies: { name: string; pct: number }[];
-}
 
 // A favorite's lover or best friend — the minimal actor fields the companion card renders.
 interface Companion {
@@ -181,6 +172,7 @@ interface FavoriteStats {
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium, no neighbour or no ongoing war means no key at all.
 interface Kingdom {
   alliance?: KingdomAlliance;
+  breakdown: PopulationBreakdown;
   metadata: KingdomMetadata;
   population: KingdomPopulation;
   ranks?: KingdomRanks;
@@ -272,6 +264,15 @@ interface Plot {
   target_alliance?: string;
   target_kingdom?: string;
   type_id: string;
+}
+
+// Top-3 shares of a civ population per dimension (% of the whole). `species`/`subspecies` always ≥1 (`species` adds `asset_id`); the rest optional.
+interface PopulationBreakdown {
+  cultures?: { name: string; pct: number }[];
+  languages?: { name: string; pct: number }[];
+  religions?: { name: string; pct: number }[];
+  species: { asset_id: string; name: string; pct: number }[];
+  subspecies: { name: string; pct: number }[];
 }
 
 // A per-side tally (attackers vs defenders) — reused for a war's population, warriors, cities and deaths.

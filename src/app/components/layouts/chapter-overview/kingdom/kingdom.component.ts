@@ -8,6 +8,7 @@ import { NewBadgeComponent, RankedStatComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
 
 import { KingdomAllianceComponent } from './kingdom-alliance/kingdom-alliance.component';
+import { KingdomBreakdownComponent } from './kingdom-breakdown/kingdom-breakdown.component';
 import { KingdomRelationsComponent } from './kingdom-relations/kingdom-relations.component';
 import { KingdomWealthComponent } from './kingdom-wealth/kingdom-wealth.component';
 import { WarCardComponent } from './war-card/war-card.component';
@@ -16,6 +17,7 @@ import { WarCardComponent } from './war-card/war-card.component';
   selector: 'app-kingdom',
   imports: [
     KingdomAllianceComponent,
+    KingdomBreakdownComponent,
     KingdomRelationsComponent,
     KingdomWealthComponent,
     NewBadgeComponent,

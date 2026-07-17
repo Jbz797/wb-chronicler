@@ -21,9 +21,9 @@ export class KingdomAllianceComponent {
   protected readonly tops = computed(() => {
     const b = this.alliance()?.breakdown;
     return {
-      culture: b?.cultures[0] ?? null,
-      language: b?.languages[0] ?? null,
-      religion: b?.religions[0] ?? null,
+      culture: b?.cultures?.[0] ?? null,
+      language: b?.languages?.[0] ?? null,
+      religion: b?.religions?.[0] ?? null,
       species: b?.species[0] ?? null,
       subspecies: b?.subspecies[0] ?? null,
     };

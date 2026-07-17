@@ -30,7 +30,7 @@ from shared import (
 )
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
-_ALL_SECTIONS = ("alliance", "metadata", "population", "ranks", "relations", "wars")
+_ALL_SECTIONS = ("alliance", "breakdown", "metadata", "population", "ranks", "relations", "wars")
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else age/money/renown/sex).
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 _BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close » if any pair of their zones are within this Manhattan distance.
@@ -53,37 +53,6 @@ _SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like 
 _SPECIES = load_data("species.json")  # asset_id → {stats, name, description}. Here for the French `name`; falls back to the asset_id.
 
 
-# Alliance civ population per dimension: each one's top-3 shares (like `geography/islands.py`). Species = `asset_id` (icon) + French name; the rest a registry name.
-def _alliance_breakdown(members: list[int], ctx: dict, save: dict) -> dict:
-    species, cultures, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter()
-    for m in members:
-        for a in ctx["actors_by_kingdom"].get(m, []):  # boats already excluded when the context was built
-            species[a.get("asset_id")] += 1
-            for counter, field in ((cultures, "culture"), (languages, "language"), (religions, "religion"), (subspecies, "subspecies")):
-                if (v := a.get(field)) is not None:
-                    counter[v] += 1
-
-    def top3(counter: Counter, names: dict) -> list[dict]:
-        total = sum(counter.values())
-        return [
-            {"name": (names.get(k) or {}).get("name") or f"#{k}", "pct": pct} for k, n in counter.most_common(3) if total and (pct := round(n / total * 100)) > 0
-        ]
-
-    species_total = sum(species.values())
-
-    return {
-        "cultures": top3(cultures, index_by_id(save.get("cultures", []))),
-        "languages": top3(languages, index_by_id(save.get("languages", []))),
-        "religions": top3(religions, index_by_id(save.get("religions", []))),
-        "species": [  # Species carries `asset_id` (icon key) alongside the French `name`; the others need only their registry name.
-            {"asset_id": k, "name": (_SPECIES.get(k) or {}).get("name") or k, "pct": pct}
-            for k, n in species.most_common(3)
-            if species_total and (pct := round(n / species_total * 100)) > 0
-        ],
-        "subspecies": top3(subspecies, index_by_id(save.get("subspecies", []))),
-    }
-
-
 # The kingdom's alliance and its other members (`None` if unaligned). `population`/`renown` sum the members (WB tracks neither), ranked top-3; `motto` often absent.
 def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
     kid = kingdom.get("id")
@@ -92,7 +61,7 @@ def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
     if alliance is None:
         return None
 
-    kingdoms_by_id = {k["id"]: k for k in save.get("kingdoms", [])}
+    kingdoms_by_id = ctx["kingdoms_by_id"]
     populations = ctx["populations_by_kingdom"]
 
     def totals(members: list[int]) -> tuple[int, int]:
@@ -111,7 +80,7 @@ def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
         "allies": sorted(
             ({"id": i, "name": kingdoms_by_id.get(i, {}).get("name") or f"#{i}"} for i in alliance.get("kingdoms") or [] if i != kid), key=lambda o: o["id"]
         ),
-        "breakdown": _alliance_breakdown(alliance.get("kingdoms") or [], ctx, save),
+        "breakdown": _population_breakdown(alliance.get("kingdoms") or [], ctx),
         "motto": alliance.get("motto"),
         "name": alliance.get("name"),
         "population": own[0],
@@ -260,11 +229,13 @@ def _build_context(save: dict) -> dict:
         "houses_by_kingdom": houses_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
         "infected_by_kingdom": infected_by_kingdom,
+        "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
         "main_subspecies": main_subspecies,
         "money_by_kingdom": money_by_kingdom,
         "nobles_by_kingdom": nobles_by_kingdom,
         "nobles_money_by_kingdom": nobles_money_by_kingdom,
         "populations_by_kingdom": populations_by_kingdom,
+        "religions_by_id": index_by_id(save.get("religions", [])),  # The other breakdown indexes (`cultures`/`languages`/`subspecies`) already ride in ctx.
         "renown_by_kingdom": renown_by_kingdom,
         "sick_by_kingdom": sick_by_kingdom,
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors (≈8×).
@@ -456,7 +427,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
 # Ongoing wars involving this kingdom (as attacker or defender). Concluded wars are skipped (`winner` is set when a war ends).
 def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
     kid = kingdom.get("id")
-    kingdoms_by_id = index_by_id(save.get("kingdoms", []))
+    kingdoms_by_id = ctx["kingdoms_by_id"]
     alliances = save.get("alliances", [])
 
     # Alliance backing a side when ≥2 of its kingdoms (the main + at least one ally) sit in the same alliance.
@@ -802,6 +773,35 @@ def _luminance(color: str) -> float:
     return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
 
 
+# Top-3 shares per dimension of the members' civ population. Denominator = the whole population, so a religion held by 28% reads 28% (not 96% of its believers).
+def _population_breakdown(members: list[int], ctx: dict) -> dict:
+    species, cultures, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter()
+    pop = 0
+
+    for m in members:
+        for a in ctx["actors_by_kingdom"].get(m, []):  # boats already excluded when the context was built
+            pop += 1
+            species[a.get("asset_id")] += 1
+            for counter, field in ((cultures, "culture"), (languages, "language"), (religions, "religion"), (subspecies, "subspecies")):
+                if (v := a.get(field)) is not None:
+                    counter[v] += 1
+
+    def top3(counter: Counter, names: dict) -> list[dict]:
+        return [{"name": (names.get(k) or {}).get("name") or f"#{k}", "pct": pct} for k, n in counter.most_common(3) if pop and (pct := round(n / pop * 100)) > 0]
+
+    return {
+        "cultures": top3(cultures, ctx["cultures_by_id"]),
+        "languages": top3(languages, ctx["languages_by_id"]),
+        "religions": top3(religions, ctx["religions_by_id"]),
+        "species": [  # Species carries `asset_id` (icon key) alongside the French `name`; the others need only their registry name.
+            {"asset_id": k, "name": (_SPECIES.get(k) or {}).get("name") or k, "pct": pct}
+            for k, n in species.most_common(3)
+            if pop and (pct := round(n / pop * 100)) > 0
+        ],
+        "subspecies": top3(subspecies, ctx["subspecies_by_id"]),
+    }
+
+
 # Upsert reader registry with per-kingdom visuals (icon + colours). Display name comes from the caller (markdown token or chapter.json), not stored here.
 def _register_kingdom(kingdom: dict, ctx: dict) -> None:
     # Background = darkest of colour's 4 game hues, ink (icon/text/border) = lightest — max contrast within kingdom's real palette (colors-all.json).
@@ -916,6 +916,8 @@ def main(argv: list[str]) -> int:
     out: dict = {}
     if "alliance" in sections:
         out["alliance"] = _build_alliance(kingdom, ctx, save)
+    if "breakdown" in sections:
+        out["breakdown"] = _population_breakdown([kingdom_id], ctx)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(kingdom, ctx, save)
     if "population" in sections:

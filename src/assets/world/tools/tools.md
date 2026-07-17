@@ -8,7 +8,7 @@ Invoquer chaque script via `python3 tools/<commande> [sections]`. Sortie : objet
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `actor/info.py <id>`               | `full`, `best_friend`, `creature_traits`, `equipment`, `inventory`, `lover`, `metadata`, `plot`, `ranks_in_species`, `stats` |
 | `geography/info.py`                | `islands`, `natural_features`                                                                                                |
-| `kingdom/info.py <id>`             | `full`, `alliance`, `metadata`, `population`, `ranks`, `relations`, `wars`                                                   |
+| `kingdom/info.py <id>`             | `full`, `alliance`, `breakdown`, `metadata`, `population`, `ranks`, `relations`, `wars`                                      |
 | `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                           |
 | `world/info.py`                    | `full`, `cumulative`, `leaders`, `metadata`, `snapshot`                                                                      |
 

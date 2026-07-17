@@ -8,7 +8,7 @@
       } @else {
         <span>{{ d.value | number: numberFormat() }}{{ suffix() }}</span>
       }
-      <app-delta [suffix]="deltaSuffix()" [value]="d.valueDelta" />
+      <app-delta [inverted]="inverted()" [suffix]="deltaSuffix()" [value]="d.valueDelta" />
     </span>
     @if (showRank() && (d.rank !== undefined || d.rankStatus)) {
       <span>
