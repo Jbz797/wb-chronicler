@@ -59,6 +59,7 @@ interface AllianceBreakdown {
   languages: { name: string; pct: number }[];
   religions: { name: string; pct: number }[];
   species: { asset_id: string; name: string; pct: number }[];
+  subspecies: { name: string; pct: number }[];
 }
 
 // A favorite's lover or best friend — the minimal actor fields the companion card renders.

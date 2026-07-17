@@ -25,6 +25,7 @@ export class KingdomAllianceComponent {
       language: b?.languages[0] ?? null,
       religion: b?.religions[0] ?? null,
       species: b?.species[0] ?? null,
+      subspecies: b?.subspecies[0] ?? null,
     };
   });
 

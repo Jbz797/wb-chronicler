@@ -55,11 +55,11 @@ _SPECIES = load_data("species.json")  # asset_id → {stats, name, description}.
 
 # Alliance civ population per dimension: each one's top-3 shares (like `geography/islands.py`). Species = `asset_id` (icon) + French name; the rest a registry name.
 def _alliance_breakdown(members: list[int], ctx: dict, save: dict) -> dict:
-    species, cultures, languages, religions = Counter(), Counter(), Counter(), Counter()
+    species, cultures, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter()
     for m in members:
         for a in ctx["actors_by_kingdom"].get(m, []):  # boats already excluded when the context was built
             species[a.get("asset_id")] += 1
-            for counter, field in ((cultures, "culture"), (languages, "language"), (religions, "religion")):
+            for counter, field in ((cultures, "culture"), (languages, "language"), (religions, "religion"), (subspecies, "subspecies")):
                 if (v := a.get(field)) is not None:
                     counter[v] += 1
 
@@ -80,6 +80,7 @@ def _alliance_breakdown(members: list[int], ctx: dict, save: dict) -> dict:
             for k, n in species.most_common(3)
             if species_total and (pct := round(n / species_total * 100)) > 0
         ],
+        "subspecies": top3(subspecies, index_by_id(save.get("subspecies", []))),
     }
 
 
