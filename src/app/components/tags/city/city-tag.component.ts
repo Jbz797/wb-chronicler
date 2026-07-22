@@ -5,18 +5,18 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { RegistryService } from '../../../services';
 
 @Component({
-  selector: 'app-kingdom-tag',
+  selector: 'app-city-tag',
   imports: [NzTagModule],
-  templateUrl: './kingdom-tag.component.html',
+  templateUrl: './city-tag.component.html',
 })
-export class KingdomTagComponent {
+export class CityTagComponent {
 
   private readonly _registry = inject(RegistryService);
 
   public readonly id = input.required<number>();
   public readonly name = input.required<string>();
 
-  // Visuals (banner, palette, species) come from the kingdoms registry, kept fresh by each kingdom/info.py run. `null` until the kingdom is registered.
-  protected readonly kingdom = computed(() => this._registry.kingdoms()[String(this.id())] ?? null);
+  // Visuals (palette, size, species, capital) come from the cities registry, kept fresh by each city/info.py run. `null` until the city is registered.
+  protected readonly city = computed(() => this._registry.cities()[String(this.id())] ?? null);
 
 }

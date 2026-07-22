@@ -1,7 +1,10 @@
 @if (kingdom(); as k) {
-  <nz-tag class="entity-tag kingdom-tag" [style.--kingdom-color]="k.color" [style.--kingdom-ink]="k.ink" [title]="name()">
+  <nz-tag class="entity-tag kingdom-tag" [class.dead]="k.dead" [style.--kingdom-color]="k.color" [style.--kingdom-ink]="k.ink" [title]="name()">
     <span class="glyph" [style.mask-image]="'url(assets/img/world/kingdom.png)'"></span>
     <span class="entity-name">{{ name() }}</span>
     <span class="glyph" [style.mask-image]="`url(assets/img/banners/${k.banner_icon}.png)`"></span>
+    @if (k.species; as s) {
+      <img [src]="`assets/img/species/${s}.png`" />
+    }
   </nz-tag>
 }

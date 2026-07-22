@@ -1,7 +1,7 @@
 import { registerLocaleData } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import fr from '@angular/common/locales/fr';
-import { inject, LOCALE_ID, provideAppInitializer, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { LOCALE_ID, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 
@@ -16,7 +16,6 @@ import 'prismjs/components/prism-python';
 import { App } from './app/app';
 import { MarkedHelpers } from './app/helpers';
 import { ROUTES } from './app/routes';
-import { RegistryService } from './app/services';
 
 registerLocaleData(fr);
 
@@ -24,7 +23,6 @@ MarkedHelpers.configure();
 
 bootstrapApplication(App, {
   providers: [
-    provideAppInitializer(() => inject(RegistryService).loadAll()),
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(),
     provideMarkdown(),

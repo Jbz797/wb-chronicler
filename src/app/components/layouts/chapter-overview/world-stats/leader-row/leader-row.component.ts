@@ -2,11 +2,11 @@ import { Component, input } from '@angular/core';
 
 import { LeaderRow } from '../../../../../interfaces';
 import { NewBadgeComponent } from '../../../../misc';
-import { KingdomTagComponent, PersonTagComponent } from '../../../../tags';
+import { CityTagComponent, KingdomTagComponent, PersonTagComponent } from '../../../../tags';
 
 @Component({
   selector: 'app-leader-row',
-  imports: [KingdomTagComponent, NewBadgeComponent, PersonTagComponent],
+  imports: [CityTagComponent, KingdomTagComponent, NewBadgeComponent, PersonTagComponent],
   templateUrl: './leader-row.component.html',
 })
 export class LeaderRowComponent {

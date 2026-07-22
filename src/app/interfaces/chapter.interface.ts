@@ -8,6 +8,7 @@ export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 // A parsed chapter.json: the three overview panels (favorite/kingdom/world) plus the age label and prose tags.
 export interface ChapterMeta {
   age_label: string;
+  city: City | null;
   favorite: Favorite | null;
   kingdom: Kingdom | null;
   tags: string[];
@@ -16,7 +17,7 @@ export interface ChapterMeta {
 
 // `allies` is absent, not empty, if the kingdom is the alliance's last member. `population`/`renown` sum its members. `motto` is chronicler-only (omitted from TS).
 export interface KingdomAlliance {
-  allies?: KingdomReference[];
+  allies?: EntityReference[];
   breakdown: PopulationBreakdown;
   name: string;
   population: number;
@@ -26,32 +27,115 @@ export interface KingdomAlliance {
 
 // This kingdom's diplomatic tie to one other — ally/enemy/neutral, with the net opinion score driving the tag colour.
 export interface KingdomRelation {
-  kingdom: KingdomReference;
+  kingdom: EntityReference;
   opinion: { total: number };
   status: 'ally' | 'enemy' | 'neutral';
 }
 
 // `allies` is absent when a kingdom fights alone, both `*_alliance` when no alliance backs that side, `war_type` when WB never set one — `emit` strips them all.
 export interface KingdomWar {
-  allies?: KingdomReference[];
-  attacker_alliance?: KingdomReference;
+  allies?: EntityReference[];
+  attacker_alliance?: EntityReference;
   cities: SideStats;
   deaths: SideStats;
-  defender_alliance?: KingdomReference;
+  defender_alliance?: EntityReference;
   duration_years: number;
   id: number;
   name: string;
-  opponents: KingdomReference[];
+  opponents: EntityReference[];
   populations: SideStats;
   renown_at_stake: number;
   side: 'attacker' | 'defender';
-  started_by: { kingdom: KingdomReference };
+  started_by: { actor?: { id: number; name?: string }; kingdom: EntityReference };
   war_type?: 'conquest' | 'inspire' | 'rebellion' | 'spite' | 'whisper';
   warriors: SideStats;
 }
 
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
 export interface LeaderRow extends Omit<Leader, 'value'> { isNew: boolean; key: LeaderKind }
+
+// Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium (`ranks`) or an empty dimension means no key at all. A city is a kingdom's settlement.
+interface City {
+  breakdown: PopulationBreakdown;
+  metadata: CityMetadata;
+  population: CityPopulation;
+  ranks?: CityRanks;
+}
+
+// The city's own attributes (age, official culture/religion, leader/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
+interface CityMetadata {
+  age: number;
+  buildings: number;
+  capital?: boolean;
+  culture?: string;
+  deaths: number;
+  food: number;
+  founder?: { id: number; name: string };
+  gold: number;
+  goods: number;
+  houses: number;
+  id: number;
+  islands: number[];
+  kills: number;
+  kingdom?: EntityReference;
+  language?: string;
+  leader?: { id: number; name: string };
+  name: string;
+  religion?: string;
+  renown: number;
+  territory: number;
+  wealth: number;
+}
+
+// Aggregates over the city's inhabitants (demographics, wealth, food/housing ratios) — distinct from its `metadata`. `immortals`/`infected`/`sick` omitted at 0.
+interface CityPopulation {
+  adults: number;
+  babies: number;
+  children: number;
+  couples: number;
+  elders: number;
+  familyless: number;
+  fed_pct: number;
+  food_per_capita: number;
+  happy: number;
+  housed_pct: number;
+  immortals?: number;
+  infected?: number;
+  men: number;
+  money: number;
+  nobles: number;
+  renown_total: number;
+  sick?: number;
+  teens: number;
+  total: number;
+  warriors: number;
+  wealth_per_capita: number;
+  women: number;
+}
+
+// The city's rank (1-3) per stat among all cities — all optional: present only when the city is on that stat's podium.
+interface CityRanks {
+  age?: number;
+  buildings?: number;
+  deaths?: number;
+  fed_pct?: number;
+  food?: number;
+  food_per_capita?: number;
+  gold?: number;
+  goods?: number;
+  housed_pct?: number;
+  houses?: number;
+  kills?: number;
+  money?: number;
+  nobles?: number;
+  population?: number;
+  renown?: number;
+  renown_total?: number;
+  territory?: number;
+  warriors?: number;
+  wealth?: number;
+  wealth_per_capita?: number;
+}
 
 // A favorite's lover or best friend — the minimal actor fields the companion card renders.
 interface Companion {
@@ -85,6 +169,9 @@ interface DeathBreakdown {
   weapon?: number;
 }
 
+// A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
+interface EntityReference { id: number; name: string }
+
 // Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key. `descriptor` is authored by the chronicler.
 interface Favorite {
   best_friend?: Companion;
@@ -102,7 +189,9 @@ interface Favorite {
 interface FavoriteMetadata {
   age: number;
   asset_id: string;
-  kingdom?: KingdomReference;
+  city?: EntityReference;
+  id: number;
+  kingdom?: EntityReference;
   life_stage: LifeStage;
   name: string;
   personality?: string;
@@ -173,6 +262,7 @@ interface FavoriteStats {
 interface Kingdom {
   alliance?: KingdomAlliance;
   breakdown: PopulationBreakdown;
+  cities?: KingdomCity[];
   metadata: KingdomMetadata;
   population: KingdomPopulation;
   ranks?: KingdomRanks;
@@ -180,22 +270,25 @@ interface Kingdom {
   wars?: KingdomWar[];
 }
 
+// The kingdom's settlements, most populous first — chronicler-oriented list, also handy to resolve city names.
+interface KingdomCity { id: number; name: string; population: number }
+
 // The kingdom's own attributes (age, capital, king/heir/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
 interface KingdomMetadata {
   age: number;
   buildings: number;
-  capital?: string;
+  capital?: EntityReference;
   cities: number;
   deaths: number;
   food: number;
-  founder?: { asset_id: string; dead: boolean; id: number; name: string; profession?: string; sex?: 'female' | 'male' };
+  founder?: { id: number; name: string };
   gold: number;
   goods: number;
-  heir?: { asset_id: string; id: number; name: string; profession?: string; sex: 'female' | 'male' };
+  heir?: { id: number; name: string };
   houses: number;
   id: number;
   kills: number;
-  king?: { asset_id: string; id: number; money: number; name: string; sex: 'female' | 'male' };
+  king?: { id: number; money: number; name: string };
   name: string;
   renown: number;
   territory: number;
@@ -251,20 +344,11 @@ interface KingdomRanks {
   wealth_per_capita?: number;
 }
 
-// A minimal id + name pointer to a kingdom, for tags and cross-links.
-interface KingdomReference { id: number; name: string }
-
-// The winner of a « Records » category; shape varies by kind (person carries asset_id/sex, the rest just id + name).
-interface Leader { asset_id?: string; id?: number; name: string; profession?: string; sex?: 'female' | 'male'; value: number }
+// The winner of a « Records » category: `dominant_species` carries `asset_id` (its icon); every other kind is a `{id, name}` ref the UI resolves via its registry.
+interface Leader { asset_id?: string; id?: number; name: string; value: number }
 
 // The favorite's active scheme (WB `Plot`); `target_*` are absent when the plot has no such target.
-interface Plot {
-  name: string;
-  progress: number;
-  target_alliance?: string;
-  target_kingdom?: string;
-  type_id: string;
-}
+interface Plot { name: string; progress: number; target_alliance?: EntityReference; target_kingdom?: EntityReference; type_id: string }
 
 // Top-3 shares of a civ population per dimension (% of the whole). `species`/`subspecies` always ≥1 (`species` adds `asset_id`); the rest optional.
 interface PopulationBreakdown {
@@ -279,12 +363,7 @@ interface PopulationBreakdown {
 interface SideStats { attackers: number; defenders: number }
 
 // The world panel's four blocks: live snapshot, cumulative counters, « Records » leaders, and metadata.
-interface World {
-  cumulative: WorldCumulative;
-  leaders?: Partial<Record<LeaderKind, Leader>>;
-  metadata: WorldMetadata;
-  snapshot: WorldSnapshot;
-}
+interface World { cumulative: WorldCumulative; leaders?: Partial<Record<LeaderKind, Leader>>; metadata: WorldMetadata; snapshot: WorldSnapshot }
 
 // Since-world-start counters the UI diffs per chapter; Python omits 0-counts, so an absent key means 0.
 interface WorldCumulative {
@@ -299,10 +378,7 @@ interface WorldCumulative {
 }
 
 // The world's current age id and its `world_time` clock (the two fields the chapter header needs).
-interface WorldMetadata {
-  age_id: string;
-  world_time: number;
-}
+interface WorldMetadata { age_id: string; world_time: number }
 
 // Live counts of every world entity at this chapter (population, buildings, cultures…); `infected`/`sick` are omitted when 0.
 interface WorldSnapshot {

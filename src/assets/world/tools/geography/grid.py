@@ -46,13 +46,8 @@ def decode_tile_grid(save: dict) -> list[list[int]]:
 
 # Vegetation biome (jungle/savanna/swamp/…). `None` for terrain-only tiles and overlays (`*:road`, `*:field`).
 def tile_biome(tile_name: str) -> str | None:
-    if ":" not in tile_name:
-        return None
-    suffix = tile_name.split(":", 1)[1]
-    for marker in ("_high", "_low"):
-        if suffix.endswith(marker):
-            return suffix[: -len(marker)]
-    return None
+    biome, sep, tier = tile_name.partition(":")[2].rpartition("_")
+    return biome if sep and tier in ("high", "low") else None
 
 
 def tile_elevation(tile_name: str) -> str | None:
@@ -62,10 +57,8 @@ def tile_elevation(tile_name: str) -> str | None:
 # Structural terrain kind (mirrors WB UI). Overlay suffixes (`*:road`, `*:field`) win over the base.
 def tile_kind(tile_name: str) -> str:
     base, _, suffix = tile_name.partition(":")
-    if suffix == "road":
-        return "road"
-    if suffix == "field":
-        return "field"
+    if suffix in ("road", "field"):
+        return suffix
     if base.startswith("lava"):
         return "lava"
     if base.startswith("soil_"):

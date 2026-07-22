@@ -12,25 +12,26 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats
 from islands import compute_islands_cached
 from shared import (
-    CURRENT_SAVE,
+    PROFESSION_KING,
+    PROFESSION_LEADER,
     UNITS_PER_YEAR,
     age_thresholds,
+    competition_ranks,
     emit,
+    entity_ref,
     index_by_id,
     life_stage,
     load_save,
     parse_sections,
-    reconcile_deaths,
-    register_entity,
     resolve_profession,
+    sex_label,
+    take_chapter,
 )
 
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _LEVEL_RE = re.compile(r"(\d+)$")
-_PROFESSION_KING = 3
-_PROFESSION_LEADER = 4
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
 _RANKED_STATS = {
@@ -59,7 +60,6 @@ _RANKED_STATS = {
 }
 
 _RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # Rarity weights for equipment power (Normal 1 → Legendary 4).
-_REGISTRY = Path(__file__).parent.parent.parent / "saves" / "persons.json"
 
 # UI order: active roles (chief, alpha) before historical foundations (creators before founders). `army_captain` is a `profession`, not a role.
 _ROLE_ORDER = (
@@ -92,6 +92,7 @@ _TRAIT_MASS_MODS = {
 _UNDEAD_SPECIES = frozenset({"skeleton"})  # Fail `isAlive`/`needsFood`: never breed, never hunger (no diet).
 
 
+# Lover / best friend snapshot — the handful of fields the companion card shows. `None` when unset or when the companion has died.
 def _build_companion(actor: dict, ctx: dict, id_field: str) -> dict | None:
     companion_id = actor.get(id_field)
     if companion_id is None:
@@ -109,12 +110,12 @@ def _build_companion(actor: dict, ctx: dict, id_field: str) -> dict | None:
         "money": snap.get("money", 0),
         "name": companion.get("name") or f"#{companion_id}",
         "renown": snap.get("renown", 0),
-        "sex": "female" if companion.get("sex") == 1 else "male",
+        "sex": sex_label(companion),
     }
 
 
 # Single pass over actors: id / asset_id lookups + children-per-parent (matches `Actor.get_current_children_count`).
-def _build_context(save: dict) -> dict:
+def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_asset: dict[str, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
     children_by_parent: dict[int, int] = {}
@@ -130,10 +131,12 @@ def _build_context(save: dict) -> dict:
         "actors_by_asset": actors_by_asset,
         "actors_by_id": actors_by_id,
         "children_by_parent": children_by_parent,
+        "save_path": save_path,  # islands cache key — must be the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "subspecies_base_cache": {},
     }
 
 
+# Each carried item with provenance (`by`/`from`), wear, kill count and its aggregated stats — sorted by item id for stable output.
 def _build_equipment_list(actor: dict, ctx: dict) -> list:
     item_stats = ctx["equipment"]["items"]
     mod_stats = ctx["equipment"]["modifiers"]
@@ -162,11 +165,13 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
     return sorted(out, key=lambda i: i["id"])
 
 
+# Resource bag → `{resource_id: amount}`, sorted — the raw save nests it as `inventory.dict.<id>.amount`.
 def _build_inventory(actor: dict) -> dict:
     items = ((actor.get("inventory") or {}).get("dict") or {}).items()
     return dict(sorted((iid, entry.get("amount", 0)) for iid, entry in items))
 
 
+# The actor's identity card: civic ties (city/kingdom/culture/family…), body (age tier, mass), posts held and their tenure.
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     snap = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
 
@@ -195,21 +200,22 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         and int(actor.get("nutrition") or 0) > 0
     )
 
-    _, island_lookup = compute_islands_cached(save, CURRENT_SAVE)
+    _, island_lookup = compute_islands_cached(save, ctx["save_path"])
 
     return {
         "age": age,
         "asset_id": actor.get("asset_id"),
         "can_reproduce": can_reproduce,
-        "city": (cities_by_id.get(actor.get("cityID")) or {}).get("name"),
+        "city": entity_ref(actor.get("cityID"), cities_by_id),
         "clan": clan.get("name"),
         "clan_chief_years": _resolve_tenure(actor, _CLAN_CHIEF_ROLE, save, ctx["world_time"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
         "culture": (cultures_by_id.get(actor.get("culture")) or {}).get("name"),
         "family": (families_by_id.get(actor.get("family")) or {}).get("name"),
         "favorite_food": actor.get("favorite_food"),
         "generation": int(actor.get("generation") or 1),
+        "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
         "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,  # Chronicler-only: land mass (geography/info.py).
-        "kingdom": _resolve_kingdom(actor.get("civ_kingdom_id"), kingdoms_by_id),
+        "kingdom": entity_ref(actor.get("civ_kingdom_id"), kingdoms_by_id),
         "language": language.get("name"),
         "life_stage": life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor, ctx),
@@ -218,7 +224,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "profession": profession,
         "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
         "roles": _compute_roles(actor, save),
-        "sex": "female" if actor.get("sex") == 1 else "male",
+        "sex": sex_label(actor),
         "subspecies": sub.get("name") or actor.get("subspecies"),
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
         "x": ax,
@@ -240,21 +246,21 @@ def _build_plot(actor: dict, save: dict) -> dict | None:
         "name": plot.get("name"),
         "progress": round(float(plot.get("progress_current", 0)), 1),
         "started_at": round(float(plot.get("created_time", 0)), 2),
-        "target_alliance": (alliances_by_id.get(plot.get("id_target_alliance")) or {}).get("name"),
-        "target_kingdom": (kingdoms_by_id.get(plot.get("id_target_kingdom")) or {}).get("name"),
+        "target_alliance": entity_ref(plot.get("id_target_alliance"), alliances_by_id),
+        "target_kingdom": entity_ref(plot.get("id_target_kingdom"), kingdoms_by_id),
         "type_id": plot.get("plot_type_id"),
     }
 
 
-def _build_trait_list(trait_ids: list[str], traits_data: dict, narrative: bool) -> list:
+# Trait entries with their stats + narrative fields (description/flavor/rarity) when the data carries them — sorted by trait id.
+def _build_trait_list(trait_ids: list[str], traits_data: dict) -> list:
     out = []
     for tid in trait_ids or []:
         entry = traits_data.get(tid) or {}
         item: dict = {"id": tid, "stats": entry.get("stats") or {}}
-        if narrative:
-            for k in ("description", "flavor", "rarity"):
-                if k in entry:
-                    item[k] = entry[k]
+        for k in ("description", "flavor", "rarity"):
+            if k in entry:
+                item[k] = entry[k]
         out.append(dict(sorted(item.items())))
     return sorted(out, key=lambda t: t["id"])
 
@@ -274,7 +280,7 @@ def _compute_mass(actor: dict, ctx: dict) -> int | None:
 
 # `Actor.updateStats` personality: city leaders/kings only → diplomat/administrator/militarist/balanced (diplomacy/stewardship/warfare); `wildcard` never used.
 def _compute_personality(actor: dict, snap: dict) -> str | None:
-    if actor.get("profession") not in (_PROFESSION_KING, _PROFESSION_LEADER):
+    if actor.get("profession") not in (PROFESSION_KING, PROFESSION_LEADER):
         return None
     diplo, stew, war = snap.get("diplomacy", 0), snap.get("stewardship", 0), snap.get("warfare", 0)
     p, max_val = "balanced", diplo
@@ -287,30 +293,23 @@ def _compute_personality(actor: dict, snap: dict) -> str | None:
     return p
 
 
-# Top 3 only — UI hides the rest, no narrative use for "34th out of 114".
+# Top 3 only — UI hides the rest, no narrative use for "34th out of 114". Zero-skip like the city/kingdom ranks: no podium for a stat the actor has none of.
 def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
     same_species = ctx["actors_by_asset"].get(actor.get("asset_id"), [])
-    peers = [(a["id"], _compute_stats(a, ctx, ctx["subspecies_base_cache"])) for a in same_species]
-    own = next(s for aid, s in peers if aid == actor["id"])
-    ranks = {}
-    for stat, value in sorted(own.items()):
-        if stat not in _RANKED_STATS:
-            continue
-        rank = sum(1 for _, s in peers if s.get(stat, 0) > value) + 1
-        if rank <= 3:
-            ranks[stat] = rank
+    peers = [_compute_stats(a, ctx, ctx["subspecies_base_cache"]) for a in same_species]
+    own = next(s for a, s in zip(same_species, peers) if a["id"] == actor["id"])
 
-    # Age is not in _compute_stats (it's derived from created_time) — rank it separately.
     def actor_age(a: dict) -> int:
         return int((ctx["world_time"] - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
 
-    own_age = actor_age(actor)
-    age_rank = sum(1 for a in same_species if actor_age(a) > own_age) + 1
-    if age_rank <= 3:
-        ranks["age"] = age_rank
+    getters = {stat: (lambda st: lambda s: s.get(st, 0))(stat) for stat in _RANKED_STATS if stat in own}
+    ranks = competition_ranks(own, peers, getters)
+    # Age is not in `_compute_stats` (derived from `created_time`) — ranked separately, against the raw actors.
+    ranks.update(competition_ranks(actor, same_species, {"age": actor_age}))
     return dict(sorted(ranks.items()))
 
 
+# Active/historical roles in `_ROLE_ORDER` — each is a linear probe of its collection (all tiny).
 def _compute_roles(actor: dict, save: dict) -> list[str]:
     actor_id = actor.get("id")
     checks = {
@@ -337,7 +336,7 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
             "births": int(actor.get("births") or 0),
             "children": ctx["children_by_parent"].get(actor.get("id"), 0),
             "equipment_power": _equipment_power(actor, ctx),
-            "happiness": (int(actor.get("happiness") or 0) + 100) * 100 // 200,  # WB happiness: -100→+100, UI shows (raw+100)/2 as 0–100%.
+            "happiness": (int(actor.get("happiness") or 0) + 100) // 2,  # WB happiness runs -100..+100; surfaced as the 0-100% the UI shows.
             "health": int(actor.get("health") or 0),
             "kills": int(actor.get("kills") or 0),
             # WB displays level 1 as the floor, even when the raw save field is absent / 0.
@@ -353,6 +352,7 @@ def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = 
     return dict(sorted(cleaned.items()))
 
 
+# Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
 def _equipment_power(actor: dict, ctx: dict) -> int:
     items = ctx["items_by_id"]
     total = 0
@@ -363,6 +363,7 @@ def _equipment_power(actor: dict, ctx: dict) -> int:
     return total
 
 
+# Rarity = the highest numbered suffix among an item's modifiers (`…_5` ⇒ Legendary) — mirrors WB's enchant tiers.
 def _equipment_rarity(modifiers: list[str]) -> str:
     max_level = max((int(m.group(1)) for m in (_LEVEL_RE.search(x) for x in modifiers) if m), default=0)
     if max_level >= 5:
@@ -374,6 +375,7 @@ def _equipment_rarity(modifiers: list[str]) -> str:
     return "Normal"
 
 
+# Item base stats + its modifiers' bonuses, floats trimmed to 4 decimals (ints when whole), zeros dropped.
 def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_stats: dict) -> dict:
     out = dict(item_stats.get(asset_id, {}))
     for mod in modifiers:
@@ -388,30 +390,6 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
         if v:
             result[k] = v
     return dict(sorted(result.items()))
-
-
-# Register this actor (species + sex + non-civilian profession) in the reader's person registry, for the `[p id Nom]` tag.
-def _register_person(actor: dict, profession: str | None) -> None:
-    # `[p id]` tags are civ-only (intelligent, kingdom-bound) — skip wild creatures / boats so they never get a person badge.
-    if not actor.get("civ_kingdom_id") or (actor.get("asset_id") or "").startswith("boat_"):
-        return
-    entry = {
-        "asset_id": actor.get("asset_id"),
-        "dead": False,  # Alive at registration; `reconcile_deaths` flips it when the id later leaves the save.
-        "sex": "female" if actor.get("sex") == 1 else "male",
-    }
-    if profession and profession != "unit":  # Civilians carry no badge — keep the registry lean.
-        entry["profession"] = profession
-    register_entity(_REGISTRY, str(actor.get("id")), entry)
-
-
-def _resolve_kingdom(kingdom_id: int | None, kingdoms_by_id: dict) -> dict | None:
-    if kingdom_id is None:
-        return None
-    kingdom = kingdoms_by_id.get(kingdom_id)
-    if kingdom is None:
-        return None
-    return {"id": kingdom_id, "name": kingdom.get("name")}
 
 
 # Years the actor has held `role` = (holder field, collection, history). `None` unless the history's last entry still names them.
@@ -430,8 +408,9 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
 
 
 def main(argv: list[str]) -> int:
+    save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("usage: info.py <id> [sections] — see tools/tools.md", file=sys.stderr)
+        print("usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
         return 2
     try:
         actor_id = int(argv[0])
@@ -443,14 +422,12 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    save = load_save()
-    ctx = _build_context(save)
+    save = load_save(save_path)
+    ctx = _build_context(save, save_path)
     actor = ctx["actors_by_id"].get(actor_id)
     if actor is None:
         print(f"unknown actor: {actor_id}", file=sys.stderr)
         return 1
-    _register_person(actor, resolve_profession(actor, save))
-    reconcile_deaths(_REGISTRY, set(ctx["actors_by_id"]))
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     if sub is None:
         print(f"no subspecies for actor {actor_id}", file=sys.stderr)
@@ -460,7 +437,7 @@ def main(argv: list[str]) -> int:
     if "best_friend" in sections:
         out["best_friend"] = _build_companion(actor, ctx, "best_friend_id")
     if "creature_traits" in sections:
-        out["creature_traits"] = _build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"], narrative=True)
+        out["creature_traits"] = _build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"])
     if "equipment" in sections:
         out["equipment"] = _build_equipment_list(actor, ctx)
     if "inventory" in sections:

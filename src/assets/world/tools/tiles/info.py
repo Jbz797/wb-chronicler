@@ -6,42 +6,31 @@
 
 import argparse
 import sys
-from collections import defaultdict, deque
+from collections import defaultdict
 from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
-from shared import CURRENT_SAVE, emit, index_by_id, load_save, parse_sections
+from shared import ZONE_TILES, emit, entity_ref, index_by_id, load_save, parse_sections, take_chapter
 from grid import decode_tile_grid, tile_biome, tile_elevation, tile_kind, tile_layer
 from islands import compute_islands_cached
 
 _ALL_SECTIONS = ("actors", "buildings", "context", "distances", "tile_info")
-_DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
 _MAX_RADIUS = 2
 
 
-def _actors_at(x: int, y: int, actors_by_pos: dict[tuple[int, int], list[dict]]) -> list[dict]:
-    return [{"asset_id": a.get("asset_id"), "id": a.get("id"), "kingdom_id": a.get("civ_kingdom_id"), "name": a.get("name")} for a in actors_by_pos.get((x, y), [])]
-
-
-# Precompute distance-to-nearest-water for every tile via multi-source 4-conn BFS from all Ocean tiles. O(W·H) once → O(1) lookup per tile after.
-def _build_water_distance_grid(grid: list[list[int]], layer_by_id: list[str], width: int, height: int) -> list[list[int]]:
-    dist = [[-1] * width for _ in range(height)]
-    queue: deque[tuple[int, int]] = deque()
-    for y in range(height):
-        for x in range(width):
-            if layer_by_id[grid[y][x]] == "Ocean":
-                dist[y][x] = 0
-                queue.append((x, y))
-    while queue:
-        x, y = queue.popleft()
-        for dx, dy in _DELTAS_4:
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < width and 0 <= ny < height and dist[ny][nx] == -1:
-                dist[ny][nx] = dist[y][x] + 1
-                queue.append((nx, ny))
-    return dist
+def _actors_at(x: int, y: int, actors_by_pos: dict[tuple[int, int], list[dict]], cities_by_id: dict, kingdoms_by_id: dict) -> list[dict]:
+    return [
+        {
+            "asset_id": a.get("asset_id"),
+            "city": entity_ref(a.get("cityID"), cities_by_id),
+            "id": a.get("id"),
+            "kingdom": entity_ref(a.get("civ_kingdom_id"), kingdoms_by_id),
+            "name": a.get("name"),
+        }
+        for a in actors_by_pos.get((x, y), [])
+    ]
 
 
 def _buildings_at(x: int, y: int, buildings_by_pos: dict[tuple[int, int], list[dict]]) -> list[dict]:
@@ -50,26 +39,27 @@ def _buildings_at(x: int, y: int, buildings_by_pos: dict[tuple[int, int], list[d
 
 # Returns `{}` for unclaimed tiles (stripped by `emit`). Distances live in the `distances` section, not here.
 def _context_at(x: int, y: int, city_by_pos: dict[tuple[int, int], dict], kingdoms_by_id: dict[int, dict]) -> dict:
-    city = city_by_pos.get((x, y))
+    city = city_by_pos.get((x // ZONE_TILES, y // ZONE_TILES))
     if city is None:
         return {}
-    out: dict = {"city": {"id": city["id"], "name": city.get("name")}}
-    if kid := city.get("kingdomID"):
-        out["kingdom"] = {"id": kid, "name": kingdoms_by_id.get(kid, {}).get("name")}
-    return out
+    return {
+        "city": {"id": city["id"], "name": city.get("name") or f"#{city['id']}"},
+        "kingdom": entity_ref(city.get("kingdomID"), kingdoms_by_id),
+    }
 
 
 # `to_water` always; `to_capital` only when owned by a city, `to_nearest_city` only when unclaimed. Manhattan distance in tiles.
 def _distances_at(
     x: int,
     y: int,
-    water_dist: list[list[int]],
+    grid: list[list[int]],
+    layer_by_id: list[str],
     city_by_pos: dict[tuple[int, int], dict],
     capital_pos_by_kingdom: dict[int, tuple[int, int]],
     city_centroids: list[tuple[int, int]],
 ) -> dict:
-    out: dict = {"to_water": water_dist[y][x]}
-    city = city_by_pos.get((x, y))
+    out: dict = {"to_water": _water_distance(x, y, grid, layer_by_id)}
+    city = city_by_pos.get((x // ZONE_TILES, y // ZONE_TILES))
     if city is None:
         if city_centroids:
             out["to_nearest_city"] = min(abs(x - cx) + abs(y - cy) for cx, cy in city_centroids)
@@ -90,6 +80,20 @@ def _tile_info_at(x: int, y: int, grid: list[list[int]], tile_map: list[str], ti
     return out
 
 
+# All cells walkable => water distance == Manhattan: diamonds expand to the first Ocean ring — coastal sites end it fast, vs a 300k-cell full BFS. `-1` = no water.
+def _water_distance(x: int, y: int, grid: list[list[int]], layer_by_id: list[str]) -> int:
+    height, width = len(grid), len(grid[0])
+    for r in range(width + height):
+        for dx in range(-r, r + 1):
+            nx = x + dx
+            if not 0 <= nx < width:
+                continue
+            for ny in {y + r - abs(dx), y - r + abs(dx)}:
+                if 0 <= ny < height and layer_by_id[grid[ny][nx]] == "Ocean":
+                    return r
+    return -1
+
+
 def _xy(value: str) -> tuple[int, int]:
     try:
         x_str, y_str = value.split(",", 1)
@@ -98,93 +102,106 @@ def _xy(value: str) -> tuple[int, int]:
         raise argparse.ArgumentTypeError(f"expected `x,y` (e.g. `415,117`), got {value!r}") from e
 
 
-# Mean (x, y) over a city's `zones` (or capital's). Used twice in `main` to compute city centroids + capital positions.
+# Cities are zone polygons, not points — collapse to one integer anchor for distances, in tile space like every coord here.
 def _zone_centroid(zones: list[dict]) -> tuple[int, int]:
-    n = len(zones)
-    return sum(z.get("x", 0) for z in zones) // n, sum(z.get("y", 0) for z in zones) // n
+    n, half = len(zones), ZONE_TILES // 2
+    return sum(z.get("x", 0) * ZONE_TILES + half for z in zones) // n, sum(z.get("y", 0) * ZONE_TILES + half for z in zones) // n
 
 
 def main(argv: list[str]) -> int:
+    save_path, argv, _ = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
+
     parser = argparse.ArgumentParser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
     parser.add_argument("xy", type=_xy, metavar="x,y", help="Tile coords (WB UI, y grows north), comma-separated — e.g. `415,117`.")
     parser.add_argument("sections", nargs="?", default="full", help=f"Comma-separated sections or `full`. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
     args = parser.parse_args(argv)
     cx, cy = args.xy
+
     try:
         sections = parse_sections(args.sections, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    save = load_save()
+
+    save = load_save(save_path)
     grid = decode_tile_grid(save)
     if not grid:
         print("empty grid", file=sys.stderr)
         return 2
+
     height, width = len(grid), len(grid[0])
     if not (0 <= cx < width and 0 <= cy < height):
         print(f"coords ({cx}, {cy}) out of bounds — map is {width}×{height}", file=sys.stderr)
         return 2
+
     tile_map = save["tileMap"]
     coords = _radius_tiles(cx, cy, args.radius, width, height)
+    wanted = set(coords)
+    wanted_zones = {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords}
 
-    # Precompute position indices once — each lookup is O(1) per tile afterwards.
+    # Index only the queried positions — the save carries ~15k buildings and ~1.5k actors for at most 25 tiles of interest.
     actors_by_pos: dict[tuple[int, int], list[dict]] = defaultdict(list)
     if "actors" in sections:
         for a in save.get("actors_data", []):
             ax, ay = a.get("x"), a.get("y")
-            if ax is not None and ay is not None:
-                actors_by_pos[(int(ax), int(ay))].append(a)
+            if ax is not None and ay is not None and (pos := (int(ax), int(ay))) in wanted:
+                actors_by_pos[pos].append(a)
     buildings_by_pos: dict[tuple[int, int], list[dict]] = defaultdict(list)
+
     if "buildings" in sections:
         for b in save.get("buildings", []):
             bx, by = b.get("mainX"), b.get("mainY")
-            if bx is not None and by is not None:
-                buildings_by_pos[(int(bx), int(by))].append(b)
-    # `city_by_pos` shared by both `context` and `distances`; centroids + capital positions only needed by `distances`.
-    city_by_pos: dict[tuple[int, int], dict] = {}
+            if bx is not None and by is not None and (pos := (int(bx), int(by))) in wanted:
+                buildings_by_pos[pos].append(b)
+    # `cities/kingdoms_by_id` resolve refs for `actors` + `context`; `city_by_pos`, centroids and capital positions only serve `context`/`distances`.
+    cities_by_id: dict[int, dict] = {}
     kingdoms_by_id: dict[int, dict] = {}
+
+    if {"actors", "context", "distances"} & set(sections):
+        cities_by_id = index_by_id(save.get("cities") or [])
+        kingdoms_by_id = index_by_id(save.get("kingdoms") or [])
+    city_by_pos: dict[tuple[int, int], dict] = {}
     capital_pos_by_kingdom: dict[int, tuple[int, int]] = {}
     city_centroids: list[tuple[int, int]] = []
+
     if {"context", "distances"} & set(sections):
-        kingdoms_by_id = index_by_id(save.get("kingdoms") or [])
-        cities = save.get("cities") or []
-        cities_by_id = index_by_id(cities)
-        for c in cities:
+        for c in cities_by_id.values():
             zones = c.get("zones") or []
             if not zones:
                 continue
             city_centroids.append(_zone_centroid(zones))
             for z in zones:
-                if (zx := z.get("x")) is not None and (zy := z.get("y")) is not None:
+                if (zx := z.get("x")) is not None and (zy := z.get("y")) is not None and (zx, zy) in wanted_zones:
                     city_by_pos[(zx, zy)] = c
-        for k in save.get("kingdoms") or []:
-            cap_zones = (cities_by_id.get(k.get("capitalID")) or {}).get("zones") or []
-            if cap_zones:
+        for k in kingdoms_by_id.values():
+            if (cap_id := k.get("capitalID")) is None:
+                continue
+            if cap_zones := (cities_by_id.get(cap_id) or {}).get("zones"):
                 capital_pos_by_kingdom[k["id"]] = _zone_centroid(cap_zones)
     tile_to_island: dict[tuple[int, int], int] = {}
     frozen_set: set[tuple[int, int]] = set()
+
     if "tile_info" in sections:
-        _, tile_to_island = compute_islands_cached(save, CURRENT_SAVE)
-        # `frozen_tiles` are packed as `y * width + x` ints. Decode once into a position set for O(1) lookup.
-        for idx in save.get("frozen_tiles") or []:
-            frozen_set.add((idx % width, idx // width))
-    water_dist: list[list[int]] = []
+        _, tile_to_island = compute_islands_cached(save, save_path)
+        # `frozen_tiles` are packed as `y * width + x` ints — decode to positions, keeping only the queried ones.
+        frozen_set = {pos for idx in save.get("frozen_tiles") or [] if (pos := (idx % width, idx // width)) in wanted}
+    layer_by_id: list[str] = []
+
     if "distances" in sections:
         layer_by_id = [tile_layer(name) for name in tile_map]
-        water_dist = _build_water_distance_grid(grid, layer_by_id, width, height)
 
     out: dict = {}
     for x, y in coords:
         cell: dict = {}
         if "actors" in sections:
-            cell["actors"] = _actors_at(x, y, actors_by_pos)
+            cell["actors"] = _actors_at(x, y, actors_by_pos, cities_by_id, kingdoms_by_id)
         if "buildings" in sections:
             cell["buildings"] = _buildings_at(x, y, buildings_by_pos)
         if "context" in sections:
             cell["context"] = _context_at(x, y, city_by_pos, kingdoms_by_id)
         if "distances" in sections:
-            cell["distances"] = _distances_at(x, y, water_dist, city_by_pos, capital_pos_by_kingdom, city_centroids)
+            cell["distances"] = _distances_at(x, y, grid, layer_by_id, city_by_pos, capital_pos_by_kingdom, city_centroids)
         if "tile_info" in sections:
             cell["tile_info"] = _tile_info_at(x, y, grid, tile_map, tile_to_island, frozen_set)
         out[f"{x},{y}"] = cell

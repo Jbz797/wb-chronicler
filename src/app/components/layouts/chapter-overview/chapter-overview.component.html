@@ -19,7 +19,16 @@
   </ng-template>
   <ng-template #favoriteExtra>
     @if (c.meta.favorite; as fav) {
-      <app-person-tag [assetId]="fav.metadata.asset_id" [name]="fav.metadata.name" [profession]="fav.metadata.profession" [sex]="fav.metadata.sex" />
+      <app-person-tag [id]="fav.metadata.id" [name]="fav.metadata.name" />
+    }
+  </ng-template>
+  <ng-template #cityHeader>
+    <img class="panel-icon" src="assets/img/world/most_populous_village.png" />
+    <span>Village</span>
+  </ng-template>
+  <ng-template #cityExtra>
+    @if (c.meta.city; as city) {
+      <app-city-tag [id]="city.metadata.id" [name]="city.metadata.name" />
     }
   </ng-template>
   <ng-template #kingdomHeader>
@@ -38,7 +47,7 @@
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'favorite'"
-      [nzDisabled]="!c.meta.favorite"
+      [nzCollapsible]="collapsible(c.meta.favorite)"
       [nzExtra]="favoriteExtra"
       [nzHeader]="favoritesHeader"
       (nzActiveChange)="onPanelToggle('favorite', $event)"
@@ -46,8 +55,17 @@
       <app-favorite />
     </nz-collapse-panel>
     <nz-collapse-panel
+      [nzActive]="activePanel() === 'city'"
+      [nzCollapsible]="collapsible(c.meta.city)"
+      [nzExtra]="cityExtra"
+      [nzHeader]="cityHeader"
+      (nzActiveChange)="onPanelToggle('city', $event)"
+    >
+      <app-city />
+    </nz-collapse-panel>
+    <nz-collapse-panel
       [nzActive]="activePanel() === 'kingdom'"
-      [nzDisabled]="!c.meta.kingdom"
+      [nzCollapsible]="collapsible(c.meta.kingdom)"
       [nzExtra]="kingdomExtra"
       [nzHeader]="kingdomHeader"
       (nzActiveChange)="onPanelToggle('kingdom', $event)"

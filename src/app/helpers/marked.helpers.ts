@@ -1,7 +1,7 @@
 import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
-import { INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
+import { CITY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
 export class MarkedHelpers {
@@ -11,6 +11,8 @@ export class MarkedHelpers {
     marked.use(gfmHeadingId());
     marked.use({
       extensions: [
+        // `[c <id> <name>]` = city (settlement glyph + name, coloured by its kingdom's palette from the registry).
+        this._extension(INLINE_MARKER.City, 'cities', false, this._renderCity),
         // `[k <id> <name>]` = kingdom (colored name + banner icon, resolved from the registry).
         this._extension(INLINE_MARKER.Kingdom, 'kingdoms', false, this._renderKingdom),
         // `[p <id> <name>]` = person (intelligent only: species icon + name + sex icon, from the registry).
@@ -23,7 +25,7 @@ export class MarkedHelpers {
     });
   }
 
-  // Build a marked inline extension for a `[<letter> <id> <name>]` marker — shared shape across all 4 kinds.
+  // Build a marked inline extension for a `[<letter> <id> <name>]` marker — shared shape across all 5 kinds.
   private static _extension(
     marker: InlineMarker,
     kind: IconKind,
@@ -51,12 +53,26 @@ export class MarkedHelpers {
     };
   }
 
-  // Inline-code regex: numeric id for kingdoms/persons (else `[_a-z]+`), name optional per caller.
+  // Inline-code regex: numeric id for cities/kingdoms/persons (else `[_a-z]+`), name optional per caller.
   private static readonly _iconPattern = (letter: InlineMarker, { isNameOptional }: { isNameOptional: boolean }): RegExp => {
-    const id = letter === INLINE_MARKER.Kingdom || letter === INLINE_MARKER.Person ? String.raw`\d+` : '[_a-z]+';
+    const isNumericId = letter === INLINE_MARKER.City || letter === INLINE_MARKER.Kingdom || letter === INLINE_MARKER.Person;
+    const id = isNumericId ? String.raw`\d+` : '[_a-z]+';
     const name = isNameOptional ? String.raw`(?: ([^\n\]]+))?` : String.raw` ([^\n\]]+)`;
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };
+
+  private static _renderCity(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = CITY_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+    // Capital → crown-star glyph, ordinary settlement → house; both tinted by the kingdom ink. No banner keeps a village lighter than its `[k]` realm.
+    const glyph = `<span class="glyph" style="mask-image: url(assets/img/world/${info?.capital ? 'capital' : 'houses'}.png)"></span>`;
+    const size = info?.size ? `<span class="city-size"><span>${info.size}</span></span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
+    const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
+    const style = `--city-color: ${info?.color ?? ''}; --city-ink: ${info?.ink ?? ''}`;
+    return `<span class="ant-tag entity-tag city-tag${dead}" style="${style}">${glyph}<span class="entity-name">${name}</span>${size}${species}</span>`;
+  }
 
   private static _renderKingdom(this: ParserThis, token: Tokens.Generic): string {
     const { id, tokens: children } = token as IconToken;
@@ -66,8 +82,11 @@ export class MarkedHelpers {
     const banner = info
       ? `<span class="glyph" style="mask-image: url(assets/img/banners/${info.banner_icon}.png)"></span>`
       : '';
+    const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const style = `--kingdom-color: ${info?.color ?? ''}; --kingdom-ink: ${info?.ink ?? ''}`;
-    return `<span class="ant-tag entity-tag kingdom-tag" style="${style}">${crown}${name}${banner}</span>`;
+    const label = `<span class="entity-name">${name}</span>`;
+    return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${crown}${label}${banner}${species}</span>`;
   }
 
   private static _renderPerson(this: ParserThis, token: Tokens.Generic): string {
@@ -79,9 +98,10 @@ export class MarkedHelpers {
     const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';
     const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : profession;
     const species = `<img src="assets/img/species/${info.asset_id}.png" />`;
-    const sex = `<img src="assets/img/sex/${info.sex}.png" />`;
+    const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
     const label = `<span class="entity-name">${name}</span>`;
-    return `<span class="ant-tag entity-tag person-tag${info.dead ? ' dead' : ''}" style="--person-color: ${color}">${badge}${species}${label}${sex}</span>`;
+    // Order: profession/tombstone · name · sex · species icon (trailing, like kingdom/city tags).
+    return `<span class="ant-tag entity-tag person-tag${info.dead ? ' dead' : ''}" style="--person-color: ${color}">${badge}${label}${sex}${species}</span>`;
   }
 
   // Resource: icon + optional inline text, never coloured.

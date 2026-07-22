@@ -60,13 +60,18 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
   village_founder: { active: false, label: 'Fondateur de village' },
 };
 
+// City `RankedStatKind`s resolved from `metadata` (vs `population`) — same as the kingdom's minus `cities`, which a settlement has none of.
+export const CITY_META_STATS = new Set<RankedStatKind>([
+  'age', 'buildings', 'deaths', 'food', 'gold', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
+]);
+
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
 export const KINGDOM_META_STATS = new Set<RankedStatKind>([
   'age', 'buildings', 'cities', 'deaths', 'food', 'gold', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
 ]);
 
-// Kingdom ranked stats shown raw (age in years, `%`, per-capita ratio) — every other kingdom stat compacts to `X.X K` above 100, like the world panel.
-export const NON_COMPACT_KINGDOM_STATS = new Set<RankedStatKind>(['age', 'fed_pct', 'food_per_capita', 'housed_pct', 'wealth_per_capita']);
+// Ranked stats shown raw (age in years, `%`, per-capita ratio) — every other kingdom/city/alliance stat compacts to `X.X K` above 100, like the world panel.
+export const NON_COMPACT_STATS = new Set<RankedStatKind>(['age', 'fed_pct', 'food_per_capita', 'housed_pct', 'wealth_per_capita']);
 
 // Favorite combat stats — damage / defense / attack rhythm.
 export const COMBAT_STATS: StatConfig[] = [
@@ -87,11 +92,11 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
   { key: 'evolutions', label: 'Évolutions' },
 ];
 
-// Top entity per category (mirrors WB's « Records » panel). `icon` overrides the default `<key>.png` lookup so `dominant_*` reuses the snapshot icons.
+// Top entity per category (WB « Records »). Ordered like the collapses (person → village → kingdom); `icon` overrides the `<key>.png` lookup for `dominant_*`.
 export const LEADERS: { icon?: string; key: LeaderKind; label: string }[] = [
+  { key: 'most_renowned_person', label: 'Perso. illustre' },
   { key: 'most_populous_village', label: 'Village peuplé' },
   { key: 'most_populous_kingdom', label: 'Roy. peuplé' },
-  { key: 'most_renowned_person', label: 'Perso. illustre' },
   { key: 'most_renowned_clan', label: 'Clan illustre' },
   { icon: 'families', key: 'most_renowned_family', label: 'Famille illustre' },
   { icon: 'species', key: 'dominant_species', label: 'Espèce' },

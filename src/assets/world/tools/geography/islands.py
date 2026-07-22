@@ -15,8 +15,7 @@ from pathlib import Path
 from grid import decode_tile_grid, tile_biome, tile_kind, tile_layer
 
 
-# `TileTypeBase.block = true` tiles — block diagonal moves (`isDiagonalBlockedByCorners`), splitting regions in sync with WB.
-_BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})
+_BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})  # WB `TileTypeBase.block` tiles — block diagonals, which splits regions.
 _CACHE_DIR = Path(__file__).parent.parent / ".cache"  # Sibling of `actor/`, `kingdom/`, … — gitignored via root `.gitignore`.
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
 _DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
@@ -38,6 +37,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
     tile_map = save.get("tileMap") or []
     layer_by_id = [tile_layer(name) for name in tile_map]
     block_by_id = [name.split(":", 1)[0] in _BLOCK_TILES for name in tile_map]
+
     # Precompute per-tile-id biome/kind once — Phase 1 + Phase 4 BFSs touch ~10⁵ tiles, each function call would otherwise be repeated for the same id.
     biome_by_id = [tile_biome(name) for name in tile_map]
     kind_by_id = [tile_kind(name) for name in tile_map]
@@ -45,9 +45,11 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
     if not grid:
         return [], {}
     height, width = len(grid), len(grid[0])
+
     # Phase 1: split each 16×16 chunk into MapRegions (same-layer 8-conn components within the chunk, respecting `isDiagonalBlockedByCorners`).
     region_grid: list[list[int]] = [[-1] * width for _ in range(height)]
     regions: list[dict] = []
+
     for cy0 in range(0, height, _CHUNK_SIZE):
         for cx0 in range(0, width, _CHUNK_SIZE):
             cy1, cx1 = min(cy0 + _CHUNK_SIZE, height), min(cx0 + _CHUNK_SIZE, width)
@@ -84,9 +86,29 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
                             region_grid[ny][nx] = region_id
                             queue.append((nx, ny))
                     regions.append({"biomes": biomes, "layer": layer, "tile_kinds": tile_kinds, "tiles": tiles})
-    # Phase 2: merge regions into TileIslands via cross-chunk neighbours of the same layer (4-conn between tiles).
+
+    # Phase 2: merge regions into TileIslands. Regions only meet across chunk borders — inside one, same-layer 4-neighbours already share a region.
+    neighbours: list[set[int]] = [set() for _ in regions]
+
+    for y in range(height):
+        row = region_grid[y]
+        for x in range(_CHUNK_SIZE, width, _CHUNK_SIZE):
+            a, b = row[x - 1], row[x]
+            if regions[a]["layer"] == regions[b]["layer"]:
+                neighbours[a].add(b)
+                neighbours[b].add(a)
+
+    for y in range(_CHUNK_SIZE, height, _CHUNK_SIZE):
+        row, above = region_grid[y], region_grid[y - 1]
+        for x in range(width):
+            a, b = above[x], row[x]
+            if regions[a]["layer"] == regions[b]["layer"]:
+                neighbours[a].add(b)
+                neighbours[b].add(a)
+
     island_of_region: list[int] = [-1] * len(regions)
     component_regions: list[list[int]] = []
+
     for start in range(len(regions)):
         if island_of_region[start] != -1:
             continue
@@ -97,19 +119,13 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
         while queue:
             r_idx = queue.popleft()
             component_regions[cid].append(r_idx)
-            layer = regions[r_idx]["layer"]
-            for tx, ty in regions[r_idx]["tiles"]:
-                for dx, dy in _DELTAS_4:
-                    nx, ny = tx + dx, ty + dy
-                    if not (0 <= nx < width and 0 <= ny < height):
-                        continue
-                    other = region_grid[ny][nx]
-                    if other == r_idx or island_of_region[other] != -1 or regions[other]["layer"] != layer:
-                        continue
+            for other in neighbours[r_idx]:
+                if island_of_region[other] == -1:
                     island_of_region[other] = cid
                     queue.append(other)
     # Phase 3: keep only Ground islands with ≥ `_GROUND_REGIONS_THRESHOLD` regions (mirrors `countLandIslands`).
     kept: list[tuple[int, Counter[str], Counter[str], list[tuple[int, int]]]] = []
+
     for r_indices in component_regions:
         if regions[r_indices[0]]["layer"] != "Ground" or len(r_indices) < _GROUND_REGIONS_THRESHOLD:
             continue
@@ -126,6 +142,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
     island_tile_kinds: dict[int, Counter[str]] = {}
     tile_to_id: dict[tuple[int, int], int] = {}
     seeds: deque[tuple[int, int]] = deque()
+
     for idx, (size, biomes, tile_kinds, tiles) in enumerate(kept, start=1):
         cx = sum(t[0] for t in tiles) // size
         cy = sum(t[1] for t in tiles) // size
@@ -135,7 +152,8 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
         for gx, gy in tiles:
             tile_to_id[(gx, gy)] = idx
             seeds.append((gx, gy))
-    # Phase 4: propagate id to adjacent Block/Lava (mountains/summit/lava) so actors there map to their host island. Ocean/Goo skipped — they aren't part of the landmass.
+
+    # Phase 4: bleed the id into adjacent Block/Lava so actors on mountains/lava resolve to their host island. Ocean/Goo stay out — not landmass.
     while seeds:
         x, y = seeds.popleft()
         iid = tile_to_id[(x, y)]
@@ -148,6 +166,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
             tile_to_id[(nx, ny)] = iid
             island_tile_kinds[iid][kind_by_id[grid[ny][nx]]] += 1
             seeds.append((nx, ny))
+
     # Phase 5: finalize per-island `tiles` field — same `% kind` format as `biomes`, now including the Block/Lava tiles propagated in Phase 4.
     for island in islands:
         counter = island_tile_kinds[island["id"]]

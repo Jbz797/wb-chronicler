@@ -18,9 +18,10 @@
 # ⚠️ If you ever rewrite the DNA generator to keep the spaces, shift the indices back.
 
 import math
+from collections import Counter
 from functools import cache
 
-from shared import UNITS_PER_YEAR, index_by_id, load_data
+from shared import PROFESSION_KING, UNITS_PER_YEAR, age_thresholds, index_by_id, life_stage, load_data
 
 
 # Genes that round UP on BAD (instead of down).
@@ -140,7 +141,6 @@ _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
 
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
-_PROFESSION_KING = 3
 _RENAMES = {"cities": "max_cities", "health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 _SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
@@ -253,7 +253,7 @@ def _apply_tier(gene: str, value: float, bad: bool, golden: bool) -> float:
     return value * 2 if golden else value
 
 
-# Floor floats to int (game stores most stats as int32). `health`/`mana` renamed to `health_max`/`mana_max` — values represent actor's post-pipeline maximum.
+# Truncate toward zero like C#'s `(int)`, not floor — negatives occur. `health`/`mana` => `health_max`/`mana_max`: post-pipeline maximums.
 def _cleanup_stats(totals: dict) -> dict:
     result = {}
     for k, v in totals.items():
@@ -392,7 +392,7 @@ def build_actor_stats_context(save: dict) -> dict:
     }
 
 
-# Aggregate one actor's stats (no counters). `subspecies_base_cache` reuses the species+chromosomes+traits base per subspecies — 5× speedup when ranking peers.
+# Aggregate one actor's stats (no counters). `subspecies_base_cache` reuses the species+chromosomes+traits base per subspecies — ~7× speedup when ranking peers.
 def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
@@ -412,8 +412,7 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _add_trait_stats(totals, (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits") or [], ctx["language_traits"])
     _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
     _add_custom_data_float(totals, actor.get("custom_data_float"))
-    # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
-    _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))
+    _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
     _apply_intelligence_bonus(totals)
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
@@ -422,6 +421,27 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     _apply_offspring_age_scaling(totals, age_units / lifespan_units if lifespan_units else 0)
     cleaned = _cleanup_stats(totals)
     # `max_cities` (Kingdom.getMaxCities) only matters for kings (profession=3).
-    if actor.get("profession") != _PROFESSION_KING:
+    if actor.get("profession") != PROFESSION_KING:
         cleaned.pop("max_cities", None)
     return cleaned
+
+
+# Demographic tally over a settlement's actors — age tiers, men, mutual-lover couples. One implementation for the kingdom and city `population` sections.
+def demographics(actors: list[dict], ctx: dict) -> dict:
+    by_id = ctx["actors_by_id"]
+    ids = {a["id"] for a in actors}
+    men = couples = 0
+    paired: set[int] = set()
+    stages: Counter[str] = Counter()
+    world_time = ctx["world_time"]
+    for a in actors:
+        age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+        lifespan = compute_actor_stats(a, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0)
+        stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
+        if a.get("sex") != 1:
+            men += 1
+        lover = a.get("lover")
+        if lover is not None and lover in ids and a["id"] not in paired and by_id.get(lover, {}).get("lover") == a["id"]:
+            couples += 1
+            paired.update((a["id"], lover))
+    return {"couples": couples, "men": men, "stages": stages}

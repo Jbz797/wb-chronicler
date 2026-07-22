@@ -1,8 +1,10 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 
-import { KINGDOM_META_STATS, NON_COMPACT_KINGDOM_STATS } from '../../../constants';
-import { ChapterMeta, KingdomAlliance, KingdomMetaStat, KingdomPopulationStat, RankedStatKind, RankedStatSnapshot } from '../../../interfaces';
+import { CITY_META_STATS, KINGDOM_META_STATS, NON_COMPACT_STATS } from '../../../constants';
+import {
+  ChapterMeta, CityMetaStat, KingdomAlliance, KingdomMetaStat, PopulationStat, RankedStatKind, RankedStatSnapshot,
+} from '../../../interfaces';
 import { CompactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
@@ -22,7 +24,7 @@ export class RankedStatComponent {
   public readonly inverted = input<boolean>(false); // Flips the delta colour — for stats where a rise is bad (deaths).
   public readonly numberFormat = input<string>('1.0-0');
   public readonly showRank = input<boolean>(true);
-  public readonly source = input<'alliance' | 'favorite' | 'kingdom'>('favorite');
+  public readonly source = input<'alliance' | 'city' | 'favorite' | 'kingdom'>('favorite');
   public readonly stat = input.required<RankedStatKind>();
   public readonly suffix = input<string>('');
 
@@ -46,8 +48,8 @@ export class RankedStatComponent {
     if (k === 'stamina') return s?.stamina;
     return null;
   });
-  // Kingdom + alliance quantities render compact (`X.X K` above 100), like the world panel — except age/`%`/per-capita stats.
-  protected readonly useCompact = computed(() => this.source() !== 'favorite' && !NON_COMPACT_KINGDOM_STATS.has(this.stat()));
+  // Kingdom/city/alliance quantities render compact (`X.X K` above 100), like the world panel — except age/`%`/per-capita stats.
+  protected readonly useCompact = computed(() => this.source() !== 'favorite' && !NON_COMPACT_STATS.has(this.stat()));
 
   // Status dot color shown next to the podium icon:
   private _rankStatus(current: number | undefined, previous: number | undefined, hasPrevious: boolean): 'error' | 'success' | null {
@@ -61,12 +63,23 @@ export class RankedStatComponent {
     return null;
   }
 
-  // Branches on `source()` to pull value + rank from the favorite, the kingdom snapshot, or its alliance.
-  private _resolve(entity: KingdomAlliance | NonNullable<ChapterMeta['favorite'] | ChapterMeta['kingdom']>): RankedStatSnapshot {
+  // Branches on `source()` to pull value + rank from the favorite, the kingdom/city snapshot, or the alliance.
+  private _resolve(entity: KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']>): RankedStatSnapshot {
     if (this.source() === 'alliance') {
       const a = entity as KingdomAlliance;
       const key = this.stat() as 'population' | 'renown';
       return this._snap(a[key], a.ranks?.[key]);
+    }
+
+    if (this.source() === 'city') {
+      const c = entity as NonNullable<ChapterMeta['city']>;
+      const key = this.stat();
+      if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
+      if (CITY_META_STATS.has(key)) return this._snap(c.metadata[key as CityMetaStat], c.ranks?.[key as CityMetaStat]);
+      const pk = key as PopulationStat;
+      // Cities don't rank `immortals`/`infected`/`sick` (absent from `CityRanks`) — the value still reads from `population`, the rank just stays undefined.
+      const ranks = c.ranks as Record<string, number | undefined> | undefined;
+      return this._snap(c.population[pk] ?? 0, ranks?.[pk]);
     }
 
     if (this.source() === 'kingdom') {
@@ -74,7 +87,7 @@ export class RankedStatComponent {
       const key = this.stat();
       if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
       if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat], k.ranks?.[key as KingdomMetaStat]);
-      const pk = key as KingdomPopulationStat;
+      const pk = key as PopulationStat;
       // Only `immortals`/`infected`/`sick` can be absent — Python omits them at 0, so reading 0 is right.
       return this._snap(k.population[pk] ?? 0, k.ranks?.[pk]);
     }
@@ -116,11 +129,11 @@ export class RankedStatComponent {
     return out;
   }
 
-  // Picks the favorite, kingdom, or (nested) alliance block from a chapter's meta based on the configured source.
-  private _sourceOf(meta: ChapterMeta | undefined): ChapterMeta['favorite'] | ChapterMeta['kingdom'] | KingdomAlliance {
+  // Picks the favorite, kingdom, city, or (nested) alliance block from a chapter's meta based on the configured source.
+  private _sourceOf(meta: ChapterMeta | undefined): ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom'] | KingdomAlliance {
     if (!meta) return null;
     if (this.source() === 'alliance') return meta.kingdom?.alliance ?? null;
-    return meta[this.source() as 'favorite' | 'kingdom'];
+    return meta[this.source() as 'city' | 'favorite' | 'kingdom'];
   }
 
 }

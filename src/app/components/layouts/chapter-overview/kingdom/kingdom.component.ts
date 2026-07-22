@@ -4,27 +4,26 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { KingdomWar, RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
-import { NewBadgeComponent, RankedStatComponent } from '../../../misc';
-import { PersonTagComponent } from '../../../tags';
+import { BreakdownComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '../../../misc';
+import { CityTagComponent, PersonTagComponent } from '../../../tags';
 
 import { KingdomAllianceComponent } from './kingdom-alliance/kingdom-alliance.component';
-import { KingdomBreakdownComponent } from './kingdom-breakdown/kingdom-breakdown.component';
 import { KingdomRelationsComponent } from './kingdom-relations/kingdom-relations.component';
-import { KingdomWealthComponent } from './kingdom-wealth/kingdom-wealth.component';
 import { WarCardComponent } from './war-card/war-card.component';
 
 @Component({
   selector: 'app-kingdom',
   imports: [
+    BreakdownComponent,
+    CityTagComponent,
     KingdomAllianceComponent,
-    KingdomBreakdownComponent,
     KingdomRelationsComponent,
-    KingdomWealthComponent,
     NewBadgeComponent,
     NzDescriptionsModule,
     PersonTagComponent,
     RankedStatComponent,
     WarCardComponent,
+    WealthComponent,
   ],
   templateUrl: './kingdom.component.html',
 })
@@ -34,17 +33,17 @@ export class KingdomComponent {
   private readonly _registry = inject(RegistryService);
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
-  // Founder sex: from the save when alive, else fall back to the person registry (registered in a past chapter), else '' → the tag drops the sex icon.
-  protected readonly founderSex = computed(() => {
-    const f = this.kingdom()?.metadata.founder;
-    return f ? (f.sex ?? this._registry.persons()[String(f.id)]?.sex ?? '') : '';
-  });
   // NEW badge on the king when the same featured kingdom crowned a different ruler since the previous chapter.
   protected readonly isNewKing = computed(() => {
     const current = this.kingdom()?.metadata;
     const previous = this._chronicler.previousChapter()?.meta.kingdom?.metadata;
     if (!current?.king || !previous?.king || current.id !== previous.id) return false;
     return current.king.id !== previous.king.id;
+  });
+  // King sex drives the « Reine/Roi » descriptions title — read from the person registry now that `king` is emitted as `{id, name}`.
+  protected readonly kingSex = computed(() => {
+    const k = this.kingdom()?.metadata.king;
+    return k ? this._registry.persons()[String(k.id)]?.sex ?? '' : '';
   });
   // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
   protected readonly optionalStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {

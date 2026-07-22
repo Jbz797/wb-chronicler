@@ -1,8 +1,9 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { SPECIES_COLORS } from '../../../constants';
+import { RegistryService } from '../../../services';
 
 @Component({
   selector: 'app-person-tag',
@@ -11,12 +12,13 @@ import { SPECIES_COLORS } from '../../../constants';
 })
 export class PersonTagComponent {
 
-  public readonly assetId = input.required<string>();
-  public readonly dead = input<boolean>(false);
-  public readonly name = input.required<string>();
-  public readonly profession = input<string>('');
-  public readonly sex = input<string>('');
+  private readonly _registry = inject(RegistryService);
 
-  protected readonly color = computed(() => SPECIES_COLORS[this.assetId()] ?? null);
+  public readonly id = input.required<number>();
+  public readonly name = input.required<string>();
+
+  // Species/sex/profession badge/dead come from the person registry, kept fresh by actor/city/kingdom info.py. `null` until the person is registered.
+  protected readonly person = computed(() => this._registry.persons()[String(this.id())] ?? null);
+  protected readonly color = computed(() => SPECIES_COLORS[this.person()?.asset_id ?? ''] ?? null);
 
 }

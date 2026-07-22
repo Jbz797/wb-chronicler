@@ -1,116 +1,89 @@
-@if (kingdom(); as k) {
+@if (city(); as c) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    @if (k.metadata.king; as king) {
-      <ng-template #kingTitle>
-        <img src="assets/img/professions/king.png" />
-        <span>{{ kingSex() === 'female' ? 'Reine' : 'Roi' }}</span>
-      </ng-template>
-      <nz-descriptions-item [nzTitle]="kingTitle">
-        <app-person-tag [id]="king.id" [name]="king.name" />
-        <app-new-badge [show]="isNewKing()" />
+    @if (c.metadata.leader; as leader) {
+      <nz-descriptions-item [nzTitle]="leaderTitle">
+        <app-person-tag [id]="leader.id" [name]="leader.name" />
+        <app-new-badge [show]="isNewLeader()" />
       </nz-descriptions-item>
     }
 
-    @if (k.metadata.heir; as heir) {
-      <nz-descriptions-item [nzTitle]="heirTitle">
-        <app-person-tag [id]="heir.id" [name]="heir.name" />
-      </nz-descriptions-item>
-    }
-
-    @if (k.metadata.founder; as founder) {
+    @if (c.metadata.founder; as founder) {
       <nz-descriptions-item [nzTitle]="founderTitle">
         <app-person-tag [id]="founder.id" [name]="founder.name" />
       </nz-descriptions-item>
     }
 
-    @if (k.metadata.capital; as capital) {
-      <nz-descriptions-item [nzTitle]="capitalTitle"><app-city-tag [id]="capital.id" [name]="capital.name" /></nz-descriptions-item>
-    }
-
     <nz-descriptions-item [nzTitle]="ageTitle">
-      <app-ranked-stat source="kingdom" stat="age" suffix=" ans" [hideDelta]="true" />
+      <app-ranked-stat source="city" stat="age" suffix=" ans" [hideDelta]="true" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="renownTitle">
-      <app-ranked-stat source="kingdom" stat="renown" />
+      <app-ranked-stat source="city" stat="renown" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="populationTitle">
-      <app-ranked-stat source="kingdom" stat="population" />
+      <app-ranked-stat source="city" stat="population" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="warriorsTitle">
-      <app-ranked-stat source="kingdom" stat="warriors" />
+      <app-ranked-stat source="city" stat="warriors" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="deathsTitle">
-      <app-ranked-stat source="kingdom" stat="deaths" [inverted]="true" />
+      <app-ranked-stat source="city" stat="deaths" [inverted]="true" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="killsTitle">
-      <app-ranked-stat source="kingdom" stat="kills" />
+      <app-ranked-stat source="city" stat="kills" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="renownTotalTitle">
-      <app-ranked-stat source="kingdom" stat="renown_total" />
+      <app-ranked-stat source="city" stat="renown_total" />
     </nz-descriptions-item>
     @for (o of optionalStats(); track o.stat) {
       <ng-template #optionalTitle>
         <img [src]="o.icon" /><span>{{ o.label }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="optionalTitle">
-        <app-ranked-stat source="kingdom" [stat]="o.stat" />
+        <app-ranked-stat source="city" [stat]="o.stat" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item [nzTitle]="citiesTitle">
-      <app-ranked-stat source="kingdom" stat="cities" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="buildingsTitle">
-      <app-ranked-stat source="kingdom" stat="buildings" />
+      <app-ranked-stat source="city" stat="buildings" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="housesTitle">
-      <app-ranked-stat source="kingdom" stat="houses" />
+      <app-ranked-stat source="city" stat="houses" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="housedPctTitle">
-      <app-ranked-stat deltaSuffix="%" source="kingdom" stat="housed_pct" suffix="%" />
+      <app-ranked-stat deltaSuffix="%" source="city" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="territoryTitle">
-      <app-ranked-stat source="kingdom" stat="territory" />
+      <app-ranked-stat source="city" stat="territory" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="foodTitle">
-      <app-ranked-stat source="kingdom" stat="food" />
+      <app-ranked-stat source="city" stat="food" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="foodPerCapitaTitle">
-      <app-ranked-stat numberFormat="1.1-1" source="kingdom" stat="food_per_capita" suffix="/hab" />
+      <app-ranked-stat numberFormat="1.1-1" source="city" stat="food_per_capita" suffix="/hab" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="fedPctTitle">
-      <app-ranked-stat deltaSuffix="%" source="kingdom" stat="fed_pct" suffix="%" />
+      <app-ranked-stat deltaSuffix="%" source="city" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="goodsTitle">
-      <app-ranked-stat source="kingdom" stat="goods" />
+      <app-ranked-stat source="city" stat="goods" />
     </nz-descriptions-item>
   </nz-descriptions>
 
-  <app-breakdown source="kingdom" />
+  <app-breakdown source="city" />
 
-  <app-wealth source="kingdom" />
+  <app-wealth source="city" />
 
-  <app-kingdom-alliance />
-
-  @for (war of k.wars ?? []; track war.id) {
-    <app-war-card [isNew]="startedWarIds().has(war.id)" [war]="war" />
-  }
-
-  <app-kingdom-relations [relations]="k.relations ?? []" />
-
-  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du royaume</span></ng-template>
+  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du village</span></ng-template>
   <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
-  <ng-template #capitalTitle><img src="assets/img/world/capital.png" /><span>Capitale</span></ng-template>
-  <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
   <ng-template #deathsTitle><img src="assets/img/world/deaths.png" /><span>Morts</span></ng-template>
   <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>
   <ng-template #foodTitle><img src="assets/img/world/food.png" /><span>Nourriture</span></ng-template>
   <ng-template #foodPerCapitaTitle><img src="assets/img/world/food_per_capita.png" /><span>Réserves</span></ng-template>
   <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
   <ng-template #goodsTitle><img src="assets/img/world/goods.png" /><span>Biens</span></ng-template>
-  <ng-template #heirTitle><img src="assets/img/world/heir.png" /><span>Héritier</span></ng-template>
   <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
+  <ng-template #leaderTitle><img src="assets/img/professions/leader.png" /><span>Dirigeant</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>

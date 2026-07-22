@@ -1,13 +1,18 @@
 @let r = row();
 @switch (r.key) {
+  @case ('most_populous_village') {
+    @if (r.id !== undefined) {
+      <app-city-tag [id]="r.id" [name]="r.name" />
+    }
+  }
   @case ('most_populous_kingdom') {
     @if (r.id !== undefined) {
       <app-kingdom-tag [id]="r.id" [name]="r.name" />
     }
   }
   @case ('most_renowned_person') {
-    @if (r.asset_id && r.sex) {
-      <app-person-tag [assetId]="r.asset_id" [name]="r.name" [profession]="r.profession ?? ''" [sex]="r.sex" />
+    @if (r.id !== undefined) {
+      <app-person-tag [id]="r.id" [name]="r.name" />
     }
   }
   @case ('dominant_species') {

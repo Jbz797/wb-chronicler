@@ -9,8 +9,9 @@ import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { HISTORY_DIR } from '../../../constants';
 import { ChapterOverviewPanel, World } from '../../../interfaces';
 import { ChroniclerService } from '../../../services';
-import { KingdomTagComponent, PersonTagComponent } from '../../tags';
+import { CityTagComponent, KingdomTagComponent, PersonTagComponent } from '../../tags';
 
+import { CityComponent } from './city/city.component';
 import { FavoriteComponent } from './favorite/favorite.component';
 import { KingdomComponent } from './kingdom/kingdom.component';
 import { WorldStatsComponent } from './world-stats/world-stats.component';
@@ -18,6 +19,8 @@ import { WorldStatsComponent } from './world-stats/world-stats.component';
 @Component({
   selector: 'app-chapter-overview',
   imports: [
+    CityComponent,
+    CityTagComponent,
     FavoriteComponent,
     KingdomComponent,
     KingdomTagComponent,
@@ -40,6 +43,9 @@ export class ChapterOverviewComponent {
   protected readonly activePanel = signal<ChapterOverviewPanel>(this._restoreActivePanel());
   protected readonly world = toSignal(this._http.get<World>(`${HISTORY_DIR}/world.json`));
 
+  // ng-zorro 22 dropped `nzDisabled` for `nzCollapsible`, whose union has no "default" member — `undefined` restores it (cast for `exactOptionalPropertyTypes`).
+  protected collapsible = (enabled: unknown): 'disabled' | 'header' | 'icon' => (enabled ? undefined : 'disabled') as 'disabled';
+
   // Persist the active panel to sessionStorage so it survives reloads and page changes.
   protected onPanelToggle(panel: ChapterOverviewPanel, isActive: boolean): void {
     const next = isActive ? panel : 'world-stats';
@@ -48,7 +54,7 @@ export class ChapterOverviewComponent {
   }
 
   private _isPanel(v: string | null): v is ChapterOverviewPanel {
-    const panels: string[] = ['favorite', 'kingdom', 'world-stats'];
+    const panels: string[] = ['city', 'favorite', 'kingdom', 'world-stats'];
     return panels.includes(v ?? '');
   }
 

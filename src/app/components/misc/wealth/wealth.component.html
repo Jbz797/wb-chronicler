@@ -6,10 +6,10 @@
     <nz-descriptions-item [nzTitle]="shareTitle">{{ s.value === undefined ? '—' : (s.value | compact) }}</nz-descriptions-item>
   }
   <nz-descriptions-item [nzSpan]="2" [nzTitle]="totalTitle">
-    <app-ranked-stat source="kingdom" stat="wealth" />
+    <app-ranked-stat stat="wealth" [source]="source()" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzSpan]="2" [nzTitle]="perCapitaTitle">
-    <app-ranked-stat numberFormat="1.1-1" source="kingdom" stat="wealth_per_capita" suffix="/hab" />
+    <app-ranked-stat numberFormat="1.1-1" stat="wealth_per_capita" suffix="/hab" [source]="source()" />
   </nz-descriptions-item>
 </nz-descriptions>
 
