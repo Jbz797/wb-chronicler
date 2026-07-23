@@ -1,7 +1,7 @@
 import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
-import { CITY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
+import { CHAPTER_REGISTRY, CITY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SAVES_DIR, SPECIES_COLORS } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
 export class MarkedHelpers {
@@ -65,13 +65,13 @@ export class MarkedHelpers {
     const { id, tokens: children } = token as IconToken;
     const info = CITY_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
-    // Capital → crown-star glyph, ordinary settlement → house; both tinted by the kingdom ink. No banner keeps a village lighter than its `[k]` realm.
-    const glyph = `<span class="glyph" style="mask-image: url(assets/img/world/${info?.capital ? 'capital' : 'houses'}.png)"></span>`;
+    // WB crown icon, pre-generated per chapter (kingdom-tinted, capital = gold crown / village = stone rampart). No banner keeps it lighter than its `[k]` realm.
+    const crown = `<img class="crown" src="${SAVES_DIR}/${CHAPTER_REGISTRY.slug}/crowns/c${id}.png" />`;
     const size = info?.size ? `<span class="city-size"><span>${info.size}</span></span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const style = `--city-color: ${info?.color ?? ''}; --city-ink: ${info?.ink ?? ''}`;
-    return `<span class="ant-tag entity-tag city-tag${dead}" style="${style}">${glyph}<span class="entity-name">${name}</span>${size}${species}</span>`;
+    return `<span class="ant-tag entity-tag city-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${size}${species}</span>`;
   }
 
   private static _renderKingdom(this: ParserThis, token: Tokens.Generic): string {

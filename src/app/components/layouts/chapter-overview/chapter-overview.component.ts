@@ -1,14 +1,14 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
-import { HISTORY_DIR } from '../../../constants';
+import { CITY_SIZE_TERMS, HISTORY_DIR } from '../../../constants';
 import { ChapterOverviewPanel, World } from '../../../interfaces';
-import { ChroniclerService } from '../../../services';
+import { ChroniclerService, RegistryService } from '../../../services';
 import { CityTagComponent, KingdomTagComponent, PersonTagComponent } from '../../tags';
 
 import { CityComponent } from './city/city.component';
@@ -37,10 +37,17 @@ export class ChapterOverviewComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _http = inject(HttpClient);
+  private readonly _registry = inject(RegistryService);
 
   protected currentChapter = this._chronicler.currentChapter;
 
   protected readonly activePanel = signal<ChapterOverviewPanel>(this._restoreActivePanel());
+  // Panel title honours the `chronicler.md` population scale — never call a three-soul hamlet a « cité ».
+  protected readonly cityTerm = computed(() => {
+    const id = this.currentChapter()?.meta.city?.metadata.id;
+    const size = id === undefined ? undefined : this._registry.cities()[String(id)]?.size;
+    return (size ? CITY_SIZE_TERMS[size - 1] : undefined) ?? 'Village';
+  });
   protected readonly world = toSignal(this._http.get<World>(`${HISTORY_DIR}/world.json`));
 
   // ng-zorro 22 dropped `nzDisabled` for `nzCollapsible`, whose union has no "default" member — `undefined` restores it (cast for `exactOptionalPropertyTypes`).

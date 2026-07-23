@@ -1,6 +1,6 @@
 @if (city(); as c) {
   <nz-tag class="entity-tag city-tag" [class.dead]="c.dead" [style.--city-color]="c.color" [style.--city-ink]="c.ink" [title]="name()">
-    <span class="glyph" [style.mask-image]="`url(assets/img/world/${c.capital ? 'capital' : 'houses'}.png)`"></span>
+    <img class="crown" [src]="crownSrc()" />
     <span class="entity-name">{{ name() }}</span>
     @if (c.size; as s) {
       <span class="city-size">

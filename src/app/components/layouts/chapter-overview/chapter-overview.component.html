@@ -24,7 +24,7 @@
   </ng-template>
   <ng-template #cityHeader>
     <img class="panel-icon" src="assets/img/world/most_populous_village.png" />
-    <span>Village</span>
+    <span>{{ cityTerm() }}</span>
   </ng-template>
   <ng-template #cityExtra>
     @if (c.meta.city; as city) {

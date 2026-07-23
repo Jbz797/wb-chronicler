@@ -32,6 +32,12 @@ img {
   margin-right: 0;
   padding: 0 5px;
 
+  // WB crown icon (26px-wide sprite) — keep it pixel-crisp and free of the square icon cap below.
+  .crown {
+    image-rendering: pixelated;
+    max-width: none;
+  }
+
   .glyph {
     height: 11.5px;
     mask-position: center;
@@ -56,14 +62,10 @@ img {
   }
 }
 
-// A settlement within its realm — same palette as its `[k]` kingdom (filled, readable on any hue); the house / capital glyph and missing banner set it apart.
+// A settlement within its realm — same palette as its `[k]` kingdom (filled, readable on any hue); the crown icon and missing banner set it apart.
 .ant-tag.city-tag {
   background-color: color-mix(in srgb, var(--city-color), black 40%);
   color: color-mix(in srgb, var(--city-ink), white 40%);
-
-  .glyph {
-    background-color: color-mix(in srgb, var(--city-ink), white 40%);
-  }
 
   // Civ-style population-tier medallion (1-7): a bright ink disc with a bold dark number so it pops off the filled tag.
   .city-size {

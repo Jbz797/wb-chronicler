@@ -2,6 +2,7 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { SAVES_DIR } from '../../../constants';
 import { RegistryService } from '../../../services';
 
 @Component({
@@ -16,7 +17,9 @@ export class CityTagComponent {
   public readonly id = input.required<number>();
   public readonly name = input.required<string>();
 
-  // Visuals (palette, size, species, capital) come from the cities registry, kept fresh by each city/info.py run. `null` until the city is registered.
+  // Visuals (palette, size, species) come from the cities registry, kept fresh by each city/info.py run. `null` until the city is registered.
   protected readonly city = computed(() => this._registry.cities()[String(this.id())] ?? null);
+  // WB crown icon, pre-generated per chapter (kingdom-tinted, capital = gold crown / village = stone rampart).
+  protected readonly crownSrc = computed(() => `${SAVES_DIR}/${this._registry.chapter()}/crowns/c${this.id()}.png`);
 
 }
