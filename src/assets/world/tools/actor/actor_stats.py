@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Shared actor stats pipeline — mirrors `Actor.updateStats` from WB's `Assembly-CSharp.dll`.
 #
 # ─── Maintenance / algorithm reference ───
@@ -22,7 +20,6 @@ from collections import Counter
 from functools import cache
 
 from shared import PROFESSION_KING, UNITS_PER_YEAR, age_thresholds, index_by_id, life_stage, load_data
-
 
 # Genes that round UP on BAD (instead of down).
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}

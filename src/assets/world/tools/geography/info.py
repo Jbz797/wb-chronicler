@@ -5,10 +5,9 @@
 import sys
 from pathlib import Path
 
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import emit, load_save, parse_sections, take_chapter
 from islands import compute_islands_cached
+from shared import emit, load_save, parse_sections, take_chapter
 
 _ALL_SECTIONS = ("islands", "natural_features")
 # Rare geological/mineral landmarks. Common minerals (stone/metals/silver/mythril) and vegetation excluded — too noisy narratively.

@@ -19,97 +19,147 @@ img {
   image-rendering: pixelated;
 }
 
-.ant-tag.entity-tag {
-  align-items: center;
-  border: none;
-  display: inline-flex;
-  font-family: $font-body;
-  font-size: 12.5px;
-  font-variant-caps: small-caps;
-  font-weight: 500;
-  gap: 0.25rem;
-  line-height: 18px;
-  margin-right: 0;
-  padding: 0 5px;
-
-  // WB crown icon (26px-wide sprite) — keep it pixel-crisp and free of the square icon cap below.
-  .crown {
-    image-rendering: pixelated;
-    max-width: none;
-  }
-
-  .glyph {
-    height: 11.5px;
-    mask-position: center;
-    mask-repeat: no-repeat;
-    mask-size: contain;
-    width: 11.5px;
-  }
-
-  img {
-    image-rendering: auto;
-    max-height: 12px;
-    max-width: 12px;
-  }
-}
-
-.ant-tag.kingdom-tag {
-  background-color: color-mix(in srgb, var(--kingdom-color), black 40%);
-  color: color-mix(in srgb, var(--kingdom-ink), white 40%);
-
-  .glyph {
-    background-color: color-mix(in srgb, var(--kingdom-ink), white 40%);
-  }
-}
-
-// A settlement within its realm — same palette as its `[k]` kingdom (filled, readable on any hue); the crown icon and missing banner set it apart.
-.ant-tag.city-tag {
-  background-color: color-mix(in srgb, var(--city-color), black 40%);
-  color: color-mix(in srgb, var(--city-ink), white 40%);
-
-  // Civ-style population-tier medallion (1-7): a bright ink disc with a bold dark number so it pops off the filled tag.
-  .city-size {
+.ant-tag {
+  // Shared base for every entity tag (city / kingdom / person); each `&.<type>-tag` below layers palette and glyphs on top.
+  &.entity-tag {
     align-items: center;
-    background-color: color-mix(in srgb, var(--city-ink), white 40%);
-    border-radius: 50%;
-    border: 1px solid color-mix(in srgb, var(--city-color), black 60%);
-    color: color-mix(in srgb, var(--city-color), black 60%);
+    border: none;
     display: inline-flex;
-    font-weight: 800;
-    height: 14.5px;
-    justify-content: center;
-    width: 14.5px;
+    font-family: $font-body;
+    font-size: 12.5px;
+    font-variant-caps: small-caps;
+    font-weight: 500;
+    gap: 0.25rem;
+    line-height: 18px;
+    margin-right: 0;
+    padding: 0 5px;
 
-    span {
-      left: -0.1px;
+    // WB heraldry sprites (crown, banner) — pixel-crisp and free of the square icon cap below; the banner is a tall portrait, so it earns more height.
+    .banner,
+    .crown {
+      image-rendering: pixelated;
+      max-width: none;
+    }
+
+    // Taller than the tag and lifted so it overhangs the top edge — a flag planted through the plate, as in WB's kingdom list.
+    .banner {
+      max-height: 22px;
       position: relative;
-      top: -0.5px;
+      top: -2px;
+    }
+
+    img {
+      image-rendering: auto;
+      max-height: 12px;
+      max-width: 12px;
+    }
+  }
+
+  // A settlement within its realm — same palette as its `[k]` kingdom (filled, readable on any hue); the crown icon and missing banner set it apart.
+  &.city-tag {
+    background-color: color-mix(in srgb, var(--city-color), black 40%);
+    color: color-mix(in srgb, var(--city-ink), white 40%);
+
+    // Civ-style population-tier medallion (1-7): a bright ink disc with a bold dark number so it pops off the filled tag.
+    .city-size {
+      align-items: center;
+      background-color: color-mix(in srgb, var(--city-ink), white 40%);
+      border: 1px solid color-mix(in srgb, var(--city-color), black 60%);
+      border-radius: 50%;
+      color: color-mix(in srgb, var(--city-color), black 60%);
+      display: inline-flex;
+      font-weight: 800;
+      height: 14.5px;
+      justify-content: center;
+      width: 14.5px;
+
+      span {
+        left: -0.1px;
+        position: relative;
+        top: -0.5px;
+      }
+    }
+  }
+
+  // Razed / fallen: a city or kingdom lost since this chapter — tag drains to ash, name struck through, still named in history.
+  &.city-tag.dead,
+  &.kingdom-tag.dead {
+    filter: grayscale(0.85);
+    opacity: 0.7;
+
+    .entity-name {
+      text-decoration: line-through;
+    }
+  }
+
+  // WB's kingdom-list look: the game's own plate colour, name in the realm's `getColorText` hue (WB lightens it when too dark, so it stays legible), banner alongside.
+  &.kingdom-tag {
+    background-color: $kingdom-plate;
+    color: var(--kingdom-color);
+
+    // City-count badge — mirrors the city-tag size medallion: a bright disc (the realm's own hue) with a bold dark number, popping off the dark plate.
+    .kingdom-cities {
+      align-items: center;
+      background-color: var(--kingdom-color);
+      border-radius: 2px;
+      color: $kingdom-plate;
+      display: inline-flex;
+      font-weight: 800;
+      height: 14.5px;
+      justify-content: center;
+      width: 14.5px;
+
+      span {
+        position: relative;
+        top: -0.5px;
+      }
+    }
+
+    // Top-3 by population: a medal border that shimmers. `--medal` drives the ring; the animation flares it toward white. Disabled under reduced-motion (ring stays).
+    &.rank-1 {
+      --medal: #{$medal-gold};
+    }
+
+    &.rank-2 {
+      --medal: #{$medal-silver};
+    }
+
+    &.rank-3 {
+      --medal: #{$medal-bronze};
+    }
+
+    &.rank-1,
+    &.rank-2,
+    &.rank-3 {
+      animation: medal-shimmer 2.4s ease-in-out infinite;
+      border: 1.5px solid var(--medal);
+    }
+  }
+
+  // Icons keep their original sprite colours; only the name + background take the species hue.
+  &.person-tag {
+    background-color: $paper;
+    border: 1px solid var(--person-color);
+    color: color-mix(in srgb, var(--person-color), black 30%);
+    font-weight: 600;
+
+    // Deceased: name struck through + drained toward gray (the tombstone icon replaces the profession badge).
+    &.dead .entity-name {
+      color: color-mix(in srgb, var(--person-color), gray 70%);
+      text-decoration: line-through;
     }
   }
 }
 
-// Icons keep their original sprite colours; only the name + background take the species hue.
-.ant-tag.person-tag {
-  box-shadow: inset 0 0 0 1px var(--person-color);
-  background-color: $paper;
-  color: color-mix(in srgb, var(--person-color), black 30%);
-  font-weight: 600;
-
-  // Deceased: name struck through + drained toward gray (the tombstone icon replaces the profession badge).
-  &.dead .entity-name {
-    color: color-mix(in srgb, var(--person-color), gray 70%);
-    text-decoration: line-through;
+// Medal border twinkle: the ring flares near-white then settles — a sparkle on the podium tags.
+@keyframes medal-shimmer {
+  0%,
+  100% {
+    border-color: var(--medal);
   }
-}
 
-// Razed / fallen: the filled tag drains to ash and the name is struck through — a settlement razed or a kingdom destroyed since this chapter, still named in history.
-.ant-tag.city-tag.dead,
-.ant-tag.kingdom-tag.dead {
-  filter: grayscale(0.85);
-  opacity: 0.7;
-
-  .entity-name {
-    text-decoration: line-through;
+  50% {
+    border-color: color-mix(in srgb, var(--medal), white 55%);
   }
 }
 

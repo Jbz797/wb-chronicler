@@ -7,13 +7,11 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "actor"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, demographics
 from islands import compute_islands_cached
-
 from shared import (
     HAPPY_MIN_HAPPINESS,
     NON_FOOD_SPECIES,

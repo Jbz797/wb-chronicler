@@ -104,11 +104,6 @@
         top: -1px;
       }
 
-      .ant-descriptions-item-content app-city-tag,
-      .ant-descriptions-item-content app-kingdom-tag {
-        display: block;
-      }
-
       .ant-descriptions-header {
         margin-bottom: 2px;
       }
@@ -141,9 +136,25 @@
           position: relative;
           top: -1px;
         }
+
+        &.section-header {
+          background: $background;
+          color: $primary;
+          font-size: 0.85rem;
+          letter-spacing: $letter-spacing-wide;
+          line-height: 0.75;
+          padding: 6px 0 !important;
+          text-align: center;
+          text-transform: uppercase;
+        }
       }
 
       .ant-descriptions-item-content {
+        app-city-tag,
+        app-kingdom-tag {
+          display: block;
+        }
+
         img.podium {
           margin-left: 0.25rem;
           position: relative;
@@ -153,30 +164,19 @@
         .entity-tag {
           margin: 0;
         }
-      }
 
-      .ant-descriptions-item-content:has(.entity-tag):has(app-new-badge) {
-        white-space: nowrap;
+        &:has(.entity-tag):has(app-new-badge) {
+          white-space: nowrap;
 
-        .entity-tag {
-          max-width: 100px;
+          .entity-tag {
+            max-width: 100px;
 
-          .entity-name {
-            overflow: hidden;
-            text-overflow: ellipsis;
+            .entity-name {
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
           }
         }
-      }
-
-      .ant-descriptions-item-label.section-header {
-        background: $background;
-        color: $primary;
-        font-size: 0.85rem;
-        letter-spacing: $letter-spacing-wide;
-        line-height: 0.75;
-        padding: 6px 0 !important;
-        text-align: center;
-        text-transform: uppercase;
       }
 
       .ant-descriptions-item-label,

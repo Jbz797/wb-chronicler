@@ -1,0 +1,5 @@
+# Ruff for the chronicler py tools: `line-length` mirrors VS Code's; `known-first-party` pins isort for the `sys.path` siblings (else editor ≠ CLI).
+
+line-length = 165
+[lint.isort]
+known-first-party = ["actor_stats", "grid", "islands", "shared", "visuals"]

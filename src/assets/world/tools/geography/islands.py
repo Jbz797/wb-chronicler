@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Reusable island detection — mirrors WB's `IslandsCalculator.countLandIslands`. Consumed by `geography/info.py` and `actor/info.py` (per-actor island_id).
 #
 # Algorithm (extracted from `Assembly-CSharp.dll`):
@@ -13,7 +11,6 @@ from collections import Counter, deque
 from pathlib import Path
 
 from grid import decode_tile_grid, tile_biome, tile_kind, tile_layer
-
 
 _BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})  # WB `TileTypeBase.block` tiles — block diagonals, which splits regions.
 _CACHE_DIR = Path(__file__).parent.parent / ".cache"  # Sibling of `actor/`, `kingdom/`, … — gitignored via root `.gitignore`.

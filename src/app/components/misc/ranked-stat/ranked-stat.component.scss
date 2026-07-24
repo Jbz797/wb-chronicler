@@ -1,21 +1,21 @@
 .stat-row {
   display: flex;
   justify-content: space-between;
-}
 
-.rank {
-  position: relative;
-  top: -1px;
+  .rank {
+    position: relative;
+    top: -1px;
 
-  &:last-child {
-    margin-right: 3px;
-  }
+    &:last-child {
+      margin-right: 3px;
+    }
 
-  &.rank-down {
-    color: #ff4d4f;
-  }
+    &.rank-down {
+      color: #ff4d4f;
+    }
 
-  &.rank-up {
-    color: #52c41a;
+    &.rank-up {
+      color: #52c41a;
+    }
   }
 }

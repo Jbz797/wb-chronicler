@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Tile-level primitives shared across geography consumers (`islands.py`, `tiles/info.py`, …). No save-wide state, no caching — just functions over a tile name or grid.
 
 # Soil gradients (`low`/`high`) and water depths (`shallow`/`coastal`/`deep`). Other kinds encode their verticality in the kind itself.

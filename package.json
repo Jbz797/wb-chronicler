@@ -46,12 +46,12 @@
     "zone.js": "0.16.2"
   },
   "devDependencies": {
-    "@angular/build": "22.0.7",
+    "@angular/build": "22.0.8",
     "@angular/compiler-cli": "22.0.8",
     "@angular/language-service": "22.0.8",
     "chokidar": "5.0.0",
     "concurrently": "10.0.3",
-    "eslint-config-angular-strict": "22.1.5",
+    "eslint-config-angular-strict": "22.1.6",
     "less": "4.8.0",
     "prettier": "3.9.6",
     "stylelint": "17.14.1",

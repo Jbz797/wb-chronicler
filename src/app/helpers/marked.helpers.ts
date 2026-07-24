@@ -78,15 +78,15 @@ export class MarkedHelpers {
     const { id, tokens: children } = token as IconToken;
     const info = KINGDOM_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
-    const crown = '<span class="glyph" style="mask-image: url(assets/img/world/kingdom.png)"></span>';
-    const banner = info
-      ? `<span class="glyph" style="mask-image: url(assets/img/banners/${info.banner_icon}.png)"></span>`
-      : '';
+    // WB banner, pre-generated per chapter (species background + icon, kingdom-tinted) — the real heraldry, not a monochrome glyph.
+    const banner = `<img class="banner" src="${SAVES_DIR}/${CHAPTER_REGISTRY.slug}/banners/k${id}.png" />`;
+    const cities = info?.cities ? `<span class="kingdom-cities"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const rank = info?.rank ? ` rank-${info.rank}` : ''; // top-3 population → gold/silver/bronze shimmering border
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
-    const style = `--kingdom-color: ${info?.color ?? ''}; --kingdom-ink: ${info?.ink ?? ''}`;
+    const style = `--kingdom-color: ${info?.color ?? ''}`;
     const label = `<span class="entity-name">${name}</span>`;
-    return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${crown}${label}${banner}${species}</span>`;
+    return `<span class="ant-tag entity-tag kingdom-tag${dead}${rank}" style="${style}">${banner}${label}${cities}${species}</span>`;
   }
 
   private static _renderPerson(this: ParserThis, token: Tokens.Generic): string {

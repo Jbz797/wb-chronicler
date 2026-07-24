@@ -2,6 +2,7 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { SAVES_DIR } from '../../../constants';
 import { RegistryService } from '../../../services';
 
 @Component({
@@ -16,7 +17,9 @@ export class KingdomTagComponent {
   public readonly id = input.required<number>();
   public readonly name = input.required<string>();
 
-  // Visuals (banner, palette, species) come from the kingdoms registry, kept fresh by each kingdom/info.py run. `null` until the kingdom is registered.
+  // WB banner, pre-generated per chapter (species background + icon, kingdom-tinted).
+  protected readonly bannerSrc = computed(() => `${SAVES_DIR}/${this._registry.chapter()}/banners/k${this.id()}.png`);
+  // Visuals (palette, species) come from the kingdoms registry, kept fresh by each world/info.py run. `null` until the kingdom is registered.
   protected readonly kingdom = computed(() => this._registry.kingdoms()[String(this.id())] ?? null);
 
 }

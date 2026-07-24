@@ -6,7 +6,6 @@ import re
 import sys
 from pathlib import Path
 
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
 from actor_stats import build_actor_stats_context, compute_actor_stats
@@ -27,7 +26,6 @@ from shared import (
     sex_label,
     take_chapter,
 )
-
 
 _ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.

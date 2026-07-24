@@ -9,12 +9,11 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
-from shared import ZONE_TILES, emit, entity_ref, index_by_id, load_save, parse_sections, take_chapter
 from grid import decode_tile_grid, tile_biome, tile_elevation, tile_kind, tile_layer
 from islands import compute_islands_cached
+from shared import ZONE_TILES, emit, entity_ref, index_by_id, load_save, parse_sections, take_chapter
 
 _ALL_SECTIONS = ("actors", "buildings", "context", "distances", "tile_info")
 _MAX_RADIUS = 2

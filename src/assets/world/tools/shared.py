@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Shared constants/helpers reused by ≥2 of `actor/`, `city/`, `kingdom/`, `world/`, `geography/`, `tiles/` `info.py` — `sys.path`-injected from parent dir; see each bootstrap.
 # Rule: an exported symbol must serve ≥2 scripts; single-script helpers live in that script.
 
@@ -11,7 +9,6 @@ from collections import Counter
 from functools import cache
 from pathlib import Path
 
-
 HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20. (Emotionless non-civ actors also count — ignored.)
 NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
@@ -21,7 +18,7 @@ SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `
 SAVES_DIR = Path(__file__).parent.parent / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `world/info.py` needs it to reach back to `C<n-1>`.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
-ZONE_TILES = 8  # WB `TileZone` side in tiles: city `zones` are stored in zone units — tile coords divide by this, zone centres are `z * ZONE_TILES + ZONE_TILES // 2`.
+ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
 # Live game save by default; a trailing `C<n>` script arg (via `take_chapter`) overrides it to a chapter's archived `map.wbox`. `WB_SAVE` still forces a path.
 _CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
