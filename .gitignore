@@ -5,6 +5,8 @@ __pycache__/
 .vscode
 .yarn
 dist/
+map_stats.s3db
 node_modules/
 saves/
+todo.md
 world.json

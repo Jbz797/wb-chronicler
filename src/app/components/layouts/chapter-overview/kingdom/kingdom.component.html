@@ -27,6 +27,9 @@
       <nz-descriptions-item [nzTitle]="capitalTitle"><app-city-tag [id]="capital.id" [name]="capital.name" /></nz-descriptions-item>
     }
 
+    <nz-descriptions-item [nzTitle]="scoreRankTitle">
+      <app-ranked-stat source="kingdom" stat="score_rank" suffix="ᵉ" [inverted]="true" [showRank]="false" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat source="kingdom" stat="age" suffix=" ans" [hideDelta]="true" />
     </nz-descriptions-item>
@@ -114,6 +117,7 @@
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
+  <ng-template #scoreRankTitle><img src="assets/img/podium/1.png" /><span>Classement</span></ng-template>
   <ng-template #territoryTitle><img src="assets/img/world/territory.png" /><span>Territoire</span></ng-template>
   <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
 }

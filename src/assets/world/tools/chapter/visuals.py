@@ -1,4 +1,4 @@
-# Per-chapter PNG visuals composed from raw sprite parts (`tools/sprites/`): city crowns + kingdom banners, kingdom-tinted à la WB. Invoked by `world/info.py`.
+# Per-chapter crown/banner PNGs composed from raw sprite parts (`tools/sprites/`), kingdom-tinted à la WB. Invoked by `chapter/registries.py`.
 # Both writers carry the previous chapter's PNGs forward first, then overwrite the living entities — razed/destroyed entities keep their last-known art.
 
 from pathlib import Path

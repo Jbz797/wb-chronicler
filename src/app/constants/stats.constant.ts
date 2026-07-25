@@ -70,8 +70,8 @@ export const KINGDOM_META_STATS = new Set<RankedStatKind>([
   'age', 'buildings', 'cities', 'deaths', 'food', 'gold', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
 ]);
 
-// Ranked stats shown raw (age in years, `%`, per-capita ratio) — every other kingdom/city/alliance stat compacts to `X.X K` above 100, like the world panel.
-export const NON_COMPACT_STATS = new Set<RankedStatKind>(['age', 'fed_pct', 'food_per_capita', 'housed_pct', 'wealth_per_capita']);
+// Ranked stats shown raw (age, `%`, per-capita, placement) — every other kingdom/city/alliance stat compacts to `X.X K` above 100, like the world panel.
+export const NON_COMPACT_STATS = new Set<RankedStatKind>(['age', 'fed_pct', 'food_per_capita', 'housed_pct', 'score_rank', 'wealth_per_capita']);
 
 // Favorite combat stats — damage / defense / attack rhythm.
 export const COMBAT_STATS: StatConfig[] = [
@@ -96,7 +96,7 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
 export const LEADERS: { icon?: string; key: LeaderKind; label: string }[] = [
   { key: 'most_renowned_person', label: 'Perso. illustre' },
   { key: 'most_populous_village', label: 'Village peuplé' },
-  { key: 'most_populous_kingdom', label: 'Roy. peuplé' },
+  { icon: 'kingdom', key: 'most_powerful_kingdom', label: 'Roy. dominant' },
   { key: 'most_renowned_clan', label: 'Clan illustre' },
   { icon: 'families', key: 'most_renowned_family', label: 'Famille illustre' },
   { icon: 'species', key: 'dominant_species', label: 'Espèce' },

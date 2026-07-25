@@ -85,6 +85,7 @@ export class RankedStatComponent {
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
       const key = this.stat();
+      if (key === 'score_rank') return this._snap(k.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
       if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
       if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat], k.ranks?.[key as KingdomMetaStat]);
       const pk = key as PopulationStat;

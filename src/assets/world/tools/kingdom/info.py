@@ -26,6 +26,7 @@ from shared import (
     emit,
     food_resources,
     index_by_id,
+    kingdom_score_ranks,
     load_data,
     load_save,
     parse_sections,
@@ -54,7 +55,7 @@ _OPINION_CONSTANTS = load_data("opinion-constants.json")
 
 # The kingdom's alliance and its other members (`None` if unaligned). `population`/`renown` sum the members (WB tracks neither), ranked top-3; `motto` often absent.
 def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
-    kid = kingdom.get("id")
+    kid = kingdom["id"]
     alliance = next((a for a in save.get("alliances", []) if kid in (a.get("kingdoms") or [])), None)
 
     if alliance is None:
@@ -85,7 +86,7 @@ def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
 
 # Chronicler-only: the kingdom's settlements, most populous first.
 def _build_cities(kingdom: dict, ctx: dict) -> list[dict]:
-    kid = kingdom.get("id")
+    kid = kingdom["id"]
     cities = [c for c in ctx["cities_by_id"].values() if c.get("kingdomID") == kid]
     out = [{"id": c["id"], "name": c.get("name") or f"#{c['id']}", "population": ctx["populations_by_city"][c["id"]]} for c in cities]
     return sorted(out, key=lambda c: (-c["population"], c["id"]))
@@ -252,7 +253,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
 def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
-    kid = kingdom.get("id")
+    kid = kingdom["id"]
     age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
     _, island_lookup = compute_islands_cached(save, ctx["save_path"])
 
@@ -306,6 +307,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
         "renown": kingdom.get("renown", 0),
+        "score_rank": kingdom_score_ranks(save).get(kid),  # Rank (1 = strongest) on the composite power score — UI shows the placement, not the total.
         **taxes,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
         "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
@@ -314,7 +316,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
 # Tiers/men/couples via `demographics`; `nobles` = kings + leaders + captains; `sick`/`infected` = WB `calculateIsSick` (`infected` ⊂ `sick`).
 def _build_population(kingdom: dict, ctx: dict) -> dict:
-    kid = kingdom.get("id")
+    kid = kingdom["id"]
 
     actors = ctx["actors_by_kingdom"].get(kid, [])
     demo = demographics(actors, ctx)
@@ -359,7 +361,7 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
 
 # Diplomatic ties involving this kingdom. Status derived from alliances/wars cross-ref (WB only persists pair + timestamps).
 def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
-    kid = kingdom.get("id")
+    kid = kingdom["id"]
     alliances = save.get("alliances", [])
     ongoing_wars = [w for w in save.get("wars", []) if not w.get("winner")]
     war_sides = [_war_sides(w) for w in ongoing_wars]  # Built once, reused by `is_enemy` + every `_compute_opinion` below.
@@ -406,7 +408,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
 
 # Ongoing wars involving this kingdom (as attacker or defender). Concluded wars are skipped (`winner` is set when a war ends).
 def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
-    kid = kingdom.get("id")
+    kid = kingdom["id"]
     kingdoms_by_id = ctx["kingdoms_by_id"]
     alliances = save.get("alliances", [])
 

@@ -81,12 +81,12 @@ export class MarkedHelpers {
     // WB banner, pre-generated per chapter (species background + icon, kingdom-tinted) — the real heraldry, not a monochrome glyph.
     const banner = `<img class="banner" src="${SAVES_DIR}/${CHAPTER_REGISTRY.slug}/banners/k${id}.png" />`;
     const cities = info?.cities ? `<span class="kingdom-cities"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
+    const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 population → gold/silver/bronze podium medal
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const rank = info?.rank ? ` rank-${info.rank}` : ''; // top-3 population → gold/silver/bronze shimmering border
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const style = `--kingdom-color: ${info?.color ?? ''}`;
     const label = `<span class="entity-name">${name}</span>`;
-    return `<span class="ant-tag entity-tag kingdom-tag${dead}${rank}" style="${style}">${banner}${label}${cities}${species}</span>`;
+    return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
   }
 
   private static _renderPerson(this: ParserThis, token: Tokens.Generic): string {

@@ -5,9 +5,9 @@
       <app-city-tag [id]="r.id" [name]="r.name" />
     }
   }
-  @case ('most_populous_kingdom') {
+  @case ('most_powerful_kingdom') {
     @if (r.id !== undefined) {
-      <app-kingdom-tag [id]="r.id" [name]="r.name" />
+      <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
   }
   @case ('most_renowned_person') {

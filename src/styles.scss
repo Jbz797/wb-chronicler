@@ -30,9 +30,11 @@ img {
     font-variant-caps: small-caps;
     font-weight: 500;
     gap: 0.25rem;
+    height: 20px;
     line-height: 18px;
     margin-right: 0;
     padding: 0 5px;
+    vertical-align: text-top; // Top-align every tag (all 20px) — else the kingdom-tag's tall banner drags its baseline out of line with the prose.
 
     // WB heraldry sprites (crown, banner) — pixel-crisp and free of the square icon cap below; the banner is a tall portrait, so it earns more height.
     .banner,
@@ -50,8 +52,8 @@ img {
 
     img {
       image-rendering: auto;
-      max-height: 12px;
-      max-width: 12px;
+      max-height: 14px;
+      max-width: 14px;
     }
   }
 
@@ -115,24 +117,11 @@ img {
       }
     }
 
-    // Top-3 by population: a medal border that shimmers. `--medal` drives the ring; the animation flares it toward white. Disabled under reduced-motion (ring stays).
-    &.rank-1 {
-      --medal: #{$medal-gold};
-    }
-
-    &.rank-2 {
-      --medal: #{$medal-silver};
-    }
-
-    &.rank-3 {
-      --medal: #{$medal-bronze};
-    }
-
-    &.rank-1,
-    &.rank-2,
-    &.rank-3 {
-      animation: medal-shimmer 2.4s ease-in-out infinite;
-      border: 1.5px solid var(--medal);
+    // Top-3 by population: the gold/silver/bronze podium medal (the sprite the stat ranks use), sat by the city-count badge so the standing reads at a glance.
+    .medal {
+      image-rendering: pixelated;
+      max-height: 15px;
+      max-width: none;
     }
   }
 
@@ -148,18 +137,6 @@ img {
       color: color-mix(in srgb, var(--person-color), gray 70%);
       text-decoration: line-through;
     }
-  }
-}
-
-// Medal border twinkle: the ring flares near-white then settles — a sparkle on the podium tags.
-@keyframes medal-shimmer {
-  0%,
-  100% {
-    border-color: var(--medal);
-  }
-
-  50% {
-    border-color: color-mix(in srgb, var(--medal), white 55%);
   }
 }
 

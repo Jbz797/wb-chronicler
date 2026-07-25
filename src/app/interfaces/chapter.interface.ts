@@ -291,6 +291,7 @@ interface KingdomMetadata {
   king?: { id: number; money: number; name: string };
   name: string;
   renown: number;
+  score_rank: number;
   territory: number;
   wealth: number;
 }

@@ -101,6 +101,68 @@ def index_by_id(records: list[dict]) -> dict:
     return {record["id"]: record for record in records}
 
 
+# Composite « kingdom power » ranking → `{kingdom id: place}` (1 = strongest) over living kingdoms, id-tiebroken (distinct). Feeds the top-3 tag medal
+# (`world/info.py`) + featured standing (`kingdom/info.py`). Ten dims — size (population, territory), might (warriors, kills, wars won),
+# wealth (coins + gold ore), prestige (renown, culture/language/religion traits, foundings), reach (10/book + reads) — each ranks N (N … 1, 0 → 0); totals summed.
+def kingdom_score_ranks(save: dict) -> dict[int, int]:
+    kingdoms = save.get("kingdoms") or []
+    ids = [k["id"] for k in kingdoms]
+    if not ids:
+        return {}
+    actors_by_kingdom: dict[int, list] = {}
+    for actor in save.get("actors_data") or []:
+        if (kid := actor.get("civ_kingdom_id")) and not (actor.get("asset_id") or "").startswith("boat_"):
+            actors_by_kingdom.setdefault(kid, []).append(actor)
+    cities = save.get("cities") or []
+    cities_by_id = index_by_id(cities)
+    territory: Counter = Counter()
+    for city in cities:
+        if (kid := city.get("kingdomID")) is not None:
+            territory[kid] += len(city.get("zones") or [])
+    gold: Counter = Counter()  # gold ore stockpiled in a kingdom's buildings; each building carries its `cityID`, so no spatial lookup
+    for building in save.get("buildings") or []:
+        if (city := cities_by_id.get(building.get("cityID"))) and (kid := city.get("kingdomID")):
+            for resource in (building.get("resources") or {}).get("saved_resources") or []:
+                if resource.get("id") == "gold":
+                    gold[kid] += resource.get("amount", 0)
+    wars_won: Counter = Counter()
+    for war in save.get("wars") or []:
+        if (winner := war.get("winner")) == 1:
+            wars_won[war.get("main_attacker")] += 1
+        elif winner == 2:
+            wars_won[war.get("main_defender")] += 1
+    reach: Counter = Counter()  # 10 per authored book + how widely it's read
+    for book in save.get("books") or []:
+        if (kid := book.get("author_kingdom_id")) is not None:
+            reach[kid] += 10 + (book.get("times_read") or 0)
+    traits = {coll: {x["id"]: len(x.get("saved_traits") or []) for x in save.get(coll) or []} for coll in ("cultures", "languages", "religions")}
+    foundings: Counter = Counter(item.get("creator_kingdom_id") for coll in ("cultures", "languages", "religions") for item in save.get(coll) or [])
+    dimensions = (
+        foundings,
+        reach,
+        territory,
+        wars_won,
+        {k["id"]: k.get("total_kills", 0) for k in kingdoms},
+        {k["id"]: k.get("renown", 0) for k in kingdoms},
+        {
+            k["id"]: traits["cultures"].get(k.get("id_culture"), 0)
+            + traits["languages"].get(k.get("id_language"), 0)
+            + traits["religions"].get(k.get("id_religion"), 0)
+            for k in kingdoms
+        },
+        {kid: len(actors_by_kingdom.get(kid, [])) for kid in ids},
+        {kid: sum(a.get("profession") == PROFESSION_WARRIOR for a in actors_by_kingdom.get(kid, [])) for kid in ids},
+        {kid: gold.get(kid, 0) + sum(a.get("money") or 0 for a in actors_by_kingdom.get(kid, [])) for kid in ids},
+    )
+    totals: Counter = Counter()
+    for values in dimensions:  # rank points per dimension: N − (kingdoms strictly ahead); a value of 0 sits out
+        for kid in ids:
+            if (own := values.get(kid, 0)) > 0:
+                totals[kid] += len(ids) - sum(values.get(other, 0) > own for other in ids)
+    order = sorted(ids, key=lambda kid: (-totals[kid], kid))
+    return {kid: place + 1 for place, kid in enumerate(order)}
+
+
 # Narrative age tier for kingdom demographics: baby/child/teen from `age_adult` (÷8, ÷2, ·1); `elder` = WB `isPrettyOld` (age/lifespan > 0.7).
 def life_stage(age: int, age_adult: float, lifespan: float) -> str:
     if age < age_adult / 8:

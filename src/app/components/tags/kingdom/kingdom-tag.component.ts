@@ -15,6 +15,7 @@ export class KingdomTagComponent {
   private readonly _registry = inject(RegistryService);
 
   public readonly id = input.required<number>();
+  public readonly medal = input(true); // Podium medal shown by default; hidden in the world « Palmarès » where the kingdom is always the winner (gold, redundant).
   public readonly name = input.required<string>();
 
   // WB banner, pre-generated per chapter (species background + icon, kingdom-tinted).
