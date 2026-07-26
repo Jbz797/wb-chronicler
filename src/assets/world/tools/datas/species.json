@@ -2343,6 +2343,7 @@
   "dwarf": {
     "description": "Master craftsmen who never forget a grudge",
     "name": "Nain",
+    "playable": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2361,6 +2362,7 @@
   "elf": {
     "description": "Mystical beings with a superiority complex and great hair",
     "name": "Elfe",
+    "playable": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2704,6 +2706,7 @@
   "human": {
     "description": "Masters of adaptation and bad decisions",
     "name": "Humain",
+    "playable": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2903,6 +2906,7 @@
   "orc": {
     "description": "Warriors with a heart of gold and a head of stone",
     "name": "Orc",
+    "playable": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
