@@ -74,6 +74,9 @@
     <nz-descriptions-item [nzTitle]="territoryTitle">
       <app-ranked-stat source="kingdom" stat="territory" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="boatsTitle">
+      <app-ranked-stat source="kingdom" stat="boats" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="foodTitle">
       <app-ranked-stat source="kingdom" stat="food" />
     </nz-descriptions-item>
@@ -101,6 +104,7 @@
   <app-kingdom-relations [relations]="k.relations ?? []" />
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du royaume</span></ng-template>
+  <ng-template #boatsTitle><img src="assets/img/world/boats.png" /><span>Bateaux</span></ng-template>
   <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
   <ng-template #capitalTitle><img src="assets/img/world/capital.png" /><span>Capitale</span></ng-template>
   <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>

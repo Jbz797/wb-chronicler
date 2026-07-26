@@ -12,7 +12,7 @@ from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import SAVES_DIR, index_by_id, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
+from shared import SAVES_DIR, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 from visuals import lighten_if_dark, write_banners, write_crowns
 
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
@@ -23,19 +23,21 @@ def _build_registries(save: dict, prev: dict) -> dict:
     actors = save.get("actors_data") or []
     cities = save.get("cities") or []
     kingdoms = save.get("kingdoms") or []
-    actors_by_city: dict[int, list] = {}
-    actors_by_kingdom: dict[int, list] = {}
     captain_ids = {c for army in save.get("armies") or [] if (c := army.get("id_captain"))}  # O(1) captain lookup for `resolve_profession` in the per-actor loop
     kingdoms_by_id = index_by_id(kingdoms)
     persons: dict[str, dict] = {}
 
+    # Entries only need a headcount and the dominant species, so tally asset_ids straight away rather than keeping every member around.
+    species_by_city: dict[int, Counter] = {}
+    species_by_kingdom: dict[int, Counter] = {}
+
     for a in actors:
-        if (a.get("asset_id") or "").startswith("boat_"):
+        if is_boat(a):
             continue
         if (cid := a.get("cityID")) is not None:
-            actors_by_city.setdefault(cid, []).append(a)
+            species_by_city.setdefault(cid, Counter())[a.get("asset_id")] += 1
         if kid := a.get("civ_kingdom_id"):
-            actors_by_kingdom.setdefault(kid, []).append(a)
+            species_by_kingdom.setdefault(kid, Counter())[a.get("asset_id")] += 1
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
         if entry := _person_entry(a, resolve_profession(a, save, captain_ids)):
             persons[str(a["id"])] = entry
@@ -43,9 +45,10 @@ def _build_registries(save: dict, prev: dict) -> dict:
     cities_per_kingdom: Counter = Counter(kid for c in cities if (kid := c.get("kingdomID")) is not None)
     rank_by_kingdom = {kid: rank for kid, rank in kingdom_score_ranks(save).items() if rank <= 3}  # top-3 of the composite power score → gold/silver/bronze medal
 
-    city_registry = {str(c["id"]): _city_entry(c, actors_by_city.get(c["id"], []), kingdoms_by_id.get(c.get("kingdomID"))) for c in cities}
+    city_registry = {str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID"))) for c in cities}
     kingdom_registry = {
-        str(k["id"]): _kingdom_visuals(k, actors_by_kingdom.get(k["id"], []), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"])) for k in kingdoms
+        str(k["id"]): _kingdom_visuals(k, species_by_kingdom.get(k["id"], Counter()), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"]))
+        for k in kingdoms
     }
 
     out = {
@@ -64,10 +67,10 @@ def _build_registries(save: dict, prev: dict) -> dict:
 
 
 # City registry entry (`[c id Nom]` tag visuals + last-known name): realm palette, size tier, dominant species; no capital flag — the crown PNG encodes it.
-def _city_entry(city: dict, actors_of_city: list[dict], kingdom: dict | None) -> dict:
+def _city_entry(city: dict, species: Counter, kingdom: dict | None) -> dict:
     color, ink = _kingdom_tag_colors(kingdom.get("color_id", "")) if kingdom else (None, None)
-    species = Counter(a.get("asset_id") for a in actors_of_city).most_common(1)
-    return {"color": color, "ink": ink, "name": city.get("name"), "size": _size_tier(len(actors_of_city)), "species": species[0][0] if species else None}
+    dominant = species.most_common(1)
+    return {"color": color, "ink": ink, "name": city.get("name"), "size": _size_tier(species.total()), "species": dominant[0][0] if dominant else None}
 
 
 # Kingdom tag palette: bg = darkest of 4 hues, ink = lightest (contrast, `colors-all.json`), else `(None, None)`. Cached — a kingdom's cities share one `color_id`.
@@ -86,9 +89,9 @@ def _kingdom_text_color(color_id) -> str | None:
 
 
 # Kingdom registry entry: name colour (`getColorText`), city-count badge, top-3 `rank`, species — banner in `banners/k<id>.png`, `dead` from the merge.
-def _kingdom_visuals(kingdom: dict, actors_of_kingdom: list[dict], city_count: int, rank: int | None) -> dict:
-    species = Counter(a.get("asset_id") for a in actors_of_kingdom).most_common(1)
-    entry: dict = {"color": _kingdom_text_color(kingdom.get("color_id", "")), "name": kingdom.get("name"), "species": species[0][0] if species else None}
+def _kingdom_visuals(kingdom: dict, species: Counter, city_count: int, rank: int | None) -> dict:
+    dominant = species.most_common(1)
+    entry: dict = {"color": _kingdom_text_color(kingdom.get("color_id", "")), "name": kingdom.get("name"), "species": dominant[0][0] if dominant else None}
     if city_count:  # a defunct kingdom can momentarily hold none — omit the badge rather than show a `0`
         entry["cities"] = city_count
     if rank is not None:  # top-3 by composite power score (`kingdom_score_ranks`) — drives the gold/silver/bronze podium medal
@@ -105,10 +108,8 @@ def _merge(prev: dict, live: dict) -> dict:
     return {**{k: {**{f: val for f, val in v.items() if f != "rank"}, "dead": True} for k, v in prev.items()}, **live}
 
 
-# Person registry entry (`[p id]` tag visuals): species + sex + non-unit profession. `dead` added by the merge; boats → None.
-def _person_entry(actor: dict, profession: str | None) -> dict | None:
-    if (actor.get("asset_id") or "").startswith("boat_"):
-        return None
+# Person registry entry (`[p id]` tag visuals): species + sex + non-unit profession. `dead` is added by the merge; the caller has already filtered boats out.
+def _person_entry(actor: dict, profession: str | None) -> dict:
     entry = {"asset_id": actor.get("asset_id"), "sex": sex_label(actor)}
     if name := actor.get("name"):  # Plenty of actors are unnamed — omit rather than store a placeholder; the tag's inline name stays the fallback.
         entry["name"] = name
@@ -139,7 +140,7 @@ def _write_registry(path: Path, registry: dict) -> None:
 
 
 # Builds this chapter's registries + crowns/ + banners/ when missing (idempotent). Recurses to carry C<n-1> forward first, so the dead persist chapter to chapter.
-def ensure(chapter: str) -> None:
+def ensure(chapter: str, save: dict | None = None) -> None:
     chapter_dir = SAVES_DIR / chapter
     have_banners = (chapter_dir / "banners").is_dir()
     have_crowns = (chapter_dir / "crowns").is_dir()
@@ -151,7 +152,8 @@ def ensure(chapter: str) -> None:
     if n > 1:
         ensure(f"C{n - 1}")
         prev = _load_registries(SAVES_DIR / f"C{n - 1}")
-    save = load_save(chapter_dir / "map.wbox")
+    if save is None:  # the bootstrap already holds this chapter's save — reloading it would cost a full re-parse
+        save = load_save(chapter_dir / "map.wbox")
     if not have_json:
         for name, registry in _build_registries(save, prev).items():
             _write_registry(chapter_dir / f"{name}.json", registry)

@@ -26,6 +26,7 @@ from shared import (
     emit,
     food_resources,
     index_by_id,
+    is_boat,
     kingdom_score_ranks,
     load_data,
     load_save,
@@ -98,6 +99,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_clan: dict[int, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
     actors_by_kingdom: dict[int, list[dict]] = {}
+    boats_by_kingdom: Counter[int] = Counter()  # Boats are actors, skipped by every other tally — counted here for `metadata.boats`.
     captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
     eaters_by_kingdom: Counter[int] = Counter()
     families_by_kingdom: dict[int, set[int]] = {}
@@ -119,7 +121,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     for actor in save.get("actors_data", []):
         actors_by_id[actor["id"]] = actor
-        if (actor.get("asset_id") or "").startswith("boat_"):
+        if is_boat(actor):
+            if bkid := actor.get("civ_kingdom_id"):
+                boats_by_kingdom[bkid] += 1
             continue
         if cid := actor.get("cityID"):
             populations_by_city[cid] += 1
@@ -215,6 +219,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "actors_by_clan": actors_by_clan,
         "actors_by_id": actors_by_id,
         "actors_by_kingdom": actors_by_kingdom,
+        "boats_by_kingdom": boats_by_kingdom,
         "buildings_by_kingdom": buildings_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
         "cities_by_id": cities_by_id,
@@ -289,6 +294,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     return {
         "age": int(age_units / UNITS_PER_YEAR),
+        "boats": ctx["boats_by_kingdom"][kid],  # Fishing/trading/transport hulls afloat — WB's boat techs leave no other trace in the save.
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name") or f"#{cap['id']}"} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
@@ -364,15 +370,16 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
     kid = kingdom["id"]
     alliances = save.get("alliances", [])
     ongoing_wars = [w for w in save.get("wars", []) if not w.get("winner")]
-    war_sides = [_war_sides(w) for w in ongoing_wars]  # Built once, reused by `is_enemy` + every `_compute_opinion` below.
+    war_sides = [_war_sides(w) for w in ongoing_wars]  # Built once, reused by the enemy set + every `_compute_opinion` below.
 
-    # Other kingdom is an ally if both share an alliance.
-    def is_ally(other_id: int) -> bool:
-        return any(kid in (a.get("kingdoms") or []) and other_id in (a.get("kingdoms") or []) for a in alliances)
-
-    # Other kingdom is an enemy when it stands on the opposite side of an ongoing war.
-    def is_enemy(other_id: int) -> bool:
-        return any((kid in att and other_id in dfd) or (kid in dfd and other_id in att) for att, dfd in war_sides)
+    # Our side's ties resolved once instead of per target: allies = anyone sharing an alliance with us, enemies = anyone facing us in an ongoing war.
+    allies = {member for a in alliances if kid in (a.get("kingdoms") or []) for member in a.get("kingdoms") or []}
+    enemies: set = set()
+    for attackers, defenders in war_sides:
+        if kid in attackers:
+            enemies |= defenders
+        elif kid in defenders:
+            enemies |= attackers
 
     # `save.relations` only persists pairs WB tracked, yet WB scores every kingdom regardless — hence the loop over all below and the `r or {}` fallbacks.
     relations_by_other = {
@@ -389,15 +396,16 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         if other_id == kid:
             continue
         r = relations_by_other.get(other_id)
-        status = "ally" if is_ally(other_id) else "enemy" if is_enemy(other_id) else "neutral"
+        status = "ally" if other_id in allies else "enemy" if other_id in enemies else "neutral"
         last_war_end = (r or {}).get("timestamp_last_war_ended")
         borders = _zones_within(kid_zones, ctx["zones_by_kingdom"].get(other_id, []), _BORDERS_ZONE_DISTANCE)
+
         out.append(
             {
                 "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / UNITS_PER_YEAR) if r else None,
                 **({"borders": True} if borders else {}),  # Chronicler-only, omitted when False: absence = kingdoms don't share a border.
                 "kingdom": {"id": other_id, "name": other.get("name") or f"#{other_id}"},
-                "opinion": _compute_opinion(kingdom, other, save, ctx, alliances, war_sides, r, borders),
+                "opinion": _compute_opinion(kingdom, other, save, ctx, allies, war_sides, r, borders),
                 "status": status,
                 "years_since_last_war": int((ctx["world_time"] - float(last_war_end)) / UNITS_PER_YEAR) if last_war_end else None,
             }
@@ -494,7 +502,7 @@ def _compute_king_diplomacy(king: dict, ctx: dict) -> int:
 
 
 # Mirror `DiplomacyRelation.recalculate` IL: each numbered modifier = a WB `OpinionAsset`. Runtime stats reconstructed via `actor_stats.compute_actor_stats`.
-def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances: list, war_sides: list, relation: dict | None, close: bool) -> dict:
+def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, allies: set, war_sides: list, relation: dict | None, close: bool) -> dict:
     mod: dict[str, int] = {}
     mid, tid = main["id"], target["id"]
 
@@ -600,10 +608,8 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, alliances:
         if main_clan and target_clan:
             mod["clan"] = 40 if main_clan == target_clan else -40
 
-    # 18. in_alliance: +30 if same alliance.
-    main_alliance = next((a for a in alliances if mid in (a.get("kingdoms") or [])), None)
-    target_alliance = next((a for a in alliances if tid in (a.get("kingdoms") or [])), None)
-    if main_alliance and target_alliance and main_alliance["id"] == target_alliance["id"]:
+    # 18. in_alliance: +30 if same alliance — `allies` already holds every kingdom sharing one with `main`.
+    if tid in allies:
         mod["in_alliance"] = 30
 
     # 19. truce: +100 if not enemy, has a recent relation with last_war_ended within minimum_years.
@@ -649,6 +655,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     getters = settlement_rank_getters(ctx, "kingdom")
     getters.update(
         {
+            "boats": lambda k: ctx["boats_by_kingdom"].get(k.get("id"), 0),
             "cities": lambda k: ctx["cities_by_kingdom"].get(k.get("id"), 0),
             "immortals": lambda k: ctx["immortals_by_kingdom"].get(k.get("id"), 0),
             "infected": lambda k: ctx["infected_by_kingdom"].get(k.get("id"), 0),

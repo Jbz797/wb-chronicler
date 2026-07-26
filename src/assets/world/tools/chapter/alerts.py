@@ -6,7 +6,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import load_data
+from shared import is_boat, load_data
 
 # code → {condition(kingdoms, present), message}; from `_analyze`: `kingdoms` = {playable species: [pops]} keyed by dominant, `present` = those with living actors.
 _ALERTS = {
@@ -25,17 +25,23 @@ _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of �
 # Playable species present in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
 def _analyze(save: dict) -> tuple[dict, set]:
     playable = {species for species, data in load_data("species.json").items() if data.get("playable")}
-    actors = [a for a in save.get("actors_data") or [] if not (a.get("asset_id") or "").startswith("boat_")]
-    present = {a.get("asset_id") for a in actors} & playable
     members_by_kingdom: dict[int, Counter] = {}
-    for actor in actors:
+    species_seen: set = set()
+
+    for actor in save.get("actors_data") or []:  # one pass gives both which species walk the world and each kingdom's species mix
+        if is_boat(actor):
+            continue
+        asset = actor.get("asset_id")
+        species_seen.add(asset)
         if kid := actor.get("civ_kingdom_id"):
-            members_by_kingdom.setdefault(kid, Counter())[actor.get("asset_id")] += 1
+            members_by_kingdom.setdefault(kid, Counter())[asset] += 1
     kingdoms: dict = {}
+
     for members in members_by_kingdom.values():
         if (dominant := members.most_common(1)[0][0]) in playable:
             kingdoms.setdefault(dominant, []).append(members.total())
-    return kingdoms, present
+
+    return kingdoms, species_seen & playable
 
 
 # `(code, message)` of alerts whose condition holds now and that haven't fired yet (`already` = tags already set in prior chapters).

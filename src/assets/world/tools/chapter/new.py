@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import alerts
 import registries
-from shared import SAVES_DIR, UNITS_PER_YEAR, load_data, load_save, take_chapter
+from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, load_data, load_save, take_chapter
 
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → its French title (the game's `locales/fr/world_ages`); unknown ids fall back to the raw id.
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
@@ -96,7 +96,7 @@ def main(argv: list[str]) -> int:
     if (s3db := live_dir / "map_stats.s3db").exists():
         shutil.copy2(s3db, _HISTORY_S3DB)
 
-    registries.ensure(chapter)  # builds this chapter's registries/crowns/banners (carry-forward from C<n-1>)
+    registries.ensure(chapter, live)  # registries/crowns/banners for this chapter (carry-forward from C<n-1>); `live` spares it a re-parse
     world = _run("world/info.py", chapter)  # the world panel (emit only)
     if world is None:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
@@ -111,13 +111,18 @@ def main(argv: list[str]) -> int:
         if kid := (meta.get("kingdom") or {}).get("id"):
             kingdom = _run("kingdom/info.py", kid, "full", chapter)
 
-    # tags = mechanical event codes (favorite designation, new age, world-law alerts) — `chapter.json.tags` is their single source of truth, no separate log.
     age_id = live["mapStats"].get("world_age_id") or ""
+    # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
     tags = ["NEW-FAVORITE"] if just_designated else []
     if prev_age_id and age_id != prev_age_id:  # the world turned to a new age this chapter
         tags.append("NEW_AGE")
+
+    # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. One-time, like the `DISABLE_*` alerts.
+    if "NAVIGATION" not in already and any(is_boat(a) for a in live.get("actors_data") or []):
+        tags.append("NAVIGATION")
     new_alerts = alerts.fired(live, already)
     tags += [code for code, _message in new_alerts]
+
     if not _WORLD_JSON.exists():  # C1 → scaffold the empty world-identity template for the chronicler to fill
         _WORLD_JSON.write_text(json.dumps({"description": "", "name": ""}, ensure_ascii=False, indent=2) + "\n")
 

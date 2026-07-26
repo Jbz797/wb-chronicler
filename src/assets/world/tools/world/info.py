@@ -16,6 +16,7 @@ from shared import (
     civic_building_ids,
     emit,
     index_by_id,
+    is_boat,
     kingdom_score_ranks,
     load_data,
     load_save,
@@ -121,7 +122,7 @@ def _build_leaders(save: dict) -> dict:
     top_person, top_renown = None, -1
 
     for a in actors:
-        if (a.get("asset_id") or "").startswith("boat_"):
+        if is_boat(a):
             continue
         if a.get("civ_kingdom_id"):  # civilian: non-boat, kingdom-bound. `species` is the « thinking population », not wild creatures.
             renown = int(a.get("renown") or 0)
@@ -190,15 +191,18 @@ def _build_metadata(map_stats: dict) -> dict:
     }
 
 
-# `population`/`wild_creatures` split on kingdom membership, so both drift ~2 from WB's own tally. `infected` = WB's `current_infected`.
+# Actors split three ways: hulls (`boats`), kingdom-bound thinkers (`population`) and everything else (`wild_creatures`). `infected` = WB's `current_infected`.
 def _build_snapshot(save: dict) -> dict:
     actors = save.get("actors_data") or []
     civic = civic_building_ids()
-    asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings", []))  # Count `asset_id`s once, classify distinct keys — avoids 3 scans.
+    asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings") or [])  # Count `asset_id`s once, classify distinct keys — avoids 3 scans.
 
     # Both omitted when 0 (outbreak-style, idle most chapters). `infected` ⊂ `sick`: a plague never shows up in `infected`, hence the two counters.
-    infected = population = sick = 0
+    boats = infected = population = sick = 0
     for a in actors:
+        if is_boat(a):  # hulls are actors too, but neither thinking population nor wildlife — they get their own tally
+            boats += 1
+            continue
         traits = a.get("saved_traits") or []
         infected += "infected" in traits
         population += a.get("civ_kingdom_id") is not None
@@ -209,6 +213,7 @@ def _build_snapshot(save: dict) -> dict:
             {
                 **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
                 "armies": len(save.get("armies") or []),
+                "boats": boats,
                 "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
                 "frozen_tiles": len(save.get("frozen_tiles") or []),
                 "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
@@ -221,7 +226,7 @@ def _build_snapshot(save: dict) -> dict:
                 "vegetation": sum(
                     n for aid, n in asset_counts.items() if aid not in civic and aid not in _UNVEGETATED and not aid.startswith(("fishing_docks", "mineral"))
                 ),
-                "wild_creatures": len(actors) - population,
+                "wild_creatures": len(actors) - boats - population,
             }.items()
         )
     )

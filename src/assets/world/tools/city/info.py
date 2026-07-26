@@ -28,6 +28,7 @@ from shared import (
     entity_ref,
     food_resources,
     index_by_id,
+    is_boat,
     load_save,
     parse_sections,
     population_breakdown,
@@ -61,7 +62,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     for actor in save.get("actors_data", []):
         actors_by_id[actor["id"]] = actor
         cid = actor.get("cityID")
-        if not cid or (actor.get("asset_id") or "").startswith("boat_"):
+        if not cid or is_boat(actor):
             continue
         actors_by_city.setdefault(cid, []).append(actor)
         populations_by_city[cid] += 1
@@ -149,7 +150,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
 # The city's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and officialdom tallied in `_build_context`.
 def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
-    cid = city.get("id")
+    cid = city["id"]
     age_units = ctx["world_time"] - float(city.get("created_time") or 0)
     _, island_lookup = compute_islands_cached(save, ctx["save_path"])
 
@@ -193,7 +194,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
 
 # Tiers/men/couples via `demographics`; `nobles` = leader/captains (+ the king in the capital); `sick`/`infected` = WB `calculateIsSick`.
 def _build_population(city: dict, ctx: dict) -> dict:
-    cid = city.get("id")
+    cid = city["id"]
 
     actors = ctx["actors_by_city"].get(cid, [])
     demo = demographics(actors, ctx)

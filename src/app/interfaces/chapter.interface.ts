@@ -276,6 +276,7 @@ interface KingdomCity { id: number; name: string; population: number }
 // The kingdom's own attributes (age, capital, king/heir/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
 interface KingdomMetadata {
   age: number;
+  boats: number;
   buildings: number;
   capital?: EntityReference;
   cities: number;
@@ -317,6 +318,7 @@ interface KingdomPopulation {
 // The kingdom's rank (1-3) per stat among all kingdoms — all optional: present only when the kingdom is on that stat's podium.
 interface KingdomRanks {
   age?: number;
+  boats?: number;
   buildings?: number;
   cities?: number;
   deaths?: number;
@@ -385,6 +387,7 @@ interface WorldMetadata { age_id: string; world_time: number }
 interface WorldSnapshot {
   alliances: number;
   armies: number;
+  boats?: number;
   books: number;
   buildings: number;
   cities: number;
