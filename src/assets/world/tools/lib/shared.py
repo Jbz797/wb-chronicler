@@ -1,4 +1,4 @@
-# Shared constants/helpers reused by ≥2 of `actor/`, `city/`, `kingdom/`, `world/`, `geography/`, `tiles/` `info.py` — `sys.path`-injected from parent dir; see each bootstrap.
+# Cross-domain constants + helpers — one of the `tools/lib/` libraries every entry point puts on its `sys.path` (see each bootstrap).
 # Rule: an exported symbol must serve ≥2 scripts; single-script helpers live in that script.
 
 import json
@@ -15,14 +15,14 @@ PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full 
 PROFESSION_LEADER = 4
 PROFESSION_WARRIOR = 5
 SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
-SAVES_DIR = Path(__file__).parent.parent / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `world/info.py` needs it to reach back to `C<n-1>`.
+SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `chapter/` reaches back to `C<n-1>` through it.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
 # Live game save by default; a trailing `C<n>` script arg (via `take_chapter`) overrides it to a chapter's archived `map.wbox`. `WB_SAVE` still forces a path.
 _CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
-_DATAS_DIR = Path(__file__).parent / "datas"
+_DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _PROFESSIONS = {2: "unit", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label.
@@ -106,14 +106,12 @@ def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
 
 
-# Composite « kingdom power » ranking → `{kingdom id: place}` (1 = strongest) over living kingdoms, id-tiebroken (distinct). Feeds the top-3 tag medal
-# (`world/info.py`) + featured standing (`kingdom/info.py`). Ten dims — size (population, territory), might (warriors, kills, wars won),
-# wealth (coins + gold ore), prestige (renown, culture/language/religion traits, foundings), reach (10/book + reads) — each ranks N (N … 1, 0 → 0); totals summed.
-def kingdom_score_ranks(save: dict) -> dict[int, int]:
+# The ten dimensions the composite power score weighs, as `{name: {kingdom id: value}}` — size (population, territory), might (warriors, kills, wars_won),
+# wealth (coins + gold ore), prestige (renown, its culture/language/religion traits, foundings) and literary reach (10 per authored book + its reads).
+# Named rather than anonymous because `kingdom/info.py` surfaces four of them (`book_reach`/`culture_traits`/`foundings`/`wars_won`) it has no other source for.
+def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     kingdoms = save.get("kingdoms") or []
     ids = [k["id"] for k in kingdoms]
-    if not ids:
-        return {}
     money: Counter = Counter()  # the three per-member tallies the dimensions need, gathered in one pass rather than by re-walking per-kingdom actor lists
     population: Counter = Counter()
     warriors: Counter = Counter()
@@ -144,33 +142,41 @@ def kingdom_score_ranks(save: dict) -> dict[int, int]:
             wars_won[war.get("main_attacker")] += 1
         elif winner == 2:
             wars_won[war.get("main_defender")] += 1
-    reach: Counter = Counter()  # 10 per authored book + how widely it's read
+    book_reach: Counter = Counter()  # 10 per authored book + how widely it's read
 
     for book in save.get("books") or []:
         if (kid := book.get("author_kingdom_id")) is not None:
-            reach[kid] += 10 + (book.get("times_read") or 0)
+            book_reach[kid] += 10 + (book.get("times_read") or 0)
 
     traits = {coll: {x["id"]: len(x.get("saved_traits") or []) for x in save.get(coll) or []} for coll in ("cultures", "languages", "religions")}
-    foundings: Counter = Counter(item.get("creator_kingdom_id") for coll in ("cultures", "languages", "religions") for item in save.get(coll) or [])
-    dimensions = (
-        foundings,
-        reach,
-        territory,
-        wars_won,
-        {k["id"]: k.get("total_kills", 0) for k in kingdoms},
-        {k["id"]: k.get("renown", 0) for k in kingdoms},
-        {
+    return {
+        "book_reach": book_reach,
+        "culture_traits": {
             k["id"]: traits["cultures"].get(k.get("id_culture"), 0)
             + traits["languages"].get(k.get("id_language"), 0)
             + traits["religions"].get(k.get("id_religion"), 0)
             for k in kingdoms
         },
-        population,
-        warriors,
-        {kid: gold[kid] + money[kid] for kid in ids},
-    )
+        "foundings": Counter(item.get("creator_kingdom_id") for coll in ("cultures", "languages", "religions") for item in save.get(coll) or []),
+        "kills": {k["id"]: k.get("total_kills", 0) for k in kingdoms},
+        "population": population,
+        "renown": {k["id"]: k.get("renown", 0) for k in kingdoms},
+        "territory": territory,
+        "warriors": warriors,
+        "wars_won": wars_won,
+        "wealth": {kid: gold[kid] + money[kid] for kid in ids},
+    }
+
+
+# Composite « kingdom power » ranking → `{kingdom id: place}` (1 = strongest, id-tiebroken); each dim awards N … 1 points, 0 scores none. Drives the tag medal.
+def kingdom_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, int]:
+    ids = [k["id"] for k in save.get("kingdoms") or []]
+    if not ids:
+        return {}
     totals: Counter = Counter()
-    for values in dimensions:  # rank points per dimension: N − (kingdoms strictly ahead); a value of 0 sits out
+    if dimensions is None:
+        dimensions = kingdom_score_dimensions(save)
+    for values in dimensions.values():  # N − (kingdoms strictly ahead); a value of 0 sits out
         for kid in ids:
             if (own := values.get(kid, 0)) > 0:
                 totals[kid] += len(ids) - sum(values.get(other, 0) > own for other in ids)

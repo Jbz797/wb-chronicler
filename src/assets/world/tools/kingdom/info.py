@@ -6,9 +6,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-sys.path.insert(0, str(Path(__file__).parent.parent / "actor"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+
 from actor_stats import build_actor_stats_context, compute_actor_stats, demographics
 from islands import compute_islands_cached
 from shared import (
@@ -27,6 +26,7 @@ from shared import (
     food_resources,
     index_by_id,
     is_boat,
+    kingdom_score_dimensions,
     kingdom_score_ranks,
     load_data,
     load_save,
@@ -245,6 +245,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "populations_by_kingdom": populations_by_kingdom,
         "religions_by_id": index_by_id(save.get("religions", [])),  # The other breakdown indexes (`cultures`/`languages`/`subspecies`) already ride in ctx.
         "renown_by_kingdom": renown_by_kingdom,
+        "score_dimensions": kingdom_score_dimensions(save),  # the composite score's ten tallies; four of them have no other source
         "save_path": save_path,  # islands cache key — the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "sick_by_kingdom": sick_by_kingdom,
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors (≈8×).
@@ -259,6 +260,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
 def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     kid = kingdom["id"]
+    dims = ctx["score_dimensions"]
     age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
     _, island_lookup = compute_islands_cached(save, ctx["save_path"])
 
@@ -294,10 +296,12 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     return {
         "age": int(age_units / UNITS_PER_YEAR),
+        **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # 10 per authored book + its reads
         "boats": ctx["boats_by_kingdom"][kid],  # Fishing/trading/transport hulls afloat — WB's boat techs leave no other trace in the save.
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name") or f"#{cap['id']}"} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
+        **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
@@ -312,10 +316,12 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
+        **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
         "renown": kingdom.get("renown", 0),
-        "score_rank": kingdom_score_ranks(save).get(kid),  # Rank (1 = strongest) on the composite power score — UI shows the placement, not the total.
+        "score_rank": kingdom_score_ranks(save, dims).get(kid),  # placement on the composite score (1 = strongest); the total stays internal
         **taxes,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
+        **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
         "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
     }
 
@@ -649,6 +655,8 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, allies: se
 
 # City-tier getters + the kingdom-only metrics (city count, health tallies, the wealth split by rank). Top 3 via `competition_ranks`, like every ranks section.
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
+    dims = ctx["score_dimensions"]
+
     def king_money(k: dict) -> int:
         return int((ctx["actors_by_id"].get(k.get("kingID")) or {}).get("money") or 0)
 
@@ -656,7 +664,10 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     getters.update(
         {
             "boats": lambda k: ctx["boats_by_kingdom"].get(k.get("id"), 0),
+            "book_reach": lambda k: dims["book_reach"].get(k.get("id"), 0),
             "cities": lambda k: ctx["cities_by_kingdom"].get(k.get("id"), 0),
+            "culture_traits": lambda k: dims["culture_traits"].get(k.get("id"), 0),
+            "foundings": lambda k: dims["foundings"].get(k.get("id"), 0),
             "immortals": lambda k: ctx["immortals_by_kingdom"].get(k.get("id"), 0),
             "infected": lambda k: ctx["infected_by_kingdom"].get(k.get("id"), 0),
             "king_money": king_money,
@@ -664,6 +675,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
             "sick": lambda k: ctx["sick_by_kingdom"].get(k.get("id"), 0),
             "subjects_money": lambda k: ctx["money_by_kingdom"].get(k.get("id"), 0) - king_money(k) - ctx["nobles_money_by_kingdom"].get(k.get("id"), 0),
             "territory": lambda k: ctx["territory_by_kingdom"].get(k.get("id"), 0),  # A kingdom record has no `zones` — the tally sums its cities'.
+            "wars_won": lambda k: dims["wars_won"].get(k.get("id"), 0),
         }
     )
 

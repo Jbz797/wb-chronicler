@@ -51,6 +51,14 @@
     <nz-descriptions-item [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="kingdom" stat="renown_total" />
     </nz-descriptions-item>
+    @for (s of scoreStats(); track s.stat) {
+      <ng-template #scoreTitle>
+        <img [src]="s.icon" /><span>{{ s.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="scoreTitle">
+        <app-ranked-stat source="kingdom" [stat]="s.stat" />
+      </nz-descriptions-item>
+    }
     @for (o of optionalStats(); track o.stat) {
       <ng-template #optionalTitle>
         <img [src]="o.icon" /><span>{{ o.label }}</span>

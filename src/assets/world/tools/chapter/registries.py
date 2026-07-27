@@ -2,7 +2,7 @@
 
 # Builds a chapter's `{cities,kingdoms,persons}.json` registries + `crowns/`/`banners/` PNGs under `saves/C<n>/` — the tag visuals (+ last-known names)
 # the UI and chronicler resolve `[c/k/p id]` tags from. Carried forward from C<n-1> (dead entities kept), rebuilt whole from the save, reproducible.
-# `ensure()` is what the bootstrap (`chapter/new.py`) calls; `registries.py C<n> [--force]` (re)builds one chapter standalone. Docs: `tools/tools.md`.
+# `ensure()` is what the bootstrap (`chapter/new.py`) calls; `registries.py C<n> [--force]` (re)builds one chapter standalone — a dev tool, not in `tools.md`.
 
 import json
 import shutil
@@ -11,11 +11,20 @@ from collections import Counter
 from functools import cache
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared import SAVES_DIR, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
-from visuals import lighten_if_dark, write_banners, write_crowns
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
+from shared import SAVES_DIR, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
+
+_BANNERS_IMG = Path(__file__).parents[3] / "img" / "banners"  # White species banner-icon sprites (`banner_part_object`), the same set the UI tags reference.
+_CROWN_DARK = (30, 30, 30)  # WB `ColorAsset.initColor` Lerp target for the shade ramp.
+_CROWN_FALLBACK_TEXT = "#B0B0B0"  # Neutral tint when a city has no kingdom palette — keeps the per-city crown file guaranteed.
+
+# Magenta placeholder pixels in the `bannertop_*` sprites → shade index (WB `Toolbox.color_magenta_0..4` / `checkSpecialColors`).
+_CROWN_PLACEHOLDERS = {(0xFF, 0x00, 0xFF): 0, (0xDE, 0x00, 0xDE): 1, (0xA7, 0x00, 0xA7): 2, (0x7F, 0x00, 0x7F): 3, (0x58, 0x00, 0x58): 4}
+
+_CROWN_SHADE_TS = (0.0, 0.13, 0.35, 0.51, 0.66)  # Lerp factors of `k_color_0..4` towards `_CROWN_DARK`.
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
+_SPRITE_PARTS = Path(__file__).parent.parent / "sprites"  # Raw crown/banner sprite parts composed at generation — sibling of `datas/` (which holds JSON only).
 
 
 # The chapter's cities/kingdoms/persons registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
@@ -66,11 +75,32 @@ def _build_registries(save: dict, prev: dict) -> dict:
     return out
 
 
+# Fresh output dir seeded with the previous chapter's files — razed/destroyed entities keep their last-known art; the live loop overwrites the rest.
+def _carry_forward(dest: Path, prev: Path | None, pattern: str) -> None:
+    dest.mkdir()
+    if prev is not None and prev.is_dir():
+        for f in prev.glob(pattern):
+            (dest / f.name).write_bytes(f.read_bytes())
+
+
 # City registry entry (`[c id Nom]` tag visuals + last-known name): realm palette, size tier, dominant species; no capital flag — the crown PNG encodes it.
 def _city_entry(city: dict, species: Counter, kingdom: dict | None) -> dict:
     color, ink = _kingdom_tag_colors(kingdom.get("color_id", "")) if kingdom else (None, None)
     dominant = species.most_common(1)
     return {"color": color, "ink": ink, "name": city.get("name"), "size": _size_tier(species.total()), "species": dominant[0][0] if dominant else None}
+
+
+# WB `ColorAsset.initColor` shade ramp: lighten a too-dark `color_text`, then Lerp towards `_CROWN_DARK` per `_CROWN_SHADE_TS`.
+def _crown_shades(text_hex: str) -> list[tuple[int, int, int]]:
+    r, g, b = _lighten_if_dark(int(text_hex[i : i + 2], 16) for i in (1, 3, 5))
+    return [(int(r + (_CROWN_DARK[0] - r) * t), int(g + (_CROWN_DARK[1] - g) * t), int(b + (_CROWN_DARK[2] - b) * t)) for t in _CROWN_SHADE_TS]
+
+
+# The king's (or founder's) species — drives the banner set: living subspecies → its `species_id`, else the founding `original_actor_asset` (dead-founder fallback).
+def _kingdom_species(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -> str | None:
+    king = kings_by_id.get(kingdom.get("kingID"))
+    subspecies = subspecies_by_id.get(king.get("subspecies")) if king else None
+    return (subspecies or {}).get("species_id") or kingdom.get("original_actor_asset")
 
 
 # Kingdom tag palette: bg = darkest of 4 hues, ink = lightest (contrast, `colors-all.json`), else `(None, None)`. Cached — a kingdom's cities share one `color_id`.
@@ -85,7 +115,7 @@ def _kingdom_tag_colors(color_id) -> tuple[str | None, str | None]:
 # WB `getColorText` = the palette's `color_text`, lightened if too dark — the hue WB prints a kingdom's name in. `None` when the palette is missing.
 def _kingdom_text_color(color_id) -> str | None:
     text = load_data("colors-all.json").get(str(color_id), {}).get("color_text")
-    return "#{:02X}{:02X}{:02X}".format(*lighten_if_dark(int(text[i : i + 2], 16) for i in (1, 3, 5))) if text else None
+    return "#{:02X}{:02X}{:02X}".format(*_lighten_if_dark(int(text[i : i + 2], 16) for i in (1, 3, 5))) if text else None
 
 
 # Kingdom registry entry: name colour (`getColorText`), city-count badge, top-3 `rank`, species — banner in `banners/k<id>.png`, `dead` from the merge.
@@ -97,6 +127,12 @@ def _kingdom_visuals(kingdom: dict, species: Counter, city_count: int, rank: int
     if rank is not None:  # top-3 by composite power score (`kingdom_score_ranks`) — drives the gold/silver/bronze podium medal
         entry["rank"] = rank
     return entry
+
+
+# WB `MetaSpriteLibrary.checkIfColorTooDark`: +50 to each channel when all three sit below 128 — keeps near-black palettes legible, and feeds the registry name hue.
+def _lighten_if_dark(channels) -> tuple[int, int, int]:
+    r, g, b = channels
+    return (r + 50, g + 50, b + 50) if r < 128 and g < 128 and b < 128 else (r, g, b)
 
 
 def _load_registries(chapter_dir: Path) -> dict:
@@ -118,6 +154,19 @@ def _person_entry(actor: dict, profession: str | None) -> dict:
     return entry
 
 
+# Swap the magenta placeholder pixels of a `bannertop_*` copy for the kingdom shade ramp — WB `MetaSpriteLibrary.checkSpecialColors`, port exact.
+def _recolor_crown(base, shades: list[tuple[int, int, int]]):
+    icon = base.copy()
+    if (pixels := icon.load()) is None:  # `load()` is typed Optional — never None for an in-memory RGBA copy
+        return icon
+    for y in range(icon.height):
+        for x in range(icon.width):
+            p = pixels[x, y]
+            if isinstance(p, tuple) and p[3] and (i := _CROWN_PLACEHOLDERS.get((p[0], p[1], p[2]))) is not None:  # narrows `PixelAccess`'s float | tuple
+                pixels[x, y] = (*shades[i], p[3])
+    return icon
+
+
 # Relative luminance (WCAG) of a "#RRGGBB" colour — used to pick the darkest / lightest of a palette.
 def _relative_luminance(color: str) -> float:
     channels = [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
@@ -128,6 +177,73 @@ def _relative_luminance(color: str) -> float:
 # Settlement tier (1-7) from population — mirrors the `chronicler.md` naming scale (foyer → métropole). Drives the Civ-style size badge on the city tag.
 def _size_tier(population: int) -> int:
     return next((tier for tier, cap in enumerate(_SIZE_TIERS, start=1) if population <= cap), len(_SIZE_TIERS) + 1)
+
+
+# WB `KingdomBanner.setupBanner`: multiplicative tint of a white/greyscale sprite by a `#RRGGBB` colour (Unity `Image.color`). `None` colour → sprite untouched.
+def _tint(sprite, hex_color: str | None):
+    if not hex_color:
+        return sprite
+    r, g, b = (int(hex_color[i : i + 2], 16) for i in (1, 3, 5))
+    out = sprite.copy()
+    if (pixels := out.load()) is None:
+        return out
+    for y in range(out.height):
+        for x in range(out.width):
+            p = pixels[x, y]
+            if isinstance(p, tuple) and p[3]:
+                pixels[x, y] = (p[0] * r // 255, p[1] * g // 255, p[2] * b // 255, p[3])
+    return out
+
+
+# Per-kingdom banners (WB `KingdomBanner.setupBanner`): bg tinted `color_main_2` + icon tinted `color_banner`, keyed via `banner_*_id` in `banner-icons.json`.
+def _write_banners(chapter_dir: Path, save: dict, prev_banners: Path | None) -> None:
+    from PIL import Image  # lazy: only first-time registry generation pays the Pillow import
+
+    banners = chapter_dir / "banners"
+    _carry_forward(banners, prev_banners, "k*.png")
+    king_ids = {kid for k in save.get("kingdoms") or [] if (kid := k.get("kingID"))}  # only the crowned matter here — indexing every actor would be 100× the dict
+    kings_by_id = {a["id"]: a for a in save.get("actors_data") or [] if a["id"] in king_ids}
+    backgrounds_dir = _SPRITE_PARTS / "banner-backgrounds"
+    colors_all = load_data("colors-all.json")
+    banner_cache: dict = {}  # (bg slot, main2, icon slot, banner colour) → composed banner; kingdoms of one species+palette share it
+    lib = load_data("banner-icons.json")
+    subspecies_by_id = index_by_id(save.get("subspecies") or [])
+
+    for kingdom in save.get("kingdoms") or []:
+        banner_id = lib["species_to_banner_id"].get(_kingdom_species(kingdom, kings_by_id, subspecies_by_id))
+        bg_slots, icon_slots = lib["banner_id_backgrounds"].get(banner_id), lib["banner_id_icons"].get(banner_id)
+        if not bg_slots or not icon_slots:  # species without a banner set (never seen in practice) → no file; the tag falls back gracefully
+            continue
+        pal = colors_all.get(str(kingdom.get("color_id", "")), {})
+        bg_slot = bg_slots[i if (i := kingdom.get("banner_background_id") or 0) < len(bg_slots) else 0]
+        icon_slot = icon_slots[i if (i := kingdom.get("banner_icon_id") or 0) < len(icon_slots) else 0]
+        key = (bg_slot, pal.get("color_main_2"), icon_slot, pal.get("color_banner"))
+        if (banner := banner_cache.get(key)) is None:
+            bg = _tint(Image.open(backgrounds_dir / f"{bg_slot}.png").convert("RGBA"), pal.get("color_main_2"))
+            icon = _tint(Image.open(_BANNERS_IMG / f"{icon_slot}.png").convert("RGBA"), pal.get("color_banner"))
+            banner = banner_cache[key] = bg.copy()
+            banner.alpha_composite(icon, ((bg.width - icon.width) // 2, max(1, (bg.width - icon.height) // 2)))  # centre the icon on the shield face
+        banner.save(banners / f"k{kingdom['id']}.png")
+
+
+# Per-city crowns (WB `CityBanner.setupBanner`): capital → gold crown, village → stone rampart, kingdom-tinted; prev chapter copied first — razed cities keep theirs.
+def _write_crowns(chapter_dir: Path, save: dict, prev_crowns: Path | None) -> None:
+    from PIL import Image  # lazy: only first-time registry generation pays the Pillow import
+
+    crowns = chapter_dir / "crowns"
+    _carry_forward(crowns, prev_crowns, "c*.png")
+    bases = {capital: Image.open(_SPRITE_PARTS / f"bannertop_{'capital' if capital else 'city'}.png").convert("RGBA") for capital in (False, True)}
+    colors_all = load_data("colors-all.json")
+    icon_cache: dict = {}  # (text colour, capital?) → recoloured sprite; the cities of one kingdom share their crown
+    kingdoms_by_id = index_by_id(save.get("kingdoms") or [])
+
+    for city in save.get("cities") or []:
+        kingdom = kingdoms_by_id.get(city.get("kingdomID")) or {}
+        text = colors_all.get(str(kingdom.get("color_id", "")), {}).get("color_text") or _CROWN_FALLBACK_TEXT
+        key = (text, kingdom.get("capitalID") == city.get("id"))
+        if (icon := icon_cache.get(key)) is None:
+            icon = icon_cache[key] = _recolor_crown(bases[key[1]], _crown_shades(text))
+        icon.save(crowns / f"c{city['id']}.png")
 
 
 # Serialize a registry to disk: one line per entry, sorted by numeric id, fields alphabetical — single-line diffs.
@@ -158,9 +274,9 @@ def ensure(chapter: str, save: dict | None = None) -> None:
         for name, registry in _build_registries(save, prev).items():
             _write_registry(chapter_dir / f"{name}.json", registry)
     if not have_crowns:
-        write_crowns(chapter_dir, save, SAVES_DIR / f"C{n - 1}" / "crowns" if n > 1 else None)
+        _write_crowns(chapter_dir, save, SAVES_DIR / f"C{n - 1}" / "crowns" if n > 1 else None)
     if not have_banners:
-        write_banners(chapter_dir, save, SAVES_DIR / f"C{n - 1}" / "banners" if n > 1 else None)
+        _write_banners(chapter_dir, save, SAVES_DIR / f"C{n - 1}" / "banners" if n > 1 else None)
 
 
 def main(argv: list[str]) -> int:

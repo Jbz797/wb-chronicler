@@ -277,12 +277,15 @@ interface KingdomCity { id: number; name: string; population: number }
 interface KingdomMetadata {
   age: number;
   boats: number;
+  book_reach?: number;
   buildings: number;
   capital?: EntityReference;
   cities: number;
+  culture_traits?: number;
   deaths: number;
   food: number;
   founder?: { id: number; name: string };
+  foundings?: number;
   gold: number;
   goods: number;
   heir?: { id: number; name: string };
@@ -294,6 +297,7 @@ interface KingdomMetadata {
   renown: number;
   score_rank: number;
   territory: number;
+  wars_won?: number;
   wealth: number;
 }
 
@@ -319,12 +323,15 @@ interface KingdomPopulation {
 interface KingdomRanks {
   age?: number;
   boats?: number;
+  book_reach?: number;
   buildings?: number;
   cities?: number;
+  culture_traits?: number;
   deaths?: number;
   fed_pct?: number;
   food?: number;
   food_per_capita?: number;
+  foundings?: number;
   gold?: number;
   goods?: number;
   housed_pct?: number;
@@ -343,6 +350,7 @@ interface KingdomRanks {
   subjects_money?: number;
   territory?: number;
   warriors?: number;
+  wars_won?: number;
   wealth?: number;
   wealth_per_capita?: number;
 }

@@ -2,4 +2,4 @@
 
 line-length = 165
 [lint.isort]
-known-first-party = ["actor_stats", "alerts", "grid", "islands", "registries", "shared", "visuals"]
+known-first-party = ["actor_stats", "grid", "islands", "registries", "shared"]

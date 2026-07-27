@@ -12,7 +12,10 @@ export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' 
 
 export type IconKind = 'cities' | 'kingdoms' | 'persons' | 'resources' | 'species';
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
-export type KingdomMetaStat = 'boats' | 'cities' | CityMetaStat; // a realm's own metrics: every city one, plus its fleet and settlement count
+
+// A realm's own metrics: every city one, plus its fleet, settlement count and the score dimensions it alone carries.
+export type KingdomMetaStat = 'boats' | 'book_reach' | 'cities' | 'culture_traits' | 'foundings' | 'wars_won' | CityMetaStat;
+
 export type KingdomRegistry = Record<string, KingdomInfo>;
 
 export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_religion' | 'dominant_species' | 'dominant_subspecies'
@@ -24,11 +27,12 @@ export type PersonRegistry = Record<string, PersonInfo>;
 export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'money' | 'nobles' | 'renown_total'
   | 'sick' | 'warriors' | 'wealth_per_capita';
 
-export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'boats' | 'buildings' | 'children' | 'cities' | 'critical_chance'
-  | 'damage' | 'deaths' | 'diplomacy' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'gold' | 'goods' | 'health' | 'housed_pct' | 'houses'
+export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'boats' | 'book_reach' | 'buildings' | 'children' | 'cities'
+  | 'critical_chance' | 'culture_traits' | 'damage' | 'deaths' | 'diplomacy' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
+  | 'gold' | 'goods' | 'health' | 'housed_pct' | 'houses'
   | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level'
   | 'lifespan' | 'loot' | 'mana' | 'money' | 'nobles' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship'
-  | 'territory' | 'warfare' | 'warriors' | 'wealth' | 'wealth_per_capita';
+  | 'territory' | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'
   | 'cultures' | 'equipment' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'

@@ -6,8 +6,8 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-sys.path.insert(0, str(Path(__file__).parent.parent / "geography"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+
 from actor_stats import build_actor_stats_context, compute_actor_stats
 from islands import compute_islands_cached
 from shared import (
@@ -300,7 +300,7 @@ def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
     def actor_age(a: dict) -> int:
         return int((ctx["world_time"] - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
 
-    getters = {stat: (lambda st: lambda s: s.get(st, 0))(stat) for stat in _RANKED_STATS if stat in own}
+    getters = {stat: lambda s, st=stat: s.get(st, 0) for stat in _RANKED_STATS if stat in own}  # `st=stat` binds now, else every lambda reads the last one
     ranks = competition_ranks(own, peers, getters)
     # Age is not in `_compute_stats` (derived from `created_time`) — ranked separately, against the raw actors.
     ranks.update(competition_ranks(actor, same_species, {"age": actor_age}))

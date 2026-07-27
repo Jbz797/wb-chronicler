@@ -67,7 +67,23 @@ export const CITY_META_STATS = new Set<RankedStatKind>([
 
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
 export const KINGDOM_META_STATS = new Set<RankedStatKind>([
-  'age', 'boats', 'buildings', 'cities', 'deaths', 'food', 'gold', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
+  'age',
+  'boats',
+  'book_reach',
+  'buildings',
+  'cities',
+  'culture_traits',
+  'deaths',
+  'food',
+  'foundings',
+  'gold',
+  'goods',
+  'houses',
+  'kills',
+  'renown',
+  'territory',
+  'wars_won',
+  'wealth',
 ]);
 
 // Ranked stats shown raw (age, `%`, per-capita, placement) — every other kingdom/city/alliance stat compacts to `X.X K` above 100, like the world panel.

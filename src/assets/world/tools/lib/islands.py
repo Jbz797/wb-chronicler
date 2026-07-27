@@ -1,4 +1,4 @@
-# Reusable island detection — mirrors WB's `IslandsCalculator.countLandIslands`. Consumed by `geography/info.py` and `actor/info.py` (per-actor island_id).
+# Reusable island detection — mirrors WB's `IslandsCalculator.countLandIslands`. Consumed by `actor/`, `city/`, `geography/`, `kingdom/` and `tiles/` alike.
 #
 # Algorithm (extracted from `Assembly-CSharp.dll`):
 # 1. Each tile has a `TileLayerType` (Null/Ground/Ocean/Lava/Block/Goo) — Block covers mountains/summit/walls, NOT Ground.

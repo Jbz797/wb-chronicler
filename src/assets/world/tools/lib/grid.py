@@ -1,4 +1,4 @@
-# Tile-level primitives shared across geography consumers (`islands.py`, `tiles/info.py`, …). No save-wide state, no caching — just functions over a tile name or grid.
+# Tile-level primitives, consumed by `islands.py` and `tiles/info.py`. No save-wide state, no caching — just functions over a tile name or a decoded grid.
 
 # Soil gradients (`low`/`high`) and water depths (`shallow`/`coastal`/`deep`). Other kinds encode their verticality in the kind itself.
 _ELEVATION_BY_BASE = {

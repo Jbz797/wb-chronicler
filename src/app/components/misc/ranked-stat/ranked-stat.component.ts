@@ -87,10 +87,12 @@ export class RankedStatComponent {
       const key = this.stat();
       if (key === 'score_rank') return this._snap(k.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
       if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
-      if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat], k.ranks?.[key as KingdomMetaStat]);
+
+      // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
+      if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat] ?? 0, k.ranks?.[key as KingdomMetaStat]);
+
       const pk = key as PopulationStat;
-      // Only `immortals`/`infected`/`sick` can be absent — Python omits them at 0, so reading 0 is right.
-      return this._snap(k.population[pk] ?? 0, k.ranks?.[pk]);
+      return this._snap(k.population[pk] ?? 0, k.ranks?.[pk]); // Only `immortals`/`infected`/`sick` can be absent — Python omits them at 0, so reading 0 is right.
     }
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
   }

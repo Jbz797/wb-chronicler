@@ -10,14 +10,28 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-import alerts
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+
 import registries
 from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, load_data, load_save, take_chapter
 
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → its French title (the game's `locales/fr/world_ages`); unknown ids fall back to the raw id.
+
+# World-law alerts, each fired once ever (`chapter.json.tags` is the log). Adding one = an entry here + a row in `tags.md`; both args come from `_playable_kingdoms`.
+_ALERTS = {
+    "DISABLE_DROP_OF_THOUGHTS": {
+        "condition": lambda kingdoms, present: all(kingdoms.get(species) for species in present),
+        "message": "Tu peux désactiver la loi de monde Drop of Thoughts.",
+    },
+    "DISABLE_HANDSOME_MIGRANTS": {
+        "condition": lambda kingdoms, present: all(any(pop >= _MIN_KINGDOM_POP for pop in kingdoms.get(species, ())) for species in present),
+        "message": "Tu peux désactiver la loi de monde Handsome Migrants.",
+    },
+}
+
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
+_MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
 _RARITIES = ("epic", "legendary", "normal", "rare")
 _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
@@ -32,6 +46,33 @@ def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) ->
     if prev_favorite and (prev_favorite.get("metadata") or {}).get("id") == fav_id and (descriptor := prev_favorite.get("descriptor")):
         favorite["descriptor"] = descriptor  # same favorite → keep the chronicler's epithet
     return favorite
+
+
+# `(code, message)` of alerts whose condition holds now and that haven't fired in an earlier chapter (`already` = the tags those chapters carry).
+def _fired_alerts(save: dict, already: set) -> list[tuple[str, str]]:
+    kingdoms, present = _playable_kingdoms(save)
+    if not present:  # no playable species yet → every `all(...)` would hold vacuously
+        return []
+    return [(code, spec["message"]) for code, spec in _ALERTS.items() if code not in already and spec["condition"](kingdoms, present)]
+
+
+# Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
+def _playable_kingdoms(save: dict) -> tuple[dict, set]:
+    playable = {species for species, data in load_data("species.json").items() if data.get("playable")}
+    members_by_kingdom: dict[int, Counter] = {}
+    species_seen: set = set()
+    for actor in save.get("actors_data") or []:  # one pass gives both which species walk the world and each kingdom's species mix
+        if is_boat(actor):
+            continue
+        asset = actor.get("asset_id")
+        species_seen.add(asset)
+        if kid := actor.get("civ_kingdom_id"):
+            members_by_kingdom.setdefault(kid, Counter())[asset] += 1
+    kingdoms: dict = {}
+    for members in members_by_kingdom.values():
+        if (dominant := members.most_common(1)[0][0]) in playable:
+            kingdoms.setdefault(dominant, []).append(members.total())
+    return kingdoms, species_seen & playable
 
 
 # One scan of the prior chapters → `(all tags ever set, previous favorite, previous age id)`: alert de-dup, descriptor carry-forward, null→real + new-age checks.
@@ -77,9 +118,10 @@ def main(argv: list[str]) -> int:
         return 1
 
     live = load_save(live_wbox)
+    actors = live.get("actors_data") or []
     world_time = round(float(live["mapStats"].get("world_time", 0)), 2)
     prev_dir = SAVES_DIR / f"C{n - 1}"
-    fav_id = next((a["id"] for a in live.get("actors_data") or [] if a.get("favorite") is True), None)
+    fav_id = next((a["id"] for a in actors if a.get("favorite") is True), None)
     already, prev_favorite, prev_age_id = _prior_context(n)
     just_designated = fav_id is not None and prev_favorite is None  # favorite null→real: earns a chapter even at an unchanged timestamp + the NEW-FAVORITE tag
     if n > 1 and (prev_dir / "map.wbox").exists():
@@ -95,6 +137,8 @@ def main(argv: list[str]) -> int:
             shutil.copy2(src, chapter_dir / name)
     if (s3db := live_dir / "map_stats.s3db").exists():
         shutil.copy2(s3db, _HISTORY_S3DB)
+    if not _WORLD_JSON.exists():  # C1 → scaffold the empty world-identity template for the chronicler to fill
+        _WORLD_JSON.write_text(json.dumps({"description": "", "name": ""}, ensure_ascii=False, indent=2) + "\n")
 
     registries.ensure(chapter, live)  # registries/crowns/banners for this chapter (carry-forward from C<n-1>); `live` spares it a re-parse
     world = _run("world/info.py", chapter)  # the world panel (emit only)
@@ -118,13 +162,10 @@ def main(argv: list[str]) -> int:
         tags.append("NEW_AGE")
 
     # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. One-time, like the `DISABLE_*` alerts.
-    if "NAVIGATION" not in already and any(is_boat(a) for a in live.get("actors_data") or []):
+    if "NAVIGATION" not in already and any(is_boat(a) for a in actors):
         tags.append("NAVIGATION")
-    new_alerts = alerts.fired(live, already)
+    new_alerts = _fired_alerts(live, already)
     tags += [code for code, _message in new_alerts]
-
-    if not _WORLD_JSON.exists():  # C1 → scaffold the empty world-identity template for the chronicler to fill
-        _WORLD_JSON.write_text(json.dumps({"description": "", "name": ""}, ensure_ascii=False, indent=2) + "\n")
 
     age_label = _AGE_LABELS.get(age_id, age_id)
     # `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
