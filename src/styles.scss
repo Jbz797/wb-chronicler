@@ -125,17 +125,30 @@ img {
     }
   }
 
-  // Icons keep their original sprite colours; only the name + background take the species hue.
+  // A subject, never a crown: pale plate, the realm's hue full strength on the border, halved into black for the name — `getColorText` needs a dark plate.
   &.person-tag {
     background-color: $paper;
     border: 1px solid var(--person-color);
-    color: color-mix(in srgb, var(--person-color), black 30%);
+    color: color-mix(in srgb, var(--person-color), black 50%);
     font-weight: 600;
 
-    // Deceased: name struck through + drained toward gray (the tombstone icon replaces the profession badge).
-    &.dead .entity-name {
-      color: color-mix(in srgb, var(--person-color), gray 70%);
-      text-decoration: line-through;
+    // Fallen: drained to near-ash and struck through, as cities and kingdoms are — bar their `opacity`, which on this pale plate would sink the name under AA.
+    &.dead {
+      filter: grayscale(0.85);
+
+      .entity-name {
+        text-decoration: line-through;
+      }
+    }
+
+    // ×3 so every body (6-16px) reaches the cap and overhangs like the banner; `width: auto` holds the aspect a lone `max-height` squashes.
+    canvas.portrait {
+      image-rendering: pixelated;
+      margin-right: -2px;
+      max-height: 22px;
+      position: relative;
+      top: -3px;
+      width: auto;
     }
   }
 }

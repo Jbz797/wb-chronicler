@@ -1,4 +1,3 @@
-import { Page } from './page.interface';
 import { RarityCounts } from './stats.interface';
 import { LeaderKind, LifeStage } from './types';
 
@@ -54,6 +53,9 @@ export interface KingdomWar {
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
 export interface LeaderRow extends Omit<Leader, 'value'> { isNew: boolean; key: LeaderKind }
 
+// A reader destination: the static Précepte pages and, through `Chapter`, every chronicle.
+export interface Page { label: string; mdUrl: string; slug: string }
+
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium (`ranks`) or an empty dimension means no key at all. A city is a kingdom's settlement.
 interface City {
   breakdown: PopulationBreakdown;
@@ -75,7 +77,6 @@ interface CityMetadata {
   goods: number;
   houses: number;
   id: number;
-  islands: number[];
   kills: number;
   kingdom?: EntityReference;
   language?: string;
@@ -87,33 +88,22 @@ interface CityMetadata {
   wealth: number;
 }
 
-// Aggregates over the city's inhabitants (demographics, wealth, food/housing ratios) — distinct from its `metadata`. `immortals`/`infected`/`sick` omitted at 0.
+// The city's inhabitants aggregated, not its `metadata`: `immortals`/`infected`/`sick` omitted at 0, age/sex tallies ship but stay chronicler-only.
 interface CityPopulation {
-  adults: number;
-  babies: number;
-  children: number;
-  couples: number;
-  elders: number;
-  familyless: number;
   fed_pct: number;
   food_per_capita: number;
-  happy: number;
   housed_pct: number;
   immortals?: number;
   infected?: number;
-  men: number;
   money: number;
-  nobles: number;
   renown_total: number;
   sick?: number;
-  teens: number;
   total: number;
   warriors: number;
   wealth_per_capita: number;
-  women: number;
 }
 
-// The city's rank (1-3) per stat among all cities — all optional: present only when the city is on that stat's podium.
+// The city's rank (1-3) per stat among all cities, podium-only; the money ranks (`gold`, `money`, `nobles`) stay chronicler-only — Richesse prints them bare.
 interface CityRanks {
   age?: number;
   buildings?: number;
@@ -121,13 +111,10 @@ interface CityRanks {
   fed_pct?: number;
   food?: number;
   food_per_capita?: number;
-  gold?: number;
   goods?: number;
   housed_pct?: number;
   houses?: number;
   kills?: number;
-  money?: number;
-  nobles?: number;
   population?: number;
   renown?: number;
   renown_total?: number;
@@ -301,15 +288,14 @@ interface KingdomMetadata {
   wealth: number;
 }
 
-// Aggregates over the kingdom's inhabitants (demographics, wealth split, food/housing ratios) — distinct from the kingdom's own `metadata`.
+// Aggregates over the kingdom's inhabitants (wealth split, food/housing ratios) — distinct from the kingdom's own `metadata`. Its age/sex tallies and its
+// `money` total are chronicler-only: the Richesse card sums the shares itself, so it never reads the total back.
 interface KingdomPopulation {
   fed_pct: number;
   food_per_capita: number;
   housed_pct: number;
   immortals?: number;
   infected?: number;
-  money: number;
-  nobles: number;
   nobles_money: number;
   renown_total: number;
   sick?: number;
@@ -319,7 +305,7 @@ interface KingdomPopulation {
   wealth_per_capita: number;
 }
 
-// The kingdom's rank (1-3) per stat among all kingdoms — all optional: present only when the kingdom is on that stat's podium.
+// The kingdom's rank (1-3) per stat among all kingdoms, podium-only; its six money-share podiums stay chronicler-only — Richesse prints those shares bare.
 interface KingdomRanks {
   age?: number;
   boats?: number;
@@ -332,22 +318,16 @@ interface KingdomRanks {
   food?: number;
   food_per_capita?: number;
   foundings?: number;
-  gold?: number;
   goods?: number;
   housed_pct?: number;
   houses?: number;
   immortals?: number;
   infected?: number;
   kills?: number;
-  king_money?: number;
-  money?: number;
-  nobles?: number;
-  nobles_money?: number;
   population?: number;
   renown?: number;
   renown_total?: number;
   sick?: number;
-  subjects_money?: number;
   territory?: number;
   warriors?: number;
   wars_won?: number;

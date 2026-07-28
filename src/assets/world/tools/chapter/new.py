@@ -37,12 +37,12 @@ _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
 
-# The save's `favorite`-flagged actor (WB's in-game marker), UI-slimmed; the chronicler's `descriptor` carries forward while it stays the same favorite.
+# The save's `favorite`-flagged actor (WB's in-game marker), detail folded; the chronicler's `descriptor` carries forward while it stays the same favorite.
 def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) -> dict | None:
     favorite = _run("actor/info.py", fav_id, "full", chapter)
     if favorite is None:
         return None
-    _slim_favorite(favorite)
+    _fold_favorite_detail(favorite)
     if prev_favorite and (prev_favorite.get("metadata") or {}).get("id") == fav_id and (descriptor := prev_favorite.get("descriptor")):
         favorite["descriptor"] = descriptor  # same favorite → keep the chronicler's epithet
     return favorite
@@ -54,6 +54,13 @@ def _fired_alerts(save: dict, already: set) -> list[tuple[str, str]]:
     if not present:  # no playable species yet → every `all(...)` would hold vacuously
         return []
     return [(code, spec["message"]) for code, spec in _ALERTS.items() if code not in already and spec["condition"](kingdoms, present)]
+
+
+# Folds the favorite's two heavy blocks: `creature_traits` becomes the rarity summary the panel renders, `equipment` goes — both stay whole in `actor/info.py`.
+def _fold_favorite_detail(favorite: dict) -> None:
+    counts = Counter(trait.get("rarity", "").lower() for trait in favorite.pop("creature_traits", []))
+    favorite.pop("equipment", None)
+    favorite["traits"] = {rarity: counts.get(rarity, 0) for rarity in _RARITIES}
 
 
 # Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
@@ -97,13 +104,6 @@ def _run(rel_path: str, *args) -> dict | None:
         print(f"  ⚠ {rel_path} {' '.join(map(str, args))}: {result.stderr.strip()[:200]}", file=sys.stderr)
         return None
     return json.loads(result.stdout) if result.stdout.strip() else None
-
-
-# UI projection of a favorite: the rich `creature_traits`/`equipment` (chronicler-only, in `actor/info.py`) collapse to the rarity summary the panel renders.
-def _slim_favorite(favorite: dict) -> None:
-    counts = Counter(trait.get("rarity", "").lower() for trait in favorite.pop("creature_traits", []))
-    favorite.pop("equipment", None)
-    favorite["traits"] = {rarity: counts.get(rarity, 0) for rarity in _RARITIES}
 
 
 def main(argv: list[str]) -> int:

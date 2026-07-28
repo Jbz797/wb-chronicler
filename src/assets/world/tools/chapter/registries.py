@@ -7,7 +7,7 @@
 import json
 import shutil
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache
 from pathlib import Path
 
@@ -33,22 +33,23 @@ def _build_registries(save: dict, prev: dict) -> dict:
     cities = save.get("cities") or []
     kingdoms = save.get("kingdoms") or []
     captain_ids = {c for army in save.get("armies") or [] if (c := army.get("id_captain"))}  # O(1) captain lookup for `resolve_profession` in the per-actor loop
+    items_by_id = index_by_id(save.get("items") or [])
     kingdoms_by_id = index_by_id(kingdoms)
     persons: dict[str, dict] = {}
 
     # Entries only need a headcount and the dominant species, so tally asset_ids straight away rather than keeping every member around.
-    species_by_city: dict[int, Counter] = {}
-    species_by_kingdom: dict[int, Counter] = {}
+    species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
+    species_by_kingdom: defaultdict[int, Counter] = defaultdict(Counter)
 
     for a in actors:
         if is_boat(a):
             continue
         if (cid := a.get("cityID")) is not None:
-            species_by_city.setdefault(cid, Counter())[a.get("asset_id")] += 1
+            species_by_city[cid][a.get("asset_id")] += 1
         if kid := a.get("civ_kingdom_id"):
-            species_by_kingdom.setdefault(kid, Counter())[a.get("asset_id")] += 1
+            species_by_kingdom[kid][a.get("asset_id")] += 1
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
-        if entry := _person_entry(a, resolve_profession(a, save, captain_ids)):
+        if entry := _person_entry(a, resolve_profession(a, save, captain_ids), items_by_id):
             persons[str(a["id"])] = entry
 
     cities_per_kingdom: Counter = Counter(kid for c in cities if (kid := c.get("kingdomID")) is not None)
@@ -80,7 +81,7 @@ def _carry_forward(dest: Path, prev: Path | None, pattern: str) -> None:
     dest.mkdir()
     if prev is not None and prev.is_dir():
         for f in prev.glob(pattern):
-            (dest / f.name).write_bytes(f.read_bytes())
+            shutil.copyfile(f, dest / f.name)
 
 
 # City registry entry (`[c id Nom]` tag visuals + last-known name): realm palette, size tier, dominant species; no capital flag — the crown PNG encodes it.
@@ -144,13 +145,23 @@ def _merge(prev: dict, live: dict) -> dict:
     return {**{k: {**{f: val for f, val in v.items() if f != "rank"}, "dead": True} for k, v in prev.items()}, **live}
 
 
-# Person registry entry (`[p id]` tag visuals): species + sex + non-unit profession. `dead` is added by the merge; the caller has already filtered boats out.
-def _person_entry(actor: dict, profession: str | None) -> dict:
+# Person registry entry: everything needed to draw the actor — species, sex, head, skin phenotype, wielded weapon, non-unit profession. `dead` comes from the merge.
+def _person_entry(actor: dict, profession: str | None, items_by_id: dict) -> dict:
+    carried = [(items_by_id.get(iid) or {}).get("asset_id", "") for iid in actor.get("saved_items") or []]  # resolved once: head and weapon both read it
     entry = {"asset_id": actor.get("asset_id"), "sex": sex_label(actor)}
+    for field in ("head", "phenotype_index", "phenotype_shade"):  # All three default to 0 in WB — omit then, the reader falls back to the same.
+        if value := actor.get(field):
+            entry[field] = value
+    if kingdom := actor.get("civ_kingdom_id"):  # Their realm's hue dyes the clothes — kept as a ref so the palette lives in one place, the kingdom registry.
+        entry["kingdom"] = kingdom
     if name := actor.get("name"):  # Plenty of actors are unnamed — omit rather than store a placeholder; the tag's inline name stays the fallback.
         entry["name"] = name
     if profession and profession != "unit":  # `unit` carries no badge — keep the registry lean.
         entry["profession"] = profession
+    if special := _special_head(actor, profession, carried):
+        entry["special_head"] = special
+    if weapon := _wielded_weapon(carried):
+        entry["weapon"] = weapon
     return entry
 
 
@@ -179,20 +190,33 @@ def _size_tier(population: int) -> int:
     return next((tier for tier, cap in enumerate(_SIZE_TIERS, start=1) if population <= cap), len(_SIZE_TIERS) + 1)
 
 
-# WB `KingdomBanner.setupBanner`: multiplicative tint of a white/greyscale sprite by a `#RRGGBB` colour (Unity `Image.color`). `None` colour → sprite untouched.
+# WB `Actor.checkSpriteHead`: a worn helmet, then a crown, then the white hair of the wise — each replaces the drawn head; failing all three, `head` picks it.
+def _special_head(actor: dict, profession: str | None, carried: list[str]) -> str | None:
+    if profession in ("army_captain", "warrior") and any(asset.startswith("helmet_") for asset in carried):
+        return "head_warrior"
+    if profession == "king":
+        return "head_king"
+    return "head_old" if "wise" in (actor.get("saved_traits") or []) else None
+
+
+# WB `KingdomBanner.setupBanner`: multiplicative `#RRGGBB` tint, `None` leaving the sprite alone — a lookup per band beats walking pixels, alpha mapping to itself.
 def _tint(sprite, hex_color: str | None):
     if not hex_color:
         return sprite
-    r, g, b = (int(hex_color[i : i + 2], 16) for i in (1, 3, 5))
-    out = sprite.copy()
-    if (pixels := out.load()) is None:
-        return out
-    for y in range(out.height):
-        for x in range(out.width):
-            p = pixels[x, y]
-            if isinstance(p, tuple) and p[3]:
-                pixels[x, y] = (p[0] * r // 255, p[1] * g // 255, p[2] * b // 255, p[3])
-    return out
+    lut = [c * int(hex_color[i : i + 2], 16) // 255 for i in (1, 3, 5) for c in range(256)]
+    return sprite.point([*lut, *range(256)])
+
+
+# Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.
+@cache
+def _weapon_assets() -> frozenset[str]:
+    return frozenset(asset for asset, stats in load_data("equipment.json")["items"].items() if "damage" in stats)
+
+
+# The weapon an actor holds — WB gives out at most one, so the first match is it.
+def _wielded_weapon(carried: list[str]) -> str | None:
+    assets = _weapon_assets()
+    return next((asset for asset in carried if asset in assets), None)
 
 
 # Per-kingdom banners (WB `KingdomBanner.setupBanner`): bg tinted `color_main_2` + icon tinted `color_banner`, keyed via `banner_*_id` in `banner-icons.json`.

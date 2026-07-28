@@ -2,8 +2,11 @@ import { INLINE_MARKER } from '../constants/inline-marker.constant';
 
 import { CityInfo, KingdomInfo, PersonInfo } from './world.interface';
 
+// Sprite rect in its sheet, in image coords — x, y, width, height, then the pivot's drop from the top edge; a part sits where its pivot meets the anchor's.
+export type ActorRect = [number, number, number, number, number];
+
 export type ChapterOverviewPanel = 'city' | 'favorite' | 'kingdom' | 'world-stats';
-export type CityMetaStat = 'age' | 'buildings' | 'deaths' | 'food' | 'gold' | 'goods' | 'houses' | 'kills' | 'renown' | 'territory' | 'wealth';
+export type CityMetaStat = 'age' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown' | 'territory' | 'wealth';
 export type CityRegistry = Record<string, CityInfo>;
 export type CumulativeStat = 'books_burnt' | 'books_read' | 'cities_conquered' | 'cities_rebelled' | 'evolutions' | 'metamorphosis' | 'plots_succeeded';
 
@@ -23,16 +26,13 @@ export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_re
 
 export type LifeStage = 'adult' | 'baby' | 'child' | 'elder' | 'teen';
 export type PersonRegistry = Record<string, PersonInfo>;
-
-export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'money' | 'nobles' | 'renown_total'
-  | 'sick' | 'warriors' | 'wealth_per_capita';
+export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'renown_total' | 'sick' | 'warriors' | 'wealth_per_capita';
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'birth_rate' | 'boats' | 'book_reach' | 'buildings' | 'children' | 'cities'
   | 'critical_chance' | 'culture_traits' | 'damage' | 'deaths' | 'diplomacy' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
-  | 'gold' | 'goods' | 'health' | 'housed_pct' | 'houses'
-  | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level'
-  | 'lifespan' | 'loot' | 'mana' | 'money' | 'nobles' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship'
-  | 'territory' | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
+  | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level' | 'lifespan' | 'loot' | 'mana' | 'money'
+  | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'territory' | 'warfare' | 'warriors'
+  | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'
   | 'cultures' | 'equipment' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'

@@ -1,3 +1,4 @@
+export * from './actor-portrait/actor-portrait.component';
 export * from './breakdown/breakdown.component';
 export * from './delta/delta.component';
 export * from './github-stars/github-stars.component';

@@ -3760,9 +3760,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:22.1.7":
-  version: 22.1.7
-  resolution: "eslint-config-angular-strict@npm:22.1.7"
+"eslint-config-angular-strict@npm:22.1.9":
+  version: 22.1.9
+  resolution: "eslint-config-angular-strict@npm:22.1.9"
   dependencies:
     "@angular-eslint/builder": "npm:22.1.0"
     "@angular-eslint/eslint-plugin": "npm:22.1.0"
@@ -3778,7 +3778,7 @@ __metadata:
     eslint-plugin-import-x: "npm:4.17.1"
     eslint-plugin-perfectionist: "npm:5.10.0"
     eslint-plugin-unicorn: "npm:72.0.0"
-  checksum: 10c0/3f8b9790042d5ffab63bb8a4839c8b50e45a24b385a5b112a3a8750b5049618eb5ead00d593fdc2d6559c638f0d79c82de35174240f3301490b1f86723212862
+  checksum: 10c0/2b7862af90b2c61aff3295ffb80b94842edfd9209de1d8234e2e2b1bc77513bc19e443591de001d2aed34a52d8c65373e2d01cc3dfcbbf70d10de008bf6a19fa
   languageName: node
   linkType: hard
 
@@ -5350,9 +5350,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"less@npm:4.8.0":
-  version: 4.8.0
-  resolution: "less@npm:4.8.0"
+"less@npm:4.8.1":
+  version: 4.8.1
+  resolution: "less@npm:4.8.1"
   dependencies:
     copy-anything: "npm:^3.0.5"
     errno: "npm:^0.1.1"
@@ -5380,7 +5380,7 @@ __metadata:
       optional: true
   bin:
     lessc: bin/lessc
-  checksum: 10c0/ecc8196a582cd5b977af5c86176b70a7bd23a41feb43e01491b6c3a4260a7afe5e59557c875a5fdf4490ec15c77812a78154c4515dae07ce83e1da9d9574b496
+  checksum: 10c0/41fbad950e9d5110bd86c94726a57eb771e2dfc6eb82aa687dd153f9f463c8707cb3b4e89144d1617bbf026ff7dc57cea7e7a33dfbe959565c9cc35a9d480808
   languageName: node
   linkType: hard
 
@@ -7717,8 +7717,8 @@ __metadata:
     "@angular/router": "npm:22.0.8"
     chokidar: "npm:5.0.0"
     concurrently: "npm:10.0.4"
-    eslint-config-angular-strict: "npm:22.1.7"
-    less: "npm:4.8.0"
+    eslint-config-angular-strict: "npm:22.1.9"
+    less: "npm:4.8.1"
     marked: "npm:18.0.7"
     marked-gfm-heading-id: "npm:4.1.4"
     ng-zorro-antd: "npm:22.0.0"

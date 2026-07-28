@@ -4,6 +4,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 @Pipe({ name: 'compact', standalone: true })
 export class CompactPipe implements PipeTransform {
 
+  // Below 100 a decimal still carries meaning; above it the thousands form reads faster in a stat row.
   public transform(value: number): string {
     if (Math.abs(value) < 100) return String(Math.round(value * 10) / 10);
     return `${Number((value / 1000).toFixed(1))} K`;

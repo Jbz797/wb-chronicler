@@ -7,7 +7,7 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
 import { CITY_SIZE_TERMS, HISTORY_DIR } from '../../../constants';
-import { ChapterOverviewPanel, World } from '../../../interfaces';
+import { ChapterOverviewPanel, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
 import { CityTagComponent, KingdomTagComponent, PersonTagComponent } from '../../tags';
 
@@ -48,7 +48,7 @@ export class ChapterOverviewComponent {
     const size = id === undefined ? undefined : this._registry.cities()[String(id)]?.size;
     return (size ? CITY_SIZE_TERMS[size - 1] : undefined) ?? 'Village';
   });
-  protected readonly world = toSignal(this._http.get<World>(`${HISTORY_DIR}/world.json`));
+  protected readonly world = toSignal(this._http.get<WorldInfo>(`${HISTORY_DIR}/world.json`));
 
   // ng-zorro 22 dropped `nzDisabled` for `nzCollapsible`, whose union has no "default" member — `undefined` restores it (cast for `exactOptionalPropertyTypes`).
   protected collapsible = (enabled: unknown): 'disabled' | 'header' | 'icon' => (enabled ? undefined : 'disabled') as 'disabled';
@@ -60,6 +60,7 @@ export class ChapterOverviewComponent {
     sessionStorage.setItem('chapter-overview.active-panel', next);
   }
 
+  // Type guard over the persisted panel name — a stale or hand-edited value falls through to the default rather than selecting nothing.
   private _isPanel(v: string | null): v is ChapterOverviewPanel {
     const panels: string[] = ['city', 'favorite', 'kingdom', 'world-stats'];
     return panels.includes(v ?? '');

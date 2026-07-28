@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, ElementRef, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
@@ -6,7 +6,8 @@ import { MarkdownComponent } from 'ngx-markdown';
 import { map } from 'rxjs';
 
 import { PAGES } from '../../constants';
-import { ChroniclerService } from '../../services';
+import { ActorSpriteHelpers } from '../../helpers';
+import { ChroniclerService, RegistryService } from '../../services';
 
 @Component({
   selector: 'app-reader',
@@ -18,6 +19,8 @@ import { ChroniclerService } from '../../services';
 export class ReaderPage {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _element = inject(ElementRef<HTMLElement>);
+  private readonly _registry = inject(RegistryService);
 
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });
 
@@ -40,5 +43,7 @@ export class ReaderPage {
     const slug = decodeURIComponent(href.slice(1));
     document.querySelector(`[id$="${CSS.escape(slug)}"]`)?.scrollIntoView({ behavior: 'smooth' });
   }
+
+  protected onReady = (): void => ActorSpriteHelpers.paintAll(this._element.nativeElement, this._registry.persons());
 
 }

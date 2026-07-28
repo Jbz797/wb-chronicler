@@ -61,9 +61,7 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
 };
 
 // City `RankedStatKind`s resolved from `metadata` (vs `population`) — same as the kingdom's minus `cities`, which a settlement has none of.
-export const CITY_META_STATS = new Set<RankedStatKind>([
-  'age', 'buildings', 'deaths', 'food', 'gold', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
-]);
+export const CITY_META_STATS = new Set<RankedStatKind>(['age', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth']);
 
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
 export const KINGDOM_META_STATS = new Set<RankedStatKind>([
@@ -76,7 +74,6 @@ export const KINGDOM_META_STATS = new Set<RankedStatKind>([
   'deaths',
   'food',
   'foundings',
-  'gold',
   'goods',
   'houses',
   'kills',
