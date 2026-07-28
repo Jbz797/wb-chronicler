@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Emits the world sections (`cumulative`/`leaders`/`metadata`/`snapshot`) from the save alone (`mapStats` = WB's period-accurate counters). The chapter's
-# registries/crowns/banners are built by `chapter/registries.py` (the bootstrap), not here. User-facing docs: `tools/tools.md`.
+# the registries are built by `chapter/registries.py` (the bootstrap), not here. User-facing docs: `tools/tools.md`.
 #
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names verbatim for raw-save fields (e.g. `relations`, `world_time`) — chronicler reads save directly, divergent names would cause friction.

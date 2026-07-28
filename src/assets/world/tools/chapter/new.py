@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries/crowns/banners (via `registries.py`) and a
+# Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries (via `registries.py`) and a
 # `chapter.json` skeleton. The chronicler then analyses (§III), writes `chapter.md`, and fills `title` + the favorite's `descriptor`. Docs: `tools/tools.md`.
 
 import json
@@ -97,9 +97,9 @@ def _prior_context(n: int) -> tuple[set, dict | None, str | None]:
     return tags, favorite, age_id
 
 
-# Runs a sibling `info.py`, returning its parsed JSON stdout — `None` (stderr surfaced) on failure or empty output.
+# Runs a sibling `info.py` → its parsed JSON stdout, `None` (stderr surfaced) on failure or empty output. `sys.executable` so a venv never forks children elsewhere.
 def _run(rel_path: str, *args) -> dict | None:
-    result = subprocess.run(["python3", str(_TOOLS / rel_path), *map(str, args)], capture_output=True, text=True, check=False)
+    result = subprocess.run([sys.executable, str(_TOOLS / rel_path), *map(str, args)], capture_output=True, text=True, check=False)
     if result.returncode:
         print(f"  ⚠ {rel_path} {' '.join(map(str, args))}: {result.stderr.strip()[:200]}", file=sys.stderr)
         return None
@@ -140,8 +140,8 @@ def main(argv: list[str]) -> int:
     if not _WORLD_JSON.exists():  # C1 → scaffold the empty world-identity template for the chronicler to fill
         _WORLD_JSON.write_text(json.dumps({"description": "", "name": ""}, ensure_ascii=False, indent=2) + "\n")
 
-    registries.ensure(chapter, live)  # registries/crowns/banners for this chapter (carry-forward from C<n-1>); `live` spares it a re-parse
-    world = _run("world/info.py", chapter)  # the world panel (emit only)
+    registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
+    world = _run("world/info.py", chapter)
     if world is None:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
@@ -158,7 +158,7 @@ def main(argv: list[str]) -> int:
     age_id = live["mapStats"].get("world_age_id") or ""
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
     tags = ["NEW-FAVORITE"] if just_designated else []
-    if prev_age_id and age_id != prev_age_id:  # the world turned to a new age this chapter
+    if prev_age_id and age_id != prev_age_id:
         tags.append("NEW_AGE")
 
     # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. One-time, like the `DISABLE_*` alerts.
@@ -174,7 +174,7 @@ def main(argv: list[str]) -> int:
 
     year = int(world_time / UNITS_PER_YEAR)
     counts = {name: len(json.loads((chapter_dir / f"{name}.json").read_text())) for name in ("cities", "kingdoms", "persons")}
-    fav_name = (favorite or {}).get("metadata", {}).get("name")
+    fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ {chapter} — an {year}, {age_label} (world_time {world_time})")
     print(f"  registres: {counts['cities']} cités · {counts['kingdoms']} royaumes · {counts['persons']} personnes")
     print(f"  favori: {fav_name or 'aucun (aucun acteur marqué favori dans la save)'}")

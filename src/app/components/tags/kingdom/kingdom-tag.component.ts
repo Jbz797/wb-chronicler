@@ -1,8 +1,8 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, viewChild } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { SAVES_DIR } from '../../../constants';
+import { KingdomSpriteHelpers } from '../../../helpers';
 import { RegistryService } from '../../../services';
 
 @Component({
@@ -18,9 +18,17 @@ export class KingdomTagComponent {
   public readonly medal = input(true); // Podium medal shown by default; hidden in the world « Palmarès » where the kingdom is always the winner (gold, redundant).
   public readonly name = input.required<string>();
 
-  // WB banner, pre-generated per chapter (species background + icon, kingdom-tinted).
-  protected readonly bannerSrc = computed(() => `${SAVES_DIR}/${this._registry.chapter()}/banners/k${this.id()}.png`);
-  // Visuals (palette, species) come from the kingdoms registry, kept fresh by each world/info.py run. `null` until the kingdom is registered.
+  // Visuals (palette, heraldry, species) come from the kingdoms registry, kept fresh by each world/info.py run. `null` until the kingdom is registered.
   protected readonly kingdom = computed(() => this._registry.kingdoms()[String(this.id())] ?? null);
+
+  private readonly _banner = viewChild<ElementRef<HTMLCanvasElement>>('banner'); // absent until `@if (kingdom())` has drawn the plate
+
+  constructor() {
+    effect(() => {
+      const canvas = this._banner()?.nativeElement;
+      const kingdom = this.kingdom();
+      if (canvas && kingdom) KingdomSpriteHelpers.paint(canvas, kingdom).catch(() => {}); // a species with no banner set leaves it collapsed
+    });
+  }
 
 }

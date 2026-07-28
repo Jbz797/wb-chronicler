@@ -1,6 +1,6 @@
 @if (person(); as p) {
   <nz-tag class="entity-tag person-tag" [class.dead]="p.dead" [style.--person-color]="color()" [title]="name()">
-    <app-actor-portrait [actor]="p" />
+    <canvas #portrait class="portrait"></canvas>
     <span class="entity-name">{{ name() }}</span>
     @if (p.sex; as s) {
       <img [src]="`assets/img/sex/${s}.png`" />

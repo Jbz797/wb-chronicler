@@ -1,14 +1,13 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, viewChild } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { PaletteHelpers } from '../../../helpers';
+import { ActorSpriteHelpers, PaletteHelpers } from '../../../helpers';
 import { RegistryService } from '../../../services';
-import { ActorPortraitComponent } from '../../misc';
 
 @Component({
   selector: 'app-person-tag',
-  imports: [ActorPortraitComponent, NzTagModule],
+  imports: [NzTagModule],
   templateUrl: './person-tag.component.html',
 })
 export class PersonTagComponent {
@@ -22,5 +21,15 @@ export class PersonTagComponent {
   protected readonly person = computed(() => this._registry.persons()[String(this.id())] ?? null);
   // Their realm's own name hue — a subject reads as belonging to that crown, exactly as its `[k]` tag does.
   protected readonly color = computed(() => PaletteHelpers.realmHue(this.person()?.kingdom));
+
+  private readonly _portrait = viewChild<ElementRef<HTMLCanvasElement>>('portrait'); // absent until `@if (person())` has drawn the plate
+
+  constructor() {
+    effect(() => {
+      const canvas = this._portrait()?.nativeElement;
+      const person = this.person();
+      if (canvas && person) ActorSpriteHelpers.paint(canvas, person).catch(() => {}); // a species we hold no sheet for leaves it collapsed
+    });
+  }
 
 }

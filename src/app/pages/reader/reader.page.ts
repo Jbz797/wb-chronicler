@@ -6,7 +6,7 @@ import { MarkdownComponent } from 'ngx-markdown';
 import { map } from 'rxjs';
 
 import { PAGES } from '../../constants';
-import { ActorSpriteHelpers } from '../../helpers';
+import { ActorSpriteHelpers, CitySpriteHelpers, KingdomSpriteHelpers } from '../../helpers';
 import { ChroniclerService, RegistryService } from '../../services';
 
 @Component({
@@ -44,6 +44,12 @@ export class ReaderPage {
     document.querySelector(`[id$="${CSS.escape(slug)}"]`)?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  protected onReady = (): void => ActorSpriteHelpers.paintAll(this._element.nativeElement, this._registry.persons());
+  // Fills the canvas placeholders `marked` left in the prose — subjects and heraldry alike — now that the rendered chapter sits in the DOM.
+  protected onReady(): void {
+    const root = this._element.nativeElement;
+    ActorSpriteHelpers.paintAll(root, this._registry.persons());
+    CitySpriteHelpers.paintAll(root, this._registry.cities());
+    KingdomSpriteHelpers.paintAll(root, this._registry.kingdoms());
+  }
 
 }

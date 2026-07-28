@@ -1,9 +1,9 @@
-import { ActorAtlas, ActorPose, ActorRect, ActorSheets, PersonInfo } from '../interfaces';
+import { ActorAtlas, ActorPose, ActorRect, ActorSheets, PersonInfo } from '../../interfaces';
+import { PaletteHelpers } from '../palette.helpers';
 
-import { PaletteHelpers } from './palette.helpers';
 import { SpriteHelpers } from './sprite.helpers';
 
-// Composes an actor the way WorldBox does — body, weapon, then head — over the plumbing in `SpriteHelpers`. Driven by `<app-actor-portrait>` and the prose tags.
+// Composes an actor the way WorldBox does — body, weapon, then head — over the plumbing in `SpriteHelpers`. Feeds every `[p]` plate, panel and prose alike.
 export class ActorSpriteHelpers {
 
   private static readonly _atlas = fetch('assets/img/actors/actors.json').then(r => r.json() as Promise<ActorAtlas>);
@@ -13,28 +13,13 @@ export class ActorSpriteHelpers {
   private static readonly _scale = 3; // every body (6-16px) then clears the 22px cap `canvas.portrait` imposes, so each one fills it
   private static readonly _sprites = new Map<string, Promise<HTMLCanvasElement | null>>();
 
-  // Scales the composed sprite onto the caller's canvas, at whole pixels so the art stays crisp.
+  // The only one of the three drawn scaled — a body is 6-16px, well under the 22px cap `canvas.portrait` imposes.
   public static async paint(canvas: HTMLCanvasElement, actor: PersonInfo): Promise<void> {
-    const sprite = await this._compose(actor);
-    const context = canvas.getContext('2d');
-    if (!sprite || !context) {
-      canvas.height = 0; // a species we hold no sheet for must take no room at all, not the 300×150 a bare canvas defaults to
-      canvas.width = 0;
-      return;
-    }
-
-    canvas.height = sprite.height * this._scale; // resizing resets the context, so smoothing goes off after it, not before
-    canvas.width = sprite.width * this._scale;
-    context.imageSmoothingEnabled = false;
-    context.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, 0, canvas.width, canvas.height);
+    SpriteHelpers.blit(canvas, await this._compose(actor), this._scale);
   }
 
-  // Paints every `<canvas data-person>` marked left in a rendered chapter. Unknown ids and species collapse to nothing rather than a blank box.
   public static paintAll(root: ParentNode, persons: Record<string, PersonInfo | undefined>): void {
-    for (const canvas of root.querySelectorAll<HTMLCanvasElement>('canvas[data-person]')) {
-      const actor = persons[canvas.dataset.person ?? ''];
-      if (actor) this.paint(canvas, actor).catch(() => {}); // a missing sheet just leaves the canvas collapsed
-    }
+    SpriteHelpers.paintAll(root, 'person', persons, (canvas, actor) => this.paint(canvas, actor));
   }
 
   // Pivot on pivot vertically — it seats a head in its collar, not a pixel above. Centred horizontally: WB's x-pivot is a mirror axis, not a placement point.
@@ -79,7 +64,7 @@ export class ActorSpriteHelpers {
     return cut;
   }
 
-  // Keyed on the whole visual identity, realm hue included: the two `[p 7]` tags of one chapter, and every panel echoing them, compose once between them.
+  // Keyed on the whole visual identity, realm hue included — two subjects alike to the pixel share one sprite, however many tags and panels echo them.
   private static async _compose(actor: PersonInfo): Promise<HTMLCanvasElement | null> {
     const hue = PaletteHelpers.realmHue(actor.kingdom);
     const key = [
@@ -93,11 +78,7 @@ export class ActorSpriteHelpers {
       actor.weapon,
       hue,
     ].join(',');
-    const cached = this._sprites.get(key);
-    if (cached) return cached;
-    const pending = this._build(actor, hue);
-    this._sprites.set(key, pending);
-    return pending;
+    return SpriteHelpers.compose(this._sprites, key, () => this._build(actor, hue));
   }
 
   // WB `Actor.checkSpriteHead`: a helmet, a crown or the wise's white hair replace the head, never overlay it — Python picks which, we only fetch the sheet.
@@ -127,7 +108,8 @@ export class ActorSpriteHelpers {
     const [from, to] = sheets.phenotypes[String(actor.phenotype_index ?? 0)] ?? sheets.phenotypes['1'] ?? [];
     if (from && to) {
       const skin = SpriteHelpers.blend(SpriteHelpers.hexRgb(from), SpriteHelpers.hexRgb(to), 1 - (actor.phenotype_shade ?? 0) / 3); // `PhenotypeAsset.colors[shade]`
-      this._phenotypeGreens.forEach((key, step) => swaps.set(key, skin.map(c => Math.round(c * (this._darkerFactors[step] ?? 1))).join(',')));
+      // Floored, not rounded — `makeDarkerColor` is a multiply, and Unity truncates on the way back to a byte, exactly as `blend` and `tint` do.
+      this._phenotypeGreens.forEach((key, step) => swaps.set(key, skin.map(c => Math.floor(c * (this._darkerFactors[step] ?? 1))).join(',')));
     }
 
     return swaps;

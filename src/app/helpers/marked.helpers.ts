@@ -1,7 +1,7 @@
 import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
-import { CHAPTER_REGISTRY, CITY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SAVES_DIR, SPECIES_COLORS } from '../constants';
+import { CITY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
 import { PaletteHelpers } from './palette.helpers';
@@ -68,12 +68,14 @@ export class MarkedHelpers {
     const { id, tokens: children } = token as IconToken;
     const info = CITY_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
-    // Pre-generated per chapter, kingdom-tinted: gold crown for a capital, stone rampart for a village.
-    const crown = `<img class="crown" src="${SAVES_DIR}/${CHAPTER_REGISTRY.slug}/crowns/c${id}.png" />`;
+
+    const crown = `<canvas class="crown" data-city="${id}"></canvas>`; // `CitySpriteHelpers.paintAll` dyes it once rendered — same crown the tag component paints.
+
+    const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const size = info?.size ? `<span class="city-size"><span>${info.size}</span></span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const style = `--city-color: ${info?.color ?? ''}; --city-ink: ${info?.ink ?? ''}`;
+
     return `<span class="ant-tag entity-tag city-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${size}${species}</span>`;
   }
 
@@ -82,31 +84,36 @@ export class MarkedHelpers {
     const { id, tokens: children } = token as IconToken;
     const info = KINGDOM_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
-    // Pre-generated per chapter: species background + icon, both kingdom-tinted.
-    const banner = `<img class="banner" src="${SAVES_DIR}/${CHAPTER_REGISTRY.slug}/banners/k${id}.png" />`;
+
+    const banner = `<canvas class="banner" data-kingdom="${id}"></canvas>`; // `KingdomSpriteHelpers.paintAll` composes it once rendered — same heraldry as the tag.
+
     const cities = info?.cities ? `<span class="kingdom-cities"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
+    const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
+    const label = `<span class="entity-name">${name}</span>`;
     const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 population → gold/silver/bronze podium medal
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const style = `--kingdom-color: ${info?.color ?? ''}`;
-    const label = `<span class="entity-name">${name}</span>`;
+
     return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
   }
 
   // A subject plate: the actor as WB draws them, name, sex, then their charge where the other plates put a species glyph — the portrait already shows it.
   private static _renderPerson(this: ParserThis, token: Tokens.Generic): string {
     const { id, tokens: children } = token as IconToken;
-    const name = children?.length ? this.parser.parseInline(children) : id;
     const info = PERSON_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
     if (!info) return name;
+
+    const portrait = `<canvas class="portrait" data-person="${id}"></canvas>`; // `ActorSpriteHelpers.paintAll` fills it once rendered — the actor as WB draws them.
+
     const color = PaletteHelpers.realmHue(info.kingdom); // their realm's own name hue — a subject reads as belonging to that crown
-    const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';
-    const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : profession;
-    const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
-    const label = `<span class="entity-name">${name}</span>`;
-    // The actor as WB draws them. Marked renders to a plain HTML string, so all it can leave is the canvas — `ActorSpriteHelpers.paintAll` fills it once rendered.
-    const portrait = `<canvas class="portrait" data-person="${id}"></canvas>`;
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style
+    const label = `<span class="entity-name">${name}</span>`;
+    const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';
+    const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
+
+    const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : profession;
+
     return `<span class="ant-tag entity-tag person-tag${dead}" style="--person-color: ${color}">${portrait}${label}${sex}${badge}</span>`;
   }
 
