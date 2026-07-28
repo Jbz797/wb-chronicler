@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Emits the world sections (`cumulative`/`leaders`/`metadata`/`snapshot`) from the save alone (`mapStats` = WB's period-accurate counters). The chapter's
-# the registries are built by `chapter/registries.py` (the bootstrap), not here. User-facing docs: `tools/tools.md`.
+# registries are built by `chapter/registries.py` (the bootstrap), not here. User-facing docs: `tools/tools.md`.
 #
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names verbatim for raw-save fields (e.g. `relations`, `world_time`) — chronicler reads save directly, divergent names would cause friction.
@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     SICK_TRAITS,
+    city_score_ranks,
     civic_building_ids,
     emit,
     index_by_id,
@@ -54,24 +55,24 @@ _CUMULATIVE_COUNTERS = {
     "wars_started": "warsStarted",
 }
 
-# Chronicler key => WB save fields (sum). Mirrors the 16 rows of WB's « Deaths » panel; `water` is hydrophobic damage (separate from `drowning`).
+# Chronicler key => WB save field. Mirrors the 16 rows of WB's « Deaths » panel; `water` is hydrophobic damage (separate from `drowning`).
 _DEATH_CAUSES = {
-    "acid": ("deaths_acid",),
-    "divine": ("deaths_divine",),
-    "drowning": ("deaths_drowning",),
-    "eaten": ("deaths_eaten",),
-    "explosion": ("deaths_explosion",),
-    "fire": ("deaths_fire",),
-    "gravity": ("deaths_gravity",),
-    "hunger": ("deaths_hunger",),
-    "infection": ("deaths_infection",),
-    "old_age": ("deaths_age",),
-    "other": ("deaths_other",),
-    "plague": ("deaths_plague",),
-    "poison": ("deaths_poison",),
-    "tumor": ("deaths_tumor",),
-    "water": ("deaths_water",),
-    "weapon": ("deaths_weapon",),
+    "acid": "deaths_acid",
+    "divine": "deaths_divine",
+    "drowning": "deaths_drowning",
+    "eaten": "deaths_eaten",
+    "explosion": "deaths_explosion",
+    "fire": "deaths_fire",
+    "gravity": "deaths_gravity",
+    "hunger": "deaths_hunger",
+    "infection": "deaths_infection",
+    "old_age": "deaths_age",
+    "other": "deaths_other",
+    "plague": "deaths_plague",
+    "poison": "deaths_poison",
+    "tumor": "deaths_tumor",
+    "water": "deaths_water",
+    "weapon": "deaths_weapon",
 }
 
 # Chronicler key => save collection simply counted. The rest of the snapshot needs classifying (buildings) or filtering (actors), so it lives in `_build_snapshot`.
@@ -101,13 +102,13 @@ _UNVEGETATED = {
 
 # 0-count entries (counters + per-cause deaths) are dropped — UI treats missing keys as 0. `or 0` also covers the few counters WB stores as null.
 def _build_cumulative(map_stats: dict) -> dict:
-    deaths = ((k, sum(int(map_stats.get(s, 0)) for s in srcs)) for k, srcs in _DEATH_CAUSES.items())
+    deaths = ((k, int(map_stats.get(src) or 0)) for k, src in _DEATH_CAUSES.items())
     out: dict = {k: v for k, src in _CUMULATIVE_COUNTERS.items() if (v := int(map_stats.get(src) or 0)) > 0}
     out["deaths"] = dict(sorted((k, v) for k, v in deaths if v > 0))
     return dict(sorted(out.items()))
 
 
-# Top entity per category (populous village, powerful kingdom, dominant culture/language/religion/subspecies, top renown) — mirrors WB's « Records » panel.
+# Top entity per category (dominant village and realm by their composite scores, dominant culture/language/religion/subspecies, top renown) — WB's « Records ».
 def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
     cities_by_id = index_by_id(save.get("cities") or [])
@@ -118,7 +119,7 @@ def _build_leaders(save: dict) -> dict:
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
 
     # Single pass over actors feeds every leader: category counts, top-renown civilian, and family renown sums (all gated the same way, no need to re-scan).
-    counts: dict[str, Counter] = {k: Counter() for k in ("city", "culture", "language", "religion", "species", "subspecies")}
+    counts: dict[str, Counter] = {k: Counter() for k in ("culture", "language", "religion", "species", "subspecies")}
     family_renown: Counter[int] = Counter()
     top_person, top_renown = None, -1
 
@@ -133,7 +134,6 @@ def _build_leaders(save: dict) -> dict:
             if fid := a.get("family"):
                 family_renown[fid] += renown
         for key, field in (
-            ("city", "cityID"),
             ("culture", "culture"),
             ("language", "language"),
             ("religion", "religion"),
@@ -142,10 +142,9 @@ def _build_leaders(save: dict) -> dict:
             if (v := a.get(field)) is not None:
                 counts[key][v] += 1
 
-    # City/dominant leaders are emitted as `{id, name, value}` — the UI reads the rest (palette, banner, size, species) from the registries.
+    # The four dominant traits, emitted as `{id, name, value}` — the UI reads the rest (palette, banner, size, species) from the registries.
     out: dict[str, dict] = {}
     for key, registry, dest in (
-        ("city", cities_by_id, "most_populous_village"),
         ("culture", cultures_by_id, "dominant_culture"),
         ("language", languages_by_id, "dominant_language"),
         ("religion", religions_by_id, "dominant_religion"),
@@ -156,6 +155,10 @@ def _build_leaders(save: dict) -> dict:
         top_id, value = counts[key].most_common(1)[0]
         entry = registry.get(top_id) or {}
         out[dest] = {"id": top_id, "name": entry.get("name") or f"#{top_id}", "value": value}
+
+    if scores := city_score_ranks(save):  # heaviest settlement by the composite score, not the most populous — size is only one of its ten dimensions
+        top_cid = min(scores, key=lambda cid: scores[cid])
+        out["most_dominant_village"] = {"id": top_cid, "name": (cities_by_id.get(top_cid) or {}).get("name") or f"#{top_cid}"}
 
     if scores := kingdom_score_ranks(save):  # strongest realm by the composite power score, `{id, name}` only — its score is meaningless to the chronicler
         top_kid = min(scores, key=lambda kid: scores[kid])
@@ -196,7 +199,7 @@ def _build_metadata(map_stats: dict) -> dict:
 def _build_snapshot(save: dict) -> dict:
     actors = save.get("actors_data") or []
     civic = civic_building_ids()
-    asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings") or [])  # Count `asset_id`s once, classify distinct keys — avoids 3 scans.
+    asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings") or [])  # Count `asset_id`s once, classify the distinct keys — four scans saved.
 
     # Both omitted when 0 (outbreak-style, idle most chapters). `infected` ⊂ `sick`: a plague never shows up in `infected`, hence the two counters.
     boats = infected = population = sick = 0

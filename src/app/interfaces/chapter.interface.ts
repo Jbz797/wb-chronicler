@@ -67,6 +67,8 @@ interface City {
 // The city's own attributes (age, official culture/religion, leader/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
 interface CityMetadata {
   age: number;
+  attractivity?: number;
+  book_reach?: number;
   buildings: number;
   capital?: boolean;
   culture?: string;
@@ -84,6 +86,7 @@ interface CityMetadata {
   name: string;
   religion?: string;
   renown: number;
+  score_rank: number;
   territory: number;
   wealth: number;
 }
@@ -106,6 +109,8 @@ interface CityPopulation {
 // The city's rank (1-3) per stat among all cities, podium-only; the money ranks (`gold`, `money`, `nobles`) stay chronicler-only — Richesse prints them bare.
 interface CityRanks {
   age?: number;
+  attractivity?: number;
+  book_reach?: number;
   buildings?: number;
   deaths?: number;
   fed_pct?: number;

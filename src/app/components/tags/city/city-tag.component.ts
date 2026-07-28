@@ -15,6 +15,7 @@ export class CityTagComponent {
   private readonly _registry = inject(RegistryService);
 
   public readonly id = input.required<number>();
+  public readonly medal = input(true); // Podium medal shown by default; hidden in the world « Palmarès » where the village is always the winner (gold, redundant).
   public readonly name = input.required<string>();
 
   // Visuals (palette, crown, size, species) come from the cities registry, kept fresh by each city/info.py run. `null` until the city is registered.

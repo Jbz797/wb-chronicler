@@ -21,6 +21,8 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
+    city_score_dimensions,
+    city_score_ranks,
     civic_building_ids,
     competition_ranks,
     emit,
@@ -141,6 +143,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "religions_by_id": index_by_id(save.get("religions", [])),
         "renown_by_city": renown_by_city,
         "save_path": save_path,  # islands cache key — the loaded save's real path (live or a chapter's map.wbox), not the module default.
+        "score_dimensions": city_score_dimensions(save),  # the composite score's ten tallies; two of them have no other source
         "sick_by_city": sick_by_city,
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors.
         "warriors_by_city": warriors_by_city,
@@ -157,6 +160,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
     centres = ((z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2) for z in city.get("zones") or [])
     islands = sorted({iid for pos in centres if (iid := island_lookup.get(pos)) is not None})
 
+    dims = ctx["score_dimensions"]
     kingdom = ctx["kingdoms_by_id"].get(city.get("kingdomID"))
 
     # Founder = the city's first settler (`founder_id`), emitted as `{id, name}` (dead or alive — the registry carries its visuals + tombstone).
@@ -168,6 +172,8 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
 
     return {
         "age": int(age_units / UNITS_PER_YEAR),
+        **({"attractivity": net} if (net := dims["attractivity"].get(cid, 0)) > 0 else {}),  # Net settlers, omitted at 0 or below — a deserted city shows none.
+        **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # 10 per book authored here + its reads
         "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
         "culture": (ctx["cultures_by_id"].get(city.get("id_culture")) or {}).get("name"),  # Official culture (WB `id_culture`), not the population's majority.
@@ -186,6 +192,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "name": city.get("name"),
         "religion": (ctx["religions_by_id"].get(city.get("id_religion")) or {}).get("name"),
         "renown": city.get("renown", 0),
+        "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
         "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
         "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
     }
@@ -232,7 +239,11 @@ def _build_population(city: dict, ctx: dict) -> dict:
 
 
 def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
-    return competition_ranks(city, save.get("cities", []), settlement_rank_getters(ctx, "city"))
+    dims = ctx["score_dimensions"]
+    getters = settlement_rank_getters(ctx, "city")
+    # the two score dimensions the panel surfaces and no other getter covers
+    getters.update({"attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0), "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0)})
+    return competition_ranks(city, save.get("cities", []), getters)
 
 
 def main(argv: list[str]) -> int:

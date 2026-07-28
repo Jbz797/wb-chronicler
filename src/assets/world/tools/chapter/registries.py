@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import SAVES_DIR, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
+from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
 _CROWN_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — the crown a settlement wears when no crown claims it.
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
@@ -45,13 +45,15 @@ def _build_registries(save: dict, prev: dict) -> dict:
         if kid := a.get("civ_kingdom_id"):
             species_by_kingdom[kid][a.get("asset_id")] += 1
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
-        if entry := _person_entry(a, resolve_profession(a, save, captain_ids), items_by_id):
-            persons[str(a["id"])] = entry
+        persons[str(a["id"])] = _person_entry(a, resolve_profession(a, save, captain_ids), items_by_id)
 
     cities_per_kingdom: Counter = Counter(kid for c in cities if (kid := c.get("kingdomID")) is not None)
+    rank_by_city = {cid: rank for cid, rank in city_score_ranks(save).items() if rank <= 3}  # top-3 of the composite settlement weight → same medal as a realm's
     rank_by_kingdom = {kid: rank for kid, rank in kingdom_score_ranks(save).items() if rank <= 3}  # top-3 of the composite power score → gold/silver/bronze medal
 
-    city_registry = {str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID"))) for c in cities}
+    city_registry = {
+        str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID")), rank_by_city.get(c["id"])) for c in cities
+    }
     kingdom_registry = {
         str(k["id"]): _kingdom_visuals(k, species_by_kingdom.get(k["id"], Counter()), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"]))
         | _kingdom_banner(k, kings_by_id, subspecies_by_id)
@@ -74,11 +76,11 @@ def _build_registries(save: dict, prev: dict) -> dict:
 
 
 # City registry entry — what a `[c id Nom]` tag draws, plus the last-known name. A settlement no crown claims falls back to the neutral hue on both lookups.
-def _city_entry(city: dict, species: Counter, kingdom: dict | None) -> dict:
+def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | None) -> dict:
     color_id = (kingdom or {}).get("color_id", "")  # `""` misses every palette, which is exactly the kingdomless answer both colour helpers already give
     color, ink = _kingdom_tag_colors(color_id)
     dominant = species.most_common(1)
-    return {
+    entry = {
         "color": color,
         "crown": "capital" if (kingdom or {}).get("capitalID") == city.get("id") else "city",  # gold crown for the seat, stone rampart for the rest
         "crown_color": _kingdom_text_color(color_id) or _CROWN_FALLBACK_HUE,
@@ -87,6 +89,9 @@ def _city_entry(city: dict, species: Counter, kingdom: dict | None) -> dict:
         "size": _size_tier(species.total()),
         "species": dominant[0][0] if dominant else None,
     }
+    if rank is not None:
+        entry["rank"] = rank
+    return entry
 
 
 # WB `KingdomBanner.setupBanner` inputs, for the UI to compose on canvas: the species' background/icon slots the kingdom's two banner ids pick, each with its hue.
@@ -211,7 +216,7 @@ def _wielded_weapon(carried: list[str]) -> str | None:
 def _write_registry(path: Path, registry: dict) -> None:
     rows = []
     for entry_key, entry_value in sorted(registry.items(), key=lambda item: int(item[0])):
-        fields = ", ".join(f"{json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}" for k, v in sorted(entry_value.items()))
+        fields = json.dumps(dict(sorted(entry_value.items())), ensure_ascii=False)[1:-1]  # one dump per entry, not per field — 3× faster over 3k persons
         rows.append(f"  {json.dumps(entry_key)}: {{ {fields} }}")
     path.write_text("{\n" + ",\n".join(rows) + "\n}\n")
 

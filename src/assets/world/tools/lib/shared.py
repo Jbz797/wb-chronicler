@@ -45,6 +45,18 @@ def _render(value, indent: int = 0, used: int = 0) -> str:
     return one if "\n" not in one and len(pad) + used + len(one) <= _INLINE_WIDTH else multi
 
 
+# Borda shared by both composites → `{id: place}`, 1 = strongest: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens.
+def _score_ranks(ids: list[int], dimensions: dict[str, dict]) -> dict[int, int]:
+    if not ids:
+        return {}
+    totals: Counter = Counter()
+    for values in dimensions.values():
+        for eid in ids:
+            if (own := values.get(eid, 0)) > 0:
+                totals[eid] += len(ids) - sum(values.get(other, 0) > own for other in ids)
+    return {eid: place + 1 for place, eid in enumerate(sorted(ids, key=lambda eid: (-totals[eid], eid)))}
+
+
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
 def _strip_none(value):
     if isinstance(value, dict):
@@ -66,6 +78,57 @@ def age_thresholds(lifespan: float) -> tuple[float, float]:
 @cache
 def civic_building_ids() -> frozenset[str]:
     return frozenset(asset for asset, category in load_data("building-categories.json").items() if category.startswith("civ_"))
+
+
+# Ten dimensions, `{name: {city id: value}}` — six transposed from the kingdom, four village-only. Exported: `city/info.py` surfaces two it has no other source for.
+def city_score_dimensions(save: dict) -> dict[str, dict]:
+    cities = save.get("cities") or []
+    civic = civic_building_ids()
+    elite: Counter = Counter()  # the four per-inhabitant tallies, gathered in one pass rather than by re-walking per-city actor lists
+    money: Counter = Counter()
+    population: Counter = Counter()
+    warriors: Counter = Counter()
+
+    for actor in save.get("actors_data") or []:
+        if (cid := actor.get("cityID")) is not None and not is_boat(actor):
+            elite[cid] += actor.get("renown") or 0
+            money[cid] += actor.get("money") or 0
+            population[cid] += 1
+            warriors[cid] += actor.get("profession") == PROFESSION_WARRIOR
+    buildings: Counter = Counter()  # civic only — `save.buildings` is mostly flora and ore, which would drown the tally
+    gold: Counter = Counter()
+
+    for building in save.get("buildings") or []:
+        if (cid := building.get("cityID")) is None:
+            continue
+        if building.get("asset_id") in civic:
+            buildings[cid] += 1
+        for resource in (building.get("resources") or {}).get("saved_resources") or []:
+            if resource.get("id") == "gold":
+                gold[cid] += resource.get("amount", 0)
+    book_reach: Counter = Counter()  # 10 per authored book + how widely it's read, as the kingdom score counts it
+
+    for book in save.get("books") or []:
+        if (cid := book.get("author_city_id")) is not None:
+            book_reach[cid] += 10 + (book.get("times_read") or 0)
+
+    return {
+        "attractivity": {c["id"]: c.get("migrated", 0) - c.get("left", 0) for c in cities},  # `migrated - left` fits a headcount best; `joined`/`moved` worsen it.
+        "book_reach": book_reach,
+        "buildings": buildings,
+        "elite": elite,  # the renown of its inhabitants — who lives there, where `renown` below is what the city itself achieved
+        "kills": {c["id"]: c.get("total_kills", 0) for c in cities},
+        "population": population,
+        "renown": {c["id"]: c.get("renown", 0) for c in cities},
+        "territory": {c["id"]: len(c.get("zones") or []) for c in cities},
+        "warriors": warriors,
+        "wealth": {c["id"]: money[c["id"]] + gold[c["id"]] for c in cities},
+    }
+
+
+# Composite « settlement weight » ranking → `{city id: place}` (1 = heaviest, id-tiebroken). Drives the tag medal and the world panel's dominant village.
+def city_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, int]:
+    return _score_ranks([c["id"] for c in save.get("cities") or []], dimensions if dimensions is not None else city_score_dimensions(save))
 
 
 # Standard competition rank (1,2,2,4) among `peers` per getter — top 3 only. `skip_zero` drops metrics the entity has none of (no meaningless podium at 0).
@@ -106,9 +169,7 @@ def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
 
 
-# The ten dimensions the composite power score weighs, as `{name: {kingdom id: value}}` — size (population, territory), might (warriors, kills, wars_won),
-# wealth (coins + gold ore), prestige (renown, its culture/language/religion traits, foundings) and literary reach (10 per authored book + its reads).
-# Named rather than anonymous because `kingdom/info.py` surfaces four of them (`book_reach`/`culture_traits`/`foundings`/`wars_won`) it has no other source for.
+# Ten dimensions, `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces four it has no other source for.
 def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     kingdoms = save.get("kingdoms") or []
     ids = [k["id"] for k in kingdoms]
@@ -168,20 +229,9 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     }
 
 
-# Composite « kingdom power » ranking → `{kingdom id: place}` (1 = strongest, id-tiebroken); each dim awards N … 1 points, 0 scores none. Drives the tag medal.
+# Composite « kingdom power » ranking → `{kingdom id: place}` (1 = strongest, id-tiebroken). Drives the tag medal.
 def kingdom_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, int]:
-    ids = [k["id"] for k in save.get("kingdoms") or []]
-    if not ids:
-        return {}
-    totals: Counter = Counter()
-    if dimensions is None:
-        dimensions = kingdom_score_dimensions(save)
-    for values in dimensions.values():  # N − (kingdoms strictly ahead); a value of 0 sits out
-        for kid in ids:
-            if (own := values.get(kid, 0)) > 0:
-                totals[kid] += len(ids) - sum(values.get(other, 0) > own for other in ids)
-    order = sorted(ids, key=lambda kid: (-totals[kid], kid))
-    return {kid: place + 1 for place, kid in enumerate(order)}
+    return _score_ranks([k["id"] for k in save.get("kingdoms") or []], dimensions if dimensions is not None else kingdom_score_dimensions(save))
 
 
 # Narrative age tier for kingdom demographics: baby/child/teen from `age_adult` (÷8, ÷2, ·1); `elder` = WB `isPrettyOld` (age/lifespan > 0.7).

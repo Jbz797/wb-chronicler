@@ -2,6 +2,9 @@
   <nz-tag class="entity-tag city-tag" [class.dead]="c.dead" [style.--city-color]="c.color" [style.--city-ink]="c.ink" [title]="name()">
     <canvas #crown class="crown"></canvas>
     <span class="entity-name">{{ name() }}</span>
+    @if (medal() && c.rank; as r) {
+      <img class="medal" [src]="`assets/img/podium/${r}.png`" />
+    }
     @if (c.size; as s) {
       <span class="city-size">
         <span>{{ s }}</span>

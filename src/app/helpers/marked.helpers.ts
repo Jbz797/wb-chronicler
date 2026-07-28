@@ -63,7 +63,7 @@ export class MarkedHelpers {
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };
 
-  // A settlement plate: crown, name, size medallion, species glyph — everything but the realm's banner, which is what keeps it lighter than its `[k]`.
+  // A settlement plate: crown, name, podium medal, size medallion, species glyph — everything but the realm's banner, which keeps it lighter than its `[k]`.
   private static _renderCity(this: ParserThis, token: Tokens.Generic): string {
     const { id, tokens: children } = token as IconToken;
     const info = CITY_REGISTRY[id];
@@ -72,11 +72,12 @@ export class MarkedHelpers {
     const crown = `<canvas class="crown" data-city="${id}"></canvas>`; // `CitySpriteHelpers.paintAll` dyes it once rendered — same crown the tag component paints.
 
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
+    const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
     const size = info?.size ? `<span class="city-size"><span>${info.size}</span></span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const style = `--city-color: ${info?.color ?? ''}; --city-ink: ${info?.ink ?? ''}`;
 
-    return `<span class="ant-tag entity-tag city-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${size}${species}</span>`;
+    return `<span class="ant-tag entity-tag city-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
   }
 
   // A realm plate: banner, name, podium medal, city count, species glyph — the heraldry comes first, as it does in WB's own kingdom list.
@@ -90,7 +91,7 @@ export class MarkedHelpers {
     const cities = info?.cities ? `<span class="kingdom-cities"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
-    const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 population → gold/silver/bronze podium medal
+    const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite power score, as the city's is
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const style = `--kingdom-color: ${info?.color ?? ''}`;
 

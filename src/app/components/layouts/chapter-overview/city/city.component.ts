@@ -42,5 +42,15 @@ export class CityComponent {
     ];
     return rows.filter(r => (p[r.stat] ?? 0) > 0);
   });
+  // Score dimensions with no other home in the panel — Python omits each at 0, so a row appears only once the settlement has earned it.
+  protected readonly scoreStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
+    const m = this.city()?.metadata;
+    if (!m) return [];
+    const rows = [
+      { icon: 'assets/img/world/population.png', label: 'Attractivité', stat: 'attractivity' as const },
+      { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', stat: 'book_reach' as const },
+    ];
+    return rows.filter(r => (m[r.stat] ?? 0) > 0);
+  });
 
 }

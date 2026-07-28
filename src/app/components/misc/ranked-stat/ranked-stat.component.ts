@@ -74,9 +74,14 @@ export class RankedStatComponent {
     if (this.source() === 'city') {
       const c = entity as NonNullable<ChapterMeta['city']>;
       const key = this.stat();
+
+      if (key === 'score_rank') return this._snap(c.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
       if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
-      if (CITY_META_STATS.has(key)) return this._snap(c.metadata[key as CityMetaStat], c.ranks?.[key as CityMetaStat]);
+
+      // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
+      if (CITY_META_STATS.has(key)) return this._snap(c.metadata[key as CityMetaStat] ?? 0, c.ranks?.[key as CityMetaStat]);
       const pk = key as PopulationStat;
+
       // Cities don't rank `immortals`/`infected`/`sick` (absent from `CityRanks`) — the value still reads from `population`, the rank just stays undefined.
       const ranks = c.ranks as Record<string, number | undefined> | undefined;
       return this._snap(c.population[pk] ?? 0, ranks?.[pk]);
@@ -85,6 +90,7 @@ export class RankedStatComponent {
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
       const key = this.stat();
+
       if (key === 'score_rank') return this._snap(k.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
       if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
 

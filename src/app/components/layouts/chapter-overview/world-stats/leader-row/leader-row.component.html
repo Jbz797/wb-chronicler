@@ -1,8 +1,8 @@
 @let r = row();
 @switch (r.key) {
-  @case ('most_populous_village') {
+  @case ('most_dominant_village') {
     @if (r.id !== undefined) {
-      <app-city-tag [id]="r.id" [name]="r.name" />
+      <app-city-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
   }
   @case ('most_powerful_kingdom') {

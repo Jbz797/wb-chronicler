@@ -13,6 +13,9 @@
       </nz-descriptions-item>
     }
 
+    <nz-descriptions-item [nzTitle]="scoreRankTitle">
+      <app-ranked-stat source="city" stat="score_rank" suffix="ᵉ" [inverted]="true" [showRank]="false" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat source="city" stat="age" suffix=" ans" [hideDelta]="true" />
     </nz-descriptions-item>
@@ -34,6 +37,14 @@
     <nz-descriptions-item [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="city" stat="renown_total" />
     </nz-descriptions-item>
+    @for (s of scoreStats(); track s.stat) {
+      <ng-template #scoreTitle>
+        <img [src]="s.icon" /><span>{{ s.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="scoreTitle">
+        <app-ranked-stat source="city" [stat]="s.stat" />
+      </nz-descriptions-item>
+    }
     @for (o of optionalStats(); track o.stat) {
       <ng-template #optionalTitle>
         <img [src]="o.icon" /><span>{{ o.label }}</span>
@@ -87,6 +98,7 @@
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
+  <ng-template #scoreRankTitle><img src="assets/img/podium/1.png" /><span>Classement</span></ng-template>
   <ng-template #territoryTitle><img src="assets/img/world/territory.png" /><span>Territoire</span></ng-template>
   <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
 }

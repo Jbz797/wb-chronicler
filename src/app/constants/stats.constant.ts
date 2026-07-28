@@ -60,8 +60,10 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: stri
   village_founder: { active: false, label: 'Fondateur de village' },
 };
 
-// City `RankedStatKind`s resolved from `metadata` (vs `population`) — same as the kingdom's minus `cities`, which a settlement has none of.
-export const CITY_META_STATS = new Set<RankedStatKind>(['age', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth']);
+// City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `cities`, plus the `attractivity` only a settlement can have.
+export const CITY_META_STATS = new Set<RankedStatKind>([
+  'age', 'attractivity', 'book_reach', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
+]);
 
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
 export const KINGDOM_META_STATS = new Set<RankedStatKind>([
@@ -108,7 +110,7 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
 // Top entity per category (WB « Records »). Ordered like the collapses (person → village → kingdom); `icon` overrides the `<key>.png` lookup for `dominant_*`.
 export const LEADERS: { icon?: string; key: LeaderKind; label: string }[] = [
   { key: 'most_renowned_person', label: 'Perso. illustre' },
-  { key: 'most_populous_village', label: 'Village peuplé' },
+  { icon: 'village', key: 'most_dominant_village', label: 'Village dominant' },
   { icon: 'kingdom', key: 'most_powerful_kingdom', label: 'Roy. dominant' },
   { key: 'most_renowned_clan', label: 'Clan illustre' },
   { icon: 'families', key: 'most_renowned_family', label: 'Famille illustre' },

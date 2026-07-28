@@ -5,6 +5,7 @@ export interface CityInfo {
   crown_color?: string;
   dead?: boolean;
   ink: string;
+  rank?: number;
   size?: number;
   species?: string;
 }
