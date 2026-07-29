@@ -87,7 +87,7 @@ canvas {
       font-weight: 800;
       height: 14.5px;
       justify-content: center;
-      width: 14.5px;
+      padding: 0 2px; // Two pixels of air whatever the digit count — the old fixed 14.5px box left `18` touching both edges.
     }
 
     img {

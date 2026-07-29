@@ -73,7 +73,7 @@ export class MarkedHelpers {
 
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
-    const size = info?.size ? `<span class="tag-badge"><span>${info.size}</span></span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
     const ring = PaletteHelpers.realmRing(info?.kingdom); // its crown's emblem tint, framing the plate as it frames that crown's own tag
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const style = `--tag-color: ${PaletteHelpers.realmHue(info?.kingdom)}${ring ? `; --tag-ring: ${ring}` : ''}`; // omitted, never empty — empty kills the fallback
@@ -89,7 +89,7 @@ export class MarkedHelpers {
 
     const banner = `<canvas class="banner" data-kingdom="${id}" height="0" width="0"></canvas>`; // `KingdomSpriteHelpers.paintAll` composes it once rendered
 
-    const cities = info?.cities ? `<span class="tag-badge"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
+    const cities = info?.cities ? `<span class="tag-badge">${info.cities}</span>` : ''; // city-count badge, mirrors the city-tag size medallion
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite power score, as the city's is
@@ -113,7 +113,7 @@ export class MarkedHelpers {
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';
-    const level = info.level ? `<span class="tag-badge"><span>${info.level}</span></span>` : ''; // only once earned — Python omits the level-1 crowd
+    const level = info.level ? `<span class="tag-badge">${info.level}</span>` : ''; // only once earned — Python omits the level-1 crowd
     const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
 
     const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : profession;

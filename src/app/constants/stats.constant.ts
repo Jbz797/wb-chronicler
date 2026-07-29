@@ -109,16 +109,16 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
 
 // Top entity per category (WB « Records »). Ordered like the collapses (person → village → kingdom); `icon` overrides the `<key>.png` lookup for `dominant_*`.
 export const LEADERS: { icon?: string; key: LeaderKind; label: string }[] = [
-  { key: 'most_renowned_person', label: 'Perso. illustre' },
-  { icon: 'village', key: 'most_dominant_village', label: 'Village dominant' },
-  { icon: 'kingdom', key: 'most_powerful_kingdom', label: 'Roy. dominant' },
-  { key: 'most_renowned_clan', label: 'Clan illustre' },
-  { icon: 'families', key: 'most_renowned_family', label: 'Famille illustre' },
+  { icon: 'person', key: 'most_renowned_person', label: 'P. illustre' },
+  { icon: 'village', key: 'most_dominant_village', label: 'V. dominant' },
+  { icon: 'kingdom', key: 'most_powerful_kingdom', label: 'R. dominant' },
+  { key: 'most_renowned_clan', label: 'C. illustre' },
+  { icon: 'families', key: 'most_renowned_family', label: 'F. illustre' },
   { icon: 'species', key: 'dominant_species', label: 'Espèce' },
   { icon: 'cultures', key: 'dominant_culture', label: 'Culture' },
   { icon: 'languages', key: 'dominant_language', label: 'Langue' },
   { icon: 'religions', key: 'dominant_religion', label: 'Religion' },
-  { icon: 'subspecies', key: 'dominant_subspecies', label: 'Sous-espèce' },
+  { icon: 'subspecies', key: 'dominant_subspecies', label: 'S. espèce' },
 ];
 
 // Death causes — runtime-sorted by per-chapter count desc and 0-count rows hidden in `world-stats.component`. Icons at `assets/img/world/deaths/<key>.png`.
@@ -175,12 +175,11 @@ export const SNAPSHOT_STATS: { hideIfZero?: boolean; key: SnapshotStat; label: s
   { key: 'families', label: 'Familles' },
   { key: 'clans', label: 'Clans' },
   { key: 'alliances', label: 'Alliances' },
-  { key: 'wars', label: 'Guerres' },
+  { hideIfZero: true, key: 'wars', label: 'Guerres' },
   { key: 'armies', label: 'Armées' },
   { hideIfZero: true, key: 'boats', label: 'Bateaux' },
   { key: 'languages', label: 'Langues' },
   { key: 'cultures', label: 'Cultures' },
   { key: 'religions', label: 'Religions' },
-  { key: 'equipment', label: 'Équipement' },
   { key: 'books', label: 'Livres' },
 ];

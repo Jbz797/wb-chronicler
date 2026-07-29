@@ -386,7 +386,6 @@ interface WorldSnapshot {
   cities: number;
   clans: number;
   cultures: number;
-  equipment: number;
   families: number;
   frozen_tiles: number;
   houses: number;

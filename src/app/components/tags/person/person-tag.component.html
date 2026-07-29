@@ -3,9 +3,7 @@
     <canvas #portrait class="portrait" height="0" width="0"></canvas>
     <span class="entity-name">{{ name() }}</span>
     @if (p.level; as l) {
-      <span class="tag-badge">
-        <span>{{ l }}</span>
-      </span>
+      <span class="tag-badge">{{ l }}</span>
     }
     @if (p.sex; as s) {
       <img [src]="`assets/img/sex/${s}.png`" />

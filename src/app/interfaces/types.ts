@@ -39,6 +39,6 @@ export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'attractivity' |
   | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'
-  | 'cultures' | 'equipment' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'
+  | 'cultures' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'
   | 'languages' | 'population' | 'religions' | 'sick' | 'subspecies' | 'trees' | 'vegetation'
   | 'wars' | 'wild_creatures';

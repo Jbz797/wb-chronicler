@@ -75,7 +75,15 @@ _DEATH_CAUSES = {
     "weapon": "deaths_weapon",
 }
 
-# Chronicler key => save collection simply counted. The rest of the snapshot needs classifying (buildings) or filtering (actors), so it lives in `_build_snapshot`.
+# Actor field => the save collection naming it. Each yields a `dominant_<field>` leader; the plurals are irregular enough (`subspecies`) to spell out.
+_DOMINANT = {
+    "culture": "cultures",
+    "language": "languages",
+    "religion": "religions",
+    "subspecies": "subspecies",
+}
+
+# Chronicler key => save collection simply counted. What needs classifying (buildings) or filtering (actors, wars) lives in `_build_snapshot` instead.
 _SNAPSHOT_COLLECTIONS = {
     "alliances": "alliances",
     "books": "books",
@@ -88,7 +96,6 @@ _SNAPSHOT_COLLECTIONS = {
     "languages": "languages",
     "religions": "religions",
     "subspecies": "subspecies",
-    "wars": "wars",
 }
 
 _SPECIES = load_data("species.json")  # asset_id → {stats, name, description}. Here for the French `name`; falls back to the asset_id when absent.
@@ -112,14 +119,11 @@ def _build_cumulative(map_stats: dict) -> dict:
 def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
     cities_by_id = index_by_id(save.get("cities") or [])
-    cultures_by_id = index_by_id(save.get("cultures") or [])
     kingdoms_by_id = index_by_id(save.get("kingdoms") or [])
-    languages_by_id = index_by_id(save.get("languages") or [])
-    religions_by_id = index_by_id(save.get("religions") or [])
-    subspecies_by_id = index_by_id(save.get("subspecies") or [])
+    registries = {field: index_by_id(save.get(coll) or []) for field, coll in _DOMINANT.items()}
 
     # Single pass over actors feeds every leader: category counts, top-renown civilian, and family renown sums (all gated the same way, no need to re-scan).
-    counts: dict[str, Counter] = {k: Counter() for k in ("culture", "language", "religion", "species", "subspecies")}
+    counts: dict[str, Counter] = {k: Counter() for k in (*_DOMINANT, "species")}
     family_renown: Counter[int] = Counter()
     top_person, top_renown = None, -1
 
@@ -133,28 +137,17 @@ def _build_leaders(save: dict) -> dict:
                 top_person, top_renown = a, renown
             if fid := a.get("family"):
                 family_renown[fid] += renown
-        for key, field in (
-            ("culture", "culture"),
-            ("language", "language"),
-            ("religion", "religion"),
-            ("subspecies", "subspecies"),
-        ):
+        for field in _DOMINANT:  # counted on every actor, wildlife included — a culture or a tongue outlives the crown that carried it
             if (v := a.get(field)) is not None:
-                counts[key][v] += 1
+                counts[field][v] += 1
 
     # The four dominant traits, emitted as `{id, name, value}` — the UI reads the rest (palette, banner, size, species) from the registries.
     out: dict[str, dict] = {}
-    for key, registry, dest in (
-        ("culture", cultures_by_id, "dominant_culture"),
-        ("language", languages_by_id, "dominant_language"),
-        ("religion", religions_by_id, "dominant_religion"),
-        ("subspecies", subspecies_by_id, "dominant_subspecies"),
-    ):
-        if not counts[key]:
+    for field, registry in registries.items():
+        if not counts[field]:
             continue
-        top_id, value = counts[key].most_common(1)[0]
-        entry = registry.get(top_id) or {}
-        out[dest] = {"id": top_id, "name": entry.get("name") or f"#{top_id}", "value": value}
+        top_id, value = counts[field].most_common(1)[0]
+        out[f"dominant_{field}"] = {"id": top_id, "name": (registry.get(top_id) or {}).get("name") or f"#{top_id}", "value": value}
 
     if scores := city_score_ranks(save):  # heaviest settlement by the composite score, not the most populous — size is only one of its ten dimensions
         top_cid = min(scores, key=lambda cid: scores[cid])
@@ -225,11 +218,11 @@ def _build_snapshot(save: dict) -> dict:
                 "plots_active": len(save.get("plots") or []),
                 "population": population,
                 **({"sick": sick} if sick else {}),
-                # `tree` substring catches every `Building_Tree` asset_id (pine/swamp/birch/…). ≤1% drift vs WB UI — counter moves between snapshots.
-                "trees": sum(n for aid, n in asset_counts.items() if "tree" in aid),
+                "trees": sum(n for aid, n in asset_counts.items() if "tree" in aid),  # Catches every `Building_Tree` variant — ≤1% off WB's unstable counter.
                 "vegetation": sum(
                     n for aid, n in asset_counts.items() if aid not in civic and aid not in _UNVEGETATED and not aid.startswith(("fishing_docks", "mineral"))
                 ),
+                "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
                 "wild_creatures": len(actors) - boats - population,
             }.items()
         )

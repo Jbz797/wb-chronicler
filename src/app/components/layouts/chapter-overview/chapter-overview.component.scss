@@ -85,7 +85,7 @@
       .ant-collapse-extra nz-tag {
         opacity: 0.6;
         position: relative;
-        top: -2px; // a 20px plate against a 16px uppercase title sits ~2px low on its own — lift it so both read as centred on the same line
+        top: -2.5px; // a 20px plate against a 16px uppercase title sits ~2px low on its own — lift it so both read as centred on the same line
       }
 
       .panel-icon {
@@ -169,7 +169,7 @@
           white-space: nowrap;
 
           .entity-tag {
-            max-width: 100px;
+            max-width: 138px;
 
             .entity-name {
               overflow: hidden;
