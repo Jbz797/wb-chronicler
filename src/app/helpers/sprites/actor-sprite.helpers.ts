@@ -9,6 +9,7 @@ export class ActorSpriteHelpers {
   private static readonly _atlas = fetch('assets/img/actors/actors.json').then(r => r.json() as Promise<ActorAtlas>);
   private static readonly _bodySheets: Record<string, string> = { army_captain: 'warrior_1', king: 'king', leader: 'leader', warrior: 'warrior_1' };
   private static readonly _darkerFactors = [1, 0.9, 0.8, 0.7]; // WB `loadPhenotype`: the four greens are one skin colour at four `makeDarkerColor` steps
+  private static readonly _lightPlaceholder: [string, string] = ['255,216,0', '0,0,0'];
   private static readonly _phenotypeGreens = ['184,255,150', '0,255,0', '0,175,0', '74,131,31']; // WB `color_phenotype_green_0..3` → the skin shades
   private static readonly _scale = 3; // every body (6-16px) then clears the 22px cap `canvas.portrait` imposes, so each one fills it
   private static readonly _sprites = new Map<string, Promise<HTMLCanvasElement | null>>();
@@ -105,6 +106,7 @@ export class ActorSpriteHelpers {
   // The realm ramp every WB sprite shares, extended with what only an actor carries: four greens for the four shades of their skin.
   private static _swaps(sheets: ActorAtlas, actor: PersonInfo, hue: string): Map<string, string> {
     const swaps = SpriteHelpers.realmRamp(hue);
+    swaps.set(...this._lightPlaceholder); // WB `drawPixelsAll` blacks `arr_pixels_light` unconditionally — the 37 px of `#FFD800` on the special heads.
     const [from, to] = sheets.phenotypes[String(actor.phenotype_index ?? 0)] ?? sheets.phenotypes['1'] ?? [];
     if (from && to) {
       const skin = SpriteHelpers.blend(SpriteHelpers.hexRgb(from), SpriteHelpers.hexRgb(to), 1 - (actor.phenotype_shade ?? 0) / 3); // `PhenotypeAsset.colors[shade]`

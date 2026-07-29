@@ -1,7 +1,12 @@
 @if (person(); as p) {
-  <nz-tag class="entity-tag person-tag" [class.dead]="p.dead" [style.--person-color]="color()" [title]="name()">
+  <nz-tag class="entity-tag" [class.dead]="p.dead" [style.--tag-color]="color()" [title]="name()">
     <canvas #portrait class="portrait"></canvas>
     <span class="entity-name">{{ name() }}</span>
+    @if (p.level; as l) {
+      <span class="tag-badge">
+        <span>{{ l }}</span>
+      </span>
+    }
     @if (p.sex; as s) {
       <img [src]="`assets/img/sex/${s}.png`" />
     }

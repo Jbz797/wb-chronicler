@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
-_CROWN_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — the crown a settlement wears when no crown claims it.
+_REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — the hue a settlement wears when no crown claims it.
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
 
 
@@ -55,7 +55,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
         str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID")), rank_by_city.get(c["id"])) for c in cities
     }
     kingdom_registry = {
-        str(k["id"]): _kingdom_visuals(k, species_by_kingdom.get(k["id"], Counter()), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"]))
+        str(k["id"]): _kingdom_entry(k, species_by_kingdom.get(k["id"], Counter()), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"]))
         | _kingdom_banner(k, kings_by_id, subspecies_by_id)
         for k in kingdoms
     }
@@ -75,22 +75,20 @@ def _build_registries(save: dict, prev: dict) -> dict:
     return out
 
 
-# City registry entry — what a `[c id Nom]` tag draws, plus the last-known name. A settlement no crown claims falls back to the neutral hue on both lookups.
+# City registry entry — what a `[c id Nom]` tag draws, plus the last-known name. A settlement no crown claims falls back to the neutral hue.
 def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | None) -> dict:
-    color_id = (kingdom or {}).get("color_id", "")  # `""` misses every palette, which is exactly the kingdomless answer both colour helpers already give
-    color, ink = _kingdom_tag_colors(color_id)
+    color_id = (kingdom or {}).get("color_id", "")  # `""` misses every palette, which is exactly the kingdomless answer the colour helper already gives
     dominant = species.most_common(1)
     entry = {
-        "color": color,
+        "color": _kingdom_text_color(color_id) or _REALM_FALLBACK_HUE,  # one hue for the plate text, the medallion and the crown's ramp — its realm's own
         "crown": "capital" if (kingdom or {}).get("capitalID") == city.get("id") else "city",  # gold crown for the seat, stone rampart for the rest
-        "crown_color": _kingdom_text_color(color_id) or _CROWN_FALLBACK_HUE,
-        "ink": ink,
         "name": city.get("name"),
-        "size": _size_tier(species.total()),
         "species": dominant[0][0] if dominant else None,
     }
     if rank is not None:
         entry["rank"] = rank
+    if (size := _size_tier(species.total())) > 1:  # a medallion reading `1` states the floor — every tag pill stays silent at its lowest tier
+        entry["size"] = size
     return entry
 
 
@@ -110,6 +108,21 @@ def _kingdom_banner(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) ->
     }
 
 
+# Kingdom registry entry, minus the heraldry `_kingdom_banner` folds in and the `dead` the merge sets. Same shape as `_city_entry`, one tier up.
+def _kingdom_entry(kingdom: dict, species: Counter, city_count: int, rank: int | None) -> dict:
+    dominant = species.most_common(1)
+    entry: dict = {
+        "color": _kingdom_text_color(kingdom.get("color_id", "")) or _REALM_FALLBACK_HUE,  # a palette WB never shipped would emit a `null` the UI type forbids
+        "name": kingdom.get("name"),
+        "species": dominant[0][0] if dominant else None,
+    }
+    if city_count > 1:  # a lone city (or none, for a realm just fallen) needs no badge — every tag pill stays silent at its lowest tier
+        entry["cities"] = city_count
+    if rank is not None:
+        entry["rank"] = rank
+    return entry
+
+
 # The king's (or founder's) species — drives the banner set: living subspecies → its `species_id`, else the founding `original_actor_asset` (dead-founder fallback).
 def _kingdom_species(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -> str | None:
     king = kings_by_id.get(kingdom.get("kingID"))
@@ -117,31 +130,11 @@ def _kingdom_species(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -
     return (subspecies or {}).get("species_id") or kingdom.get("original_actor_asset")
 
 
-# Kingdom tag palette: bg = darkest of 4 hues, ink = lightest (contrast, `colors-all.json`), else `(None, None)`. Cached — a kingdom's cities share one `color_id`.
-@cache
-def _kingdom_tag_colors(color_id) -> tuple[str | None, str | None]:
-    palette = [h for h in load_data("colors-all.json").get(str(color_id), {}).values() if h]
-    if not palette:
-        return None, None
-    return min(palette, key=_relative_luminance), max(palette, key=_relative_luminance)
-
-
 # WB `getColorText` = the palette's `color_text`, lightened if too dark — the hue WB prints a kingdom's name in. `None` when the palette is missing.
 @cache  # every city of a realm asks for the same hue to dye its crown, on top of the realm's own call
 def _kingdom_text_color(color_id) -> str | None:
     text = load_data("colors-all.json").get(str(color_id), {}).get("color_text")
     return "#{:02X}{:02X}{:02X}".format(*_lighten_if_dark(int(text[i : i + 2], 16) for i in (1, 3, 5))) if text else None
-
-
-# Kingdom registry entry, minus the heraldry `_kingdom_banner` folds in and the `dead` the merge sets.
-def _kingdom_visuals(kingdom: dict, species: Counter, city_count: int, rank: int | None) -> dict:
-    dominant = species.most_common(1)
-    entry: dict = {"color": _kingdom_text_color(kingdom.get("color_id", "")), "name": kingdom.get("name"), "species": dominant[0][0] if dominant else None}
-    if city_count:  # a defunct kingdom can momentarily hold none — omit the badge rather than show a `0`
-        entry["cities"] = city_count
-    if rank is not None:
-        entry["rank"] = rank
-    return entry
 
 
 # WB `MetaSpriteLibrary.checkIfColorTooDark`: +50 to each channel when all three sit below 128 — keeps near-black palettes legible, and feeds the registry name hue.
@@ -168,6 +161,8 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict) -> dic
             entry[field] = value
     if kingdom := actor.get("civ_kingdom_id"):  # Their realm's hue dyes the clothes — kept as a ref so the palette lives in one place, the kingdom registry.
         entry["kingdom"] = kingdom
+    if (level := max(int(actor.get("level") or 0), 1)) > 1:  # 93 % of a world sits at 1 — a medallion on every subject would say nothing, so it stays earned
+        entry["level"] = level
     if name := actor.get("name"):  # Plenty of actors are unnamed — omit rather than store a placeholder; the tag's inline name stays the fallback.
         entry["name"] = name
     if profession and profession != "unit":  # `unit` carries no badge — keep the registry lean.
@@ -177,13 +172,6 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict) -> dic
     if weapon := _wielded_weapon(carried):
         entry["weapon"] = weapon
     return entry
-
-
-# Relative luminance (WCAG) of a "#RRGGBB" colour — used to pick the darkest / lightest of a palette.
-def _relative_luminance(color: str) -> float:
-    channels = [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
-    linear = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
-    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
 
 
 # Settlement tier (1-7) from population — mirrors the `chronicler.md` naming scale (foyer → métropole). Drives the Civ-style size badge on the city tag.

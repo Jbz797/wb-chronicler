@@ -1,4 +1,3 @@
-import { REALM_FALLBACK_HUE } from '../../constants';
 import { CityInfo } from '../../interfaces';
 
 import { SpriteHelpers } from './sprite.helpers';
@@ -27,14 +26,14 @@ export class CitySpriteHelpers {
     if (!context) return null;
 
     context.drawImage(sprite, 0, 0);
-    SpriteHelpers.repaint(context, cut.width, cut.height, SpriteHelpers.realmRamp(city.crown_color ?? REALM_FALLBACK_HUE));
+    SpriteHelpers.repaint(context, cut.width, cut.height, SpriteHelpers.realmRamp(city.color));
     return cut;
   }
 
   // Keyed on sprite and hue alone: every settlement of one realm — and every `[c]` tag echoing them — composes once between them.
   private static async _compose(city: CityInfo): Promise<HTMLCanvasElement | null> {
     if (!city.crown) return null;
-    const key = `${city.crown},${city.crown_color ?? ''}`;
+    const key = `${city.crown},${city.color}`;
     const cached = this._crowns.get(key);
     if (cached) return cached;
     const pending = this._build(city);

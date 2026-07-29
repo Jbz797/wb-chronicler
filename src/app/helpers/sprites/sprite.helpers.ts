@@ -3,7 +3,6 @@ export class SpriteHelpers {
 
   private static readonly _dark: readonly [number, number, number] = [30, 30, 30]; // WB `ColorAsset.initColor` Lerp target
   private static readonly _images = new Map<string, Promise<HTMLImageElement>>();
-  // WB's sixth placeholder, `color_light` → black, is left alone: it lands on a crown's 1-2 highlights, which WB blacks out only to paint the glow back over.
   private static readonly _magentaRamp = ['255,0,255', '222,0,222', '167,0,167', '127,0,127', '88,0,88']; // WB `color_magenta_0..4` → `k_color_0..4`
   private static readonly _shadeTs = [0, 0.13, 0.35, 0.51, 0.66]; // Lerp factors of the five realm steps towards `_dark`
 
@@ -76,6 +75,7 @@ export class SpriteHelpers {
   // The five magenta placeholders mapped to a realm's shade ramp — what dyes an actor's cloth and, in WB, a city's crown. Callers extend the table with their own.
   public static realmRamp(hue: string): Map<string, string> {
     const base = this.hexRgb(hue);
+    // WB's sixth placeholder, `color_light`, stays out — only the actor sheets carry it, so `ActorSpriteHelpers` adds it. No crown, shield or emblem holds a pixel.
     return new Map(this._magentaRamp.map((placeholder, step) => [placeholder, this.blend(this._dark, base, this._shadeTs[step] ?? 0).join(',')]));
   }
 

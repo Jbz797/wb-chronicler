@@ -73,11 +73,11 @@ export class MarkedHelpers {
 
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
-    const size = info?.size ? `<span class="city-size"><span>${info.size}</span></span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
+    const size = info?.size ? `<span class="tag-badge"><span>${info.size}</span></span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const style = `--city-color: ${info?.color ?? ''}; --city-ink: ${info?.ink ?? ''}`;
+    const style = `--tag-color: ${info?.color ?? ''}`;
 
-    return `<span class="ant-tag entity-tag city-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
+    return `<span class="ant-tag entity-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
   }
 
   // A realm plate: banner, name, podium medal, city count, species glyph — the heraldry comes first, as it does in WB's own kingdom list.
@@ -88,14 +88,14 @@ export class MarkedHelpers {
 
     const banner = `<canvas class="banner" data-kingdom="${id}"></canvas>`; // `KingdomSpriteHelpers.paintAll` composes it once rendered — same heraldry as the tag.
 
-    const cities = info?.cities ? `<span class="kingdom-cities"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
+    const cities = info?.cities ? `<span class="tag-badge"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite power score, as the city's is
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const style = `--kingdom-color: ${info?.color ?? ''}`;
+    const style = `--tag-color: ${info?.color ?? ''}`;
 
-    return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
+    return `<span class="ant-tag entity-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
   }
 
   // A subject plate: the actor as WB draws them, name, sex, then their charge where the other plates put a species glyph — the portrait already shows it.
@@ -111,11 +111,12 @@ export class MarkedHelpers {
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';
+    const level = info.level ? `<span class="tag-badge"><span>${info.level}</span></span>` : ''; // only once earned — Python omits the level-1 crowd
     const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
 
     const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : profession;
 
-    return `<span class="ant-tag entity-tag person-tag${dead}" style="--person-color: ${color}">${portrait}${label}${sex}${badge}</span>`;
+    return `<span class="ant-tag entity-tag${dead}" style="--tag-color: ${color}">${portrait}${label}${level}${sex}${badge}</span>`;
   }
 
   // Resource: icon + optional inline text, never coloured.

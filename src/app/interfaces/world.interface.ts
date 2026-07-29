@@ -1,10 +1,8 @@
-// A settlement's tag visuals: `crown` names the sprite `CitySpriteHelpers` paints (`capital`/`city`), `crown_color` dyes it; its `name` is chronicler-only.
+// A settlement's tag visuals: `color` is its realm's hue — plate text, medallion and the crown's ramp all wear it; `crown` names the sprite (`capital`/`city`).
 export interface CityInfo {
   color: string;
   crown?: string;
-  crown_color?: string;
   dead?: boolean;
-  ink: string;
   rank?: number;
   size?: number;
   species?: string;
@@ -29,6 +27,7 @@ export interface PersonInfo {
   dead?: boolean;
   head?: number;
   kingdom?: number;
+  level?: number;
   phenotype_index?: number;
   phenotype_shade?: number;
   profession?: string;
