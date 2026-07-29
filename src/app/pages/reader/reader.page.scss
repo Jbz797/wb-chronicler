@@ -5,7 +5,7 @@
   border-radius: $radius;
   box-shadow: $glow;
   font-family: $font-body;
-  font-size: 1.08rem;
+  font-size: 1.1rem;
   height: calc(100vh - 4rem);
   line-height: 1.75;
   margin: 2rem auto;
@@ -124,6 +124,11 @@
     tr:nth-child(even) td {
       background: $paper-dim;
     }
+  }
+
+  .entity-tag {
+    position: relative;
+    top: 2px;
   }
 
   hr {

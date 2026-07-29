@@ -69,7 +69,7 @@ export class MarkedHelpers {
     const info = CITY_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
 
-    const crown = `<canvas data-city="${id}" height="0" width="0"></canvas>`; // sized to nothing until `CitySpriteHelpers.paintAll` finds it by that attribute
+    const crown = `<canvas class="crown" data-city="${id}" height="0" width="0"></canvas>`; // sized to nothing until `paintAll` finds it by that attribute
 
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
