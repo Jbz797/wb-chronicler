@@ -1,5 +1,5 @@
 @if (person(); as p) {
-  <nz-tag class="entity-tag" [class.dead]="p.dead" [style.--tag-color]="color()" [title]="name()">
+  <nz-tag class="entity-tag" [class.dead]="p.dead" [style.--tag-color]="color()" [style.--tag-ring]="ring()" [title]="name()">
     <canvas #portrait class="portrait"></canvas>
     <span class="entity-name">{{ name() }}</span>
     @if (p.level; as l) {

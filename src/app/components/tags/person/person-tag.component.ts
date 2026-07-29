@@ -21,6 +21,8 @@ export class PersonTagComponent {
   protected readonly person = computed(() => this._registry.persons()[String(this.id())] ?? null);
   // Their realm's own name hue — a subject reads as belonging to that crown, exactly as its `[k]` tag does.
   protected readonly color = computed(() => PaletteHelpers.realmHue(this.person()?.kingdom));
+  // And its emblem tint around the plate — the second half of that belonging, shared with the crown's own tag and its villages'.
+  protected readonly ring = computed(() => PaletteHelpers.realmRing(this.person()?.kingdom));
 
   private readonly _portrait = viewChild<ElementRef<HTMLCanvasElement>>('portrait'); // absent until `@if (person())` has drawn the plate
 

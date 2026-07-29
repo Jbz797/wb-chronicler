@@ -1,9 +1,9 @@
 @if (city(); as c) {
-  <nz-tag class="entity-tag" [class.dead]="c.dead" [style.--tag-color]="c.color" [title]="name()">
-    <canvas #crown class="crown"></canvas>
+  <nz-tag class="entity-tag" [class.dead]="c.dead" [style.--tag-color]="color()" [style.--tag-ring]="ring()" [title]="name()">
+    <canvas #crown></canvas>
     <span class="entity-name">{{ name() }}</span>
     @if (medal() && c.rank; as r) {
-      <img class="medal" [src]="`assets/img/podium/${r}.png`" />
+      <img [src]="`assets/img/podium/${r}.png`" />
     }
     @if (c.size; as s) {
       <span class="tag-badge">

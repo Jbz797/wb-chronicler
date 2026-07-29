@@ -23,7 +23,7 @@ img {
   // One plate and one hue for the three entity tags — a subject, its village and its crown read as one family. Only their sprites and glyphs tell them apart.
   &.entity-tag {
     align-items: center;
-    background-color: $kingdom-plate;
+    background-color: #000;
     border: none;
     color: var(--tag-color);
     display: inline-flex;
@@ -36,6 +36,11 @@ img {
     margin-right: 0;
     padding: 0 5px;
     vertical-align: text-top; // Top-align every tag (all 20px) — else the kingdom-tag's tall banner drags its baseline out of line with the prose.
+
+    // Black rides over the emblem tint's outer column, insetting it so plate flanks both sides and it reads alike on any page; the olive fallback keeps both alive.
+    box-shadow:
+      inset 0 0 0 1px #000,
+      inset 0 0 0 1.5px var(--tag-ring, #{$kingdom-plate});
 
     // Every WB sprite is a canvas — pixel-crisp whatever the cap below scales it to, and free of the square icon bound `img` carries.
     canvas {
@@ -62,7 +67,7 @@ img {
       align-items: center;
       background-color: var(--tag-color);
       border-radius: 2px;
-      color: $kingdom-plate;
+      color: #000; // the pill rides the olive edge, so its ink takes the black the name gets rather than the plate — 2.75 → 5.46 on that same palette
       display: inline-flex;
       font-weight: 800;
       height: 14.5px;

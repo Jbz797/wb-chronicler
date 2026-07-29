@@ -1,8 +1,8 @@
-// A settlement's tag visuals: `color` is its realm's hue — plate text, medallion and the crown's ramp all wear it; `crown` names the sprite (`capital`/`city`).
+// A settlement's tag visuals: `crown` names the sprite (`capital`/`city`), and `kingdom` fetches every hue it wears — name, medallion, crown ramp and ring alike.
 export interface CityInfo {
-  color: string;
   crown?: string;
   dead?: boolean;
+  kingdom?: number;
   rank?: number;
   size?: number;
   species?: string;

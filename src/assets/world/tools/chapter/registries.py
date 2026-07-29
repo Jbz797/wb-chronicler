@@ -14,7 +14,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
-_REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — the hue a settlement wears when no crown claims it.
+_REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
+_REGISTRIES = ("cities", "kingdoms", "persons")
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
 
 
@@ -75,16 +76,17 @@ def _build_registries(save: dict, prev: dict) -> dict:
     return out
 
 
-# City registry entry — what a `[c id Nom]` tag draws, plus the last-known name. A settlement no crown claims falls back to the neutral hue.
+# City registry entry — what a `[c id Nom]` tag draws, plus the last-known name. Every hue it wears is its crown's, so `kingdom` stands in for all of them.
 def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | None) -> dict:
-    color_id = (kingdom or {}).get("color_id", "")  # `""` misses every palette, which is exactly the kingdomless answer the colour helper already gives
     dominant = species.most_common(1)
+    kingdom = kingdom or {}
     entry = {
-        "color": _kingdom_text_color(color_id) or _REALM_FALLBACK_HUE,  # one hue for the plate text, the medallion and the crown's ramp — its realm's own
-        "crown": "capital" if (kingdom or {}).get("capitalID") == city.get("id") else "city",  # gold crown for the seat, stone rampart for the rest
+        "crown": "capital" if kingdom.get("capitalID") == city.get("id") else "city",  # gold crown for the seat, stone rampart for the rest
         "name": city.get("name"),
         "species": dominant[0][0] if dominant else None,
     }
+    if kingdom_id := kingdom.get("id"):  # its crown — the UI reads the name hue, the crown's ramp and the ring off it, and fallen realms stay registered
+        entry["kingdom"] = kingdom_id
     if rank is not None:
         entry["rank"] = rank
     if (size := _size_tier(species.total())) > 1:  # a medallion reading `1` states the floor — every tag pill stays silent at its lowest tier
@@ -108,7 +110,7 @@ def _kingdom_banner(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) ->
     }
 
 
-# Kingdom registry entry, minus the heraldry `_kingdom_banner` folds in and the `dead` the merge sets. Same shape as `_city_entry`, one tier up.
+# Kingdom entry, less the heraldry `_kingdom_banner` folds in and the merge's `dead`. It alone holds a hue — cities and subjects read theirs off it.
 def _kingdom_entry(kingdom: dict, species: Counter, city_count: int, rank: int | None) -> dict:
     dominant = species.most_common(1)
     entry: dict = {
@@ -131,7 +133,7 @@ def _kingdom_species(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -
 
 
 # WB `getColorText` = the palette's `color_text`, lightened if too dark — the hue WB prints a kingdom's name in. `None` when the palette is missing.
-@cache  # every city of a realm asks for the same hue to dye its crown, on top of the realm's own call
+@cache  # realms of one palette share the call, and every chapter rebuild replays it
 def _kingdom_text_color(color_id) -> str | None:
     text = load_data("colors-all.json").get(str(color_id), {}).get("color_text")
     return "#{:02X}{:02X}{:02X}".format(*_lighten_if_dark(int(text[i : i + 2], 16) for i in (1, 3, 5))) if text else None
@@ -144,7 +146,7 @@ def _lighten_if_dark(channels) -> tuple[int, int, int]:
 
 
 def _load_registries(chapter_dir: Path) -> dict:
-    return {name: json.loads(p.read_text()) if (p := chapter_dir / f"{name}.json").exists() else {} for name in ("cities", "kingdoms", "persons")}
+    return {name: json.loads(p.read_text()) if (p := chapter_dir / f"{name}.json").exists() else {} for name in _REGISTRIES}
 
 
 # Carry each prior entry forward flagged dead (last-known visuals kept, `rank` dropped — a medal is meaningless once fallen), then let live entities overwrite.
@@ -200,7 +202,7 @@ def _wielded_weapon(carried: list[str]) -> str | None:
     return next((asset for asset in carried if asset in assets), None)
 
 
-# Serialize a registry to disk: one line per entry, sorted by numeric id, fields alphabetical — single-line diffs.
+# One line per entry, sorted by numeric id with fields alphabetical, so a changed entry shows up as a one-line diff rather than a reshuffled block.
 def _write_registry(path: Path, registry: dict) -> None:
     rows = []
     for entry_key, entry_value in sorted(registry.items(), key=lambda item: int(item[0])):
@@ -212,7 +214,7 @@ def _write_registry(path: Path, registry: dict) -> None:
 # Builds this chapter's registries when missing (idempotent). Recurses to carry C<n-1> forward first, so the dead persist chapter to chapter.
 def ensure(chapter: str, save: dict | None = None) -> None:
     chapter_dir = SAVES_DIR / chapter
-    if all((chapter_dir / f"{name}.json").exists() for name in ("cities", "kingdoms", "persons")):
+    if all((chapter_dir / f"{name}.json").exists() for name in _REGISTRIES):
         return
     n = int(chapter[1:])
     prev = {}
@@ -231,7 +233,7 @@ def main(argv: list[str]) -> int:
         print("usage: registries.py C<n> [--force] — (re)builds the saves/C<n>/ registries", file=sys.stderr)
         return 2
     if "--force" in argv:  # clear first so `ensure` rebuilds from scratch (e.g. after a py change to an entry's shape)
-        for name in ("cities", "kingdoms", "persons"):
+        for name in _REGISTRIES:
             (SAVES_DIR / chapter / f"{name}.json").unlink(missing_ok=True)
     ensure(chapter)
     return 0

@@ -69,13 +69,14 @@ export class MarkedHelpers {
     const info = CITY_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
 
-    const crown = `<canvas class="crown" data-city="${id}"></canvas>`; // `CitySpriteHelpers.paintAll` dyes it once rendered — same crown the tag component paints.
+    const crown = `<canvas data-city="${id}"></canvas>`; // `CitySpriteHelpers.paintAll` finds it by that attribute and dyes it — same crown the tag paints.
 
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
-    const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
     const size = info?.size ? `<span class="tag-badge"><span>${info.size}</span></span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
+    const ring = PaletteHelpers.realmRing(info?.kingdom); // its crown's emblem tint, framing the plate as it frames that crown's own tag
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const style = `--tag-color: ${info?.color ?? ''}`;
+    const style = `--tag-color: ${PaletteHelpers.realmHue(info?.kingdom)}${ring ? `; --tag-ring: ${ring}` : ''}`; // omitted, never empty — empty kills the fallback
 
     return `<span class="ant-tag entity-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
   }
@@ -91,9 +92,10 @@ export class MarkedHelpers {
     const cities = info?.cities ? `<span class="tag-badge"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
-    const medal = info?.rank ? `<img class="medal" src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite power score, as the city's is
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite power score, as the city's is
+    const ring = info?.banner_icon_color ? `; --tag-ring: ${info.banner_icon_color}` : ''; // the emblem tint framing the plate, as on its cities' own tags
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const style = `--tag-color: ${info?.color ?? ''}`;
+    const style = `--tag-color: ${info?.color ?? ''}${ring}`;
 
     return `<span class="ant-tag entity-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
   }
@@ -115,8 +117,10 @@ export class MarkedHelpers {
     const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
 
     const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : profession;
+    const hue = PaletteHelpers.realmRing(info.kingdom); // their crown's emblem tint, framing the plate exactly as it frames the crown's own tag
+    const style = `--tag-color: ${color}${hue ? `; --tag-ring: ${hue}` : ''}`;
 
-    return `<span class="ant-tag entity-tag${dead}" style="--tag-color: ${color}">${portrait}${label}${level}${sex}${badge}</span>`;
+    return `<span class="ant-tag entity-tag${dead}" style="${style}">${portrait}${label}${level}${sex}${badge}</span>`;
   }
 
   // Resource: icon + optional inline text, never coloured.
