@@ -69,7 +69,7 @@ export class MarkedHelpers {
     const info = CITY_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
 
-    const crown = `<canvas data-city="${id}"></canvas>`; // `CitySpriteHelpers.paintAll` finds it by that attribute and dyes it — same crown the tag paints.
+    const crown = `<canvas data-city="${id}" height="0" width="0"></canvas>`; // sized to nothing until `CitySpriteHelpers.paintAll` finds it by that attribute
 
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
@@ -87,7 +87,7 @@ export class MarkedHelpers {
     const info = KINGDOM_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
 
-    const banner = `<canvas class="banner" data-kingdom="${id}"></canvas>`; // `KingdomSpriteHelpers.paintAll` composes it once rendered — same heraldry as the tag.
+    const banner = `<canvas class="banner" data-kingdom="${id}" height="0" width="0"></canvas>`; // `KingdomSpriteHelpers.paintAll` composes it once rendered
 
     const cities = info?.cities ? `<span class="tag-badge"><span>${info.cities}</span></span>` : ''; // city-count badge, mirrors the city-tag size medallion
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
@@ -107,7 +107,7 @@ export class MarkedHelpers {
     const name = children?.length ? this.parser.parseInline(children) : id;
     if (!info) return name;
 
-    const portrait = `<canvas class="portrait" data-person="${id}"></canvas>`; // `ActorSpriteHelpers.paintAll` fills it once rendered — the actor as WB draws them.
+    const portrait = `<canvas class="portrait" data-person="${id}" height="0" width="0"></canvas>`; // `ActorSpriteHelpers.paintAll` fills it once rendered
 
     const color = PaletteHelpers.realmHue(info.kingdom); // their realm's own name hue — a subject reads as belonging to that crown
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style

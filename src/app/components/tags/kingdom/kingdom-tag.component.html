@@ -1,6 +1,6 @@
 @if (kingdom(); as k) {
   <nz-tag class="entity-tag" [class.dead]="k.dead" [style.--tag-color]="k.color" [style.--tag-ring]="k.banner_icon_color" [title]="name()">
-    <canvas #banner class="banner"></canvas>
+    <canvas #banner class="banner" height="0" width="0"></canvas>
     <span class="entity-name">{{ name() }}</span>
     @if (medal() && k.rank; as r) {
       <img [src]="`assets/img/podium/${r}.png`" />

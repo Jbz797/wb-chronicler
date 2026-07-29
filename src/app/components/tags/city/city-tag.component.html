@@ -1,6 +1,6 @@
 @if (city(); as c) {
   <nz-tag class="entity-tag" [class.dead]="c.dead" [style.--tag-color]="color()" [style.--tag-ring]="ring()" [title]="name()">
-    <canvas #crown></canvas>
+    <canvas #crown height="0" width="0"></canvas>
     <span class="entity-name">{{ name() }}</span>
     @if (medal() && c.rank; as r) {
       <img [src]="`assets/img/podium/${r}.png`" />
