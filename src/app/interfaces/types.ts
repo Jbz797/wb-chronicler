@@ -16,6 +16,9 @@ export type CumulativeStat = 'books_burnt' | 'books_read' | 'cities_conquered' |
 export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' | 'fire' | 'gravity' | 'hunger'
   | 'infection' | 'old_age' | 'other' | 'plague' | 'poison' | 'tumor' | 'water' | 'weapon';
 
+// A French label that agrees with the person it describes — a plain string when invariable, a pair when the ending changes. Resolved by `LabelHelpers.gendered`.
+export type GenderedLabel = string | { f: string; m: string };
+
 export type IconKind = 'cities' | 'kingdoms' | 'persons' | 'resources' | 'species';
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 

@@ -1,3 +1,4 @@
+export * from './label.helpers';
 export * from './marked.helpers';
 export * from './palette.helpers';
 export * from './sprites/actor-sprite.helpers';

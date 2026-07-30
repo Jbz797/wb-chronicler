@@ -4,10 +4,11 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { COMBAT_STATS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, ROLE_LABELS, SKILL_STATS, TENURE_LABELS } from '../../../../constants';
+import { COMBAT_STATS, COMPANION_LABELS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, ROLE_LABELS, SKILL_STATS, TENURE_LABELS } from '../../../../constants';
+import { LabelHelpers } from '../../../../helpers';
 import { RarityCounts } from '../../../../interfaces';
 import { TierPipe } from '../../../../pipes';
-import { ChroniclerService } from '../../../../services';
+import { ChroniclerService, RegistryService } from '../../../../services';
 import { NewBadgeComponent, RankedStatComponent, RarityStatsComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
 
@@ -31,6 +32,7 @@ import { PlotCardComponent } from './plot-card/plot-card.component';
 export class FavoriteComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _registry = inject(RegistryService);
 
   protected readonly combatStats = COMBAT_STATS;
   protected readonly skillStats = SKILL_STATS;
@@ -39,8 +41,8 @@ export class FavoriteComponent {
 
   // Age suffix « ans (<stage>) » — appends the life-stage label to the ranked age value.
   protected readonly ageSuffix = computed(() => {
-    const stage = this.currentChapter()?.meta.favorite?.metadata.life_stage;
-    return stage ? ` ans (${LIFE_STAGE_LABELS[stage]})` : ' ans';
+    const meta = this.currentChapter()?.meta.favorite?.metadata;
+    return meta?.life_stage ? ` ans (${LabelHelpers.gendered(LIFE_STAGE_LABELS[meta.life_stage], meta.sex)})` : ' ans';
   });
   // Tags: personality + active roles. Each one carries `isNew` (true if absent from the previous chapter).
   protected readonly roleTags = computed(() => {
@@ -54,14 +56,14 @@ export class FavoriteComponent {
 
     if (meta.personality) {
       const isNew = !!previousMeta && previousMeta.personality !== meta.personality;
-      tags.push({ color: 'yellow', isNew, label: PERSONALITY_LABELS[meta.personality] ?? meta.personality });
+      tags.push({ color: 'yellow', isNew, label: LabelHelpers.gendered(PERSONALITY_LABELS[meta.personality], meta.sex) || meta.personality });
     }
 
     for (const role of roles) {
       const definition = ROLE_LABELS[role];
       if (definition?.active) {
         const isNew = !!previousMeta && !previousRoles.has(role);
-        tags.push({ color: 'lime', isNew, label: definition.label });
+        tags.push({ color: 'lime', isNew, label: LabelHelpers.gendered(definition.label, meta.sex) });
       }
     }
 
@@ -84,14 +86,18 @@ export class FavoriteComponent {
       role: this.roleTags().some(tag => tag.isNew),
     };
   });
-  // The attachments the favorite actually has — an absent one drops its row entirely, so the template needs neither a fallback nor a branch to render one.
+  // An absent attachment drops its row, sparing the template a fallback. Labels agree with the companion, whose sex only the registry holds — the ref is id + name.
   protected readonly companionRows = computed(() => {
     const companions = this.currentChapter()?.meta.favorite?.companions;
     const changed = this.changedFields();
+    const persons = this._registry.persons();
     return [
-      { isNew: changed.lover, label: 'Amoureux', person: companions?.lover },
-      { isNew: changed.bestFriend, label: 'Meilleur ami', person: companions?.best_friend },
-    ].flatMap(row => row.person ? [{ ...row, person: row.person }] : []);
+      { icon: 'lovers', isNew: changed.lover, label: COMPANION_LABELS.lover, person: companions?.lover },
+      { icon: 'friendship', isNew: changed.bestFriend, label: COMPANION_LABELS.best_friend, person: companions?.best_friend },
+    ].flatMap((row) => {
+      if (!row.person) return [];
+      return [{ ...row, label: LabelHelpers.gendered(row.label, persons[String(row.person.id)]?.sex), person: row.person }];
+    });
   });
   // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — ranked stats handle their own deltas.
   protected readonly deltas = computed(() => {

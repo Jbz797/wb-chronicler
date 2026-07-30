@@ -33,6 +33,11 @@ export class KingdomComponent {
   private readonly _registry = inject(RegistryService);
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
+  // Same lookup for the heir — « Héritière » when the designated successor is a woman.
+  protected readonly heirSex = computed(() => {
+    const h = this.kingdom()?.metadata.heir;
+    return h ? this._registry.persons()[String(h.id)]?.sex ?? '' : '';
+  });
   // NEW badge on the king when the same featured kingdom crowned a different ruler since the previous chapter.
   protected readonly isNewKing = computed(() => {
     const current = this.kingdom()?.metadata;

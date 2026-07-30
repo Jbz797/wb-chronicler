@@ -1,4 +1,4 @@
-import { CumulativeStat, DeathCause, LeaderKind, LifeStage, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
+import { CumulativeStat, DeathCause, GenderedLabel, LeaderKind, LifeStage, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
 
 // French labels for `plot.type_id` — sourced from WB's `PlotsLibrary`. Unknown ids fall back to the raw id at render time.
 export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -33,12 +33,24 @@ export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
 };
 
 // French labels for `metadata.life_stage` — WB age tiers (baby → elder), shown lowercase next to the age.
-export const LIFE_STAGE_LABELS: Readonly<Record<LifeStage, string>> = { adult: 'adulte', baby: 'bébé', child: 'enfant', elder: 'aîné', teen: 'adolescent' };
+export const LIFE_STAGE_LABELS: Readonly<Record<LifeStage, GenderedLabel>> = {
+  adult: 'adulte',
+  baby: 'bébé',
+  child: 'enfant',
+  elder: { f: 'aînée', m: 'aîné' },
+  teen: { f: 'adolescente', m: 'adolescent' },
+};
+
+// The favorite's two attachments — each agrees with the companion's own sex, not the favorite's.
+export const COMPANION_LABELS: Readonly<Record<string, GenderedLabel>> = {
+  best_friend: { f: 'Meilleure amie', m: 'Meilleur ami' },
+  lover: { f: 'Amoureuse', m: 'Amoureux' },
+};
 
 // French labels for `metadata.personality` (mirrors the IDs WB stores). `null` means commoner (no role).
-export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
-  administrator: 'Administrateur',
-  balanced: 'Équilibré',
+export const PERSONALITY_LABELS: Readonly<Record<string, GenderedLabel>> = {
+  administrator: { f: 'Administratrice', m: 'Administrateur' },
+  balanced: { f: 'Équilibrée', m: 'Équilibré' },
   diplomat: 'Diplomate',
   militarist: 'Militariste',
   wildcard: 'Imprévisible',
@@ -48,16 +60,16 @@ export const PERSONALITY_LABELS: Readonly<Record<string, string>> = {
 export const TENURE_LABELS: Readonly<Record<string, string>> = { army_captain: 'Commandement', king: 'Règne', leader: 'Direction' };
 
 // French labels for `metadata.roles` (active = current position, !active = historical foundation) — Python emits the canonical order, do not re-sort here.
-export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: string }>> = {
-  alliance_founder: { active: false, label: "Fondateur d'alliance" },
-  clan_chief: { active: true, label: 'Chef de clan' },
-  clan_founder: { active: false, label: 'Fondateur de clan' },
-  culture_creator: { active: false, label: 'Créateur de culture' },
-  family_alpha: { active: true, label: 'Chef de famille' },
-  family_founder: { active: false, label: 'Fondateur de famille' },
-  language_creator: { active: false, label: 'Créateur de langue' },
-  religion_creator: { active: false, label: 'Créateur de religion' },
-  village_founder: { active: false, label: 'Fondateur de village' },
+export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: GenderedLabel }>> = {
+  alliance_founder: { active: false, label: { f: "Fondatrice d'alliance", m: "Fondateur d'alliance" } },
+  clan_chief: { active: true, label: { f: 'Cheffe de clan', m: 'Chef de clan' } },
+  clan_founder: { active: false, label: { f: 'Fondatrice de clan', m: 'Fondateur de clan' } },
+  culture_creator: { active: false, label: { f: 'Créatrice de culture', m: 'Créateur de culture' } },
+  family_alpha: { active: true, label: { f: 'Cheffe de famille', m: 'Chef de famille' } },
+  family_founder: { active: false, label: { f: 'Fondatrice de famille', m: 'Fondateur de famille' } },
+  language_creator: { active: false, label: { f: 'Créatrice de langue', m: 'Créateur de langue' } },
+  religion_creator: { active: false, label: { f: 'Créatrice de religion', m: 'Créateur de religion' } },
+  village_founder: { active: false, label: { f: 'Fondatrice de village', m: 'Fondateur de village' } },
 };
 
 // City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `cities`, plus the `attractivity` only a settlement can have.

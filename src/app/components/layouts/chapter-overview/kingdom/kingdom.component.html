@@ -122,7 +122,9 @@
   <ng-template #foodPerCapitaTitle><img src="assets/img/world/food_per_capita.png" /><span>Réserves</span></ng-template>
   <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
   <ng-template #goodsTitle><img src="assets/img/world/goods.png" /><span>Biens</span></ng-template>
-  <ng-template #heirTitle><img src="assets/img/world/heir.png" /><span>Héritier</span></ng-template>
+  <ng-template #heirTitle>
+    <img src="assets/img/world/heir.png" /><span>{{ heirSex() === 'female' ? 'Héritière' : 'Héritier' }}</span>
+  </ng-template>
   <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
