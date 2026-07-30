@@ -111,7 +111,6 @@ export class RankedStatComponent {
     if (k === 'armor') return this._snap(f.stats.armor, ranks.armor);
     if (k === 'children') return this._snap(f.stats.children, ranks.children);
     if (k === 'attack_speed') return this._snap(f.stats.attack_speed, ranks.attack_speed);
-    if (k === 'birth_rate') return this._snap(f.stats.birth_rate, ranks.birth_rate);
     if (k === 'critical_chance') return this._snap(f.stats.critical_chance, ranks.critical_chance);
     if (k === 'damage') return this._snap(f.stats.damage, ranks.damage);
     if (k === 'diplomacy') return this._snap(f.stats.diplomacy, ranks.diplomacy);
@@ -121,7 +120,6 @@ export class RankedStatComponent {
     if (k === 'kills') return this._snap(f.stats.kills, ranks.kills);
     if (k === 'level') return this._snap(f.stats.level, ranks.level);
     if (k === 'lifespan') return this._snap(f.stats.lifespan, ranks.lifespan);
-    if (k === 'loot') return this._snap(f.stats.loot, ranks.loot);
     if (k === 'mana') return this._snap(f.stats.mana_max, ranks.mana_max);
     if (k === 'money') return this._snap(f.stats.money, ranks.money);
     if (k === 'renown') return this._snap(f.stats.renown, ranks.renown);

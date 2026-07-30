@@ -27,7 +27,7 @@ from shared import (
     take_chapter,
 )
 
-_ALL_SECTIONS = ("best_friend", "creature_traits", "equipment", "inventory", "lover", "metadata", "plot", "ranks_in_species", "stats")
+_ALL_SECTIONS = ("companions", "creature_traits", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats")
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _LEVEL_RE = re.compile(r"(\d+)$")
 
@@ -90,29 +90,7 @@ _TRAIT_MASS_MODS = {
 _UNDEAD_SPECIES = frozenset({"skeleton"})  # Fail `isAlive`/`needsFood`: never breed, never hunger (no diet).
 
 
-# Lover / best friend snapshot — the handful of fields the companion card shows. `None` when unset or when the companion has died.
-def _build_companion(actor: dict, ctx: dict, id_field: str) -> dict | None:
-    companion_id = actor.get(id_field)
-    if companion_id is None:
-        return None
-    companion = ctx["actors_by_id"].get(companion_id)
-    if companion is None:
-        return None
-    snap = compute_actor_stats(companion, ctx, ctx["subspecies_base_cache"])
-    age_units = ctx["world_time"] - float(companion.get("created_time") or 0)
-    return {
-        "age": int(age_units / UNITS_PER_YEAR) + (companion.get("age_overgrowth") or 0),
-        "health_max": snap.get("health_max", 0),
-        "id": companion_id,
-        "level": snap.get("level", 0),
-        "money": snap.get("money", 0),
-        "name": companion.get("name") or f"#{companion_id}",
-        "renown": snap.get("renown", 0),
-        "sex": sex_label(companion),
-    }
-
-
-# Single pass over actors: id / asset_id lookups + children-per-parent (matches `Actor.get_current_children_count`).
+# One home for every index the sections read, so no caller rolls its own. Actor loop = one pass: id, asset_id, children-per-parent (`get_current_children_count`).
 def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_asset: dict[str, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
@@ -128,7 +106,13 @@ def _build_context(save: dict, save_path: Path) -> dict:
         **build_actor_stats_context(save),
         "actors_by_asset": actors_by_asset,
         "actors_by_id": actors_by_id,
+        "alliances_by_id": index_by_id(save.get("alliances", [])),
         "children_by_parent": children_by_parent,
+        "cities_by_id": index_by_id(save.get("cities", [])),
+        "cultures_by_id": index_by_id(save.get("cultures", [])),
+        "families_by_id": index_by_id(save.get("families", [])),
+        "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
+        "religions_by_id": index_by_id(save.get("religions", [])),
         "save_path": save_path,  # islands cache key — must be the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "subspecies_base_cache": {},
     }
@@ -179,14 +163,9 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)  # `age_overgrowth` (years past the lifespan cap) added on top, like the WB tooltip.
     age_adult, age_breeding = age_thresholds(lifespan)
     ax, ay = actor.get("x"), actor.get("y")
-    cities_by_id = index_by_id(save.get("cities", []))
     clan = ctx["clans_by_id"].get(actor.get("clan")) or {}
-    cultures_by_id = index_by_id(save.get("cultures", []))
-    families_by_id = index_by_id(save.get("families", []))
-    kingdoms_by_id = index_by_id(save.get("kingdoms", []))
     language = ctx["languages_by_id"].get(actor.get("language")) or {}
     profession = resolve_profession(actor, save)
-    religions_by_id = index_by_id(save.get("religions", []))
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}
 
     # `canBreed`/`canMakeBabies` gates: alive, breeding age, not infertile, below offspring cap, fed. Transients (pregnancy, afterglow) aren't in the save.
@@ -204,23 +183,23 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "age": age,
         "asset_id": actor.get("asset_id"),
         "can_reproduce": can_reproduce,
-        "city": entity_ref(actor.get("cityID"), cities_by_id),
+        "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
         "clan": clan.get("name"),
         "clan_chief_years": _resolve_tenure(actor, _CLAN_CHIEF_ROLE, save, ctx["world_time"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
-        "culture": (cultures_by_id.get(actor.get("culture")) or {}).get("name"),
-        "family": (families_by_id.get(actor.get("family")) or {}).get("name"),
+        "culture": (ctx["cultures_by_id"].get(actor.get("culture")) or {}).get("name"),
+        "family": (ctx["families_by_id"].get(actor.get("family")) or {}).get("name"),
         "favorite_food": actor.get("favorite_food"),
         "generation": int(actor.get("generation") or 1),
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
         "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,  # Chronicler-only: land mass (geography/info.py).
-        "kingdom": entity_ref(actor.get("civ_kingdom_id"), kingdoms_by_id),
+        "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": language.get("name"),
         "life_stage": life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor, ctx),
         "name": actor.get("name") or f"#{actor.get('id')}",  # `#id` fallback like every other name field — WB leaves plenty of actors unnamed.
         "personality": _compute_personality(actor, snap),
         "profession": profession,
-        "religion": (religions_by_id.get(actor.get("religion")) or {}).get("name"),
+        "religion": (ctx["religions_by_id"].get(actor.get("religion")) or {}).get("name"),
         "roles": _compute_roles(actor, save),
         "sex": sex_label(actor),
         "subspecies": sub.get("name") or actor.get("subspecies"),
@@ -231,21 +210,19 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
 
 
 # Actor's current plot — `actor.plot` points into `save.plots`. Returns `None` when no plot (most actors). Targets → kingdom/alliance names.
-def _build_plot(actor: dict, save: dict) -> dict | None:
+def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
     plot_id = actor.get("plot")
     if plot_id is None:
         return None
     plot = next((p for p in save.get("plots", []) if p.get("id") == plot_id), None)
     if plot is None:
         return None
-    kingdoms_by_id = index_by_id(save.get("kingdoms", []))
-    alliances_by_id = index_by_id(save.get("alliances", []))
     return {
         "name": plot.get("name"),
         "progress": round(float(plot.get("progress_current", 0)), 1),
         "started_at": round(float(plot.get("created_time", 0)), 2),
-        "target_alliance": entity_ref(plot.get("id_target_alliance"), alliances_by_id),
-        "target_kingdom": entity_ref(plot.get("id_target_kingdom"), kingdoms_by_id),
+        "target_alliance": entity_ref(plot.get("id_target_alliance"), ctx["alliances_by_id"]),
+        "target_kingdom": entity_ref(plot.get("id_target_kingdom"), ctx["kingdoms_by_id"]),
         "type_id": plot.get("plot_type_id"),
     }
 
@@ -294,7 +271,7 @@ def _compute_personality(actor: dict, snap: dict) -> str | None:
 # Top 3 only — UI hides the rest, no narrative use for "34th out of 114". Zero-skip like the city/kingdom ranks: no podium for a stat the actor has none of.
 def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
     same_species = ctx["actors_by_asset"].get(actor.get("asset_id"), [])
-    peers = [_compute_stats(a, ctx, ctx["subspecies_base_cache"]) for a in same_species]
+    peers = [_compute_stats(a, ctx) for a in same_species]
     own = next(s for a, s in zip(same_species, peers) if a["id"] == actor["id"])
 
     def actor_age(a: dict) -> int:
@@ -325,8 +302,8 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
 
 
 # `compute_actor_stats` returns the cleaned pipeline output — we append always-surface counters here (chronicler expects them even at 0).
-def _compute_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
-    cleaned = compute_actor_stats(actor, ctx, subspecies_base_cache)
+def _compute_stats(actor: dict, ctx: dict) -> dict:
+    cleaned = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
     if not cleaned:
         return {}
     cleaned.update(
@@ -432,24 +409,23 @@ def main(argv: list[str]) -> int:
         return 1
 
     out: dict = {}
-    if "best_friend" in sections:
-        out["best_friend"] = _build_companion(actor, ctx, "best_friend_id")
+    if "companions" in sections:  # both attachments as plain refs — `emit` drops whichever is unset or dead, and the section itself when the actor has neither
+        by_id = ctx["actors_by_id"]
+        out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": entity_ref(actor.get("lover"), by_id)}
     if "creature_traits" in sections:
         out["creature_traits"] = _build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"])
     if "equipment" in sections:
         out["equipment"] = _build_equipment_list(actor, ctx)
     if "inventory" in sections:
         out["inventory"] = _build_inventory(actor)
-    if "lover" in sections:
-        out["lover"] = _build_companion(actor, ctx, "lover")
     if "metadata" in sections:
         out["metadata"] = _build_metadata(actor, ctx, save)
     if "plot" in sections:
-        out["plot"] = _build_plot(actor, save)
+        out["plot"] = _build_plot(actor, ctx, save)
     if "ranks_in_species" in sections:
         out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx)
     if "stats" in sections:
-        out["stats"] = _compute_stats(actor, ctx, ctx["subspecies_base_cache"])
+        out["stats"] = _compute_stats(actor, ctx)
 
     emit(out)
     return 0

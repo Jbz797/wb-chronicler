@@ -8,18 +8,19 @@ import { COMBAT_STATS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, ROLE_LABELS, SKILL
 import { RarityCounts } from '../../../../interfaces';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
-import { RankedStatComponent, RarityStatsComponent } from '../../../misc';
+import { NewBadgeComponent, RankedStatComponent, RarityStatsComponent } from '../../../misc';
+import { PersonTagComponent } from '../../../tags';
 
-import { CompanionCardComponent } from './companion-card/companion-card.component';
 import { PlotCardComponent } from './plot-card/plot-card.component';
 
 @Component({
   selector: 'app-favorite',
   imports: [
-    CompanionCardComponent,
+    NewBadgeComponent,
     NzBadgeModule,
     NzDescriptionsModule,
     NzTagModule,
+    PersonTagComponent,
     PlotCardComponent,
     RankedStatComponent,
     RarityStatsComponent,
@@ -76,12 +77,21 @@ export class FavoriteComponent {
     if (current.plot) hasPlotChanged = previous.plot ? previous.plot.type_id !== current.plot.type_id : true;
 
     return {
-      bestFriend: !!current.best_friend && current.best_friend.id !== previous.best_friend?.id,
+      bestFriend: !!current.companions?.best_friend && current.companions.best_friend.id !== previous.companions?.best_friend?.id,
       descriptor: current.descriptor !== previous.descriptor,
-      lover: !!current.lover && current.lover.id !== previous.lover?.id,
+      lover: !!current.companions?.lover && current.companions.lover.id !== previous.companions?.lover?.id,
       plot: hasPlotChanged,
       role: this.roleTags().some(tag => tag.isNew),
     };
+  });
+  // The attachments the favorite actually has — an absent one drops its row entirely, so the template needs neither a fallback nor a branch to render one.
+  protected readonly companionRows = computed(() => {
+    const companions = this.currentChapter()?.meta.favorite?.companions;
+    const changed = this.changedFields();
+    return [
+      { isNew: changed.lover, label: 'Amoureux', person: companions?.lover },
+      { isNew: changed.bestFriend, label: 'Meilleur ami', person: companions?.best_friend },
+    ].flatMap(row => row.person ? [{ ...row, person: row.person }] : []);
   });
   // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — ranked stats handle their own deltas.
   protected readonly deltas = computed(() => {

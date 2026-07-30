@@ -129,16 +129,10 @@ interface CityRanks {
   wealth_per_capita?: number;
 }
 
-// A favorite's lover or best friend — the minimal actor fields the companion card renders.
-interface Companion {
-  age: number;
-  health_max: number;
-  id: number;
-  level: number;
-  money: number;
-  name: string;
-  renown: number;
-  sex: 'female' | 'male';
+// The favorite's two attachments. Python emits each with its full stat line for the chronicler; the UI only ever draws their `[p]` tag, hence `EntityReference`.
+interface Companions {
+  best_friend?: EntityReference;
+  lover?: EntityReference;
 }
 
 // Per-cause death counts since world start — Python omits 0-counts, so UI must treat absent keys as 0.
@@ -166,10 +160,9 @@ interface EntityReference { id: number; name: string }
 
 // Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key. `descriptor` is authored by the chronicler.
 interface Favorite {
-  best_friend?: Companion;
+  companions?: Companions;
   descriptor: string;
   inventory?: Record<string, number>;
-  lover?: Companion;
   metadata: FavoriteMetadata;
   plot?: Plot;
   ranks_in_species?: FavoriteRanks;
@@ -198,7 +191,6 @@ interface FavoriteRanks {
   age?: number;
   armor?: number;
   attack_speed?: number;
-  birth_rate?: number;
   children?: number;
   critical_chance?: number;
   damage?: number;
@@ -209,7 +201,6 @@ interface FavoriteRanks {
   kills?: number;
   level?: number;
   lifespan?: number;
-  loot?: number;
   mana_max?: number;
   money?: number;
   renown?: number;
@@ -223,7 +214,6 @@ interface FavoriteRanks {
 interface FavoriteStats {
   armor: number;
   attack_speed: number;
-  birth_rate: number;
   children: number;
   critical_chance: number;
   damage: number;
@@ -236,7 +226,6 @@ interface FavoriteStats {
   kills: number;
   level: number;
   lifespan: number;
-  loot: number;
   mana: number;
   mana_max: number;
   max_children: number;
