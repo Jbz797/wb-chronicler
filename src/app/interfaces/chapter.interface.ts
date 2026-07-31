@@ -59,10 +59,14 @@ export interface Page { label: string; mdUrl: string; slug: string }
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium (`ranks`) or an empty dimension means no key at all. A city is a kingdom's settlement.
 interface City {
   breakdown: PopulationBreakdown;
+  loyalty: CityLoyalty;
   metadata: CityMetadata;
   population: CityPopulation;
   ranks?: CityRanks;
 }
+
+// How firmly the city holds to its crown: `new.py` keeps only the `total` for the reader, `city/info.py <id> loyalty` itemises the modifiers for the chronicler.
+interface CityLoyalty { total: number }
 
 // The city's own attributes (age, leader/founder, stocks…) — `population` aggregates its inhabitants instead. Its culture/language/religion ship chronicler-only.
 interface CityMetadata {
@@ -81,7 +85,6 @@ interface CityMetadata {
   kills: number;
   kingdom?: EntityReference;
   leader?: { id: number; name: string };
-  loyalty: number; // Sum of the `loyalty` section Python ships alongside — that itemised tally is chronicler-only, the panel prints the total.
   name: string;
   renown: number;
   score_rank: number;

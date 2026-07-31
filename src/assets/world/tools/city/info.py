@@ -169,7 +169,22 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "warriors_by_city": warriors_by_city,
     }
     ctx["loyalty_by_city"] = {c["id"]: _city_loyalty(c, ctx) for c in save.get("cities") or []}  # Last, and out of band: it reads everything above.
+
+    # The one place the total is defined — the loyalty section prints it and the ranks section sorts on it, and they must never drift apart.
+    ctx["loyalty_total_by_city"] = {cid: sum(mods.values()) for cid, mods in ctx["loyalty_by_city"].items()}
+
     return ctx
+
+
+# The city's hold on its crown — the panel prints `total`. Chronicler-only beside it: `drivers` is every modifier and sums to `total`, `top_drivers` does not.
+def _build_loyalty(city_id: int, ctx: dict, detailed: bool) -> dict:
+    mods = ctx["loyalty_by_city"].get(city_id, {})
+    total = ctx["loyalty_total_by_city"].get(city_id, 0)
+    if detailed:
+        return {"drivers": mods, "total": total}  # already ordered like WB's tooltip, strongest bond first
+    top_pos = max((kv for kv in mods.items() if kv[1] > 0), key=lambda kv: kv[1], default=None)
+    top_neg = min((kv for kv in mods.items() if kv[1] < 0), key=lambda kv: kv[1], default=None)
+    return {"top_drivers": dict(kv for kv in (top_pos, top_neg) if kv is not None), "total": total}
 
 
 # The city's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and officialdom tallied in `_build_context`.
@@ -211,13 +226,14 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
         "language": entity_ref(city.get("id_language"), ctx["languages_by_id"]),
         "leader": entity_ref(city.get("leaderID"), ctx["actors_by_id"]),  # The sitting mayor — `None` between leaders.
-        "loyalty": sum(ctx["loyalty_by_city"][cid].values()),  # How firmly the city holds to its crown; the `loyalty` section itemises it.
         "name": city.get("name"),
         "religion": entity_ref(city.get("id_religion"), ctx["religions_by_id"]),
         "renown": city.get("renown", 0),
         "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
         "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
         "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
+        # Chronicler-only, years under the present banner: stamped on annexation, so no key means the city never changed hands. The save keeps no previous owner.
+        **({"years_in_kingdom": _years_since(stamp, ctx)} if (stamp := city.get("timestamp_kingdom")) not in (None, -1.0) else {}),
     }
 
 
@@ -442,7 +458,7 @@ def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
         {
             "attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0),
             "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
-            "loyalty": lambda c: sum(ctx["loyalty_by_city"].get(c.get("id"), {}).values()),
+            "loyalty": lambda c: ctx["loyalty_total_by_city"].get(c.get("id"), 0),
         }
     )
     return competition_ranks(city, save.get("cities", []), getters)
@@ -527,8 +543,9 @@ def main(argv: list[str]) -> int:
     except ValueError:
         print(f"invalid id: {argv[0]}", file=sys.stderr)
         return 1
+    requested = argv[1] if len(argv) > 1 else None
     try:
-        sections = parse_sections(argv[1] if len(argv) > 1 else None, _ALL_SECTIONS)
+        sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -543,7 +560,7 @@ def main(argv: list[str]) -> int:
     if "breakdown" in sections:
         out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
     if "loyalty" in sections:
-        out["loyalty"] = ctx["loyalty_by_city"][city_id]
+        out["loyalty"] = _build_loyalty(city_id, ctx, detailed=requested not in (None, "full"))  # Naming a section gives the full ledger, `full` the summary.
     if "metadata" in sections:
         out["metadata"] = _build_metadata(city, ctx, save)
     if "population" in sections:

@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -54,6 +55,11 @@ def _fired_alerts(save: dict, already: set) -> list[tuple[str, str]]:
     if not present:  # no playable species yet → every `all(...)` would hold vacuously
         return []
     return [(code, spec["message"]) for code, spec in _ALERTS.items() if code not in already and spec["condition"](kingdoms, present)]
+
+
+# Drops the loyalty summary, keeping only its `total` — the panel prints that alone, and `city/info.py <id> loyalty` still itemises every modifier.
+def _fold_city_detail(city: dict) -> None:
+    city.get("loyalty", {}).pop("top_drivers", None)
 
 
 # Folds the favorite's two heavy blocks: `creature_traits` becomes the rarity summary the panel renders, `equipment` goes — both stay whole in `actor/info.py`.
@@ -113,6 +119,13 @@ def _run(rel_path: str, *args) -> dict | None:
     return json.loads(result.stdout) if result.stdout.strip() else None
 
 
+# Runs `(callable, *args)` tuples at once, results in order (`None` call → `None`) — each `info.py` re-parses the whole save and only reads, so overlap is free.
+def _run_together(*calls: tuple | None) -> list:
+    with ThreadPoolExecutor(max_workers=max(len(calls), 1)) as pool:
+        jobs = [pool.submit(*call) if call else None for call in calls]
+    return [job.result() if job else None for job in jobs]
+
+
 def main(argv: list[str]) -> int:
     live_wbox = take_chapter([])[0]  # no `C<n>` token → the live save path
     if not live_wbox.exists():
@@ -148,18 +161,28 @@ def main(argv: list[str]) -> int:
         _WORLD_JSON.write_text(json.dumps({"description": "", "name": ""}, ensure_ascii=False, indent=2) + "\n")
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
-    world = _run("world/info.py", chapter)
+
+    # Two waves rather than four calls in a row: the favorite's metadata names the city and kingdom, so those two can only start once it has landed.
+    world, favorite = _run_together(
+        (_run, "world/info.py", chapter),
+        (_featured_favorite, chapter, fav_id, prev_favorite) if fav_id is not None else None,
+    )
+
     if world is None:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    favorite = _featured_favorite(chapter, fav_id, prev_favorite) if fav_id is not None else None
     city = kingdom = None
     if favorite:
         meta = favorite.get("metadata") or {}
-        if cid := (meta.get("city") or {}).get("id"):
-            city = _run("city/info.py", cid, "full", chapter)
-        if (kid := (meta.get("kingdom") or {}).get("id")) and (kingdom := _run("kingdom/info.py", kid, "full", chapter)):
+        cid, kid = (meta.get("city") or {}).get("id"), (meta.get("kingdom") or {}).get("id")
+        city, kingdom = _run_together(
+            (_run, "city/info.py", cid, "full", chapter) if cid else None,
+            (_run, "kingdom/info.py", kid, "full", chapter) if kid else None,
+        )
+        if city:
+            _fold_city_detail(city)
+        if kingdom:
             _fold_kingdom_detail(kingdom)
 
     age_id = live["mapStats"].get("world_age_id") or ""

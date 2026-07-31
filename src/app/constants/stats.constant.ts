@@ -74,7 +74,7 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: Gend
 
 // City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `cities`, plus the `attractivity` only a settlement can have.
 export const CITY_META_STATS = new Set<RankedStatKind>([
-  'age', 'attractivity', 'book_reach', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'loyalty', 'renown', 'territory', 'wealth',
+  'age', 'attractivity', 'book_reach', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
 ]);
 
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.

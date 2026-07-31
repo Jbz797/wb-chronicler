@@ -76,6 +76,7 @@ export class RankedStatComponent {
       const key = this.stat();
 
       if (key === 'score_rank') return this._snap(c.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
+      if (key === 'loyalty') return this._snap(c.loyalty.total, c.ranks?.loyalty); // its own block, not `metadata`: the modifiers ride alongside the total
       if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
 
       // Score dimensions are omitted at 0 by Python, hence the `?? 0`.

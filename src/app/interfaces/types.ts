@@ -7,7 +7,7 @@ export type ActorRect = [number, number, number, number, number];
 
 export type ChapterOverviewPanel = 'city' | 'favorite' | 'kingdom' | 'world-stats';
 
-export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'loyalty' | 'renown'
+export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
   | 'territory' | 'wealth';
 
 export type CityRegistry = Record<string, CityInfo>;
