@@ -6,10 +6,11 @@
 # Pipeline per chromosome:
 #   1. For each locus (skipping `void_loci`):
 #        a. Detect BAD: at least one cardinal neighbor (N/S/E/W) contains the `bad` gene.
-#        b. Detect GOLDEN: every non-border side synergizes (≥1 synergized side, all of them synergized). BAD has priority over GOLDEN.
+#        b. Detect GOLDEN: every side that holds a real gene synergizes (≥1 such side). Borders AND `empty` slots are skipped. BAD wins over GOLDEN.
 #        c. Apply tier: BAD → floor(v/2) (ceil for `attack_speed`/`damage_1`/`health_1`/`speed_1`); GOLDEN → v×2; else v as-is.
-#        d. Accumulate per stat name.
-#   2. Round any float result to 4 decimals, cast integer-equivalents to int, drop zeros.
+#        d. Accumulate per stat name — into the neutral block, or into one sex's block for the neighbours of a `bonus_male`/`bonus_female` locus.
+#   2. Actor-side: neutral block + the actor's sex block, then traits, equipment, level, `normalize`, derived stats, multipliers, `normalize` again.
+#   3. `_cleanup_stats` truncates floats toward zero (1 decimal for `_KEEP_DECIMAL`), renames, drops zeros.
 #
 # Color synergy: .NET `System.Random` (seed `life_dna + gene._GENE_INDEX`) → 4-side color signature/gene; int32 overflow mirrored (`_to_int32()`/`_SystemRandom`).
 # Color positions (per chronicler.md): indices target *spaced* text (`"XXX XXX XXX XXX XXX"`, 19 chars) at 0/8/10/18 → unspaced 15-char text at 0/6/8/14.
@@ -18,8 +19,9 @@
 import math
 from collections import Counter
 from functools import cache
+from math import inf
 
-from shared import PROFESSION_KING, UNITS_PER_YEAR, age_thresholds, index_by_id, life_stage, load_data
+from shared import PROFESSION_KING, PROFESSION_LEADER, UNITS_PER_YEAR, age_thresholds, index_by_id, life_stage, load_data, sex_label
 
 # Genes that round UP on BAD (instead of down).
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}
@@ -137,19 +139,52 @@ _LEVEL_VETERAN_SKILL_BONUS = 0.1
 _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
 
+
+# WB `BaseStatAsset.normalize_min`/`normalize_max` for the 23 bounded stats — an unset max (2^31) is `inf`. Floors bite: traits push stats under, WB lifts them back.
+_NORMALIZE = {
+    "accuracy": (1, 10),
+    "armor": (0, 99),
+    "army": (0.1, inf),
+    "attack_speed": (0.5, 10),
+    "bonus_towers": (0, 2),
+    "construction_speed": (1, 100),
+    "damage": (1, inf),
+    "damage_range": (0.1, inf),
+    "diplomacy": (0, 999),
+    "health": (1, inf),
+    "intelligence": (0, 999),
+    "lifespan": (1, inf),
+    "offspring": (0, 1000),
+    "personality_administration": (0, 1),
+    "personality_aggression": (0, 1),
+    "personality_diplomatic": (0, 1),
+    "personality_rationality": (0, 1),
+    "projectiles": (1, inf),
+    "speed": (1, inf),
+    "stamina": (1, inf),
+    "stewardship": (0, 999),
+    "throwing_range": (1, 100),
+    "warfare": (0, 999),
+}
+
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
 _RENAMES = {"cities": "max_cities", "health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
+_SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_bonus_male`/`is_bonus_female` — the block each one feeds.
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 _SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
 
 
-def _add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> None:
+def _add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> dict:
+    sex_bonus: dict[str, dict] = {"female": {}, "male": {}}
     for chrom in sub.get("saved_chromosome_data") or []:
         loci = chrom.get("loci") or []
         void_set = set(chrom.get("void_loci") or [])
         super_set = set(chrom.get("super_loci") or [])
         for idx, gene in enumerate(loci):
             if idx in void_set:
+                continue
+            if sex := _SEX_GENES.get(gene):  # carries no stat of its own — it makes its neighbours pay a second time, into one sex's block
+                _add_sex_bonus(sex_bonus[sex], loci, idx, void_set, super_set, life_dna)
                 continue
             entry = _GENE_VALUES.get(gene)
             if entry is None:
@@ -158,6 +193,7 @@ def _add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> None:
             bad = _is_bad(loci, idx)
             golden = (not bad) and _is_golden(loci, idx, void_set, super_set, life_dna)
             totals[stat] = totals.get(stat, 0) + _apply_tier(gene, value, bad, golden)
+    return sex_bonus
 
 
 # Civil progression accumulator (`actor.custom_data_float`) — diplomacy/warfare/stewardship/intelligence +1 per conversation/event/aging tick over actor's life.
@@ -176,6 +212,22 @@ def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, i
         for mod in item.get("modifiers") or []:
             for k, v in (mod_stats.get(mod) or {}).items():
                 totals[k] = totals.get(k, 0) + v
+
+
+# WB `Chromosome.combineBonusesForSides`: the four cardinal neighbours of a sex-bonus locus pay into that sex block at their neutral value, halved next to a `bad`.
+def _add_sex_bonus(block: dict, loci: list[str], idx: int, void_set: set[int], super_set: set[int], life_dna: int) -> None:
+    gathered: dict = {}
+    for dx, dy in _DIRECTIONS:
+        ngene, nidx = _neighbor(loci, void_set, idx, dx, dy)
+        if ngene is None or (entry := _GENE_VALUES.get(ngene)) is None:
+            continue
+        stat, value = entry
+        bad = _is_bad(loci, nidx)
+        golden = (not bad) and _is_golden(loci, nidx, void_set, super_set, life_dna)
+        gathered[stat] = gathered.get(stat, 0) + _apply_tier(ngene, value, bad, golden)
+    crippled = _is_bad(loci, idx)
+    for stat, value in gathered.items():
+        block[stat] = block.get(stat, 0) + (_half(value) if crippled else value)
 
 
 def _add_species_stats(totals: dict, asset_id: str, species_data: dict) -> None:
@@ -200,10 +252,12 @@ def _apply_damage_finalize(totals: dict) -> None:
         totals["critical_chance"] = totals["critical_chance"] * 100
 
 
-# Flat additive bonuses applied late in `Actor.updateStats`: stats["mana"] += int(stats["intelligence"] × _MANA_PER_INTELLIGENCE)
-def _apply_intelligence_bonus(totals: dict) -> None:
-    intel = totals.get("intelligence", 0)
-    if intel:
+# The three stats `updateStats` derives right after normalize #1, in WB's order: each truncates a clamped source like C#'s `(int)`, so `//` is safe.
+def _apply_derived_stats(totals: dict) -> None:
+    totals["cities"] = totals.get("cities", 0) + int(totals.get("stewardship", 0)) // 6 + 1  # one more holding a steward can hold together per 6 points
+    if towers := int(totals.get("warfare", 0) / 10):
+        totals["bonus_towers"] = totals.get("bonus_towers", 0) + towers
+    if intel := totals.get("intelligence", 0):
         totals["mana"] = totals.get("mana", 0) + int(intel * _MANA_PER_INTELLIGENCE)
 
 
@@ -274,6 +328,11 @@ def _gene_colors(gene: str, life_dna: int) -> dict:
     return {"left": _COLOR_MAP[text[0]], "up": _COLOR_MAP[text[6]], "down": _COLOR_MAP[text[8]], "right": _COLOR_MAP[text[14]]}
 
 
+# WB `GeneAsset.getHalfStats`: a whole number floors on halving, a fractional one just keeps its remainder.
+def _half(value: float) -> float:
+    return math.floor(value * 0.5) if float(value).is_integer() else value * 0.5
+
+
 def _is_bad(loci: list[str], idx: int) -> bool:
     rows = len(loci) // _GRID_COLS
     x, y = idx % _GRID_COLS, idx // _GRID_COLS
@@ -289,7 +348,8 @@ def _is_golden(loci: list[str], idx: int, void_set: set[int], super_set: set[int
     non_border = synergized = 0
     for dx, dy in _DIRECTIONS:
         ngene, nidx = _neighbor(loci, void_set, idx, dx, dy)
-        if ngene is None:
+        # An empty slot reads as a border, not a side that failed — WB shows the same `Guérilla I` at +2 beside an empty and +1 beside a real gene.
+        if ngene is None or ngene == "empty":
             continue
         non_border += 1
         if _synergizes(gene, ngene, dx, dy, super_set, idx, nidx, life_dna):
@@ -309,12 +369,16 @@ def _neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) -
     return loci[nidx], nidx
 
 
+# WB `BaseStats.normalize` — bounded stats clamped, absent left absent. Driven by `_NORMALIZE`, not `totals`: measured faster, half an actor's stats are bounded.
+def _normalize(totals: dict) -> None:
+    for stat, (low, high) in _NORMALIZE.items():
+        if stat in totals:
+            totals[stat] = min(max(totals[stat], low), high)
+
+
 def _synergizes(gene: str, ngene: str, dx: int, dy: int, super_set: set[int], my_idx: int, n_idx: int, life_dna: int) -> bool:
     my_super = my_idx in super_set
     n_super = n_idx in super_set
-    # Empty checked first: a super-empty spot has nothing to amplify (calibrated on WB Diplomatie II tooltip).
-    if gene == "empty" or ngene == "empty":
-        return False
     if my_super and n_super:
         return False  # two amplifiers don't synergize with each other
     if my_super or n_super:
@@ -371,6 +435,42 @@ def _to_int32(x: int) -> int:
     return x - 0x100000000 if x >= 0x80000000 else x
 
 
+# WB's `Actor.stats`, floats intact, before `_cleanup_stats`. Combine stats from here: WB adds first, truncates once, so 14.5 stays 14.5.
+def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
+    sub_id = actor.get("subspecies")
+    sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
+    if sub is None:
+        return {}
+    cached = subspecies_base_cache.get(sub_id) if subspecies_base_cache is not None else None
+    if cached is None:
+        base = {}
+        _add_species_stats(base, actor.get("asset_id", ""), ctx["species_data"])
+        sex_bonus = _add_chromosome_stats(base, sub, ctx["life_dna"])
+        _add_trait_stats(base, sub.get("saved_traits") or [], ctx["subspecies_traits"])
+        cached = (base, sex_bonus)
+        if subspecies_base_cache is not None:
+            subspecies_base_cache[sub_id] = cached
+    base, sex_bonus = cached
+    totals = dict(base)
+    for stat, value in sex_bonus[sex_label(actor)].items():  # `updateStats` merges `base_stats_male`/`base_stats_female` on top of the neutral block
+        totals[stat] = totals.get(stat, 0) + value
+    _add_trait_stats(totals, actor.get("saved_traits") or [], ctx["creature_traits"])
+    _add_trait_stats(totals, (ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits") or [], ctx["clan_traits"])
+    _add_trait_stats(totals, (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits") or [], ctx["language_traits"])
+    _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
+    _add_custom_data_float(totals, actor.get("custom_data_float"))
+    _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
+    _normalize(totals)  # `updateStats` normalizes here, ahead of the derived stats: mana reads the clamped intelligence, damage the clamped warfare.
+    _apply_derived_stats(totals)
+    _apply_multipliers(totals)
+    _apply_damage_finalize(totals)
+    _normalize(totals)  # and again at the very end, once the multipliers have had their say
+    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
+    lifespan_units = totals.get("lifespan", 0) * UNITS_PER_YEAR
+    _apply_offspring_age_scaling(totals, age_units / lifespan_units if lifespan_units else 0)
+    return totals
+
+
 # Shared context built from a single save load — feeds every actor stats computation. Callers (actor/info.py, kingdom/info.py) typically extend it with their own keys.
 def build_actor_stats_context(save: dict) -> dict:
     return {
@@ -391,35 +491,11 @@ def build_actor_stats_context(save: dict) -> dict:
 
 # Aggregate one actor's stats (no counters). `subspecies_base_cache` reuses the species+chromosomes+traits base per subspecies — ~7× speedup when ranking peers.
 def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
-    sub_id = actor.get("subspecies")
-    sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
-    if sub is None:
-        return {}
-    base = subspecies_base_cache.get(sub_id) if subspecies_base_cache is not None else None
-    if base is None:
-        base = {}
-        _add_species_stats(base, actor.get("asset_id", ""), ctx["species_data"])
-        _add_chromosome_stats(base, sub, ctx["life_dna"])
-        _add_trait_stats(base, sub.get("saved_traits") or [], ctx["subspecies_traits"])
-        if subspecies_base_cache is not None:
-            subspecies_base_cache[sub_id] = dict(base)
-    totals = dict(base)
-    _add_trait_stats(totals, actor.get("saved_traits") or [], ctx["creature_traits"])
-    _add_trait_stats(totals, (ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits") or [], ctx["clan_traits"])
-    _add_trait_stats(totals, (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits") or [], ctx["language_traits"])
-    _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
-    _add_custom_data_float(totals, actor.get("custom_data_float"))
-    _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
-    _apply_intelligence_bonus(totals)
-    _apply_multipliers(totals)
-    _apply_damage_finalize(totals)
-    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
-    lifespan_units = totals.get("lifespan", 0) * UNITS_PER_YEAR
-    _apply_offspring_age_scaling(totals, age_units / lifespan_units if lifespan_units else 0)
-    cleaned = _cleanup_stats(totals)
-    # `max_cities` (Kingdom.getMaxCities) only matters for kings (profession=3).
-    if actor.get("profession") != PROFESSION_KING:
-        cleaned.pop("max_cities", None)
+    cleaned = _cleanup_stats(actor_stat_totals(actor, ctx, subspecies_base_cache))
+    # Two stats WB reads off a single office-holder: `max_cities` from a king (`Kingdom.getMaxCities`), `bonus_towers` from a city leader (its watch-tower cap).
+    for stat, holder in (("bonus_towers", PROFESSION_LEADER), ("max_cities", PROFESSION_KING)):
+        if actor.get("profession") != holder:
+            cleaned.pop(stat, None)
     return cleaned
 
 
@@ -433,7 +509,8 @@ def demographics(actors: list[dict], ctx: dict) -> dict:
     world_time = ctx["world_time"]
     for a in actors:
         age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
-        lifespan = compute_actor_stats(a, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0)
+        # Raw totals, not `compute_actor_stats`: only `lifespan` is read, so the cleanup's rename-and-sort of thirty other stats would be pure waste per actor.
+        lifespan = int(actor_stat_totals(a, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0))
         stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
         if a.get("sex") != 1:
             men += 1

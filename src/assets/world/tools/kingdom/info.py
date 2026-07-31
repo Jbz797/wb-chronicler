@@ -23,6 +23,7 @@ from shared import (
     civic_building_ids,
     competition_ranks,
     emit,
+    entity_ref,
     food_resources,
     index_by_id,
     is_boat,
@@ -40,10 +41,8 @@ _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor
 _ALL_SECTIONS = ("alliance", "breakdown", "cities", "metadata", "population", "ranks", "relations", "wars")
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else age/money/renown/sex).
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
-_BORDERS_ZONE_DISTANCE = 3  # `areKingdomsClose` proxy: kingdoms are « close » if any pair of their zones are within this Manhattan distance.
-_FAR_LANDS_CAPITAL_DISTANCE = 18  # `!isSameIsland` proxy: capitals further apart than this are treated as on different lands.
 
-# WB `KingdomTraitLibrary`: a tax trait overrides the base rate (`Kingdom.recalcBaseStats`). Emitted as a tier — the rates themselves are WB's to change, the tier isn't.
+# WB `KingdomTraitLibrary`: a tax trait overrides the base rate (`Kingdom.recalcBaseStats`). Emitted as a tier — the rates are WB's to change, the tier isn't.
 _KINGDOM_TAX_TRAITS = {
     "tax_rate_local_high": ("tax_local", "high"),
     "tax_rate_local_low": ("tax_local", "low"),
@@ -52,6 +51,9 @@ _KINGDOM_TAX_TRAITS = {
 }
 
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
+_TRAIT_MODS = _OPINION_CONSTANTS["actor_trait_opinion_mods"]  # Read once per king trait in `_compute_opinion`, so it earns its own name (as in `city/info.py`).
+_WORLDVIEW_NEUTRAL = "neutral"
+_WORLDVIEWS = ("ethnocentric_guard", "xenophiles", "xenophobic")  # WB's `worldview` culture traits: mutually exclusive, often absent — hence our own fourth value.
 
 
 # The kingdom's alliance and its other members (`None` if unaligned). `population`/`renown` sum the members (WB tracks neither), ranked top-3; `motto` often absent.
@@ -114,6 +116,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     nobles_by_kingdom: Counter[int] = Counter()
     nobles_money_by_kingdom: Counter[int] = Counter()
     populations_by_city: Counter[int] = Counter()  # Same base as `city/info.py`: non-boat `cityID` holders, kingdom membership irrelevant.
+    warriors_by_city: Counter[int] = Counter()
     populations_by_kingdom: Counter[int] = Counter()  # Mirrors `Kingdom.getPopulation`; `boat_*` PNJs are transient. Nobles = kings (3) + leaders (4) + captains.
     renown_by_kingdom: Counter[int] = Counter()
     sick_by_kingdom: Counter[int] = Counter()
@@ -127,6 +130,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
             continue
         if cid := actor.get("cityID"):
             populations_by_city[cid] += 1
+            if actor.get("profession") == PROFESSION_WARRIOR:
+                warriors_by_city[cid] += 1  # `countTotalWarriors` reaches them through the cities — a fighter between two homes counts for nobody.
         kid = actor.get("civ_kingdom_id")
         if not kid:
             continue
@@ -140,8 +145,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
             eaters_by_kingdom[kid] += 1
             if int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION:
                 fed_by_kingdom[kid] += 1
-        if actor.get("profession") == PROFESSION_WARRIOR:
-            warriors_by_kingdom[kid] += 1
         if actor.get("profession") in (PROFESSION_KING, PROFESSION_LEADER) or actor["id"] in captain_ids:
             nobles_by_kingdom[kid] += 1
             if actor["id"] not in king_ids:
@@ -173,6 +176,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if not kid:
             continue
         cities_by_kingdom[kid] = cities_by_kingdom.get(kid, 0) + 1
+        warriors_by_kingdom[kid] += warriors_by_city[city["id"]]
         zones = city.get("zones") or []
         territory_by_kingdom[kid] = territory_by_kingdom.get(kid, 0) + len(zones)
         zones_by_kingdom.setdefault(kid, []).extend((z["x"], z["y"]) for z in zones)
@@ -190,10 +194,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
         bx, by = b.get("mainX"), b.get("mainY")
         if bx is None or by is None:
             continue
-        # Building-storage resources summed per city's kingdom: `food` (eatable, mirrors WB's `_current_total_food`), `gold` (ore), `goods` (other materials/gems).
-        city = cities_by_id.get(b.get("cityID"))
-        if city and (fkid := city.get("kingdomID")):
-            for r in (b.get("resources") or {}).get("saved_resources") or []:
+        # Storage per city's kingdom: `food` (eatable, WB `_current_total_food`), `gold` (ore), `goods` (rest) — gated on `resources`, held by 0.5 % of buildings.
+        if (stock := b.get("resources")) and (city := cities_by_id.get(b.get("cityID"))) and (fkid := city.get("kingdomID")):
+            for r in stock.get("saved_resources") or []:
                 rid = r.get("id")
                 amount = r.get("amount", 0)
                 if rid in food_ids:
@@ -211,8 +214,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     capitals_by_kingdom = {k["id"]: cities_by_id[k["capitalID"]] for k in save.get("kingdoms", []) if k.get("capitalID") in cities_by_id}
 
-    # Supreme kingdom = the one with the largest adult population. WB picks the « most powerful » kingdom — population is the most consistent metric across screens.
-    supreme_kingdom_id = max(populations_by_kingdom.items(), key=lambda kv: kv[1])[0] if populations_by_kingdom else None
+    # WB `DiplomacyManager.findSupremeKingdom`: `power = warriors × 2 + cities × 5 + 1`, highest wins — population plays no part, though we once ranked on it.
+    power_by_kingdom = {k["id"]: warriors_by_kingdom[k["id"]] * 2 + cities_by_kingdom.get(k["id"], 0) * 5 + 1 for k in save.get("kingdoms", [])}
+    supreme_kingdom_id = max(power_by_kingdom, key=lambda kid: power_by_kingdom[kid], default=None)
 
     return {
         **build_actor_stats_context(save),
@@ -222,6 +226,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "boats_by_kingdom": boats_by_kingdom,
         "buildings_by_kingdom": buildings_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
+        "island_lookup": compute_islands_cached(save, save_path)[1],  # tile → island id; `far_lands` asks it whether two capitals share a landmass
         "cities_by_id": cities_by_id,
         "cities_by_kingdom": cities_by_kingdom,
         "cultures_by_id": index_by_id(save.get("cultures", [])),
@@ -237,6 +242,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "houses_by_kingdom": houses_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
         "infected_by_kingdom": infected_by_kingdom,
+        "kingdoms_at_war": {kid for w in save.get("wars", []) if not w.get("winner") for side in _war_sides(w) for kid in side},
         "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
         "money_by_kingdom": money_by_kingdom,
         "nobles_by_kingdom": nobles_by_kingdom,
@@ -260,11 +266,12 @@ def _build_context(save: dict, save_path: Path) -> dict:
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
 def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     kid = kingdom["id"]
+    culture_traits = set((ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}).get("saved_traits") or [])
     dims = ctx["score_dimensions"]
     age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
-    _, island_lookup = compute_islands_cached(save, ctx["save_path"])
 
-    # Chronicler-only: distinct island ids touched by the kingdom's city zones, sorted asc (1 = biggest) — probed at each zone's centre tile.
+    # Chronicler-only: island ids the kingdom's city zones touch, sorted asc (1 = biggest), probed at each zone centre. From ctx — recomputing re-reads the disk.
+    island_lookup = ctx["island_lookup"]
     centres = ((zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2) for zx, zy in ctx["zones_by_kingdom"].get(kid, []))
     islands = sorted({iid for pos in centres if (iid := island_lookup.get(pos)) is not None})
 
@@ -301,6 +308,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name") or f"#{cap['id']}"} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
+        "culture": entity_ref(kingdom.get("id_culture"), ctx["cultures_by_id"]),  # The crown's official culture — `breakdown` holds what its subjects actually are.
         **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
@@ -314,15 +322,19 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "islands": islands,
         "king": king,
         "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
+        "language": entity_ref(kingdom.get("id_language"), ctx["languages_by_id"]),
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
         **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
+        **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
+        "religion": entity_ref(kingdom.get("id_religion"), ctx["religions_by_id"]),
         "renown": kingdom.get("renown", 0),
         "score_rank": kingdom_score_ranks(save, dims).get(kid),  # placement on the composite score (1 = strongest); the total stays internal
         **taxes,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
         **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
         "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
+        "worldview": next((t for t in _WORLDVIEWS if t in culture_traits), _WORLDVIEW_NEUTRAL),  # Culture's stance on foreigners (opinion mods 22-24), always set.
     }
 
 
@@ -372,7 +384,7 @@ def _build_population(kingdom: dict, ctx: dict) -> dict:
 
 
 # Diplomatic ties involving this kingdom. Status derived from alliances/wars cross-ref (WB only persists pair + timestamps).
-def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
+def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool = False) -> list[dict]:
     kid = kingdom["id"]
     alliances = save.get("alliances", [])
     ongoing_wars = [w for w in save.get("wars", []) if not w.get("winner")]
@@ -394,7 +406,8 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         if kid in (r.get("kingdom1_id"), r.get("kingdom2_id"))
     }
 
-    kid_zones = ctx["zones_by_kingdom"].get(kid, [])
+    halo = _zone_halo(ctx["zones_by_kingdom"].get(kid, []))  # built once and probed against each rival, rather than rebuilt on every pair
+    side = _opinion_side(kingdom, ctx, allies, war_sides)
     out = []
 
     for other in save.get("kingdoms", []):
@@ -404,14 +417,14 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         r = relations_by_other.get(other_id)
         status = "ally" if other_id in allies else "enemy" if other_id in enemies else "neutral"
         last_war_end = (r or {}).get("timestamp_last_war_ended")
-        borders = _zones_within(kid_zones, ctx["zones_by_kingdom"].get(other_id, []), _BORDERS_ZONE_DISTANCE)
+        borders = not halo.isdisjoint(ctx["zones_by_kingdom"].get(other_id, ()))
 
         out.append(
             {
                 "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / UNITS_PER_YEAR) if r else None,
                 **({"borders": True} if borders else {}),  # Chronicler-only, omitted when False: absence = kingdoms don't share a border.
                 "kingdom": {"id": other_id, "name": other.get("name") or f"#{other_id}"},
-                "opinion": _compute_opinion(kingdom, other, save, ctx, allies, war_sides, r, borders),
+                "opinion": _compute_opinion(kingdom, side, other, ctx, r, borders, detailed),
                 "status": status,
                 "years_since_last_war": int((ctx["world_time"] - float(last_war_end)) / UNITS_PER_YEAR) if last_war_end else None,
             }
@@ -492,54 +505,43 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
     return sorted(out, key=lambda x: x["id"])
 
 
-# Centroid of a city's zone tiles (cities don't carry a centre field — averaged from `zones`).
-def _city_centroid(city: dict | None) -> tuple[float, float] | None:
-    if not city:
-        return None
-    zones = city.get("zones") or []
+# The island its capital stands on, probed at the seat's first zone centre. `None` for a realm without a capital — which then borders nobody's land.
+def _capital_island(kingdom: dict, ctx: dict) -> int | None:
+    capital = ctx["capitals_by_kingdom"].get(kingdom["id"])
+    zones = (capital or {}).get("zones") or []
     if not zones:
         return None
-    return (sum(z["x"] for z in zones) / len(zones), sum(z["y"] for z in zones) / len(zones))
-
-
-# Reconstructs `Actor.stats["diplomacy"]` via the full `actor_stats` pipeline (species + chromosome tiers + traits + equipment + custom_data_float + multipliers + level scaling).
-def _compute_king_diplomacy(king: dict, ctx: dict) -> int:
-    return int(compute_actor_stats(king, ctx, ctx["subspecies_base_cache"]).get("diplomacy", 0))
+    z = zones[0]
+    return ctx["island_lookup"].get((z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2))
 
 
 # Mirror `DiplomacyRelation.recalculate` IL: each numbered modifier = a WB `OpinionAsset`. Runtime stats reconstructed via `actor_stats.compute_actor_stats`.
-def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, allies: set, war_sides: list, relation: dict | None, close: bool) -> dict:
+def _compute_opinion(main: dict, side: dict, target: dict, ctx: dict, relation: dict | None, close: bool, detailed: bool) -> dict:
     mod: dict[str, int] = {}
     mid, tid = main["id"], target["id"]
 
-    main_king = ctx["actors_by_id"].get(main.get("kingID"))
+    main_king, war_sides = side["king"], side["war_sides"]
     target_king = ctx["actors_by_id"].get(target.get("kingID"))
-    main_pos = _city_centroid(ctx["capitals_by_kingdom"].get(mid))
-    target_pos = _city_centroid(ctx["capitals_by_kingdom"].get(tid))
+    enemy = any((mid in att and tid in dfd) or (mid in dfd and tid in att) for att, dfd in war_sides)
 
-    def is_enemy() -> bool:
-        return any((mid in att and tid in dfd) or (mid in dfd and tid in att) for att, dfd in war_sides)
-
-    def is_in_war_on_same_side() -> bool:
-        return any((mid in att and tid in att) or (mid in dfd and tid in dfd) for att, dfd in war_sides)
-
-    enemy = is_enemy()
-
-    # 1. king: target's king's diplomacy stat. Stats are runtime-only in WB, so we reconstruct: species base + trait bonuses + level/2 (level scaling is empirical from screen calibration).
+    # 1. king: target's king's diplomacy stat. WB keeps stats at runtime only, so we rebuild them: species base + traits + level/2 (that last one screen-calibrated).
     if target_king:
-        mod["king"] = _compute_king_diplomacy(target_king, ctx)
+        mod["king"] = _king_stat(target_king, ctx, "diplomacy")
 
-    # 2. kings_mood: main's king's runtime mood — not serialised. Skipped.
+    # 2. kings_mood: WB's name misleads — it reads main's own king's `opinion` stat, which comes from clan traits (`silver_tongues` grants +20).
+    if side["charm"]:
+        mod["kings_mood"] = side["charm"]
 
-    # 3. is_supreme: -100 if target is the « most powerful » kingdom (= largest adult population) and world has ≥3 kingdoms.
-    if tid == ctx.get("supreme_kingdom_id") and len(save.get("kingdoms") or []) >= 3:
+    # 3. is_supreme: -100 if target holds WB's `kingdom_supreme` slot (highest `power`, see `_build_context`) and the world has ≥3 kingdoms.
+    if tid == ctx.get("supreme_kingdom_id") and len(ctx["kingdoms_by_id"]) >= 3:
         mod["is_supreme"] = -100
 
     # 4. borders: ±25. WB checks `areKingdomsClose` (any city pair within adjacency threshold). `close` = the caller's zone-proximity proxy, computed once per pair.
     mod["borders"] = -25 if close else 25
 
-    # 5. far_lands: +60 if not « close » and both capitals exist and are « on different islands ». Proxy: capital Manhattan distance > _FAR_LANDS_CAPITAL_DISTANCE.
-    if not close and main_pos and target_pos and (abs(main_pos[0] - target_pos[0]) + abs(main_pos[1] - target_pos[1])) > _FAR_LANDS_CAPITAL_DISTANCE:
+    # 5. far_lands: +60 when the realms do not border and their capitals sit on different islands (`WorldTile.isSameIsland`), read off the island map.
+    target_island = _capital_island(target, ctx)
+    if not close and side["island"] is not None and target_island is not None and side["island"] != target_island:
         mod["far_lands"] = 60
 
     # 6. in_war: -500 if currently fighting.
@@ -547,7 +549,7 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, allies: se
         mod["in_war"] = -500
 
     # 7. same_wars: +50 if on same side in any ongoing war (and NOT enemies).
-    if not enemy and is_in_war_on_same_side():
+    if not enemy and any((mid in att and tid in att) or (mid in dfd and tid in dfd) for att, dfd in war_sides):
         mod["same_wars"] = 50
 
     # 8. species: ±15/-10 if both kings exist and main « can have prejudice » (assumed true).
@@ -557,33 +559,29 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, allies: se
         if main_sp and target_sp:
             mod["species"] = 15 if main_sp == target_sp else -10
 
-    # 9. zones: clamp((main_zones − target_zones) / 5, -20, 0). Negative when we own more territory than them. WB uses C# int division (truncate toward 0), not Python floor.
-    diff = ctx["territory_by_kingdom"].get(mid, 0) - ctx["territory_by_kingdom"].get(tid, 0)
+    # 9. zones: clamp((main_zones − target_zones) / 5, -20, 0), negative when we own the most. WB's C# division truncates toward 0, where Python's floors.
+    diff = side["territory"] - ctx["territory_by_kingdom"].get(tid, 0)
     zones_val = min(0, max(-20, int(diff / 5)))
     if zones_val:
         mod["zones"] = zones_val
 
-    # 10. peace_time: years since last war > minimum_years_between_wars → min(years, 20). WB treats absent `timestamp_last_war_ended` as 0 (= « forever ago »).
-    last_war_end = float(relation.get("timestamp_last_war_ended") or 0) if relation else None
-    years_since = (ctx["world_time"] - last_war_end) / UNITS_PER_YEAR if last_war_end is not None else None
+    # 10. peace_time: years since their last war, capped at 20, past `minimum_years_between_wars` — `getRelation` mints blanks, so never-paired realms get all 20.
     minimum_years = _OPINION_CONSTANTS.get("minimum_years_between_wars", 5)
-    if not enemy and years_since is not None and years_since > minimum_years:
+    years_since = (ctx["world_time"] - float((relation or {}).get("timestamp_last_war_ended") or 0)) / UNITS_PER_YEAR
+    if not enemy and years_since > minimum_years:
         mod["peace_time"] = min(int(years_since), 20)
 
     # 11. power: max(0, (target_power − main_power) / 10) where power = countCities * 5 + getPopulationPeople() (adults, boats excluded).
-    def power_of(k: dict) -> int:
-        return ctx["cities_by_kingdom"].get(k["id"], 0) * 5 + ctx["populations_by_kingdom"].get(k["id"], 0)
-
-    power_diff = power_of(target) - power_of(main)
+    power_diff = _opinion_power(tid, ctx) - side["power"]
     if power_diff > 0:
         mod["power"] = power_diff // 10
 
     # 12. traits: per target.king trait — +same_trait_mod if main.king has same, +opposite_trait_mod if main.king has opposite.
     if main_king and target_king:
         traits_total = 0
-        main_traits = set(main_king.get("saved_traits") or [])
+        main_traits = side["king_traits"]
         for t in target_king.get("saved_traits") or []:
-            spec = _OPINION_CONSTANTS["actor_trait_opinion_mods"].get(t)
+            spec = _TRAIT_MODS.get(t)
             if not spec:
                 continue
             if t in main_traits:
@@ -607,19 +605,18 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, allies: se
         if main_sub is not None and target_sub is not None:
             mod["subspecies"] = 10 if main_sub == target_sub else -10
 
-    # 17. clan: ±40 if both kings exist, same species, both have clan.
-    if mod.get("species") == 15:
-        main_clan = main.get("royal_clan_id")
-        target_clan = target.get("royal_clan_id")
+    # 17. clan: ±40 between two crowned kings of the SAME SUBSPECIES — same blood is the precondition, the clan then says friend or rival.
+    if main_king and target_king and main_king.get("subspecies") == target_king.get("subspecies"):
+        main_clan, target_clan = main.get("royal_clan_id"), target.get("royal_clan_id")
         if main_clan and target_clan:
             mod["clan"] = 40 if main_clan == target_clan else -40
 
-    # 18. in_alliance: +30 if same alliance — `allies` already holds every kingdom sharing one with `main`.
-    if tid in allies:
+    # 18. in_alliance: +30 if same alliance — `side["allies"]` already holds every kingdom sharing one with `main`.
+    if tid in side["allies"]:
         mod["in_alliance"] = 30
 
     # 19. truce: +100 if not enemy, has a recent relation with last_war_ended within minimum_years.
-    if not enemy and years_since is not None and years_since <= minimum_years:
+    if not enemy and years_since <= minimum_years:
         mod["truce"] = 100
 
     # 20. world_era: bonus_opinion of the current world age.
@@ -630,27 +627,29 @@ def _compute_opinion(main: dict, target: dict, save: dict, ctx: dict, allies: se
 
     # 21. baby_king: -50 if main's king not baby, target's king IS baby. WB « baby » threshold ≈ 16y.
     if main_king and target_king:
-        main_age = ctx["world_time"] - float(main_king.get("created_time") or 0)
         target_age = ctx["world_time"] - float(target_king.get("created_time") or 0)
-        if main_age >= _BABY_AGE_THRESHOLD_UNITS and target_age < _BABY_AGE_THRESHOLD_UNITS:
+        if side["king_age"] >= _BABY_AGE_THRESHOLD_UNITS and target_age < _BABY_AGE_THRESHOLD_UNITS:
             mod["baby_king"] = -50
 
-    # 22-24. ethnocentric_guard / xenophobic / xenophiles: need main.culture.saved_traits. Check below.
-    culture_traits = set((ctx["cultures_by_id"].get(main.get("id_culture")) or {}).get("saved_traits") or [])
-    same_species = mod.get("species") == 15
-    if "ethnocentric_guard" in culture_traits and not same_species and main.get("id_culture") != target.get("id_culture"):
+    # 22-24. Main's culture vs the target's kin, on the dominant SUBSPECIES (`getMainSubspecies`), not species — `ethnocentric_guard` wants the culture to differ.
+    culture_traits = side["culture_traits"]
+    same_sub = side["subspecies"] == _main_subspecies(target, ctx)  # two kingdoms with no subspecies at all read as alike, as WB's null == null does
+    if "ethnocentric_guard" in culture_traits and same_sub and main.get("id_culture") != target.get("id_culture"):
         mod["ethnocentric_guard"] = -50
-    if "xenophobic" in culture_traits and not same_species:
+    if "xenophobic" in culture_traits and not same_sub:
         mod["xenophobic"] = -50
-    if "xenophiles" in culture_traits and same_species:
+    if "xenophiles" in culture_traits and same_sub:
         mod["xenophiles"] = 20
 
-    # Chronicler-only: top + and top - drivers — the « pourquoi » is enough, full ledger bloats tokens.
+    # Chronicler-only, named apart on purpose: `drivers` is every modifier and sums to `total`, `top_drivers` only the heaviest each way and does not.
     non_zero = [(k, v) for k, v in mod.items() if v]
+    if detailed:
+        return {"drivers": dict(sorted(non_zero)), "total": sum(mod.values())}
+
     top_pos = max((kv for kv in non_zero if kv[1] > 0), key=lambda kv: kv[1], default=None)
     top_neg = min((kv for kv in non_zero if kv[1] < 0), key=lambda kv: kv[1], default=None)
-    drivers = dict(sorted([kv for kv in (top_pos, top_neg) if kv is not None]))
-    return {"drivers": drivers, "total": sum(mod.values())}
+
+    return {"top_drivers": dict(sorted([kv for kv in (top_pos, top_neg) if kv is not None])), "total": sum(mod.values())}
 
 
 # City-tier getters + the kingdom-only metrics (city count, health tallies, the wealth split by rank). Top 3 via `competition_ranks`, like every ranks section.
@@ -680,6 +679,52 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     )
 
     return competition_ranks(kingdom, save.get("kingdoms", []), getters)
+
+
+# One of a king's runtime stats, rebuilt through the whole `actor_stats` pipeline — WB reads them off the live actor, we recompute from the save.
+def _king_stat(king: dict, ctx: dict, stat: str) -> int:
+    return int(compute_actor_stats(king, ctx, ctx["subspecies_base_cache"]).get(stat, 0))
+
+
+# WB `Kingdom.getMainSubspecies` — the reigning king's, or its first member's while the throne is empty. `None` for a realm with neither.
+def _main_subspecies(kingdom: dict, ctx: dict) -> int | None:
+    king = ctx["actors_by_id"].get(kingdom.get("kingID"))
+    if king:
+        return king.get("subspecies")
+    members = ctx["actors_by_kingdom"].get(kingdom["id"]) or []
+    return members[0].get("subspecies") if members else None
+
+
+# WB opinion modifier 11's own notion of power — `countCities × 5 + getPopulationPeople()`. Not `_build_context`'s supreme power, which weighs warriors instead.
+def _opinion_power(kingdom_id: int, ctx: dict) -> int:
+    return ctx["cities_by_kingdom"].get(kingdom_id, 0) * 5 + ctx["populations_by_kingdom"].get(kingdom_id, 0)
+
+
+# What the queried realm's opinions would otherwise recompute per rival — the king's stats above all, which walk `actor_stats`. Built once by `_build_relations`.
+def _opinion_side(kingdom: dict, ctx: dict, allies: set, war_sides: list) -> dict:
+    king = ctx["actors_by_id"].get(kingdom.get("kingID"))
+    return {
+        "allies": allies,
+        "charm": _king_stat(king, ctx, "opinion") if king else 0,
+        "culture_traits": set((ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}).get("saved_traits") or []),
+        "island": _capital_island(kingdom, ctx),
+        "king": king,
+        "king_age": ctx["world_time"] - float((king or {}).get("created_time") or 0),
+        "king_traits": set((king or {}).get("saved_traits") or []),
+        "power": _opinion_power(kingdom["id"], ctx),
+        "subspecies": _main_subspecies(kingdom, ctx),
+        "territory": ctx["territory_by_kingdom"].get(kingdom["id"], 0),
+        "war_sides": war_sides,
+    }
+
+
+# Years without a war: since the last one ended (`Kingdom.checkEndWar` stamps `timestamp_last_war`), or since founding if none. `None` while one runs.
+def _peace_years(kingdom: dict, ctx: dict) -> int | None:
+    if kingdom["id"] in ctx["kingdoms_at_war"]:
+        return None
+    stamp = kingdom.get("timestamp_last_war")
+    since = float(stamp) if stamp is not None and float(stamp) != -1.0 else float(kingdom.get("created_time") or 0)
+    return int((ctx["world_time"] - since) / UNITS_PER_YEAR)
 
 
 # Next in line = eligible royal-clan member (alive civ, not the king), ranked by the culture's succession rule (WB `getKingFromRoyalClan`).
@@ -723,19 +768,9 @@ def _war_sides(war: dict) -> tuple[set, set]:
     return attackers, defenders
 
 
-# True if any zone pair is within `max_distance` (Manhattan). Set-probe the distance diamond + early-exit — avoids the O(len_a × len_b) all-pairs min.
-def _zones_within(zones_a: list[tuple[int, int]], zones_b: list[tuple[int, int]], max_distance: int) -> bool:
-    if not zones_a or not zones_b:
-        return False
-    if len(zones_a) > len(zones_b):
-        zones_a, zones_b = zones_b, zones_a
-    b_set = set(zones_b)
-    for ax, ay in zones_a:
-        for dx in range(-max_distance, max_distance + 1):
-            reach = max_distance - abs(dx)
-            if any((ax + dx, ay + dy) in b_set for dy in range(-reach, reach + 1)):
-                return True
-    return False
+# WB `areKingdomsClose` via `City.nearbyBorders`: zone abutting zone, diagonals included. Dilated once, each rival is a set test, not an O(a × b) all-pairs scan.
+def _zone_halo(zones: list[tuple[int, int]]) -> set[tuple[int, int]]:
+    return {(x + dx, y + dy) for x, y in zones for dx in (-1, 0, 1) for dy in (-1, 0, 1)}
 
 
 def main(argv: list[str]) -> int:
@@ -748,8 +783,9 @@ def main(argv: list[str]) -> int:
     except ValueError:
         print(f"invalid id: {argv[0]}", file=sys.stderr)
         return 1
+    requested = argv[1] if len(argv) > 1 else None
     try:
-        sections = parse_sections(argv[1] if len(argv) > 1 else None, _ALL_SECTIONS)
+        sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -774,7 +810,8 @@ def main(argv: list[str]) -> int:
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(kingdom, ctx, save)
     if "relations" in sections:
-        out["relations"] = _build_relations(kingdom, ctx, save)
+        # Naming a section is asking for it in depth, so its opinions come with the full ledger; `full` sweeps everything and keeps the two-line summary.
+        out["relations"] = _build_relations(kingdom, ctx, save, detailed=requested not in (None, "full"))
     if "wars" in sections:
         out["wars"] = _build_wars(kingdom, ctx, save)
 

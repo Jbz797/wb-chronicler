@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
-from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, load_data, load_save, take_chapter
+from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, load_data, load_save, render, take_chapter
 
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → its French title (the game's `locales/fr/world_ages`); unknown ids fall back to the raw id.
 
@@ -61,6 +61,13 @@ def _fold_favorite_detail(favorite: dict) -> None:
     counts = Counter(trait.get("rarity", "").lower() for trait in favorite.pop("creature_traits", []))
     favorite.pop("equipment", None)
     favorite["traits"] = {rarity: counts.get(rarity, 0) for rarity in _RARITIES}
+
+
+# Keeps `opinion.top_drivers` on the ally/enemy ties only — a summary earns its place where it drives events. The `relations` section still gives the full ledger.
+def _fold_kingdom_detail(kingdom: dict) -> None:
+    for relation in kingdom.get("relations") or []:
+        if relation.get("status") == "neutral":
+            relation.get("opinion", {}).pop("top_drivers", None)
 
 
 # Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
@@ -152,8 +159,8 @@ def main(argv: list[str]) -> int:
         meta = favorite.get("metadata") or {}
         if cid := (meta.get("city") or {}).get("id"):
             city = _run("city/info.py", cid, "full", chapter)
-        if kid := (meta.get("kingdom") or {}).get("id"):
-            kingdom = _run("kingdom/info.py", kid, "full", chapter)
+        if (kid := (meta.get("kingdom") or {}).get("id")) and (kingdom := _run("kingdom/info.py", kid, "full", chapter)):
+            _fold_kingdom_detail(kingdom)
 
     age_id = live["mapStats"].get("world_age_id") or ""
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
@@ -168,9 +175,12 @@ def main(argv: list[str]) -> int:
     tags += [code for code, _message in new_alerts]
 
     age_label = _AGE_LABELS.get(age_id, age_id)
+
     # `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
     chapter_json = {"age_label": age_label, "city": city, "favorite": favorite, "kingdom": kingdom, "tags": tags, "title": "", "world": world}
-    (chapter_dir / "chapter.json").write_text(json.dumps(chapter_json, ensure_ascii=False, indent=2) + "\n")
+
+    # `render`, not `json.dumps(indent=2)`: same tree, a third fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong here.
+    (chapter_dir / "chapter.json").write_text(render(chapter_json) + "\n")
 
     year = int(world_time / UNITS_PER_YEAR)
     counts = {name: len(json.loads((chapter_dir / f"{name}.json").read_text())) for name in ("cities", "kingdoms", "persons")}

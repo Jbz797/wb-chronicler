@@ -74,7 +74,7 @@ export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: Gend
 
 // City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `cities`, plus the `attractivity` only a settlement can have.
 export const CITY_META_STATS = new Set<RankedStatKind>([
-  'age', 'attractivity', 'book_reach', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
+  'age', 'attractivity', 'book_reach', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'loyalty', 'renown', 'territory', 'wealth',
 ]);
 
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
@@ -97,8 +97,8 @@ export const KINGDOM_META_STATS = new Set<RankedStatKind>([
   'wealth',
 ]);
 
-// Ranked stats shown raw (age, `%`, per-capita, placement) — every other kingdom/city/alliance stat compacts to `X.X K` above 100, like the world panel.
-export const NON_COMPACT_STATS = new Set<RankedStatKind>(['age', 'fed_pct', 'food_per_capita', 'housed_pct', 'score_rank', 'wealth_per_capita']);
+// Ranked stats shown raw (age, `%`, per-capita, placement, loyalty) — every other kingdom/city/alliance stat compacts to `X.X K` above 100, like the world panel.
+export const NON_COMPACT_STATS = new Set<RankedStatKind>(['age', 'fed_pct', 'food_per_capita', 'housed_pct', 'loyalty', 'score_rank', 'wealth_per_capita']);
 
 // Favorite combat stats — damage / defense / attack rhythm.
 export const COMBAT_STATS: StatConfig[] = [

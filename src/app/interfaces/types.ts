@@ -7,7 +7,7 @@ export type ActorRect = [number, number, number, number, number];
 
 export type ChapterOverviewPanel = 'city' | 'favorite' | 'kingdom' | 'world-stats';
 
-export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
+export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'loyalty' | 'renown'
   | 'territory' | 'wealth';
 
 export type CityRegistry = Record<string, CityInfo>;
@@ -37,7 +37,7 @@ export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'imm
 
 export type RankedStatKind = 'age' | 'armor' | 'attack_speed' | 'attractivity' | 'boats' | 'book_reach' | 'buildings' | 'children' | 'cities'
   | 'critical_chance' | 'culture_traits' | 'damage' | 'deaths' | 'diplomacy' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
-  | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level' | 'lifespan' | 'mana' | 'money'
+  | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level' | 'lifespan' | 'loyalty' | 'mana' | 'money'
   | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'territory' | 'warfare' | 'warriors'
   | 'wars_won' | 'wealth' | 'wealth_per_capita';
 

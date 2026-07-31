@@ -1,10 +1,11 @@
 # Cross-domain constants + helpers — one of the `tools/lib/` libraries every entry point puts on its `sys.path` (see each bootstrap).
-# Rule: an exported symbol must serve ≥2 scripts; single-script helpers live in that script.
+# Rule: a symbol lives here only if ≥2 scripts need it — either directly, or through another exported symbol that does. Single-script helpers live in that script.
 
 import json
 import os
 import sys
 import zlib
+from bisect import bisect_right
 from collections import Counter
 from functools import cache
 from pathlib import Path
@@ -24,25 +25,9 @@ ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divi
 _CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
+_EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _PROFESSIONS = {2: "unit", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label.
-
-
-# `json.dumps(indent=2)` with anything fitting `_INLINE_WIDTH` inlined. `used` = width the caller already spent (key + comma), so the fit test measures the real line.
-def _render(value, indent: int = 0, used: int = 0) -> str:
-    if not isinstance(value, (dict, list)) or not value:
-        return json.dumps(value, ensure_ascii=False)
-    pad = "  " * indent
-    if isinstance(value, dict):
-        parts = [f"{json.dumps(k)}: {_render(v, indent + 1, len(json.dumps(k)) + 3)}" for k, v in value.items()]
-        one = "{ " + ", ".join(parts) + " }"
-        multi = "{\n" + ",\n".join(f"{pad}  {p}" for p in parts) + "\n" + pad + "}"
-    else:
-        parts = [_render(v, indent + 1, 1) for v in value]
-        one = "[" + ", ".join(parts) + "]"
-        multi = "[\n" + ",\n".join(f"{pad}  {p}" for p in parts) + "\n" + pad + "]"
-    # A child that had to expand leaves a newline in `one` — that rules the whole parent out of the single-line form.
-    return one if "\n" not in one and len(pad) + used + len(one) <= _INLINE_WIDTH else multi
 
 
 # Borda shared by both composites → `{id: place}`, 1 = strongest: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens.
@@ -51,18 +36,20 @@ def _score_ranks(ids: list[int], dimensions: dict[str, dict]) -> dict[int, int]:
         return {}
     totals: Counter = Counter()
     for values in dimensions.values():
-        for eid in ids:
-            if (own := values.get(eid, 0)) > 0:
-                totals[eid] += len(ids) - sum(values.get(other, 0) > own for other in ids)
+        owns = [values.get(eid, 0) for eid in ids]  # read once, then sorted: those at or below `own` are exactly `N − those ahead`, one sort per dimension.
+        ordered = sorted(owns)
+        for eid, own in zip(ids, owns):
+            if own > 0:
+                totals[eid] += bisect_right(ordered, own)
     return {eid: place + 1 for place, eid in enumerate(sorted(ids, key=lambda eid: (-totals[eid], eid)))}
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
 def _strip_none(value):
     if isinstance(value, dict):
-        return {k: stripped for k, v in value.items() if (stripped := _strip_none(v)) not in (None, [], {})}
+        return {k: stripped for k, v in value.items() if (stripped := _strip_none(v)) not in _EMPTY_VALUES}
     if isinstance(value, list):
-        return [stripped for v in value if (stripped := _strip_none(v)) not in (None, [], {})]
+        return [stripped for v in value if (stripped := _strip_none(v)) not in _EMPTY_VALUES]
     return value
 
 
@@ -72,12 +59,6 @@ def age_thresholds(lifespan: float) -> tuple[float, float]:
         return 16.0, 18.0
     adult = min((lifespan**0.55) * 1.1, 16.0)
     return adult, min(adult, 18.0)
-
-
-# Asset ids of built structures (ResourceManager path `buildings/civ_*`) — excludes nature. Source: `datas/building-categories.json`.
-@cache
-def civic_building_ids() -> frozenset[str]:
-    return frozenset(asset for asset, category in load_data("building-categories.json").items() if category.startswith("civ_"))
 
 
 # Ten dimensions, `{name: {city id: value}}` — six transposed from the kingdom, four village-only. Exported: `city/info.py` surfaces two it has no other source for.
@@ -103,9 +84,10 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
             continue
         if building.get("asset_id") in civic:
             buildings[cid] += 1
-        for resource in (building.get("resources") or {}).get("saved_resources") or []:
-            if resource.get("id") == "gold":
-                gold[cid] += resource.get("amount", 0)
+        if stock := building.get("resources"):  # barely 0.5 % of buildings hold one, so gating the walk beats spending an `or {}` on every wall and tree
+            for resource in stock.get("saved_resources") or []:
+                if resource.get("id") == "gold":
+                    gold[cid] += resource.get("amount", 0)
     book_reach: Counter = Counter()  # 10 per authored book + how widely it's read, as the kingdom score counts it
 
     for book in save.get("books") or []:
@@ -131,6 +113,12 @@ def city_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, in
     return _score_ranks([c["id"] for c in save.get("cities") or []], dimensions if dimensions is not None else city_score_dimensions(save))
 
 
+# Asset ids of built structures (ResourceManager path `buildings/civ_*`) — excludes nature. Source: `datas/building-categories.json`.
+@cache
+def civic_building_ids() -> frozenset[str]:
+    return frozenset(asset for asset, category in load_data("building-categories.json").items() if category.startswith("civ_"))
+
+
 # Standard competition rank (1,2,2,4) among `peers` per getter — top 3 only. `skip_zero` drops metrics the entity has none of (no meaningless podium at 0).
 def competition_ranks(entity, peers: list, getters: dict, skip_zero: bool = True) -> dict:
     ranks = {}
@@ -145,7 +133,7 @@ def competition_ranks(entity, peers: list, getters: dict, skip_zero: bool = True
 
 
 def emit(out: dict) -> None:
-    print(_render(_strip_none(out)))
+    print(render(_strip_none(out)))
 
 
 # `{id, name}` ref or `None` — the name feeds the narration, the id a follow-up script query. One shape for every kingdom/city/alliance ref across the outputs.
@@ -173,27 +161,32 @@ def is_boat(actor: dict) -> bool:
 def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     kingdoms = save.get("kingdoms") or []
     ids = [k["id"] for k in kingdoms]
-    money: Counter = Counter()  # the three per-member tallies the dimensions need, gathered in one pass rather than by re-walking per-kingdom actor lists
+    money: Counter = Counter()  # the per-member tallies the dimensions need, gathered in one pass rather than by re-walking per-kingdom actor lists
     population: Counter = Counter()
-    warriors: Counter = Counter()
+    warriors_by_city: Counter = Counter()  # per city, because a kingdom's warriors are reached through its cities — see `warriors` below
 
     for actor in save.get("actors_data") or []:
-        if (kid := actor.get("civ_kingdom_id")) and not is_boat(actor):
+        if is_boat(actor):
+            continue
+        if kid := actor.get("civ_kingdom_id"):
             money[kid] += actor.get("money") or 0
             population[kid] += 1
-            warriors[kid] += actor.get("profession") == PROFESSION_WARRIOR
+        if (cid := actor.get("cityID")) and actor.get("profession") == PROFESSION_WARRIOR:
+            warriors_by_city[cid] += 1
     cities = save.get("cities") or []
     cities_by_id = index_by_id(cities)
     territory: Counter = Counter()
+    warriors: Counter = Counter()  # WB `Kingdom.countTotalWarriors` sums its cities, so a fighter between two homes counts for nobody
 
     for city in cities:
         if (kid := city.get("kingdomID")) is not None:
             territory[kid] += len(city.get("zones") or [])
+            warriors[kid] += warriors_by_city[city["id"]]
     gold: Counter = Counter()  # gold ore stockpiled in a kingdom's buildings; each building carries its `cityID`, so no spatial lookup
 
-    for building in save.get("buildings") or []:
-        if (city := cities_by_id.get(building.get("cityID"))) and (kid := city.get("kingdomID")):
-            for resource in (building.get("resources") or {}).get("saved_resources") or []:
+    for building in save.get("buildings") or []:  # `resources` first: by far the rarest of the three tests, so it spares the city lookup on 99 % of the walk
+        if (stock := building.get("resources")) and (city := cities_by_id.get(building.get("cityID"))) and (kid := city.get("kingdomID")):
+            for resource in stock.get("saved_resources") or []:
                 if resource.get("id") == "gold":
                     gold[kid] += resource.get("amount", 0)
     wars_won: Counter = Counter()
@@ -275,9 +268,11 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...]) -> tuple[str,
 # Top-3 shares per dimension over civ `actors` (% of the group); `species` also carries its `asset_id`. Needs the four `*_by_id` indexes in `ctx`.
 def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     species, cultures, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter()
+    # Hoisted out of the loop below: written inline, this literal would rebuild four tuples for every actor.
+    optional = ((cultures, "culture"), (languages, "language"), (religions, "religion"), (subspecies, "subspecies"))
     for a in actors:
         species[a.get("asset_id")] += 1
-        for counter, field in ((cultures, "culture"), (languages, "language"), (religions, "religion"), (subspecies, "subspecies")):
+        for counter, field in optional:
             if (v := a.get(field)) is not None:
                 counter[v] += 1
     pop = len(actors)
@@ -299,6 +294,26 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     }
 
 
+# `json.dumps(indent=2)` that inlines whatever fits `_INLINE_WIDTH`. `used` = what the caller already spent (key + comma), so the test measures the real line.
+def render(value, indent: int = 0, used: int = 0) -> str:
+    if not isinstance(value, (dict, list)) or not value:
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, dict):
+        parts = []
+        for k, v in value.items():
+            key = json.dumps(k)  # dumped once and reused for the width it costs — the naive form dumps every key twice
+            parts.append(f"{key}: {render(v, indent + 1, len(key) + 3)}")
+        one, ends = "{ " + ", ".join(parts) + " }", "{}"
+    else:
+        parts = [render(v, indent + 1, 1) for v in value]
+        one, ends = "[" + ", ".join(parts) + "]", "[]"
+    pad = "  " * indent
+    # A child that had to expand leaves a newline in `one` — that rules the parent out of the single-line form. Most nodes fit, hence the late split.
+    if "\n" not in one and len(pad) + used + len(one) <= _INLINE_WIDTH:
+        return one
+    return f"{ends[0]}\n" + ",\n".join(f"{pad}  {p}" for p in parts) + f"\n{pad}{ends[1]}"
+
+
 # `army_captain` isn't a `profession` int — a warrior (5) leading an army. Hot loops pass `captain_ids` to spare rescanning `armies`.
 def resolve_profession(actor: dict, save: dict, captain_ids: set | None = None) -> str | None:
     cid = actor.get("id")
@@ -306,7 +321,7 @@ def resolve_profession(actor: dict, save: dict, captain_ids: set | None = None) 
     return "army_captain" if captain else _PROFESSIONS.get(actor.get("profession") or 0)
 
 
-# The 20 rank getters shared by the city and kingdom `ranks` sections — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.
+# The 20 rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.
 def settlement_rank_getters(ctx: dict, tier: str) -> dict:
     def tally(name: str):
         counter = ctx[f"{name}_by_{tier}"]
@@ -322,12 +337,12 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "age": lambda r: int((ctx["world_time"] - float(r.get("created_time") or 0)) / UNITS_PER_YEAR),
         "buildings": tally("buildings"),
         "deaths": lambda r: r.get("total_deaths", 0),
-        "fed_pct": lambda r: fed(r) / eaters(r) if eaters(r) else 0.0,
+        "fed_pct": lambda r: fed(r) / n if (n := eaters(r)) else 0.0,
         "food": food,
-        "food_per_capita": lambda r: food(r) / populations(r) if populations(r) else 0.0,
+        "food_per_capita": lambda r: food(r) / n if (n := populations(r)) else 0.0,
         "gold": gold,
         "goods": tally("goods"),
-        "housed_pct": lambda r: (populations(r) - homeless(r)) / populations(r) if populations(r) else 0.0,
+        "housed_pct": lambda r: (n - homeless(r)) / n if (n := populations(r)) else 0.0,
         "houses": tally("houses"),
         "kills": lambda r: r.get("total_kills", 0),
         "money": money,
@@ -338,7 +353,7 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "territory": lambda r: len(r.get("zones") or []),
         "warriors": tally("warriors"),
         "wealth": wealth,
-        "wealth_per_capita": lambda r: wealth(r) / populations(r) if populations(r) else 0.0,
+        "wealth_per_capita": lambda r: wealth(r) / n if (n := populations(r)) else 0.0,
     }
 
 

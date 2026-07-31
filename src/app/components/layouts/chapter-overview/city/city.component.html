@@ -13,6 +13,9 @@
       </nz-descriptions-item>
     }
 
+    <nz-descriptions-item [nzTitle]="loyaltyTitle">
+      <app-ranked-stat source="city" stat="loyalty" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="scoreRankTitle">
       <app-ranked-stat source="city" stat="score_rank" suffix="ᵉ" [inverted]="true" [showRank]="false" />
     </nz-descriptions-item>
@@ -95,6 +98,7 @@
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
   <ng-template #leaderTitle><img src="assets/img/professions/leader.png" /><span>Dirigeant</span></ng-template>
+  <ng-template #loyaltyTitle><img src="assets/img/world/loyalty.png" /><span>Loyauté</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>

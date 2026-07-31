@@ -64,14 +64,13 @@ interface City {
   ranks?: CityRanks;
 }
 
-// The city's own attributes (age, official culture/religion, leader/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
+// The city's own attributes (age, leader/founder, stocks…) — `population` aggregates its inhabitants instead. Its culture/language/religion ship chronicler-only.
 interface CityMetadata {
   age: number;
   attractivity?: number;
   book_reach?: number;
   buildings: number;
   capital?: boolean;
-  culture?: string;
   deaths: number;
   food: number;
   founder?: { id: number; name: string };
@@ -81,10 +80,9 @@ interface CityMetadata {
   id: number;
   kills: number;
   kingdom?: EntityReference;
-  language?: string;
   leader?: { id: number; name: string };
+  loyalty: number; // Sum of the `loyalty` section Python ships alongside — that itemised tally is chronicler-only, the panel prints the total.
   name: string;
-  religion?: string;
   renown: number;
   score_rank: number;
   territory: number;
@@ -120,6 +118,7 @@ interface CityRanks {
   housed_pct?: number;
   houses?: number;
   kills?: number;
+  loyalty?: number;
   population?: number;
   renown?: number;
   renown_total?: number;
