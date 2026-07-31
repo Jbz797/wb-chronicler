@@ -38,7 +38,7 @@ from shared import (
 )
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
-_ALL_SECTIONS = ("alliance", "breakdown", "cities", "metadata", "population", "ranks", "relations", "wars")
+_ALL_SECTIONS = ("alliance", "breakdown", "cities", "identity", "metadata", "population", "ranks", "relations", "wars")
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else age/money/renown/sex).
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 
@@ -205,9 +205,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
                     gold_by_kingdom[fkid] += amount
                 else:
                     goods_by_kingdom[fkid] += amount
-        kid = zone_to_kingdom.get((bx // ZONE_TILES, by // ZONE_TILES))
+        # `civic` first: 691 buildings of 15 671 pass it, and the zone lookup behind it costs a tuple and two divisions the other 95 % would spend for nothing.
         asset_id = b.get("asset_id")
-        if kid is not None and asset_id in civic:
+        if asset_id in civic and (kid := zone_to_kingdom.get((bx // ZONE_TILES, by // ZONE_TILES))) is not None:
             buildings_by_kingdom[kid] += 1
             if asset_id.startswith("house"):
                 houses_by_kingdom[kid] += 1
@@ -263,10 +263,23 @@ def _build_context(save: dict, save_path: Path) -> dict:
     }
 
 
+# Chronicler-only: what the crown officially is, not what its subjects are (`breakdown`). It all rides on the king: a succession can turn it over, conquest cannot.
+def _build_identity(kingdom: dict, ctx: dict) -> dict:
+    culture = ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}
+    return {
+        "clan": entity_ref(kingdom.get("royal_clan_id"), ctx["clans_by_id"]),  # WB's `royal_clan_id` — the reigning house
+        "culture": entity_ref(kingdom.get("id_culture"), ctx["cultures_by_id"]),
+        "language": entity_ref(kingdom.get("id_language"), ctx["languages_by_id"]),
+        "religion": entity_ref(kingdom.get("id_religion"), ctx["religions_by_id"]),
+        "subspecies": entity_ref(_main_subspecies(kingdom, ctx), ctx["subspecies_by_id"]),
+        # Its culture's stance on foreigners, driving opinion modifiers 22-24. Always set, `neutral` included: absence would read as unknown.
+        "worldview": next((t for t in _WORLDVIEWS if t in (culture.get("saved_traits") or [])), _WORLDVIEW_NEUTRAL),
+    }
+
+
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
 def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     kid = kingdom["id"]
-    culture_traits = set((ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}).get("saved_traits") or [])
     dims = ctx["score_dimensions"]
     age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
 
@@ -308,7 +321,6 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name") or f"#{cap['id']}"} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
-        "culture": entity_ref(kingdom.get("id_culture"), ctx["cultures_by_id"]),  # The crown's official culture — `breakdown` holds what its subjects actually are.
         **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
@@ -322,19 +334,16 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "islands": islands,
         "king": king,
         "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
-        "language": entity_ref(kingdom.get("id_language"), ctx["languages_by_id"]),
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
         **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
         **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
-        "religion": entity_ref(kingdom.get("id_religion"), ctx["religions_by_id"]),
         "renown": kingdom.get("renown", 0),
         "score_rank": kingdom_score_ranks(save, dims).get(kid),  # placement on the composite score (1 = strongest); the total stays internal
         **taxes,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
         **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
         "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
-        "worldview": next((t for t in _WORLDVIEWS if t in culture_traits), _WORLDVIEW_NEUTRAL),  # Culture's stance on foreigners (opinion mods 22-24), always set.
     }
 
 
@@ -803,6 +812,8 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx)
     if "cities" in sections:
         out["cities"] = _build_cities(kingdom, ctx)
+    if "identity" in sections:
+        out["identity"] = _build_identity(kingdom, ctx)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(kingdom, ctx, save)
     if "population" in sections:

@@ -39,7 +39,7 @@ from shared import (
     take_chapter,
 )
 
-_ALL_SECTIONS = ("breakdown", "loyalty", "metadata", "population", "ranks")
+_ALL_SECTIONS = ("breakdown", "identity", "loyalty", "metadata", "population", "ranks")
 _CIV_BASE_CITIES = {"dwarf": 3, "elf": 3, "orc": 4}  # WB `ActorAsset.civ_base_cities`; every other civ keeps the `$civ_unit$` template's 5.
 _ERA_LOYALTY = {"age_chaos": -10, "age_dark": -5, "age_hope": 15, "age_moon": -25, "age_sun": 5, "age_tears": -55}  # `WorldAgeAsset.bonus_loyalty`
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
@@ -176,6 +176,17 @@ def _build_context(save: dict, save_path: Path) -> dict:
     return ctx
 
 
+# Chronicler-only: what the city officially is, not what its people are (`breakdown`). A mayor can turn it over (`leader_change_city_culture`), conquest cannot.
+def _build_identity(city: dict, ctx: dict) -> dict:
+    return {
+        "clan": entity_ref(_city_clan(city, ctx), ctx["clans_by_id"]),
+        "culture": entity_ref(city.get("id_culture"), ctx["cultures_by_id"]),
+        "language": entity_ref(city.get("id_language"), ctx["languages_by_id"]),
+        "religion": entity_ref(city.get("id_religion"), ctx["religions_by_id"]),
+        "subspecies": entity_ref(_main_subspecies(city, ctx), ctx["subspecies_by_id"]),
+    }
+
+
 # The city's hold on its crown — the panel prints `total`. Chronicler-only beside it: `drivers` is every modifier and sums to `total`, `top_drivers` does not.
 def _build_loyalty(city_id: int, ctx: dict, detailed: bool) -> dict:
     mods = ctx["loyalty_by_city"].get(city_id, {})
@@ -213,7 +224,6 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # 10 per book authored here + its reads
         "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
-        "culture": entity_ref(city.get("id_culture"), ctx["cultures_by_id"]),  # Its official culture — `breakdown` holds what its people actually are.
         "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
         "food": ctx["food_by_city"][cid],  # Eatable resources stocked in the city's buildings.
         "founder": founder,
@@ -224,10 +234,8 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "islands": islands,
         "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
-        "language": entity_ref(city.get("id_language"), ctx["languages_by_id"]),
         "leader": entity_ref(city.get("leaderID"), ctx["actors_by_id"]),  # The sitting mayor — `None` between leaders.
         "name": city.get("name"),
-        "religion": entity_ref(city.get("id_religion"), ctx["religions_by_id"]),
         "renown": city.get("renown", 0),
         "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
         "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
@@ -328,6 +336,15 @@ def _city_centre(city: dict, ctx: dict) -> tuple[float, float] | None:
         closest = min(zones, key=lambda z: (z[0] - mean_x) ** 2 + (z[1] - mean_y) ** 2, default=None)
         ctx["centres"][cid] = None if closest is None else (closest[0], closest[1] + 2)
     return ctx["centres"][cid]
+
+
+# WB `City.getRoyalClan`: the sitting mayor's clan, and the king's while the seat is vacant — a town keeps a royal house even between mayors.
+def _city_clan(city: dict, ctx: dict) -> int | None:
+    leader = ctx["actors_by_id"].get(city.get("leaderID"))
+    if leader and (clan := leader.get("clan")):
+        return clan
+    king = ctx["actors_by_id"].get((ctx["kingdoms_by_id"].get(city.get("kingdomID")) or {}).get("kingID"))
+    return king.get("clan") if king else None
 
 
 # WB `LoyaltyLibrary`'s 29 modifiers, summed into `metadata.loyalty`, numbered in registration order — bar #8 `mood`, whose `MoodLibrary` WB never registers.
@@ -559,6 +576,8 @@ def main(argv: list[str]) -> int:
     out: dict = {}
     if "breakdown" in sections:
         out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
+    if "identity" in sections:
+        out["identity"] = _build_identity(city, ctx)
     if "loyalty" in sections:
         out["loyalty"] = _build_loyalty(city_id, ctx, detailed=requested not in (None, "full"))  # Naming a section gives the full ledger, `full` the summary.
     if "metadata" in sections:
