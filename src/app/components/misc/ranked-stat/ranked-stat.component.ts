@@ -71,22 +71,7 @@ export class RankedStatComponent {
       return this._snap(a[key], a.ranks?.[key]);
     }
 
-    if (this.source() === 'city') {
-      const c = entity as NonNullable<ChapterMeta['city']>;
-      const key = this.stat();
-
-      if (key === 'score_rank') return this._snap(c.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
-      if (key === 'loyalty') return this._snap(c.loyalty.total, c.ranks?.loyalty); // its own block, not `metadata`: the modifiers ride alongside the total
-      if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
-
-      // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
-      if (CITY_META_STATS.has(key)) return this._snap(c.metadata[key as CityMetaStat] ?? 0, c.ranks?.[key as CityMetaStat]);
-      const pk = key as PopulationStat;
-
-      // Cities don't rank `immortals`/`infected`/`sick` (absent from `CityRanks`) — the value still reads from `population`, the rank just stays undefined.
-      const ranks = c.ranks as Record<string, number | undefined> | undefined;
-      return this._snap(c.population[pk] ?? 0, ranks?.[pk]);
-    }
+    if (this.source() === 'city') return this._resolveCity(entity as NonNullable<ChapterMeta['city']>);
 
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
@@ -102,6 +87,29 @@ export class RankedStatComponent {
       return this._snap(k.population[pk] ?? 0, k.ranks?.[pk]); // Only `immortals`/`infected`/`sick` can be absent — Python omits them at 0, so reading 0 is right.
     }
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
+  }
+
+  // Per-kind accessor for a city — `army` and `loyalty` each have their own block, the score dimensions sit in `metadata`, everything else in `population`.
+  private _resolveCity(c: NonNullable<ChapterMeta['city']>): RankedStatSnapshot {
+    const key = this.stat();
+
+    if (key === 'score_rank') return this._snap(c.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
+    if (key === 'loyalty') return this._snap(c.loyalty.total, c.ranks?.loyalty); // its own block, not `metadata`: the modifiers ride alongside the total
+    if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
+
+    // Army stats rank under an `army_` prefix — the city already ranks `kills`/`deaths`/`renown` of its own. Only numeric fields are ever addressed this way.
+    if (key.startsWith('army_')) {
+      const army = c.army as unknown as Record<string, number | undefined> | undefined;
+      return this._snap(army?.[key.slice(5)] ?? 0, (c.ranks as Record<string, number | undefined> | undefined)?.[key]);
+    }
+
+    // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
+    if (CITY_META_STATS.has(key)) return this._snap(c.metadata[key as CityMetaStat] ?? 0, c.ranks?.[key as CityMetaStat]);
+
+    // Cities don't rank `immortals`/`infected`/`sick` (absent from `CityRanks`) — the value still reads from `population`, the rank just stays undefined.
+    const pk = key as PopulationStat;
+    const ranks = c.ranks as Record<string, number | undefined> | undefined;
+    return this._snap(c.population[pk] ?? 0, ranks?.[pk]);
   }
 
   // Per-kind field accessor — pulls value/rank from the favorite's stats/ranks dict.

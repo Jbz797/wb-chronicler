@@ -5,6 +5,7 @@ export class SpriteHelpers {
   private static readonly _images = new Map<string, Promise<HTMLImageElement>>();
   private static readonly _magentaRamp = ['255,0,255', '222,0,222', '167,0,167', '127,0,127', '88,0,88']; // WB `color_magenta_0..4` → `k_color_0..4`
   private static readonly _shadeTs = [0, 0.13, 0.35, 0.51, 0.66]; // Lerp factors of the five realm steps towards `_dark`
+  private static readonly _tealRamp = ['0,239,239', '0,219,219', '0,188,188', '0,158,158', '0,119,119']; // WB `color_teal_0..4` → `k2_color_0..4`
 
   // WB `Toolbox.blendColor`: `a * t + b * (1 - t)`, so `t = 1` yields `a`. Truncated, as Unity casts a `Color` to `Color32` — rounding drifts a shade off WB's own.
   public static blend(a: readonly number[], b: readonly number[], t: number): [number, number, number] {
@@ -73,10 +74,15 @@ export class SpriteHelpers {
   }
 
   // The five magenta placeholders mapped to a realm's shade ramp — what dyes an actor's cloth and, in WB, a city's crown. Callers extend the table with their own.
-  public static realmRamp(hue: string): Map<string, string> {
-    const base = this.hexRgb(hue);
-    // WB's sixth placeholder, `color_light`, stays out — only the actor sheets carry it, so `ActorSpriteHelpers` adds it. No crown, shield or emblem holds a pixel.
-    return new Map(this._magentaRamp.map((placeholder, step) => [placeholder, this.blend(this._dark, base, this._shadeTs[step] ?? 0).join(',')]));
+  public static realmRamp(hue: string, main?: string): Map<string, string> {
+    // Both ramps darken their root by the same factors (`ColorAsset.initColor`). `color_light` stays out — only actor sheets carry it, `ActorSpriteHelpers` adds it.
+    const ramp = (root: string, placeholders: readonly string[]): [string, string][] => {
+      const base = this.hexRgb(root);
+      return placeholders.map((placeholder, step) => [placeholder, this.blend(this._dark, base, this._shadeTs[step] ?? 0).join(',')]);
+    };
+    const swaps = ramp(hue, this._magentaRamp);
+    if (main) swaps.push(...ramp(main, this._tealRamp));
+    return new Map(swaps);
   }
 
   // WB `DynamicColorPixelTool.checkSpecialColors`: run once, on the assembled sprite — placeholders survive compositing, so per-part passes are wasted work.

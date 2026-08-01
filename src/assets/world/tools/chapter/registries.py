@@ -39,14 +39,15 @@ def _build_registries(save: dict, prev: dict) -> dict:
     for a in actors:
         if is_boat(a):
             continue
-        if a["id"] in king_ids:
-            kings_by_id[a["id"]] = a
+        actor_id, species = a["id"], a.get("asset_id")  # both read three times below
+        if actor_id in king_ids:
+            kings_by_id[actor_id] = a
         if (cid := a.get("cityID")) is not None:
-            species_by_city[cid][a.get("asset_id")] += 1
+            species_by_city[cid][species] += 1
         if kid := a.get("civ_kingdom_id"):
-            species_by_kingdom[kid][a.get("asset_id")] += 1
+            species_by_kingdom[kid][species] += 1
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
-        persons[str(a["id"])] = _person_entry(a, resolve_profession(a, save, captain_ids), items_by_id)
+        persons[str(actor_id)] = _person_entry(a, resolve_profession(a, save, captain_ids), items_by_id, subspecies_by_id)
 
     cities_per_kingdom: Counter = Counter(kid for c in cities if (kid := c.get("kingdomID")) is not None)
     rank_by_city = {cid: rank for cid, rank in city_score_ranks(save).items() if rank <= 3}  # top-3 of the composite settlement weight → same medal as a realm's
@@ -114,7 +115,9 @@ def _kingdom_banner(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) ->
 def _kingdom_entry(kingdom: dict, species: Counter, city_count: int, rank: int | None) -> dict:
     dominant = species.most_common(1)
     entry: dict = {
-        "color": _kingdom_text_color(kingdom.get("color_id", "")) or _REALM_FALLBACK_HUE,  # a palette WB never shipped would emit a `null` the UI type forbids
+        # Two ramps: magenta off `color_text` (the name hue too), teal off `color_main`. The fallback is on the first only — a `null` there would break the UI type.
+        "color": _palette_color(kingdom.get("color_id", ""), "color_text") or _REALM_FALLBACK_HUE,
+        "color_main": _palette_color(kingdom.get("color_id", ""), "color_main"),
         "name": kingdom.get("name"),
         "species": dominant[0][0] if dominant else None,
     }
@@ -132,13 +135,6 @@ def _kingdom_species(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -
     return (subspecies or {}).get("species_id") or kingdom.get("original_actor_asset")
 
 
-# WB `getColorText` = the palette's `color_text`, lightened if too dark — the hue WB prints a kingdom's name in. `None` when the palette is missing.
-@cache  # realms of one palette share the call, and every chapter rebuild replays it
-def _kingdom_text_color(color_id) -> str | None:
-    text = load_data("colors-all.json").get(str(color_id), {}).get("color_text")
-    return "#{:02X}{:02X}{:02X}".format(*_lighten_if_dark(int(text[i : i + 2], 16) for i in (1, 3, 5))) if text else None
-
-
 # WB `MetaSpriteLibrary.checkIfColorTooDark`: +50 to each channel when all three sit below 128 — keeps near-black palettes legible, and feeds the registry name hue.
 def _lighten_if_dark(channels) -> tuple[int, int, int]:
     r, g, b = channels
@@ -154,8 +150,15 @@ def _merge(prev: dict, live: dict) -> dict:
     return {**{k: {**{f: val for f, val in v.items() if f != "rank"}, "dead": True} for k, v in prev.items()}, **live}
 
 
+# One field of a realm's palette, lightened if too dark (WB applies `checkIfColorTooDark` to both ramp roots). `None` when WB never shipped that palette.
+@cache  # realms of one palette share the call, and every chapter rebuild replays it
+def _palette_color(color_id, field: str) -> str | None:
+    value = load_data("colors-all.json").get(str(color_id), {}).get(field)
+    return "#{:02X}{:02X}{:02X}".format(*_lighten_if_dark(int(value[i : i + 2], 16) for i in (1, 3, 5))) if value else None
+
+
 # Person registry entry — everything the UI composes an actor from, plus the last-known name. `dead` comes from the merge.
-def _person_entry(actor: dict, profession: str | None, items_by_id: dict) -> dict:
+def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspecies_by_id: dict) -> dict:
     carried = [(items_by_id.get(iid) or {}).get("asset_id", "") for iid in actor.get("saved_items") or []]  # resolved once: head and weapon both read it
     entry = {"asset_id": actor.get("asset_id"), "sex": sex_label(actor)}
     for field in ("head", "phenotype_index", "phenotype_shade"):  # All three default to 0 in WB — omit then, the reader falls back to the same.
@@ -169,6 +172,9 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict) -> dic
         entry["name"] = name
     if profession and profession != "unit":  # `unit` carries no badge — keep the registry lean.
         entry["profession"] = profession
+    # WB `Subspecies.cacheSkins` picks the body sheet by the subspecies' `skin_id` — `warrior_6` rather than `warrior_1`. Absent means index 0, the reader's default.
+    if skin := (subspecies_by_id.get(actor.get("subspecies")) or {}).get("skin_id"):
+        entry["skin_id"] = skin
     if special := _special_head(actor, profession, carried):
         entry["special_head"] = special
     if weapon := _wielded_weapon(carried):

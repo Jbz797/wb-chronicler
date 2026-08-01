@@ -17,14 +17,16 @@ export class WealthComponent {
 
   public readonly source = input.required<'city' | 'kingdom'>();
 
-  // Disjoint shares of `metadata.wealth`, so the cells sum to the total — a kingdom splits crown/nobility/commoners/vaults, a city only people/vaults (no crown).
+  // Disjoint shares of `metadata.wealth`, so the cells sum to the total. Same four-way split either side: the crown or the mayor, then nobility, commoners, vaults.
   protected readonly shares = computed(() => {
     const meta = this._chronicler.currentChapter()?.meta;
     if (this.source() === 'city') {
       const c = meta?.city;
       if (!c) return [];
       return [
-        { icon: 'world/population', label: 'Habitants', value: c.population.money },
+        { icon: 'professions/leader', label: 'Dirigeant', value: c.metadata.leader?.money },
+        { icon: 'world/nobles', label: 'Nobles', value: c.population.nobles_money },
+        { icon: 'world/population', label: 'Habitants', value: c.population.subjects_money },
         { icon: 'world/gold', label: 'Lingots', value: c.metadata.gold },
       ];
     }

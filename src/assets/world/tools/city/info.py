@@ -21,13 +21,13 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
+    asset_set,
     city_score_dimensions,
     city_score_ranks,
     civic_building_ids,
     competition_ranks,
     emit,
     entity_ref,
-    food_resources,
     index_by_id,
     is_boat,
     load_data,
@@ -39,10 +39,11 @@ from shared import (
     take_chapter,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "loyalty", "metadata", "population", "ranks")
+_ALL_SECTIONS = ("army", "breakdown", "identity", "loyalty", "metadata", "population", "ranks")
 _CIV_BASE_CITIES = {"dwarf": 3, "elf": 3, "orc": 4}  # WB `ActorAsset.civ_base_cities`; every other civ keeps the `$civ_unit$` template's 5.
 _ERA_LOYALTY = {"age_chaos": -10, "age_dark": -5, "age_hope": 15, "age_moon": -25, "age_sun": 5, "age_tears": -55}  # `WorldAgeAsset.bonus_loyalty`
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
+_RANGED_ATTACKS = asset_set("ranged")  # WB `attack_type != 0`: every asset cloned from the `$range` template (`ItemLibrary`).
 _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  # `ActorTrait.same_trait_mod`/`opposite_trait_mod` — the kingdom reads it too.
 
 
@@ -53,6 +54,31 @@ def _actor_stats(actor: dict | None, ctx: dict) -> dict:
     if actor["id"] not in ctx["stats_cache"]:
         ctx["stats_cache"][actor["id"]] = actor_stat_totals(actor, ctx, ctx["subspecies_base_cache"])
     return ctx["stats_cache"][actor["id"]]
+
+
+# The city's standing army — at most one, residents only, `None` where there is none. `captain_years`, `kills_per_death` and `total_captains` stay chronicler-only.
+def _build_army(city: dict, ctx: dict) -> dict | None:
+    army = ctx["armies_by_city"].get(city["id"])
+    if army is None:
+        return None
+    cid, past = city["id"], army.get("past_captains") or []
+    deaths, kills = int(army.get("total_deaths") or 0), int(army.get("total_kills") or 0)
+    # The sitting captain's own term: WB appends them to `past_captains` on taking office and only stamps `timestamp_end` when they leave.
+    reign = next((float(c["timestamp_ago"]) for c in reversed(past) if c.get("timestamp_end") is None and c.get("timestamp_ago") is not None), None)
+    return {
+        "age": _years_since(army.get("created_time") or 0, ctx),
+        "captain": entity_ref(army.get("id_captain"), ctx["actors_by_id"]),
+        **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
+        "deaths": deaths,
+        "kills": kills,
+        "kills_per_death": round(kills / deaths, 1) if deaths else float(kills),
+        "melee": ctx["melee_by_city"][cid],
+        "money": ctx["troop_money_by_city"][cid],
+        "name": army.get("name"),
+        "ranged": ctx["ranged_by_city"][cid],
+        "renown": int(army.get("renown") or 0),
+        "total_captains": len(past),  # every captain since the founding, the sitting one included — a succession count, never a headcount
+    }
 
 
 # One pass over actors then buildings — every per-city tally the sections need, so no section rescans the save. Built whole whatever was asked for.
@@ -68,12 +94,19 @@ def _build_context(save: dict, save_path: Path) -> dict:
     homeless_by_city: Counter[int] = Counter()
     immortals_by_city: Counter[int] = Counter()
     infected_by_city: Counter[int] = Counter()
+    leader_ids = {lid for c in save.get("cities", []) if (lid := c.get("leaderID"))}  # Sitting mayors: nobles too, but their purse is reported on its own.
+    melee_by_city: Counter[int] = Counter()
     money_by_city: Counter[int] = Counter()
     nobles_by_city: Counter[int] = Counter()
+    nobles_money_by_city: Counter[int] = Counter()
     populations_by_city: Counter[int] = Counter()
+    ranged_by_city: Counter[int] = Counter()
     renown_by_city: Counter[int] = Counter()
     sick_by_city: Counter[int] = Counter()
+    troop_money_by_city: Counter[int] = Counter()
     warriors_by_city: Counter[int] = Counter()
+
+    items_by_id = index_by_id(save.get("items") or [])
 
     for actor in save.get("actors_data", []):
         actors_by_id[actor["id"]] = actor
@@ -82,17 +115,31 @@ def _build_context(save: dict, save_path: Path) -> dict:
             continue
         actors_by_city.setdefault(cid, []).append(actor)
         populations_by_city[cid] += 1
-        money_by_city[cid] += int(actor.get("money") or 0)
-        renown_by_city[cid] += int(actor.get("renown") or 0)
+        # Read once (three tallies want the purse) and guarded: renown is zero on most inhabitants, and a `+= 0` still costs a hash and a store.
+        coins = actor.get("money")
+        if coins:
+            money_by_city[cid] += int(coins)
+        if renown := actor.get("renown"):
+            renown_by_city[cid] += int(renown)
         if actor.get("asset_id") not in NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
             eaters_by_city[cid] += 1
             if int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION:
                 fed_by_city[cid] += 1
         profession = actor.get("profession")
+        # WB enlists only in the resident's own city, so `cityID` keys the army. `Army.countMelee`: ranged needs a `$range` weapon — carrying none counts as melee.
+        if actor.get("army"):
+            if coins:
+                troop_money_by_city[cid] += int(coins)
+            if any((items_by_id.get(i) or {}).get("asset_id") in _RANGED_ATTACKS for i in actor.get("saved_items") or []):
+                ranged_by_city[cid] += 1
+            else:
+                melee_by_city[cid] += 1
         if profession == PROFESSION_WARRIOR:
             warriors_by_city[cid] += 1
         if profession in (PROFESSION_KING, PROFESSION_LEADER) or actor["id"] in captain_ids:  # king (the capital's), leader, or captain
             nobles_by_city[cid] += 1
+            if coins and actor["id"] not in leader_ids:
+                nobles_money_by_city[cid] += int(coins)
         traits = actor.get("saved_traits") or []
         if "infected" in traits:
             infected_by_city[cid] += 1
@@ -109,7 +156,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     buildings_by_city: Counter[int] = Counter()
     civic = civic_building_ids()  # `houses` = the dwelling subset.
-    food_ids = food_resources()
+    food_ids = asset_set("food")
     food_by_city: Counter[int] = Counter()
     gold_by_city: Counter[int] = Counter()
     goods_by_city: Counter[int] = Counter()
@@ -139,6 +186,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         **build_actor_stats_context(save),  # world_time, languages_by_id, subspecies_by_id, species_data…
         **_build_realm_context(save, warriors_by_city),  # everything `_city_loyalty` reads above the settlement: the crown, its peers, its wars
         "actors_by_city": actors_by_city,
+        "armies_by_city": {a["id_city"]: a for a in save.get("armies") or []},  # at most one per city, enforced by WB
         "actors_by_id": actors_by_id,
         "buildings_by_city": buildings_by_city,
         "centres": {},  # `_city_centre` memo — every town asks its capital's, over and over.
@@ -154,16 +202,20 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "homeless_by_city": homeless_by_city,
         "houses_by_city": houses_by_city,
         "immortals_by_city": immortals_by_city,
+        "melee_by_city": melee_by_city,
         "infected_by_city": infected_by_city,
         "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
         "money_by_city": money_by_city,
         "nobles_by_city": nobles_by_city,
+        "nobles_money_by_city": nobles_money_by_city,
         "populations_by_city": populations_by_city,
+        "ranged_by_city": ranged_by_city,
         "religions_by_id": index_by_id(save.get("religions", [])),
         "renown_by_city": renown_by_city,
         "save_path": save_path,  # islands cache key — the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "score_dimensions": city_score_dimensions(save),  # the composite score's ten tallies; two of them have no other source
         "sick_by_city": sick_by_city,
+        "troop_money_by_city": troop_money_by_city,
         "stats_cache": {},  # `_actor_stats` memo: loyalty asks the same handful of kings and mayors for their skills over and over.
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors.
         "warriors_by_city": warriors_by_city,
@@ -234,7 +286,12 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "islands": islands,
         "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
-        "leader": entity_ref(city.get("leaderID"), ctx["actors_by_id"]),  # The sitting mayor — `None` between leaders.
+        # The sitting mayor (`None` between leaders). `money` = his own purse: inside `population.money`, netted out of `subjects_money` so both show apart.
+        **(
+            {"leader": {"id": lead["id"], "money": int(lead.get("money") or 0), "name": lead.get("name") or f"#{lead['id']}"}}
+            if (lead := ctx["actors_by_id"].get(city.get("leaderID")))
+            else {}
+        ),
         "name": city.get("name"),
         "renown": city.get("renown", 0),
         "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
@@ -255,6 +312,7 @@ def _build_population(city: dict, ctx: dict) -> dict:
     total = len(actors)
 
     eaters = ctx["eaters_by_city"][cid]  # food-needing pop (undead excluded); denominator for `fed_pct`
+    leader_money = int((ctx["actors_by_id"].get(city.get("leaderID")) or {}).get("money") or 0)  # netted out below; the value rides in `metadata.leader`
     immortals = ctx["immortals_by_city"][cid]
     infected = ctx["infected_by_city"][cid]
     sick = ctx["sick_by_city"][cid]
@@ -275,8 +333,10 @@ def _build_population(city: dict, ctx: dict) -> dict:
         "men": men,
         "money": ctx["money_by_city"][cid],  # Total coins held across the city's population.
         "nobles": ctx["nobles_by_city"][cid],
+        "nobles_money": ctx["nobles_money_by_city"][cid],  # Coins of the other nobles, mayor excluded — his own purse sits in `metadata.leader`.
         "renown_total": ctx["renown_by_city"][cid],  # Summed renown of all inhabitants (distinct from the city's own `metadata.renown`).
         **({"sick": sick} if sick else {}),
+        "subjects_money": ctx["money_by_city"][cid] - leader_money - ctx["nobles_money_by_city"][cid],  # Commoners' coins: `money` minus mayor and nobility.
         "teens": stages["teen"],
         "total": total,
         "warriors": ctx["warriors_by_city"][cid],
@@ -470,11 +530,17 @@ def _city_species(city: dict, ctx: dict) -> str | None:
 # The shared settlement getters plus the three this tier owns. Top 3 among the world's cities via `competition_ranks`, like every ranks section.
 def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
     dims = ctx["score_dimensions"]
+    armies = {c["id"]: _build_army(c, ctx) or {} for c in save.get("cities", [])}  # built once per city, not once per city and per stat
     getters = settlement_rank_getters(ctx, "city")
     getters.update(  # the two score dimensions the panel surfaces and no other getter covers, plus the loyalty the crown's hold rests on
         {
             "attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0),
             "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
+            # Prefixed: the city ranks `kills`/`deaths`/`renown` of its own already. `key=k` binds per entry — a bare closure would read the loop's last value.
+            **{
+                f"army_{k}": lambda c, key=k: armies.get(c.get("id"), {}).get(key, 0)
+                for k in ("age", "captain_years", "kills", "kills_per_death", "money", "renown")
+            },
             "loyalty": lambda c: ctx["loyalty_total_by_city"].get(c.get("id"), 0),
         }
     )
@@ -574,6 +640,8 @@ def main(argv: list[str]) -> int:
     ctx = _build_context(save, save_path)
 
     out: dict = {}
+    if "army" in sections:
+        out["army"] = _build_army(city, ctx)
     if "breakdown" in sections:
         out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
     if "identity" in sections:

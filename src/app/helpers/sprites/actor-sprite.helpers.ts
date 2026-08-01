@@ -7,7 +7,8 @@ import { SpriteHelpers } from './sprite.helpers';
 export class ActorSpriteHelpers {
 
   private static readonly _atlas = fetch('assets/img/actors/actors.json').then(r => r.json() as Promise<ActorAtlas>);
-  private static readonly _bodySheets: Record<string, string> = { army_captain: 'warrior_1', king: 'king', leader: 'leader', warrior: 'warrior_1' };
+  private static readonly _bodySheets: Record<string, string> = { army_captain: 'warrior', king: 'king', leader: 'leader', warrior: 'warrior' };
+  private static readonly _bodyVariants = 10; // WB ships ten `warrior_*`/`male_*`/`female_*` sheets per civ species; `skin_id` indexes them
   private static readonly _darkerFactors = [1, 0.9, 0.8, 0.7]; // WB `loadPhenotype`: the four greens are one skin colour at four `makeDarkerColor` steps
   private static readonly _lightPlaceholder: [string, string] = ['255,216,0', '0,0,0'];
   private static readonly _phenotypeGreens = ['184,255,150', '0,255,0', '0,175,0', '74,131,31']; // WB `color_phenotype_green_0..3` → the skin shades
@@ -39,16 +40,24 @@ export class ActorSpriteHelpers {
     const species = sheets.species[actor.asset_id];
     const sex = actor.sex === 'female' ? 'female' : 'male';
 
+    // WB `Subspecies.cacheSkins`: the subspecies' `skin_id` picks among the ten sheets of its family, looped like `Toolbox.loopIndex`. Absent → the first.
+    const looped = (((actor.skin_id ?? 0) % this._bodyVariants) + this._bodyVariants) % this._bodyVariants;
+    const variant = looped + 1;
+
     // Rank sheet first, then the plain civilian of that sex, then the lone `main` a flat species (most animals) ships instead.
-    const body = [this._bodySheets[actor.profession ?? ''], `${sex}_1`, 'main'].find(name => name && species?.bodies[name]);
+    const rank = this._bodySheets[actor.profession ?? ''];
+
+    const body = [rank && `${rank}_${variant}`, rank && `${rank}_1`, `${sex}_${variant}`, `${sex}_1`, 'main'].find(name => name && species?.bodies[name]);
     const pose: ActorPose | undefined = body ? species?.bodies[body] : undefined;
 
     if (!species || !pose) return null;
 
     const [bx, by, bw, bh] = pose.body;
     const cut = document.createElement('canvas');
+
     cut.height = bh;
     cut.width = bw;
+
     const context = cut.getContext('2d');
     if (!context) return null;
 
@@ -76,6 +85,7 @@ export class ActorSpriteHelpers {
       actor.special_head,
       actor.phenotype_index,
       actor.phenotype_shade,
+      actor.skin_id,
       actor.weapon,
       hue,
     ].join(',');
@@ -105,7 +115,7 @@ export class ActorSpriteHelpers {
 
   // The realm ramp every WB sprite shares, extended with what only an actor carries: four greens for the four shades of their skin.
   private static _swaps(sheets: ActorAtlas, actor: PersonInfo, hue: string): Map<string, string> {
-    const swaps = SpriteHelpers.realmRamp(hue);
+    const swaps = SpriteHelpers.realmRamp(hue, PaletteHelpers.realmMain(actor.kingdom));
     swaps.set(...this._lightPlaceholder); // WB `drawPixelsAll` blacks `arr_pixels_light` unconditionally — the 37 px of `#FFD800` on the special heads.
     const [from, to] = sheets.phenotypes[String(actor.phenotype_index ?? 0)] ?? sheets.phenotypes['1'] ?? [];
     if (from && to) {

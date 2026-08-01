@@ -16,6 +16,7 @@ export interface KingdomInfo {
   banner_icon_color?: string;
   cities?: number;
   color: string;
+  color_main?: string;
   dead?: boolean;
   rank?: number;
   species?: string;
@@ -32,6 +33,7 @@ export interface PersonInfo {
   phenotype_shade?: number;
   profession?: string;
   sex?: string;
+  skin_id?: number;
   special_head?: string;
   weapon?: string;
 }

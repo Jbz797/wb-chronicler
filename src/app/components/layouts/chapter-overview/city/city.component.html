@@ -82,11 +82,55 @@
     </nz-descriptions-item>
   </nz-descriptions>
 
+  @if (c.army; as army) {
+    <ng-template #armyTitle
+      ><span>{{ army.name }}</span></ng-template
+    >
+    <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="armyTitle">
+      <nz-descriptions-item [nzTitle]="armyCaptainTitle">
+        @if (army.captain; as captain) {
+          <app-person-tag [id]="captain.id" [name]="captain.name" />
+        } @else {
+          —
+        }
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="armyAgeTitle">
+        <app-ranked-stat source="city" stat="army_age" suffix=" ans" [hideDelta]="true" />
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="armyMoneyTitle">
+        <app-ranked-stat source="city" stat="army_money" />
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="armyKillsTitle">
+        <app-ranked-stat source="city" stat="army_kills" />
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="armyDeathsTitle">
+        <app-ranked-stat source="city" stat="army_deaths" [inverted]="true" />
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="armyRenownTitle">
+        <app-ranked-stat source="city" stat="army_renown" />
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="armyMeleeTitle">
+        <app-ranked-stat source="city" stat="army_melee" />
+      </nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="armyRangedTitle">
+        <app-ranked-stat source="city" stat="army_ranged" />
+      </nz-descriptions-item>
+    </nz-descriptions>
+  }
+
   <app-breakdown source="city" />
 
   <app-wealth source="city" />
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du village</span></ng-template>
+  <ng-template #armyAgeTitle><img src="assets/img/stats/age.png" /><span>Fondée il y a</span></ng-template>
+  <ng-template #armyCaptainTitle><img src="assets/img/world/armies.png" /><span>Capitaine</span></ng-template>
+  <ng-template #armyDeathsTitle><img src="assets/img/world/deaths.png" /><span>Pertes</span></ng-template>
+  <ng-template #armyKillsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
+  <ng-template #armyMeleeTitle><img src="assets/img/world/melee.png" /><span>Mêlée</span></ng-template>
+  <ng-template #armyMoneyTitle><img src="assets/img/stats/money.png" /><span>Solde</span></ng-template>
+  <ng-template #armyRangedTitle><img src="assets/img/world/ranged.png" /><span>Distance</span></ng-template>
+  <ng-template #armyRenownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
   <ng-template #deathsTitle><img src="assets/img/world/deaths.png" /><span>Morts</span></ng-template>
   <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>

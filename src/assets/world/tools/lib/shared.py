@@ -61,6 +61,12 @@ def age_thresholds(lifespan: float) -> tuple[float, float]:
     return adult, min(adult, 18.0)
 
 
+# A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
+@cache
+def asset_set(name: str) -> frozenset[str]:
+    return frozenset(load_data("asset-sets.json").get(name) or ())
+
+
 # Ten dimensions, `{name: {city id: value}}` — six transposed from the kingdom, four village-only. Exported: `city/info.py` surfaces two it has no other source for.
 def city_score_dimensions(save: dict) -> dict[str, dict]:
     cities = save.get("cities") or []
@@ -70,12 +76,17 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
     population: Counter = Counter()
     warriors: Counter = Counter()
 
+    # Guarded rather than summed blind: three of these four are zero on most actors, and a `+= 0` still costs a hash and a store. Absent reads back as 0 anyway.
     for actor in save.get("actors_data") or []:
-        if (cid := actor.get("cityID")) is not None and not is_boat(actor):
-            elite[cid] += actor.get("renown") or 0
-            money[cid] += actor.get("money") or 0
-            population[cid] += 1
-            warriors[cid] += actor.get("profession") == PROFESSION_WARRIOR
+        if (cid := actor.get("cityID")) is None or is_boat(actor):
+            continue
+        population[cid] += 1
+        if renown := actor.get("renown"):
+            elite[cid] += renown
+        if coins := actor.get("money"):
+            money[cid] += coins
+        if actor.get("profession") == PROFESSION_WARRIOR:
+            warriors[cid] += 1
     buildings: Counter = Counter()  # civic only — `save.buildings` is mostly flora and ore, which would drown the tally
     gold: Counter = Counter()
 
@@ -142,12 +153,6 @@ def entity_ref(entity_id: int | None, by_id: dict) -> dict | None:
     return None if entity is None else {"id": entity_id, "name": entity.get("name") or f"#{entity_id}"}
 
 
-# WB eatable resource ids (`initFood` + `initFoodRecipes`) — raw + cooked/drinks. Cached function, not a constant: `load_data` is defined below.
-@cache
-def food_resources() -> frozenset[str]:
-    return frozenset(load_data("food-resources.json"))
-
-
 def index_by_id(records: list[dict]) -> dict:
     return {record["id"]: record for record in records}
 
@@ -169,8 +174,9 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
         if is_boat(actor):
             continue
         if kid := actor.get("civ_kingdom_id"):
-            money[kid] += actor.get("money") or 0
             population[kid] += 1
+            if coins := actor.get("money"):  # a quarter of the world carries none — see `city_score_dimensions`
+                money[kid] += coins
         if (cid := actor.get("cityID")) and actor.get("profession") == PROFESSION_WARRIOR:
             warriors_by_city[cid] += 1
     cities = save.get("cities") or []
@@ -297,7 +303,8 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
 # `json.dumps(indent=2)` that inlines whatever fits `_INLINE_WIDTH`. `used` = what the caller already spent (key + comma), so the test measures the real line.
 def render(value, indent: int = 0, used: int = 0) -> str:
     if not isinstance(value, (dict, list)) or not value:
-        return json.dumps(value, ensure_ascii=False)
+        # A ratio that lands whole prints whole: `5.0` is noise the chronicler would have to read past, and no consumer distinguishes it from `5`.
+        return json.dumps(int(value) if isinstance(value, float) and value.is_integer() else value, ensure_ascii=False)
     if isinstance(value, dict):
         parts = []
         for k, v in value.items():

@@ -6,6 +6,9 @@ export class PaletteHelpers {
   // A realm's `getColorText` hue — its `[k]` name, its subjects' tags and their cloth, resolved here so the three never drift; the crownless wear undyed grey.
   public static realmHue = (kingdom: number | undefined): string => (kingdom === undefined ? null : KINGDOM_REGISTRY[String(kingdom)]?.color) ?? REALM_FALLBACK_HUE;
 
+  // WB tints a sprite from two ramps: `realmHue` feeds the magenta one, this feeds the teal. `undefined` leaves the teal placeholders untouched, as WB does.
+  public static realmMain = (kingdom: number | undefined): string | undefined => kingdom === undefined ? undefined : KINGDOM_REGISTRY[String(kingdom)]?.color_main;
+
   // A realm's banner-emblem tint, ringing the tags of its subjects — cities carry their own copy, so a razed one keeps it once its crown is gone.
   public static realmRing(kingdom: number | undefined): string | undefined {
     return kingdom === undefined ? undefined : KINGDOM_REGISTRY[String(kingdom)]?.banner_icon_color;

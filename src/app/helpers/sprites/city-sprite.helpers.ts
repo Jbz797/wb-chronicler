@@ -27,7 +27,7 @@ export class CitySpriteHelpers {
     if (!context) return null;
 
     context.drawImage(sprite, 0, 0);
-    SpriteHelpers.repaint(context, cut.width, cut.height, SpriteHelpers.realmRamp(PaletteHelpers.realmHue(city.kingdom)));
+    SpriteHelpers.repaint(context, cut.width, cut.height, SpriteHelpers.realmRamp(PaletteHelpers.realmHue(city.kingdom), PaletteHelpers.realmMain(city.kingdom)));
     return cut;
   }
 

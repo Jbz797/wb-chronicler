@@ -58,11 +58,25 @@ export interface Page { label: string; mdUrl: string; slug: string }
 
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium (`ranks`) or an empty dimension means no key at all. A city is a kingdom's settlement.
 interface City {
+  army?: CityArmy;
   breakdown: PopulationBreakdown;
   loyalty: CityLoyalty;
   metadata: CityMetadata;
   population: CityPopulation;
   ranks?: CityRanks;
+}
+
+// The city's whole military, absent where there is none. `captain_years`, `kills_per_death` and `total_captains` ship in the JSON but stay chronicler-only.
+interface CityArmy {
+  age: number;
+  captain?: { id: number; name: string };
+  deaths: number;
+  kills: number;
+  melee: number;
+  money: number;
+  name: string;
+  ranged: number;
+  renown: number;
 }
 
 // How firmly the city holds to its crown: `new.py` keeps only the `total` for the reader, `city/info.py <id> loyalty` itemises the modifiers for the chronicler.
@@ -84,7 +98,7 @@ interface CityMetadata {
   id: number;
   kills: number;
   kingdom?: EntityReference;
-  leader?: { id: number; name: string };
+  leader?: { id: number; money: number; name: string };
   name: string;
   renown: number;
   score_rank: number;
@@ -100,8 +114,10 @@ interface CityPopulation {
   immortals?: number;
   infected?: number;
   money: number;
+  nobles_money: number;
   renown_total: number;
   sick?: number;
+  subjects_money: number;
   total: number;
   warriors: number;
   wealth_per_capita: number;
@@ -110,6 +126,10 @@ interface CityPopulation {
 // The city's rank (1-3) per stat among all cities, podium-only; the money ranks (`gold`, `money`, `nobles`) stay chronicler-only — Richesse prints them bare.
 interface CityRanks {
   age?: number;
+  army_age?: number;
+  army_kills?: number;
+  army_money?: number;
+  army_renown?: number;
   attractivity?: number;
   book_reach?: number;
   buildings?: number;

@@ -20,11 +20,11 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
+    asset_set,
     civic_building_ids,
     competition_ranks,
     emit,
     entity_ref,
-    food_resources,
     index_by_id,
     is_boat,
     kingdom_score_dimensions,
@@ -136,30 +136,44 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if not kid:
             continue
         actors_by_kingdom.setdefault(kid, []).append(actor)
+
         if clan_id := actor.get("clan"):
             actors_by_clan.setdefault(clan_id, []).append(actor)  # Heir lookup: a royal clan spans kingdoms, so `actors_by_kingdom` can't serve it.
         populations_by_kingdom[kid] += 1
-        money_by_kingdom[kid] += int(actor.get("money") or 0)
-        renown_by_kingdom[kid] += int(actor.get("renown") or 0)
+
+        # Guarded rather than summed blind: renown is zero on 84 % of subjects and coins on a quarter, and a `+= 0` still costs a hash and a store.
+        if coins := actor.get("money"):
+            money_by_kingdom[kid] += int(coins)
+
+        if renown := actor.get("renown"):
+            renown_by_kingdom[kid] += int(renown)
+
         if actor.get("asset_id") not in NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
             eaters_by_kingdom[kid] += 1
             if int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION:
                 fed_by_kingdom[kid] += 1
+
         if actor.get("profession") in (PROFESSION_KING, PROFESSION_LEADER) or actor["id"] in captain_ids:
             nobles_by_kingdom[kid] += 1
-            if actor["id"] not in king_ids:
-                nobles_money_by_kingdom[kid] += int(actor.get("money") or 0)
+            if actor["id"] not in king_ids and (coins := actor.get("money")):
+                nobles_money_by_kingdom[kid] += int(coins)
         traits = actor.get("saved_traits") or []
+
         if "infected" in traits:
             infected_by_kingdom[kid] += 1
+
         if not SICK_TRAITS.isdisjoint(traits):
             sick_by_kingdom[kid] += 1
+
         if "immortal" in traits:
             immortals_by_kingdom[kid] += 1
+
         if int(actor.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS:
             happy_by_kingdom[kid] += 1
+
         if not actor.get("homeBuildingID"):
             homeless_by_kingdom[kid] += 1
+
         if fid := actor.get("family"):
             families_by_kingdom.setdefault(kid, set()).add(fid)
         else:
@@ -183,7 +197,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     buildings_by_kingdom: Counter[int] = Counter()
     civic = civic_building_ids()  # Tallied per kingdom below (tile inside a city zone); `houses` = the dwelling subset.
-    food_ids = food_resources()
+    food_ids = asset_set("food")
     food_by_kingdom: Counter[int] = Counter()
     gold_by_kingdom: Counter[int] = Counter()
     goods_by_kingdom: Counter[int] = Counter()
