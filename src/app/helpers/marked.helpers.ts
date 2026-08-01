@@ -76,7 +76,7 @@ export class MarkedHelpers {
     const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
     const ring = PaletteHelpers.realmRing(info?.kingdom); // its crown's emblem tint, framing the plate as it frames that crown's own tag
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const style = `--tag-color: ${PaletteHelpers.realmHue(info?.kingdom)}${ring ? `; --tag-ring: ${ring}` : ''}`; // omitted, never empty — empty kills the fallback
+    const style = `--tag-color: ${PaletteHelpers.realmText(info?.kingdom)}${ring ? `; --tag-ring: ${ring}` : ''}`; // omitted, never empty — empty kills the fallback
 
     return `<span class="ant-tag entity-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
   }
@@ -93,9 +93,9 @@ export class MarkedHelpers {
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite power score, as the city's is
-    const ring = info?.banner_icon_color ? `; --tag-ring: ${info.banner_icon_color}` : ''; // the emblem tint framing the plate, as on its cities' own tags
+    const ring = PaletteHelpers.realmRing(Number(id)); // the emblem tint framing the plate, as on its cities' own tags
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const style = `--tag-color: ${info?.color ?? ''}${ring}`;
+    const style = `--tag-color: ${PaletteHelpers.realmText(Number(id))}${ring ? `; --tag-ring: ${ring}` : ''}`;
 
     return `<span class="ant-tag entity-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
   }
@@ -109,7 +109,7 @@ export class MarkedHelpers {
 
     const portrait = `<canvas class="portrait" data-person="${id}" height="0" width="0"></canvas>`; // `ActorSpriteHelpers.paintAll` fills it once rendered
 
-    const color = PaletteHelpers.realmHue(info.kingdom); // their realm's own name hue — a subject reads as belonging to that crown
+    const color = PaletteHelpers.realmText(info.kingdom); // their realm's own name hue — a subject reads as belonging to that crown
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';

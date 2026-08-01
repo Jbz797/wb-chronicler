@@ -77,7 +77,7 @@ export class SpriteHelpers {
   public static realmRamp(hue: string, main?: string): Map<string, string> {
     // Both ramps darken their root by the same factors (`ColorAsset.initColor`). `color_light` stays out — only actor sheets carry it, `ActorSpriteHelpers` adds it.
     const ramp = (root: string, placeholders: readonly string[]): [string, string][] => {
-      const base = this.hexRgb(root);
+      const base = this._lightenIfDark(this.hexRgb(root));
       return placeholders.map((placeholder, step) => [placeholder, this.blend(this._dark, base, this._shadeTs[step] ?? 0).join(',')]);
     };
     const swaps = ramp(hue, this._magentaRamp);
@@ -113,6 +113,12 @@ export class SpriteHelpers {
       px[index + 2] = Math.floor(((px[index + 2] ?? 0) * b) / 255);
     }
     context.putImageData(data, 0, 0);
+  }
+
+  // WB `ColorAsset.checkIfColorTooDark`: +50 a channel when all three sit under 128. `initColor` runs it on the two ramp roots alone, so the registry ships raw.
+  private static _lightenIfDark([r, g, b]: readonly number[]): [number, number, number] {
+    const channels: [number, number, number] = [r ?? 0, g ?? 0, b ?? 0];
+    return channels.every(channel => channel < 128) ? [channels[0] + 50, channels[1] + 50, channels[2] + 50] : channels;
   }
 
 }

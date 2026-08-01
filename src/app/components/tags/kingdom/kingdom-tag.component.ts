@@ -2,7 +2,7 @@ import { Component, computed, effect, ElementRef, inject, input, viewChild } fro
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { KingdomSpriteHelpers } from '../../../helpers';
+import { KingdomSpriteHelpers, PaletteHelpers } from '../../../helpers';
 import { RegistryService } from '../../../services';
 
 @Component({
@@ -18,8 +18,9 @@ export class KingdomTagComponent {
   public readonly medal = input(true); // Podium medal shown by default; hidden in the world « Palmarès » where the kingdom is always the winner (gold, redundant).
   public readonly name = input.required<string>();
 
-  // Visuals (palette, heraldry, species) come from the kingdoms registry, kept fresh by each world/info.py run. `null` until the kingdom is registered.
-  protected readonly kingdom = computed(() => this._registry.kingdoms()[String(this.id())] ?? null);
+  protected readonly color = computed(() => PaletteHelpers.realmText(this.id()));
+  protected readonly kingdom = computed(() => this._registry.kingdoms()[String(this.id())] ?? null); // palette, heraldry and species, `null` until registered
+  protected readonly ring = computed(() => PaletteHelpers.realmRing(this.id()));
 
   private readonly _banner = viewChild<ElementRef<HTMLCanvasElement>>('banner'); // absent until `@if (kingdom())` has drawn the plate
 

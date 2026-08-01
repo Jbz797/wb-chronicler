@@ -102,7 +102,7 @@ def _kingdom_banner(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) ->
     bg_slots, icon_slots = lib["banner_id_backgrounds"].get(banner_id), lib["banner_id_icons"].get(banner_id)
     if not bg_slots or not icon_slots:  # species without a banner set (never seen in practice) → no fields, and the tag simply wears no heraldry
         return {}
-    palette = load_data("colors-all.json").get(str(kingdom.get("color_id", "")), {})
+    palette = _palette(kingdom.get("color_id", ""))
     return {
         "banner_bg": bg_slots[i if (i := kingdom.get("banner_background_id") or 0) < len(bg_slots) else 0],
         "banner_bg_color": palette.get("color_main_2"),
@@ -113,11 +113,10 @@ def _kingdom_banner(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) ->
 
 # Kingdom entry, less the heraldry `_kingdom_banner` folds in and the merge's `dead`. It alone holds a hue — cities and subjects read theirs off it.
 def _kingdom_entry(kingdom: dict, species: Counter, city_count: int, rank: int | None) -> dict:
-    dominant = species.most_common(1)
+    dominant, palette = species.most_common(1), _palette(kingdom.get("color_id", ""))
     entry: dict = {
-        # Two ramps: magenta off `color_text` (the name hue too), teal off `color_main`. The fallback is on the first only — a `null` there would break the UI type.
-        "color": _palette_color(kingdom.get("color_id", ""), "color_text") or _REALM_FALLBACK_HUE,
-        "color_main": _palette_color(kingdom.get("color_id", ""), "color_main"),
+        "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue, and the magenta ramp root once lightened; a `null` would break the UI type
+        "color_main": palette.get("color_main"),
         "name": kingdom.get("name"),
         "species": dominant[0][0] if dominant else None,
     }
@@ -135,26 +134,23 @@ def _kingdom_species(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -
     return (subspecies or {}).get("species_id") or kingdom.get("original_actor_asset")
 
 
-# WB `MetaSpriteLibrary.checkIfColorTooDark`: +50 to each channel when all three sit below 128 — keeps near-black palettes legible, and feeds the registry name hue.
-def _lighten_if_dark(channels) -> tuple[int, int, int]:
-    r, g, b = channels
-    return (r + 50, g + 50, b + 50) if r < 128 and g < 128 and b < 128 else (r, g, b)
-
-
 def _load_registries(chapter_dir: Path) -> dict:
     return {name: json.loads(p.read_text()) if (p := chapter_dir / f"{name}.json").exists() else {} for name in _REGISTRIES}
 
 
 # Carry each prior entry forward flagged dead (last-known visuals kept, `rank` dropped — a medal is meaningless once fallen), then let live entities overwrite.
 def _merge(prev: dict, live: dict) -> dict:
-    return {**{k: {**{f: val for f, val in v.items() if f != "rank"}, "dead": True} for k, v in prev.items()}, **live}
+    carried = {}
+    for entry_key, entry in prev.items():  # spread then pop beats filtering the items — most entries never held a rank to drop
+        carried[entry_key] = fallen = {**entry, "dead": True}
+        fallen.pop("rank", None)
+    return carried | live
 
 
-# One field of a realm's palette, lightened if too dark (WB applies `checkIfColorTooDark` to both ramp roots). `None` when WB never shipped that palette.
+# A realm's palette, verbatim — WB's own `checkIfColorTooDark` belongs to the sprite ramps alone, so the UI applies it. Empty when WB shipped no such palette.
 @cache  # realms of one palette share the call, and every chapter rebuild replays it
-def _palette_color(color_id, field: str) -> str | None:
-    value = load_data("colors-all.json").get(str(color_id), {}).get(field)
-    return "#{:02X}{:02X}{:02X}".format(*_lighten_if_dark(int(value[i : i + 2], 16) for i in (1, 3, 5))) if value else None
+def _palette(color_id) -> dict:
+    return load_data("colors-all.json").get(str(color_id), {})
 
 
 # Person registry entry — everything the UI composes an actor from, plus the last-known name. `dead` comes from the merge.
@@ -210,10 +206,11 @@ def _wielded_weapon(carried: list[str]) -> str | None:
 
 # One line per entry, sorted by numeric id with fields alphabetical, so a changed entry shows up as a one-line diff rather than a reshuffled block.
 def _write_registry(path: Path, registry: dict) -> None:
-    rows = []
-    for entry_key, entry_value in sorted(registry.items(), key=lambda item: int(item[0])):
-        fields = json.dumps(dict(sorted(entry_value.items())), ensure_ascii=False)[1:-1]  # one dump per entry, not per field — 3× faster over 3k persons
-        rows.append(f"  {json.dumps(entry_key)}: {{ {fields} }}")
+    # One dump per entry, not per field, and `sort_keys` rather than a pre-sorted copy — both push the work into C. Keys are ids, so they need no escaping.
+    rows = [
+        f'  "{entry_key}": {{ {json.dumps(entry, ensure_ascii=False, sort_keys=True)[1:-1]} }}'
+        for entry_key, entry in sorted(registry.items(), key=lambda item: int(item[0]))
+    ]
     path.write_text("{\n" + ",\n".join(rows) + "\n}\n")
 
 
