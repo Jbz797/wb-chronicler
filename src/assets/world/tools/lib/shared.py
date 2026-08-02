@@ -3,6 +3,7 @@
 
 import json
 import os
+import pickle
 import sys
 import zlib
 from bisect import bisect_right
@@ -21,8 +22,12 @@ SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"}
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
+_CACHE_DIR = Path(__file__).parent.parent / ".cache"  # shared with the islands cache; gitignored via the root `.gitignore`
+_CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — old entries fall off by mtime rather than piling up
+
 # Live game save by default; a trailing `C<n>` script arg (via `take_chapter`) overrides it to a chapter's archived `map.wbox`. `WB_SAVE` still forces a path.
 _CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
+
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
@@ -51,6 +56,16 @@ def _strip_none(value):
     if isinstance(value, list):
         return [stripped for v in value if (stripped := _strip_none(v)) not in _EMPTY_VALUES]
     return value
+
+
+# Newest `_CACHE_KEEP` entries kept, the rest dropped by mtime — chapter saves each want their own, unlike the islands cache's single slot.
+def _write_save_cache(cache_file: Path, save: dict) -> None:
+    _CACHE_DIR.mkdir(exist_ok=True)
+    with cache_file.open("wb") as f:
+        pickle.dump(save, f, protocol=5)
+    stale = sorted(_CACHE_DIR.glob("save_v1_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)[_CACHE_KEEP:]
+    for old_entry in stale:
+        old_entry.unlink(missing_ok=True)
 
 
 # WB `Subspecies.calculateAgeRelatedStats`: lifespan > 30 → (16, 18); else `Pow(lifespan, 0.55)×1.1` capped 16/18 (civ species always > 30).
@@ -106,7 +121,8 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
             book_reach[cid] += 10 + (book.get("times_read") or 0)
 
     return {
-        "attractivity": {c["id"]: c.get("migrated", 0) - c.get("left", 0) for c in cities},  # `migrated - left` fits a headcount best; `joined`/`moved` worsen it.
+        # Net settlers won over: `joined` had no city, `moved` came from another, `left` walked out. `migrated` is out — a world law spawns those outright.
+        "attractivity": {c["id"]: c.get("joined", 0) + c.get("moved", 0) - c.get("left", 0) for c in cities},
         "book_reach": book_reach,
         "buildings": buildings,
         "elite": elite,  # the renown of its inhabitants — who lives there, where `renown` below is what the city itself achieved
@@ -252,13 +268,23 @@ def load_data(name: str) -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
-# Path is required on purpose: a default would silently read the live save when a chapter was meant — the bug class `take_chapter` exists to prevent.
+# Path required on purpose — a default would silently read the live save. Disk-cached on `mtime+size`: 49 ms of JSON parsing against 16 to unpickle.
 def load_save(path: Path) -> dict:
     if not path.exists():
         print(f"no save found at {path}", file=sys.stderr)
         sys.exit(2)
+    stat = path.stat()
+    cache_file = _CACHE_DIR / f"save_v1_{int(stat.st_mtime)}_{stat.st_size}.pkl"
+    if cache_file.exists():
+        try:
+            with cache_file.open("rb") as f:
+                return pickle.load(f)
+        except Exception:  # noqa: BLE001 — corrupt cache, fall through and reparse.
+            cache_file.unlink(missing_ok=True)
     with path.open("rb") as f:
-        return json.loads(zlib.decompress(f.read()))
+        save = json.loads(zlib.decompress(f.read()))
+    _write_save_cache(cache_file, save)
+    return save
 
 
 # Parses a comma-separated section list — `None` and `full` both expand to all known sections.

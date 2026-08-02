@@ -30,7 +30,6 @@ from shared import (
     emit,
     entity_ref,
     index_by_id,
-    is_boat,
     load_data,
     load_save,
     parse_sections,
@@ -113,7 +112,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
     for actor in save.get("actors_data", []):
         actors_by_id[actor["id"]] = actor
         cid = actor.get("cityID")
-        if not cid or is_boat(actor):
+        asset_id = actor.get("asset_id") or ""  # read once, as the purse is below: the boat guard and the hunger tally both want it
+        if not cid or asset_id.startswith("boat_"):  # `is_boat` inlined — it would re-read the field we already hold
             continue
         actors_by_city.setdefault(cid, []).append(actor)
         populations_by_city[cid] += 1
@@ -123,7 +123,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
             money_by_city[cid] += int(coins)
         if renown := actor.get("renown"):
             renown_by_city[cid] += int(renown)
-        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
+        if asset_id not in NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
             eaters_by_city[cid] += 1
             if int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION:
                 fed_by_city[cid] += 1
@@ -283,32 +283,32 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
 
     return {
         "age": int(age_units / UNITS_PER_YEAR),
-        **({"attractivity": net} if (net := dims["attractivity"].get(cid, 0)) > 0 else {}),  # Net settlers, omitted at 0 or below — a deserted city shows none.
-        **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # 10 per book authored here + its reads
+        "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
         "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
-        **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
         "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
         "food": ctx["food_by_city"][cid],  # Eatable resources stocked in the city's buildings.
         "founder": founder,
         "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.
         "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).
-        **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
         "houses": ctx["houses_by_city"][cid],  # Dwellings (subset of `buildings`).
         "id": cid,
         "islands": islands,
         "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
+        "name": city.get("name"),
+        "renown": city.get("renown", 0),
+        "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
+        "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
+        "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
+        **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # 10 per book authored here + its reads
+        **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
+        **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
         # The sitting mayor (`None` between leaders). `money` = his own purse: inside `population.money`, netted out of `subjects_money` so both show apart.
         **(
             {"leader": {"id": lead["id"], "money": int(lead.get("money") or 0), "name": lead.get("name") or f"#{lead['id']}"}}
             if (lead := ctx["actors_by_id"].get(city.get("leaderID")))
             else {}
         ),
-        "name": city.get("name"),
-        "renown": city.get("renown", 0),
-        "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
-        "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
-        "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
         # Chronicler-only, years under the present banner: stamped on annexation, so no key means the city never changed hands. The save keeps no previous owner.
         **({"years_in_kingdom": _years_since(stamp, ctx)} if (stamp := city.get("timestamp_kingdom")) not in (None, -1.0) else {}),
     }

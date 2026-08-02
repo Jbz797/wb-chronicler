@@ -85,7 +85,7 @@ interface CityLoyalty { total: number }
 // The city's own attributes (age, leader/founder, stocks…) — `population` aggregates its inhabitants instead. Its culture/language/religion ship chronicler-only.
 interface CityMetadata {
   age: number;
-  attractivity?: number;
+  attractivity: number; // `migrated - left`, emitted whatever its sign — 0 and negatives are readings too
   book_reach?: number;
   buildings: number;
   capital?: boolean;
