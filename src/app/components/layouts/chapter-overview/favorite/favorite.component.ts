@@ -9,7 +9,7 @@ import { LabelHelpers } from '../../../../helpers';
 import { RarityCounts } from '../../../../interfaces';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService, RegistryService } from '../../../../services';
-import { NewBadgeComponent, RankedStatComponent, RarityStatsComponent } from '../../../misc';
+import { InventoryComponent, NewBadgeComponent, RankedStatComponent, RarityStatsComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
 
 import { PlotCardComponent } from './plot-card/plot-card.component';
@@ -17,6 +17,7 @@ import { PlotCardComponent } from './plot-card/plot-card.component';
 @Component({
   selector: 'app-favorite',
   imports: [
+    InventoryComponent,
     NewBadgeComponent,
     NzBadgeModule,
     NzDescriptionsModule,
@@ -113,11 +114,6 @@ export class FavoriteComponent {
     });
 
     return { traits: diffCounts(current.traits, previous.traits) };
-  });
-  // Flattened for the template — Python emits the dict already sorted alphabetically.
-  protected readonly inventoryEntries = computed(() => {
-    const inventory = this.currentChapter()?.meta.favorite?.inventory ?? {};
-    return Object.entries(inventory).map(([key, amount]) => ({ amount, key }));
   });
   // Names the post `tenure_years` counts — only kings/leaders/captains hold one, so the fallback never surfaces.
   protected readonly tenureLabel = computed(() => TENURE_LABELS[this.currentChapter()?.meta.favorite?.metadata.profession ?? ''] ?? 'Ancienneté');

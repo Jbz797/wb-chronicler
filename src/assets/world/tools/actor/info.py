@@ -149,10 +149,10 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
     return sorted(out, key=lambda i: i["id"])
 
 
-# Resource bag → `{resource_id: amount}`, sorted — the raw save nests it as `inventory.dict.<id>.amount`.
+# Resource bag → `{resource_id: amount}`, heaviest stack first then alphabetical — the raw save nests it as `inventory.dict.<id>.amount`.
 def _build_inventory(actor: dict) -> dict:
     items = ((actor.get("inventory") or {}).get("dict") or {}).items()
-    return dict(sorted((iid, entry.get("amount", 0)) for iid, entry in items))
+    return dict(sorted(((iid, entry.get("amount", 0)) for iid, entry in items), key=lambda kv: (-kv[1], kv[0])))
 
 
 # The actor's identity card: civic ties (city/kingdom/culture/family…), body (age tier, mass), posts held and their tenure.

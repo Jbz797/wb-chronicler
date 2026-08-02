@@ -86,6 +86,9 @@
     <nz-descriptions-item [nzTitle]="goodsTitle">
       <app-ranked-stat source="city" stat="goods" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="inventoryTitle">
+      <app-inventory [resources]="c.inventory" />
+    </nz-descriptions-item>
   </nz-descriptions>
 
   @if (c.army; as army) {
@@ -150,6 +153,7 @@
   <ng-template #heirTitle>
     <img src="assets/img/world/heir.png" /><span>{{ heirSex() === 'female' ? 'Héritière' : 'Héritier' }}</span>
   </ng-template>
+  <ng-template #inventoryTitle><img src="assets/img/stats/inventory.png" /><span>Inventaire</span></ng-template>
   <ng-template #leaderTitle><img src="assets/img/professions/leader.png" /><span>Dirigeant</span></ng-template>
   <ng-template #loyaltyTitle><img src="assets/img/world/loyalty.png" /><span>Loyauté</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>

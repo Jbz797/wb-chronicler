@@ -60,6 +60,7 @@ export interface Page { label: string; mdUrl: string; slug: string }
 interface City {
   army?: CityArmy;
   breakdown: PopulationBreakdown;
+  inventory: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
   loyalty: CityLoyalty;
   metadata: CityMetadata;
   population: CityPopulation;

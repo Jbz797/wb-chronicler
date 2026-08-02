@@ -4,7 +4,7 @@
 # Notes below are for maintainers. Mirrors `kingdom/info.py` one tier down: per-city aggregates instead of per-kingdom; no diplomacy (relations/wars/alliance).
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache
 from pathlib import Path
 
@@ -39,7 +39,7 @@ from shared import (
     take_chapter,
 )
 
-_ALL_SECTIONS = ("army", "breakdown", "identity", "loyalty", "metadata", "population", "ranks")
+_ALL_SECTIONS = ("army", "breakdown", "identity", "inventory", "loyalty", "metadata", "population", "ranks")
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the crown's base rate. Emitted as a tier — the rates are WB's to change, the tier isn't.
@@ -104,6 +104,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     homeless_by_city: Counter[int] = Counter()
     immortals_by_city: Counter[int] = Counter()
     infected_by_city: Counter[int] = Counter()
+    inventory_by_city: defaultdict[int, Counter[str]] = defaultdict(Counter)
     leader_ids = {lid for c in save.get("cities", []) if (lid := c.get("leaderID"))}  # Sitting mayors: nobles too, but their purse is reported on its own.
     melee_by_city: Counter[int] = Counter()
     money_by_city: Counter[int] = Counter()
@@ -181,6 +182,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
             for r in stock.get("saved_resources") or []:
                 rid = r.get("id")
                 amount = r.get("amount", 0)
+                inventory_by_city[cid][rid] += amount  # WB's own « Inventaire » panel, itemising the three tallies below
                 if rid in food_ids:
                     food_by_city[cid] += amount
                 elif rid == "gold":
@@ -223,6 +225,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "houses_by_city": houses_by_city,
         "immortals_by_city": immortals_by_city,
         "infected_by_city": infected_by_city,
+        "inventory_by_city": inventory_by_city,
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: 33 ms only `metadata` needs
         "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
         "melee_by_city": melee_by_city,
@@ -708,6 +711,9 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
     if "identity" in sections:
         out["identity"] = _build_identity(city, ctx)
+    if "inventory" in sections:
+        # WB's « Inventaire »: what `metadata.food`, `gold` and `goods` add up. Heaviest stack first — a granary reads by what fills it, not by spelling.
+        out["inventory"] = dict(sorted(ctx["inventory_by_city"][city_id].items(), key=lambda kv: (-kv[1], kv[0])))
     if "loyalty" in sections:
         out["loyalty"] = _build_loyalty(city_id, ctx, detailed=requested not in (None, "full"))  # Naming a section gives the full ledger, `full` the summary.
     if "metadata" in sections:

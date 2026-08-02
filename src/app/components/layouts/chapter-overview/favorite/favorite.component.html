@@ -35,13 +35,7 @@
       <app-ranked-stat stat="equipment_power" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="inventoryTitle">
-      <div class="inventory">
-        @for (item of inventoryEntries(); track item.key) {
-          <span><img [src]="`assets/img/resources/${item.key}.png`" />x{{ item.amount }}</span>
-        } @empty {
-          <em>vide</em>
-        }
-      </div>
+      <app-inventory [resources]="fav.inventory ?? {}" />
     </nz-descriptions-item>
     @for (row of companionRows(); track row.label) {
       <ng-template #companionTitle>
