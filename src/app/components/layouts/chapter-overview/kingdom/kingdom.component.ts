@@ -33,11 +33,7 @@ export class KingdomComponent {
   private readonly _registry = inject(RegistryService);
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
-  // Same lookup for the heir — « Héritière » when the designated successor is a woman.
-  protected readonly heirSex = computed(() => {
-    const h = this.kingdom()?.metadata.heir;
-    return h ? this._registry.persons()[String(h.id)]?.sex ?? '' : '';
-  });
+  protected readonly heirSex = computed(() => this._registry.persons()[String(this.kingdom()?.metadata.heir?.id)]?.sex ?? '');
   // NEW badge on the king when the same featured kingdom crowned a different ruler since the previous chapter.
   protected readonly isNewKing = computed(() => {
     const current = this.kingdom()?.metadata;
@@ -45,11 +41,8 @@ export class KingdomComponent {
     if (!current?.king || !previous?.king || current.id !== previous.id) return false;
     return current.king.id !== previous.king.id;
   });
-  // King sex drives the « Reine/Roi » descriptions title — read from the person registry now that `king` is emitted as `{id, name}`.
-  protected readonly kingSex = computed(() => {
-    const k = this.kingdom()?.metadata.king;
-    return k ? this._registry.persons()[String(k.id)]?.sex ?? '' : '';
-  });
+  // Drives the « Reine/Roi » descriptions title — the registry holds it, `king` being emitted as `{id, name}`.
+  protected readonly kingSex = computed(() => this._registry.persons()[String(this.kingdom()?.metadata.king?.id)]?.sex ?? '');
   // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
   protected readonly optionalStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
     const p = this.kingdom()?.population;

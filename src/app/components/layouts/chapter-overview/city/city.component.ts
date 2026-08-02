@@ -3,7 +3,7 @@ import { Component, computed, inject } from '@angular/core';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { RankedStatKind } from '../../../../interfaces';
-import { ChroniclerService } from '../../../../services';
+import { ChroniclerService, RegistryService } from '../../../../services';
 import { BreakdownComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
 
@@ -22,8 +22,10 @@ import { PersonTagComponent } from '../../../tags';
 export class CityComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _registry = inject(RegistryService);
 
   protected readonly city = computed(() => this._chronicler.currentChapter()?.meta.city ?? null);
+  protected readonly heirSex = computed(() => this._registry.persons()[String(this.city()?.metadata.heir?.id)]?.sex ?? '');
   // NEW badge on the leader when the same featured city installed a different head since the previous chapter.
   protected readonly isNewLeader = computed(() => {
     const current = this.city()?.metadata;

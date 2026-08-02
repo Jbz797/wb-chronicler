@@ -114,10 +114,10 @@ export class FavoriteComponent {
 
     return { traits: diffCounts(current.traits, previous.traits) };
   });
-  // Flatten the inventory dict into a list for the template — Python emits it already sorted alphabetically.
+  // Flattened for the template — Python emits the dict already sorted alphabetically.
   protected readonly inventoryEntries = computed(() => {
-    const inv = this.currentChapter()?.meta.favorite?.inventory ?? {};
-    return Object.entries(inv).map(([key, amount]) => ({ amount, key }));
+    const inventory = this.currentChapter()?.meta.favorite?.inventory ?? {};
+    return Object.entries(inventory).map(([key, amount]) => ({ amount, key }));
   });
   // Names the post `tenure_years` counts — only kings/leaders/captains hold one, so the fallback never surfaces.
   protected readonly tenureLabel = computed(() => TENURE_LABELS[this.currentChapter()?.meta.favorite?.metadata.profession ?? ''] ?? 'Ancienneté');

@@ -94,6 +94,7 @@ interface CityMetadata {
   founder?: { id: number; name: string };
   gold: number;
   goods: number;
+  heir?: { id: number; name: string };
   houses: number;
   id: number;
   kills: number;

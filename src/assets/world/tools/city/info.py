@@ -5,6 +5,7 @@
 
 import sys
 from collections import Counter
+from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -40,6 +41,7 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("army", "breakdown", "identity", "loyalty", "metadata", "population", "ranks")
+_ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _CIV_BASE_CITIES = {"dwarf": 3, "elf": 3, "orc": 4}  # WB `ActorAsset.civ_base_cities`; every other civ keeps the `$civ_unit$` template's 5.
 _ERA_LOYALTY = {"age_chaos": -10, "age_dark": -5, "age_hope": 15, "age_moon": -25, "age_sun": 5, "age_tears": -55}  # `WorldAgeAsset.bonus_loyalty`
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
@@ -182,6 +184,14 @@ def _build_context(save: dict, save_path: Path) -> dict:
             if asset_id.startswith("house"):
                 houses_by_city[cid] += 1
 
+    # Succession pool, per realm: WB walks the crown's cities, so a warrior in the field is out of the running. `isUnitFitToRule` = alive civ of a kingdom.
+    king_ids = {kid for k in save.get("kingdoms") or [] if (kid := k.get("kingID"))}
+    heirs_by_kingdom: dict[int, list[dict]] = {}
+    for c in save.get("cities") or []:
+        for actor in actors_by_city.get(c["id"], ()) if (kid := c.get("kingdomID")) else ():
+            if actor.get("clan") and actor.get("civ_kingdom_id") and actor["id"] not in king_ids and actor["id"] not in leader_ids:
+                heirs_by_kingdom.setdefault(kid, []).append(actor)
+
     ctx = {
         **build_actor_stats_context(save),  # world_time, languages_by_id, subspecies_by_id, species_data…
         **_build_realm_context(save, warriors_by_city),  # everything `_city_loyalty` reads above the settlement: the crown, its peers, its wars
@@ -198,13 +208,15 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "food_by_city": food_by_city,
         "gold_by_city": gold_by_city,
         "goods_by_city": goods_by_city,
+        "heirs_by_kingdom": heirs_by_kingdom,
         "happy_by_city": happy_by_city,
         "homeless_by_city": homeless_by_city,
         "houses_by_city": houses_by_city,
         "immortals_by_city": immortals_by_city,
-        "melee_by_city": melee_by_city,
         "infected_by_city": infected_by_city,
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: 33 ms only `metadata` needs
         "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
+        "melee_by_city": melee_by_city,
         "money_by_city": money_by_city,
         "nobles_by_city": nobles_by_city,
         "nobles_money_by_city": nobles_money_by_city,
@@ -212,12 +224,11 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "ranged_by_city": ranged_by_city,
         "religions_by_id": index_by_id(save.get("religions", [])),
         "renown_by_city": renown_by_city,
-        "save_path": save_path,  # islands cache key — the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "score_dimensions": city_score_dimensions(save),  # the composite score's ten tallies; two of them have no other source
         "sick_by_city": sick_by_city,
-        "troop_money_by_city": troop_money_by_city,
         "stats_cache": {},  # `_actor_stats` memo: loyalty asks the same handful of kings and mayors for their skills over and over.
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors.
+        "troop_money_by_city": troop_money_by_city,
         "warriors_by_city": warriors_by_city,
     }
     ctx["loyalty_by_city"] = {c["id"]: _city_loyalty(c, ctx) for c in save.get("cities") or []}  # Last, and out of band: it reads everything above.
@@ -254,7 +265,7 @@ def _build_loyalty(city_id: int, ctx: dict, detailed: bool) -> dict:
 def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
     cid = city["id"]
     age_units = ctx["world_time"] - float(city.get("created_time") or 0)
-    _, island_lookup = compute_islands_cached(save, ctx["save_path"])
+    island_lookup = ctx["island_lookup"]()
 
     # Chronicler-only: distinct island ids under the city's zones, sorted asc (1 = biggest) — probed at each zone's centre tile.
     centres = ((z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2) for z in city.get("zones") or [])
@@ -281,6 +292,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "founder": founder,
         "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.
         "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).
+        **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
         "houses": ctx["houses_by_city"][cid],  # Dwellings (subset of `buildings`).
         "id": cid,
         "islands": islands,
@@ -594,6 +606,37 @@ def _main_subspecies(city: dict, ctx: dict) -> int | None:
         return leader.get("subspecies")
     residents = ctx["actors_by_city"].get(city["id"]) or []
     return residents[0].get("subspecies") if residents else None
+
+
+# WB `CityBehCheckLeader.tryGetClanLeader`: the realm's clanned subjects, royal house first, ranked by the city's culture. `None` where WB would roll dice instead.
+def _resolve_heir(city: dict, ctx: dict) -> dict | None:
+    pool = ctx["heirs_by_kingdom"].get(city.get("kingdomID")) or ()
+    if not pool:
+        return None
+    royal_clan = (ctx["kingdoms_by_id"].get(city.get("kingdomID")) or {}).get("royal_clan_id")
+    candidates = [a for a in pool if a.get("clan") == royal_clan] or pool
+    traits = set((ctx["cultures_by_id"].get(city.get("id_culture")) or {}).get("saved_traits") or [])
+    stat = next((s for t, s in _ASCENSION_STATS.items() if t in traits), None)
+
+    def score(actor: dict) -> float:
+        if stat is not None:
+            return _actor_stats(actor, ctx).get(stat, 0)
+        if "fames_crown" in traits:  # WB tests renown before coins, so a culture holding both crowns the famous, not the rich
+            return int(actor.get("renown") or 0)
+        if "golden_rule" in traits:
+            return int(actor.get("money") or 0)
+        age = ctx["world_time"] - float(actor.get("created_time") or 0)
+        return -age if "ultimogeniture" in traits else age  # `ultimogeniture` = youngest inherits, else eldest
+
+    def preferred_sex(actor: dict) -> int:
+        if "patriarchy" in traits:
+            return 0 if actor.get("sex") == 1 else 1
+        if "matriarchy" in traits:
+            return 1 if actor.get("sex") == 1 else 0
+        return 0
+
+    # Rank desc: preferred sex, then succession score, then lowest id. WB sorts on sex last of all, which makes it the criterion that outranks the rest.
+    return entity_ref(max(candidates, key=lambda a: (preferred_sex(a), score(a), -a.get("id", 0)))["id"], ctx["actors_by_id"])
 
 
 # WB's statecraft score behind loyalty modifiers 1-2: `diplomacy + stewardship × 2`, summed raw then cast once — see `_actor_stats`.

@@ -7,6 +7,12 @@
       </nz-descriptions-item>
     }
 
+    @if (c.metadata.heir; as heir) {
+      <nz-descriptions-item [nzTitle]="heirTitle">
+        <app-person-tag [id]="heir.id" [name]="heir.name" />
+      </nz-descriptions-item>
+    }
+
     @if (c.metadata.founder; as founder) {
       <nz-descriptions-item [nzTitle]="founderTitle">
         <app-person-tag [id]="founder.id" [name]="founder.name" />
@@ -83,9 +89,9 @@
   </nz-descriptions>
 
   @if (c.army; as army) {
-    <ng-template #armyTitle
-      ><span>{{ army.name }}</span></ng-template
-    >
+    <ng-template #armyTitle>
+      <span>{{ army.name }}</span>
+    </ng-template>
     <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="armyTitle">
       <nz-descriptions-item [nzTitle]="armyCaptainTitle">
         @if (army.captain; as captain) {
@@ -141,6 +147,9 @@
   <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
+  <ng-template #heirTitle>
+    <img src="assets/img/world/heir.png" /><span>{{ heirSex() === 'female' ? 'Héritière' : 'Héritier' }}</span>
+  </ng-template>
   <ng-template #leaderTitle><img src="assets/img/professions/leader.png" /><span>Dirigeant</span></ng-template>
   <ng-template #loyaltyTitle><img src="assets/img/world/loyalty.png" /><span>Loyauté</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
