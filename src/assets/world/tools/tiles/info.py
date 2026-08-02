@@ -71,7 +71,7 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
 
-def _tile_info_at(x: int, y: int, grid: list[list[int]], tile_map: list[str], tile_to_island: dict[tuple[int, int], int], frozen_set: set[tuple[int, int]]) -> dict:
+def _tile_info_at(x: int, y: int, grid: list[list[int]], tile_map: list[str], tile_to_island, frozen_set: set[tuple[int, int]]) -> dict:
     name = tile_map[grid[y][x]]
     out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": tile_to_island.get((x, y)), "kind": tile_kind(name)}
     if (x, y) in frozen_set:
@@ -124,15 +124,20 @@ def main(argv: list[str]) -> int:
         return 2
 
     save = load_save(save_path)
-    grid = decode_tile_grid(save)
-    if not grid:
+
+    # The grid ships run-length encoded, so its shape reads off the header — decoding all 331 k tiles is for the two sections that actually probe them.
+    height = len(save.get("tileArray") or [])
+    width = sum((save.get("tileAmounts") or [[]])[0])
+
+    if not (height and width):
         print("empty grid", file=sys.stderr)
         return 2
 
-    height, width = len(grid), len(grid[0])
     if not (0 <= cx < width and 0 <= cy < height):
         print(f"coords ({cx}, {cy}) out of bounds — map is {width}×{height}", file=sys.stderr)
         return 2
+
+    grid = decode_tile_grid(save) if {"distances", "tile_info"} & set(sections) else []
 
     tile_map = save["tileMap"]
     coords = _radius_tiles(cx, cy, args.radius, width, height)
@@ -178,7 +183,7 @@ def main(argv: list[str]) -> int:
                 continue
             if cap_zones := (cities_by_id.get(cap_id) or {}).get("zones"):
                 capital_pos_by_kingdom[k["id"]] = _zone_centroid(cap_zones)
-    tile_to_island: dict[tuple[int, int], int] = {}
+    tile_to_island: dict | object = {}  # placeholder until the section asks — an empty dict answers `.get` like the real lookup
     frozen_set: set[tuple[int, int]] = set()
 
     if "tile_info" in sections:

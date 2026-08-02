@@ -41,6 +41,15 @@ from shared import (
 
 _ALL_SECTIONS = ("army", "breakdown", "identity", "loyalty", "metadata", "population", "ranks")
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
+
+# WB `Kingdom.recalcBaseStats`: a tax trait overrides the crown's base rate. Emitted as a tier — the rates are WB's to change, the tier isn't.
+_CITY_TAX_TRAITS = {
+    "tax_rate_local_high": ("tax_local", "high"),
+    "tax_rate_local_low": ("tax_local", "low"),
+    "tax_rate_tribute_high": ("tax_tribute", "high"),
+    "tax_rate_tribute_low": ("tax_tribute", "low"),
+}
+
 _CIV_BASE_CITIES = {"dwarf": 3, "elf": 3, "orc": 4}  # WB `ActorAsset.civ_base_cities`; every other civ keeps the `$civ_unit$` template's 5.
 _ERA_LOYALTY = {"age_chaos": -10, "age_dark": -5, "age_hope": 15, "age_moon": -25, "age_sun": 5, "age_tears": -55}  # `WorldAgeAsset.bonus_loyalty`
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
@@ -300,6 +309,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
         "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
         "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
+        **_city_taxes(kingdom),
         **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # 10 per book authored here + its reads
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
         **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
@@ -537,6 +547,15 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
 def _city_species(city: dict, ctx: dict) -> str | None:
     leader = ctx["actors_by_id"].get(city.get("leaderID"))
     return leader.get("asset_id") if leader else city.get("original_actor_asset")
+
+
+# Chronicler-only, `BehActorGiveTax`: an inhabitant pays its mayor (`tax_local`), the mayor pays the crown (`tax_tribute`). The crown sets both rates.
+def _city_taxes(kingdom: dict | None) -> dict:
+    taxes = {"tax_local": "normal", "tax_tribute": "normal"}
+    for trait in (kingdom or {}).get("saved_traits") or []:
+        if spec := _CITY_TAX_TRAITS.get(trait):
+            taxes[spec[0]] = spec[1]
+    return taxes
 
 
 # The shared settlement getters plus the three this tier owns. Top 3 among the world's cities via `competition_ranks`, like every ranks section.

@@ -7,6 +7,7 @@
 # 4. `countLandIslands`: `count = islands.count(i => i.type == Ground && i.regions.Count >= 4)` — at least 4 regions, not 4 tiles.
 
 import pickle
+from array import array
 from collections import Counter, deque
 from pathlib import Path
 
@@ -20,6 +21,23 @@ _DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1
 _GROUND_REGIONS_THRESHOLD = 4  # WB hard-codes `regions.Count >= 4` in `countLandIslands`.
 
 
+# Tile → island id over a flat row-major grid, `0` for water (ids start at 1). The dict it replaces cost 32 ms to unpickle and 1.95 MB; this costs neither.
+class _TileIslands:
+    __slots__ = ("_grid", "_height", "_width")
+
+    def __init__(self, tile_to_id: dict[tuple[int, int], int], width: int, height: int):
+        self._grid, self._height, self._width = array("H", bytes(2 * width * height)), height, width
+        for (x, y), island_id in tile_to_id.items():
+            self._grid[y * width + x] = island_id
+
+    # Same contract as the dict it replaces — `default` off-map or on water.
+    def get(self, pos: tuple[int, int], default=None):
+        x, y = pos
+        if 0 <= x < self._width and 0 <= y < self._height and (island_id := self._grid[y * self._width + x]):
+            return island_id
+        return default
+
+
 # Cache key from save-file `mtime + size` — cheap stat, sufficient to detect WB overwrites. `None` when the file is missing (caller falls back to live compute).
 def _cache_key(save_path: Path) -> str | None:
     try:
@@ -30,7 +48,7 @@ def _cache_key(save_path: Path) -> str | None:
 
 
 # Build the islands list and a tile-to-island lookup keyed by WB-actor coordinates (no y inversion — `row` IS the actor y, see `chronicler.md`).
-def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]]:
+def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     tile_map = save.get("tileMap") or []
     layer_by_id = [tile_layer(name) for name in tile_map]
     block_by_id = [name.split(":", 1)[0] in _BLOCK_TILES for name in tile_map]
@@ -40,7 +58,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
     kind_by_id = [tile_kind(name) for name in tile_map]
     grid = decode_tile_grid(save)
     if not grid:
-        return [], {}
+        return [], _TileIslands({}, 0, 0)
     height, width = len(grid), len(grid[0])
 
     # Phase 1: split each 16×16 chunk into MapRegions (same-layer 8-conn components within the chunk, respecting `isDiagonalBlockedByCorners`).
@@ -74,12 +92,9 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
                                 continue
                             if region_grid[ny][nx] != -1 or layer_by_id[grid[ny][nx]] != layer:
                                 continue
-                            # `isDiagonalBlockedByCorners`: diagonal step blocked if either orthogonal corner is a `block` tile. Out-of-bounds counts as blocked.
-                            if dx and dy:
-                                blocked_h = not (0 <= x + dx < width) or block_by_id[grid[y][x + dx]]
-                                blocked_v = not (0 <= y + dy < height) or block_by_id[grid[y + dy][x]]
-                                if blocked_h or blocked_v:
-                                    continue
+                            # `isDiagonalBlockedByCorners`: blocked if either orthogonal corner is a `block` tile — never out of bounds, the chunk test pins both.
+                            if dx and dy and (block_by_id[grid[y][x + dx]] or block_by_id[grid[y + dy][x]]):
+                                continue
                             region_grid[ny][nx] = region_id
                             queue.append((nx, ny))
                     regions.append({"biomes": biomes, "layer": layer, "tile_kinds": tile_kinds, "tiles": tiles})
@@ -169,15 +184,15 @@ def _compute_islands(save: dict) -> tuple[list[dict], dict[tuple[int, int], int]
         counter = island_tile_kinds[island["id"]]
         total = sum(counter.values())
         island["tiles"] = " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / total * 100)) > 0)
-    return islands, tile_to_id
+    return islands, _TileIslands(tile_to_id, width, height)
 
 
 # Disk-cached `_compute_islands` — key = save `mtime+size`, pickle format, stale entries dropped on write (single-file cache).
-def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], dict[tuple[int, int], int]]:
+def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _TileIslands]:
     key = _cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = _CACHE_DIR / f"islands_v8_{key}.pkl"
+    cache_file = _CACHE_DIR / f"islands_v9_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:

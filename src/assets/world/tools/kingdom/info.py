@@ -27,7 +27,6 @@ from shared import (
     emit,
     entity_ref,
     index_by_id,
-    is_boat,
     kingdom_score_dimensions,
     kingdom_score_ranks,
     load_data,
@@ -43,13 +42,8 @@ _ALL_SECTIONS = ("alliance", "breakdown", "cities", "identity", "metadata", "pop
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 
-# WB `KingdomTraitLibrary`: a tax trait overrides the base rate (`Kingdom.recalcBaseStats`). Emitted as a tier — the rates are WB's to change, the tier isn't.
-_KINGDOM_TAX_TRAITS = {
-    "tax_rate_local_high": ("tax_local", "high"),
-    "tax_rate_local_low": ("tax_local", "low"),
-    "tax_rate_tribute_high": ("tax_tribute", "high"),
-    "tax_rate_tribute_low": ("tax_tribute", "low"),
-}
+# WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
+_KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
 
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _TRAIT_MODS = _OPINION_CONSTANTS["actor_trait_opinion_mods"]  # Read once per king trait in `_compute_opinion`, so it earns its own name (as in `city/info.py`).
@@ -125,7 +119,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     for actor in save.get("actors_data", []):
         actors_by_id[actor["id"]] = actor
-        if is_boat(actor):
+        asset_id = actor.get("asset_id") or ""  # read once, as `city/info.py` does: the boat guard and the hunger tally both want it
+        if asset_id.startswith("boat_"):  # `is_boat` inlined — it would re-read the field we already hold
             if bkid := actor.get("civ_kingdom_id"):
                 boats_by_kingdom[bkid] += 1
             continue
@@ -149,7 +144,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if renown := actor.get("renown"):
             renown_by_kingdom[kid] += int(renown)
 
-        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
+        if asset_id not in NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
             eaters_by_kingdom[kid] += 1
             if int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION:
                 fed_by_kingdom[kid] += 1
@@ -324,20 +319,15 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     heir = _resolve_heir(kingdom, ctx)
 
-    # Chronicler-only: what WB shows as « Hommage » (to the crown) and the local tax. `normal` = no tax trait, i.e. 15 of the 16 kingdoms here.
-    taxes = {"tax_local": "normal", "tax_tribute": "normal"}
-    for trait in kingdom.get("saved_traits") or []:
-        if spec := _KINGDOM_TAX_TRAITS.get(trait):
-            taxes[spec[0]] = spec[1]
+    # Chronicler-only: WB's « Hommage », what a mayor owes the crown. `normal` = no tax trait, i.e. 15 of the 16 kingdoms here.
+    tribute = next((tier for t in kingdom.get("saved_traits") or [] if (tier := _KINGDOM_TRIBUTE_TRAITS.get(t))), "normal")
 
     return {
         "age": int(age_units / UNITS_PER_YEAR),
-        **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # 10 per authored book + its reads
         "boats": ctx["boats_by_kingdom"][kid],  # Fishing/trading/transport hulls afloat — WB's boat techs leave no other trace in the save.
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name") or f"#{cap['id']}"} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
-        **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
@@ -348,18 +338,20 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).
         "id": kid,
         "islands": islands,
-        "king": king,
         "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
+        "king": king,
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
-        **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
-        **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
         "renown": kingdom.get("renown", 0),
         "score_rank": kingdom_score_ranks(save, dims).get(kid),  # placement on the composite score (1 = strongest); the total stays internal
-        **taxes,
+        "tax_tribute": tribute,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
-        **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
         "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
+        **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # 10 per authored book + its reads
+        **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
+        **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
+        **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
+        **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
     }
 
 
