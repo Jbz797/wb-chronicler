@@ -4,12 +4,27 @@
 import json
 import os
 import pickle
+import re
 import sys
 import zlib
 from bisect import bisect_right
 from collections import Counter
+from collections.abc import Sequence
 from functools import cache
 from pathlib import Path
+
+ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
+CACHE_DIR = Path(__file__).parent.parent / ".cache"  # holds the save and islands pickles alike; gitignored via the root `.gitignore`
+
+# WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
+EQUIPMENT_RACKS = {
+    "amulets": "item_storage_amulets",
+    "armor": "item_storage_armor",
+    "boots": "item_storage_boots",
+    "helmets": "item_storage_helmets",
+    "rings": "item_storage_rings",
+    "weapons": "item_storage_weapons",
+}
 
 HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20. (Emotionless non-civ actors also count — ignored.)
 NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
@@ -22,7 +37,6 @@ SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"}
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
-_CACHE_DIR = Path(__file__).parent.parent / ".cache"  # shared with the islands cache; gitignored via the root `.gitignore`
 _CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — old entries fall off by mtime rather than piling up
 
 # Live game save by default; a trailing `C<n>` script arg (via `take_chapter`) overrides it to a chapter's archived `map.wbox`. `WB_SAVE` still forces a path.
@@ -32,7 +46,25 @@ _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
+_LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 _PROFESSIONS = {2: "unit", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label.
+
+
+# Item base stats + its modifiers' bonuses, floats trimmed to 4 decimals (ints when whole), zeros dropped.
+def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_stats: dict) -> dict:
+    out = dict(item_stats.get(asset_id, {}))
+    for mod in modifiers:
+        for k, v in mod_stats.get(mod, {}).items():
+            out[k] = out.get(k, 0) + v
+    result = {}
+    for k, v in out.items():
+        if isinstance(v, float):
+            v = round(v, 4)
+            if v.is_integer():
+                v = int(v)
+        if v:
+            result[k] = v
+    return dict(sorted(result.items()))
 
 
 # Borda shared by both composites → `{id: place}`, 1 = strongest: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens.
@@ -60,10 +92,10 @@ def _strip_none(value):
 
 # Newest `_CACHE_KEEP` entries kept, the rest dropped by mtime — chapter saves each want their own, unlike the islands cache's single slot.
 def _write_save_cache(cache_file: Path, save: dict) -> None:
-    _CACHE_DIR.mkdir(exist_ok=True)
+    CACHE_DIR.mkdir(exist_ok=True)
     with cache_file.open("wb") as f:
         pickle.dump(save, f, protocol=5)
-    stale = sorted(_CACHE_DIR.glob("save_v1_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)[_CACHE_KEEP:]
+    stale = sorted(CACHE_DIR.glob("save_v1_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)[_CACHE_KEEP:]
     for old_entry in stale:
         old_entry.unlink(missing_ok=True)
 
@@ -167,6 +199,37 @@ def emit(out: dict) -> None:
 def entity_ref(entity_id: int | None, by_id: dict) -> dict | None:
     entity = by_id.get(entity_id) if entity_id is not None else None
     return None if entity is None else {"id": entity_id, "name": entity.get("name") or f"#{entity_id}"}
+
+
+# One equipped-or-racked item as both tiers report it: provenance (`by`/`from`), wear, kills, and its stats already folded with the modifiers' bonuses.
+def equipment_entry(item: dict, item_stats: dict, mod_stats: dict, world_time: float) -> dict:
+    mods = sorted(item.get("modifiers") or [])
+    created = item.get("created_time")
+    return {
+        "age": int((world_time - created) / UNITS_PER_YEAR) if created is not None else None,
+        "asset_id": item["asset_id"],
+        "by": item.get("by"),
+        "durability": item.get("durability"),
+        "from": item.get("from"),
+        "id": item["id"],
+        "kills": item.get("kills", 0),
+        "modifiers": mods,
+        "name": item.get("name"),
+        "rarity": equipment_rarity(mods),
+        "stats": _equipment_stats(item["asset_id"], mods, item_stats, mod_stats),
+    }
+
+
+# Rarity = the highest numbered suffix among an item's modifiers (`…_5` ⇒ Legendary) — mirrors WB's enchant tiers.
+def equipment_rarity(modifiers: list[str]) -> str:
+    max_level = max((int(m.group(1)) for m in (_LEVEL_RE.search(x) for x in modifiers) if m), default=0)
+    if max_level >= 5:
+        return "Legendary"
+    if max_level >= 4:
+        return "Epic"
+    if max_level >= 3:
+        return "Rare"
+    return "Normal"
 
 
 def index_by_id(records: list[dict]) -> dict:
@@ -274,7 +337,7 @@ def load_save(path: Path) -> dict:
         print(f"no save found at {path}", file=sys.stderr)
         sys.exit(2)
     stat = path.stat()
-    cache_file = _CACHE_DIR / f"save_v1_{int(stat.st_mtime)}_{stat.st_size}.pkl"
+    cache_file = CACHE_DIR / f"save_v1_{int(stat.st_mtime)}_{stat.st_size}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:
@@ -388,6 +451,32 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "wealth": wealth,
         "wealth_per_capita": lambda r: wealth(r) / n if (n := populations(r)) else 0.0,
     }
+
+
+# WB `ListSorters.sortUnitsSortedByAgeAndTraits`: age, then a trait re-sorts on renown/stat/coins, then sex — sorted last, so it wins. Callers pick the pool.
+def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: float, stat_of) -> dict | None:
+    if not candidates:
+        return None
+    stat = next((s for t, s in ASCENSION_STATS.items() if t in traits), None)
+
+    def score(actor: dict) -> float:
+        if stat is not None:
+            return stat_of(actor).get(stat, 0)
+        if "fames_crown" in traits:  # WB tests renown before coins, so a culture holding both crowns the famous, not the rich
+            return int(actor.get("renown") or 0)
+        if "golden_rule" in traits:
+            return int(actor.get("money") or 0)
+        age = world_time - float(actor.get("created_time") or 0)
+        return -age if "ultimogeniture" in traits else age  # `ultimogeniture` = youngest inherits, else eldest
+
+    def preferred_sex(actor: dict) -> int:
+        if "patriarchy" in traits:
+            return 0 if actor.get("sex") == 1 else 1
+        if "matriarchy" in traits:
+            return 1 if actor.get("sex") == 1 else 0
+        return 0
+
+    return max(candidates, key=lambda a: (preferred_sex(a), score(a), -a.get("id", 0)))
 
 
 # WB omits default values at save time: an absent `sex` IS male (0) — every species has sexed members, living swords included.

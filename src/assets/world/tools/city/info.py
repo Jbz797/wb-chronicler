@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from actor_stats import actor_stat_totals, build_actor_stats_context, demographics
 from islands import compute_islands_cached
 from shared import (
+    EQUIPMENT_RACKS,
     HAPPY_MIN_HAPPINESS,
     NON_FOOD_SPECIES,
     PROFESSION_KING,
@@ -29,6 +30,7 @@ from shared import (
     competition_ranks,
     emit,
     entity_ref,
+    equipment_entry,
     index_by_id,
     load_data,
     load_save,
@@ -36,11 +38,11 @@ from shared import (
     population_breakdown,
     settlement_rank_getters,
     sex_label,
+    succession_heir,
     take_chapter,
 )
 
-_ALL_SECTIONS = ("army", "breakdown", "identity", "inventory", "loyalty", "metadata", "population", "ranks")
-_ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
+_ALL_SECTIONS = ("army", "breakdown", "equipment", "identity", "inventory", "loyalty", "metadata", "population", "ranks")
 
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the crown's base rate. Emitted as a tier — the rates are WB's to change, the tier isn't.
 _CITY_TAX_TRAITS = {
@@ -214,6 +216,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cities_by_id": index_by_id(save.get("cities", [])),
         "cultures_by_id": index_by_id(save.get("cultures", [])),
         "eaters_by_city": eaters_by_city,
+        # Racked gear per city, the six `item_storage_*` lists summed — a stat of its own, and what `_build_equipment` details on request.
+        "equipment_by_city": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in save.get("cities") or []},
         "familyless_by_city": familyless_by_city,
         "fed_by_city": fed_by_city,
         "food_by_city": food_by_city,
@@ -249,6 +253,20 @@ def _build_context(save: dict, save_path: Path) -> dict:
     ctx["loyalty_total_by_city"] = {cid: sum(mods.values()) for cid, mods in ctx["loyalty_by_city"].items()}
 
     return ctx
+
+
+# The city's armoury: gear on its racks, worn by nobody. `total` is the ranked stat; `full` counts each rack, naming the section spells every piece out.
+def _build_equipment(city: dict, ctx: dict, detailed: bool) -> dict:
+    storage = city.get("equipment") or {}
+    total = ctx["equipment_by_city"].get(city["id"], 0)
+    if not detailed:  # `full` keeps the chapter light: a count per stocked rack, the pieces themselves only when the section is asked for by name
+        return {"racks": {rack: n for rack, field in EQUIPMENT_RACKS.items() if (n := len(storage.get(field) or []))}, "total": total}
+    item_stats, mod_stats = ctx["equipment"]["items"], ctx["equipment"]["modifiers"]
+    racks = {}
+    for rack, field in EQUIPMENT_RACKS.items():
+        stored = (ctx["items_by_id"].get(iid) for iid in storage.get(field) or [])
+        racks[rack] = sorted((equipment_entry(i, item_stats, mod_stats, ctx["world_time"]) for i in stored if i is not None), key=lambda i: i["id"])
+    return {"racks": racks, "total": total}
 
 
 # Chronicler-only: what the city officially is, not what its people are (`breakdown`). A mayor can turn it over (`leader_change_city_culture`), conquest cannot.
@@ -570,8 +588,8 @@ def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
         {
             "attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0),
             "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
-            # Prefixed: the city ranks `kills`/`deaths`/`renown` of its own already. `key=k` binds per entry — a bare closure would read the loop's last value.
-            **{
+            "equipment": lambda c: ctx["equipment_by_city"].get(c.get("id"), 0),
+            **{  # Prefixed: the city ranks `kills`/`deaths`/`renown` of its own already. `key=k` binds per entry — a bare closure would read the loop's last value.
                 f"army_{k}": lambda c, key=k: armies.get(c.get("id"), {}).get(key, 0)
                 for k in ("age", "captain_years", "kills", "kills_per_death", "money", "renown")
             },
@@ -633,32 +651,11 @@ def _main_subspecies(city: dict, ctx: dict) -> int | None:
 # WB `CityBehCheckLeader.tryGetClanLeader`: the realm's clanned subjects, royal house first, ranked by the city's culture. `None` where WB would roll dice instead.
 def _resolve_heir(city: dict, ctx: dict) -> dict | None:
     pool = ctx["heirs_by_kingdom"].get(city.get("kingdomID")) or ()
-    if not pool:
-        return None
     royal_clan = (ctx["kingdoms_by_id"].get(city.get("kingdomID")) or {}).get("royal_clan_id")
-    candidates = [a for a in pool if a.get("clan") == royal_clan] or pool
+    candidates = [a for a in pool if a.get("clan") == royal_clan] or list(pool)
     traits = set((ctx["cultures_by_id"].get(city.get("id_culture")) or {}).get("saved_traits") or [])
-    stat = next((s for t, s in _ASCENSION_STATS.items() if t in traits), None)
-
-    def score(actor: dict) -> float:
-        if stat is not None:
-            return _actor_stats(actor, ctx).get(stat, 0)
-        if "fames_crown" in traits:  # WB tests renown before coins, so a culture holding both crowns the famous, not the rich
-            return int(actor.get("renown") or 0)
-        if "golden_rule" in traits:
-            return int(actor.get("money") or 0)
-        age = ctx["world_time"] - float(actor.get("created_time") or 0)
-        return -age if "ultimogeniture" in traits else age  # `ultimogeniture` = youngest inherits, else eldest
-
-    def preferred_sex(actor: dict) -> int:
-        if "patriarchy" in traits:
-            return 0 if actor.get("sex") == 1 else 1
-        if "matriarchy" in traits:
-            return 1 if actor.get("sex") == 1 else 0
-        return 0
-
-    # Rank desc: preferred sex, then succession score, then lowest id. WB sorts on sex last of all, which makes it the criterion that outranks the rest.
-    return entity_ref(max(candidates, key=lambda a: (preferred_sex(a), score(a), -a.get("id", 0)))["id"], ctx["actors_by_id"])
+    heir = succession_heir(candidates, traits, ctx["world_time"], lambda a: _actor_stats(a, ctx))
+    return entity_ref(heir["id"], ctx["actors_by_id"]) if heir else None
 
 
 # WB's statecraft score behind loyalty modifiers 1-2: `diplomacy + stewardship × 2`, summed raw then cast once — see `_actor_stats`.
@@ -709,6 +706,8 @@ def main(argv: list[str]) -> int:
         out["army"] = _build_army(city, ctx)
     if "breakdown" in sections:
         out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
+    if "equipment" in sections:
+        out["equipment"] = _build_equipment(city, ctx, detailed=requested not in (None, "full"))
     if "identity" in sections:
         out["identity"] = _build_identity(city, ctx)
     if "inventory" in sections:

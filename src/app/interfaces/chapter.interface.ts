@@ -60,6 +60,7 @@ export interface Page { label: string; mdUrl: string; slug: string }
 interface City {
   army?: CityArmy;
   breakdown: PopulationBreakdown;
+  equipment: EquipmentStock;
   inventory: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
   loyalty: CityLoyalty;
   metadata: CityMetadata;
@@ -136,6 +137,7 @@ interface CityRanks {
   book_reach?: number;
   buildings?: number;
   deaths?: number;
+  equipment?: number;
   fed_pct?: number;
   food?: number;
   food_per_capita?: number;
@@ -181,6 +183,9 @@ interface DeathBreakdown {
 
 // A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
 interface EntityReference { id: number; name: string }
+
+// Gear on the racks, worn by nobody. Only the total reaches the UI — the per-rack counts and the pieces themselves ship in the JSON, for the chronicler alone.
+interface EquipmentStock { total: number }
 
 // Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key. `descriptor` is authored by the chronicler.
 interface Favorite {
@@ -268,6 +273,7 @@ interface Kingdom {
   alliance?: KingdomAlliance;
   breakdown: PopulationBreakdown;
   cities?: KingdomCity[];
+  equipment: EquipmentStock;
   metadata: KingdomMetadata;
   population: KingdomPopulation;
   ranks?: KingdomRanks;
@@ -332,6 +338,7 @@ interface KingdomRanks {
   cities?: number;
   culture_traits?: number;
   deaths?: number;
+  equipment?: number;
   fed_pct?: number;
   food?: number;
   food_per_capita?: number;

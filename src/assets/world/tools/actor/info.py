@@ -2,7 +2,6 @@
 
 # User-facing docs (usage, available sections) live in `tools/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
-import re
 import sys
 from pathlib import Path
 
@@ -18,6 +17,8 @@ from shared import (
     competition_ranks,
     emit,
     entity_ref,
+    equipment_entry,
+    equipment_rarity,
     index_by_id,
     life_stage,
     load_save,
@@ -29,7 +30,6 @@ from shared import (
 
 _ALL_SECTIONS = ("companions", "creature_traits", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats")
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
-_LEVEL_RE = re.compile(r"(\d+)$")
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
 _RANKED_STATS = {
@@ -125,28 +125,8 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
     item_stats = ctx["equipment"]["items"]
     mod_stats = ctx["equipment"]["modifiers"]
     world_time = ctx["world_time"]
-    out = []
-    for iid in actor.get("saved_items") or []:
-        item = ctx["items_by_id"].get(iid)
-        if item is None:
-            continue
-        mods = item.get("modifiers") or []
-        ct = item.get("created_time")
-        out.append(
-            {
-                "age": int((world_time - ct) / UNITS_PER_YEAR) if ct is not None else None,
-                "asset_id": item["asset_id"],
-                "by": item.get("by"),
-                "durability": item.get("durability"),
-                "from": item.get("from"),
-                "id": iid,
-                "kills": item.get("kills", 0),
-                "modifiers": sorted(mods),
-                "rarity": _equipment_rarity(mods),
-                "stats": _equipment_stats(item["asset_id"], mods, item_stats, mod_stats),
-            }
-        )
-    return sorted(out, key=lambda i: i["id"])
+    items = (ctx["items_by_id"].get(iid) for iid in actor.get("saved_items") or [])
+    return sorted((equipment_entry(i, item_stats, mod_stats, world_time) for i in items if i is not None), key=lambda i: i["id"])
 
 
 # Resource bag → `{resource_id: amount}`, heaviest stack first then alphabetical — the raw save nests it as `inventory.dict.<id>.amount`.
@@ -338,37 +318,8 @@ def _equipment_power(actor: dict, ctx: dict) -> int:
     for iid in actor.get("saved_items") or []:
         item = items.get(iid)
         if item:
-            total += _RARITY_POINTS[_equipment_rarity(item.get("modifiers") or [])]
+            total += _RARITY_POINTS[equipment_rarity(item.get("modifiers") or [])]
     return total
-
-
-# Rarity = the highest numbered suffix among an item's modifiers (`…_5` ⇒ Legendary) — mirrors WB's enchant tiers.
-def _equipment_rarity(modifiers: list[str]) -> str:
-    max_level = max((int(m.group(1)) for m in (_LEVEL_RE.search(x) for x in modifiers) if m), default=0)
-    if max_level >= 5:
-        return "Legendary"
-    if max_level >= 4:
-        return "Epic"
-    if max_level >= 3:
-        return "Rare"
-    return "Normal"
-
-
-# Item base stats + its modifiers' bonuses, floats trimmed to 4 decimals (ints when whole), zeros dropped.
-def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_stats: dict) -> dict:
-    out = dict(item_stats.get(asset_id, {}))
-    for mod in modifiers:
-        for k, v in mod_stats.get(mod, {}).items():
-            out[k] = out.get(k, 0) + v
-    result = {}
-    for k, v in out.items():
-        if isinstance(v, float):
-            v = round(v, 4)
-            if v.is_integer():
-                v = int(v)
-        if v:
-            result[k] = v
-    return dict(sorted(result.items()))
 
 
 # Years the actor has held `role` = (holder field, collection, history). `None` unless the history's last entry still names them.

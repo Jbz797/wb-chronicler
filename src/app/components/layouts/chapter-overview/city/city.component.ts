@@ -51,13 +51,14 @@ export class CityComponent {
   });
   // Score dimensions with no other home in the panel — a row appears when Python emitted the field, so `attractivity` always shows, 0 and negatives included.
   protected readonly scoreStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
-    const m = this.city()?.metadata;
-    if (!m) return [];
+    const c = this.city();
+    if (!c) return [];
     const rows = [
-      { icon: 'assets/img/world/population.png', label: 'Attractivité', stat: 'attractivity' as const },
-      { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', stat: 'book_reach' as const },
+      { icon: 'assets/img/world/population.png', label: 'Attractivité', shown: true, stat: 'attractivity' as const },
+      { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', shown: (c.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
+      { icon: 'assets/img/stats/equipment_power.png', label: 'Équipements', shown: !!c.equipment.total, stat: 'equipment' as const },
     ];
-    return rows.filter(r => m[r.stat] !== undefined);
+    return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));
   });
 
 }

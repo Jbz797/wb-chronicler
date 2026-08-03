@@ -3,7 +3,7 @@
 # User-facing docs (usage, available sections) live in `tools/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache
 from pathlib import Path
 
@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from actor_stats import build_actor_stats_context, compute_actor_stats, demographics
 from islands import compute_islands_cached
 from shared import (
+    EQUIPMENT_RACKS,
     HAPPY_MIN_HAPPINESS,
     NON_FOOD_SPECIES,
     PROFESSION_KING,
@@ -34,14 +35,13 @@ from shared import (
     parse_sections,
     population_breakdown,
     settlement_rank_getters,
+    succession_heir,
     take_chapter,
 )
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
-_ALL_SECTIONS = ("alliance", "breakdown", "cities", "identity", "metadata", "population", "ranks", "relations", "wars")
-_ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
+_ALL_SECTIONS = ("alliance", "breakdown", "cities", "equipment", "identity", "metadata", "population", "ranks", "relations", "wars")
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
-
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
 _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
 
@@ -177,6 +177,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     cities_by_id: dict[int, dict] = {}
     cities_by_kingdom: dict[int, int] = {}
+    racks_by_kingdom: defaultdict[int, Counter[str]] = defaultdict(Counter)
     territory_by_kingdom: dict[int, int] = {}
     zones_by_kingdom: dict[int, list[tuple[int, int]]] = {}
 
@@ -186,6 +187,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if not kid:
             continue
         cities_by_kingdom[kid] = cities_by_kingdom.get(kid, 0) + 1
+        for rack, field in EQUIPMENT_RACKS.items():
+            racks_by_kingdom[kid][rack] += len((city.get("equipment") or {}).get(field) or [])
         warriors_by_kingdom[kid] += warriors_by_city[city["id"]]
         zones = city.get("zones") or []
         territory_by_kingdom[kid] = territory_by_kingdom.get(kid, 0) + len(zones)
@@ -239,6 +242,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cities_by_kingdom": cities_by_kingdom,
         "cultures_by_id": index_by_id(save.get("cultures", [])),
         "eaters_by_kingdom": eaters_by_kingdom,
+        "racks_by_kingdom": racks_by_kingdom,
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
         "fed_by_kingdom": fed_by_kingdom,
@@ -275,6 +279,14 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
 
 # Chronicler-only: what the crown officially is, not what its subjects are (`breakdown`). It all rides on the king: a succession can turn it over, conquest cannot.
+
+
+# The realm's armoury: its towns' racks summed. `total` is the ranked stat; per-city pieces are `city/info.py <id> equipment`, a crown holds nothing itself.
+def _build_equipment(kingdom: dict, ctx: dict) -> dict:
+    racks = ctx["racks_by_kingdom"][kingdom["id"]]
+    return {"racks": {rack: n for rack, n in sorted(racks.items()) if n}, "total": sum(racks.values())}
+
+
 def _build_identity(kingdom: dict, ctx: dict) -> dict:
     culture = ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}
     return {
@@ -683,6 +695,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
             "book_reach": lambda k: dims["book_reach"].get(k.get("id"), 0),
             "cities": lambda k: ctx["cities_by_kingdom"].get(k.get("id"), 0),
             "culture_traits": lambda k: dims["culture_traits"].get(k.get("id"), 0),
+            "equipment": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
             "foundings": lambda k: dims["foundings"].get(k.get("id"), 0),
             "immortals": lambda k: ctx["immortals_by_kingdom"].get(k.get("id"), 0),
             "infected": lambda k: ctx["infected_by_kingdom"].get(k.get("id"), 0),
@@ -751,34 +764,11 @@ def _resolve_heir(kingdom: dict, ctx: dict) -> dict | None:
         return None
     # WB `Clan.fitToRule`: same crown, alive kingdom civ, and no sitting king — a royal clan spans realms, so most of its members serve someone else.
     candidates = [a for a in ctx["actors_by_clan"].get(royal_clan, ()) if a.get("civ_kingdom_id") == kingdom["id"] and a.get("id") not in ctx["king_ids"]]
-    if not candidates:
-        return None
     traits = set((ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}).get("saved_traits") or [])
-    stat = next((s for t, s in _ASCENSION_STATS.items() if t in traits), None)
-
-    def score(actor: dict) -> float:
-        if stat is not None:
-            return compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"]).get(stat, 0)
-        if "fames_crown" in traits:  # WB tests renown before coins, so a culture holding both crowns the famous, not the rich
-            return int(actor.get("renown") or 0)
-        if "golden_rule" in traits:
-            return int(actor.get("money") or 0)
-        age = ctx["world_time"] - float(actor.get("created_time") or 0)
-        return -age if "ultimogeniture" in traits else age  # `ultimogeniture` = youngest inherits, else eldest
-
-    def preferred_sex(actor: dict) -> int:
-        if "patriarchy" in traits:
-            return 0 if actor.get("sex") == 1 else 1
-        if "matriarchy" in traits:
-            return 1 if actor.get("sex") == 1 else 0
-        return 0
-
-    # Rank desc: preferred sex, then succession score, then lowest id (WB's stable tie-break among equals).
-    heir = max(candidates, key=lambda a: (preferred_sex(a), score(a), -a.get("id", 0)))
-    return {"id": heir.get("id"), "name": heir.get("name") or f"#{heir.get('id')}"}
+    heir = succession_heir(candidates, traits, ctx["world_time"], lambda a: compute_actor_stats(a, ctx, ctx["subspecies_base_cache"]))
+    return {"id": heir["id"], "name": heir.get("name") or f"#{heir['id']}"} if heir else None
 
 
-# Both sides of a war as id sets (main + listed, `None` dropped). Precompute once when scoring many kingdoms against the same wars.
 def _war_sides(war: dict) -> tuple[set, set]:
     attackers = ({war.get("main_attacker")} | set(war.get("list_attackers") or [])) - {None}
     defenders = ({war.get("main_defender")} | set(war.get("list_defenders") or [])) - {None}
@@ -820,6 +810,8 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx)
     if "cities" in sections:
         out["cities"] = _build_cities(kingdom, ctx)
+    if "equipment" in sections:
+        out["equipment"] = _build_equipment(kingdom, ctx)
     if "identity" in sections:
         out["identity"] = _build_identity(kingdom, ctx)
     if "metadata" in sections:

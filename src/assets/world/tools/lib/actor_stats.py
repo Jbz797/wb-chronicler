@@ -436,7 +436,7 @@ def _to_int32(x: int) -> int:
 
 
 # WB's `Actor.stats`, floats intact, before `_cleanup_stats`. Combine stats from here: WB adds first, truncates once, so 14.5 stays 14.5.
-def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
+def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None, *, with_equipment: bool = True) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
     if sub is None:
@@ -457,7 +457,8 @@ def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None
     _add_trait_stats(totals, actor.get("saved_traits") or [], ctx["creature_traits"])
     _add_trait_stats(totals, (ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits") or [], ctx["clan_traits"])
     _add_trait_stats(totals, (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits") or [], ctx["language_traits"])
-    _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
+    if with_equipment:  # the table only ever grants 20 stats, `lifespan` and `multiplier_lifespan` among none of them — a lifespan-only caller skips the walk
+        _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
     _add_custom_data_float(totals, actor.get("custom_data_float"))
     _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
     _normalize(totals)  # `updateStats` normalizes here, ahead of the derived stats: mana reads the clamped intelligence, damage the clamped warfare.
@@ -509,8 +510,8 @@ def demographics(actors: list[dict], ctx: dict) -> dict:
     world_time = ctx["world_time"]
     for a in actors:
         age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
-        # Raw totals, not `compute_actor_stats`: only `lifespan` is read, so the cleanup's rename-and-sort of thirty other stats would be pure waste per actor.
-        lifespan = int(actor_stat_totals(a, ctx, ctx["subspecies_base_cache"]).get("lifespan", 0))
+        # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
+        lifespan = int(actor_stat_totals(a, ctx, ctx["subspecies_base_cache"], with_equipment=False).get("lifespan", 0))
         stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
         if a.get("sex") != 1:
             men += 1

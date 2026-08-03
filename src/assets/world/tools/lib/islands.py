@@ -12,9 +12,9 @@ from collections import Counter, deque
 from pathlib import Path
 
 from grid import decode_tile_grid, tile_biome, tile_kind, tile_layer
+from shared import CACHE_DIR
 
 _BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})  # WB `TileTypeBase.block` tiles — block diagonals, which splits regions.
-_CACHE_DIR = Path(__file__).parent.parent / ".cache"  # Sibling of `actor/`, `kingdom/`, … — gitignored via root `.gitignore`.
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
 _DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
 _DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
@@ -77,10 +77,10 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                     tiles: list[tuple[int, int]] = []
                     biomes: Counter[str] = Counter()
                     tile_kinds: Counter[str] = Counter()
-                    queue = deque([(sx, sy)])
+                    queue = [(sx, sy)]  # a list popped from the tail, not a deque: the fill is order-agnostic
                     region_grid[sy][sx] = region_id
                     while queue:
-                        x, y = queue.popleft()
+                        x, y = queue.pop()
                         tiles.append((x, y))
                         tid = grid[y][x]
                         tile_kinds[kind_by_id[tid]] += 1
@@ -192,7 +192,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _Ti
     key = _cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = _CACHE_DIR / f"islands_v9_{key}.pkl"
+    cache_file = CACHE_DIR / f"islands_v9_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:
@@ -200,8 +200,8 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _Ti
         except Exception:  # noqa: BLE001 — corrupt cache, fall through to recompute.
             cache_file.unlink(missing_ok=True)
     result = _compute_islands(save)
-    _CACHE_DIR.mkdir(exist_ok=True)
-    for old in _CACHE_DIR.glob("islands_*.pkl"):
+    CACHE_DIR.mkdir(exist_ok=True)
+    for old in CACHE_DIR.glob("islands_*.pkl"):
         if old.name != cache_file.name:
             old.unlink(missing_ok=True)
     with cache_file.open("wb") as f:

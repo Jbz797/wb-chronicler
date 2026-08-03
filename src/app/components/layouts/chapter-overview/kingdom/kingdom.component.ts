@@ -56,15 +56,16 @@ export class KingdomComponent {
   });
   // Score dimensions with no other home in the panel — Python omits each at 0, so a row appears only once the realm has earned it.
   protected readonly scoreStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
-    const m = this.kingdom()?.metadata;
-    if (!m) return [];
+    const k = this.kingdom();
+    if (!k) return [];
     const rows = [
-      { icon: 'assets/img/world/cultures.png', label: 'Traits culturels', stat: 'culture_traits' as const },
-      { icon: 'assets/img/world/foundings.png', label: 'Fondations', stat: 'foundings' as const },
-      { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', stat: 'book_reach' as const },
-      { icon: 'assets/img/world/wars.png', label: 'Guerres gagnées', stat: 'wars_won' as const },
+      { icon: 'assets/img/world/cultures.png', label: 'Traits culturels', shown: (k.metadata.culture_traits ?? 0) > 0, stat: 'culture_traits' as const },
+      { icon: 'assets/img/world/foundings.png', label: 'Fondations', shown: (k.metadata.foundings ?? 0) > 0, stat: 'foundings' as const },
+      { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', shown: (k.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
+      { icon: 'assets/img/world/wars.png', label: 'Guerres gagnées', shown: (k.metadata.wars_won ?? 0) > 0, stat: 'wars_won' as const },
+      { icon: 'assets/img/stats/equipment_power.png', label: 'Équipements', shown: !!k.equipment.total, stat: 'equipment' as const },
     ];
-    return rows.filter(r => (m[r.stat] ?? 0) > 0);
+    return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));
   });
   // Set of war ids that surfaced this chapter (not present in the previous chapter's wars list).
   protected readonly startedWarIds = computed(() => {
