@@ -266,7 +266,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "religions_by_id": index_by_id(save.get("religions", [])),  # The other breakdown indexes (`cultures`/`languages`/`subspecies`) already ride in ctx.
         "renown_by_kingdom": renown_by_kingdom,
         "save_path": save_path,  # islands cache key — the loaded save's real path (live or a chapter's map.wbox), not the module default.
-        "score_dimensions": kingdom_score_dimensions(save),  # the composite score's ten tallies; four of them have no other source
+        "score_dimensions": kingdom_score_dimensions(save),  # the composite score's eleven tallies; four of them have no other source
         "sick_by_kingdom": sick_by_kingdom,
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors (≈8×).
         "supreme_kingdom_id": supreme_kingdom_id,

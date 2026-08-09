@@ -114,7 +114,7 @@ def asset_set(name: str) -> frozenset[str]:
     return frozenset(load_data("asset-sets.json").get(name) or ())
 
 
-# Ten dimensions, `{name: {city id: value}}` — six transposed from the kingdom, four village-only. Exported: `city/info.py` surfaces two it has no other source for.
+# Eleven dimensions, `{name: {city id: value}}` — seven transposed from the kingdom, four village-only. Exported: `city/info.py` surfaces two nothing else covers.
 def city_score_dimensions(save: dict) -> dict[str, dict]:
     cities = save.get("cities") or []
     civic = civic_building_ids()
@@ -158,6 +158,8 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
         "book_reach": book_reach,
         "buildings": buildings,
         "elite": elite,  # the renown of its inhabitants — who lives there, where `renown` below is what the city itself achieved
+        # Racked gear, counted apart from `wealth`: nearly orthogonal to the other nine (−0.21 with `warriors`, 0.16 with `wealth`), so it earns its own rank.
+        "equipment": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in cities},
         "kills": {c["id"]: c.get("total_kills", 0) for c in cities},
         "population": population,
         "renown": {c["id"]: c.get("renown", 0) for c in cities},
@@ -241,7 +243,7 @@ def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
 
 
-# Ten dimensions, `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces four it has no other source for.
+# Eleven dimensions, `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces four nothing else covers.
 def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     kingdoms = save.get("kingdoms") or []
     ids = [k["id"] for k in kingdoms]
@@ -258,13 +260,17 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
                 money[kid] += coins
         if (cid := actor.get("cityID")) and actor.get("profession") == PROFESSION_WARRIOR:
             warriors_by_city[cid] += 1
+
     cities = save.get("cities") or []
     cities_by_id = index_by_id(cities)
+
+    equipment: Counter = Counter()  # a crown racks nothing itself: its armoury is the sum of its towns'
     territory: Counter = Counter()
     warriors: Counter = Counter()  # WB `Kingdom.countTotalWarriors` sums its cities, so a fighter between two homes counts for nobody
 
     for city in cities:
         if (kid := city.get("kingdomID")) is not None:
+            equipment[kid] += sum(len((city.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values())
             territory[kid] += len(city.get("zones") or [])
             warriors[kid] += warriors_by_city[city["id"]]
     gold: Counter = Counter()  # gold ore stockpiled in a kingdom's buildings; each building carries its `cityID`, so no spatial lookup
@@ -297,6 +303,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
             for k in kingdoms
         },
         "foundings": Counter(item.get("creator_kingdom_id") for coll in ("cultures", "languages", "religions") for item in save.get(coll) or []),
+        "equipment": equipment,  # its towns' racks summed — see the city dimension: a martial capital none of the other nine sees
         "kills": {k["id"]: k.get("total_kills", 0) for k in kingdoms},
         "population": population,
         "renown": {k["id"]: k.get("renown", 0) for k in kingdoms},
@@ -453,6 +460,11 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
     }
 
 
+# WB omits default values at save time: an absent `sex` IS male (0) — every species has sexed members, living swords included.
+def sex_label(actor: dict) -> str:
+    return "female" if actor.get("sex") == 1 else "male"
+
+
 # WB `ListSorters.sortUnitsSortedByAgeAndTraits`: age, then a trait re-sorts on renown/stat/coins, then sex — sorted last, so it wins. Callers pick the pool.
 def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: float, stat_of) -> dict | None:
     if not candidates:
@@ -477,11 +489,6 @@ def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: fl
         return 0
 
     return max(candidates, key=lambda a: (preferred_sex(a), score(a), -a.get("id", 0)))
-
-
-# WB omits default values at save time: an absent `sex` IS male (0) — every species has sexed members, living swords included.
-def sex_label(actor: dict) -> str:
-    return "female" if actor.get("sex") == 1 else "male"
 
 
 # Pop a `C<n>` chapter token from argv → (that chapter's `map.wbox`, argv without it, chapter label). No token → the live save and `None`.

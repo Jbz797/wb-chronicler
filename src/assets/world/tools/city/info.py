@@ -240,7 +240,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "ranged_by_city": ranged_by_city,
         "religions_by_id": index_by_id(save.get("religions", [])),
         "renown_by_city": renown_by_city,
-        "score_dimensions": city_score_dimensions(save),  # the composite score's ten tallies; two of them have no other source
+        "score_dimensions": city_score_dimensions(save),  # the composite score's eleven tallies; two of them have no other source
         "sick_by_city": sick_by_city,
         "stats_cache": {},  # `_actor_stats` memo: loyalty asks the same handful of kings and mayors for their skills over and over.
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors.
