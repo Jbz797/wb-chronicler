@@ -1,7 +1,7 @@
 # Shared actor stats pipeline — mirrors `Actor.updateStats` from WB's `Assembly-CSharp.dll`.
 #
 # ─── Maintenance / algorithm reference ───
-# Full algorithm spec: `chronicler.md § VI`. Numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad, synergy-always) come from that section + WorldBox in-game tooltips.
+# Full algorithm spec: `chronicler.md § VI`. Numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad, synergy-always) come from it + WorldBox's in-game tooltips.
 #
 # Pipeline per chromosome:
 #   1. For each locus (skipping `void_loci`):
@@ -129,6 +129,7 @@ _GENE_VALUES = {
 }
 
 _GRID_COLS = 6
+_HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # the office-holder each tier nets out of `subjects_money` — WB names them apart.
 
 # Stats kept as 1-decimal floats — integer truncate would lose meaningful precision (damage_range is typically `damage × ratio` where ratio < 1).
 _KEEP_DECIMAL = {"damage_range"}
@@ -140,7 +141,7 @@ _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
 
 
-# WB `BaseStatAsset.normalize_min`/`normalize_max` for the 23 bounded stats — an unset max (2^31) is `inf`. Floors bite: traits push stats under, WB lifts them back.
+# WB `BaseStatAsset.normalize_min`/`normalize_max` for the 23 bounded stats — an unset max (2^31) is `inf`. Floors bite: traits push under, WB lifts back.
 _NORMALIZE = {
     "accuracy": (1, 10),
     "armor": (0, 99),
@@ -242,7 +243,7 @@ def _add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> N
             totals[k] = totals.get(k, 0) + v
 
 
-# Per `Actor.updateStats` + tooltip: damage += warfare/5; damage_range → raw-hp amplitude (int(damage*damage_range)); critical_chance → int percent (0.28 → 28%).
+# Per `Actor.updateStats` + tooltip: damage += warfare/5; damage_range → raw-hp amplitude (int(damage*damage_range)); critical_chance → percent (0.28 → 28).
 def _apply_damage_finalize(totals: dict) -> None:
     if "damage" in totals:
         totals["damage"] = totals["damage"] + totals.get("warfare", 0) / 5
@@ -472,7 +473,7 @@ def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None
     return totals
 
 
-# Shared context built from a single save load — feeds every actor stats computation. Callers (actor/info.py, kingdom/info.py) typically extend it with their own keys.
+# Shared context built from one save load — feeds every actor stats computation. Callers (actor/info.py, kingdom/info.py) typically extend it with their keys.
 def build_actor_stats_context(save: dict) -> dict:
     return {
         "clan_traits": load_data("clan-traits.json"),
@@ -520,3 +521,48 @@ def demographics(actors: list[dict], ctx: dict) -> dict:
             couples += 1
             paired.update((a["id"], lover))
     return {"couples": couples, "men": men, "stages": stages}
+
+
+# The population panel both tiers print, field for field — `tier` picks the ctx tallies, as `settlement_rank_getters` does. `immortals`/`infected`/`sick` drop at 0.
+def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
+    entity_id = entity["id"]
+
+    def tally(name: str) -> int:
+        return ctx[f"{name}_by_{tier}"][entity_id]
+
+    actors = ctx[f"actors_by_{tier}"].get(entity_id, [])
+    demo = demographics(actors, ctx)
+    men, stages = demo["men"], demo["stages"]
+    total = len(actors)
+
+    eaters = tally("eaters")  # food-needing pop (undead excluded); denominator for `fed_pct`
+    head_money = int((ctx["actors_by_id"].get(entity.get(_HEAD_FIELD[tier])) or {}).get("money") or 0)
+    immortals, infected, sick = tally("immortals"), tally("infected"), tally("sick")
+    money, nobles_money = tally("money"), tally("nobles_money")
+
+    return {
+        "adults": stages["adult"],
+        "babies": stages["baby"],
+        "children": stages["child"],
+        "couples": demo["couples"],
+        "elders": stages["elder"],
+        "familyless": tally("familyless"),
+        "fed_pct": round(100 * tally("fed") / eaters) if eaters else 0,  # % of food-needing pop sated (nutrition ≥ 60).
+        "food_per_capita": round(tally("food") / total, 1) if total else 0,  # Eatable stock ÷ population — food security.
+        "happy": tally("happy"),
+        "housed_pct": round((total - tally("homeless")) / total * 100) if total else 0,
+        **({"immortals": immortals} if immortals else {}),
+        **({"infected": infected} if infected else {}),
+        "men": men,
+        "money": money,  # Total coins held across the population.
+        "nobles": tally("nobles"),
+        "nobles_money": nobles_money,  # Coins of the other nobles, the head excluded — his own purse sits in `metadata`.
+        "renown_total": tally("renown"),  # Summed renown of all inhabitants (distinct from the settlement's own `metadata.renown`).
+        **({"sick": sick} if sick else {}),
+        "subjects_money": money - head_money - nobles_money,  # Commoners' coins: `money` minus the head and the nobility.
+        "teens": stages["teen"],
+        "total": total,
+        "warriors": tally("warriors"),
+        "wealth_per_capita": round((money + tally("gold")) / total, 1) if total else 0,  # `metadata.wealth` ÷ population.
+        "women": total - men,
+    }

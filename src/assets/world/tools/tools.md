@@ -6,14 +6,14 @@ Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie 
 
 Nommer une section, c'est la vouloir en profondeur : elle sort avec son détail complet, là où `full` en donne parfois une forme résumée.
 
-| Commande                           | Sections                                                                                                                   |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `actor/info.py <id>`               | `full`, `companions`, `creature_traits`, `equipment`, `inventory`, `metadata`, `plot`, `ranks_in_species`, `stats`         |
-| `city/info.py <id>`                | `full`, `army`, `books`, `breakdown`, `equipment`, `identity`, `inventory`, `loyalty`, `metadata`, `population`, `ranks`   |
-| `geography/info.py`                | `full`, `islands`, `natural_features`                                                                                      |
-| `kingdom/info.py <id>`             | `full`, `alliance`, `breakdown`, `cities`, `equipment`, `identity`, `metadata`, `population`, `ranks`, `relations`, `wars` |
-| `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                         |
-| `world/info.py`                    | `full`, `cumulative`, `leaders`, `metadata`, `snapshot`                                                                    |
+| Commande                           | Sections                                                                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `actor/info.py <id>`               | `full`, `companions`, `creature_traits`, `equipment`, `inventory`, `metadata`, `plot`, `ranks_in_species`, `stats`                    |
+| `city/info.py <id>`                | `full`, `army`, `books`, `breakdown`, `equipment`, `identity`, `inventory`, `leaders`, `loyalty`, `metadata`, `population`, `ranks`   |
+| `geography/info.py`                | `full`, `islands`, `natural_features`                                                                                                 |
+| `kingdom/info.py <id>`             | `full`, `alliance`, `breakdown`, `cities`, `equipment`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `wars` |
+| `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                                    |
+| `world/info.py`                    | `full`, `cumulative`, `leaders`, `metadata`, `snapshot`                                                                               |
 
 ##### Options :
 

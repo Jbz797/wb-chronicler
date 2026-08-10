@@ -9,7 +9,7 @@ import sys
 import zlib
 from bisect import bisect_right
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from functools import cache
 from pathlib import Path
 
@@ -69,6 +69,63 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
     return dict(sorted(result.items()))
 
 
+# The families with someone on the ground, ranked five ways: `oldest`/`kills`/`deaths` are WB's own counters, `population`/`renown` are scoped to who is present.
+def _family_leaders(actors: Sequence[dict], families_by_id: dict) -> dict:
+    members: Counter = Counter()
+    renown: Counter = Counter()
+
+    for actor in actors:
+        if family_id := actor.get("family"):
+            members[family_id] += 1
+            if fame := actor.get("renown"):
+                renown[family_id] += int(fame)
+
+    present = [families_by_id[fid] for fid in members if fid in families_by_id]
+    if not present:
+        return {}
+    picks = {
+        "deaths": _top_by(present, lambda f: int(f.get("total_deaths") or 0)),
+        "kills": _top_by(present, lambda f: int(f.get("total_kills") or 0)),
+        "population": _top_by(present, lambda f: members[f["id"]]),
+        "renown": _top_by(present, lambda f: renown[f["id"]]),
+    }
+    out = {name: _leader_ref(family) for name, family in picks.items() if family is not None}
+    out["oldest"] = _leader_ref(min(present, key=lambda f: (float(f.get("created_time") or 0), f["id"])))
+    return dict(sorted(out.items()))
+
+
+# `{id, name}` off a record that carries its own name — a family or an actor, where the caller already holds the row and needs no index.
+def _leader_ref(record: dict) -> dict:
+    return {"id": record["id"], "name": record.get("name") or f"#{record['id']}"}
+
+
+# The standout souls, thirteen ways. `hungriest` skips the undead, who hold no nutrition to be low on; the four combat stats share one pass, that being the cost.
+def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of) -> dict:
+    if not actors:
+        return {}
+    picks = {
+        "births": _top_by(actors, lambda a: int(a.get("births") or 0)),
+        "children": _top_by(actors, lambda a: children.get(a["id"], 0)),
+        "kills": _top_by(actors, lambda a: int(a.get("kills") or 0)),
+        "level": _top_by(actors, lambda a: int(a.get("level") or 0)),
+        "money": _top_by(actors, lambda a: int(a.get("money") or 0)),
+        "renown": _top_by(actors, lambda a: int(a.get("renown") or 0)),
+    }
+    scored = [(actor, stat_of(actor)) for actor in actors]
+
+    for name in ("damage", "health", "intelligence", "speed"):
+        actor, stats = max(scored, key=lambda pair: (pair[1].get(name, 0), -pair[0]["id"]))
+        picks[name] = actor if stats.get(name, 0) > 0 else None
+
+    out = {name: _leader_ref(actor) for name, actor in picks.items() if actor is not None}
+    out["oldest"] = _leader_ref(min(actors, key=lambda a: (float(a.get("created_time") or 0), a["id"])))
+    out["youngest"] = _leader_ref(max(actors, key=lambda a: (float(a.get("created_time") or 0), -a["id"])))
+
+    if eaters := [a for a in actors if (a.get("asset_id") or "") not in NON_FOOD_SPECIES]:
+        out["hungriest"] = _leader_ref(min(eaters, key=lambda a: (int(a.get("nutrition") or 0), a["id"])))
+    return dict(sorted(out.items()))
+
+
 # Borda shared by both composites → `{id: place}`, 1 = strongest: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens.
 def _score_ranks(ids: list[int], dimensions: dict[str, dict]) -> dict[int, int]:
     if not ids:
@@ -92,6 +149,12 @@ def _strip_none(value):
     return value
 
 
+# Highest `key`, ties to the lowest id. `None` when nobody scores above zero — a settlement without a killer has no deadliest soul, and that is not a zero.
+def _top_by(records: Sequence[dict], key) -> dict | None:
+    best = max(records, key=lambda r: (key(r), -r["id"]), default=None)
+    return best if best is not None and key(best) > 0 else None
+
+
 # Newest `_CACHE_KEEP` entries kept, the rest dropped by mtime — chapter saves each want their own, unlike the islands cache's single slot.
 def _write_save_cache(cache_file: Path, save: dict) -> None:
     CACHE_DIR.mkdir(exist_ok=True)
@@ -108,6 +171,12 @@ def age_thresholds(lifespan: float) -> tuple[float, float]:
         return 16.0, 18.0
     adult = min((lifespan**0.55) * 1.1, 16.0)
     return adult, min(adult, 18.0)
+
+
+# A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
+@cache
+def asset_set(name: str) -> frozenset[str]:
+    return frozenset(load_data("asset-sets.json").get(name) or ())
 
 
 # Books sit in a settlement's hall (`buildings[].books.list_books`), so their holder is that city and its crown. Memoised: a `full` run asks twice, 15 k rows each.
@@ -131,10 +200,14 @@ def books_held(save: dict) -> tuple[Counter, Counter, dict[int, int]]:
     return by_city, by_kingdom, city_of_book
 
 
-# A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
-@cache
-def asset_set(name: str) -> frozenset[str]:
-    return frozenset(load_data("asset-sets.json").get(name) or ())
+# Living children per parent, counted off `parent_id_1`/`parent_id_2`. World-wide on purpose — a parent's brood is theirs wherever it settled.
+def children_by_id(save: dict) -> Counter:
+    tally: Counter = Counter()
+    for actor in save.get("actors_data") or []:
+        for parent in (actor.get("parent_id_1"), actor.get("parent_id_2")):
+            if parent:
+                tally[parent] += 1
+    return tally
 
 
 # Eleven dimensions, `{name: {city id: value}}` — seven transposed from the kingdom, four village-only. Exported: `city/info.py` surfaces two nothing else covers.
@@ -460,6 +533,11 @@ def resolve_profession(actor: dict, save: dict, captain_ids: set | None = None) 
     cid = actor.get("id")
     captain = cid in captain_ids if captain_ids is not None else any(army.get("id_captain") == cid for army in save.get("armies", []))
     return "army_captain" if captain else _PROFESSIONS.get(actor.get("profession") or 0)
+
+
+# Who stands out among a settlement's or realm's own — its leading families and its most singular souls, `{id, name}` apiece. Both `leaders` sections share it.
+def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of) -> dict:
+    return {"families": _family_leaders(actors, families_by_id), "persons": _person_leaders(actors, children, stat_of)}
 
 
 # The 20 rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.

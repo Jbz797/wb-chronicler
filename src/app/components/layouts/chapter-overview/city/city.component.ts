@@ -6,12 +6,14 @@ import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { BreakdownComponent, InventoryComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
+import { LeadersComponent } from '../leaders/leaders.component';
 
 @Component({
   selector: 'app-city',
   imports: [
     BreakdownComponent,
     InventoryComponent,
+    LeadersComponent,
     NewBadgeComponent,
     NzDescriptionsModule,
     PersonTagComponent,

@@ -6,6 +6,7 @@ import { KingdomWar, RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { BreakdownComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '../../../misc';
 import { CityTagComponent, PersonTagComponent } from '../../../tags';
+import { LeadersComponent } from '../leaders/leaders.component';
 
 import { KingdomAllianceComponent } from './kingdom-alliance/kingdom-alliance.component';
 import { KingdomRelationsComponent } from './kingdom-relations/kingdom-relations.component';
@@ -18,6 +19,7 @@ import { WarCardComponent } from './war-card/war-card.component';
     CityTagComponent,
     KingdomAllianceComponent,
     KingdomRelationsComponent,
+    LeadersComponent,
     NewBadgeComponent,
     NzDescriptionsModule,
     PersonTagComponent,

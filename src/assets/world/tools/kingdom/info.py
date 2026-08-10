@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats, demographics
+from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, settlement_population
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -24,6 +24,7 @@ from shared import (
     ZONE_TILES,
     asset_set,
     books_held,
+    children_by_id,
     civic_building_ids,
     competition_ranks,
     emit,
@@ -35,13 +36,14 @@ from shared import (
     load_save,
     parse_sections,
     population_breakdown,
+    settlement_leaders,
     settlement_rank_getters,
     succession_heir,
     take_chapter,
 )
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
-_ALL_SECTIONS = ("alliance", "breakdown", "cities", "equipment", "identity", "metadata", "population", "ranks", "relations", "wars")
+_ALL_SECTIONS = ("alliance", "breakdown", "cities", "equipment", "identity", "leaders", "metadata", "population", "ranks", "relations", "wars")
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
 _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
@@ -241,10 +243,12 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "books_by_kingdom": cache(lambda: books_held(save)[1]),  # custody, not authorship; called not stored, a 15 k-row walk few sections need
         "buildings_by_kingdom": buildings_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
+        "children_by_id": cache(lambda: children_by_id(save)),  # living offspring per parent, world-wide: a subject's child may live abroad
         "cities_by_id": cities_by_id,
         "cities_by_kingdom": cities_by_kingdom,
         "cultures_by_id": index_by_id(save.get("cultures", [])),
         "eaters_by_kingdom": eaters_by_kingdom,
+        "families_by_id": index_by_id(save.get("families") or []),
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
         "fed_by_kingdom": fed_by_kingdom,
@@ -299,6 +303,13 @@ def _build_identity(kingdom: dict, ctx: dict) -> dict:
         # Its culture's stance on foreigners, driving opinion modifiers 22-24. Always set, `neutral` included: absence would read as unknown.
         "worldview": next((t for t in _WORLDVIEWS if t in (culture.get("saved_traits") or [])), _WORLDVIEW_NEUTRAL),
     }
+
+
+# Its leading families and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
+def _build_leaders(kingdom: dict, ctx: dict) -> dict:
+    actors = ctx["actors_by_kingdom"].get(kingdom["id"], [])
+    # `actor_stat_totals`, not `compute_actor_stats`: the latter renames `health` to `health_max`, and the city tier reads the raw names. One source, one answer.
+    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: actor_stat_totals(a, ctx, ctx["subspecies_base_cache"]))
 
 
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
@@ -366,51 +377,6 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
         **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
         **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
-    }
-
-
-# Tiers/men/couples via `demographics`; `nobles` = kings + leaders + captains; `sick`/`infected` = WB `calculateIsSick` (`infected` ⊂ `sick`).
-def _build_population(kingdom: dict, ctx: dict) -> dict:
-    kid = kingdom["id"]
-
-    actors = ctx["actors_by_kingdom"].get(kid, [])
-    demo = demographics(actors, ctx)
-    men, stages = demo["men"], demo["stages"]
-    total = len(actors)
-
-    eaters = ctx["eaters_by_kingdom"][kid]  # food-needing pop (undead excluded); denominator for `fed_pct`
-    king_money = int((ctx["actors_by_id"].get(kingdom.get("kingID")) or {}).get("money") or 0)  # Netted out of `subjects_money`; the value rides in `metadata.king`.
-
-    # `immortals`/`infected`/`sick` omitted when 0 (UI-gated on > 0; absence = none). The rest always emitted — an explicit 0 is a meaningful demographic signal.
-    immortals = ctx["immortals_by_kingdom"][kid]
-    infected = ctx["infected_by_kingdom"][kid]
-    sick = ctx["sick_by_kingdom"][kid]
-
-    return {
-        "adults": stages["adult"],
-        "babies": stages["baby"],
-        "children": stages["child"],
-        "couples": demo["couples"],
-        "elders": stages["elder"],
-        "familyless": ctx["familyless_by_kingdom"][kid],
-        "fed_pct": round(100 * ctx["fed_by_kingdom"][kid] / eaters) if eaters else 0,  # % of food-needing pop sated (nutrition ≥ 60).
-        "food_per_capita": round(ctx["food_by_kingdom"][kid] / total, 1) if total else 0,  # Eatable stock ÷ population — food security.
-        "happy": ctx["happy_by_kingdom"][kid],
-        "housed_pct": round((total - ctx["homeless_by_kingdom"][kid]) / total * 100) if total else 0,
-        **({"immortals": immortals} if immortals else {}),
-        **({"infected": infected} if infected else {}),
-        "men": men,
-        "money": ctx["money_by_kingdom"][kid],  # Total coins held across the kingdom's population.
-        "nobles": ctx["nobles_by_kingdom"][kid],
-        "nobles_money": ctx["nobles_money_by_kingdom"][kid],  # Coins of the leaders/captains, king excluded — his own purse sits in `metadata.king`.
-        "renown_total": ctx["renown_by_kingdom"][kid],  # Summed renown of all inhabitants (distinct from the kingdom's own `metadata.renown`).
-        **({"sick": sick} if sick else {}),
-        "subjects_money": ctx["money_by_kingdom"][kid] - king_money - ctx["nobles_money_by_kingdom"][kid],  # Commoners' coins: `money` minus crown and nobility.
-        "teens": stages["teen"],
-        "total": total,
-        "warriors": ctx["warriors_by_kingdom"][kid],
-        "wealth_per_capita": round((ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid]) / total, 1) if total else 0,  # `metadata.wealth` ÷ population.
-        "women": total - men,
     }
 
 
@@ -818,10 +784,12 @@ def main(argv: list[str]) -> int:
         out["equipment"] = _build_equipment(kingdom, ctx)
     if "identity" in sections:
         out["identity"] = _build_identity(kingdom, ctx)
+    if "leaders" in sections:
+        out["leaders"] = _build_leaders(kingdom, ctx)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(kingdom, ctx, save)
     if "population" in sections:
-        out["population"] = _build_population(kingdom, ctx)
+        out["population"] = settlement_population(kingdom, ctx, "kingdom")
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(kingdom, ctx, save)
     if "relations" in sections:

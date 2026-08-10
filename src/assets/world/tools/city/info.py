@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, build_actor_stats_context, demographics
+from actor_stats import actor_stat_totals, build_actor_stats_context, settlement_population
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -25,6 +25,7 @@ from shared import (
     ZONE_TILES,
     asset_set,
     books_held,
+    children_by_id,
     city_score_dimensions,
     city_score_ranks,
     civic_building_ids,
@@ -37,13 +38,14 @@ from shared import (
     load_save,
     parse_sections,
     population_breakdown,
+    settlement_leaders,
     settlement_rank_getters,
     sex_label,
     succession_heir,
     take_chapter,
 )
 
-_ALL_SECTIONS = ("army", "books", "breakdown", "equipment", "identity", "inventory", "loyalty", "metadata", "population", "ranks")
+_ALL_SECTIONS = ("army", "books", "breakdown", "equipment", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks")
 
 # What reading a genre grants (WB `BookTypeAsset.base_stats`, lifted from `BookTypeLibrary.init`) and the traits a volume teaches — absent where it grants none.
 _BOOK_STATS = load_data("books.json")
@@ -254,11 +256,13 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "books_by_city": cache(lambda: books_held(save)[0]),  # custody, not authorship; called not stored, a 15 k-row walk few sections need
         "buildings_by_city": buildings_by_city,
         "centres": {},  # `_city_centre` memo — every town asks its capital's, over and over.
+        "children_by_id": cache(lambda: children_by_id(save)),  # living offspring per parent, world-wide: a resident's child may live elsewhere
         "cities_by_id": index_by_id(save.get("cities", [])),
         "cultures_by_id": index_by_id(save.get("cultures", [])),
         "eaters_by_city": eaters_by_city,
         # Racked gear per city, the six `item_storage_*` lists summed — a stat of its own, and what `_build_equipment` details on request.
         "equipment_by_city": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in save.get("cities") or []},
+        "families_by_id": index_by_id(save.get("families") or []),
         "familyless_by_city": familyless_by_city,
         "fed_by_city": fed_by_city,
         "food_by_city": food_by_city,
@@ -319,6 +323,12 @@ def _build_identity(city: dict, ctx: dict) -> dict:
         "religion": entity_ref(city.get("id_religion"), ctx["religions_by_id"]),
         "subspecies": entity_ref(_main_subspecies(city, ctx), ctx["subspecies_by_id"]),
     }
+
+
+# Its leading families and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
+def _build_leaders(city: dict, ctx: dict) -> dict:
+    actors = ctx["actors_by_city"].get(city["id"], [])
+    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: _actor_stats(a, ctx))
 
 
 # The city's hold on its crown — the panel prints `total`. Chronicler-only beside it: `drivers` is every modifier and sums to `total`, `top_drivers` does not.
@@ -383,49 +393,6 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         ),
         # Chronicler-only, years under the present banner: stamped on annexation, so no key means the city never changed hands. The save keeps no previous owner.
         **({"years_in_kingdom": _years_since(stamp, ctx)} if (stamp := city.get("timestamp_kingdom")) not in (None, -1.0) else {}),
-    }
-
-
-# Tiers/men/couples via `demographics`; `nobles` = leader/captains (+ the king in the capital); `sick`/`infected` = WB `calculateIsSick`.
-def _build_population(city: dict, ctx: dict) -> dict:
-    cid = city["id"]
-
-    actors = ctx["actors_by_city"].get(cid, [])
-    demo = demographics(actors, ctx)
-    men, stages = demo["men"], demo["stages"]
-    total = len(actors)
-
-    eaters = ctx["eaters_by_city"][cid]  # food-needing pop (undead excluded); denominator for `fed_pct`
-    leader_money = int((ctx["actors_by_id"].get(city.get("leaderID")) or {}).get("money") or 0)  # netted out below; the value rides in `metadata.leader`
-    immortals = ctx["immortals_by_city"][cid]
-    infected = ctx["infected_by_city"][cid]
-    sick = ctx["sick_by_city"][cid]
-
-    return {
-        "adults": stages["adult"],
-        "babies": stages["baby"],
-        "children": stages["child"],
-        "couples": demo["couples"],
-        "elders": stages["elder"],
-        "familyless": ctx["familyless_by_city"][cid],
-        "fed_pct": round(100 * ctx["fed_by_city"][cid] / eaters) if eaters else 0,  # % of food-needing pop sated (nutrition ≥ 60).
-        "food_per_capita": round(ctx["food_by_city"][cid] / total, 1) if total else 0,  # Eatable stock ÷ population.
-        "happy": ctx["happy_by_city"][cid],
-        "housed_pct": round((total - ctx["homeless_by_city"][cid]) / total * 100) if total else 0,
-        **({"immortals": immortals} if immortals else {}),
-        **({"infected": infected} if infected else {}),
-        "men": men,
-        "money": ctx["money_by_city"][cid],  # Total coins held across the city's population.
-        "nobles": ctx["nobles_by_city"][cid],
-        "nobles_money": ctx["nobles_money_by_city"][cid],  # Coins of the other nobles, mayor excluded — his own purse sits in `metadata.leader`.
-        "renown_total": ctx["renown_by_city"][cid],  # Summed renown of all inhabitants (distinct from the city's own `metadata.renown`).
-        **({"sick": sick} if sick else {}),
-        "subjects_money": ctx["money_by_city"][cid] - leader_money - ctx["nobles_money_by_city"][cid],  # Commoners' coins: `money` minus mayor and nobility.
-        "teens": stages["teen"],
-        "total": total,
-        "warriors": ctx["warriors_by_city"][cid],
-        "wealth_per_capita": round((ctx["money_by_city"][cid] + ctx["gold_by_city"][cid]) / total, 1) if total else 0,  # `metadata.wealth` ÷ population.
-        "women": total - men,
     }
 
 
@@ -768,12 +735,14 @@ def main(argv: list[str]) -> int:
     if "inventory" in sections:
         # WB's « Inventaire »: what `metadata.food`, `gold` and `goods` add up. Heaviest stack first — a granary reads by what fills it, not by spelling.
         out["inventory"] = dict(sorted(ctx["inventory_by_city"][city_id].items(), key=lambda kv: (-kv[1], kv[0])))
+    if "leaders" in sections:
+        out["leaders"] = _build_leaders(city, ctx)
     if "loyalty" in sections:
         out["loyalty"] = _build_loyalty(city_id, ctx, detailed=requested not in (None, "full"))  # Naming a section gives the full ledger, `full` the summary.
     if "metadata" in sections:
         out["metadata"] = _build_metadata(city, ctx, save)
     if "population" in sections:
-        out["population"] = _build_population(city, ctx)
+        out["population"] = settlement_population(city, ctx, "city")
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(city, ctx, save)
     emit(out)

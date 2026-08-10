@@ -134,6 +134,20 @@ export const LEADERS: { icon?: string; key: LeaderKind; label: string }[] = [
   { icon: 'subspecies', key: 'dominant_subspecies', label: 'S. espèce' },
 ];
 
+// The one family a settlement/realm panel names in its « Palmarès », out of the five `leaders.families` rankings Python emits.
+export const LEADER_FAMILY_ROWS: { icon: string; key: 'population'; label: string }[] = [
+  { icon: 'assets/img/world/families.png', key: 'population', label: 'Famille dominante' },
+];
+
+// The five souls a settlement/realm panel names, out of the thirteen `leaders.persons` rankings: fame, power, violence, fortune, age.
+export const LEADER_PERSON_ROWS: { icon: string; key: 'kills' | 'level' | 'money' | 'oldest' | 'renown'; label: string }[] = [
+  { icon: 'assets/img/world/most_renowned_person.png', key: 'renown', label: 'Illustre' },
+  { icon: 'assets/img/stats/level.png', key: 'level', label: 'Plus haut niveau' },
+  { icon: 'assets/img/stats/kills.png', key: 'kills', label: 'Plus meurtrier' },
+  { icon: 'assets/img/stats/money.png', key: 'money', label: 'Plus riche' },
+  { icon: 'assets/img/stats/age.png', key: 'oldest', label: 'Doyen' },
+];
+
 // Death causes — runtime-sorted by per-chapter count desc and 0-count rows hidden in `world-stats.component`. Icons at `assets/img/world/deaths/<key>.png`.
 export const DEATH_CAUSES: { key: DeathCause; label: string }[] = [
   { key: 'acid', label: 'Acide' },

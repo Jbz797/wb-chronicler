@@ -1,0 +1,18 @@
+@if (personRows().length || familyRows().length) {
+  <nz-descriptions nzBordered nzSize="small" nzTitle="Palmarès" [nzColumn]="1">
+    @for (row of personRows(); track row.key) {
+      <ng-template #personTitle>
+        <img [src]="row.icon" /><span>{{ row.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="personTitle">
+        <app-person-tag [id]="row.ref.id" [name]="row.ref.name" />
+      </nz-descriptions-item>
+    }
+    @for (row of familyRows(); track row.key) {
+      <ng-template #familyTitle>
+        <img [src]="row.icon" /><span>{{ row.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="familyTitle">{{ row.ref.name }}</nz-descriptions-item>
+    }
+  </nz-descriptions>
+}

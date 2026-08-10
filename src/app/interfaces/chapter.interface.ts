@@ -53,6 +53,32 @@ export interface KingdomWar {
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
 export interface LeaderRow extends Omit<Leader, 'value'> { isNew: boolean; key: LeaderKind }
 
+// The standout family and souls of a settlement or realm. Every entry is optional: `emit` drops a metric nobody scored on, so no killer means no `kills` key.
+export interface Leaders {
+  families?: {
+    deaths?: EntityReference;
+    kills?: EntityReference;
+    oldest?: EntityReference;
+    population?: EntityReference;
+    renown?: EntityReference;
+  };
+  persons?: {
+    births?: EntityReference;
+    children?: EntityReference;
+    damage?: EntityReference;
+    health?: EntityReference;
+    hungriest?: EntityReference;
+    intelligence?: EntityReference;
+    kills?: EntityReference;
+    level?: EntityReference;
+    money?: EntityReference;
+    oldest?: EntityReference;
+    renown?: EntityReference;
+    speed?: EntityReference;
+    youngest?: EntityReference;
+  };
+}
+
 // A reader destination: the static Précepte pages and, through `Chapter`, every chronicle.
 export interface Page { label: string; mdUrl: string; slug: string }
 
@@ -66,6 +92,7 @@ interface City {
   breakdown: PopulationBreakdown;
   equipment: EquipmentStock;
   inventory: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
+  leaders?: Leaders;
   loyalty: CityLoyalty;
   metadata: CityMetadata;
   population: CityPopulation;
@@ -279,6 +306,7 @@ interface Kingdom {
   breakdown: PopulationBreakdown;
   cities?: KingdomCity[];
   equipment: EquipmentStock;
+  leaders?: Leaders;
   metadata: KingdomMetadata;
   population: KingdomPopulation;
   ranks?: KingdomRanks;
