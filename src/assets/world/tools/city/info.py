@@ -143,6 +143,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_city: dict[int, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
     eaters_by_city: Counter[int] = Counter()
+    families_by_city: dict[int, set[int]] = {}
     familyless_by_city: Counter[int] = Counter()
     fed_by_city: Counter[int] = Counter()
     happy_by_city: Counter[int] = Counter()
@@ -208,7 +209,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
             happy_by_city[cid] += 1
         if not actor.get("homeBuildingID"):
             homeless_by_city[cid] += 1
-        if not actor.get("family"):
+        if family_id := actor.get("family"):
+            families_by_city.setdefault(cid, set()).add(family_id)
+        else:
             familyless_by_city[cid] += 1
 
     buildings_by_city: Counter[int] = Counter()
@@ -262,6 +265,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "eaters_by_city": eaters_by_city,
         # Racked gear per city, the six `item_storage_*` lists summed — a stat of its own, and what `_build_equipment` details on request.
         "equipment_by_city": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in save.get("cities") or []},
+        "families_by_city": families_by_city,
         "families_by_id": index_by_id(save.get("families") or []),
         "familyless_by_city": familyless_by_city,
         "fed_by_city": fed_by_city,
@@ -367,6 +371,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
         "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
         "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
+        "families": len(ctx["families_by_city"].get(cid, ())),  # Distinct family lineages among its residents; the `familyless` count is in `population`.
         "food": ctx["food_by_city"][cid],  # Eatable resources stocked in the city's buildings.
         "founder": founder,
         "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.

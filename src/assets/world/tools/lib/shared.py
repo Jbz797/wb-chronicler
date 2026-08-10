@@ -45,6 +45,7 @@ _CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — o
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
+_HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 _PROFESSIONS = {2: "unit", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label.
@@ -337,6 +338,11 @@ def equipment_rarity(modifiers: list[str]) -> str:
     return "Normal"
 
 
+# The office-holder's own purse — a mayor's or a king's. Netted out of `subjects_money` on both tiers, and reported on its own in `metadata`.
+def head_money(entity: dict, ctx: dict, tier: str) -> int:
+    return int((ctx["actors_by_id"].get(entity.get(_HEAD_FIELD[tier])) or {}).get("money") or 0)
+
+
 def index_by_id(records: list[dict]) -> dict:
     return {record["id"]: record for record in records}
 
@@ -540,7 +546,7 @@ def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: M
     return {"families": _family_leaders(actors, families_by_id), "persons": _person_leaders(actors, children, stat_of)}
 
 
-# The 20 rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.
+# The 25 rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.
 def settlement_rank_getters(ctx: dict, tier: str) -> dict:
     def tally(name: str):
         counter = ctx[f"{name}_by_{tier}"]
@@ -548,6 +554,7 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
 
     eaters, fed, food, gold = tally("eaters"), tally("fed"), tally("food"), tally("gold")
     homeless, money, populations = tally("homeless"), tally("money"), tally("populations")
+    nobles_money = tally("nobles_money")
 
     def wealth(r: dict) -> int:
         return money(r) + gold(r)
@@ -563,12 +570,17 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "goods": tally("goods"),
         "housed_pct": lambda r: (n - homeless(r)) / n if (n := populations(r)) else 0.0,
         "houses": tally("houses"),
+        "immortals": tally("immortals"),
+        "infected": tally("infected"),
         "kills": lambda r: r.get("total_kills", 0),
         "money": money,
         "nobles": tally("nobles"),
+        "nobles_money": nobles_money,  # the head's own purse excluded — it is reported on its own in `metadata`
         "population": populations,
         "renown": lambda r: r.get("renown", 0),
         "renown_total": tally("renown"),
+        "sick": tally("sick"),
+        "subjects_money": lambda r: money(r) - head_money(r, ctx, tier) - nobles_money(r),  # commoners' coins: `money` minus the head and the nobility
         "territory": lambda r: len(r.get("zones") or []),
         "warriors": tally("warriors"),
         "wealth": wealth,

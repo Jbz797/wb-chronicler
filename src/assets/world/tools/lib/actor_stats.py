@@ -21,7 +21,7 @@ from collections import Counter
 from functools import cache
 from math import inf
 
-from shared import PROFESSION_KING, PROFESSION_LEADER, UNITS_PER_YEAR, age_thresholds, index_by_id, life_stage, load_data, sex_label
+from shared import PROFESSION_KING, PROFESSION_LEADER, UNITS_PER_YEAR, age_thresholds, head_money, index_by_id, life_stage, load_data, sex_label
 
 # Genes that round UP on BAD (instead of down).
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}
@@ -129,7 +129,6 @@ _GENE_VALUES = {
 }
 
 _GRID_COLS = 6
-_HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # the office-holder each tier nets out of `subjects_money` — WB names them apart.
 
 # Stats kept as 1-decimal floats — integer truncate would lose meaningful precision (damage_range is typically `damage × ratio` where ratio < 1).
 _KEEP_DECIMAL = {"damage_range"}
@@ -318,6 +317,28 @@ def _cleanup_stats(totals: dict) -> dict:
     return dict(sorted(result.items()))
 
 
+# Demographic tally over a settlement's actors — age tiers, men, mutual-lover couples. One implementation for the kingdom and city `population` sections.
+def _demographics(actors: list[dict], ctx: dict) -> dict:
+    by_id = ctx["actors_by_id"]
+    ids = {a["id"] for a in actors}
+    men = couples = 0
+    paired: set[int] = set()
+    stages: Counter[str] = Counter()
+    world_time = ctx["world_time"]
+    for a in actors:
+        age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+        # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
+        lifespan = int(actor_stat_totals(a, ctx, ctx["subspecies_base_cache"], with_equipment=False).get("lifespan", 0))
+        stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
+        if a.get("sex") != 1:
+            men += 1
+        lover = a.get("lover")
+        if lover is not None and lover in ids and a["id"] not in paired and by_id.get(lover, {}).get("lover") == a["id"]:
+            couples += 1
+            paired.update((a["id"], lover))
+    return {"couples": couples, "men": men, "stages": stages}
+
+
 # Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's colors only depend on (gene, life_dna), and life_dna is constant per run.
 @cache
 def _gene_colors(gene: str, life_dna: int) -> dict:
@@ -501,28 +522,6 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     return cleaned
 
 
-# Demographic tally over a settlement's actors — age tiers, men, mutual-lover couples. One implementation for the kingdom and city `population` sections.
-def demographics(actors: list[dict], ctx: dict) -> dict:
-    by_id = ctx["actors_by_id"]
-    ids = {a["id"] for a in actors}
-    men = couples = 0
-    paired: set[int] = set()
-    stages: Counter[str] = Counter()
-    world_time = ctx["world_time"]
-    for a in actors:
-        age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
-        # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
-        lifespan = int(actor_stat_totals(a, ctx, ctx["subspecies_base_cache"], with_equipment=False).get("lifespan", 0))
-        stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
-        if a.get("sex") != 1:
-            men += 1
-        lover = a.get("lover")
-        if lover is not None and lover in ids and a["id"] not in paired and by_id.get(lover, {}).get("lover") == a["id"]:
-            couples += 1
-            paired.update((a["id"], lover))
-    return {"couples": couples, "men": men, "stages": stages}
-
-
 # The population panel both tiers print, field for field — `tier` picks the ctx tallies, as `settlement_rank_getters` does. `immortals`/`infected`/`sick` drop at 0.
 def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
     entity_id = entity["id"]
@@ -531,12 +530,11 @@ def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
         return ctx[f"{name}_by_{tier}"][entity_id]
 
     actors = ctx[f"actors_by_{tier}"].get(entity_id, [])
-    demo = demographics(actors, ctx)
+    demo = _demographics(actors, ctx)
     men, stages = demo["men"], demo["stages"]
     total = len(actors)
 
     eaters = tally("eaters")  # food-needing pop (undead excluded); denominator for `fed_pct`
-    head_money = int((ctx["actors_by_id"].get(entity.get(_HEAD_FIELD[tier])) or {}).get("money") or 0)
     immortals, infected, sick = tally("immortals"), tally("infected"), tally("sick")
     money, nobles_money = tally("money"), tally("nobles_money")
 
@@ -559,7 +557,7 @@ def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
         "nobles_money": nobles_money,  # Coins of the other nobles, the head excluded — his own purse sits in `metadata`.
         "renown_total": tally("renown"),  # Summed renown of all inhabitants (distinct from the settlement's own `metadata.renown`).
         **({"sick": sick} if sick else {}),
-        "subjects_money": money - head_money - nobles_money,  # Commoners' coins: `money` minus the head and the nobility.
+        "subjects_money": money - head_money(entity, ctx, tier) - nobles_money,  # Commoners' coins: `money` minus the head and the nobility.
         "teens": stages["teen"],
         "total": total,
         "warriors": tally("warriors"),

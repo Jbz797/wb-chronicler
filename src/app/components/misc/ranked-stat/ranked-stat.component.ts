@@ -109,7 +109,7 @@ export class RankedStatComponent {
     // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
     if (CITY_META_STATS.has(key)) return this._snap(c.metadata[key as CityMetaStat] ?? 0, c.ranks?.[key as CityMetaStat]);
 
-    // Cities don't rank `immortals`/`infected`/`sick` (absent from `CityRanks`) — the value still reads from `population`, the rank just stays undefined.
+    // The money ranks stay chronicler-only on both tiers, so a `nobles_money`/`subjects_money` lookup simply misses — the value still reads from `population`.
     const pk = key as PopulationStat;
     const ranks = c.ranks as Record<string, number | undefined> | undefined;
     return this._snap(c.population[pk] ?? 0, ranks?.[pk]);

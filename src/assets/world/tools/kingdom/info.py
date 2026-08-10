@@ -667,12 +667,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
             "culture_traits": lambda k: dims["culture_traits"].get(k.get("id"), 0),
             "equipment": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
             "foundings": lambda k: dims["foundings"].get(k.get("id"), 0),
-            "immortals": lambda k: ctx["immortals_by_kingdom"].get(k.get("id"), 0),
-            "infected": lambda k: ctx["infected_by_kingdom"].get(k.get("id"), 0),
             "king_money": king_money,
-            "nobles_money": lambda k: ctx["nobles_money_by_kingdom"].get(k.get("id"), 0),
-            "sick": lambda k: ctx["sick_by_kingdom"].get(k.get("id"), 0),
-            "subjects_money": lambda k: ctx["money_by_kingdom"].get(k.get("id"), 0) - king_money(k) - ctx["nobles_money_by_kingdom"].get(k.get("id"), 0),
             "territory": lambda k: ctx["territory_by_kingdom"].get(k.get("id"), 0),  # A kingdom record has no `zones` — the tally sums its cities'.
             "wars_won": lambda k: dims["wars_won"].get(k.get("id"), 0),
         }

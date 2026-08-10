@@ -176,11 +176,14 @@ interface CityRanks {
   goods?: number;
   housed_pct?: number;
   houses?: number;
+  immortals?: number;
+  infected?: number;
   kills?: number;
   loyalty?: number;
   population?: number;
   renown?: number;
   renown_total?: number;
+  sick?: number;
   territory?: number;
   warriors?: number;
   wealth?: number;
