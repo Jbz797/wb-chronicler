@@ -7,7 +7,7 @@ export type ActorRect = [number, number, number, number, number];
 
 export type ChapterOverviewPanel = 'city' | 'favorite' | 'kingdom' | 'world-stats';
 
-export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
+export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'books' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
   | 'territory' | 'wealth';
 
 export type CityRegistry = Record<string, CityInfo>;
@@ -23,7 +23,7 @@ export type IconKind = 'cities' | 'kingdoms' | 'persons' | 'resources' | 'specie
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 
 // A realm's own metrics — listed in full, not extended from `CityMetaStat`: a crown has no `attractivity`, nobody migrates to a realm.
-export type KingdomMetaStat = 'age' | 'boats' | 'book_reach' | 'buildings' | 'cities' | 'culture_traits' | 'deaths' | 'food' | 'foundings' | 'goods'
+export type KingdomMetaStat = 'age' | 'boats' | 'book_reach' | 'books' | 'buildings' | 'cities' | 'culture_traits' | 'deaths' | 'food' | 'foundings' | 'goods'
   | 'houses' | 'kills' | 'renown' | 'territory' | 'wars_won' | 'wealth';
 
 export type KingdomRegistry = Record<string, KingdomInfo>;
@@ -37,7 +37,8 @@ export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'imm
 
 export type RankedStatKind = 'age' | 'armor'
   | 'army_age' | 'army_deaths' | 'army_kills' | 'army_melee' | 'army_money' | 'army_ranged' | 'army_renown'
-  | 'attack_speed' | 'attractivity' | 'boats' | 'book_reach' | 'buildings' | 'children' | 'cities' | 'critical_chance' | 'culture_traits' | 'damage' | 'deaths'
+  | 'attack_speed' | 'attractivity' | 'boats' | 'book_reach' | 'books' | 'buildings' | 'children' | 'cities' | 'critical_chance' | 'culture_traits'
+  | 'damage' | 'deaths'
   | 'diplomacy' | 'equipment' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
   | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level' | 'lifespan' | 'loyalty' | 'mana' | 'money'
   | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'territory' | 'warfare' | 'warriors'

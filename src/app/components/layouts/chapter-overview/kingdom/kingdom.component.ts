@@ -62,6 +62,7 @@ export class KingdomComponent {
       { icon: 'assets/img/world/cultures.png', label: 'Traits culturels', shown: (k.metadata.culture_traits ?? 0) > 0, stat: 'culture_traits' as const },
       { icon: 'assets/img/world/foundings.png', label: 'Fondations', shown: (k.metadata.foundings ?? 0) > 0, stat: 'foundings' as const },
       { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', shown: (k.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
+      { icon: 'assets/img/world/books.png', label: 'Livres', shown: (k.metadata.books ?? 0) > 0, stat: 'books' as const },
       { icon: 'assets/img/world/wars.png', label: 'Guerres gagnées', shown: (k.metadata.wars_won ?? 0) > 0, stat: 'wars_won' as const },
       { icon: 'assets/img/stats/equipment_power.png', label: 'Équipements', shown: !!k.equipment.total, stat: 'equipment' as const },
     ];

@@ -24,6 +24,7 @@ from shared import (
     UNITS_PER_YEAR,
     ZONE_TILES,
     asset_set,
+    books_held,
     city_score_dimensions,
     city_score_ranks,
     civic_building_ids,
@@ -207,10 +208,10 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     ctx = {
         **build_actor_stats_context(save),  # world_time, languages_by_id, subspecies_by_id, species_data…
-        **_build_realm_context(save, warriors_by_city),  # everything `_city_loyalty` reads above the settlement: the crown, its peers, its wars
         "actors_by_city": actors_by_city,
-        "armies_by_city": {a["id_city"]: a for a in save.get("armies") or []},  # at most one per city, enforced by WB
         "actors_by_id": actors_by_id,
+        "armies_by_city": {a["id_city"]: a for a in save.get("armies") or []},  # at most one per city, enforced by WB
+        "books_by_city": cache(lambda: books_held(save)[0]),  # custody, not authorship; called not stored, a 15 k-row walk few sections need
         "buildings_by_city": buildings_by_city,
         "centres": {},  # `_city_centre` memo — every town asks its capital's, over and over.
         "cities_by_id": index_by_id(save.get("cities", [])),
@@ -223,8 +224,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "food_by_city": food_by_city,
         "gold_by_city": gold_by_city,
         "goods_by_city": goods_by_city,
-        "heirs_by_kingdom": heirs_by_kingdom,
         "happy_by_city": happy_by_city,
+        "heirs_by_kingdom": heirs_by_kingdom,
         "homeless_by_city": homeless_by_city,
         "houses_by_city": houses_by_city,
         "immortals_by_city": immortals_by_city,
@@ -232,26 +233,25 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "inventory_by_city": inventory_by_city,
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: 33 ms only `metadata` needs
         "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
+        # The 29 modifiers per town, then the total the panel prints — defined in one place so the `loyalty` section and the `ranks` sort never drift.
+        "loyalty_by_city": cache(lambda: {c["id"]: _city_loyalty(c, ctx) for c in save.get("cities") or []}),
+        "loyalty_total_by_city": cache(lambda: {cid: sum(mods.values()) for cid, mods in ctx["loyalty_by_city"]().items()}),
         "melee_by_city": melee_by_city,
         "money_by_city": money_by_city,
         "nobles_by_city": nobles_by_city,
         "nobles_money_by_city": nobles_money_by_city,
         "populations_by_city": populations_by_city,
         "ranged_by_city": ranged_by_city,
+        "realm": cache(lambda: _build_realm_context(save, warriors_by_city)),  # the crown, its peers, its wars — read by loyalty alone, called not stored
         "religions_by_id": index_by_id(save.get("religions", [])),
         "renown_by_city": renown_by_city,
-        "score_dimensions": city_score_dimensions(save),  # the composite score's eleven tallies; two of them have no other source
+        "score_dimensions": cache(lambda: city_score_dimensions(save)),  # the composite score's eleven tallies, two sourced nowhere else; same two callers
         "sick_by_city": sick_by_city,
         "stats_cache": {},  # `_actor_stats` memo: loyalty asks the same handful of kings and mayors for their skills over and over.
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors.
         "troop_money_by_city": troop_money_by_city,
         "warriors_by_city": warriors_by_city,
     }
-    ctx["loyalty_by_city"] = {c["id"]: _city_loyalty(c, ctx) for c in save.get("cities") or []}  # Last, and out of band: it reads everything above.
-
-    # The one place the total is defined — the loyalty section prints it and the ranks section sorts on it, and they must never drift apart.
-    ctx["loyalty_total_by_city"] = {cid: sum(mods.values()) for cid, mods in ctx["loyalty_by_city"].items()}
-
     return ctx
 
 
@@ -282,8 +282,8 @@ def _build_identity(city: dict, ctx: dict) -> dict:
 
 # The city's hold on its crown — the panel prints `total`. Chronicler-only beside it: `drivers` is every modifier and sums to `total`, `top_drivers` does not.
 def _build_loyalty(city_id: int, ctx: dict, detailed: bool) -> dict:
-    mods = ctx["loyalty_by_city"].get(city_id, {})
-    total = ctx["loyalty_total_by_city"].get(city_id, 0)
+    mods = ctx["loyalty_by_city"]().get(city_id, {})
+    total = ctx["loyalty_total_by_city"]().get(city_id, 0)
     if detailed:
         return {"drivers": mods, "total": total}  # already ordered like WB's tooltip, strongest bond first
     top_pos = max((kv for kv in mods.items() if kv[1] > 0), key=lambda kv: kv[1], default=None)
@@ -301,7 +301,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
     centres = ((z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2) for z in city.get("zones") or [])
     islands = sorted({iid for pos in centres if (iid := island_lookup.get(pos)) is not None})
 
-    dims = ctx["score_dimensions"]
+    dims = ctx["score_dimensions"]()
     kingdom = ctx["kingdoms_by_id"].get(city.get("kingdomID"))
 
     # Founder = the city's first settler (`founder_id`), emitted as `{id, name}` (dead or alive — the registry carries its visuals + tombstone).
@@ -331,7 +331,8 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
         "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
         **_city_taxes(kingdom),
-        **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # 10 per book authored here + its reads
+        **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # `_BOOK_POINTS` per book written here + how widely it's read
+        **({"books": held} if (held := ctx["books_by_city"]()[cid]) else {}),  # volumes on its shelves, whoever wrote them
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
         **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
         # The sitting mayor (`None` between leaders). `money` = his own purse: inside `population.money`, netted out of `subjects_money` so both show apart.
@@ -462,6 +463,7 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
     king = ctx["actors_by_id"].get(kingdom.get("kingID"))
     leader = ctx["actors_by_id"].get(city.get("leaderID"))
     population = ctx["populations_by_city"]
+    realm = ctx["realm"]()
 
     def add(name: str, value: float) -> None:
         if int(value):
@@ -504,21 +506,21 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
     # 11. Overreach: every holding past what the crown's species (and its king's `cities` stat) can govern costs the outlying towns 25.
     if not is_capital:
         allowed = max(_CIV_BASE_CITIES.get(_kingdom_species(kingdom, ctx), 5) + int(_actor_stats(king, ctx).get("cities", 0)), 1)  # raw key, before the rename
-        held = len(ctx["cities_by_kingdom"].get(kingdom["id"], []))
+        held = len(realm["cities_by_kingdom"].get(kingdom["id"], []))
         if held > allowed:
             add("cities", (allowed - held) * 25)
 
     # 12. Rallying: facing foes that outweigh the realm closes ranks — worth up to 50, and never negative when the realm is the stronger one.
-    if foes := ctx["enemies_by_kingdom"].get(kingdom["id"]):
-        power = ctx["kingdom_power"]
+    if foes := realm["enemies_by_kingdom"].get(kingdom["id"]):
+        power = realm["kingdom_power"]
         add("superior_enemies", min(max((sum(power[f] for f in foes if f in power) - power[kingdom["id"]]) // 2, 0), 50))
     if not is_capital and capital:
         # 13-14. Bordering the capital is worth 20; so is a land route to it, whose absence costs 35 — but only between towns of the same species.
-        if capital["id"] in ctx["neighbours_by_city"].get(city["id"], set()):
+        if capital["id"] in realm["neighbours_by_city"].get(city["id"], set()):
             add("close_to_capital", 20)
         same_species = _city_species(capital, ctx) == _city_species(city, ctx)
         if same_species:
-            add("connected_to_capital", 20 if _connected_to_capital(city, capital, ctx) else -35)
+            add("connected_to_capital", 20 if _connected_to_capital(city, capital, realm["neighbours_by_city"]) else -35)
         # 15-17. Shared institutions: agreement is always worth 15, dissent costs more the deeper the creed runs.
         for name, field, penalty in (("culture", "id_culture", -25), ("language", "id_language", -20), ("religion", "id_religion", -30)):
             if city.get(field) is not None:
@@ -542,15 +544,15 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
         add("part_of_kingdom", (10 - years) * 10)
 
     # 23-24. Standing among the realms — WB ranks them by warriors and holdings, and only the top two earn anything.
-    if ctx["kingdom_count"] > 1 and ctx["supreme_kingdom_id"] == kingdom["id"]:
+    if realm["kingdom_count"] > 1 and realm["supreme_kingdom_id"] == kingdom["id"]:
         add("supreme_kingdom", 100)
-    if ctx["kingdom_count"] > 2 and ctx["second_kingdom_id"] == kingdom["id"]:
+    if realm["kingdom_count"] > 2 and realm["second_kingdom_id"] == kingdom["id"]:
         add("second_best_kingdom", 50)
 
     # 25-27. The reign itself: one point per year past the fifth (capped at 40), the age's own temper, and a child on the throne.
     if king and (years := _years_since(kingdom.get("timestamp_king_rule") or 0, ctx)) >= 5:
         add("king_rule", min(years, 40))
-    add("world_era", _ERA_LOYALTY.get(ctx["world_age_id"], 0))
+    add("world_era", _ERA_LOYALTY.get(realm["world_age_id"], 0))
     if king and int((ctx["world_time"] - float(king.get("created_time") or 0)) / UNITS_PER_YEAR) < 18:
         add("baby_king", -50)
 
@@ -581,27 +583,28 @@ def _city_taxes(kingdom: dict | None) -> dict:
 
 # The shared settlement getters plus the three this tier owns. Top 3 among the world's cities via `competition_ranks`, like every ranks section.
 def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
-    dims = ctx["score_dimensions"]
+    books, loyalty = ctx["books_by_city"](), ctx["loyalty_total_by_city"]()  # resolved once, not inside getters `competition_ranks` fires per city
+    dims = ctx["score_dimensions"]()
     armies = {c["id"]: _build_army(c, ctx) or {} for c in save.get("cities", [])}  # built once per city, not once per city and per stat
     getters = settlement_rank_getters(ctx, "city")
     getters.update(  # the two score dimensions the panel surfaces and no other getter covers, plus the loyalty the crown's hold rests on
         {
             "attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0),
             "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
+            "books": lambda c: books[c.get("id")],
             "equipment": lambda c: ctx["equipment_by_city"].get(c.get("id"), 0),
             **{  # Prefixed: the city ranks `kills`/`deaths`/`renown` of its own already. `key=k` binds per entry — a bare closure would read the loop's last value.
                 f"army_{k}": lambda c, key=k: armies.get(c.get("id"), {}).get(key, 0)
                 for k in ("age", "captain_years", "kills", "kills_per_death", "money", "renown")
             },
-            "loyalty": lambda c: ctx["loyalty_total_by_city"].get(c.get("id"), 0),
+            "loyalty": lambda c: loyalty.get(c.get("id"), 0),
         }
     )
     return competition_ranks(city, save.get("cities", []), getters)
 
 
 # WB `City.isConnectedToCapital`: flood the kingdom's city graph outward from the capital and see whether this town is reached before the wave count runs out.
-def _connected_to_capital(city: dict, capital: dict, ctx: dict) -> bool:
-    neighbours = ctx["neighbours_by_city"]
+def _connected_to_capital(city: dict, capital: dict, neighbours: dict[int, set[int]]) -> bool:
     seen: set[int] = set()
     wave = set(neighbours.get(capital["id"], set()))
     for _ in range(_LOYALTY_WAVES + 1):

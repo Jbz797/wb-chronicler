@@ -89,6 +89,7 @@ interface CityMetadata {
   age: number;
   attractivity: number; // `migrated - left`, emitted whatever its sign — 0 and negatives are readings too
   book_reach?: number;
+  books?: number; // volumes shelved in its halls, whoever wrote them
   buildings: number;
   capital?: boolean;
   deaths: number;
@@ -135,6 +136,7 @@ interface CityRanks {
   army_renown?: number;
   attractivity?: number;
   book_reach?: number;
+  books?: number;
   buildings?: number;
   deaths?: number;
   equipment?: number;
@@ -289,6 +291,7 @@ interface KingdomMetadata {
   age: number;
   boats: number;
   book_reach?: number;
+  books?: number; // volumes shelved across its towns, whoever wrote them
   buildings: number;
   capital?: EntityReference;
   cities: number;
@@ -334,6 +337,7 @@ interface KingdomRanks {
   age?: number;
   boats?: number;
   book_reach?: number;
+  books?: number;
   buildings?: number;
   cities?: number;
   culture_traits?: number;

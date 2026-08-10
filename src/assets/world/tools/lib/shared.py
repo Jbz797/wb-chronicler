@@ -1,5 +1,5 @@
 # Cross-domain constants + helpers — one of the `tools/lib/` libraries every entry point puts on its `sys.path` (see each bootstrap).
-# Rule: a symbol lives here only if ≥2 scripts need it — either directly, or through another exported symbol that does. Single-script helpers live in that script.
+# Rule: a symbol lives here only if ≥2 scripts need it — directly, or through another exported symbol that does. Single-script helpers live in that script.
 
 import json
 import os
@@ -13,7 +13,6 @@ from collections.abc import Sequence
 from functools import cache
 from pathlib import Path
 
-ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 CACHE_DIR = Path(__file__).parent.parent / ".cache"  # holds the save and islands pickles alike; gitignored via the root `.gitignore`
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
@@ -37,17 +36,20 @@ SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"}
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
-_CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — old entries fall off by mtime rather than piling up
-
 # Live game save by default; a trailing `C<n>` script arg (via `take_chapter`) overrides it to a chapter's archived `map.wbox`. `WB_SAVE` still forces a path.
 _CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
 
+_ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
+_BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
+_CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — old entries fall off by mtime rather than piling up
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 _PROFESSIONS = {2: "unit", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label.
+
+_books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 
 
 # Item base stats + its modifiers' bonuses, floats trimmed to 4 decimals (ints when whole), zeros dropped.
@@ -108,6 +110,27 @@ def age_thresholds(lifespan: float) -> tuple[float, float]:
     return adult, min(adult, 18.0)
 
 
+# Books sit in a settlement's hall (`buildings[].books.list_books`), so their holder is that city and its crown. Memoised: a `full` run asks twice, 15 k rows each.
+def books_held(save: dict) -> tuple[Counter, Counter, dict[int, int]]:
+    if _books_memo[0] is save:
+        return _books_memo[1]
+    kingdom_of_city = {c["id"]: c.get("kingdomID") for c in save.get("cities") or []}
+    by_city: Counter = Counter()
+    by_kingdom: Counter = Counter()
+    city_of_book: dict[int, int] = {}
+    for building in save.get("buildings") or []:
+        shelved = ((building.get("books") or {}).get("list_books")) or []
+        if not shelved or (cid := building.get("cityID")) is None:
+            continue
+        by_city[cid] += len(shelved)
+        for book_id in shelved:
+            city_of_book[book_id] = cid
+        if (kid := kingdom_of_city.get(cid)) is not None:
+            by_kingdom[kid] += len(shelved)
+    _books_memo[0], _books_memo[1] = save, (by_city, by_kingdom, city_of_book)
+    return by_city, by_kingdom, city_of_book
+
+
 # A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
 @cache
 def asset_set(name: str) -> frozenset[str]:
@@ -146,11 +169,18 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
             for resource in stock.get("saved_resources") or []:
                 if resource.get("id") == "gold":
                     gold[cid] += resource.get("amount", 0)
-    book_reach: Counter = Counter()  # 10 per authored book + how widely it's read, as the kingdom score counts it
+
+    # `_BOOK_POINTS` per authored book + its reach, as the kingdom score counts it. A razed author-town would strand that reach, so it goes to whoever shelves it.
+    _, _, city_of_book = books_held(save)
+    living = {c["id"] for c in cities}
+    book_reach: Counter = Counter()
 
     for book in save.get("books") or []:
-        if (cid := book.get("author_city_id")) is not None:
-            book_reach[cid] += 10 + (book.get("times_read") or 0)
+        cid = book.get("author_city_id")
+        if cid not in living:
+            cid = city_of_book.get(book.get("id"))
+        if cid is not None:
+            book_reach[cid] += _BOOK_POINTS + (book.get("times_read") or 0)
 
     return {
         # Net settlers won over: `joined` had no city, `moved` came from another, `left` walked out. `migrated` is out — a world law spawns those outright.
@@ -287,11 +317,19 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
             wars_won[war.get("main_attacker")] += 1
         elif winner == 2:
             wars_won[war.get("main_defender")] += 1
-    book_reach: Counter = Counter()  # 10 per authored book + how widely it's read
+
+    # As the city score does: a fallen crown's books keep their reach, credited to whoever shelves them now.
+    _, _, city_of_book = books_held(save)
+    kingdom_of_city = {c["id"]: c.get("kingdomID") for c in cities}
+    living_kingdoms = set(ids)
+    book_reach: Counter = Counter()
 
     for book in save.get("books") or []:
-        if (kid := book.get("author_kingdom_id")) is not None:
-            book_reach[kid] += 10 + (book.get("times_read") or 0)
+        kid = book.get("author_kingdom_id")
+        if kid not in living_kingdoms:
+            kid = kingdom_of_city.get(city_of_book.get(book.get("id")))
+        if kid is not None:
+            book_reach[kid] += _BOOK_POINTS + (book.get("times_read") or 0)
 
     traits = {coll: {x["id"]: len(x.get("saved_traits") or []) for x in save.get(coll) or []} for coll in ("cultures", "languages", "religions")}
     return {
@@ -469,7 +507,7 @@ def sex_label(actor: dict) -> str:
 def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: float, stat_of) -> dict | None:
     if not candidates:
         return None
-    stat = next((s for t, s in ASCENSION_STATS.items() if t in traits), None)
+    stat = next((s for t, s in _ASCENSION_STATS.items() if t in traits), None)
 
     def score(actor: dict) -> float:
         if stat is not None:

@@ -23,6 +23,7 @@ from shared import (
     UNITS_PER_YEAR,
     ZONE_TILES,
     asset_set,
+    books_held,
     civic_building_ids,
     competition_ranks,
     emit,
@@ -187,8 +188,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if not kid:
             continue
         cities_by_kingdom[kid] = cities_by_kingdom.get(kid, 0) + 1
+        equipment = city.get("equipment") or {}
         for rack, field in EQUIPMENT_RACKS.items():
-            racks_by_kingdom[kid][rack] += len((city.get("equipment") or {}).get(field) or [])
+            racks_by_kingdom[kid][rack] += len(equipment.get(field) or [])
         warriors_by_kingdom[kid] += warriors_by_city[city["id"]]
         zones = city.get("zones") or []
         territory_by_kingdom[kid] = territory_by_kingdom.get(kid, 0) + len(zones)
@@ -236,13 +238,13 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "actors_by_id": actors_by_id,
         "actors_by_kingdom": actors_by_kingdom,
         "boats_by_kingdom": boats_by_kingdom,
+        "books_by_kingdom": cache(lambda: books_held(save)[1]),  # custody, not authorship; called not stored, a 15 k-row walk few sections need
         "buildings_by_kingdom": buildings_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
         "cities_by_id": cities_by_id,
         "cities_by_kingdom": cities_by_kingdom,
         "cultures_by_id": index_by_id(save.get("cultures", [])),
         "eaters_by_kingdom": eaters_by_kingdom,
-        "racks_by_kingdom": racks_by_kingdom,
         "families_by_kingdom": families_by_kingdom,
         "familyless_by_kingdom": familyless_by_kingdom,
         "fed_by_kingdom": fed_by_kingdom,
@@ -263,10 +265,11 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "nobles_money_by_kingdom": nobles_money_by_kingdom,
         "populations_by_city": populations_by_city,
         "populations_by_kingdom": populations_by_kingdom,
+        "racks_by_kingdom": racks_by_kingdom,
         "religions_by_id": index_by_id(save.get("religions", [])),  # The other breakdown indexes (`cultures`/`languages`/`subspecies`) already ride in ctx.
         "renown_by_kingdom": renown_by_kingdom,
         "save_path": save_path,  # islands cache key — the loaded save's real path (live or a chapter's map.wbox), not the module default.
-        "score_dimensions": kingdom_score_dimensions(save),  # the composite score's eleven tallies; four of them have no other source
+        "score_dimensions": cache(lambda: kingdom_score_dimensions(save)),  # the composite score's eleven tallies, four sourced nowhere else; same two callers
         "sick_by_kingdom": sick_by_kingdom,
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors (≈8×).
         "supreme_kingdom_id": supreme_kingdom_id,
@@ -278,15 +281,13 @@ def _build_context(save: dict, save_path: Path) -> dict:
     }
 
 
-# Chronicler-only: what the crown officially is, not what its subjects are (`breakdown`). It all rides on the king: a succession can turn it over, conquest cannot.
-
-
 # The realm's armoury: its towns' racks summed. `total` is the ranked stat; per-city pieces are `city/info.py <id> equipment`, a crown holds nothing itself.
 def _build_equipment(kingdom: dict, ctx: dict) -> dict:
     racks = ctx["racks_by_kingdom"][kingdom["id"]]
     return {"racks": {rack: n for rack, n in sorted(racks.items()) if n}, "total": sum(racks.values())}
 
 
+# Chronicler-only: what the crown officially is, not what its subjects are (`breakdown`). It all rides on the king: a succession can turn it over, conquest cannot.
 def _build_identity(kingdom: dict, ctx: dict) -> dict:
     culture = ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}
     return {
@@ -303,7 +304,7 @@ def _build_identity(kingdom: dict, ctx: dict) -> dict:
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
 def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     kid = kingdom["id"]
-    dims = ctx["score_dimensions"]
+    dims = ctx["score_dimensions"]()
     age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
 
     # Chronicler-only: island ids the kingdom's city zones touch, sorted asc (1 = biggest), probed at each zone centre. From ctx — recomputing re-reads the disk.
@@ -359,7 +360,8 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "tax_tribute": tribute,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
         "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
-        **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # 10 per authored book + its reads
+        **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # `_BOOK_POINTS` per authored book + how widely it's read
+        **({"books": held} if (held := ctx["books_by_kingdom"]()[kid]) else {}),  # volumes shelved in its towns, whoever wrote them
         **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
         **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
         **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
@@ -495,7 +497,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
 
         duration_units = ctx["world_time"] - float(w.get("created_time") or 0)
 
-        # Instigator: WB stores the kingdom name but not the actor's — resolved from the save when still alive, bare `{id}` otherwise (searchable in past chapters).
+        # Instigator: WB stores the kingdom name but not the actor's — resolved from the save when alive, bare `{id}` otherwise (searchable in past chapters).
         sb_id = w.get("started_by_actor_id")
         sb_actor = ctx["actors_by_id"].get(sb_id)
 
@@ -627,7 +629,7 @@ def _compute_opinion(main: dict, side: dict, target: dict, ctx: dict, relation: 
             continue
         mod[key] = 15 if main.get(field) == tval else -15
 
-    # 16. subspecies: ±10. WB calc fires when SPECIES DIFFER (subspecies = secondary distinction), main has king + canHavePrejudice — i.e. exactly modifier 8 at -10.
+    # 16. subspecies: ±10. WB calc fires when SPECIES DIFFER (subspecies = secondary), main has king + canHavePrejudice — i.e. exactly modifier 8 at -10.
     if mod.get("species") == -10:
         main_sub = main_king.get("subspecies")
         target_sub = target_king.get("subspecies")
@@ -683,7 +685,8 @@ def _compute_opinion(main: dict, side: dict, target: dict, ctx: dict, relation: 
 
 # City-tier getters + the kingdom-only metrics (city count, health tallies, the wealth split by rank). Top 3 via `competition_ranks`, like every ranks section.
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
-    dims = ctx["score_dimensions"]
+    books = ctx["books_by_kingdom"]()  # resolved once here rather than inside the getter, which `competition_ranks` fires per kingdom
+    dims = ctx["score_dimensions"]()
 
     def king_money(k: dict) -> int:
         return int((ctx["actors_by_id"].get(k.get("kingID")) or {}).get("money") or 0)
@@ -693,6 +696,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
         {
             "boats": lambda k: ctx["boats_by_kingdom"].get(k.get("id"), 0),
             "book_reach": lambda k: dims["book_reach"].get(k.get("id"), 0),
+            "books": lambda k: books[k.get("id")],
             "cities": lambda k: ctx["cities_by_kingdom"].get(k.get("id"), 0),
             "culture_traits": lambda k: dims["culture_traits"].get(k.get("id"), 0),
             "equipment": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
