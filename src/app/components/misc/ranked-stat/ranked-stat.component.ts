@@ -90,11 +90,12 @@ export class RankedStatComponent {
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
   }
 
-  // Per-kind accessor for a city — `army` and `loyalty` each have their own block, the score dimensions sit in `metadata`, everything else in `population`.
+  // Per-kind accessor for a city — `army`, `books`, `equipment` and `loyalty` each own a block, score dimensions sit in `metadata`, the rest in `population`.
   private _resolveCity(c: NonNullable<ChapterMeta['city']>): RankedStatSnapshot {
     const key = this.stat();
 
     if (key === 'score_rank') return this._snap(c.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
+    if (key === 'books') return this._snap(c.books.total, c.ranks?.books); // its own block: the volumes ride alongside the total
     if (key === 'equipment') return this._snap(c.equipment.total, c.ranks?.equipment); // its own block: the racks ride alongside the total
     if (key === 'loyalty') return this._snap(c.loyalty.total, c.ranks?.loyalty); // its own block, not `metadata`: the modifiers ride alongside the total
     if (key === 'population') return this._snap(c.population.total, c.ranks?.population);

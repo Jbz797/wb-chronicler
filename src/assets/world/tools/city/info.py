@@ -43,7 +43,11 @@ from shared import (
     take_chapter,
 )
 
-_ALL_SECTIONS = ("army", "breakdown", "equipment", "identity", "inventory", "loyalty", "metadata", "population", "ranks")
+_ALL_SECTIONS = ("army", "books", "breakdown", "equipment", "identity", "inventory", "loyalty", "metadata", "population", "ranks")
+
+# What reading a genre grants (WB `BookTypeAsset.base_stats`, lifted from `BookTypeLibrary.init`) and the traits a volume teaches — absent where it grants none.
+_BOOK_STATS = load_data("books.json")
+_BOOK_TRAITS = ("trait_id_actor", "trait_id_culture", "trait_id_language", "trait_id_religion")
 
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the crown's base rate. Emitted as a tier — the rates are WB's to change, the tier isn't.
 _CITY_TAX_TRAITS = {
@@ -52,6 +56,7 @@ _CITY_TAX_TRAITS = {
     "tax_rate_tribute_high": ("tax_tribute", "high"),
     "tax_rate_tribute_low": ("tax_tribute", "low"),
 }
+
 
 _CIV_BASE_CITIES = {"dwarf": 3, "elf": 3, "orc": 4}  # WB `ActorAsset.civ_base_cities`; every other civ keeps the `$civ_unit$` template's 5.
 _ERA_LOYALTY = {"age_chaos": -10, "age_dark": -5, "age_hope": 15, "age_moon": -25, "age_sun": 5, "age_tears": -55}  # `WorldAgeAsset.bonus_loyalty`
@@ -67,6 +72,33 @@ def _actor_stats(actor: dict | None, ctx: dict) -> dict:
     if actor["id"] not in ctx["stats_cache"]:
         ctx["stats_cache"][actor["id"]] = actor_stat_totals(actor, ctx, ctx["subspecies_base_cache"])
     return ctx["stats_cache"][actor["id"]]
+
+
+# One volume. Every ref reads the names WB stamped on the book itself — an author long dead has left `actors_by_id`, but their name is kept here.
+def _book_entry(book: dict, ctx: dict) -> dict:
+    return {
+        "age": _years_since(book.get("created_time") or 0, ctx),
+        "author": _book_ref(book, "author"),
+        "author_city": _book_ref(book, "author_city"),
+        "author_kingdom": _book_ref(book, "author_kingdom"),
+        "book_type": book.get("book_type"),  # WB's genre asset (`mathbook`, `diplomacy_manual`…), what its panel prints under the title
+        "clan": _book_ref(book, "author_clan"),
+        "culture": _book_ref(book, "culture"),
+        "id": book["id"],
+        "language": _book_ref(book, "language"),
+        "last_read": _years_since(book.get("timestamp_read_last_time") or 0, ctx),  # years since anyone opened it — a library can go quiet
+        "name": book.get("name"),
+        "read": _BOOK_STATS.get(book.get("book_type")) or {},  # the panel's « En lecture »: stats a reader walks away with, the genre's not the volume's
+        "religion": _book_ref(book, "religion"),
+        "times_read": book.get("times_read", 0),
+        **{field: trait for field in _BOOK_TRAITS if (trait := book.get(field))},
+    }
+
+
+# `{id, name}` off a book's own `<prefix>_id`/`<prefix>_name` pair — `None` where WB stamped neither (a book need carry no religion).
+def _book_ref(book: dict, prefix: str) -> dict | None:
+    ref_id = book.get(f"{prefix}_id")
+    return None if ref_id is None else {"id": ref_id, "name": book.get(f"{prefix}_name") or f"#{ref_id}"}
 
 
 # The city's standing army — at most one, residents only, `None` where there is none. `captain_years`, `kills_per_death` and `total_captains` stay chronicler-only.
@@ -92,6 +124,14 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
         "renown": int(army.get("renown") or 0),
         "total_captains": len(past),  # every captain since the founding, the sitting one included — a succession count, never a headcount
     }
+
+
+# The city's library: volumes on its halls' shelves, whoever wrote them. `total` is the ranked stat; naming the section spells each one out, as `equipment` does.
+def _build_books(city: dict, ctx: dict, detailed: bool) -> dict:
+    total = ctx["books_by_city"]()[city["id"]]
+    if not detailed:  # `full` keeps the chapter light — one count, the volumes themselves only when the section is asked for by name
+        return {"total": total}
+    return {"held": [_book_entry(b, ctx) for b in ctx["shelved_by_city"]().get(city["id"], ())], "total": total}
 
 
 # One pass over actors then buildings — every per-city tally the sections need, so no section rescans the save. Built whole whatever was asked for.
@@ -246,6 +286,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "religions_by_id": index_by_id(save.get("religions", [])),
         "renown_by_city": renown_by_city,
         "score_dimensions": cache(lambda: city_score_dimensions(save)),  # the composite score's eleven tallies, two sourced nowhere else; same two callers
+        "shelved_by_city": cache(lambda: _shelved_by_city(save)),  # the records behind `books_by_city`, only the `books` section spells them out
         "sick_by_city": sick_by_city,
         "stats_cache": {},  # `_actor_stats` memo: loyalty asks the same handful of kings and mayors for their skills over and over.
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors.
@@ -332,7 +373,6 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
         **_city_taxes(kingdom),
         **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # `_BOOK_POINTS` per book written here + how widely it's read
-        **({"books": held} if (held := ctx["books_by_city"]()[cid]) else {}),  # volumes on its shelves, whoever wrote them
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
         **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
         # The sitting mayor (`None` between leaders). `money` = his own purse: inside `population.money`, netted out of `subjects_money` so both show apart.
@@ -661,6 +701,16 @@ def _resolve_heir(city: dict, ctx: dict) -> dict | None:
     return entity_ref(heir["id"], ctx["actors_by_id"]) if heir else None
 
 
+# Books grouped by the town holding them, off `books_held`'s book → city map. The save lists every volume ever written, shelved or lost with its hall.
+def _shelved_by_city(save: dict) -> dict[int, list[dict]]:
+    city_of_book = books_held(save)[2]
+    by_city: dict[int, list[dict]] = {}
+    for book in sorted(save.get("books") or [], key=lambda b: b["id"]):
+        if (cid := city_of_book.get(book.get("id"))) is not None:
+            by_city.setdefault(cid, []).append(book)
+    return by_city
+
+
 # WB's statecraft score behind loyalty modifiers 1-2: `diplomacy + stewardship × 2`, summed raw then cast once — see `_actor_stats`.
 def _skill(actor: dict, ctx: dict) -> int:
     stats = _actor_stats(actor, ctx)
@@ -707,6 +757,8 @@ def main(argv: list[str]) -> int:
     out: dict = {}
     if "army" in sections:
         out["army"] = _build_army(city, ctx)
+    if "books" in sections:
+        out["books"] = _build_books(city, ctx, detailed=requested not in (None, "full"))
     if "breakdown" in sections:
         out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
     if "equipment" in sections:

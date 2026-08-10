@@ -56,9 +56,13 @@ export interface LeaderRow extends Omit<Leader, 'value'> { isNew: boolean; key: 
 // A reader destination: the static Précepte pages and, through `Chapter`, every chronicle.
 export interface Page { label: string; mdUrl: string; slug: string }
 
+// Volumes on the city's shelves, whoever wrote them. Only the total reaches the UI — each volume ships in the `books` section, for the chronicler alone.
+interface BookShelf { total: number }
+
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium (`ranks`) or an empty dimension means no key at all. A city is a kingdom's settlement.
 interface City {
   army?: CityArmy;
+  books: BookShelf;
   breakdown: PopulationBreakdown;
   equipment: EquipmentStock;
   inventory: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
@@ -89,7 +93,6 @@ interface CityMetadata {
   age: number;
   attractivity: number; // `migrated - left`, emitted whatever its sign — 0 and negatives are readings too
   book_reach?: number;
-  books?: number; // volumes shelved in its halls, whoever wrote them
   buildings: number;
   capital?: boolean;
   deaths: number;

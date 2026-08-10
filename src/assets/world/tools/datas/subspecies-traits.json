@@ -43,16 +43,8 @@
   "diet_xylophagy": {},
   "dreamweavers": {},
   "energy_preserver": {},
-  "enhanced_strength": {
-    "stats": {
-      "damage": 50
-    }
-  },
-  "exoskeleton": {
-    "stats": {
-      "armor": 10
-    }
-  },
+  "enhanced_strength": { "stats": { "damage": 50 } },
+  "exoskeleton": { "stats": { "armor": 10 } },
   "fast_builders": {},
   "fenix_born": {},
   "fins": {},
@@ -66,31 +58,15 @@
   "gestation_short": {},
   "gestation_very_long": {},
   "gmo": {},
-  "good_throwers": {
-    "stats": {
-      "throwing_range": 6
-    }
-  },
+  "good_throwers": { "stats": { "throwing_range": 6 } },
   "grin_mark": {},
   "heat_resistance": {},
-  "high_fecundity": {
-    "stats": {
-      "birth_rate": 5
-    }
-  },
+  "high_fecundity": { "stats": { "birth_rate": 5 } },
   "hovering": {},
   "hydrophobia": {},
-  "hyper_intelligence": {
-    "stats": {
-      "intelligence": 30
-    }
-  },
+  "hyper_intelligence": { "stats": { "intelligence": 30 } },
   "inquisitive_nature": {},
-  "long_lifespan": {
-    "stats": {
-      "lifespan": 100
-    }
-  },
+  "long_lifespan": { "stats": { "lifespan": 100 } },
   "metamorphosis_butterfly": {},
   "metamorphosis_chicken": {},
   "metamorphosis_crab": {},
@@ -118,11 +94,7 @@
   "reproduction_hermaphroditic": {},
   "reproduction_metamorph": {},
   "reproduction_parthenogenesis": {},
-  "reproduction_sexual": {
-    "stats": {
-      "birth_rate": 3
-    }
-  },
+  "reproduction_sexual": { "stats": { "birth_rate": 3 } },
   "reproduction_soulborne": {},
   "reproduction_spores": {},
   "reproduction_strategy_oviparity": {},

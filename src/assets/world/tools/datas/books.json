@@ -1,0 +1,14 @@
+{
+  "bad_story_about_king": { "experience": 10, "happiness": -10 },
+  "biology_book": { "experience": 30, "happiness": 10, "intelligence": 1 },
+  "diplomacy_manual": { "diplomacy": 1, "experience": 10, "happiness": -10 },
+  "economy_manual": { "experience": 10, "happiness": -10, "intelligence": 1, "stewardship": 1 },
+  "fable": { "experience": 30, "happiness": 10, "mana": 20 },
+  "family_story": { "experience": 5, "happiness": 5, "mana": 10 },
+  "friendship_story": { "experience": 5, "happiness": 5, "mana": 10 },
+  "history_book": { "diplomacy": 1, "experience": 30, "happiness": 5, "intelligence": 1, "warfare": 1 },
+  "love_story": { "experience": 5, "happiness": 10, "mana": 10 },
+  "mathbook": { "experience": 30, "happiness": -20, "intelligence": 1 },
+  "stewardship_manual": { "experience": 10, "happiness": -5, "intelligence": 1, "stewardship": 1 },
+  "warfare_manual": { "experience": 5, "intelligence": 1, "warfare": 1 }
+}

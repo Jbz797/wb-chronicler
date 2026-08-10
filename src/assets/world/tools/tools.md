@@ -9,7 +9,7 @@ Nommer une section, c'est la vouloir en profondeur : elle sort avec son détail 
 | Commande                           | Sections                                                                                                                   |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `actor/info.py <id>`               | `full`, `companions`, `creature_traits`, `equipment`, `inventory`, `metadata`, `plot`, `ranks_in_species`, `stats`         |
-| `city/info.py <id>`                | `full`, `army`, `breakdown`, `equipment`, `identity`, `inventory`, `loyalty`, `metadata`, `population`, `ranks`            |
+| `city/info.py <id>`                | `full`, `army`, `books`, `breakdown`, `equipment`, `identity`, `inventory`, `loyalty`, `metadata`, `population`, `ranks`   |
 | `geography/info.py`                | `full`, `islands`, `natural_features`                                                                                      |
 | `kingdom/info.py <id>`             | `full`, `alliance`, `breakdown`, `cities`, `equipment`, `identity`, `metadata`, `population`, `ranks`, `relations`, `wars` |
 | `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                         |

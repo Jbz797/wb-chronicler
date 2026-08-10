@@ -56,7 +56,7 @@ export class CityComponent {
     const rows = [
       { icon: 'assets/img/world/population.png', label: 'Attractivité', shown: true, stat: 'attractivity' as const },
       { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', shown: (c.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
-      { icon: 'assets/img/world/books.png', label: 'Livres', shown: (c.metadata.books ?? 0) > 0, stat: 'books' as const },
+      { icon: 'assets/img/world/books.png', label: 'Livres', shown: !!c.books.total, stat: 'books' as const },
       { icon: 'assets/img/stats/equipment_power.png', label: 'Équipements', shown: !!c.equipment.total, stat: 'equipment' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));

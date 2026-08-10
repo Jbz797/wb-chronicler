@@ -1,13 +1,6 @@
 {
   "minimum_years_between_wars": 5,
-  "world_age_bonus_opinion": {
-    "age_hope": 15,
-    "age_sun": 5,
-    "age_dark": -5,
-    "age_tears": -35,
-    "age_moon": -10,
-    "age_chaos": -10
-  },
+  "world_age_bonus_opinion": { "age_hope": 15, "age_sun": 5, "age_dark": -5, "age_tears": -35, "age_moon": -10, "age_chaos": -10 },
   "actor_trait_opinion_mods": {
     "agile": { "same": 5, "opposite": 0, "opposite_trait": null },
     "ambitious": { "same": -10, "opposite": 0, "opposite_trait": null },

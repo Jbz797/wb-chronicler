@@ -272,1182 +272,113 @@
       "targets": 1
     }
   },
-  "boat_fishing": {
-    "stats": {
-      "health": 100,
-      "mass": 1000,
-      "mass_2": 100,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 10
-    }
-  },
-  "boat_trading_acid_gentleman": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_alien": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_alpaca": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_angle": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_armadillo": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_bandit": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_bear": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_bee": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_beetle": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_buffalo": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_candy_man": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_capybara": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_cat": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_chicken": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_cold_one": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_cow": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_crab": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_crocodile": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_crystal_golem": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_demon": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_dog": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_druid": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_dwarf": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_elf": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_evil_mage": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_fairy": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_fox": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_frog": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_garlic_man": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_ghost": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_goat": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_greg": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_human": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_hyena": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_lemon_man": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_liliar": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_monkey": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_necromancer": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_orc": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_penguin": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_piranha": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_rabbit": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_rat": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_rhino": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_scorpion": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_seal": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_sheep": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_snake": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_snowman": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_turtle": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_unicorn": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_white_mage": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_trading_wolf": {
-    "stats": {
-      "attack_speed": 0.1,
-      "health": 200,
-      "mass": 1000,
-      "mass_2": 3000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 30
-    }
-  },
-  "boat_transport_acid_gentleman": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_alien": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_alpaca": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_angle": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_armadillo": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_bandit": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_bear": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_bee": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_beetle": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_buffalo": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_candy_man": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_capybara": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_cat": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_chicken": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_cold_one": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_cow": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_crab": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_crocodile": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_crystal_golem": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_demon": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_dog": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_druid": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_dwarf": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_elf": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_evil_mage": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_fairy": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_fox": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_frog": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_garlic_man": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_ghost": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_goat": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_greg": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_human": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_hyena": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_lemon_man": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_liliar": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_monkey": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_necromancer": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_orc": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_penguin": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_piranha": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_rabbit": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_rat": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_rhino": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_scorpion": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_seal": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_sheep": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_snake": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_snowman": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_turtle": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_unicorn": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_white_mage": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
-  "boat_transport_wolf": {
-    "stats": {
-      "attack_speed": 0.5,
-      "health": 1000,
-      "mass": 1000,
-      "mass_2": 2000,
-      "scale": 0.25,
-      "size": 1,
-      "speed": 25
-    }
-  },
+  "boat_fishing": { "stats": { "health": 100, "mass": 1000, "mass_2": 100, "scale": 0.25, "size": 1, "speed": 10 } },
+  "boat_trading_acid_gentleman": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_alien": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_alpaca": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_angle": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_armadillo": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_bandit": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_bear": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_bee": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_beetle": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_buffalo": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_candy_man": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_capybara": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_cat": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_chicken": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_cold_one": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_cow": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_crab": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_crocodile": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_crystal_golem": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_demon": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_dog": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_druid": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_dwarf": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_elf": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_evil_mage": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_fairy": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_fox": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_frog": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_garlic_man": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_ghost": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_goat": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_greg": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_human": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_hyena": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_lemon_man": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_liliar": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_monkey": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_necromancer": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_orc": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_penguin": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_piranha": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_rabbit": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_rat": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_rhino": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_scorpion": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_seal": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_sheep": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_snake": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_snowman": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_turtle": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_unicorn": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_white_mage": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_wolf": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_transport_acid_gentleman": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_alien": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_alpaca": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_angle": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_armadillo": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_bandit": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_bear": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_bee": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_beetle": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_buffalo": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_candy_man": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_capybara": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_cat": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_chicken": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_cold_one": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_cow": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_crab": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_crocodile": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_crystal_golem": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_demon": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_dog": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_druid": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_dwarf": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_elf": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_evil_mage": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_fairy": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_fox": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_frog": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_garlic_man": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_ghost": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_goat": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_greg": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_human": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_hyena": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_lemon_man": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_liliar": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_monkey": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_necromancer": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_orc": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_penguin": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_piranha": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_rabbit": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_rat": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_rhino": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_scorpion": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_seal": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_sheep": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_snake": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_snowman": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_turtle": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_unicorn": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_white_mage": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_transport_wolf": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
   "buffalo": {
     "description": "Shaggy behemoth of the Great Plains",
     "name": "Buffle",
@@ -2225,14 +1156,7 @@
   "crabzilla": {
     "description": "Become an enormous Crab, the destroyer of worlds",
     "name": "Crabzilla",
-    "stats": {
-      "damage": 10,
-      "health": 10000,
-      "mass_2": 99999,
-      "scale": 0.25,
-      "size": 8,
-      "speed": 50
-    }
+    "stats": { "damage": 10, "health": 10000, "mass_2": 99999, "scale": 0.25, "size": 8, "speed": 50 }
   },
   "crocodile": {
     "description": "The boring dinosaur",
@@ -2310,17 +1234,7 @@
   "dragon": {
     "description": "Scary flying lizard that brings destruction to your world. Fun!",
     "name": "Dragon",
-    "stats": {
-      "damage": 100,
-      "health": 1000,
-      "lifespan": 10000,
-      "mass": 4,
-      "mass_2": 2500,
-      "scale": 0.3,
-      "size": 2,
-      "speed": 40,
-      "targets": 20
-    }
+    "stats": { "damage": 100, "health": 1000, "lifespan": 10000, "mass": 4, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 40, "targets": 20 }
   },
   "druid": {
     "description": "She likes to watch the grass grow",
@@ -2653,17 +1567,7 @@
   "god_finger": {
     "description": "Multiplayer Simulator",
     "name": "Doigt Divin",
-    "stats": {
-      "armor": 5,
-      "damage": 80,
-      "health": 100,
-      "lifespan": 10000,
-      "mass": 5,
-      "mass_2": 99999,
-      "scale": 0.3,
-      "size": 2,
-      "speed": 50
-    }
+    "stats": { "armor": 5, "damage": 80, "health": 100, "lifespan": 10000, "mass": 5, "mass_2": 99999, "scale": 0.3, "size": 2, "speed": 50 }
   },
   "grasshopper": {
     "description": "Tiny insect that likes to jump around happily",
@@ -3280,19 +2184,7 @@
       "targets": 1
     }
   },
-  "UFO": {
-    "stats": {
-      "armor": 5,
-      "damage": 80,
-      "health": 1000,
-      "lifespan": 0,
-      "mass": 5,
-      "mass_2": 2500,
-      "scale": 0.3,
-      "size": 2,
-      "speed": 20
-    }
-  },
+  "UFO": { "stats": { "armor": 5, "damage": 80, "health": 1000, "lifespan": 0, "mass": 5, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 20 } },
   "unicorn": {
     "description": "Magic included, sparkles optional",
     "name": "Licorne",
@@ -3364,17 +2256,5 @@
       "targets": 1
     }
   },
-  "zombie_dragon": {
-    "stats": {
-      "damage": 100,
-      "health": 1000,
-      "lifespan": 10000,
-      "mass": 4,
-      "mass_2": 2500,
-      "scale": 0.3,
-      "size": 2,
-      "speed": 40,
-      "targets": 20
-    }
-  }
+  "zombie_dragon": { "stats": { "damage": 100, "health": 1000, "lifespan": 10000, "mass": 4, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 40, "targets": 20 } }
 }
