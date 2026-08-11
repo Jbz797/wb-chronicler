@@ -1,11 +1,11 @@
 import { INLINE_MARKER } from '../constants/inline-marker.constant';
 
-import { CityInfo, KingdomInfo, PersonInfo } from './world.interface';
+import { CityInfo, FamilyInfo, KingdomInfo, PersonInfo } from './world.interface';
 
 // Sprite rect in its sheet, in image coords — x, y, width, height, then the pivot's drop from the top edge; a part sits where its pivot meets the anchor's.
 export type ActorRect = [number, number, number, number, number];
 
-export type ChapterOverviewPanel = 'city' | 'favorite' | 'kingdom' | 'world-stats';
+export type ChapterOverviewPanel = 'city' | 'family' | 'favorite' | 'kingdom' | 'world-stats';
 
 export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
   | 'territory' | 'wealth';
@@ -16,10 +16,9 @@ export type CumulativeStat = 'books_burnt' | 'books_read' | 'cities_conquered' |
 export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' | 'fire' | 'gravity' | 'hunger'
   | 'infection' | 'old_age' | 'other' | 'plague' | 'poison' | 'tumor' | 'water' | 'weapon';
 
-// A French label that agrees with the person it describes — a plain string when invariable, a pair when the ending changes. Resolved by `LabelHelpers.gendered`.
-export type GenderedLabel = string | { f: string; m: string };
-
-export type IconKind = 'cities' | 'kingdoms' | 'persons' | 'resources' | 'species';
+export type FamilyRegistry = Record<string, FamilyInfo>;
+export type GenderedLabel = string | { f: string; m: string }; // agrees with its subject: plain when invariable, a pair otherwise — see `LabelHelpers.gendered`
+export type IconKind = 'cities' | 'families' | 'kingdoms' | 'persons' | 'resources' | 'species';
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 
 // A realm's own metrics — listed in full, not extended from `CityMetaStat`: a crown has no `attractivity`, nobody migrates to a realm.
@@ -37,11 +36,11 @@ export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'imm
 
 export type RankedStatKind = 'age' | 'armor'
   | 'army_age' | 'army_deaths' | 'army_kills' | 'army_melee' | 'army_money' | 'army_ranged' | 'army_renown'
-  | 'attack_speed' | 'attractivity' | 'boats' | 'book_reach' | 'books' | 'buildings' | 'children' | 'cities' | 'critical_chance' | 'culture_traits'
+  | 'attack_speed' | 'attractivity' | 'births' | 'boats' | 'book_reach' | 'books' | 'buildings' | 'children' | 'cities' | 'critical_chance' | 'culture_traits'
   | 'damage' | 'deaths'
   | 'diplomacy' | 'equipment' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
-  | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level' | 'lifespan' | 'loyalty' | 'mana' | 'money'
-  | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'territory' | 'warfare' | 'warriors'
+  | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'level' | 'lifespan' | 'loyalty' | 'mana' | 'members'
+  | 'money' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'territory' | 'warfare' | 'warriors'
   | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'

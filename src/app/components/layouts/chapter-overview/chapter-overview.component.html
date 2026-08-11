@@ -22,6 +22,15 @@
       <app-person-tag [id]="fav.metadata.id" [name]="fav.metadata.name" />
     }
   </ng-template>
+  <ng-template #familyHeader>
+    <img class="panel-icon" src="assets/img/world/families.png" />
+    <span>Lignée</span>
+  </ng-template>
+  <ng-template #familyExtra>
+    @if (c.meta.family; as f) {
+      <app-family-tag [id]="f.metadata.id" [name]="f.metadata.name" />
+    }
+  </ng-template>
   <ng-template #cityHeader>
     <img class="panel-icon" src="assets/img/world/village.png" />
     <span>{{ cityTerm() }}</span>
@@ -53,6 +62,15 @@
       (nzActiveChange)="onPanelToggle('favorite', $event)"
     >
       <app-favorite />
+    </nz-collapse-panel>
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'family'"
+      [nzCollapsible]="collapsible(c.meta.family)"
+      [nzExtra]="familyExtra"
+      [nzHeader]="familyHeader"
+      (nzActiveChange)="onPanelToggle('family', $event)"
+    >
+      <app-family />
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'city'"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Builds a chapter's `{cities,kingdoms,persons}.json` registries under `saves/C<n>/` — the tag visuals (+ last-known names) the UI and chronicler resolve
+# Builds a chapter's `{cities,families,kingdoms,persons}.json` registries under `saves/C<n>/` — the tag visuals (+ last-known names) the UI and chronicler resolve
 # `[c/k/p id]` tags from; the UI composes crowns and banners on canvas from them. Carried forward from C<n-1> (dead kept), rebuilt whole, reproducible.
 # `ensure()` is what the bootstrap (`chapter/new.py`) calls; `registries.py C<n> [--force]` (re)builds one chapter standalone — a dev tool, not in `tools.md`.
 
@@ -15,11 +15,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
-_REGISTRIES = ("cities", "kingdoms", "persons")
+_REGISTRIES = ("cities", "families", "kingdoms", "persons")
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
 
 
-# The chapter's cities/kingdoms/persons registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
+# The chapter's four registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
 def _build_registries(save: dict, prev: dict) -> dict:
     actors = save.get("actors_data") or []
     cities = save.get("cities") or []
@@ -33,12 +33,15 @@ def _build_registries(save: dict, prev: dict) -> dict:
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
 
     # Entries only need a headcount and the dominant species, so tally asset_ids straight away rather than keeping every member around.
+    members_by_family: Counter = Counter()  # WB points the actor at its lineage, never the reverse — the tally only exists once the roster is walked
     species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
     species_by_kingdom: defaultdict[int, Counter] = defaultdict(Counter)
 
     for a in actors:
         if is_boat(a):
             continue
+        if fid := a.get("family"):
+            members_by_family[fid] += 1
         actor_id, species = a["id"], a.get("asset_id")  # both read three times below
         if actor_id in king_ids:
             kings_by_id[actor_id] = a
@@ -62,8 +65,11 @@ def _build_registries(save: dict, prev: dict) -> dict:
         for k in kingdoms
     }
 
+    family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0)) for f in save.get("families") or []}
+
     out = {
         "cities": _merge(prev.get("cities") or {}, city_registry),
+        "families": _merge(prev.get("families") or {}, family_registry),
         "kingdoms": _merge(prev.get("kingdoms") or {}, kingdom_registry),
         "persons": _merge(prev.get("persons") or {}, persons),
     }
@@ -93,6 +99,24 @@ def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | 
     if (size := _size_tier(species.total())) > 1:  # a medallion reading `1` states the floor — every tag pill stays silent at its lowest tier
         entry["size"] = size
     return entry
+
+
+# Family registry entry — the frame the tag wears as a border, the founding species' pip, the flattened backing hue and the living headcount, plus the last name.
+def _family_entry(family: dict, members: int) -> dict:
+    entry = {
+        "frame": family.get("banner_frame_id") or 0,  # an absent banner id arrives as C#'s 0 — slot zero, not no slot
+        "name": family.get("name"),
+    }
+    if members:  # dropped once the last member dies, as the city badge drops with its last citizen — a lineage carried over from an older chapter keeps none
+        entry["members"] = members
+    if (species := family.get("species_id")) is not None:  # the founding species' pip, right of the name as on every other tag
+        entry["species"] = species
+    # WB paints the backing sprite with `getColorMainSecond` (families borrow the realms' palette). Flattened to one hex: the tag fills rather than stacks.
+    backing = load_data("family-backgrounds.json").get(f"{family.get('banner_background_id') or 0:02}")
+    tint = _palette(family.get("color_id", "")).get("color_main_2")
+    if backing and tint:
+        entry["bg_color"] = _multiply(backing, tint)
+    return {k: v for k, v in entry.items() if v is not None}
 
 
 # WB `KingdomBanner.setupBanner` inputs, for the UI to compose on canvas: the species' background/icon slots the kingdom's two banner ids pick, each with its hue.
@@ -138,13 +162,20 @@ def _load_registries(chapter_dir: Path) -> dict:
     return {name: json.loads(p.read_text()) if (p := chapter_dir / f"{name}.json").exists() else {} for name in _REGISTRIES}
 
 
-# Carry each prior entry forward flagged dead (last-known visuals kept, `rank` dropped — a medal is meaningless once fallen), then let live entities overwrite.
+# Carry each prior entry forward flagged dead (last-known visuals kept), then let live entities overwrite. `rank` and `members` go: neither survives the entity.
 def _merge(prev: dict, live: dict) -> dict:
     carried = {}
-    for entry_key, entry in prev.items():  # spread then pop beats filtering the items — most entries never held a rank to drop
+    for entry_key, entry in prev.items():  # spread then pop beats filtering the items — most entries never held either key
         carried[entry_key] = fallen = {**entry, "dead": True}
+        fallen.pop("members", None)
         fallen.pop("rank", None)
     return carried | live
+
+
+# Unity's `set_color` is a multiply — the flat fill a tinted backing comes out as.
+def _multiply(base: str, tint: str) -> str:
+    channels = (int(base[i : i + 2], 16) * int(tint[i : i + 2], 16) // 255 for i in (1, 3, 5))
+    return "#{:02X}{:02X}{:02X}".format(*channels)
 
 
 # A realm's palette, verbatim — WB's own `checkIfColorTooDark` belongs to the sprite ramps alone, so the UI applies it. Empty when WB shipped no such palette.
@@ -166,7 +197,7 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
         entry["level"] = level
     if name := actor.get("name"):  # Plenty of actors are unnamed — omit rather than store a placeholder; the tag's inline name stays the fallback.
         entry["name"] = name
-    if profession and profession != "unit":  # `unit` carries no badge — keep the registry lean.
+    if profession and profession != "civilian":  # a civilian carries no badge — keep the registry lean.
         entry["profession"] = profession
     # WB `Subspecies.cacheSkins` picks the body sheet by the subspecies' `skin_id` — `warrior_6` rather than `warrior_1`. Absent means index 0, the reader's default.
     if skin := (subspecies_by_id.get(actor.get("subspecies")) or {}).get("skin_id"):

@@ -9,9 +9,10 @@ import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { CITY_SIZE_TERMS, HISTORY_DIR } from '../../../constants';
 import { ChapterOverviewPanel, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
-import { CityTagComponent, KingdomTagComponent, PersonTagComponent } from '../../tags';
+import { CityTagComponent, FamilyTagComponent, KingdomTagComponent, PersonTagComponent } from '../../tags';
 
 import { CityComponent } from './city/city.component';
+import { FamilyComponent } from './family/family.component';
 import { FavoriteComponent } from './favorite/favorite.component';
 import { KingdomComponent } from './kingdom/kingdom.component';
 import { WorldStatsComponent } from './world-stats/world-stats.component';
@@ -21,6 +22,8 @@ import { WorldStatsComponent } from './world-stats/world-stats.component';
   imports: [
     CityComponent,
     CityTagComponent,
+    FamilyComponent,
+    FamilyTagComponent,
     FavoriteComponent,
     KingdomComponent,
     KingdomTagComponent,

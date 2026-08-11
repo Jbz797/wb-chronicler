@@ -8,6 +8,16 @@ export interface CityInfo {
   species?: string;
 }
 
+// A lineage's tag: the frame worn as a border, the flattened backing hue, the founding species' pip and its living headcount. Its `name` survives extinction.
+export interface FamilyInfo {
+  bg_color?: string;
+  dead?: boolean;
+  frame?: number;
+  members?: number;
+  name: string;
+  species?: string;
+}
+
 // A realm's tag visuals: the `banner_*` four are the shield and emblem slots `KingdomSpriteHelpers` composes, each with its hue; its `name` is chronicler-only.
 export interface KingdomInfo {
   banner_bg?: number;

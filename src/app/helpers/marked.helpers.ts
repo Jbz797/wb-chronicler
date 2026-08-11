@@ -1,33 +1,32 @@
 import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
-import { CITY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
+import { CITY_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
 import { PaletteHelpers } from './palette.helpers';
 
 export class MarkedHelpers {
 
+  // The four markers a registry resolves, hence an id that is a number — `[r]`/`[s]` name their asset instead.
+  private static readonly _numericIdMarkers = new Set<InlineMarker>([INLINE_MARKER.City, INLINE_MARKER.Family, INLINE_MARKER.Kingdom, INLINE_MARKER.Person]);
+
   // Inline icon codes — each one a `[<letter> <id> <name>]` marker handled by its own renderer.
   public static configure(): void {
     marked.use(gfmHeadingId());
     marked.use({
       extensions: [
-        // `[c <id> <name>]` = city (settlement glyph + name, coloured by its kingdom's palette from the registry).
-        this._extension(INLINE_MARKER.City, 'cities', false, this._renderCity),
-        // `[k <id> <name>]` = kingdom (colored name + banner icon, resolved from the registry).
-        this._extension(INLINE_MARKER.Kingdom, 'kingdoms', false, this._renderKingdom),
-        // `[p <id> <name>]` = person (portrait painted after render + name + sex icon + charge, from the registry).
-        this._extension(INLINE_MARKER.Person, 'persons', false, this._renderPerson),
-        // `[r <id> <text>?]` = resource (icon + optional text, never colored).
-        this._extension(INLINE_MARKER.Resource, 'resources', true, this._renderResource),
-        // `[s <id> <text>?]` = species (icon + optional colored text).
-        this._extension(INLINE_MARKER.Species, 'species', true, this._renderSpecies),
+        this._extension(INLINE_MARKER.City, 'cities', false, this._renderCity), // `[c <id> <name>]` = city (glyph + name, in its kingdom's palette).
+        this._extension(INLINE_MARKER.Family, 'families', false, this._renderFamily), // `[f <id> <name>]` = family (WB's picture frame + name).
+        this._extension(INLINE_MARKER.Kingdom, 'kingdoms', false, this._renderKingdom), // `[k <id> <name>]` = kingdom (colored name + banner icon).
+        this._extension(INLINE_MARKER.Person, 'persons', false, this._renderPerson), // `[p <id> <name>]` = person (portrait + name + sex icon + charge).
+        this._extension(INLINE_MARKER.Resource, 'resources', true, this._renderResource), // `[r <id> <text>?]` = resource (icon + optional text, never colored).
+        this._extension(INLINE_MARKER.Species, 'species', true, this._renderSpecies), // `[s <id> <text>?]` = species (icon + optional colored text).
       ],
     });
   }
 
-  // Build a marked inline extension for a `[<letter> <id> <name>]` marker — shared shape across all 5 kinds.
+  // Build a marked inline extension for a `[<letter> <id> <name>]` marker — shared shape across all 6 kinds.
   private static _extension(
     marker: InlineMarker,
     kind: IconKind,
@@ -55,10 +54,9 @@ export class MarkedHelpers {
     };
   }
 
-  // Inline-code regex: numeric id for cities/kingdoms/persons (else `[_a-z]+`), name optional per caller.
+  // Inline-code regex: numeric id for the four registered entities (else `[_a-z]+`), name optional per caller.
   private static readonly _iconPattern = (letter: InlineMarker, { isNameOptional }: { isNameOptional: boolean }): RegExp => {
-    const isNumericId = letter === INLINE_MARKER.City || letter === INLINE_MARKER.Kingdom || letter === INLINE_MARKER.Person;
-    const id = isNumericId ? String.raw`\d+` : '[_a-z]+';
+    const id = this._numericIdMarkers.has(letter) ? String.raw`\d+` : '[_a-z]+';
     const name = isNameOptional ? String.raw`(?: ([^\n\]]+))?` : String.raw` ([^\n\]]+)`;
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };
@@ -81,7 +79,25 @@ export class MarkedHelpers {
     return `<span class="ant-tag entity-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
   }
 
-  // A realm plate: banner, name, podium medal, city count, species glyph — the heraldry comes first, as it does in WB's own kingdom list.
+  // A lineage wears no crown's hue, so its tag is the frame alone on a plain ground — nothing to resolve but the sprite.
+  private static _renderFamily(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = FAMILY_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+
+    const dead = info?.dead ? ' dead' : ''; // lineage died out since this chapter → drained + struck-through
+    const framed = info?.frame === undefined ? '' : ' framed';
+    const n = info?.frame === undefined ? null : String(info.frame).padStart(2, '0');
+
+    // Two sprites off the same number: the rails, then the corner volutes those rails are too thin to hold — the pair `family-tag.component.ts` binds.
+    const border = n === null ? '' : `--tag-border: url(assets/img/families/frame_${n}.png); --tag-corner: url(assets/img/families/corner_${n}.png); `;
+    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // living headcount, as the city plate badges its citizens
+    const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const style = `${border}--tag-fill: ${info?.bg_color}; --tag-ink: ${PaletteHelpers.readableOn(info?.bg_color)}`;
+
+    return `<span class="ant-tag family-tag${framed}${dead}" style="${style}"><span class="entity-name">${name}</span>${members}${species}</span>`;
+  }
+
   private static _renderKingdom(this: ParserThis, token: Tokens.Generic): string {
     const { id, tokens: children } = token as IconToken;
     const info = KINGDOM_REGISTRY[id];

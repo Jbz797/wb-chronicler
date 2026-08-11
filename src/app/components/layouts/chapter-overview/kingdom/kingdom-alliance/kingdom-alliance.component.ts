@@ -24,7 +24,7 @@ export class KingdomAllianceComponent {
       culture: b?.cultures?.[0] ?? null,
       language: b?.languages?.[0] ?? null,
       religion: b?.religions?.[0] ?? null,
-      species: b?.species[0] ?? null,
+      species: b?.species?.[0] ?? null, // optional since a lineage carries none; an alliance always does
       subspecies: b?.subspecies[0] ?? null,
     };
   });

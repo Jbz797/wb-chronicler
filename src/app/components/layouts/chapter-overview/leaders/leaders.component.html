@@ -12,7 +12,9 @@
       <ng-template #familyTitle>
         <img [src]="row.icon" /><span>{{ row.label }}</span>
       </ng-template>
-      <nz-descriptions-item [nzTitle]="familyTitle">{{ row.ref.name }}</nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="familyTitle">
+        <app-family-tag [id]="row.ref.id" [name]="row.ref.name" />
+      </nz-descriptions-item>
     }
   </nz-descriptions>
 }

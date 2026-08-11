@@ -10,6 +10,11 @@
       <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
   }
+  @case ('most_renowned_family') {
+    @if (r.id !== undefined) {
+      <app-family-tag [id]="r.id" [name]="r.name" />
+    }
+  }
   @case ('most_renowned_person') {
     @if (r.id !== undefined) {
       <app-person-tag [id]="r.id" [name]="r.name" />

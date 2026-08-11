@@ -48,7 +48,7 @@ _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild 
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
-_PROFESSIONS = {2: "unit", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label.
+_PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 
@@ -81,7 +81,7 @@ def _family_leaders(actors: Sequence[dict], families_by_id: dict) -> dict:
             if fame := actor.get("renown"):
                 renown[family_id] += int(fame)
 
-    present = [families_by_id[fid] for fid in members if fid in families_by_id]
+    present = [family for fid in members if (family := families_by_id.get(fid))]
     if not present:
         return {}
     picks = {
@@ -365,7 +365,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
             continue
         if kid := actor.get("civ_kingdom_id"):
             population[kid] += 1
-            if coins := actor.get("money"):  # a quarter of the world carries none — see `city_score_dimensions`
+            if coins := actor.get("money"):  # a third of the world carries none — see `city_score_dimensions`
                 money[kid] += coins
         if (cid := actor.get("cityID")) and actor.get("profession") == PROFESSION_WARRIOR:
             warriors_by_city[cid] += 1
@@ -419,8 +419,8 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
             + traits["religions"].get(k.get("id_religion"), 0)
             for k in kingdoms
         },
-        "foundings": Counter(item.get("creator_kingdom_id") for coll in ("cultures", "languages", "religions") for item in save.get(coll) or []),
         "equipment": equipment,  # its towns' racks summed — see the city dimension: a martial capital none of the other nine sees
+        "foundings": Counter(item.get("creator_kingdom_id") for coll in ("cultures", "languages", "religions") for item in save.get(coll) or []),
         "kills": {k["id"]: k.get("total_kills", 0) for k in kingdoms},
         "population": population,
         "renown": {k["id"]: k.get("renown", 0) for k in kingdoms},
@@ -538,7 +538,10 @@ def render(value, indent: int = 0, used: int = 0) -> str:
 def resolve_profession(actor: dict, save: dict, captain_ids: set | None = None) -> str | None:
     cid = actor.get("id")
     captain = cid in captain_ids if captain_ids is not None else any(army.get("id_captain") == cid for army in save.get("armies", []))
-    return "army_captain" if captain else _PROFESSIONS.get(actor.get("profession") or 0)
+    if captain:
+        return "army_captain"
+    profession = actor.get("profession") or 0  # `0`/absent is WB's `nothing` — no profession, not an unknown one; anything else off the map surfaces as `#<int>`.
+    return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)
 
 
 # Who stands out among a settlement's or realm's own — its leading families and its most singular souls, `{id, name}` apiece. Both `leaders` sections share it.

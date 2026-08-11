@@ -169,12 +169,10 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "clan": clan.get("name"),
         "clan_chief_years": _resolve_tenure(actor, _CLAN_CHIEF_ROLE, save, ctx["world_time"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
         "culture": (ctx["cultures_by_id"].get(actor.get("culture")) or {}).get("name"),
-        "family": (ctx["families_by_id"].get(actor.get("family")) or {}).get("name"),
+        "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # a ref, not a bare name: `family/info.py <id>` can be called on it
         "favorite_food": actor.get("favorite_food"),
         "generation": int(actor.get("generation") or 1),
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
-        # Chronicler-only, fighters only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks one left out.
-        **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,  # Chronicler-only: land mass (geography/info.py).
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": language.get("name"),
@@ -190,6 +188,10 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
         "x": ax,
         "y": ay,
+        # Chronicler-only: the dwelling it sleeps in — WB names no house, so this id is the only handle, and `house/info.py <id>` takes it.
+        **({"home": home} if (home := actor.get("homeBuildingID")) else {}),
+        # Chronicler-only, fighters only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks one left out.
+        **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
     }
 
 

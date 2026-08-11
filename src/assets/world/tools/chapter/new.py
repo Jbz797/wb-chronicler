@@ -172,12 +172,14 @@ def main(argv: list[str]) -> int:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    city = kingdom = None
+    city = family = kingdom = None
     if favorite:
         meta = favorite.get("metadata") or {}
         cid, kid = (meta.get("city") or {}).get("id"), (meta.get("kingdom") or {}).get("id")
-        city, kingdom = _run_together(
+        fid = (meta.get("family") or {}).get("id")
+        city, family, kingdom = _run_together(
             (_run, "city/info.py", cid, "full", chapter) if cid else None,
+            (_run, "family/info.py", fid, "full", chapter) if fid else None,
             (_run, "kingdom/info.py", kid, "full", chapter) if kid else None,
         )
         if city:
@@ -200,16 +202,16 @@ def main(argv: list[str]) -> int:
     age_label = _AGE_LABELS.get(age_id, age_id)
 
     # `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
-    chapter_json = {"age_label": age_label, "city": city, "favorite": favorite, "kingdom": kingdom, "tags": tags, "title": "", "world": world}
+    chapter_json = {"age_label": age_label, "city": city, "family": family, "favorite": favorite, "kingdom": kingdom, "tags": tags, "title": "", "world": world}
 
     # `render`, not `json.dumps(indent=2)`: same tree, a third fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong here.
     (chapter_dir / "chapter.json").write_text(render(chapter_json) + "\n")
 
     year = int(world_time / UNITS_PER_YEAR)
-    counts = {name: len(json.loads((chapter_dir / f"{name}.json").read_text())) for name in ("cities", "kingdoms", "persons")}
+    counts = {name: len(json.loads((chapter_dir / f"{name}.json").read_text())) for name in ("cities", "families", "kingdoms", "persons")}
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ {chapter} — an {year}, {age_label} (world_time {world_time})")
-    print(f"  registres: {counts['cities']} cités · {counts['kingdoms']} royaumes · {counts['persons']} personnes")
+    print(f"  registres: {counts['cities']} cités · {counts['kingdoms']} royaumes · {counts['families']} lignées · {counts['persons']} personnes")
     print(f"  favori: {fav_name or 'aucun (aucun acteur marqué favori dans la save)'}")
     for _code, message in new_alerts:
         print(f"  ⚠ {message}")

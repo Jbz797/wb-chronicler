@@ -22,12 +22,10 @@ canvas {
 }
 
 .ant-tag {
-  // One plate and one hue for the three entity tags — a subject, its village and its crown read as one family. Only their sprites and glyphs tell them apart.
-  &.entity-tag {
+  // One plate for all four: a subject, its village, its crown and its lineage share a body, so they read as one family. Only ground and ink part them.
+  &.entity-tag,
+  &.family-tag {
     align-items: center;
-    background-color: #000;
-    border: none;
-    color: var(--tag-color);
     display: inline-flex;
     font-family: $font-body;
     font-size: 12.5px;
@@ -39,12 +37,7 @@ canvas {
     padding: 0 5px;
     vertical-align: text-top; // On `baseline` an inline-flex takes its first child's, so a 22px banner would ride 4px above a 14px crown.
 
-    // Black rides over the emblem tint's outer column, insetting it so plate flanks both sides and it reads alike on any page; the olive fallback keeps both alive.
-    box-shadow:
-      inset 0 0 0 1px #000,
-      inset 0 0 0 1.5px var(--tag-ring, #{$kingdom-plate});
-
-    // Fallen: a subject, city or kingdom lost since this chapter — tag drains to ash, name struck through, still named in history.
+    // Gone since this chapter — razed, fallen or died out. The tag drains to ash and the name is struck through, still named in history.
     &.dead {
       filter: grayscale(0.85);
       opacity: 0.7;
@@ -53,6 +46,32 @@ canvas {
         text-decoration: line-through;
       }
     }
+
+    // The species pip and the sex glyph, capped alike on every plate so a lineage sits level with its village and its crown.
+    img {
+      max-height: 14px;
+      max-width: 14px;
+    }
+  }
+
+  // Every tag that counts something hangs the same centred box; what it counts, and on which ground, each plate settles for itself below.
+  .tag-badge {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    justify-content: center;
+  }
+
+  // The three entity tags take a black ground and their crown's hue, so a subject, its village and its realm answer to the same palette.
+  &.entity-tag {
+    background-color: #000;
+    border: none;
+    color: var(--tag-color);
+
+    // Black rides over the emblem tint's outer column, insetting it so plate flanks both sides and it reads alike on any page; the olive fallback keeps both alive.
+    box-shadow:
+      inset 0 0 0 1px #000,
+      inset 0 0 0 1.5px var(--tag-ring, #{$kingdom-plate});
 
     // All three sprites ride a lift of their own, so the offsetting parent belongs here rather than repeated three times below.
     canvas {
@@ -79,20 +98,58 @@ canvas {
 
     // One badge for the three tags: a settlement's size tier, a realm's city count, a subject's level — absent below 2, where `1` only states the floor.
     .tag-badge {
-      align-items: center;
       background-color: var(--tag-color);
       border-radius: 2px;
       color: #000; // the pill rides the olive edge, so its ink takes the black the name gets rather than the plate — 2.75 → 5.46 on that same palette
-      display: inline-flex;
-      font-weight: 800;
       height: 14.5px;
-      justify-content: center;
       padding: 0 2px; // Two pixels of air whatever the digit count — the old fixed 14.5px box left `18` touching both edges.
     }
+  }
 
-    img {
-      max-height: 14px;
-      max-width: 14px;
+  // The lineage stands apart: it wears no crown's hue, so it carries its own fill and the frame WB hangs it in, 9-sliced as a border.
+  &.family-tag {
+    background-color: var(--tag-fill, #f4f1ea);
+    border: 1px solid rgb(0 0 0 / 28%);
+    color: var(--tag-ink, #23211d);
+
+    // `padding-box` stops the fill under the rails, so the six openwork tops show the page through their gaps, as they show the portrait in game.
+    &.framed {
+      background-clip: padding-box;
+      border: 4px solid transparent;
+      border-width: 4px 3px;
+      padding: 0 4px;
+      position: relative;
+
+      // Absolute so both paint over the badge, which overhangs the content box; `inset` restores the border they'd sit inside, and `::after` lands on `::before`.
+      &::after,
+      &::before {
+        content: '';
+        inset: -4px -3px;
+        position: absolute;
+      }
+
+      // Rails measure 5/4 on 17 of the 23 frames, but their last line is WB's mat — sliced one short at 4/3 the fill meets the ornament, and 1:1 keeps its scale.
+      &::before {
+        border: 4px solid transparent;
+        border-image: var(--tag-border) 4 3 / 4px 3px / 0 stretch;
+        border-width: 4px 3px;
+      }
+
+      // Volutes reach 8px, twice the rail, and a 9-slice cannot widen corners without thickening rails — hence their own layer, rails blank, mat and glint stripped.
+      &::after {
+        border: 8px solid transparent;
+        border-image: var(--tag-corner) 8 / 8px / 0 stretch;
+      }
+    }
+
+    // Living headcount, inverting the tag — ink for ground, fill for figure — so it reads on any lineage; round, not the plates' 2px: it counts people not holdings.
+    .tag-badge {
+      background-color: var(--tag-ink, #23211d);
+      border-radius: 50%;
+      color: var(--tag-fill, #f4f1ea);
+      font-size: 10px;
+      height: 14px;
+      min-width: 14px; // no padding, so two digits still fit the 14px disc and it stays a circle rather than stretching to a pill — a lineage never reaches three
     }
   }
 }

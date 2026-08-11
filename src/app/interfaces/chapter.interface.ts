@@ -8,6 +8,7 @@ export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 export interface ChapterMeta {
   age_label: string;
   city: City | null;
+  family: Family | null;
   favorite: Favorite | null;
   kingdom: Kingdom | null;
   tags: string[];
@@ -222,6 +223,45 @@ interface EntityReference { id: number; name: string }
 // Gear on the racks, worn by nobody. Only the total reaches the UI — the per-rack counts and the pieces themselves ship in the JSON, for the chronicler alone.
 interface EquipmentStock { total: number }
 
+// The favourite's bloodline. A lineage, not a household — `houses` counts the roofs its members sleep under, rarely one. The roster stays chronicler-only.
+interface Family {
+  breakdown: PopulationBreakdown;
+  metadata: FamilyMetadata;
+  ranks?: FamilyRanks;
+}
+
+interface FamilyMetadata {
+  age: number;
+  alpha?: EntityReference;
+  births?: number;
+  cities: number;
+  deaths?: number;
+  founders: EntityReference[];
+  founding_city?: EntityReference;
+  founding_kingdom?: EntityReference;
+  housed_pct: number;
+  houses: number;
+  id: number;
+  kills?: number;
+  members: number;
+  money: number;
+  name: string;
+  parents?: EntityReference[];
+}
+
+// Podium-only, like every other tier: absent where the lineage places outside the top 3 among the world's families.
+interface FamilyRanks {
+  age?: number;
+  births?: number;
+  deaths?: number;
+  housed_pct?: number;
+  houses?: number;
+  kills?: number;
+  members?: number;
+  money?: number;
+  renown?: number;
+}
+
 // Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key. `descriptor` is authored by the chronicler.
 interface Favorite {
   companions?: Companions;
@@ -409,7 +449,7 @@ interface PopulationBreakdown {
   cultures?: { name: string; pct: number }[];
   languages?: { name: string; pct: number }[];
   religions?: { name: string; pct: number }[];
-  species: { asset_id: string; name: string; pct: number }[];
+  species?: { asset_id: string; name: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
   subspecies: { name: string; pct: number }[];
 }
 

@@ -5,8 +5,8 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 
 import { catchError, forkJoin, Observable, of, tap } from 'rxjs';
 
-import { CITY_REGISTRY, KINGDOM_REGISTRY, PERSON_REGISTRY, SAVES_DIR } from '../constants';
-import { CityRegistry, KingdomRegistry, PersonRegistry } from '../interfaces';
+import { CITY_REGISTRY, FAMILY_REGISTRY, KINGDOM_REGISTRY, PERSON_REGISTRY, SAVES_DIR } from '../constants';
+import { CityRegistry, FamilyRegistry, KingdomRegistry, PersonRegistry } from '../interfaces';
 
 @Service()
 export class RegistryService {
@@ -15,13 +15,15 @@ export class RegistryService {
   private readonly _message = inject(NzMessageService);
 
   public readonly cities = signal<CityRegistry>({});
+  public readonly families = signal<FamilyRegistry>({});
   public readonly kingdoms = signal<KingdomRegistry>({});
   public readonly persons = signal<PersonRegistry>({});
 
-  // Loads a chapter's three registries (per-chapter, period-accurate) into the signals + the marked bridges. Called by the route resolver before the reader renders.
+  // Loads a chapter's four registries (per-chapter, period-accurate) into the signals + the marked bridges. Called by the route resolver before the reader renders.
   public load(slug: string): Observable<unknown> {
     return forkJoin([
       this._load<CityRegistry>(slug, 'cities.json', CITY_REGISTRY, this.cities),
+      this._load<FamilyRegistry>(slug, 'families.json', FAMILY_REGISTRY, this.families),
       this._load<KingdomRegistry>(slug, 'kingdoms.json', KINGDOM_REGISTRY, this.kingdoms),
       this._load<PersonRegistry>(slug, 'persons.json', PERSON_REGISTRY, this.persons),
     ]);

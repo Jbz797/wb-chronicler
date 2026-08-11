@@ -216,6 +216,11 @@
           }
         }
       }
+
+      // A NEW badge opens the label it sits in, so its air belongs on the right. Only the label: in a content cell it trails its tag, as `leader-row`'s does.
+      .ant-descriptions-item-label app-new-badge nz-tag {
+        margin: 0 4px 0 0;
+      }
     }
 
     .ant-table-tbody nz-tag {

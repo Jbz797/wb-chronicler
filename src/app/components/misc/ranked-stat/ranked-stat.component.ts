@@ -24,7 +24,7 @@ export class RankedStatComponent {
   public readonly inverted = input<boolean>(false); // Flips the delta colour — for stats where a rise is bad (deaths).
   public readonly numberFormat = input<string>('1.0-0');
   public readonly showRank = input<boolean>(true);
-  public readonly source = input<'alliance' | 'city' | 'favorite' | 'kingdom'>('favorite');
+  public readonly source = input<'alliance' | 'city' | 'family' | 'favorite' | 'kingdom'>('favorite');
   public readonly stat = input.required<RankedStatKind>();
   public readonly suffix = input<string>('');
 
@@ -64,7 +64,9 @@ export class RankedStatComponent {
   }
 
   // Branches on `source()` to pull value + rank from the favorite, the kingdom/city snapshot, or the alliance.
-  private _resolve(entity: KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']>): RankedStatSnapshot {
+  private _resolve(
+    entity: KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['family'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']>,
+  ): RankedStatSnapshot {
     if (this.source() === 'alliance') {
       const a = entity as KingdomAlliance;
       const key = this.stat() as 'population' | 'renown';
@@ -72,6 +74,12 @@ export class RankedStatComponent {
     }
 
     if (this.source() === 'city') return this._resolveCity(entity as NonNullable<ChapterMeta['city']>);
+
+    if (this.source() === 'family') {
+      const f = entity as NonNullable<ChapterMeta['family']>;
+      const key = this.stat() as keyof NonNullable<ChapterMeta['family']>['metadata'] & keyof NonNullable<NonNullable<ChapterMeta['family']>['ranks']>;
+      return this._snap(f.metadata[key] ?? 0, f.ranks?.[key]); // WB omits a counter it never wrote, hence the `?? 0`
+    }
 
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
@@ -149,10 +157,12 @@ export class RankedStatComponent {
   }
 
   // Picks the favorite, kingdom, city, or (nested) alliance block from a chapter's meta based on the configured source.
-  private _sourceOf(meta: ChapterMeta | undefined): ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom'] | KingdomAlliance {
+  private _sourceOf(
+    meta: ChapterMeta | undefined,
+  ): KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['family'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | null {
     if (!meta) return null;
     if (this.source() === 'alliance') return meta.kingdom?.alliance ?? null;
-    return meta[this.source() as 'city' | 'favorite' | 'kingdom'];
+    return meta[this.source() as 'city' | 'family' | 'favorite' | 'kingdom'];
   }
 
 }
