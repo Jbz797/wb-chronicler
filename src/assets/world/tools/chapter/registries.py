@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Builds a chapter's `{cities,families,kingdoms,persons}.json` registries under `saves/C<n>/` — the tag visuals (+ last-known names) the UI and chronicler resolve
-# `[c/k/p id]` tags from; the UI composes crowns and banners on canvas from them. Carried forward from C<n-1> (dead kept), rebuilt whole, reproducible.
+# Builds a chapter's `{cities,clans,families,kingdoms,persons}.json` registries under `saves/C<n>/` — the tag visuals (+ last-known names)
+# the UI and chronicler resolve `[c/f/k/l/p id]` tags from, crowns and banners composed on canvas. Carried forward from C<n-1> (dead kept), rebuilt whole.
 # `ensure()` is what the bootstrap (`chapter/new.py`) calls; `registries.py C<n> [--force]` (re)builds one chapter standalone — a dev tool, not in `tools.md`.
 
 import json
@@ -15,11 +15,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
-_REGISTRIES = ("cities", "families", "kingdoms", "persons")
+_REGISTRIES = ("cities", "clans", "families", "kingdoms", "persons")
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
 
 
-# The chapter's four registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
+# WB `KingdomBanner.setupBanner` inputs for the UI's canvas: the slots the realm's two banner ids pick in its king's species set, each with its hue. Realms only.
+def _banner(record: dict, species: str | None) -> dict:
+    lib = load_data("banner-icons.json")
+    banner_id = lib["species_to_banner_id"].get(species)
+    bg_slots, icon_slots = lib["banner_id_backgrounds"].get(banner_id), lib["banner_id_icons"].get(banner_id)
+    if not bg_slots or not icon_slots:  # species without a banner set (never seen in practice) → no fields, and the tag simply wears no heraldry
+        return {}
+    palette = _palette(record.get("color_id", ""))
+    return {
+        "banner_bg": bg_slots[i if (i := record.get("banner_background_id") or 0) < len(bg_slots) else 0],
+        "banner_bg_color": palette.get("color_main_2"),
+        "banner_icon": icon_slots[i if (i := record.get("banner_icon_id") or 0) < len(icon_slots) else 0],
+        "banner_icon_color": palette.get("color_banner"),
+    }
+
+
+# The chapter's five registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
 def _build_registries(save: dict, prev: dict) -> dict:
     actors = save.get("actors_data") or []
     cities = save.get("cities") or []
@@ -33,6 +49,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
 
     # Entries only need a headcount and the dominant species, so tally asset_ids straight away rather than keeping every member around.
+    members_by_clan: Counter = Counter()  # WB points the actor at its clan, never the reverse — same walk as the lineages below
     members_by_family: Counter = Counter()  # WB points the actor at its lineage, never the reverse — the tally only exists once the roster is walked
     species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
     species_by_kingdom: defaultdict[int, Counter] = defaultdict(Counter)
@@ -40,6 +57,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
     for a in actors:
         if is_boat(a):
             continue
+        if cid := a.get("clan"):
+            members_by_clan[cid] += 1
         if fid := a.get("family"):
             members_by_family[fid] += 1
         actor_id, species = a["id"], a.get("asset_id")  # both read three times below
@@ -61,14 +80,16 @@ def _build_registries(save: dict, prev: dict) -> dict:
     }
     kingdom_registry = {
         str(k["id"]): _kingdom_entry(k, species_by_kingdom.get(k["id"], Counter()), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"]))
-        | _kingdom_banner(k, kings_by_id, subspecies_by_id)
+        | _banner(k, _kingdom_species(k, kings_by_id, subspecies_by_id))
         for k in kingdoms
     }
 
+    clan_registry = {str(c["id"]): _clan_entry(c, members_by_clan.get(c["id"], 0)) for c in save.get("clans") or []}
     family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0)) for f in save.get("families") or []}
 
     out = {
         "cities": _merge(prev.get("cities") or {}, city_registry),
+        "clans": _merge(prev.get("clans") or {}, clan_registry),
         "families": _merge(prev.get("families") or {}, family_registry),
         "kingdoms": _merge(prev.get("kingdoms") or {}, kingdom_registry),
         "persons": _merge(prev.get("persons") or {}, persons),
@@ -101,6 +122,25 @@ def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | 
     return entry
 
 
+# Clan registry entry — its own hue (a clan is sworn, not granted, so it carries no crown's colour), the founder's species and the living headcount.
+def _clan_entry(clan: dict, members: int) -> dict:
+    palette = _palette(clan.get("color_id", ""))
+    entry: dict = {
+        "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
+        "name": clan.get("name"),
+        "species": clan.get("creator_species_id"),  # the founder's stock, which its recruits need not share — the pip right of the name
+    }
+    if members:  # dropped once the last member dies, as the lineage badge drops with its last member
+        entry["members"] = members
+    entry |= {  # WB gives clans their own sheets (`clan_background_*`, `clan_icon_*`), indexed straight by these two ids — not the realms' species-keyed sets.
+        "banner_bg": clan.get("banner_background_id") or 0,
+        "banner_bg_color": palette.get("color_main_2"),
+        "banner_icon": clan.get("banner_icon_id") or 0,
+        "banner_icon_color": palette.get("color_banner"),
+    }
+    return {k: v for k, v in entry.items() if v is not None}
+
+
 # Family registry entry — the frame the tag wears as a border, the founding species' pip, the flattened backing hue and the living headcount, plus the last name.
 def _family_entry(family: dict, members: int) -> dict:
     entry = {
@@ -119,23 +159,7 @@ def _family_entry(family: dict, members: int) -> dict:
     return {k: v for k, v in entry.items() if v is not None}
 
 
-# WB `KingdomBanner.setupBanner` inputs, for the UI to compose on canvas: the species' background/icon slots the kingdom's two banner ids pick, each with its hue.
-def _kingdom_banner(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -> dict:
-    lib = load_data("banner-icons.json")
-    banner_id = lib["species_to_banner_id"].get(_kingdom_species(kingdom, kings_by_id, subspecies_by_id))
-    bg_slots, icon_slots = lib["banner_id_backgrounds"].get(banner_id), lib["banner_id_icons"].get(banner_id)
-    if not bg_slots or not icon_slots:  # species without a banner set (never seen in practice) → no fields, and the tag simply wears no heraldry
-        return {}
-    palette = _palette(kingdom.get("color_id", ""))
-    return {
-        "banner_bg": bg_slots[i if (i := kingdom.get("banner_background_id") or 0) < len(bg_slots) else 0],
-        "banner_bg_color": palette.get("color_main_2"),
-        "banner_icon": icon_slots[i if (i := kingdom.get("banner_icon_id") or 0) < len(icon_slots) else 0],
-        "banner_icon_color": palette.get("color_banner"),
-    }
-
-
-# Kingdom entry, less the heraldry `_kingdom_banner` folds in and the merge's `dead`. It alone holds a hue — cities and subjects read theirs off it.
+# Kingdom entry, less the heraldry `_banner` folds in and the merge's `dead`. It alone holds a hue — cities and subjects read theirs off it.
 def _kingdom_entry(kingdom: dict, species: Counter, city_count: int, rank: int | None) -> dict:
     dominant, palette = species.most_common(1), _palette(kingdom.get("color_id", ""))
     entry: dict = {

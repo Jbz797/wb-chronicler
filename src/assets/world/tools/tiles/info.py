@@ -19,6 +19,7 @@ _ALL_SECTIONS = ("actors", "buildings", "context", "distances", "tile_info")
 _MAX_RADIUS = 2
 
 
+# Identity and allegiance only — the chronicler follows up with `actor/info.py <id>` for the rest, so a tile sweep stays readable at 25 cells.
 def _actors_at(x: int, y: int, actors_by_pos: dict[tuple[int, int], list[dict]], cities_by_id: dict, kingdoms_by_id: dict) -> list[dict]:
     return [
         {
@@ -42,7 +43,7 @@ def _context_at(x: int, y: int, city_by_pos: dict[tuple[int, int], dict], kingdo
     if city is None:
         return {}
     return {
-        "city": {"id": city["id"], "name": city.get("name") or f"#{city['id']}"},
+        "city": {"id": city["id"], "name": city.get("name")},
         "kingdom": entity_ref(city.get("kingdomID"), kingdoms_by_id),
     }
 
@@ -71,6 +72,7 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
 
+# `frozen` is emitted only when true: an unfrozen tile is the rule, and `emit` would carry 25 `false` for nothing.
 def _tile_info_at(x: int, y: int, grid: list[list[int]], tile_map: list[str], tile_to_island, frozen_set: set[tuple[int, int]]) -> dict:
     name = tile_map[grid[y][x]]
     out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": tile_to_island.get((x, y)), "kind": tile_kind(name)}
@@ -93,6 +95,7 @@ def _water_distance(x: int, y: int, grid: list[list[int]], layer_by_id: list[str
     return -1
 
 
+# argparse type converter — raising `ArgumentTypeError` is what makes it print the usage line rather than a traceback.
 def _xy(value: str) -> tuple[int, int]:
     try:
         x_str, y_str = value.split(",", 1)
@@ -118,7 +121,7 @@ def main(argv: list[str]) -> int:
     cx, cy = args.xy
 
     try:
-        sections = parse_sections(args.sections, _ALL_SECTIONS)
+        sections = set(parse_sections(args.sections, _ALL_SECTIONS))  # membership only, never walked in order — the emitting `if`s below name each one
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -137,7 +140,7 @@ def main(argv: list[str]) -> int:
         print(f"coords ({cx}, {cy}) out of bounds — map is {width}×{height}", file=sys.stderr)
         return 2
 
-    grid = decode_tile_grid(save) if {"distances", "tile_info"} & set(sections) else []
+    grid = decode_tile_grid(save) if {"distances", "tile_info"} & sections else []
 
     tile_map = save["tileMap"]
     coords = _radius_tiles(cx, cy, args.radius, width, height)
@@ -151,25 +154,25 @@ def main(argv: list[str]) -> int:
             ax, ay = a.get("x"), a.get("y")
             if ax is not None and ay is not None and (pos := (int(ax), int(ay))) in wanted:
                 actors_by_pos[pos].append(a)
-    buildings_by_pos: dict[tuple[int, int], list[dict]] = defaultdict(list)
 
+    buildings_by_pos: dict[tuple[int, int], list[dict]] = defaultdict(list)
     if "buildings" in sections:
         for b in save.get("buildings", []):
             bx, by = b.get("mainX"), b.get("mainY")
             if bx is not None and by is not None and (pos := (int(bx), int(by))) in wanted:
                 buildings_by_pos[pos].append(b)
+
     # `cities/kingdoms_by_id` resolve refs for `actors` + `context`; `city_by_pos`, centroids and capital positions only serve `context`/`distances`.
     cities_by_id: dict[int, dict] = {}
     kingdoms_by_id: dict[int, dict] = {}
-
-    if {"actors", "context", "distances"} & set(sections):
+    if {"actors", "context", "distances"} & sections:
         cities_by_id = index_by_id(save.get("cities") or [])
         kingdoms_by_id = index_by_id(save.get("kingdoms") or [])
+
     city_by_pos: dict[tuple[int, int], dict] = {}
     capital_pos_by_kingdom: dict[int, tuple[int, int]] = {}
     city_centroids: list[tuple[int, int]] = []
-
-    if {"context", "distances"} & set(sections):
+    if {"context", "distances"} & sections:
         for c in cities_by_id.values():
             zones = c.get("zones") or []
             if not zones:
@@ -183,15 +186,15 @@ def main(argv: list[str]) -> int:
                 continue
             if cap_zones := (cities_by_id.get(cap_id) or {}).get("zones"):
                 capital_pos_by_kingdom[k["id"]] = _zone_centroid(cap_zones)
-    tile_to_island: dict | object = {}  # placeholder until the section asks — an empty dict answers `.get` like the real lookup
-    frozen_set: set[tuple[int, int]] = set()
 
+    tile_to_island = {}  # placeholder until the section asks — an empty dict answers `.get` like the real island lookup
+    frozen_set: set[tuple[int, int]] = set()
     if "tile_info" in sections:
         _, tile_to_island = compute_islands_cached(save, save_path)
         # `frozen_tiles` are packed as `y * width + x` ints — decode to positions, keeping only the queried ones.
         frozen_set = {pos for idx in save.get("frozen_tiles") or [] if (pos := (idx % width, idx // width)) in wanted}
-    layer_by_id: list[str] = []
 
+    layer_by_id: list[str] = []
     if "distances" in sections:
         layer_by_id = [tile_layer(name) for name in tile_map]
 

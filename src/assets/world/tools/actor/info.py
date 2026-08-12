@@ -14,6 +14,7 @@ from shared import (
     PROFESSION_LEADER,
     UNITS_PER_YEAR,
     age_thresholds,
+    build_trait_list,
     competition_ranks,
     emit,
     entity_ref,
@@ -95,7 +96,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_asset: dict[str, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
     children_by_parent: dict[int, int] = {}
-    for actor in save.get("actors_data", []):
+    for actor in save.get("actors_data") or []:
         actors_by_id[actor["id"]] = actor
         actors_by_asset.setdefault(actor.get("asset_id"), []).append(actor)
         # Unrolled: the pair literal rebuilt a tuple per actor. A `Counter` here would read cleaner but measures 46 % slower than `dict.get` on this pattern.
@@ -108,13 +109,13 @@ def _build_context(save: dict, save_path: Path) -> dict:
         **build_actor_stats_context(save),
         "actors_by_asset": actors_by_asset,
         "actors_by_id": actors_by_id,
-        "alliances_by_id": index_by_id(save.get("alliances", [])),
+        "alliances_by_id": index_by_id(save.get("alliances") or []),
         "children_by_parent": children_by_parent,
-        "cities_by_id": index_by_id(save.get("cities", [])),
-        "cultures_by_id": index_by_id(save.get("cultures", [])),
-        "families_by_id": index_by_id(save.get("families", [])),
-        "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
-        "religions_by_id": index_by_id(save.get("religions", [])),
+        "cities_by_id": index_by_id(save.get("cities") or []),
+        "cultures_by_id": index_by_id(save.get("cultures") or []),
+        "families_by_id": index_by_id(save.get("families") or []),
+        "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
+        "religions_by_id": index_by_id(save.get("religions") or []),
         "save_path": save_path,  # islands cache key — must be the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "subspecies_base_cache": {},
     }
@@ -145,7 +146,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)  # `age_overgrowth` (years past the lifespan cap) added on top, like the WB tooltip.
     age_adult, age_breeding = age_thresholds(lifespan)
     ax, ay = actor.get("x"), actor.get("y")
-    clan = ctx["clans_by_id"].get(actor.get("clan")) or {}
     language = ctx["languages_by_id"].get(actor.get("language")) or {}
     profession = resolve_profession(actor, save)
     sub = ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}
@@ -166,7 +166,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "asset_id": actor.get("asset_id"),
         "can_reproduce": can_reproduce,
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
-        "clan": clan.get("name"),
+        "clan": entity_ref(actor.get("clan"), ctx["clans_by_id"]),  # a ref, not a bare name: `clan/info.py <id>` can be called on it, as on `family`
         "clan_chief_years": _resolve_tenure(actor, _CLAN_CHIEF_ROLE, save, ctx["world_time"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
         "culture": (ctx["cultures_by_id"].get(actor.get("culture")) or {}).get("name"),
         "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # a ref, not a bare name: `family/info.py <id>` can be called on it
@@ -178,7 +178,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "language": language.get("name"),
         "life_stage": life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor, ctx),
-        "name": actor.get("name") or f"#{actor.get('id')}",  # `#id` fallback like every other name field — WB leaves plenty of actors unnamed.
+        "name": actor.get("name"),  # absent, not a placeholder, where WB never named them — `emit` strips it and the panels drop the row
         "personality": _compute_personality(actor, snap),
         "profession": profession,
         "religion": (ctx["religions_by_id"].get(actor.get("religion")) or {}).get("name"),
@@ -200,7 +200,7 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
     plot_id = actor.get("plot")
     if plot_id is None:
         return None
-    plot = next((p for p in save.get("plots", []) if p.get("id") == plot_id), None)
+    plot = next((p for p in save.get("plots") or [] if p.get("id") == plot_id), None)
     if plot is None:
         return None
     return {
@@ -211,19 +211,6 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
         "target_kingdom": entity_ref(plot.get("id_target_kingdom"), ctx["kingdoms_by_id"]),
         "type_id": plot.get("plot_type_id"),
     }
-
-
-# Trait entries with their stats + narrative fields (description/flavor/rarity) when the data carries them — sorted by trait id.
-def _build_trait_list(trait_ids: list[str], traits_data: dict) -> list:
-    out = []
-    for tid in trait_ids or []:
-        entry = traits_data.get(tid) or {}
-        item: dict = {"id": tid, "stats": entry.get("stats") or {}}
-        for k in ("description", "flavor", "rarity"):
-            if k in entry:
-                item[k] = entry[k]
-        out.append(dict(sorted(item.items())))
-    return sorted(out, key=lambda t: t["id"])
 
 
 # `Actor.getMassKG`: (target_scale / 0.1) × base mass × (1 + Σ trait multiplier_mass). Base mass = the asset's `mass_2` (kg) from `species.json`; `None` if massless.
@@ -274,15 +261,15 @@ def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
 def _compute_roles(actor: dict, save: dict) -> list[str]:
     actor_id = actor.get("id")
     checks = {
-        "alliance_founder": any(a.get("founder_actor_id") == actor_id for a in save.get("alliances", [])),
-        "clan_chief": any(c.get("chief_id") == actor_id for c in save.get("clans", [])),
-        "clan_founder": any(c.get("founder_actor_id") == actor_id for c in save.get("clans", [])),
-        "culture_creator": any(c.get("creator_id") == actor_id for c in save.get("cultures", [])),
-        "family_alpha": any(f.get("alpha_id") == actor_id for f in save.get("families", [])),
-        "family_founder": any(f.get("main_founder_id_1") == actor_id or f.get("main_founder_id_2") == actor_id for f in save.get("families", [])),
-        "language_creator": any(lang.get("creator_id") == actor_id for lang in save.get("languages", [])),
-        "religion_creator": any(r.get("creator_id") == actor_id for r in save.get("religions", [])),
-        "village_founder": any(c.get("founder_id") == actor_id for c in save.get("cities", [])),
+        "alliance_founder": any(a.get("founder_actor_id") == actor_id for a in save.get("alliances") or []),
+        "clan_chief": any(c.get("chief_id") == actor_id for c in save.get("clans") or []),
+        "clan_founder": any(c.get("founder_actor_id") == actor_id for c in save.get("clans") or []),
+        "culture_creator": any(c.get("creator_id") == actor_id for c in save.get("cultures") or []),
+        "family_alpha": any(f.get("alpha_id") == actor_id for f in save.get("families") or []),
+        "family_founder": any(f.get("main_founder_id_1") == actor_id or f.get("main_founder_id_2") == actor_id for f in save.get("families") or []),
+        "language_creator": any(lang.get("creator_id") == actor_id for lang in save.get("languages") or []),
+        "religion_creator": any(r.get("creator_id") == actor_id for r in save.get("religions") or []),
+        "village_founder": any(c.get("founder_id") == actor_id for c in save.get("cities") or []),
     }
     return [role for role in _ROLE_ORDER if checks[role]]
 
@@ -370,7 +357,7 @@ def main(argv: list[str]) -> int:
         by_id = ctx["actors_by_id"]
         out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": entity_ref(actor.get("lover"), by_id)}
     if "creature_traits" in sections:
-        out["creature_traits"] = _build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"])
+        out["creature_traits"] = build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"])
     if "equipment" in sections:
         out["equipment"] = _build_equipment_list(actor, ctx)
     if "inventory" in sections:

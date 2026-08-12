@@ -8,9 +8,7 @@ export class KingdomSpriteHelpers {
   private static readonly _banners = new Map<string, Promise<HTMLCanvasElement | null>>();
 
   // Native size: a shield stands taller than the 22px cap `.banner` sets, so the CSS scales it down and no upscale is wanted here.
-  public static async paint(canvas: HTMLCanvasElement, kingdom: KingdomInfo): Promise<void> {
-    SpriteHelpers.blit(canvas, await this._compose(kingdom));
-  }
+  public static paint = async (canvas: HTMLCanvasElement, kingdom: KingdomInfo): Promise<void> => SpriteHelpers.blit(canvas, await this._compose(kingdom));
 
   public static paintAll(root: ParentNode, kingdoms: Record<string, KingdomInfo | undefined>): void {
     SpriteHelpers.paintAll(root, 'kingdom', kingdoms, (canvas, kingdom) => this.paint(canvas, kingdom));

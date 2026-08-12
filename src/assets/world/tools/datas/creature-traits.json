@@ -531,7 +531,7 @@
     "rarity": "Legendary",
     "stats": { "lifespan": 100, "multiplier_health": 100 }
   },
-  "thief": { "description": "Skilled at taking others' possessions", "flavor": "One for you... all for me", "name": "Thief", "rarity": "Epic" },
+  "thief": { "description": "Skilled at taking others' possessions", "flavor": "One for you... all for me", "name": "Thief", "rarity": "Legendary" },
   "thorns": { "description": "Damages attackers when hit", "flavor": "Every rose has its thorns", "name": "Thorns", "rarity": "Rare" },
   "tiny": {
     "description": "Small in size, mighty in spirit",
@@ -544,7 +544,7 @@
     "description": "Their stamina is seemingly inexhaustible",
     "flavor": "Breathing is their superweapon",
     "name": "Titan's Lungs",
-    "rarity": "Rare",
+    "rarity": "Legendary",
     "stats": { "multiplier_stamina": 10 }
   },
   "tough": {

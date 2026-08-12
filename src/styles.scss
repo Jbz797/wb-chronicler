@@ -104,6 +104,12 @@ canvas {
       height: 14.5px;
       padding: 0 2px; // Two pixels of air whatever the digit count — the old fixed 14.5px box left `18` touching both edges.
     }
+
+    // A clan's wreath is 26×37 where a realm's shield is 26×22, so it needs the extra height and a deeper lift to hang from the same line.
+    &.clan-tag .banner {
+      max-height: 25px;
+      top: -4px;
+    }
   }
 
   // The lineage stands apart: it wears no crown's hue, so it carries its own fill and the frame WB hangs it in, 9-sliced as a border.
@@ -142,15 +148,21 @@ canvas {
       }
     }
 
-    // Living headcount, inverting the tag — ink for ground, fill for figure — so it reads on any lineage; round, not the plates' 2px: it counts people not holdings.
+    // Living headcount, inverting the tag — ink for ground, fill for figure — so it reads on any lineage. Its shape it shares with the clan's, below.
     .tag-badge {
       background-color: var(--tag-ink, #23211d);
-      border-radius: 50%;
       color: var(--tag-fill, #f4f1ea);
-      font-size: 10px;
-      height: 14px;
-      min-width: 14px; // no padding, so two digits still fit the 14px disc and it stays a circle rather than stretching to a pill — a lineage never reaches three
     }
+  }
+
+  // One disc for the two that count people — a lineage's living, a clan's sworn; last on purpose, as it ties the pill above and only source order then wins.
+  &.clan-tag .tag-badge,
+  &.family-tag .tag-badge {
+    border-radius: 50%;
+    font-size: 10px; // sized for two digits: at the plate's 12.5px a clan of 43 pressed both walls of the disc
+    height: 14px;
+    min-width: 14px; // no padding, so two digits still fit and it stays a circle rather than stretching to a pill — neither roster reaches three
+    padding: 0;
   }
 }
 
@@ -161,15 +173,7 @@ canvas {
   }
 }
 
-// ng-zorro Typography is compiled in dark mode globally — restore the light-theme colors (cf. `node_modules/ng-zorro-antd/typography/style/index.css`).
+// ng-zorro Typography is compiled in dark mode globally — the reader's article wears the class, so its ink is restored here (cf. the package's `index.css`).
 .ant-typography {
   color: rgb(0 0 0 / 85%);
-}
-
-.ant-typography-secondary {
-  color: rgb(0 0 0 / 45%);
-}
-
-.ant-typography-disabled {
-  color: rgb(0 0 0 / 25%);
 }

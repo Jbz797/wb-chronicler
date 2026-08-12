@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 11/08/26 08:21</p>
+<p class="metadata">Date de mise à jour : 11/08/26 16:06</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -416,7 +416,7 @@ Chaque type de nom propre a son balisage markdown dédié — le chroniqueur l'a
 | Lieu géographique   | `***gras italique***`                                                                              |
 | Village / Capitale  | `[c id Nom]`                                                                                       |
 | Royaume             | `[k id Nom]`                                                                                       |
-| Clan                | `🛡 **gras**`                                                                                       |
+| Clan                | `[l id Nom]`                                                                                       |
 | Culture             | `📜 **gras**`                                                                                      |
 | Langue              | `🪶 **gras**`                                                                                      |
 | Religion            | `🕯 **gras**`                                                                                       |

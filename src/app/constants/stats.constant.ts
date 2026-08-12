@@ -1,4 +1,6 @@
-import { CumulativeStat, DeathCause, GenderedLabel, LeaderKind, LifeStage, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
+import { CumulativeStat, DeathCause, GenderedLabel, LeaderKind, LifeStage, RankedStatKind, SnapshotStat, StatConfig, TraitGroup } from '../interfaces';
+
+export const ANONYMOUS_NAME = 'Anonyme'; // Stands in for a person WB never named — 42 % of its actors — so the row holds instead of showing a mute plate.
 
 // French labels for `plot.type_id` — sourced from WB's `PlotsLibrary`. Unknown ids fall back to the raw id at render time.
 export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -58,6 +60,11 @@ export const PERSONALITY_LABELS: Readonly<Record<string, GenderedLabel>> = {
 
 // French labels for `metadata.tenure_years` — names the post the years are counted for. Only these professions hold one.
 export const TENURE_LABELS: Readonly<Record<string, string>> = { army_captain: 'Commandement', king: 'Règne', leader: 'Direction' };
+
+// The seven buckets WB sorts clan traits into (`ClanTraitGroupLibrary`). Ours: the game ships no locale for the four it invented for clans.
+export const TRAIT_GROUP_LABELS: Readonly<Record<TraitGroup, string>> = {
+  body: 'Corps', chaos: 'Chaos', fate: 'Destin', harmony: 'Harmonie', mind: 'Mental', special: 'Spécial', spirit: 'Esprit',
+};
 
 // French labels for `metadata.roles` (active = current position, !active = historical foundation) — Python emits the canonical order, do not re-sort here.
 export const ROLE_LABELS: Readonly<Record<string, { active: boolean; label: GenderedLabel }>> = {

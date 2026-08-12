@@ -62,6 +62,12 @@ def _fold_city_detail(city: dict) -> None:
     city.get("loyalty", {}).pop("top_drivers", None)
 
 
+# Tallies the sworn traits per WB group, the panel's axis — rarity says only Rare or achievement-locked Legendary. `clan/info.py <id> traits` keeps both whole.
+def _fold_clan_detail(clan: dict) -> None:
+    counts = Counter(trait["group"] for trait in clan.pop("traits", []) if trait.get("group"))
+    clan["traits"] = dict(sorted(counts.items()))
+
+
 # Folds the favorite's two heavy blocks: `creature_traits` becomes the rarity summary the panel renders, `equipment` goes — both stay whole in `actor/info.py`.
 def _fold_favorite_detail(favorite: dict) -> None:
     counts = Counter(trait.get("rarity", "").lower() for trait in favorite.pop("creature_traits", []))
@@ -172,18 +178,21 @@ def main(argv: list[str]) -> int:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    city = family = kingdom = None
+    city = clan = family = kingdom = None
     if favorite:
         meta = favorite.get("metadata") or {}
         cid, kid = (meta.get("city") or {}).get("id"), (meta.get("kingdom") or {}).get("id")
-        fid = (meta.get("family") or {}).get("id")
-        city, family, kingdom = _run_together(
+        clan_id, fid = (meta.get("clan") or {}).get("id"), (meta.get("family") or {}).get("id")
+        city, clan, family, kingdom = _run_together(
             (_run, "city/info.py", cid, "full", chapter) if cid else None,
+            (_run, "clan/info.py", clan_id, "full", chapter) if clan_id else None,  # absent on most favorites — a clan is joined, not inherited
             (_run, "family/info.py", fid, "full", chapter) if fid else None,
             (_run, "kingdom/info.py", kid, "full", chapter) if kid else None,
         )
         if city:
             _fold_city_detail(city)
+        if clan:
+            _fold_clan_detail(clan)
         if kingdom:
             _fold_kingdom_detail(kingdom)
 
@@ -202,16 +211,29 @@ def main(argv: list[str]) -> int:
     age_label = _AGE_LABELS.get(age_id, age_id)
 
     # `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
-    chapter_json = {"age_label": age_label, "city": city, "family": family, "favorite": favorite, "kingdom": kingdom, "tags": tags, "title": "", "world": world}
+    chapter_json = {
+        "age_label": age_label,
+        "city": city,
+        "clan": clan,
+        "family": family,
+        "favorite": favorite,
+        "kingdom": kingdom,
+        "tags": tags,
+        "title": "",
+        "world": world,
+    }
 
     # `render`, not `json.dumps(indent=2)`: same tree, a third fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong here.
     (chapter_dir / "chapter.json").write_text(render(chapter_json) + "\n")
 
     year = int(world_time / UNITS_PER_YEAR)
-    counts = {name: len(json.loads((chapter_dir / f"{name}.json").read_text())) for name in ("cities", "families", "kingdoms", "persons")}
+    counts = " · ".join(  # The chronicler's own order: the map first, then who fills it. Each name pairs with its label here rather than twice below.
+        f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {label}"
+        for name, label in (("cities", "cités"), ("kingdoms", "royaumes"), ("clans", "clans"), ("families", "lignées"), ("persons", "personnes"))
+    )
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ {chapter} — an {year}, {age_label} (world_time {world_time})")
-    print(f"  registres: {counts['cities']} cités · {counts['kingdoms']} royaumes · {counts['families']} lignées · {counts['persons']} personnes")
+    print(f"  registres: {counts}")
     print(f"  favori: {fav_name or 'aucun (aucun acteur marqué favori dans la save)'}")
     for _code, message in new_alerts:
         print(f"  ⚠ {message}")

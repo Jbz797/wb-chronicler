@@ -1,3 +1,5 @@
+import { Clan } from './clan.interface';
+import { EntityReference, PersonReference, PopulationBreakdown } from './entity.interface';
 import { RarityCounts } from './stats.interface';
 import { LeaderKind, LifeStage } from './types';
 
@@ -8,6 +10,7 @@ export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 export interface ChapterMeta {
   age_label: string;
   city: City | null;
+  clan: Clan | null;
   family: Family | null;
   favorite: Favorite | null;
   kingdom: Kingdom | null;
@@ -46,13 +49,13 @@ export interface KingdomWar {
   populations: SideStats;
   renown_at_stake: number;
   side: 'attacker' | 'defender';
-  started_by: { actor?: { id: number; name?: string }; kingdom: EntityReference };
+  started_by: { actor?: PersonReference; kingdom: EntityReference };
   war_type?: 'conquest' | 'inspire' | 'rebellion' | 'spite' | 'whisper';
   warriors: SideStats;
 }
 
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
-export interface LeaderRow extends Omit<Leader, 'value'> { isNew: boolean; key: LeaderKind }
+export interface LeaderRow extends Omit<Leader, 'name' | 'value'> { isNew: boolean; key: LeaderKind; name: string }
 
 // The standout family and souls of a settlement or realm. Every entry is optional: `emit` drops a metric nobody scored on, so no killer means no `kills` key.
 export interface Leaders {
@@ -64,19 +67,19 @@ export interface Leaders {
     renown?: EntityReference;
   };
   persons?: {
-    births?: EntityReference;
-    children?: EntityReference;
-    damage?: EntityReference;
-    health?: EntityReference;
-    hungriest?: EntityReference;
-    intelligence?: EntityReference;
-    kills?: EntityReference;
-    level?: EntityReference;
-    money?: EntityReference;
-    oldest?: EntityReference;
-    renown?: EntityReference;
-    speed?: EntityReference;
-    youngest?: EntityReference;
+    births?: PersonReference;
+    children?: PersonReference;
+    damage?: PersonReference;
+    health?: PersonReference;
+    hungriest?: PersonReference;
+    intelligence?: PersonReference;
+    kills?: PersonReference;
+    level?: PersonReference;
+    money?: PersonReference;
+    oldest?: PersonReference;
+    renown?: PersonReference;
+    speed?: PersonReference;
+    youngest?: PersonReference;
   };
 }
 
@@ -103,7 +106,7 @@ interface City {
 // The city's whole military, absent where there is none. `captain_years`, `kills_per_death` and `total_captains` ship in the JSON but stay chronicler-only.
 interface CityArmy {
   age: number;
-  captain?: { id: number; name: string };
+  captain?: PersonReference;
   deaths: number;
   kills: number;
   melee: number;
@@ -125,15 +128,15 @@ interface CityMetadata {
   capital?: boolean;
   deaths: number;
   food: number;
-  founder?: { id: number; name: string };
+  founder?: PersonReference;
   gold: number;
   goods: number;
-  heir?: { id: number; name: string };
+  heir?: PersonReference;
   houses: number;
   id: number;
   kills: number;
   kingdom?: EntityReference;
-  leader?: { id: number; money: number; name: string };
+  leader?: PersonReference & { money: number };
   name: string;
   renown: number;
   score_rank: number;
@@ -193,8 +196,8 @@ interface CityRanks {
 
 // The favorite's two attachments. Python emits each with its full stat line for the chronicler; the UI only ever draws their `[p]` tag, hence `EntityReference`.
 interface Companions {
-  best_friend?: EntityReference;
-  lover?: EntityReference;
+  best_friend?: PersonReference;
+  lover?: PersonReference;
 }
 
 // Per-cause death counts since world start — Python omits 0-counts, so UI must treat absent keys as 0.
@@ -217,9 +220,6 @@ interface DeathBreakdown {
   weapon?: number;
 }
 
-// A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
-interface EntityReference { id: number; name: string }
-
 // Gear on the racks, worn by nobody. Only the total reaches the UI — the per-rack counts and the pieces themselves ship in the JSON, for the chronicler alone.
 interface EquipmentStock { total: number }
 
@@ -232,13 +232,11 @@ interface Family {
 
 interface FamilyMetadata {
   age: number;
-  alpha?: EntityReference;
+  alpha?: PersonReference;
   births?: number;
   cities: number;
   deaths?: number;
-  founders: EntityReference[];
-  founding_city?: EntityReference;
-  founding_kingdom?: EntityReference;
+  founders: PersonReference[];
   housed_pct: number;
   houses: number;
   id: number;
@@ -246,7 +244,7 @@ interface FamilyMetadata {
   members: number;
   money: number;
   name: string;
-  parents?: EntityReference[];
+  renown: number; // summed over the living, not a WB field — a lineage has no renown of its own, its members do
 }
 
 // Podium-only, like every other tier: absent where the lineage places outside the top 3 among the world's families.
@@ -372,15 +370,15 @@ interface KingdomMetadata {
   culture_traits?: number;
   deaths: number;
   food: number;
-  founder?: { id: number; name: string };
+  founder?: PersonReference;
   foundings?: number;
   gold: number;
   goods: number;
-  heir?: { id: number; name: string };
+  heir?: PersonReference;
   houses: number;
   id: number;
   kills: number;
-  king?: { id: number; money: number; name: string };
+  king?: PersonReference & { money: number };
   name: string;
   renown: number;
   score_rank: number;
@@ -439,19 +437,10 @@ interface KingdomRanks {
 }
 
 // The winner of a « Records » category: `dominant_species` carries `asset_id` (its icon); every other kind is a `{id, name}` ref the UI resolves via its registry.
-interface Leader { asset_id?: string; id?: number; name: string; value: number }
+interface Leader { asset_id?: string; id?: number; name?: string; value: number }
 
 // The favorite's active scheme (WB `Plot`); `target_*` are absent when the plot has no such target.
 interface Plot { name: string; progress: number; target_alliance?: EntityReference; target_kingdom?: EntityReference; type_id: string }
-
-// Top-3 shares of a civ population per dimension (% of the whole). `species`/`subspecies` always ≥1 (`species` adds `asset_id`); the rest optional.
-interface PopulationBreakdown {
-  cultures?: { name: string; pct: number }[];
-  languages?: { name: string; pct: number }[];
-  religions?: { name: string; pct: number }[];
-  species?: { asset_id: string; name: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
-  subspecies: { name: string; pct: number }[];
-}
 
 // A per-side tally (attackers vs defenders) — reused for a war's population, warriors, cities and deaths.
 interface SideStats { attackers: number; defenders: number }

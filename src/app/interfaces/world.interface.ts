@@ -8,6 +8,19 @@ export interface CityInfo {
   species?: string;
 }
 
+// A clan's tag: its own hue (sworn, not granted, so no crown lends it one), the founder's species pip and the living headcount. Its `name` survives extinction.
+export interface ClanInfo {
+  banner_bg?: number;
+  banner_bg_color?: string;
+  banner_icon?: number;
+  banner_icon_color?: string;
+  color: string;
+  dead?: boolean;
+  members?: number;
+  name: string;
+  species?: string;
+}
+
 // A lineage's tag: the frame worn as a border, the flattened backing hue, the founding species' pip and its living headcount. Its `name` survives extinction.
 export interface FamilyInfo {
   bg_color?: string;

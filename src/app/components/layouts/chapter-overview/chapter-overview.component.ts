@@ -9,9 +9,10 @@ import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { CITY_SIZE_TERMS, HISTORY_DIR } from '../../../constants';
 import { ChapterOverviewPanel, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
-import { CityTagComponent, FamilyTagComponent, KingdomTagComponent, PersonTagComponent } from '../../tags';
+import { CityTagComponent, ClanTagComponent, FamilyTagComponent, KingdomTagComponent, PersonTagComponent } from '../../tags';
 
 import { CityComponent } from './city/city.component';
+import { ClanComponent } from './clan/clan.component';
 import { FamilyComponent } from './family/family.component';
 import { FavoriteComponent } from './favorite/favorite.component';
 import { KingdomComponent } from './kingdom/kingdom.component';
@@ -22,6 +23,8 @@ import { WorldStatsComponent } from './world-stats/world-stats.component';
   imports: [
     CityComponent,
     CityTagComponent,
+    ClanComponent,
+    ClanTagComponent,
     FamilyComponent,
     FamilyTagComponent,
     FavoriteComponent,
@@ -63,10 +66,10 @@ export class ChapterOverviewComponent {
     sessionStorage.setItem('chapter-overview.active-panel', next);
   }
 
-  // Type guard over the persisted panel name — a stale or hand-edited value falls through to the default rather than selecting nothing.
+  // Type guard on the persisted panel name — a `Record`, not a list, so a panel added to the union but forgotten here breaks the build instead of failing silently.
   private _isPanel(v: string | null): v is ChapterOverviewPanel {
-    const panels: string[] = ['city', 'favorite', 'kingdom', 'world-stats'];
-    return panels.includes(v ?? '');
+    const panels: Record<ChapterOverviewPanel, true> = { city: true, clan: true, family: true, favorite: true, kingdom: true, 'world-stats': true };
+    return Object.keys(panels).includes(v ?? '');
   }
 
   // Read the stored panel and fall back to `world-stats` when nothing valid is found.

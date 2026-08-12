@@ -1,31 +1,226 @@
 {
-  "antimatter_blood": { "stats": { "damage": 1 } },
-  "best_five": { "stats": {} },
-  "blood_of_eons": { "stats": { "lifespan": 1000000000 } },
-  "blood_of_giants": { "stats": { "scale": 0.05 } },
-  "blood_of_sea": { "stats": { "stamina": 20 } },
-  "blood_pact": { "stats": { "warfare": 1 } },
-  "bonebreakers": { "stats": { "damage": 5 } },
-  "combat_instincts": { "stats": { "warfare": 10 } },
-  "cursed_blood": { "stats": { "lifespan": -666 } },
-  "deathbound": { "stats": { "warfare": 5 } },
-  "divine_dozen": { "stats": {} },
-  "endurance_of_titans": { "stats": { "multiplier_stamina": 3 } },
-  "flesh_weavers": { "stats": { "multiplier_health": 0.2 } },
-  "gaia_blood": { "stats": { "multiplier_health": 0.05 } },
-  "gaia_shield": { "stats": { "armor": 10, "multiplier_health": 0.1 } },
-  "geb": { "stats": {} },
-  "gods_chosen": { "stats": { "armor": 20, "diplomacy": 5, "stewardship": 10 } },
-  "grin_mark": { "stats": {} },
-  "iron_will": { "stats": { "intelligence": 5 } },
-  "magic_blood": { "stats": { "multiplier_mana": 3 } },
-  "mark_of_becoming": { "stats": {} },
-  "masters_of_propaganda": { "stats": { "loyalty_traits": 20 } },
-  "nitroglycerin_blood": { "stats": { "health": -1 } },
-  "silver_tongues": { "stats": { "diplomacy": 5, "opinion": 20 } },
-  "stonefists": { "stats": { "damage": 30 } },
-  "void_ban": { "stats": { "multiplier_mana": -10 } },
-  "warlocks_vein": { "stats": {} },
-  "we_are_legion": { "stats": {} },
-  "witchs_vein": { "stats": {} }
+  "antimatter_blood": {
+    "description": "Death triggers devastating explosion",
+    "flavor": "They close their eyes, and everything turns to nothing",
+    "group": "chaos",
+    "name": "Antimatter Blood",
+    "rarity": "Legendary",
+    "stats": { "damage": 1 }
+  },
+  "best_five": {
+    "description": "Only five members can exist in the clan",
+    "flavor": "Five perfect pieces of a broken whole",
+    "group": "harmony",
+    "name": "Best Five",
+    "rarity": "Rare"
+  },
+  "blood_of_eons": {
+    "description": "Their lifespan extends beyond billions of years",
+    "flavor": "Time forgets to claim them",
+    "group": "body",
+    "name": "Blood of Eons",
+    "rarity": "Rare",
+    "stats": { "lifespan": 1000000000 }
+  },
+  "blood_of_giants": {
+    "description": "Members grow to massive size",
+    "flavor": "Why fight giants when you can be one?",
+    "group": "body",
+    "name": "Blood of Giants",
+    "rarity": "Rare",
+    "stats": { "scale": 0.05 }
+  },
+  "blood_of_sea": {
+    "description": "They glide through water faster than most, and never tire",
+    "flavor": "They swim so well, it's almost suspicious",
+    "group": "body",
+    "name": "Blood of Sea",
+    "rarity": "Rare",
+    "stats": { "stamina": 20 }
+  },
+  "blood_pact": {
+    "description": "Betraying the chief means permanent exile",
+    "flavor": "Choose loyalty or choose loneliness",
+    "group": "spirit",
+    "name": "Blood Pact",
+    "rarity": "Rare",
+    "stats": { "warfare": 1 }
+  },
+  "bonebreakers": {
+    "description": "Their strikes often cripple opponents",
+    "flavor": "Each swing is a promise: something will break!",
+    "group": "body",
+    "name": "Bonebreakers",
+    "rarity": "Legendary",
+    "stats": { "damage": 5 }
+  },
+  "combat_instincts": {
+    "description": "Endowed with an innate mastery of combat",
+    "flavor": "For them, war is as natural as breathing",
+    "group": "mind",
+    "name": "Combat Instincts",
+    "rarity": "Legendary",
+    "stats": { "warfare": 10 }
+  },
+  "cursed_blood": {
+    "description": "Their cursed lineage means a short and tragic life",
+    "flavor": "Doom claims its children early",
+    "group": "chaos",
+    "name": "Cursed Blood",
+    "rarity": "Legendary",
+    "stats": { "lifespan": -666 }
+  },
+  "deathbound": {
+    "description": "Betraying the chief brings instant death",
+    "flavor": "Loyalty or death. There's no third option",
+    "group": "spirit",
+    "name": "Deathbound",
+    "rarity": "Rare",
+    "stats": { "warfare": 5 }
+  },
+  "divine_dozen": {
+    "description": "Clan limited to twelve chosen members",
+    "flavor": "Sacred circle stays small",
+    "group": "harmony",
+    "name": "The Divine Dozen",
+    "rarity": "Rare"
+  },
+  "endurance_of_titans": {
+    "description": "Members possess supernatural stamina",
+    "flavor": "Even the winds grow tired of testing them",
+    "group": "body",
+    "name": "Endurance of Titans",
+    "rarity": "Rare",
+    "stats": { "multiplier_stamina": 3 }
+  },
+  "flesh_weavers": {
+    "description": "Their bodies heal with unnatural speed",
+    "flavor": "Wounds are just minor inconveniences to them",
+    "group": "body",
+    "name": "Flesh Weavers",
+    "rarity": "Rare",
+    "stats": { "multiplier_health": 0.2 }
+  },
+  "gaia_blood": {
+    "description": "Spawns life-seeding clouds on death",
+    "flavor": "Even in death, they sow the future",
+    "group": "spirit",
+    "name": "Gaia Blood",
+    "rarity": "Legendary",
+    "stats": { "multiplier_health": 0.05 }
+  },
+  "gaia_shield": {
+    "description": "Nature's forces cannot harm them",
+    "flavor": "Earth protects its children",
+    "group": "body",
+    "name": "Gaia's Shield",
+    "rarity": "Rare",
+    "stats": { "armor": 10, "multiplier_health": 0.1 }
+  },
+  "geb": {
+    "description": "Genetically Engineered Blood",
+    "flavor": "Cursed? Blessed? Either way, their bloodline is... different",
+    "group": "special",
+    "name": "GEB",
+    "rarity": "Rare"
+  },
+  "gods_chosen": {
+    "description": "Blessed with divine favor, improving their abilities",
+    "flavor": "Chosen for greatness... or perhaps a divine experiment?",
+    "group": "spirit",
+    "name": "Children of the Divine",
+    "rarity": "Rare",
+    "stats": { "armor": 20, "diplomacy": 5, "stewardship": 10 }
+  },
+  "grin_mark": {
+    "description": "Marked for death by the Grin Reaper. Their end is near",
+    "flavor": "They laugh because it's already too late not to",
+    "group": "fate",
+    "name": "Grin Mark",
+    "rarity": "Legendary"
+  },
+  "iron_will": {
+    "description": "Immune to mind-affecting effects",
+    "flavor": "Their minds are tombs where fear is buried",
+    "group": "mind",
+    "name": "Iron Will",
+    "rarity": "Rare",
+    "stats": { "intelligence": 5 }
+  },
+  "magic_blood": {
+    "description": "Born with vastly enhanced magical potential",
+    "flavor": "A drop of their blood could light up the darkest night",
+    "group": "spirit",
+    "name": "Magic Blood",
+    "rarity": "Legendary",
+    "stats": { "multiplier_mana": 3 }
+  },
+  "mark_of_becoming": {
+    "description": "Physical form changes as proof of evolution",
+    "flavor": "Evolution burns old bridges",
+    "group": "special",
+    "name": "Mark of Becoming",
+    "rarity": "Rare"
+  },
+  "masters_of_propaganda": {
+    "description": "Extremely skilled at spreading influence",
+    "flavor": "They don't need facts. They create their own reality",
+    "group": "mind",
+    "name": "Masters of Propaganda",
+    "rarity": "Rare",
+    "stats": { "loyalty_traits": 20 }
+  },
+  "nitroglycerin_blood": {
+    "description": "Blood explodes when spilled",
+    "flavor": "Their word is final and explosive",
+    "group": "chaos",
+    "name": "Nitroglycerin Blood",
+    "rarity": "Legendary",
+    "stats": { "health": -1 }
+  },
+  "silver_tongues": {
+    "description": "They speak with charm and grace",
+    "flavor": "Their lies sound too good to resist",
+    "group": "mind",
+    "name": "Silver Tongues",
+    "rarity": "Rare",
+    "stats": { "diplomacy": 5, "opinion": 20 }
+  },
+  "stonefists": {
+    "description": "They hit harder than most",
+    "flavor": "Born to rule with a stone grip",
+    "group": "body",
+    "name": "Stonefists",
+    "rarity": "Rare",
+    "stats": { "damage": 30 }
+  },
+  "void_ban": {
+    "description": "Magic use is forbidden to clan members",
+    "flavor": "Forbidden fruits stay forbidden",
+    "group": "chaos",
+    "name": "Void Ban",
+    "rarity": "Rare",
+    "stats": { "multiplier_mana": -10 }
+  },
+  "warlocks_vein": {
+    "description": "Male members channel greater magical power",
+    "flavor": "Magic answers their call",
+    "group": "spirit",
+    "name": "Warlock's Vein",
+    "rarity": "Rare"
+  },
+  "we_are_legion": {
+    "description": "Clan thrives with massive numbers",
+    "flavor": "But who's actually in charge?",
+    "group": "harmony",
+    "name": "We are Legion",
+    "rarity": "Legendary"
+  },
+  "witchs_vein": {
+    "description": "Female members channel greater magical power",
+    "flavor": "Their blood sings sorcery",
+    "group": "spirit",
+    "name": "Witch's Vein",
+    "rarity": "Rare"
+  }
 }

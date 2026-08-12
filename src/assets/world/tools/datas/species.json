@@ -1,4 +1,5 @@
 {
+  "UFO": { "stats": { "armor": 5, "damage": 80, "health": 1000, "lifespan": 0, "mass": 5, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 20 } },
   "acid_blob": {
     "description": "A roiling mass of acidic slime",
     "name": "Blob d'acide",
@@ -2184,7 +2185,6 @@
       "targets": 1
     }
   },
-  "UFO": { "stats": { "armor": 5, "damage": 80, "health": 1000, "lifespan": 0, "mass": 5, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 20 } },
   "unicorn": {
     "description": "Magic included, sparkles optional",
     "name": "Licorne",

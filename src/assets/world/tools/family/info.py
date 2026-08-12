@@ -5,10 +5,12 @@
 
 import sys
 from collections import Counter
+from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
+from islands import compute_islands_cached
 from shared import (
     UNITS_PER_YEAR,
     competition_ranks,
@@ -46,7 +48,8 @@ def _build_members(members: list[dict], ctx: dict, save: dict) -> list[dict]:
                 "generation": int(actor.get("generation") or 1),
                 **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # `house/info.py <id>` — who shares a roof with whom
                 "id": actor["id"],
-                "name": actor.get("name") or f"#{actor['id']}",
+                "island_id": ctx["island_lookup"]().get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
+                "name": actor.get("name"),
                 "profession": resolve_profession(actor, save),
                 "sex": sex_label(actor),
             }
@@ -61,7 +64,7 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
     housed = sum(1 for a in members if a.get("homeBuildingID"))
 
     # WB stores the founding pair as loose name/id fields rather than refs; the second is absent wherever a lone settler started the line.
-    founders = [{"id": fid, "name": family.get(f"founder_actor_name_{n}") or f"#{fid}"} for n in (1, 2) if (fid := family.get(f"main_founder_id_{n}")) is not None]
+    founders = [{"id": fid, "name": family.get(f"founder_actor_name_{n}")} for n in (1, 2) if (fid := family.get(f"main_founder_id_{n}")) is not None]
 
     return {
         "age": int((ctx["world_time"] - float(family.get("created_time") or 0)) / UNITS_PER_YEAR),
@@ -93,17 +96,16 @@ def _housed_pct(family_id: int, tallies: dict) -> int:
 
 # The rank getters, shared by the section and by `competition_ranks`. Living counts come off the roster, lifetime counters off WB's own fields.
 def _rank_getters(tallies: dict, world_time: float) -> dict:
-    members_by_family, renown_by_family, houses_by_family = tallies["members"], tallies["renown"], tallies["houses"]
     return {
         "age": lambda f: int((world_time - float(f.get("created_time") or 0)) / UNITS_PER_YEAR),
         "births": lambda f: int(f.get("total_births") or 0),
         "deaths": lambda f: int(f.get("total_deaths") or 0),
         "housed_pct": lambda f: _housed_pct(f["id"], tallies),
-        "houses": lambda f: len(houses_by_family.get(f["id"], ())),
+        "houses": lambda f: len(tallies["houses"].get(f["id"], ())),
         "kills": lambda f: int(f.get("total_kills") or 0),
-        "members": lambda f: len(members_by_family.get(f["id"], ())),
+        "members": lambda f: len(tallies["members"].get(f["id"], ())),
         "money": lambda f: tallies["money"][f["id"]],
-        "renown": lambda f: renown_by_family[f["id"]],
+        "renown": lambda f: tallies["renown"][f["id"]],
     }
 
 
@@ -142,18 +144,18 @@ def main(argv: list[str]) -> int:
         if home := actor.get("homeBuildingID"):
             tallies["houses"].setdefault(fid, set()).add(home)
             tallies["housed"][fid] += 1
-    members_by_family, renown_by_family = tallies["members"], tallies["renown"]
 
-    members = members_by_family.get(family_id, [])
+    members = tallies["members"].get(family_id, [])
     ctx = {
-        "actors_by_id": index_by_id(save.get("actors_data", [])),
-        "cities_by_id": index_by_id(save.get("cities", [])),
+        "actors_by_id": index_by_id(save.get("actors_data") or []),
+        "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": families_by_id,
-        "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
+        "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "languages_by_id": index_by_id(save.get("languages") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
-        "renown_by_family": renown_by_family,
+        "renown_by_family": tallies["renown"],
         "subspecies_by_id": index_by_id(save.get("subspecies") or []),
         "world_time": save["mapStats"]["world_time"],
     }

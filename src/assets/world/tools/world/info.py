@@ -17,7 +17,6 @@ from shared import (
     city_score_ranks,
     civic_building_ids,
     emit,
-    index_by_id,
     is_boat,
     kingdom_score_ranks,
     load_data,
@@ -109,18 +108,14 @@ _UNVEGETATED = {
 
 # 0-count entries (counters + per-cause deaths) are dropped — UI treats missing keys as 0. `or 0` also covers the few counters WB stores as null.
 def _build_cumulative(map_stats: dict) -> dict:
-    deaths = ((k, int(map_stats.get(src) or 0)) for k, src in _DEATH_CAUSES.items())
     out: dict = {k: v for k, src in _CUMULATIVE_COUNTERS.items() if (v := int(map_stats.get(src) or 0)) > 0}
-    out["deaths"] = dict(sorted((k, v) for k, v in deaths if v > 0))
+    out["deaths"] = dict(sorted((k, v) for k, src in _DEATH_CAUSES.items() if (v := int(map_stats.get(src) or 0)) > 0))
     return dict(sorted(out.items()))
 
 
 # Top entity per category (dominant village and realm by their composite scores, dominant culture/language/religion/subspecies, top renown) — WB's « Records ».
 def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
-    cities_by_id = index_by_id(save.get("cities") or [])
-    kingdoms_by_id = index_by_id(save.get("kingdoms") or [])
-    registries = {field: index_by_id(save.get(coll) or []) for field, coll in _DOMINANT.items()}
 
     # Single pass over actors feeds every leader: category counts, top-renown civilian, and family renown sums (all gated the same way, no need to re-scan).
     counts: dict[str, Counter] = {k: Counter() for k in (*_DOMINANT, "species")}
@@ -143,40 +138,40 @@ def _build_leaders(save: dict) -> dict:
 
     # The four dominant traits, emitted as `{id, name, value}` — the UI reads the rest (palette, banner, size, species) from the registries.
     out: dict[str, dict] = {}
-    for field, registry in registries.items():
+    for field, coll in _DOMINANT.items():
         if not counts[field]:
             continue
         top_id, value = counts[field].most_common(1)[0]
-        out[f"dominant_{field}"] = {"id": top_id, "name": (registry.get(top_id) or {}).get("name") or f"#{top_id}", "value": value}
+        out[f"dominant_{field}"] = {"id": top_id, "name": _name_of(save.get(coll) or [], top_id), "value": value}
 
     if scores := city_score_ranks(save):  # heaviest settlement by the composite score, not the most populous — size is only one of its ten dimensions
         top_cid = min(scores, key=lambda cid: scores[cid])
-        out["most_dominant_village"] = {"id": top_cid, "name": (cities_by_id.get(top_cid) or {}).get("name") or f"#{top_cid}"}
+        out["most_dominant_village"] = {"id": top_cid, "name": _name_of(save.get("cities") or [], top_cid)}
 
     if scores := kingdom_score_ranks(save):  # strongest realm by the composite power score, `{id, name}` only — its score is meaningless to the chronicler
         top_kid = min(scores, key=lambda kid: scores[kid])
-        out["most_powerful_kingdom"] = {"id": top_kid, "name": (kingdoms_by_id.get(top_kid) or {}).get("name") or f"#{top_kid}"}
+        out["most_powerful_kingdom"] = {"id": top_kid, "name": _name_of(save.get("kingdoms") or [], top_kid)}
 
     if counts["species"]:  # `asset_id` is the UI icon key; `name` is its French label (falls back to the asset_id).
         top_species, value = counts["species"].most_common(1)[0]
         out["dominant_species"] = {"asset_id": top_species, "name": (_SPECIES.get(top_species) or {}).get("name") or top_species, "value": value}
 
     if top_person is not None:  # Top-renown civilian — emitted as `{id, name}` (+ renown); the UI's `<app-person-tag>` reads its visuals from the person registry.
-        out["most_renowned_person"] = {"id": top_person.get("id"), "name": top_person.get("name") or f"#{top_person.get('id')}", "value": top_renown}
+        out["most_renowned_person"] = {"id": top_person.get("id"), "name": top_person.get("name"), "value": top_renown}
 
     clans = save.get("clans") or []
     if clans:
         top_clan = max(clans, key=lambda c: int(c.get("renown") or 0))
-        out["most_renowned_clan"] = {"id": top_clan.get("id"), "name": top_clan.get("name") or f"#{top_clan.get('id')}", "value": int(top_clan.get("renown") or 0)}
+        out["most_renowned_clan"] = {"id": top_clan.get("id"), "name": top_clan.get("name"), "value": int(top_clan.get("renown") or 0)}
 
     if family_renown:  # Families carry no native renown (unlike clans) — rank by their members' summed renown, tallied in the pass above.
         top_fid, value = family_renown.most_common(1)[0]
-        family = next((f for f in save.get("families") or [] if f.get("id") == top_fid), {})  # single lookup → no full index alloc
-        out["most_renowned_family"] = {"id": top_fid, "name": family.get("name") or f"#{top_fid}", "value": value}
+        out["most_renowned_family"] = {"id": top_fid, "name": _name_of(save.get("families") or [], top_fid), "value": value}
 
     return dict(sorted(out.items()))
 
 
+# WB's own clock and its age of the world; `months_until_next_age` is derived here because the save states progress as a ratio, never as a countdown.
 def _build_metadata(map_stats: dict) -> dict:
     age_duration = float(map_stats.get("current_world_ages_duration") or 0)
     age_progress = float(map_stats.get("current_age_progress") or 0)
@@ -227,6 +222,11 @@ def _build_snapshot(save: dict) -> dict:
             }.items()
         )
     )
+
+
+# The one name a leader needs, found by a scan: six of them each read a single row, where six `index_by_id` would allocate six dicts to serve six keys.
+def _name_of(records: list[dict], target_id) -> str | None:
+    return next((r.get("name") for r in records if r.get("id") == target_id), None)
 
 
 def main(argv: list[str]) -> int:

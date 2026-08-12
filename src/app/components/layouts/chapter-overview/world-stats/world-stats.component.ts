@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
-import { CUMULATIVE_STATS, DEATH_CAUSES, LEADERS, SNAPSHOT_STATS } from '../../../../constants';
+import { ANONYMOUS_NAME, CUMULATIVE_STATS, DEATH_CAUSES, LEADERS, SNAPSHOT_STATS } from '../../../../constants';
 import { LeaderRow } from '../../../../interfaces';
 import { CompactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
@@ -54,7 +54,8 @@ export class WorldStatsComponent {
       if (!entry) return [];
       const p = previous?.[key];
       const isNew = !!previous && !!p && (entry.id !== p.id);
-      return [{ data: { ...entry, isNew, key }, icon: icon ?? key, label }];
+      // Only `most_renowned_person` can reach here unnamed; the four other entity rows and the dominant traits always carry one.
+      return [{ data: { ...entry, isNew, key, name: entry.name ?? ANONYMOUS_NAME }, icon: icon ?? key, label }];
     });
   });
   // Per-snapshot-stat delta vs previous chapter — `null` when no previous chapter to compare.

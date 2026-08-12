@@ -16,9 +16,7 @@ export class ActorSpriteHelpers {
   private static readonly _sprites = new Map<string, Promise<HTMLCanvasElement | null>>();
 
   // The only one of the three drawn scaled — a body is 6-16px, well under the 22px cap `canvas.portrait` imposes.
-  public static async paint(canvas: HTMLCanvasElement, actor: PersonInfo): Promise<void> {
-    SpriteHelpers.blit(canvas, await this._compose(actor), this._scale);
-  }
+  public static paint = async (canvas: HTMLCanvasElement, actor: PersonInfo): Promise<void> => SpriteHelpers.blit(canvas, await this._compose(actor), this._scale);
 
   public static paintAll(root: ParentNode, persons: Record<string, PersonInfo | undefined>): void {
     SpriteHelpers.paintAll(root, 'person', persons, (canvas, actor) => this.paint(canvas, actor));

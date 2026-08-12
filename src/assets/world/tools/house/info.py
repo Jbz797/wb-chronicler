@@ -17,23 +17,27 @@ _ALL_SECTIONS = ("inventory", "metadata", "occupants")
 
 # The dwelling's identity card. `families` counts the lineages under the roof — a WorldBox house shelters whoever needs a bed, not one household.
 def _build_metadata(house: dict, residents: list[dict], ctx: dict) -> dict:
-    hx, hy = house.get("mainX"), house.get("mainY")
     city = ctx["cities_by_id"].get(house.get("cityID")) or {}
-    island_lookup = ctx["island_lookup"]()
+    hx, hy = house.get("mainX"), house.get("mainY")
+    island_id = zone = None
+
+    # WB writes both coordinates or neither, so one guard serves the pair — and a wall torn mid-tick, left unsited, never pays for the island map at all.
+    if hx is not None and hy is not None:
+        island_id = ctx["island_lookup"]().get((int(hx), int(hy)))
+        zone = {"x": hx // ZONE_TILES, "y": hy // ZONE_TILES}  # the `TileZone` it stands in, as cities claim them
 
     return {
         "age": int((ctx["world_time"] - float(house.get("created_time") or 0)) / UNITS_PER_YEAR),
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         "families": len({fid for a in residents if (fid := a.get("family"))}),
-        # WB writes `health` on a dwelling only once it has been hurt, so most carry no key at all — an absent one means intact, not unknown.
-        **({"health": int(health)} if (health := house.get("health")) is not None else {}),
-        "island_id": island_lookup.get((int(hx), int(hy))) if hx is not None and hy is not None else None,
+        "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
         "occupants": len(residents),
         "x": hx,
         "y": hy,
-        "zone": {"x": hx // ZONE_TILES, "y": hy // ZONE_TILES} if hx is not None and hy is not None else None,  # the `TileZone` it stands in, as cities claim them
+        "zone": zone,
+        **({"health": int(health)} if (health := house.get("health")) is not None else {}),  # WB writes `health` only when hurt — absent means intact, not unknown.
     }
 
 
@@ -46,7 +50,7 @@ def _build_occupants(residents: list[dict], ctx: dict, save: dict) -> list[dict]
                 "age": int((ctx["world_time"] - float(actor.get("created_time") or 0)) / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
                 "family": entity_ref(actor.get("family"), ctx["families_by_id"]),
                 "id": actor["id"],
-                "name": actor.get("name") or f"#{actor['id']}",
+                "name": actor.get("name"),
                 "profession": resolve_profession(actor, save),
                 "sex": sex_label(actor),
             }
@@ -77,10 +81,10 @@ def main(argv: list[str]) -> int:
 
     residents = [a for a in save.get("actors_data") or [] if a.get("homeBuildingID") == house_id]
     ctx = {
-        "cities_by_id": index_by_id(save.get("cities", [])),
+        "cities_by_id": index_by_id(save.get("cities") or []),
         "families_by_id": index_by_id(save.get("families") or []),
         "island_lookup": lambda: compute_islands_cached(save, save_path)[1],  # called not stored: a cold island map costs tens of ms, and only `metadata` needs it
-        "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
+        "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "world_time": save["mapStats"]["world_time"],
     }
 

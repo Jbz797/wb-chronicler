@@ -6,7 +6,7 @@ import { MarkdownComponent } from 'ngx-markdown';
 import { map } from 'rxjs';
 
 import { PAGES } from '../../constants';
-import { ActorSpriteHelpers, CitySpriteHelpers, KingdomSpriteHelpers } from '../../helpers';
+import { ActorSpriteHelpers, CitySpriteHelpers, ClanSpriteHelpers, KingdomSpriteHelpers } from '../../helpers';
 import { ChroniclerService, RegistryService } from '../../services';
 
 @Component({
@@ -50,6 +50,7 @@ export class ReaderPage {
     ActorSpriteHelpers.paintAll(root, this._registry.persons());
     CitySpriteHelpers.paintAll(root, this._registry.cities());
     KingdomSpriteHelpers.paintAll(root, this._registry.kingdoms());
+    ClanSpriteHelpers.paintAll(root, this._registry.clans());
   }
 
 }

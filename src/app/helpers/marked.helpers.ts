@@ -1,7 +1,7 @@
 import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
-import { CITY_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
+import { CITY_REGISTRY, CLAN_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
 import { PaletteHelpers } from './palette.helpers';
@@ -9,7 +9,9 @@ import { PaletteHelpers } from './palette.helpers';
 export class MarkedHelpers {
 
   // The four markers a registry resolves, hence an id that is a number — `[r]`/`[s]` name their asset instead.
-  private static readonly _numericIdMarkers = new Set<InlineMarker>([INLINE_MARKER.City, INLINE_MARKER.Family, INLINE_MARKER.Kingdom, INLINE_MARKER.Person]);
+  private static readonly _numericIdMarkers = new Set<InlineMarker>([
+    INLINE_MARKER.City, INLINE_MARKER.Clan, INLINE_MARKER.Family, INLINE_MARKER.Kingdom, INLINE_MARKER.Person,
+  ]);
 
   // Inline icon codes — each one a `[<letter> <id> <name>]` marker handled by its own renderer.
   public static configure(): void {
@@ -17,6 +19,7 @@ export class MarkedHelpers {
     marked.use({
       extensions: [
         this._extension(INLINE_MARKER.City, 'cities', false, this._renderCity), // `[c <id> <name>]` = city (glyph + name, in its kingdom's palette).
+        this._extension(INLINE_MARKER.Clan, 'clans', false, this._renderClan), // `[l <id> <name>]` = clan (name in its own hue + headcount).
         this._extension(INLINE_MARKER.Family, 'families', false, this._renderFamily), // `[f <id> <name>]` = family (WB's picture frame + name).
         this._extension(INLINE_MARKER.Kingdom, 'kingdoms', false, this._renderKingdom), // `[k <id> <name>]` = kingdom (colored name + banner icon).
         this._extension(INLINE_MARKER.Person, 'persons', false, this._renderPerson), // `[p <id> <name>]` = person (portrait + name + sex icon + charge).
@@ -77,6 +80,22 @@ export class MarkedHelpers {
     const style = `--tag-color: ${PaletteHelpers.realmText(info?.kingdom)}${ring ? `; --tag-ring: ${ring}` : ''}`; // omitted, never empty — empty kills the fallback
 
     return `<span class="ant-tag entity-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
+  }
+
+  // A clan plate: its own hue, name and living headcount. Sworn rather than granted, so it borrows no crown's palette and hangs no banner.
+  private static _renderClan(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = CLAN_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+
+    const banner = `<canvas class="banner" data-clan="${id}" height="0" width="0"></canvas>`; // `KingdomSpriteHelpers.paintAll` composes it once rendered
+
+    const dead = info?.dead ? ' dead' : ''; // clan disbanded since this chapter → drained + struck-through
+    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // living headcount, as the lineage plate badges its own
+    const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const label = `<span class="entity-name">${name}</span>`;
+
+    return `<span class="ant-tag entity-tag clan-tag${dead}" style="--tag-color: ${info?.color}">${banner}${label}${members}${species}</span>`;
   }
 
   // A lineage wears no crown's hue, so its tag is the frame alone on a plain ground — nothing to resolve but the sprite.

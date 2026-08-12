@@ -1,0 +1,11 @@
+<nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="title()">
+  @for (row of rows(); track row.group) {
+    <ng-template #groupTitle
+      ><span [class]="`group ${row.group}`">{{ row.label }}</span></ng-template
+    >
+    <nz-descriptions-item [nzTitle]="groupTitle">
+      {{ row.value }}
+      <app-delta [value]="row.delta" />
+    </nz-descriptions-item>
+  }
+</nz-descriptions>

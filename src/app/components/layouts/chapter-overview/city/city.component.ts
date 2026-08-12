@@ -29,10 +29,6 @@ export class CityComponent {
 
   protected readonly city = computed(() => this._chronicler.currentChapter()?.meta.city ?? null);
   protected readonly heirSex = computed(() => this._registry.persons()[String(this.city()?.metadata.heir?.id)]?.sex ?? '');
-  protected readonly inventoryEntries = computed(() => {
-    const inventory = this.city()?.inventory ?? {};
-    return Object.entries(inventory).map(([key, amount]) => ({ amount, key }));
-  });
   // NEW badge on the leader when the same featured city installed a different head since the previous chapter.
   protected readonly isNewLeader = computed(() => {
     const current = this.city()?.metadata;

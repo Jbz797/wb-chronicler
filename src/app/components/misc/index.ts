@@ -5,4 +5,5 @@ export * from './inventory/inventory.component';
 export * from './new-badge/new-badge.component';
 export * from './ranked-stat/ranked-stat.component';
 export * from './rarity-stats/rarity-stats.component';
+export * from './trait-groups/trait-groups.component';
 export * from './wealth/wealth.component';

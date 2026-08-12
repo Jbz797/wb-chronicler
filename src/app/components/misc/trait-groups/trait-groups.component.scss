@@ -1,0 +1,12 @@
+@use 'variables' as *;
+
+// `.body` `.chaos` `.fate` `.harmony` `.mind` `.special` `.spirit` — posted by name from TS, spelt out so a grep for one still lands here.
+:host {
+  @each $group,
+    $color in (body: $group-body, chaos: $group-chaos, fate: $group-fate, harmony: $group-harmony, mind: $group-mind, special: $group-special, spirit: $group-spirit)
+  {
+    .group.#{$group} {
+      color: $color;
+    }
+  }
+}

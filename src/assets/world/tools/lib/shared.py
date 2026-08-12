@@ -36,7 +36,7 @@ SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"}
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
-# Live game save by default; a trailing `C<n>` script arg (via `take_chapter`) overrides it to a chapter's archived `map.wbox`. `WB_SAVE` still forces a path.
+# The live save by default, `WB_SAVE` replacing that default; a `C<n>` token anywhere in argv beats both — `take_chapter` scans every position, not just the last.
 _CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
@@ -49,6 +49,7 @@ _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-h
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
+_VALUE_ORDERED = frozenset({"inventory"})  # the one shape whose key order carries meaning: a store reads heaviest-first, alphabetical would bury the granary
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 
@@ -95,9 +96,9 @@ def _family_leaders(actors: Sequence[dict], families_by_id: dict) -> dict:
     return dict(sorted(out.items()))
 
 
-# `{id, name}` off a record that carries its own name — a family or an actor, where the caller already holds the row and needs no index.
+# `{id, name}` off a record carrying its own name — a family or an actor the caller already holds. `emit` drops `name` where WB wrote none, leaving `{id}` alone.
 def _leader_ref(record: dict) -> dict:
-    return {"id": record["id"], "name": record.get("name") or f"#{record['id']}"}
+    return {"id": record["id"], "name": record.get("name")}
 
 
 # The standout souls, thirteen ways. `hungriest` skips the undead, who hold no nutrition to be low on; the four combat stats share one pass, that being the cost.
@@ -201,6 +202,19 @@ def books_held(save: dict) -> tuple[Counter, Counter, dict[int, int]]:
     return by_city, by_kingdom, city_of_book
 
 
+# Trait entries with their stats + whichever narrative fields the library carries — `rarity` on a creature's, `group` on a clan's, neither on both. Sorted by id.
+def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
+    out = []
+    for tid in trait_ids or []:
+        entry = traits_data.get(tid) or {}
+        item: dict = {"id": tid, "stats": entry.get("stats") or {}}
+        for key in ("description", "flavor", "group", "rarity"):
+            if key in entry:
+                item[key] = entry[key]
+        out.append(dict(sorted(item.items())))
+    return sorted(out, key=lambda t: t["id"])
+
+
 # Living children per parent, counted off `parent_id_1`/`parent_id_2`. World-wide on purpose — a parent's brood is theirs wherever it settled.
 def children_by_id(save: dict) -> Counter:
     tally: Counter = Counter()
@@ -231,6 +245,7 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
             money[cid] += coins
         if actor.get("profession") == PROFESSION_WARRIOR:
             warriors[cid] += 1
+
     buildings: Counter = Counter()  # civic only — `save.buildings` is mostly flora and ore, which would drown the tally
     gold: Counter = Counter()
 
@@ -301,10 +316,10 @@ def emit(out: dict) -> None:
     print(render(_strip_none(out)))
 
 
-# `{id, name}` ref or `None` — the name feeds the narration, the id a follow-up script query. One shape for every kingdom/city/alliance ref across the outputs.
+# `{id, name}` ref or `None` — the name feeds the narration, the id a follow-up query; an unnamed entity keeps the id and loses the key, having nothing to quote.
 def entity_ref(entity_id: int | None, by_id: dict) -> dict | None:
     entity = by_id.get(entity_id) if entity_id is not None else None
-    return None if entity is None else {"id": entity_id, "name": entity.get("name") or f"#{entity_id}"}
+    return None if entity is None else {"id": entity_id, "name": entity.get("name")}
 
 
 # One equipped-or-racked item as both tiers report it: provenance (`by`/`from`), wear, kills, and its stats already folded with the modifiers' bonuses.
@@ -382,6 +397,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
             equipment[kid] += sum(len((city.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values())
             territory[kid] += len(city.get("zones") or [])
             warriors[kid] += warriors_by_city[city["id"]]
+
     gold: Counter = Counter()  # gold ore stockpiled in a kingdom's buildings; each building carries its `cityID`, so no spatial lookup
 
     for building in save.get("buildings") or []:  # `resources` first: by far the rarest of the three tests, so it spares the city lookup on 99 % of the walk
@@ -389,6 +405,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
             for resource in stock.get("saved_resources") or []:
                 if resource.get("id") == "gold":
                     gold[kid] += resource.get("amount", 0)
+
     wars_won: Counter = Counter()
 
     for war in save.get("wars") or []:
@@ -498,7 +515,7 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     species_names = load_data("species.json")
 
     def top3(counter: Counter, names: dict) -> list[dict]:
-        return [{"name": (names.get(k) or {}).get("name") or f"#{k}", "pct": pct} for k, n in counter.most_common(3) if pop and (pct := round(n / pop * 100)) > 0]
+        return [{"name": (names.get(k) or {}).get("name"), "pct": pct} for k, n in counter.most_common(3) if pop and (pct := round(n / pop * 100)) > 0]
 
     return {
         "cultures": top3(cultures, ctx["cultures_by_id"]),
@@ -514,15 +531,16 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
 
 
 # `json.dumps(indent=2)` that inlines whatever fits `_INLINE_WIDTH`. `used` = what the caller already spent (key + comma), so the test measures the real line.
-def render(value, indent: int = 0, used: int = 0) -> str:
+def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str:
     if not isinstance(value, (dict, list)) or not value:
         # A ratio that lands whole prints whole: `5.0` is noise the chronicler would have to read past, and no consumer distinguishes it from `5`.
         return json.dumps(int(value) if isinstance(value, float) and value.is_integer() else value, ensure_ascii=False)
     if isinstance(value, dict):
         parts = []
-        for k, v in value.items():
-            key = json.dumps(k)  # dumped once and reused for the width it costs — the naive form dumps every key twice
-            parts.append(f"{key}: {render(v, indent + 1, len(key) + 3)}")
+        record = all(isinstance(k, str) and k.isidentifier() for k in value)  # Records sort; late keys move nothing. Data-keyed maps and `_VALUE_ORDERED` apart.
+        for k, v in sorted(value.items()) if record and key not in _VALUE_ORDERED else value.items():
+            dumped = json.dumps(k)  # dumped once and reused for the width it costs — the naive form dumps every key twice
+            parts.append(f"{dumped}: {render(v, indent + 1, len(dumped) + 3, k)}")
         one, ends = "{ " + ", ".join(parts) + " }", "{}"
     else:
         parts = [render(v, indent + 1, 1) for v in value]
@@ -619,7 +637,8 @@ def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: fl
             return 1 if actor.get("sex") == 1 else 0
         return 0
 
-    return max(candidates, key=lambda a: (preferred_sex(a), score(a), -a.get("id", 0)))
+    # Twins share a `created_time` to the digit, so ties fall to the pool's order — `max` keeps the first, like WB's stable sort; callers must pass it save-ordered.
+    return max(candidates, key=lambda a: (preferred_sex(a), score(a)))
 
 
 # Pop a `C<n>` chapter token from argv → (that chapter's `map.wbox`, argv without it, chapter label). No token → the live save and `None`.

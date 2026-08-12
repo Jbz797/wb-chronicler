@@ -9,9 +9,7 @@ export class CitySpriteHelpers {
   private static readonly _crowns = new Map<string, Promise<HTMLCanvasElement | null>>();
 
   // Native size — 26×12 for a village, 26×14 for a seat, both already under the cap the tag's icons wear, so nothing is scaled.
-  public static async paint(canvas: HTMLCanvasElement, city: CityInfo): Promise<void> {
-    SpriteHelpers.blit(canvas, await this._compose(city));
-  }
+  public static paint = async (canvas: HTMLCanvasElement, city: CityInfo): Promise<void> => SpriteHelpers.blit(canvas, await this._compose(city));
 
   public static paintAll(root: ParentNode, cities: Record<string, CityInfo | undefined>): void {
     SpriteHelpers.paintAll(root, 'city', cities, (canvas, city) => this.paint(canvas, city));

@@ -1,0 +1,12 @@
+@if (clan(); as c) {
+  <nz-tag class="entity-tag clan-tag" [class.dead]="c.dead" [style.--tag-color]="c.color" [title]="name()">
+    <canvas #banner class="banner" height="0" width="0"></canvas>
+    <span class="entity-name">{{ name() }}</span>
+    @if (c.members; as members) {
+      <span class="tag-badge">{{ members }}</span>
+    }
+    @if (c.species; as sp) {
+      <img [src]="`assets/img/species/${sp}.png`" />
+    }
+  </nz-tag>
+}

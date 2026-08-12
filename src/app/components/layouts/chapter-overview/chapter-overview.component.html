@@ -31,6 +31,15 @@
       <app-family-tag [id]="f.metadata.id" [name]="f.metadata.name" />
     }
   </ng-template>
+  <ng-template #clanHeader>
+    <img class="panel-icon" src="assets/img/world/most_renowned_clan.png" />
+    <span>Clan</span>
+  </ng-template>
+  <ng-template #clanExtra>
+    @if (c.meta.clan; as clan) {
+      <app-clan-tag [id]="clan.metadata.id" [name]="clan.metadata.name" />
+    }
+  </ng-template>
   <ng-template #cityHeader>
     <img class="panel-icon" src="assets/img/world/village.png" />
     <span>{{ cityTerm() }}</span>
@@ -71,6 +80,15 @@
       (nzActiveChange)="onPanelToggle('family', $event)"
     >
       <app-family />
+    </nz-collapse-panel>
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'clan'"
+      [nzCollapsible]="collapsible(c.meta.clan)"
+      [nzExtra]="clanExtra"
+      [nzHeader]="clanHeader"
+      (nzActiveChange)="onPanelToggle('clan', $event)"
+    >
+      <app-clan />
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'city'"
