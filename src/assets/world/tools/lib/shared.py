@@ -49,7 +49,7 @@ _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-h
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
-_VALUE_ORDERED = frozenset({"inventory"})  # the one shape whose key order carries meaning: a store reads heaviest-first, alphabetical would bury the granary
+_VALUE_ORDERED = frozenset({"drivers", "inventory"})  # shapes whose key order carries meaning: a store and a loyalty ledger both read heaviest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 

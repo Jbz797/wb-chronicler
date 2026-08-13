@@ -77,12 +77,14 @@ export class RankedStatComponent {
 
     if (this.source() === 'clan') {
       const c = entity as NonNullable<ChapterMeta['clan']>;
+      if (this.stat() === 'members') return this._snap(c.members.total, c.ranks?.members); // its own block, like a city's population
       const key = this.stat() as keyof NonNullable<ChapterMeta['clan']>['metadata'] & keyof NonNullable<NonNullable<ChapterMeta['clan']>['ranks']>;
       return this._snap(c.metadata[key] ?? 0, c.ranks?.[key]); // WB omits a counter it never wrote, hence the `?? 0`
     }
 
     if (this.source() === 'family') {
       const f = entity as NonNullable<ChapterMeta['family']>;
+      if (this.stat() === 'members') return this._snap(f.members.total, f.ranks?.members); // its own block, like a city's population
       const key = this.stat() as keyof NonNullable<ChapterMeta['family']>['metadata'] & keyof NonNullable<NonNullable<ChapterMeta['family']>['ranks']>;
       return this._snap(f.metadata[key] ?? 0, f.ranks?.[key]); // WB omits a counter it never wrote, hence the `?? 0`
     }

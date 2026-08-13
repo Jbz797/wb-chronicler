@@ -42,8 +42,8 @@ def _build_identity(clan: dict, ctx: dict) -> dict:
     }
 
 
-# Everyone alive who wears the colours, eldest first — WB points the actor at its clan and never the reverse, so the roster is rebuilt by walking the actors.
-def _build_members(members: list[dict], ctx: dict, save: dict) -> list[dict]:
+# Everyone alive who wears the colours, eldest first — WB points the actor at its clan, never the reverse. `total` rides with the list it counts, not in `metadata`.
+def _build_members(members: list[dict], ctx: dict, save: dict) -> dict:
     out = [
         {
             "age": int((ctx["world_time"] - float(actor.get("created_time") or 0)) / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
@@ -57,14 +57,15 @@ def _build_members(members: list[dict], ctx: dict, save: dict) -> list[dict]:
         }
         for actor in members
     ]
-    return sorted(out, key=lambda m: (-m["age"], m["id"]))
+    return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
-# The clan's identity card: WB's own lifetime counters beside what only a walk over the living can tell — how many answer the call, and from where.
+# The clan's identity card: WB's own lifetime counters beside what only a walk over the living can tell — where they answer from, and what they carry.
 def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
     cities = {c for a in members if (c := a.get("cityID"))}
+    kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
     # Each cause WB bothered to write, its prefix stripped; a clan that never lost anyone to fire carries no key rather than a zero.
-    causes = {k[len(_DEATH_PREFIX) :]: v for k, v in sorted(clan.items()) if k.startswith(_DEATH_PREFIX) and v}
+    causes = {k[len(_DEATH_PREFIX) :]: v for k, v in clan.items() if k.startswith(_DEATH_PREFIX) and v}
 
     return {
         "age": int((ctx["world_time"] - float(clan.get("created_time") or 0)) / UNITS_PER_YEAR),
@@ -75,7 +76,7 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
         "founding_kingdom": entity_ref(clan.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
         "heir": _resolve_heir(clan, members, ctx),
         "id": clan["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
-        "members": len(members),
+        "kingdoms": len(kingdoms),  # crowns its members answer to — a clan is sworn, not granted, so it spans realms as freely as their towns
         "money": sum(int(a.get("money") or 0) for a in members),  # the purse the living carry between them — a clan owns nothing of its own, WB banks per actor
         "name": clan.get("name"),
         "past_chiefs": len(clan.get("past_chiefs") or []),  # the sitting chief included — WB appends him on accession

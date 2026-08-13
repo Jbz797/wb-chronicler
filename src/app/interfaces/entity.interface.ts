@@ -3,6 +3,9 @@
 // A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
 export interface EntityReference { id: number; name: string }
 
+// A clan's or lineage's living, counted where they are listed — the roster itself ships in the JSON for the chronicler and never reaches the UI.
+export interface MemberRoster { total: number }
+
 // A soul, not a place: 42 % of WB's actors go unnamed; `PersonTagComponent` prints `ANONYMOUS_NAME`.
 export interface PersonReference { id: number; name?: string }
 

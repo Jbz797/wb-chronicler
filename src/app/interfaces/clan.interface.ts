@@ -1,9 +1,10 @@
-import { PersonReference, PopulationBreakdown } from './entity.interface';
+import { MemberRoster, PersonReference, PopulationBreakdown } from './entity.interface';
 import { TraitGroupCounts } from './types';
 
 // The favourite's clan. Joined, not inherited — so unlike its `Family`, its members share colours rather than blood, and its `traits` are sworn to.
 export interface Clan {
   breakdown: PopulationBreakdown;
+  members: MemberRoster;
   metadata: ClanMetadata;
   ranks?: ClanRanks;
   traits: TraitGroupCounts;
@@ -20,7 +21,7 @@ interface ClanMetadata {
   heir?: PersonReference;
   id: number;
   kills?: number;
-  members: number;
+  kingdoms: number;
   money: number; // summed over the living, not a WB field — a clan has no purse of its own, its members do
   name: string;
   past_chiefs: number;

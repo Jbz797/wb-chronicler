@@ -1,5 +1,5 @@
 import { Clan } from './clan.interface';
-import { EntityReference, PersonReference, PopulationBreakdown } from './entity.interface';
+import { EntityReference, MemberRoster, PersonReference, PopulationBreakdown } from './entity.interface';
 import { RarityCounts } from './stats.interface';
 import { LeaderKind, LifeStage } from './types';
 
@@ -226,6 +226,7 @@ interface EquipmentStock { total: number }
 // The favourite's bloodline. A lineage, not a household — `houses` counts the roofs its members sleep under, rarely one. The roster stays chronicler-only.
 interface Family {
   breakdown: PopulationBreakdown;
+  members: MemberRoster;
   metadata: FamilyMetadata;
   ranks?: FamilyRanks;
 }
@@ -234,14 +235,12 @@ interface FamilyMetadata {
   age: number;
   alpha?: PersonReference;
   births?: number;
-  cities: number;
   deaths?: number;
   founders: PersonReference[];
   housed_pct: number;
   houses: number;
   id: number;
   kills?: number;
-  members: number;
   money: number;
   name: string;
   renown: number; // summed over the living, not a WB field — a lineage has no renown of its own, its members do
