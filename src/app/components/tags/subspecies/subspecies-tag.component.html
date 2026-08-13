@@ -1,0 +1,12 @@
+@if (subspecies(); as s) {
+  <nz-tag class="entity-tag subspecies-tag" [class.dead]="s.dead" [style.--tag-color]="s.color" [style.--tag-slab]="slab()" [title]="name()">
+    <canvas #bookmark class="bookmark" height="0" width="0"></canvas>
+    <span class="entity-name">{{ name() }}</span>
+    @if (s.members; as members) {
+      <span class="tag-badge">{{ members }}</span>
+    }
+    @if (s.species; as sp) {
+      <img [src]="`assets/img/species/${sp}.png`" />
+    }
+  </nz-tag>
+}

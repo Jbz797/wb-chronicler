@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Builds a chapter's `{cities,clans,families,kingdoms,persons}.json` registries under `saves/C<n>/` — the tag visuals (+ last-known names)
-# the UI and chronicler resolve `[c/f/k/l/p id]` tags from, crowns and banners composed on canvas. Carried forward from C<n-1> (dead kept), rebuilt whole.
+# Builds a chapter's `{cities,clans,families,kingdoms,persons,subspecies}.json` registries under `saves/C<n>/` — the tag visuals (+ last-known names)
+# the UI and chronicler resolve `[c/f/k/l/p/u id]` tags from, crowns and banners composed on canvas. Carried forward from C<n-1> (dead kept), rebuilt whole.
 # `ensure()` is what the bootstrap (`chapter/new.py`) calls; `registries.py C<n> [--force]` (re)builds one chapter standalone — a dev tool, not in `tools.md`.
 
 import json
@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
-_REGISTRIES = ("cities", "clans", "families", "kingdoms", "persons")
+_REGISTRIES = ("cities", "clans", "families", "kingdoms", "persons", "subspecies")
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
 
 
@@ -35,7 +35,7 @@ def _banner(record: dict, species: str | None) -> dict:
     }
 
 
-# The chapter's five registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
+# The chapter's six registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
 def _build_registries(save: dict, prev: dict) -> dict:
     actors = save.get("actors_data") or []
     cities = save.get("cities") or []
@@ -51,6 +51,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
     # Entries only need a headcount and the dominant species, so tally asset_ids straight away rather than keeping every member around.
     members_by_clan: Counter = Counter()  # WB points the actor at its clan, never the reverse — same walk as the lineages below
     members_by_family: Counter = Counter()  # WB points the actor at its lineage, never the reverse — the tally only exists once the roster is walked
+    members_by_subspecies: Counter = Counter()  # same walk again: WB points the actor at its biology and never the reverse
     species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
     species_by_kingdom: defaultdict[int, Counter] = defaultdict(Counter)
 
@@ -61,6 +62,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
             members_by_clan[cid] += 1
         if fid := a.get("family"):
             members_by_family[fid] += 1
+        if sid := a.get("subspecies"):
+            members_by_subspecies[sid] += 1
         actor_id, species = a["id"], a.get("asset_id")  # both read three times below
         if actor_id in king_ids:
             kings_by_id[actor_id] = a
@@ -86,6 +89,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
 
     clan_registry = {str(c["id"]): _clan_entry(c, members_by_clan.get(c["id"], 0)) for c in save.get("clans") or []}
     family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0)) for f in save.get("families") or []}
+    subspecies_registry = {str(s["id"]): _subspecies_entry(s, members_by_subspecies.get(s["id"], 0)) for s in save.get("subspecies") or []}
 
     out = {
         "cities": _merge(prev.get("cities") or {}, city_registry),
@@ -93,6 +97,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
         "families": _merge(prev.get("families") or {}, family_registry),
         "kingdoms": _merge(prev.get("kingdoms") or {}, kingdom_registry),
         "persons": _merge(prev.get("persons") or {}, persons),
+        "subspecies": _merge(prev.get("subspecies") or {}, subspecies_registry),
     }
 
     for record in (*cities, *kingdoms):  # dead founder never seen alive → only its founding species survives, on the record
@@ -104,16 +109,16 @@ def _build_registries(save: dict, prev: dict) -> dict:
     return out
 
 
-# City registry entry — what a `[c id Nom]` tag draws, plus the last-known name. Every hue it wears is its crown's, so `kingdom` stands in for all of them.
+# City registry entry — what a `[c id Nom]` tag draws, plus the last-known name. `kingdom` stands in for the name's hue, all it still borrows from its crown.
 def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | None) -> dict:
     dominant = species.most_common(1)
     kingdom = kingdom or {}
     entry = {
-        "crown": "capital" if kingdom.get("capitalID") == city.get("id") else "city",  # gold crown for the seat, stone rampart for the rest
+        "plate": "capital" if kingdom.get("capitalID") == city.get("id") else "city",  # WB's nameplates: gold studs mark a seat, bare stone the rest
         "name": city.get("name"),
         "species": dominant[0][0] if dominant else None,
     }
-    if kingdom_id := kingdom.get("id"):  # its crown — the UI reads the name hue, the crown's ramp and the ring off it, and fallen realms stay registered
+    if kingdom_id := kingdom.get("id"):  # its crown, which the name's hue is read off — fallen realms stay registered so a razed city keeps its colour
         entry["kingdom"] = kingdom_id
     if rank is not None:
         entry["rank"] = rank
@@ -245,6 +250,22 @@ def _special_head(actor: dict, profession: str | None, carried: list[str]) -> st
     if profession == "king":
         return "head_king"
     return "head_old" if "wise" in (actor.get("saved_traits") or []) else None
+
+
+# Subspecies registry entry — the stone slab it is written on, the two bookmark hues WB dyes over it, the species pip and the last-known name.
+def _subspecies_entry(subspecies: dict, members: int) -> dict:
+    palette = _palette(subspecies.get("color_id", ""))
+    entry = {
+        "banner_bg": subspecies.get("banner_background_id") or 0,  # WB `SubspeciesBannerLibrary`: twelve slabs of its own, not the 272 a crown draws from.
+        "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
+        "color_main": palette.get("color_main"),  # `getColorMain`, dyeing the inner bookmark
+        "color_main_2": palette.get("color_main_2"),  # `getColorMainSecond`, dyeing the outer one
+        "name": subspecies.get("name"),
+        "species": subspecies.get("species_id"),  # the stock WB mutated it out of — the pip right of the name
+    }
+    if members:  # dropped once the last bearer dies, as the lineage badge drops with its last member
+        entry["members"] = members
+    return {k: v for k, v in entry.items() if v is not None}
 
 
 # Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.

@@ -3,17 +3,18 @@ import { Component, computed, inject, input } from '@angular/core';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { ChroniclerService } from '../../../services';
+import { SubspeciesTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-breakdown',
-  imports: [NzDescriptionsModule],
+  imports: [NzDescriptionsModule, SubspeciesTagComponent],
   templateUrl: './breakdown.component.html',
 })
 export class BreakdownComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
 
-  public readonly source = input.required<'city' | 'clan' | 'family' | 'kingdom'>();
+  public readonly source = input.required<'city' | 'clan' | 'family' | 'kingdom' | 'subspecies'>();
 
   protected readonly breakdown = computed(() => this._chronicler.currentChapter()?.meta[this.source()]?.breakdown ?? null);
   // The most-represented entry of each dimension — the table shows the leader, the chronicler keeps the full top-3. `null` for a dimension with no data.
@@ -24,7 +25,7 @@ export class BreakdownComponent {
       language: b?.languages?.[0] ?? null,
       religion: b?.religions?.[0] ?? null,
       species: b?.species?.[0] ?? null, // a lineage carries none — it would only restate the species its `identity` already stamps
-      subspecies: b?.subspecies[0] ?? null,
+      subspecies: b?.subspecies?.[0] ?? null,
     };
   });
 

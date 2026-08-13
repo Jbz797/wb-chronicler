@@ -20,7 +20,6 @@ export class KingdomTagComponent {
 
   protected readonly color = computed(() => PaletteHelpers.realmText(this.id()));
   protected readonly kingdom = computed(() => this._registry.kingdoms()[String(this.id())] ?? null); // palette, heraldry and species, `null` until registered
-  protected readonly ring = computed(() => PaletteHelpers.realmRing(this.id()));
 
   private readonly _banner = viewChild<ElementRef<HTMLCanvasElement>>('banner'); // absent until `@if (kingdom())` has drawn the plate
 

@@ -1,37 +1,33 @@
 @let r = row();
-@switch (r.key) {
-  @case ('most_dominant_village') {
-    @if (r.id !== undefined) {
+@if (r.id === undefined) {
+  <!-- The dimensions no registry resolves: the species carries its icon, the rest are a name and nothing else. -->
+  @if (r.asset_id) {
+    <img class="species-icon" [src]="`assets/img/species/${r.asset_id}.png`" />
+  }
+  {{ r.name }}
+} @else {
+  @switch (r.key) {
+    @case ('dominant_subspecies') {
+      <app-subspecies-tag [id]="r.id" [name]="r.name" />
+    }
+    @case ('most_dominant_village') {
       <app-city-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
-  }
-  @case ('most_powerful_kingdom') {
-    @if (r.id !== undefined) {
+    @case ('most_powerful_kingdom') {
       <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
-  }
-  @case ('most_renowned_clan') {
-    @if (r.id !== undefined) {
+    @case ('most_renowned_clan') {
       <app-clan-tag [id]="r.id" [name]="r.name" />
     }
-  }
-  @case ('most_renowned_family') {
-    @if (r.id !== undefined) {
+    @case ('most_renowned_family') {
       <app-family-tag [id]="r.id" [name]="r.name" />
     }
-  }
-  @case ('most_renowned_person') {
-    @if (r.id !== undefined) {
+    @case ('most_renowned_person') {
       <app-person-tag [id]="r.id" [name]="r.name" />
     }
-  }
-  @case ('dominant_species') {
-    @if (r.asset_id) {
-      <img class="species-icon" [src]="`assets/img/species/${r.asset_id}.png`" /> {{ r.name }}
+    @default {
+      {{ r.name }}
     }
-  }
-  @default {
-    {{ r.name }}
   }
 }
 @if (r.isNew) {

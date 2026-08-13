@@ -40,6 +40,15 @@
       <app-clan-tag [id]="clan.metadata.id" [name]="clan.metadata.name" />
     }
   </ng-template>
+  <ng-template #subspeciesHeader>
+    <img class="panel-icon" src="assets/img/world/subspecies.png" />
+    <span>S. espèce</span>
+  </ng-template>
+  <ng-template #subspeciesExtra>
+    @if (c.meta.subspecies; as subspecies) {
+      <app-subspecies-tag [id]="subspecies.metadata.id" [name]="subspecies.metadata.name" />
+    }
+  </ng-template>
   <ng-template #cityHeader>
     <img class="panel-icon" src="assets/img/world/village.png" />
     <span>{{ cityTerm() }}</span>
@@ -89,6 +98,15 @@
       (nzActiveChange)="onPanelToggle('clan', $event)"
     >
       <app-clan />
+    </nz-collapse-panel>
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'subspecies'"
+      [nzCollapsible]="collapsible(c.meta.subspecies)"
+      [nzExtra]="subspeciesExtra"
+      [nzHeader]="subspeciesHeader"
+      (nzActiveChange)="onPanelToggle('subspecies', $event)"
+    >
+      <app-subspecies />
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'city'"

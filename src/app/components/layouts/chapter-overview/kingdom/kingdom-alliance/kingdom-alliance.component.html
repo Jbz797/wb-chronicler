@@ -1,5 +1,5 @@
 @if (alliance(); as a) {
-  <nz-descriptions nzBordered nzSize="small" nzTitle="Alliance" [nzColumn]="1">
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="allianceTitle">
     <nz-descriptions-item [nzTitle]="nameTitle">{{ a.name }}</nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="alliesTitle">
       @for (ally of a.allies ?? []; track ally.id) {
@@ -20,7 +20,7 @@
       </nz-descriptions-item>
     }
     @if (tops().subspecies; as ss) {
-      <nz-descriptions-item [nzTitle]="subspeciesTitle">{{ ss.name }} — {{ ss.pct }}%</nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="subspeciesTitle"> <app-subspecies-tag [id]="ss.id" [name]="ss.name" /> — {{ ss.pct }}% </nz-descriptions-item>
     }
     @if (tops().culture; as c) {
       <nz-descriptions-item [nzTitle]="cultureTitle">{{ c.name }} — {{ c.pct }}%</nz-descriptions-item>
@@ -33,6 +33,7 @@
     }
   </nz-descriptions>
 
+  <ng-template #allianceTitle><span class="alliance-plate">Alliance</span></ng-template>
   <ng-template #alliesTitle><img src="assets/img/world/kingdoms.png" /><span>Alliés</span></ng-template>
   <ng-template #cultureTitle><img src="assets/img/world/cultures.png" /><span>Culture</span></ng-template>
   <ng-template #languageTitle><img src="assets/img/world/languages.png" /><span>Langage</span></ng-template>
@@ -41,5 +42,5 @@
   <ng-template #religionTitle><img src="assets/img/world/religions.png" /><span>Religion</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #speciesTitle><img src="assets/img/world/species.png" /><span>Espèce</span></ng-template>
-  <ng-template #subspeciesTitle><img src="assets/img/world/subspecies.png" /><span>Sous-espèce</span></ng-template>
+  <ng-template #subspeciesTitle><img src="assets/img/world/subspecies.png" /><span>S. espèce</span></ng-template>
 }

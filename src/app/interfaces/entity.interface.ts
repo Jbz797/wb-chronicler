@@ -3,17 +3,24 @@
 // A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
 export interface EntityReference { id: number; name: string }
 
-// A clan's or lineage's living, counted where they are listed — the roster itself ships in the JSON for the chronicler and never reaches the UI.
+// The living of a clan, a lineage or a biology, counted and nothing more — the roster stays behind in `<tier>/info.py <id> members`, where the chronicler reads it.
 export interface MemberRoster { total: number }
+
+// A clan, a lineage and a biology answer the same shape, served by one resolver — structural, since naming the three would reach back into `types.ts`.
+export interface PeopleTier {
+  members: MemberRoster;
+  metadata: object; // each tier's own shape; the resolver reads it by key, so it casts rather than narrowing
+  ranks?: { members?: number }; // `members` is the one the resolver names; the rest it reaches by key, through the same cast
+}
 
 // A soul, not a place: 42 % of WB's actors go unnamed; `PersonTagComponent` prints `ANONYMOUS_NAME`.
 export interface PersonReference { id: number; name?: string }
 
-// Top-3 shares of a civ population per dimension (% of the whole) — only `subspecies` is always there, the rest come and go with the tier.
+// Top-3 shares of a civ population per dimension (% of the whole). All optional: a tier drops the dimension it is defined by, which would read 100 %.
 export interface PopulationBreakdown {
   cultures?: { name: string; pct: number }[];
   languages?: { name: string; pct: number }[];
   religions?: { name: string; pct: number }[];
   species?: { asset_id: string; name: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
-  subspecies: { name: string; pct: number }[];
+  subspecies?: { id: number; name: string; pct: number }[]; // the one dimension carrying an id: it alone has a `[u]` tag to resolve against the registry
 }

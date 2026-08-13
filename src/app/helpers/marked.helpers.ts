@@ -1,16 +1,19 @@
 import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
-import { CITY_REGISTRY, CLAN_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS } from '../constants';
+import {
+  CITY_REGISTRY, CLAN_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS, SUBSPECIES_REGISTRY,
+} from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
 import { PaletteHelpers } from './palette.helpers';
+import { SubspeciesSpriteHelpers } from './sprites/subspecies-sprite.helpers';
 
 export class MarkedHelpers {
 
   // The four markers a registry resolves, hence an id that is a number — `[r]`/`[s]` name their asset instead.
   private static readonly _numericIdMarkers = new Set<InlineMarker>([
-    INLINE_MARKER.City, INLINE_MARKER.Clan, INLINE_MARKER.Family, INLINE_MARKER.Kingdom, INLINE_MARKER.Person,
+    INLINE_MARKER.City, INLINE_MARKER.Clan, INLINE_MARKER.Family, INLINE_MARKER.Kingdom, INLINE_MARKER.Person, INLINE_MARKER.Subspecies,
   ]);
 
   // Inline icon codes — each one a `[<letter> <id> <name>]` marker handled by its own renderer.
@@ -25,6 +28,7 @@ export class MarkedHelpers {
         this._extension(INLINE_MARKER.Person, 'persons', false, this._renderPerson), // `[p <id> <name>]` = person (portrait + name + sex icon + charge).
         this._extension(INLINE_MARKER.Resource, 'resources', true, this._renderResource), // `[r <id> <text>?]` = resource (icon + optional text, never colored).
         this._extension(INLINE_MARKER.Species, 'species', true, this._renderSpecies), // `[s <id> <text>?]` = species (icon + optional colored text).
+        this._extension(INLINE_MARKER.Subspecies, 'subspecies', false, this._renderSubspecies), // `[u <id> <name>]` = subspecies (name in its own hue + bearers).
       ],
     });
   }
@@ -64,22 +68,22 @@ export class MarkedHelpers {
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };
 
-  // A settlement plate: crown, name, podium medal, size medallion, species glyph — everything but the realm's banner, which keeps it lighter than its `[k]`.
+  // A settlement plate: WB's own slab as the ground, name, podium medal, size medallion, species glyph — the gold studs alone marking a seat.
   private static _renderCity(this: ParserThis, token: Tokens.Generic): string {
     const { id, tokens: children } = token as IconToken;
     const info = CITY_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
 
-    const crown = `<canvas class="crown" data-city="${id}" height="0" width="0"></canvas>`; // sized to nothing until `paintAll` finds it by that attribute
-
+    const isCapital = info?.plate === 'capital'; // the gold-studded slab, which is what tells a seat from the rest now that no crown does
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
     const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
-    const ring = PaletteHelpers.realmRing(info?.kingdom); // its crown's emblem tint, framing the plate as it frames that crown's own tag
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const style = `--tag-color: ${PaletteHelpers.realmText(info?.kingdom)}${ring ? `; --tag-ring: ${ring}` : ''}`; // omitted, never empty — empty kills the fallback
+    const style = `--tag-color: ${PaletteHelpers.realmText(info?.kingdom)}; --tag-plate: url('assets/img/nameplates/${isCapital ? 'capital' : 'city'}.png')`;
 
-    return `<span class="ant-tag entity-tag${dead}" style="${style}">${crown}<span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
+    const classes = `ant-tag entity-tag city-tag${isCapital ? ' capital' : ''}${dead}`;
+
+    return `<span class="${classes}" style="${style}"><span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
   }
 
   // A clan plate: its own hue, name and living headcount. Sworn rather than granted, so it borrows no crown's palette and hangs no banner.
@@ -128,11 +132,10 @@ export class MarkedHelpers {
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite power score, as the city's is
-    const ring = PaletteHelpers.realmRing(Number(id)); // the emblem tint framing the plate, as on its cities' own tags
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
-    const style = `--tag-color: ${PaletteHelpers.realmText(Number(id))}${ring ? `; --tag-ring: ${ring}` : ''}`;
+    const style = `--tag-color: ${PaletteHelpers.realmText(Number(id))}`; // the plate itself frames it now, where an emblem-tinted ring used to
 
-    return `<span class="ant-tag entity-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
+    return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
   }
 
   // A subject plate: the actor as WB draws them, name, sex, then their charge where the other plates put a species glyph — the portrait already shows it.
@@ -174,6 +177,23 @@ export class MarkedHelpers {
     const color = SPECIES_COLORS[id];
     const style = color ? ` style="color: ${color}"` : '';
     return `<span class="icon-wrap"${style}>${this.parser.parseInline(children)}${img}</span>`;
+  }
+
+  // A biology is written on stone: the plate takes the slab whole, hangs the dyed bookmark on it, and keeps its hue for the name, the bearers and the pip.
+  private static _renderSubspecies(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = SUBSPECIES_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+
+    const bookmark = `<canvas class="bookmark" data-subspecies="${id}" height="0" width="0"></canvas>`; // `SubspeciesSpriteHelpers.paintAll` dyes it once rendered
+
+    const dead = info?.dead ? ' dead' : ''; // biology extinct since this chapter → drained + struck-through
+    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // living bearers, as the clan plate badges its sworn
+    const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const label = `<span class="entity-name">${name}</span>`;
+
+    const style = `--tag-color: ${info?.color}; --tag-slab: ${SubspeciesSpriteHelpers.slab(info?.banner_bg)}`;
+    return `<span class="ant-tag entity-tag subspecies-tag${dead}" style="${style}">${bookmark}${label}${members}${species}</span>`;
   }
 
 }

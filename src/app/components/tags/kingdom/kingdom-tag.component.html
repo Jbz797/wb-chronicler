@@ -1,5 +1,5 @@
 @if (kingdom(); as k) {
-  <nz-tag class="entity-tag" [class.dead]="k.dead" [style.--tag-color]="color()" [style.--tag-ring]="ring()" [title]="name()">
+  <nz-tag class="entity-tag kingdom-tag" [class.dead]="k.dead" [style.--tag-color]="color()" [title]="name()">
     <canvas #banner class="banner" height="0" width="0"></canvas>
     <span class="entity-name">{{ name() }}</span>
     @if (medal() && k.rank; as r) {

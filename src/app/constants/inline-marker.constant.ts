@@ -7,4 +7,5 @@ export const INLINE_MARKER = {
   Person: 'p',
   Resource: 'r',
   Species: 's',
+  Subspecies: 'u', // `s` is the species', so a subspecies takes the letter of its own prefix — sUbspecies, as a cLan took its second
 } as const;

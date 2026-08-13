@@ -9,13 +9,14 @@ import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { CITY_SIZE_TERMS, HISTORY_DIR } from '../../../constants';
 import { ChapterOverviewPanel, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
-import { CityTagComponent, ClanTagComponent, FamilyTagComponent, KingdomTagComponent, PersonTagComponent } from '../../tags';
+import { CityTagComponent, ClanTagComponent, FamilyTagComponent, KingdomTagComponent, PersonTagComponent, SubspeciesTagComponent } from '../../tags';
 
 import { CityComponent } from './city/city.component';
 import { ClanComponent } from './clan/clan.component';
 import { FamilyComponent } from './family/family.component';
 import { FavoriteComponent } from './favorite/favorite.component';
 import { KingdomComponent } from './kingdom/kingdom.component';
+import { SubspeciesComponent } from './subspecies/subspecies.component';
 import { WorldStatsComponent } from './world-stats/world-stats.component';
 
 @Component({
@@ -34,6 +35,8 @@ import { WorldStatsComponent } from './world-stats/world-stats.component';
     NzDividerModule,
     NzEmptyModule,
     PersonTagComponent,
+    SubspeciesComponent,
+    SubspeciesTagComponent,
     WorldStatsComponent,
   ],
   templateUrl: './chapter-overview.component.html',
@@ -68,7 +71,9 @@ export class ChapterOverviewComponent {
 
   // Type guard on the persisted panel name — a `Record`, not a list, so a panel added to the union but forgotten here breaks the build instead of failing silently.
   private _isPanel(v: string | null): v is ChapterOverviewPanel {
-    const panels: Record<ChapterOverviewPanel, true> = { city: true, clan: true, family: true, favorite: true, kingdom: true, 'world-stats': true };
+    const panels: Record<ChapterOverviewPanel, true> = {
+      city: true, clan: true, family: true, favorite: true, kingdom: true, subspecies: true, 'world-stats': true,
+    };
     return Object.keys(panels).includes(v ?? '');
   }
 

@@ -211,7 +211,7 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
         for key in ("description", "flavor", "group", "rarity"):
             if key in entry:
                 item[key] = entry[key]
-        out.append(dict(sorted(item.items())))
+        out.append(item)  # keys left as inserted: `render` sorts every record-shaped dict on the way out, so ordering them here would be sorting twice
     return sorted(out, key=lambda t: t["id"])
 
 
@@ -514,8 +514,13 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     pop = len(actors)
     species_names = load_data("species.json")
 
-    def top3(counter: Counter, names: dict) -> list[dict]:
-        return [{"name": (names.get(k) or {}).get("name"), "pct": pct} for k, n in counter.most_common(3) if pop and (pct := round(n / pop * 100)) > 0]
+    # `identified` carries the key out as an `id`, which only the subspecies needs — it alone among the four has a tag to resolve and a script to query.
+    def top3(counter: Counter, names: dict, identified: bool = False) -> list[dict]:
+        return [
+            {**({"id": k} if identified else {}), "name": (names.get(k) or {}).get("name"), "pct": pct}
+            for k, n in counter.most_common(3)
+            if pop and (pct := round(n / pop * 100)) > 0
+        ]
 
     return {
         "cultures": top3(cultures, ctx["cultures_by_id"]),
@@ -526,7 +531,7 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
             for k, n in species.most_common(3)
             if pop and (pct := round(n / pop * 100)) > 0
         ],
-        "subspecies": top3(subspecies, ctx["subspecies_by_id"]),
+        "subspecies": top3(subspecies, ctx["subspecies_by_id"], identified=True),
     }
 
 

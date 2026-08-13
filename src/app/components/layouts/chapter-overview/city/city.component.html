@@ -93,7 +93,7 @@
 
   @if (c.army; as army) {
     <ng-template #armyTitle>
-      <span>{{ army.name }}</span>
+      <span class="army-plate">{{ army.name }}</span>
     </ng-template>
     <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="armyTitle">
       <nz-descriptions-item [nzTitle]="armyCaptainTitle">

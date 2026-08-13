@@ -3,3 +3,4 @@ export * from './clan/clan-tag.component';
 export * from './family/family-tag.component';
 export * from './kingdom/kingdom-tag.component';
 export * from './person/person-tag.component';
+export * from './subspecies/subspecies-tag.component';

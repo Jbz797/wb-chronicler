@@ -6,7 +6,7 @@
       </nz-descriptions-item>
     }
     @if (tops().subspecies; as ss) {
-      <nz-descriptions-item [nzTitle]="subspeciesTitle">{{ ss.name }} — {{ ss.pct }}%</nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="subspeciesTitle"> <app-subspecies-tag [id]="ss.id" [name]="ss.name" /> — {{ ss.pct }}% </nz-descriptions-item>
     }
     @if (tops().culture; as c) {
       <nz-descriptions-item [nzTitle]="cultureTitle">{{ c.name }} — {{ c.pct }}%</nz-descriptions-item>
@@ -23,5 +23,5 @@
   <ng-template #languageTitle><img src="assets/img/world/languages.png" /><span>Langage</span></ng-template>
   <ng-template #religionTitle><img src="assets/img/world/religions.png" /><span>Religion</span></ng-template>
   <ng-template #speciesTitle><img src="assets/img/world/species.png" /><span>Espèce</span></ng-template>
-  <ng-template #subspeciesTitle><img src="assets/img/world/subspecies.png" /><span>Sous-espèce</span></ng-template>
+  <ng-template #subspeciesTitle><img src="assets/img/world/subspecies.png" /><span>S. espèce</span></ng-template>
 }

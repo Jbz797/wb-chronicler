@@ -1,8 +1,8 @@
-// A settlement's tag visuals: `crown` names the sprite (`capital`/`city`), and `kingdom` fetches every hue it wears — name, medallion, crown ramp and ring alike.
+// A settlement's tag visuals: `plate` names WB's own nameplate (`capital`/`city`), which is what sets a seat apart, and `kingdom` fetches the name's hue.
 export interface CityInfo {
-  crown?: string;
   dead?: boolean;
   kingdom?: number;
+  plate?: string;
   rank?: number;
   size?: number;
   species?: string;
@@ -59,6 +59,18 @@ export interface PersonInfo {
   skin_id?: number;
   special_head?: string;
   weapon?: string;
+}
+
+// A biology's tag: the stone slab its name is written on, the two hues WB dyes its bookmark in, the species it was mutated out of, and its living bearers.
+export interface SubspeciesInfo {
+  banner_bg?: number;
+  color: string;
+  color_main?: string;
+  color_main_2?: string;
+  dead?: boolean;
+  members?: number;
+  name: string;
+  species?: string;
 }
 
 export interface WorldInfo { description: string; name: string }

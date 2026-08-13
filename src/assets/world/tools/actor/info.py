@@ -104,8 +104,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
         if parent := actor.get("parent_id_2"):
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
-    # `subspecies_base_cache`: heavy `compute_actor_stats` base computed once per subspecies, reused run-wide.
-    return {
+    return {  # `subspecies_base_cache`: the per-subspecies base of `compute_actor_stats`, computed once and reused run-wide — 2-8 % of a species-wide ranking.
         **build_actor_stats_context(save),
         "actors_by_asset": actors_by_asset,
         "actors_by_id": actors_by_id,
@@ -148,7 +147,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     ax, ay = actor.get("x"), actor.get("y")
     language = ctx["languages_by_id"].get(actor.get("language")) or {}
     profession = resolve_profession(actor, save)
-    sub = ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}
 
     # `canBreed`/`canMakeBabies` gates: alive, breeding age, not infertile, below offspring cap, fed. Transients (pregnancy, afterglow) aren't in the save.
     can_reproduce = (
@@ -184,7 +182,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "religion": (ctx["religions_by_id"].get(actor.get("religion")) or {}).get("name"),
         "roles": _compute_roles(actor, save),
         "sex": sex_label(actor),
-        "subspecies": sub.get("name") or actor.get("subspecies"),
+        "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
         "x": ax,
         "y": ay,

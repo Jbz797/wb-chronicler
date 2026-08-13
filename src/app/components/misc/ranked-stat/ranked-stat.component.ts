@@ -3,11 +3,13 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { CITY_META_STATS, KINGDOM_META_STATS, NON_COMPACT_STATS } from '../../../constants';
 import {
-  ChapterMeta, CityMetaStat, KingdomAlliance, KingdomMetaStat, PopulationStat, RankedStatKind, RankedStatSnapshot,
+  ChapterMeta, CityMetaStat, KingdomAlliance, KingdomMetaStat, PeopleTier, PopulationStat, RankedStatKind, RankedStatSnapshot, SpeciesStanding, SpeciesTotals,
 } from '../../../interfaces';
 import { CompactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
+
+const peopleSources = new Set(['clan', 'family', 'subspecies']); // the three tiers `_resolvePeople` serves, kept out of the if-chain to hold its complexity
 
 @Component({
   selector: 'app-ranked-stat',
@@ -24,7 +26,7 @@ export class RankedStatComponent {
   public readonly inverted = input<boolean>(false); // Flips the delta colour — for stats where a rise is bad (deaths).
   public readonly numberFormat = input<string>('1.0-0');
   public readonly showRank = input<boolean>(true);
-  public readonly source = input<'alliance' | 'city' | 'clan' | 'family' | 'favorite' | 'kingdom'>('favorite');
+  public readonly source = input<'alliance' | 'city' | 'clan' | 'family' | 'favorite' | 'kingdom' | 'species' | 'subspecies'>('favorite');
   public readonly stat = input.required<RankedStatKind>();
   public readonly suffix = input<string>('');
 
@@ -65,7 +67,7 @@ export class RankedStatComponent {
 
   // Branches on `source()` to pull value + rank from the favorite, the kingdom/city snapshot, or the alliance.
   private _resolve(
-    entity: KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['clan'] | ChapterMeta['family'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']>,
+    entity: KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding,
   ): RankedStatSnapshot {
     if (this.source() === 'alliance') {
       const a = entity as KingdomAlliance;
@@ -75,19 +77,14 @@ export class RankedStatComponent {
 
     if (this.source() === 'city') return this._resolveCity(entity as NonNullable<ChapterMeta['city']>);
 
-    if (this.source() === 'clan') {
-      const c = entity as NonNullable<ChapterMeta['clan']>;
-      if (this.stat() === 'members') return this._snap(c.members.total, c.ranks?.members); // its own block, like a city's population
-      const key = this.stat() as keyof NonNullable<ChapterMeta['clan']>['metadata'] & keyof NonNullable<NonNullable<ChapterMeta['clan']>['ranks']>;
-      return this._snap(c.metadata[key] ?? 0, c.ranks?.[key]); // WB omits a counter it never wrote, hence the `?? 0`
+    // The stock a biology sprang from, ranked among the world's species rather than among its biologies — same two dicts as a people tier, minus `members`.
+    if (this.source() === 'species') {
+      const stock = entity as SpeciesStanding;
+      const key = this.stat() as keyof SpeciesTotals;
+      return this._snap(stock.metadata[key], stock.ranks?.[key]); // every count is always written, unlike the score dimensions Python omits at 0
     }
 
-    if (this.source() === 'family') {
-      const f = entity as NonNullable<ChapterMeta['family']>;
-      if (this.stat() === 'members') return this._snap(f.members.total, f.ranks?.members); // its own block, like a city's population
-      const key = this.stat() as keyof NonNullable<ChapterMeta['family']>['metadata'] & keyof NonNullable<NonNullable<ChapterMeta['family']>['ranks']>;
-      return this._snap(f.metadata[key] ?? 0, f.ranks?.[key]); // WB omits a counter it never wrote, hence the `?? 0`
-    }
+    if (peopleSources.has(this.source())) return this._resolvePeople(entity as PeopleTier);
 
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
@@ -157,6 +154,14 @@ export class RankedStatComponent {
     return this._snap(f.stats.warfare, ranks.warfare);
   }
 
+  // The three tiers built alike — a clan, a lineage, a biology: every stat sits in `metadata` beside a podium of the same name, `members` alone owning its block.
+  private _resolvePeople(entity: PeopleTier): RankedStatSnapshot {
+    if (this.stat() === 'members') return this._snap(entity.members.total, entity.ranks?.members); // its own block, like a city's population
+    const metadata = entity.metadata as unknown as Record<string, number | undefined>;
+    const ranks = entity.ranks as Record<string, number | undefined> | undefined;
+    return this._snap(metadata[this.stat()] ?? 0, ranks?.[this.stat()]); // WB omits a counter it never wrote, hence the `?? 0`
+  }
+
   // Omits `rank` when undefined — required by `exactOptionalPropertyTypes`.
   private _snap(value: number, rank: number | undefined): RankedStatSnapshot {
     const out: RankedStatSnapshot = { value };
@@ -167,10 +172,11 @@ export class RankedStatComponent {
   // Picks the favorite, kingdom, city, or (nested) alliance block from a chapter's meta based on the configured source.
   private _sourceOf(
     meta: ChapterMeta | undefined,
-  ): KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['clan'] | ChapterMeta['family'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | null {
+  ): KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding | null {
     if (!meta) return null;
     if (this.source() === 'alliance') return meta.kingdom?.alliance ?? null;
-    return meta[this.source() as 'city' | 'clan' | 'family' | 'favorite' | 'kingdom'];
+    if (this.source() === 'species') return meta.subspecies?.identity.species ?? null; // nested one level down, where every other source sits at the root
+    return meta[this.source() as 'city' | 'clan' | 'family' | 'favorite' | 'kingdom' | 'subspecies'];
   }
 
 }

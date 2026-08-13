@@ -35,7 +35,7 @@ canvas {
     height: 20px;
     margin-right: 0;
     padding: 0 5px;
-    vertical-align: text-top; // On `baseline` an inline-flex takes its first child's, so a 22px banner would ride 4px above a 14px crown.
+    vertical-align: text-top; // On `baseline` an inline-flex takes its first child's, so a 22px banner would ride 8px above a 14px species pip.
 
     // Gone since this chapter — razed, fallen or died out. The tag drains to ash and the name is struck through, still named in history.
     &.dead {
@@ -80,13 +80,8 @@ canvas {
 
     // Taller than the tag and lifted so it overhangs the top edge — a flag planted through the plate, as in WB's kingdom list.
     .banner {
-      max-height: 22px;
+      max-height: 19px;
       top: -2px;
-    }
-
-    // Drawn 1:1 at its native 26×12-14, so nothing scales it — a pixel up from the flex centre is all it takes to sit on the name's line.
-    .crown {
-      top: -0.5px;
     }
 
     // ×3 so every body (6-16px) reaches the cap and overhangs like the banner; `width: auto` holds the aspect a lone `max-height` squashes.
@@ -105,10 +100,80 @@ canvas {
       padding: 0 2px; // Two pixels of air whatever the digit count — the old fixed 14.5px box left `18` touching both edges.
     }
 
-    // A clan's wreath is 26×37 where a realm's shield is 26×22, so it needs the extra height and a deeper lift to hang from the same line.
-    &.clan-tag .banner {
-      max-height: 25px;
-      top: -4px;
+    // WB's realm nameplate (`nameplate_kingdom`), 57×22, symmetric — one slice serves both ends: 20 for the art, 15 for the content, where the rubies clear.
+    &.kingdom-tag {
+      background-color: transparent;
+      border: 0 solid transparent;
+      border-image: url('/assets/img/nameplates/kingdom.png') 0 20 fill / 0 20px / 0 stretch;
+      border-width: 0 15px;
+      box-shadow: none;
+      padding: 0 7px; // on top of the rails, which reserve room for the rubies and none for the type
+
+      // Seated inside the hexagon rather than planted through it — the chevrons close over the plate's ends, so an overhang would break them.
+      .banner {
+        top: 0;
+      }
+    }
+
+    // WB's settlement nameplates (`nameplate_city` / `_capital`), 43 wide — gold studs mark a seat, bare stone a village. Sliced 3 ways, both ends whole.
+    &.city-tag {
+      background-color: transparent;
+      border: 0 solid transparent;
+      border-image: var(--tag-plate) 0 26 0 15 fill / 0 26px 0 15px / 0 stretch;
+
+      // Narrower than the image's rails: the 15 and 26 draw the edge and taper at 1:1 but also fence the content, and the slab runs to x=38 under the glyphs.
+      border-width: 0 8px 0 6px;
+      box-shadow: none;
+      padding: 0;
+
+      // The seat's slab is symmetric and 23 tall where the village's tapers to a point over its right 26 columns — hence a slice of its own.
+      &.capital {
+        border-image: var(--tag-plate) 0 14 0 14 fill / 0 14px 0 14px / 0 stretch;
+        border-width: 0 14px;
+      }
+
+      .tag-badge {
+        position: relative;
+        top: 0.5px;
+      }
+    }
+
+    // WB's clan nameplate (`nameplate_clan`), 47×22, rose vine and all — sliced 3 ways, the middle one plain column stretched, so no ornament repeats or smears.
+    &.clan-tag {
+      background-color: transparent;
+      border: 0 solid transparent;
+      border-image: url('/assets/img/nameplates/clan.png') 0 24 0 14 fill / 0 24px 0 14px / 0 stretch;
+
+      // Narrower than the image's rails: measured on the glyph band alone, the vine clears at 7px and its crossing at 18, so the name rides over the plate.
+      border-width: 0 18px 0 8px;
+      box-shadow: none;
+      padding: 0;
+
+      // Capped to the plate's body, not its full 21: a shield is a flat block, so an overhang reads as a misfit where a banner's reads as a flag planted through.
+      .banner {
+        margin-right: -0.5px; // against the 0.25rem every plate hands its parts: the shield reads as the name's own escutcheon, not as a neighbour
+        top: 0;
+      }
+    }
+
+    // A biology is written on stone, not hung from a crown: WB gives it one of twelve slabs, 9-sliced with its ragged corners at native scale, ground and all.
+    &.subspecies-tag {
+      background-color: transparent;
+      border: 5px solid transparent;
+      border-image: var(--tag-slab) 5 fill / 5px / 0 stretch;
+      color: $stone-ink;
+      padding: 0 2px;
+
+      // Native 7×9 and lifted to overhang the slab's top edge — a ribbon slipped into the stone, as WB hangs it.
+      .bookmark {
+        top: -3px;
+      }
+
+      // Inverted against the plate above: the slab is pale, so the disc takes the ink for ground and the biology's own hue for figure.
+      .tag-badge {
+        background-color: $stone-ink;
+        color: var(--tag-color);
+      }
     }
   }
 
@@ -155,14 +220,15 @@ canvas {
     }
   }
 
-  // One disc for the two that count people — a lineage's living, a clan's sworn; last on purpose, as it ties the pill above and only source order then wins.
+  // One disc for the three that count people — a lineage, a clan, a biology; last on purpose, as it ties the pill above and only source order then wins.
   &.clan-tag .tag-badge,
-  &.family-tag .tag-badge {
+  &.family-tag .tag-badge,
+  &.subspecies-tag .tag-badge {
     border-radius: 50%;
     font-size: 10px; // sized for two digits: at the plate's 12.5px a clan of 43 pressed both walls of the disc
     height: 14px;
-    min-width: 14px; // no padding, so two digits still fit and it stays a circle rather than stretching to a pill — neither roster reaches three
-    padding: 0;
+    min-width: 14px; // no padding: two digits hold the circle, and a biology in the hundreds simply stretches it to a stadium rather than clipping
+    padding: 0 0 0.5px;
   }
 }
 

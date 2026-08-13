@@ -1,6 +1,7 @@
 import { Clan } from './clan.interface';
 import { EntityReference, MemberRoster, PersonReference, PopulationBreakdown } from './entity.interface';
 import { RarityCounts } from './stats.interface';
+import { Subspecies } from './subspecies.interface';
 import { LeaderKind, LifeStage } from './types';
 
 // One chronicle chapter: a nav Page plus its parsed chapter.json `meta` and preview image.
@@ -14,6 +15,7 @@ export interface ChapterMeta {
   family: Family | null;
   favorite: Favorite | null;
   kingdom: Kingdom | null;
+  subspecies: Subspecies | null;
   tags: string[];
   world: World;
 }

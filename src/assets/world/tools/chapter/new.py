@@ -70,9 +70,8 @@ def _fold_clan_detail(clan: dict) -> None:
 
 # Folds the favorite's two heavy blocks: `creature_traits` becomes the rarity summary the panel renders, `equipment` goes — both stay whole in `actor/info.py`.
 def _fold_favorite_detail(favorite: dict) -> None:
-    counts = Counter(trait.get("rarity", "").lower() for trait in favorite.pop("creature_traits", []))
     favorite.pop("equipment", None)
-    favorite["traits"] = {rarity: counts.get(rarity, 0) for rarity in _RARITIES}
+    favorite["traits"] = _rarity_counts(favorite.pop("creature_traits", []))
 
 
 # Keeps `opinion.top_drivers` on the ally/enemy ties only — a summary earns its place where it drives events. The `relations` section still gives the full ledger.
@@ -80,6 +79,16 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
     for relation in kingdom.get("relations") or []:
         if relation.get("status") == "neutral":
             relation.get("opinion", {}).pop("top_drivers", None)
+
+
+# Drops any people tier's roster, keeping its `total` — no panel ever names a bearer, and `<tier>/info.py <id> members` still lists every soul.
+def _fold_members(entity: dict) -> None:
+    entity["members"] = {"total": (entity.get("members") or {}).get("total", 0)}
+
+
+# Birth traits fold like the favorite's, off the same library; the biology's own carry neither rarity nor group, and `metadata.traits` counts them.
+def _fold_subspecies_detail(subspecies: dict) -> None:
+    subspecies["birth_traits"] = _rarity_counts((subspecies.pop("traits", None) or {}).get("birth") or [])
 
 
 # Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
@@ -114,6 +123,12 @@ def _prior_context(n: int) -> tuple[set, dict | None, str | None]:
             favorite = data.get("favorite")
             age_id = ((data.get("world") or {}).get("metadata") or {}).get("age_id")
     return tags, favorite, age_id
+
+
+# Creature traits tallied by rarity, all four buckets present at 0 — the panel prints them side by side, and a missing key would blank a cell rather than zero it.
+def _rarity_counts(traits: list[dict]) -> dict:
+    counts = Counter(trait.get("rarity", "").lower() for trait in traits)
+    return {rarity: counts.get(rarity, 0) for rarity in _RARITIES}
 
 
 # Runs a sibling `info.py` → its parsed JSON stdout, `None` (stderr surfaced) on failure or empty output. `sys.executable` so a venv never forks children elsewhere.
@@ -178,16 +193,18 @@ def main(argv: list[str]) -> int:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    city = clan = family = kingdom = None
+    city = clan = family = kingdom = subspecies = None
     if favorite:
         meta = favorite.get("metadata") or {}
         cid, kid = (meta.get("city") or {}).get("id"), (meta.get("kingdom") or {}).get("id")
         clan_id, fid = (meta.get("clan") or {}).get("id"), (meta.get("family") or {}).get("id")
-        city, clan, family, kingdom = _run_together(
+        sub_id = (meta.get("subspecies") or {}).get("id")
+        city, clan, family, kingdom, subspecies = _run_together(
             (_run, "city/info.py", cid, "full", chapter) if cid else None,
             (_run, "clan/info.py", clan_id, "full", chapter) if clan_id else None,  # absent on most favorites — a clan is joined, not inherited
             (_run, "family/info.py", fid, "full", chapter) if fid else None,
             (_run, "kingdom/info.py", kid, "full", chapter) if kid else None,
+            (_run, "subspecies/info.py", sub_id, "full", chapter) if sub_id else None,
         )
         if city:
             _fold_city_detail(city)
@@ -195,6 +212,11 @@ def main(argv: list[str]) -> int:
             _fold_clan_detail(clan)
         if kingdom:
             _fold_kingdom_detail(kingdom)
+        if subspecies:
+            _fold_subspecies_detail(subspecies)
+        for tier in (clan, family, subspecies):  # the three tiers built alike, folded alike — a roster never travels, whichever of them carries it
+            if tier:
+                _fold_members(tier)
 
     age_id = live["mapStats"].get("world_age_id") or ""
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
@@ -218,6 +240,7 @@ def main(argv: list[str]) -> int:
         "family": family,
         "favorite": favorite,
         "kingdom": kingdom,
+        "subspecies": subspecies,
         "tags": tags,
         "title": "",
         "world": world,
@@ -229,7 +252,14 @@ def main(argv: list[str]) -> int:
     year = int(world_time / UNITS_PER_YEAR)
     counts = " · ".join(  # The chronicler's own order: the map first, then who fills it. Each name pairs with its label here rather than twice below.
         f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {label}"
-        for name, label in (("cities", "cités"), ("kingdoms", "royaumes"), ("clans", "clans"), ("families", "lignées"), ("persons", "personnes"))
+        for name, label in (
+            ("cities", "cités"),
+            ("kingdoms", "royaumes"),
+            ("clans", "clans"),
+            ("families", "lignées"),
+            ("subspecies", "sous-espèces"),
+            ("persons", "personnes"),
+        )
     )
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ {chapter} — an {year}, {age_label} (world_time {world_time})")

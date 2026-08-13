@@ -123,6 +123,28 @@
         nz-tag {
           padding-right: 4px;
         }
+
+        // WB's alliance nameplate (`nameplate_alliance`) — two chain links, all ornament and no field, so it carries the heading rather than sitting beside it.
+        .alliance-plate {
+          background: url('/assets/img/nameplates/alliance.png') center / 100% 100% no-repeat;
+          color: #fff; // 11.9:1 against the plate's mean `#303842` — the ceiling, contrast rising with luminance and nothing outshining white
+          image-rendering: pixelated; // the global rule reaches `img` and `canvas` only, and a scaled background smooths without it
+          padding: 0 1rem;
+          text-shadow: 0 1px 2px rgb(0 0 0 / 80%);
+        }
+
+        // Its army counterpart (`nameplate_army`) — a blade, so 3-sliced: pommel and bloodied tip at 1:1, only the plain columns of blade drawn out.
+        .army-plate {
+          border: 0 solid transparent;
+          border-image: url('/assets/img/nameplates/army.png') 0 19 0 17 fill / 0 19px 0 17px / 0 stretch;
+          border-width: 0 19px 0 17px;
+          color: #fff; // 11.3:1 against the blade's mean `#45382B`
+          image-rendering: pixelated; // the global rule reaches `img` and `canvas` only, and a scaled background smooths without it
+          line-height: 22px; // the sprite's own height, so the blade neither crops nor scales
+          margin-bottom: 0.35rem;
+          padding-left: 0.45rem; // clears the pommel's gem, which the border alone left the first glyph leaning against
+          text-shadow: 0 1px 2px rgb(0 0 0 / 80%);
+        }
       }
 
       .ant-descriptions-item-label {
@@ -183,7 +205,8 @@
       .ant-descriptions-item-content {
         padding: 6px 12px !important;
 
-        nz-tag {
+        // The plain badges a row hangs — a NEW, a role, a war type. The registry plates keep their own 12.5px, which this rule outranked on specificity alone.
+        nz-tag:not(.entity-tag, .family-tag) {
           font-size: 13px;
           margin-left: 4px;
           margin-right: 0;

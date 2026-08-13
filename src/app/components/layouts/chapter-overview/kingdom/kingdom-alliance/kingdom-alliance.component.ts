@@ -4,11 +4,11 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { ChroniclerService } from '../../../../../services';
 import { RankedStatComponent } from '../../../../misc';
-import { KingdomTagComponent } from '../../../../tags';
+import { KingdomTagComponent, SubspeciesTagComponent } from '../../../../tags';
 
 @Component({
   selector: 'app-kingdom-alliance',
-  imports: [KingdomTagComponent, NzDescriptionsModule, RankedStatComponent],
+  imports: [KingdomTagComponent, NzDescriptionsModule, RankedStatComponent, SubspeciesTagComponent],
   templateUrl: './kingdom-alliance.component.html',
 })
 export class KingdomAllianceComponent {
@@ -25,7 +25,7 @@ export class KingdomAllianceComponent {
       language: b?.languages?.[0] ?? null,
       religion: b?.religions?.[0] ?? null,
       species: b?.species?.[0] ?? null, // optional since a lineage carries none; an alliance always does
-      subspecies: b?.subspecies[0] ?? null,
+      subspecies: b?.subspecies?.[0] ?? null,
     };
   });
 

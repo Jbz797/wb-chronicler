@@ -2,12 +2,12 @@ import { ClanInfo } from '../../interfaces';
 
 import { SpriteHelpers } from './sprite.helpers';
 
-// A clan's heraldry: tinted field, emblem, untinted wreath over both — from its own sheets, indexed straight by the two ids where a crown keys them by species.
+// A clan's heraldry: tinted field with its emblem over it, indexed straight by the two ids — the wreath is dropped, the tag's nameplate already carries one.
 export class ClanSpriteHelpers {
 
   private static readonly _banners = new Map<string, Promise<HTMLCanvasElement | null>>();
-  // The wreath is 26×37 but the hollow it encloses spans y 14-32 — centring the field in the whole sprite would ride it 6px high and leave daylight underneath.
-  private static readonly _hollow = { bottom: 32, top: 14 };
+  // Where the field sits on that canvas — the same box on all 17, so cropping the composite to it yields the shield alone, emblem included.
+  private static readonly _field = { height: 21, width: 18, x: 4, y: 13 };
 
   public static paint = async (canvas: HTMLCanvasElement, clan: ClanInfo): Promise<void> => SpriteHelpers.blit(canvas, await this._compose(clan));
 
@@ -15,26 +15,23 @@ export class ClanSpriteHelpers {
     SpriteHelpers.paintAll(root, 'clan', clans, (canvas, clan) => this.paint(canvas, clan));
   }
 
-  // The wreath sets the canvas: it is the tallest of the three, and the other two seat centred inside it.
+  // Both sheets share one 26×40 canvas with a centred pivot and align by it alone; the emblems are hand-placed, (6,16) to (9,21), so no centring can stand in.
   private static async _build(clan: ClanInfo): Promise<HTMLCanvasElement | null> {
     const pad = (slot: number | undefined): string => String(slot ?? 0).padStart(2, '0');
-    const [field, emblem, wreath] = await Promise.all([
+    const [field, emblem] = await Promise.all([
       SpriteHelpers.load(`assets/img/clans/clan_background_${pad(clan.banner_bg)}.png`),
       SpriteHelpers.load(`assets/img/clans/clan_icon_${pad(clan.banner_icon)}.png`),
-      SpriteHelpers.load('assets/img/clans/clan_frame.png'),
     ]);
     const cut = document.createElement('canvas');
-    cut.height = wreath.naturalHeight;
-    cut.width = wreath.naturalWidth;
+    cut.height = this._field.height;
+    cut.width = this._field.width;
     const context = cut.getContext('2d');
     const tinted = this._tinted(field, clan.banner_bg_color);
     if (!context || !tinted) return null;
 
-    const middle = (this._hollow.top + this._hollow.bottom) / 2;
-    context.drawImage(tinted, Math.floor((cut.width - field.naturalWidth) / 2), this._hollow.top);
+    context.drawImage(tinted, -this._field.x, -this._field.y);
     const badge = this._tinted(emblem, clan.banner_icon_color);
-    if (badge) context.drawImage(badge, Math.floor((cut.width - emblem.naturalWidth) / 2), Math.round(middle - emblem.naturalHeight / 2));
-    context.drawImage(wreath, 0, 0);
+    if (badge) context.drawImage(badge, -this._field.x, -this._field.y);
     return cut;
   }
 

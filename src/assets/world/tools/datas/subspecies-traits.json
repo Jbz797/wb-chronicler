@@ -1,115 +1,326 @@
 {
-  "$adaptation$": {},
-  "$egg$": {},
-  "$magic_blood$": {},
-  "$skin_mutation$": {},
-  "accelerated_healing": {},
-  "advanced_hippocampus": {},
-  "aggressive": {},
-  "amygdala": {},
-  "annoying_fireworks": {},
-  "antimatter_essence": {},
-  "aquatic": {},
-  "bad_genes": {},
-  "big_stomach": {},
-  "bioluminescence": {},
-  "bioproduct_gems": {},
-  "bioproduct_gold": {},
-  "bioproduct_mushrooms": {},
-  "bioproduct_stone": {},
-  "cautious_instincts": {},
-  "chaos_driven": {},
-  "circadian_drift": {},
-  "cold_resistance": {},
-  "death_grow_mythril": {},
-  "death_grow_plant": {},
-  "death_grow_tree": {},
-  "diet_algivore": {},
-  "diet_cannibalism": {},
-  "diet_carnivore": {},
-  "diet_florivore": {},
-  "diet_folivore": {},
-  "diet_frugivore": {},
-  "diet_geophagy": {},
-  "diet_graminivore": {},
-  "diet_granivore": {},
-  "diet_hematophagy": {},
-  "diet_herbivore": {},
-  "diet_insectivore": {},
-  "diet_lithotroph": {},
-  "diet_nectarivore": {},
-  "diet_omnivore": {},
-  "diet_piscivore": {},
-  "diet_xylophagy": {},
-  "dreamweavers": {},
-  "energy_preserver": {},
-  "enhanced_strength": { "stats": { "damage": 50 } },
-  "exoskeleton": { "stats": { "armor": 10 } },
-  "fast_builders": {},
-  "fenix_born": {},
-  "fins": {},
-  "fire_elemental_form": {},
-  "gaia_roots": {},
-  "genetic_mirror": {},
-  "genetic_psychosis": {},
-  "gestation_extremely_long": {},
-  "gestation_long": {},
-  "gestation_moderate": {},
-  "gestation_short": {},
-  "gestation_very_long": {},
-  "gmo": {},
-  "good_throwers": { "stats": { "throwing_range": 6 } },
-  "grin_mark": {},
-  "heat_resistance": {},
-  "high_fecundity": { "stats": { "birth_rate": 5 } },
-  "hovering": {},
-  "hydrophobia": {},
-  "hyper_intelligence": { "stats": { "intelligence": 30 } },
-  "inquisitive_nature": {},
-  "long_lifespan": { "stats": { "lifespan": 100 } },
-  "metamorphosis_butterfly": {},
-  "metamorphosis_chicken": {},
-  "metamorphosis_crab": {},
-  "metamorphosis_sword": {},
-  "metamorphosis_wolf": {},
-  "monophasic_sleep": {},
-  "nimble": {},
-  "nocturnal_dormancy": {},
-  "parental_care": {},
-  "photosynthetic_skin": {},
-  "pollinating": {},
-  "polyphasic_sleep": {},
-  "population_expansive": {},
-  "population_large": {},
-  "population_minimal": {},
-  "population_moderate": {},
-  "population_small": {},
-  "prefrontal_cortex": {},
-  "prolonged_rest": {},
-  "pure": {},
-  "rapid_aging": {},
-  "reproduction_budding": {},
-  "reproduction_divine": {},
-  "reproduction_fission": {},
-  "reproduction_hermaphroditic": {},
-  "reproduction_metamorph": {},
-  "reproduction_parthenogenesis": {},
-  "reproduction_sexual": { "stats": { "birth_rate": 3 } },
-  "reproduction_soulborne": {},
-  "reproduction_spores": {},
-  "reproduction_strategy_oviparity": {},
-  "reproduction_strategy_viviparity": {},
-  "reproduction_vegetative": {},
-  "shiny_love": {},
-  "slow_builders": {},
-  "spicy_kids": {},
-  "stomach": {},
-  "super_positivity": {},
-  "telepathic_link": {},
-  "unmoving": {},
-  "unstable_genome": {},
-  "uplifted": {},
-  "voracious": {},
-  "wernicke_area": {},
-  "winter_slumberers": {}
+  "accelerated_healing": {
+    "description": "Can heal wounds and regenerate damaged skin",
+    "flavor": "They heal faster than their regrets",
+    "name": "Accelerated Healing"
+  },
+  "adaptation_corruption": {
+    "description": "Adapted to life in a cursed, corrupted biome",
+    "flavor": "The corruption welcomes all. For a time",
+    "name": "Corruption Adaptation"
+  },
+  "adaptation_desert": {
+    "description": "Adapted to life in mysterious deserts",
+    "flavor": "Born from dust, destined to fade into dust",
+    "name": "Arcane Desert Adaptation"
+  },
+  "adaptation_infernal": {
+    "description": "Adapted to living and building in the infernal biome",
+    "flavor": "Hell is home, and home is warm",
+    "name": "Infernal Adaptation"
+  },
+  "adaptation_permafrost": { "description": "Adapted to life in the permafrost biome", "flavor": "Cold? What cold?", "name": "Permafrost Adaptation" },
+  "adaptation_swamp": {
+    "description": "Adapted to living and building in swamps",
+    "flavor": "Damp, dark, and full of smells. Just the way they like it",
+    "name": "Swamp Adaptation"
+  },
+  "advanced_hippocampus": {
+    "description": "Enhanced memory capabilities allow this species to develop cultures and religions",
+    "flavor": "First memories become first myths",
+    "name": "Advanced Hippocampus"
+  },
+  "aggressive": { "description": "Prone to lose their temper", "flavor": "Their fuse runs short", "name": "Aggressive" },
+  "amygdala": {
+    "description": "Grants this species the ability to feel emotions, especially happiness, shaping their behavior and reactions",
+    "flavor": "Emotions drive evolution",
+    "name": "Amygdala"
+  },
+  "annoying_fireworks": { "description": "Creates colorful explosions upon death", "flavor": "Death should be entertaining", "name": "Annoying Fireworks" },
+  "antimatter_essence": { "description": "Explodes violently when slain in combat", "flavor": "Physics demands a dramatic exit", "name": "Antimatter Essence" },
+  "aquatic": { "description": "Adapted to life underwater", "flavor": "They may know some deep secrets", "name": "Aquatic" },
+  "bad_genes": {
+    "description": "A genetic mutation that can lead to expression of bad traits",
+    "flavor": "The flesh remembers ancient mistakes",
+    "name": "Bad Genes"
+  },
+  "big_stomach": { "description": "These species have a huge appetite", "flavor": "The void within must be fed", "name": "Big Stomach" },
+  "bioluminescence": { "description": "Body naturally generates light", "flavor": "They wear stars within", "name": "Bioluminescence" },
+  "bioproduct_gems": { "description": "Processes food into precious gems", "flavor": "Food goes in, fortune comes out", "name": "Gem Production" },
+  "bioproduct_gold": { "description": "Converts consumed nutrients into pure gold", "flavor": "Their metabolism defies economics", "name": "Gold Production" },
+  "bioproduct_mushrooms": {
+    "description": "Nourishes fungi from within, periodically producing mushrooms",
+    "flavor": "Every host becomes a garden",
+    "name": "Mushroom Production"
+  },
+  "bioproduct_stone": { "description": "Efficiently converts consumed material into stone", "flavor": "Their digestion is rock solid!", "name": "Stone Production" },
+  "cautious_instincts": { "description": "Prefers to avoid danger", "flavor": "Better safe than sorry", "name": "Cautious Instincts" },
+  "chaos_driven": { "description": "They are fully awakened during the Age of Chaos", "flavor": "Their time comes with madness", "name": "Chaos Driven" },
+  "circadian_drift": { "description": "They like to sleep when it's light outside", "flavor": "Their night starts at sunrise", "name": "Circadian Drift" },
+  "cold_resistance": { "description": "Can withstand extreme cold without harm", "flavor": "Ice age? More like nice age", "name": "Cold Resistance" },
+  "death_grow_mythril": { "description": "Transforms into mythril upon death", "flavor": "Even death has value", "name": "Mythril Form" },
+  "death_grow_plant": { "description": "On death transforms into a plant!", "flavor": "Nature recycles everything", "name": "Plant Growth" },
+  "death_grow_tree": { "description": "On death transforms into a tree!", "flavor": "Death plants deeper roots", "name": "Tree Growth" },
+  "diet_algivore": { "description": "An algae-based diet", "flavor": "Others dread algae... they dream of it", "name": "Algivore" },
+  "diet_cannibalism": {
+    "description": "Feeds on members of its own species, a rare and often desperate survival strategy",
+    "flavor": "You are what you eat...",
+    "name": "Cannibalism"
+  },
+  "diet_carnivore": { "description": "A diet focused on meat", "flavor": "A balanced diet? Meat, meat, and more meat", "name": "Carnivore" },
+  "diet_florivore": { "description": "Feeds mainly on flowers", "flavor": "Flowers aren't just for decoration!", "name": "Florivore" },
+  "diet_folivore": { "description": "A diet composed mainly of leaves and plants", "flavor": "Leaf it to me!", "name": "Folivore" },
+  "diet_frugivore": { "description": "A diet primarily composed of fruits", "flavor": "If life gives them lemons... they eat them!", "name": "Frugivore" },
+  "diet_geophagy": { "description": "Consumes soil and dirt", "flavor": "To them, even dirt is a delicacy", "name": "Geophagy" },
+  "diet_graminivore": { "description": "Consumes primarily grasses", "flavor": "Don't touch, eat!", "name": "Graminivore" },
+  "diet_granivore": { "description": "Eats primarily wheat, grains and seeds", "flavor": "Every day is a harvest festival!", "name": "Granivore" },
+  "diet_hematophagy": { "description": "They sustain themselves by drinking the blood of others", "flavor": "The fresher, the better", "name": "Hematophagy" },
+  "diet_herbivore": { "description": "A plant-based diet, consumes everything green", "flavor": "Eats greens so you don't have to", "name": "Herbivore" },
+  "diet_insectivore": { "description": "A diet focused on insects", "flavor": "Small prey feeds great hunger", "name": "Insectivore" },
+  "diet_lithotroph": { "description": "Uses stone and minerals for food", "flavor": "Loves him some rock and stone!", "name": "Lithotroph" },
+  "diet_nectarivore": { "description": "Feeds primarily on nectar", "flavor": "Survival never tasted sweeter", "name": "Nectarivore" },
+  "diet_omnivore": { "description": "Eats both plants and animals", "flavor": "Salad or steak? Why not both?", "name": "Omnivore" },
+  "diet_piscivore": { "description": "Feeds primarily on fish", "flavor": "The only release fish get is from life itself", "name": "Piscivore" },
+  "diet_xylophagy": { "description": "Specializes in consuming wood", "flavor": "If there's wood, there's food!", "name": "Xylophagy" },
+  "dreamweavers": {
+    "description": "Silently alters the dreams of others, spreading their language, culture, or religion",
+    "flavor": "The mind is most open when it's unaware",
+    "name": "Dreamweavers"
+  },
+  "egg_bubble": { "description": "Delicate, translucent eggs", "flavor": "Nature's most fragile packaging", "name": "Bubble" },
+  "egg_candy": { "description": "Eggs that look and taste like candy", "flavor": "Sweet on the outside, full of surprises inside", "name": "Candy" },
+  "egg_cocoon": { "description": "Eggs that look like a cocoon", "flavor": "Secrets spin their own shells", "name": "Cocoon" },
+  "egg_colored": { "description": "Eggs that take phenotype color of these creatures", "flavor": "Genetics shows its work early", "name": "Colored" },
+  "egg_face": { "description": "Eggs in a form of a weird face", "flavor": "Their eggs stare back at you", "name": "Face" },
+  "egg_flames": { "description": "Eggs surrounded by flames", "flavor": "Fire remembers its children", "name": "Flames" },
+  "egg_ice": { "description": "Eggs made out of ice", "flavor": "Life sleeps in frozen dreams", "name": "Ice" },
+  "egg_orb": { "description": "Eggs shaped like mysterious orbs", "flavor": "Tomorrow comes in perfect spheres", "name": "Orb" },
+  "egg_rainbow": { "description": "Eggs with a rainbow pattern", "flavor": "All colors lead to life", "name": "Rainbow" },
+  "egg_roe": { "description": "Eggs in a shape of roe", "flavor": "Ready to spawn the future", "name": "Roe" },
+  "egg_shell_plain": { "description": "Eggs with a plain shell", "flavor": "Simple vessels hide complex futures", "name": "Plain Shell" },
+  "egg_shell_spotted": { "description": "Eggs with a spotted shell", "flavor": "Every spot tells a different story", "name": "Spotted Shell" },
+  "energy_preserver": { "description": "Preserves energy during rest periods", "flavor": "Dreams substitute sustenance", "name": "Energy Preserver" },
+  "enhanced_strength": {
+    "description": "They have great physical strength",
+    "flavor": "Their muscles have muscles",
+    "name": "Enhanced Strength",
+    "stats": { "damage": 50 }
+  },
+  "exoskeleton": { "description": "Possesses a hard, protective outer shell", "flavor": "Nature's knight armor", "name": "Exoskeleton", "stats": { "armor": 10 } },
+  "fast_builders": { "description": "Masters of efficient construction techniques", "flavor": "They nailed it!", "name": "Fast Builders" },
+  "fenix_born": { "description": "Can rise from their own ashes after death, reborn anew", "flavor": "Death is more of a power nap", "name": "Fenix Born" },
+  "fins": { "description": "These species are excellent swimmers", "flavor": "The ocean is their playground", "name": "Fins" },
+  "fire_elemental_form": { "description": "Releases a fire elemental when killed", "flavor": "Death only feeds their flame", "name": "Fire Elemental Form" },
+  "gaia_roots": { "description": "They release life-giving clouds upon death", "flavor": "Their last breath births tomorrow", "name": "Gaia Roots" },
+  "genetic_mirror": { "description": "Their children inherit all biological traits from parents", "flavor": "Nature knows what to copy", "name": "Genetic Mirror" },
+  "genetic_psychosis": {
+    "description": "Prone to inherited mental instability and can go mad",
+    "flavor": "Their mirrors show different faces",
+    "name": "Genetic Psychosis"
+  },
+  "gestation_extremely_long": {
+    "description": "Has an extraordinarily prolonged gestation period!",
+    "flavor": "Like crystal people!",
+    "name": "Extremely Long Gestation"
+  },
+  "gestation_long": {
+    "description": "Has longer developmental periods before birth!",
+    "flavor": "Similar to humans, with gestation lasting about 3 trimesters",
+    "name": "Long Gestation"
+  },
+  "gestation_moderate": {
+    "description": "Gestation period spans a few months",
+    "flavor": "Like cats, dogs and sheep - typically ranging a few months",
+    "name": "Moderate Gestation"
+  },
+  "gestation_short": { "description": "Has a rapid reproductive cycle", "flavor": "Just like rabbits - but also rabbits", "name": "Short Gestation" },
+  "gestation_very_long": {
+    "description": "Gestation period spans multiple years",
+    "flavor": "Like elephants, which can last up to 22 months",
+    "name": "Very Long Gestation"
+  },
+  "gift_of_air": {
+    "description": "Can shape the air into powerful storms",
+    "flavor": "But always ends up getting caught in their own windstorm",
+    "name": "Gift of Air"
+  },
+  "gift_of_blood": { "description": "Capable of healing through blood magic", "flavor": "Life flows where blood wills", "name": "Gift of Blood" },
+  "gift_of_fire": { "description": "Born with a mastery over flames", "flavor": "And die in a blaze of glory", "name": "Gift of Fire" },
+  "gift_of_harmony": {
+    "description": "They can cure illness with a single touch",
+    "flavor": "The geometry of existence reveals itself to them in all its beauty",
+    "name": "Gift of Harmony"
+  },
+  "gift_of_life": {
+    "description": "They wield the power to bring life into the world",
+    "flavor": "But all life eventually fades back into the void, even their own",
+    "name": "Gift of Life"
+  },
+  "gift_of_thunder": {
+    "description": "Born with control over thunder and lightning",
+    "flavor": "Yet still afraid of thunderstorms when they're alone",
+    "name": "Gift of Thunder"
+  },
+  "gift_of_void": { "description": "The Void pulses through their very being", "flavor": "The Void gives... and takes away", "name": "Gift of the Void" },
+  "gift_of_water": {
+    "description": "They can command water particles with a flick of their fingers",
+    "flavor": "But still can't walk on water",
+    "name": "Gift of Water"
+  },
+  "gmo": { "description": "Genetically Modified Organisms", "flavor": "Straight from the divine labs. What could go wrong?", "name": "GMO" },
+  "good_throwers": {
+    "description": "Can throw items from long distances",
+    "flavor": "'Fragile' is just a challenge",
+    "name": "Good Throwers",
+    "stats": { "throwing_range": 6 }
+  },
+  "grin_mark": {
+    "description": "This subspecies is marked for death by the Grin Reaper",
+    "flavor": "They laugh because it's already too late not to",
+    "name": "Grin Mark"
+  },
+  "heat_resistance": { "description": "Can withstand extreme heat without harm", "flavor": "Temperature is just a number", "name": "Heat Resistance" },
+  "high_fecundity": {
+    "description": "Possesses a high reproductive rate, leading to large numbers of babies",
+    "flavor": "Numbers ensure survival",
+    "name": "High Fecundity",
+    "stats": { "birth_rate": 5 }
+  },
+  "hovering": { "description": "Hovers effortlessly over any terrain or obstacle", "flavor": "Walking is such a primitive concept", "name": "Hovering" },
+  "hydrophobia": { "description": "Gets damaged when in water or under rain", "flavor": "Water brings only pain", "name": "Hydrophobia" },
+  "hyper_intelligence": {
+    "description": "Possesses cognitive abilities far beyond the norm",
+    "flavor": "They see solutions where others see problems",
+    "name": "Hyper Intelligence",
+    "stats": { "intelligence": 30 }
+  },
+  "inquisitive_nature": { "description": "They are very curious", "flavor": "Questions bring more questions", "name": "Inquisitive Nature" },
+  "long_lifespan": {
+    "description": "Lives significantly longer than the average species",
+    "flavor": "Tomorrow is just another yesterday",
+    "name": "Long Lifespan",
+    "stats": { "lifespan": 100 }
+  },
+  "metamorphosis_butterfly": {
+    "description": "Eventually transforms into a butterfly form",
+    "flavor": "Wings of freedom, they spread to embrace the world",
+    "name": "Butterfly Metamorphosis"
+  },
+  "metamorphosis_chicken": {
+    "description": "Eventually transforms into a chicken form",
+    "flavor": "The egg comes after, actually",
+    "name": "Chicken Metamorphosis"
+  },
+  "metamorphosis_crab": {
+    "description": "Eventually transforms into a crab form",
+    "flavor": "Evolution always leads to crab. Always",
+    "name": "Crab Metamorphosis"
+  },
+  "metamorphosis_sword": {
+    "description": "Eventually transforms into a living sword",
+    "flavor": "Some warriors never stop fighting",
+    "name": "Sword Metamorphosis"
+  },
+  "metamorphosis_wolf": { "description": "Eventually transforms into a wolf form", "flavor": "The moon calls, flesh answers", "name": "Wolf Metamorphosis" },
+  "monophasic_sleep": { "description": "Love to take long naps", "flavor": "No time for power naps", "name": "Monophasic Sleep" },
+  "nimble": { "description": "Allows species to steal items during melee attacks", "flavor": "No weapon is safe!", "name": "Nimble" },
+  "nocturnal_dormancy": { "description": "They like to sleep a lot when it's dark", "flavor": "When stars rise, dreams follow", "name": "Nocturnal Dormancy" },
+  "parental_care": {
+    "description": "Makes babies invincible for a short time after birth",
+    "flavor": "Their babies can survive anything... except the horrors of growing up",
+    "name": "Parental Care"
+  },
+  "photosynthetic_skin": { "description": "Converting sunlight into energy", "flavor": "Professional sunbathers", "name": "Photosynthetic Skin" },
+  "pollinating": { "description": "They can pollinate plants and flowers", "flavor": "Making the world a more colorful place", "name": "Pollinator" },
+  "polyphasic_sleep": { "description": "They take a lot of short naps", "flavor": "Life happens between dreams", "name": "Polyphasic Sleep" },
+  "population_expansive": { "description": "Population is limited to 3,000 members", "flavor": "When many become mighty", "name": "Expansive Population" },
+  "population_large": { "description": "Population is limited to 1,000 members", "flavor": "Power has its limits", "name": "Large Population" },
+  "population_minimal": { "description": "Population is limited to 50 members", "flavor": "When few must mean everything", "name": "Minimal Population" },
+  "population_moderate": { "description": "Population is limited to 500 members", "flavor": "Neither too many, nor too few", "name": "Moderate Population" },
+  "population_small": { "description": "Population is limited to 100 members", "flavor": "Small numbers hide greater strength", "name": "Small Population" },
+  "prefrontal_cortex": {
+    "description": "Allows species to use tools, plan, and start civilizations",
+    "flavor": "Future casts long shadows",
+    "name": "Prefrontal Cortex"
+  },
+  "prolonged_rest": { "description": "They love to take very very long naps", "flavor": "Productivity? In this economy?", "name": "Prolonged Rest" },
+  "pure": { "description": "Immune to the Monolith's influence", "flavor": "Perfection bears its own curse", "name": "Pure" },
+  "rapid_aging": {
+    "description": "Ages quickly, going through its life cycle at an accelerated rate",
+    "flavor": "Their lives are brief but intense",
+    "name": "Rapid Aging"
+  },
+  "reproduction_budding": {
+    "description": "Reproduces by growing a new individual directly from their own body",
+    "flavor": "Well, this is awkward!",
+    "name": "Budding Reproduction"
+  },
+  "reproduction_divine": {
+    "description": "Babies can be born through a miracle once in a lifetime!",
+    "flavor": "Like a... miracle!",
+    "name": "Divine Reproduction"
+  },
+  "reproduction_fission": {
+    "description": "Reproduces by splitting into two identical creatures",
+    "flavor": "One becomes two, two becomes many",
+    "name": "Fission Reproduction"
+  },
+  "reproduction_hermaphroditic": {
+    "description": "Two creatures of these species are required to make a baby",
+    "flavor": "Like snails or clownfish",
+    "name": "Hermaphroditic Reproduction"
+  },
+  "reproduction_metamorph": {
+    "description": "Reproduce by converting the children of other species into offspring of their own kind",
+    "flavor": "The ultimate identity theft",
+    "name": "Metamorph Reproduction"
+  },
+  "reproduction_parthenogenesis": {
+    "description": "Females can produce a baby without needing a partner",
+    "flavor": "Like whiptails or honeybees!",
+    "name": "Parthenogenesis Reproduction"
+  },
+  "reproduction_sexual": {
+    "description": "A male and a female are required to reproduce",
+    "flavor": "Two become more",
+    "name": "Sexual Reproduction",
+    "stats": { "birth_rate": 3 }
+  },
+  "reproduction_soulborne": {
+    "description": "Reproduce by channeling harvested souls into new life of their own kind",
+    "flavor": "Each soul fuels the fire of creation",
+    "name": "Soulborne Reproduction"
+  },
+  "reproduction_spores": { "description": "Reproduces through the release of spores", "flavor": "Like mushrooms or ferns", "name": "Spore Reproduction" },
+  "reproduction_strategy_oviparity": {
+    "description": "Creatures will lay eggs, from which their babies will hatch",
+    "flavor": "Beginning starts with breaking free",
+    "name": "Oviparity"
+  },
+  "reproduction_strategy_viviparity": {
+    "description": "Babies mature within the momma, emerging ready for life!",
+    "flavor": "Life flows from heart to heart",
+    "name": "Viviparity"
+  },
+  "reproduction_vegetative": {
+    "description": "Reproduces by breaking into multiple creatures after creature becomes an older adult",
+    "flavor": "Like garlic and... garlic people!",
+    "name": "Vegetative Reproduction"
+  },
+  "shiny_love": { "description": "They have a tendency to steal things", "flavor": "Magpies would be proud", "name": "Shiny Love" },
+  "slow_builders": { "description": "Takes their time to ensure every detail is perfect", "flavor": "Let them cook", "name": "Slow Builders" },
+  "spicy_kids": { "description": "When babies are produced, there is a chance to start a fire", "flavor": "Baby's first arson", "name": "Spicy Kids" },
+  "stomach": { "description": "This species has a stomach and needs food to survive", "flavor": "Survival's first engine", "name": "Stomach" },
+  "super_positivity": {
+    "description": "Extremely positive and optimistic. They can't get sad",
+    "flavor": "Even rain clouds make them smile",
+    "name": "Super Positivity"
+  },
+  "telepathic_link": { "description": "Can communicate with others over long distances", "flavor": "Privacy is overrated anyway", "name": "Telepathic Link" },
+  "unmoving": { "description": "Unable to move", "flavor": "Time moves, they don't", "name": "Unmoving" },
+  "unstable_genome": { "description": "Their genes keep shifting", "flavor": "Evolution never sleeps", "name": "Unstable Genome" },
+  "uplifted": { "description": "Marked by the Monolith", "flavor": "Now they can think, but can they think of a way out?", "name": "Uplifted" },
+  "voracious": { "description": "They get hungry very fast", "flavor": "Always munching on something", "name": "Voracious" },
+  "wernicke_area": { "description": "This species can learn and use languages", "flavor": "Their minds shape sound into sense", "name": "Wernicke's Area" },
+  "winter_slumberers": { "description": "They sleep a lot when it's cold", "flavor": "Snow makes great blankets", "name": "Winter Slumberers" }
 }
