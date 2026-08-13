@@ -30,6 +30,7 @@ NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have 
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
 PROFESSION_WARRIOR = 5
+RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # WB's own ladder — weighs a carried arsenal and a biology's birth traits alike.
 SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `chapter/` reaches back to `C<n-1>` through it.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.

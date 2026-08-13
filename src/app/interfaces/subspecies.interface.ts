@@ -1,5 +1,4 @@
 import { MemberRoster, PopulationBreakdown } from './entity.interface';
-import { RarityCounts } from './stats.interface';
 
 // The stock's standing among the world's species — flat counts beside its own podium, as a realm's `alliance` carries its two.
 export interface SpeciesStanding extends SpeciesTotals {
@@ -18,7 +17,6 @@ export interface SpeciesTotals {
 
 // The favourite's subspecies. Neither joined nor inherited but born into — WB fixes it at birth, so its bearers span every crown and clan without ever choosing it.
 export interface Subspecies {
-  birth_traits: RarityCounts; // what every newborn of it inherits, off the same creature library the favourite draws from — hence the same rarity axis
   breakdown: PopulationBreakdown;
   identity: SubspeciesIdentity;
   members: MemberRoster;
@@ -46,7 +44,7 @@ interface SubspeciesMetadata {
   name: string;
   renown?: number;
   renown_total?: number; // summed over the living, where `renown` above is WB's own tally over every bearer ever born
-  traits?: number;
+  trait_score?: number; // 1 pt per sworn trait carrying a stat, ½ for a descriptor, plus WB's rarity ladder on the birth traits — halves are real, so 1 decimal
 }
 
 // Podium-only, like every other tier: absent where the biology places outside the top 3 among the world's subspecies.
@@ -59,5 +57,5 @@ interface SubspeciesRanks {
   money?: number;
   renown?: number;
   renown_total?: number;
-  traits?: number;
+  trait_score?: number;
 }

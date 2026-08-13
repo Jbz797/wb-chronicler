@@ -40,7 +40,7 @@ export type RankedStatKind = 'age' | 'armor'
   | 'diplomacy' | 'equipment' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
   | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'loyalty'
   | 'mana' | 'members'
-  | 'money' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory' | 'traits'
+  | 'money' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory' | 'trait_score'
   | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'

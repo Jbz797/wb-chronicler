@@ -12,6 +12,7 @@ from islands import compute_islands_cached
 from shared import (
     PROFESSION_KING,
     PROFESSION_LEADER,
+    RARITY_POINTS,
     UNITS_PER_YEAR,
     actor_age,
     age_thresholds,
@@ -60,8 +61,6 @@ _RANKED_STATS = {
     "stewardship",
     "warfare",
 }
-
-_RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # Rarity weights for equipment power (Normal 1 → Legendary 4).
 
 # UI order: active roles (chief, alpha) before historical foundations (creators before founders). `army_captain` is a `profession`, not a role.
 _ROLE_ORDER = (
@@ -297,14 +296,14 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
     return dict(sorted(cleaned.items()))
 
 
-# Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
+# Sum of `RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
 def _equipment_power(actor: dict, ctx: dict) -> int:
     items = ctx["items_by_id"]
     total = 0
     for iid in actor.get("saved_items") or []:
         item = items.get(iid)
         if item:
-            total += _RARITY_POINTS[equipment_rarity(item.get("modifiers") or [])]
+            total += RARITY_POINTS[equipment_rarity(item.get("modifiers") or [])]
     return total
 
 

@@ -4,6 +4,7 @@
 # WB mutates one out of another as a world ages, so a species holds many — and a subspecies outlives every crown and clan its bearers ever joined.
 
 import sys
+from collections import Counter
 from functools import cache
 from operator import itemgetter
 from pathlib import Path
@@ -12,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from islands import compute_islands_cached
 from shared import (
+    RARITY_POINTS,
     actor_age,
     build_trait_ids,
     build_trait_list,
@@ -72,6 +74,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 
 # The subspecies' identity card: WB's own lifetime counters beside what only a walk over the living can tell — how far the biology spread and what it carries.
 def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
+    tallies, sub_id = ctx["tallies"], subspecies["id"]  # coins and renown came off the one actor pass — resumming them here would walk the roster twice over
     cities = {c for a in members if (c := a.get("cityID"))}
     island_of = ctx["island_lookup"]()
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
@@ -84,17 +87,16 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         "islands": sorted({iid for a in members if (iid := island_of.get((int(a["x"]), int(a["y"])))) is not None}),
         "name": subspecies.get("name"),
         # Every counter below drops at zero, as WB's own already do: a beast holds no town and swears no trait, and the panels read them through `?? 0`.
-        **({"birth_traits": birth} if (birth := len(subspecies.get("saved_actor_birth_traits") or [])) else {}),  # what every newborn inherits
         **({"births": births} if (births := int(subspecies.get("total_births") or 0)) else {}),
         **({"cities": len(cities)} if cities else {}),  # settlements its bearers answer from — a biology spreads wherever its carriers walk
         **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the biology has been dying, which its totals alone never say
         **({"deaths": deaths} if (deaths := int(subspecies.get("total_deaths") or 0)) else {}),
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
-        **({"money": money} if (money := sum(int(a.get("money") or 0) for a in members)) else {}),  # the purse the living carry; WB banks per actor
-        **({"renown_total": total} if (total := sum(int(a.get("renown") or 0) for a in members)) else {}),  # the living's worth beside WB's lifetime tally
+        **({"money": money} if (money := tallies["money"][sub_id]) else {}),  # the purse the living carry between them; WB banks per actor, never per biology
+        **({"renown_total": total} if (total := tallies["renown_total"][sub_id]) else {}),  # the living's worth beside WB's tally over every bearer ever born
         **({"renown": renown} if (renown := int(subspecies.get("renown") or 0)) else {}),
-        **({"traits": traits} if (traits := len(subspecies.get("saved_traits") or [])) else {}),
+        **({"trait_score": score} if (score := _trait_score(subspecies)) else {}),
     }
 
 
@@ -120,18 +122,18 @@ def _build_traits(subspecies: dict, detailed: bool) -> dict:
     return sworn if detailed else light(sworn, "traits")
 
 
-# What a biology is ranked on among the world's others — living counts come off the roster it was handed, lifetime counters off WB's own fields.
-def _rank_getters(members_by_subspecies: dict, world_time: float) -> dict:
+# What a biology is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs all 55, on each of the nine dimensions.
+def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda s: entity_age(s, world_time),
         "births": lambda s: int(s.get("total_births") or 0),
         "deaths": lambda s: int(s.get("total_deaths") or 0),
         "kills": lambda s: int(s.get("total_kills") or 0),
-        "members": lambda s: len(members_by_subspecies.get(s["id"], ())),
-        "money": lambda s: sum(int(a.get("money") or 0) for a in members_by_subspecies.get(s["id"], ())),
+        "members": lambda s: len(tallies["members"].get(s["id"], ())),
+        "money": lambda s: tallies["money"][s["id"]],
         "renown": lambda s: int(s.get("renown") or 0),
-        "renown_total": lambda s: sum(int(a.get("renown") or 0) for a in members_by_subspecies.get(s["id"], ())),
-        "traits": lambda s: len(s.get("saved_traits") or []),
+        "renown_total": lambda s: tallies["renown_total"][s["id"]],
+        "trait_score": _trait_score,
     }
 
 
@@ -159,6 +161,13 @@ def _species_totals(save: dict) -> dict[str, dict]:
     return totals
 
 
+# A full point per sworn trait carrying a stat, half per descriptor, plus WB's rarity ladder on the birth traits — an unregistered one counts as a descriptor.
+def _trait_score(subspecies: dict) -> float:
+    biology, creature = load_data("subspecies-traits.json"), load_data("creature-traits.json")
+    sworn = sum(1.0 if (biology.get(t) or {}).get("stats") else 0.5 for t in subspecies.get("saved_traits") or [])
+    return sworn + sum(RARITY_POINTS.get((creature.get(t) or {}).get("rarity", ""), 0) for t in subspecies.get("saved_actor_birth_traits") or [])
+
+
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
@@ -183,12 +192,17 @@ def main(argv: list[str]) -> int:
         print(f"unknown subspecies: {subspecies_id}", file=sys.stderr)
         return 1
 
-    members_by_subspecies: dict[int, list[dict]] = {}
-    for actor in save.get("actors_data") or []:
-        if sid := actor.get("subspecies"):
-            members_by_subspecies.setdefault(sid, []).append(actor)
+    tallies: dict = {"members": {}, "money": Counter(), "renown_total": Counter()}  # One pass feeds every tally: WB points the actor at its biology, never back
 
-    members = members_by_subspecies.get(subspecies_id, [])
+    for actor in save.get("actors_data") or []:
+        if not (sid := actor.get("subspecies")):
+            continue
+        tallies["members"].setdefault(sid, []).append(actor)
+        tallies["money"][sid] += int(actor.get("money") or 0)
+        if fame := actor.get("renown"):
+            tallies["renown_total"][sid] += int(fame)
+
+    members = tallies["members"].get(subspecies_id, [])
     ctx = {
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
@@ -197,6 +211,7 @@ def main(argv: list[str]) -> int:
         "languages_by_id": index_by_id(save.get("languages") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
         "subspecies_by_id": subspecies_by_id,
+        "tallies": tallies,  # the one actor pass, handed whole: `metadata` reads two of its three, `ranks` all three
         "world_time": save["mapStats"]["world_time"],
     }
 
@@ -212,7 +227,7 @@ def main(argv: list[str]) -> int:
         out["metadata"] = _build_metadata(subspecies, members, ctx)
     if "ranks" in sections:
         peers = list(subspecies_by_id.values())
-        out["ranks"] = competition_ranks(subspecies, peers, _rank_getters(members_by_subspecies, ctx["world_time"]))
+        out["ranks"] = competition_ranks(subspecies, peers, _rank_getters(tallies, ctx["world_time"]))
     if "species" in sections:
         out["species"] = _build_species(subspecies, save)
     if "traits" in sections:

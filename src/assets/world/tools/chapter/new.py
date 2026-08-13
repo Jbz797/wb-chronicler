@@ -90,11 +90,6 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
     _fold_total(kingdom, "equipment")
 
 
-# Birth traits fold like the favorite's, off the same library; the biology's own carry neither rarity nor group, and `metadata.traits` counts them.
-def _fold_subspecies_detail(subspecies: dict) -> None:
-    subspecies["birth_traits"] = _rarity_counts((subspecies.pop("traits", None) or {}).get("birth"))
-
-
 # The panels read nothing but the `total`, whichever form `full` handed over — nothing is lost, the chapter's own `map.wbox` replaying any section.
 def _fold_total(entity: dict, *keys: str) -> None:
     for key in keys:
@@ -223,8 +218,6 @@ def main(argv: list[str]) -> int:
             _fold_clan_detail(clan)
         if kingdom:
             _fold_kingdom_detail(kingdom)
-        if subspecies:
-            _fold_subspecies_detail(subspecies)
         for tier in (clan, family, subspecies):  # the three tiers built alike, folded alike — a roster never travels, whichever of them carries it
             if tier:
                 _fold_total(tier, "members")
