@@ -4,12 +4,13 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { BIOME_NAMES } from '../../../../constants';
 import { RankedStatKind, RarityCounts } from '../../../../interfaces';
+import { SpeciesNamePipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { BreakdownComponent, RankedStatComponent, RarityStatsComponent } from '../../../misc';
 
 @Component({
   selector: 'app-subspecies',
-  imports: [BreakdownComponent, NzDescriptionsModule, RankedStatComponent, RarityStatsComponent],
+  imports: [BreakdownComponent, NzDescriptionsModule, RankedStatComponent, RarityStatsComponent, SpeciesNamePipe],
   templateUrl: './subspecies.component.html',
 })
 export class SubspeciesComponent {

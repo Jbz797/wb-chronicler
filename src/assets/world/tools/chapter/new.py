@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 import registries
 from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, load_data, load_save, render, take_chapter
 
-_AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → its French title (the game's `locales/fr/world_ages`); unknown ids fall back to the raw id.
+_AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 
 # World-law alerts, each fired once ever (`chapter.json.tags` is the log). Adding one = an entry here + a row in `tags.md`; both args come from `_playable_kingdoms`.
 _ALERTS = {
@@ -38,6 +38,13 @@ _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
 
+# A chapter carries the values, not the way back to them — so the `info` signposts go. Recursive, so a light form added later needs nothing here.
+def _drop_info(node):
+    if isinstance(node, dict):
+        return {key: _drop_info(value) for key, value in node.items() if key != "info"}
+    return [_drop_info(value) for value in node] if isinstance(node, list) else node
+
+
 # The save's `favorite`-flagged actor (WB's in-game marker), detail folded; the chronicler's `descriptor` carries forward while it stays the same favorite.
 def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) -> dict | None:
     favorite = _run("actor/info.py", fav_id, "full", chapter)
@@ -57,21 +64,22 @@ def _fired_alerts(save: dict, already: set) -> list[tuple[str, str]]:
     return [(code, spec["message"]) for code, spec in _ALERTS.items() if code not in already and spec["condition"](kingdoms, present)]
 
 
-# Drops the loyalty summary, keeping only its `total` — the panel prints that alone, and `city/info.py <id> loyalty` still itemises every modifier.
+# Drops the loyalty summary and both stock lists, keeping their `total` — the panels print that alone, the sections still itemising each modifier and piece.
 def _fold_city_detail(city: dict) -> None:
     city.get("loyalty", {}).pop("top_drivers", None)
+    _fold_total(city, "books", "equipment")
 
 
-# Tallies the sworn traits per WB group, the panel's axis — rarity says only Rare or achievement-locked Legendary. `clan/info.py <id> traits` keeps both whole.
+# Tallies the sworn traits per WB group, the panel's axis — `full` already summarises them to `{id: group}`, and `clan/info.py <id> traits` keeps each whole.
 def _fold_clan_detail(clan: dict) -> None:
-    counts = Counter(trait["group"] for trait in clan.pop("traits", []) if trait.get("group"))
+    counts = Counter((clan.pop("traits", None) or {}).get("ids", {}).values())
     clan["traits"] = dict(sorted(counts.items()))
 
 
 # Folds the favorite's two heavy blocks: `creature_traits` becomes the rarity summary the panel renders, `equipment` goes — both stay whole in `actor/info.py`.
 def _fold_favorite_detail(favorite: dict) -> None:
     favorite.pop("equipment", None)
-    favorite["traits"] = _rarity_counts(favorite.pop("creature_traits", []))
+    favorite["traits"] = _rarity_counts((favorite.pop("creature_traits", None) or {}).get("ids"))
 
 
 # Keeps `opinion.top_drivers` on the ally/enemy ties only — a summary earns its place where it drives events. The `relations` section still gives the full ledger.
@@ -79,16 +87,19 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
     for relation in kingdom.get("relations") or []:
         if relation.get("status") == "neutral":
             relation.get("opinion", {}).pop("top_drivers", None)
-
-
-# Drops any people tier's roster, keeping its `total` — no panel ever names a bearer, and `<tier>/info.py <id> members` still lists every soul.
-def _fold_members(entity: dict) -> None:
-    entity["members"] = {"total": (entity.get("members") or {}).get("total", 0)}
+    _fold_total(kingdom, "equipment")
 
 
 # Birth traits fold like the favorite's, off the same library; the biology's own carry neither rarity nor group, and `metadata.traits` counts them.
 def _fold_subspecies_detail(subspecies: dict) -> None:
-    subspecies["birth_traits"] = _rarity_counts((subspecies.pop("traits", None) or {}).get("birth") or [])
+    subspecies["birth_traits"] = _rarity_counts((subspecies.pop("traits", None) or {}).get("birth"))
+
+
+# The panels read nothing but the `total`, whichever form `full` handed over — nothing is lost, the chapter's own `map.wbox` replaying any section.
+def _fold_total(entity: dict, *keys: str) -> None:
+    for key in keys:
+        if isinstance(block := entity.get(key), dict):
+            entity[key] = {"total": block.get("total", 0)}
 
 
 # Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
@@ -125,9 +136,9 @@ def _prior_context(n: int) -> tuple[set, dict | None, str | None]:
     return tags, favorite, age_id
 
 
-# Creature traits tallied by rarity, all four buckets present at 0 — the panel prints them side by side, and a missing key would blank a cell rather than zero it.
-def _rarity_counts(traits: list[dict]) -> dict:
-    counts = Counter(trait.get("rarity", "").lower() for trait in traits)
+# Creature traits tallied by rarity off the summarised `{id: rarity}` map, all four buckets at 0 — a missing key would blank the panel cell, not zero it.
+def _rarity_counts(traits: dict | None) -> dict:
+    counts = Counter(rarity.lower() for rarity in (traits or {}).values())
     return {rarity: counts.get(rarity, 0) for rarity in _RARITIES}
 
 
@@ -216,7 +227,7 @@ def main(argv: list[str]) -> int:
             _fold_subspecies_detail(subspecies)
         for tier in (clan, family, subspecies):  # the three tiers built alike, folded alike — a roster never travels, whichever of them carries it
             if tier:
-                _fold_members(tier)
+                _fold_total(tier, "members")
 
     age_id = live["mapStats"].get("world_age_id") or ""
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
@@ -230,7 +241,7 @@ def main(argv: list[str]) -> int:
     new_alerts = _fired_alerts(live, already)
     tags += [code for code, _message in new_alerts]
 
-    age_label = _AGE_LABELS.get(age_id, age_id)
+    age_label = (_AGE_LABELS.get(age_id) or {}).get("name") or age_id
 
     # `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
     chapter_json = {
@@ -247,7 +258,7 @@ def main(argv: list[str]) -> int:
     }
 
     # `render`, not `json.dumps(indent=2)`: same tree, a third fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong here.
-    (chapter_dir / "chapter.json").write_text(render(chapter_json) + "\n")
+    (chapter_dir / "chapter.json").write_text(render(_drop_info(chapter_json)) + "\n")
 
     year = int(world_time / UNITS_PER_YEAR)
     counts = " · ".join(  # The chronicler's own order: the map first, then who fills it. Each name pairs with its label here rather than twice below.

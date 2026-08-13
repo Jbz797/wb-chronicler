@@ -12,57 +12,54 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from islands import compute_islands_cached
 from shared import (
-    UNITS_PER_YEAR,
+    actor_age,
+    build_trait_ids,
     build_trait_list,
     competition_ranks,
     emit,
+    entity_age,
     entity_ref,
     index_by_id,
     is_boat,
+    light,
     load_data,
     load_save,
     parse_sections,
     population_breakdown,
     resolve_profession,
+    roster_ids,
     sex_label,
     take_chapter,
+    wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "ranks", "traits")
+_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "ranks", "species", "traits")
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # WB names both shorter than the sheet does; without these they print raw ids.
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field, the same narrow set a clan carries — old age answers to `natural`.
 _EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "population": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
 
 
-# The stock WB mutated this one out of, and the biome that shaped it — the stock named, flavoured (chronicler-only, English) and ranked among species.
-def _build_identity(subspecies: dict, save: dict) -> dict:
-    asset_id = subspecies.get("species_id") or ""
+# The stock WB mutated this one out of and the biome that shaped it — bare keys, and WB's `default_color` being no biome at all, the panel drops the row.
+def _build_identity(subspecies: dict) -> dict:
     raw_biome = (subspecies.get("biome_variant") or "").removeprefix("biome_")
     biome_id = _BIOME_ALIASES.get(raw_biome, raw_biome)
-    species, biome = load_data("species.json").get(asset_id) or {}, load_data("biomes.json").get(biome_id) or {}
-    totals = _species_totals(save)
-    own = totals.get(asset_id) or _EMPTY_SPECIES.copy()
-
-    return {  # The key alone: a biome is fixed vocabulary, so the French label belongs to the UI. `default_color` is no variant at all, hence nothing and no row.
-        "biome": biome_id if biome else None,
-        "species": {
-            "asset_id": asset_id,
-            "description": species.get("description"),  # chronicler-only: WB's own English line, which the panel never prints
-            "metadata": own,
-            "name": species.get("name") or asset_id,
-            "ranks": competition_ranks(own, list(totals.values()), {key: itemgetter(key) for key in _EMPTY_SPECIES}),
-        },
+    return {
+        "biome": biome_id if load_data("biomes.json").get(biome_id) else None,
+        "species": subspecies.get("species_id"),
     }
 
 
 # Everyone alive who carries the biology, eldest first — WB points the actor at its subspecies, never the reverse. `total` rides with the list it counts.
-def _build_members(members: list[dict], ctx: dict, save: dict) -> dict:
+def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
+    if not detailed:  # `full` keeps the chapter light: ids and a headcount, since a widespread biology rosters hundreds and no panel ever names one
+        return light({"ids": roster_ids(members, ctx["world_time"]), "total": len(members)}, "members")
+    island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a widespread biology would still call through it hundreds of times
     out = [
         {
-            "age": int((ctx["world_time"] - float(actor.get("created_time") or 0)) / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
+            "age": actor_age(actor, ctx["world_time"]),
             "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
             "id": actor["id"],
-            "island_id": ctx["island_lookup"]().get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
+            "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
             "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
             "name": actor.get("name"),
             "profession": resolve_profession(actor, save),
@@ -76,33 +73,57 @@ def _build_members(members: list[dict], ctx: dict, save: dict) -> dict:
 # The subspecies' identity card: WB's own lifetime counters beside what only a walk over the living can tell — how far the biology spread and what it carries.
 def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
     cities = {c for a in members if (c := a.get("cityID"))}
+    island_of = ctx["island_lookup"]()
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
     causes = {k[len(_DEATH_PREFIX) :]: v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
 
     return {
-        "age": int((ctx["world_time"] - float(subspecies.get("created_time") or 0)) / UNITS_PER_YEAR),
-        "birth_traits": len(subspecies.get("saved_actor_birth_traits") or []),  # what every newborn inherits, counted apart from the biology below
-        "cities": len(cities),  # settlements its bearers answer from — a biology spreads wherever its carriers walk, WB never ties it to a place
+        "age": entity_age(subspecies, ctx["world_time"]),
         "id": subspecies["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         # Chronicler-only: land masses its bearers stand on, sorted asc (1 = biggest). Presence, not weight — one wanderer on an islet earns it a place here.
-        "islands": sorted({iid for a in members if (iid := ctx["island_lookup"]().get((int(a["x"]), int(a["y"])))) is not None}),
-        "kingdoms": len(kingdoms),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
-        "money": sum(int(a.get("money") or 0) for a in members),  # the purse the living carry between them — a subspecies owns nothing, WB banks per actor
+        "islands": sorted({iid for a in members if (iid := island_of.get((int(a["x"]), int(a["y"])))) is not None}),
         "name": subspecies.get("name"),
-        "renown_total": sum(int(a.get("renown") or 0) for a in members),  # The living's worth beside WB's own tally below, which counts every bearer ever born.
-        "renown": int(subspecies.get("renown") or 0),
-        "traits": len(subspecies.get("saved_traits") or []),
+        # Every counter below drops at zero, as WB's own already do: a beast holds no town and swears no trait, and the panels read them through `?? 0`.
+        **({"birth_traits": birth} if (birth := len(subspecies.get("saved_actor_birth_traits") or [])) else {}),  # what every newborn inherits
         **({"births": births} if (births := int(subspecies.get("total_births") or 0)) else {}),
+        **({"cities": len(cities)} if cities else {}),  # settlements its bearers answer from — a biology spreads wherever its carriers walk
         **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the biology has been dying, which its totals alone never say
         **({"deaths": deaths} if (deaths := int(subspecies.get("total_deaths") or 0)) else {}),
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
+        **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
+        **({"money": money} if (money := sum(int(a.get("money") or 0) for a in members)) else {}),  # the purse the living carry; WB banks per actor
+        **({"renown_total": total} if (total := sum(int(a.get("renown") or 0) for a in members)) else {}),  # the living's worth beside WB's lifetime tally
+        **({"renown": renown} if (renown := int(subspecies.get("renown") or 0)) else {}),
+        **({"traits": traits} if (traits := len(subspecies.get("saved_traits") or [])) else {}),
     }
+
+
+# The stock's standing over every soul of that species, ranked against the others — its own section, like a realm's `alliance`: counts flat beside its `ranks`.
+def _build_species(subspecies: dict, save: dict) -> dict:
+    asset_id = subspecies.get("species_id") or ""
+    totals = _species_totals(save)
+    own = totals.get(asset_id) or _EMPTY_SPECIES.copy()
+    ranks = competition_ranks(own, list(totals.values()), {key: itemgetter(key) for key in _EMPTY_SPECIES})
+    description = (load_data("species.json").get(asset_id) or {}).get("description")  # chronicler-only: WB's English line, which the panel never prints
+
+    # Counts drop at zero like the tier's own — a beast holds no town, and the podium is computed off the whole dict, so nothing is lost by not printing it.
+    return {**{key: value for key, value in own.items() if value}, "description": description, **({"ranks": ranks} if ranks else {})}
+
+
+# Two libraries: `biology` what WB mutated the subspecies into, `birth` what its newborns inherit — summarised to ids and rarity at any size, standing alone.
+def _build_traits(subspecies: dict, detailed: bool) -> dict:
+    build = build_trait_list if detailed else build_trait_ids
+    sworn = {
+        "biology": build(subspecies.get("saved_traits") or [], load_data("subspecies-traits.json")),
+        "birth": build(subspecies.get("saved_actor_birth_traits") or [], load_data("creature-traits.json")),
+    }
+    return sworn if detailed else light(sworn, "traits")
 
 
 # What a biology is ranked on among the world's others — living counts come off the roster it was handed, lifetime counters off WB's own fields.
 def _rank_getters(members_by_subspecies: dict, world_time: float) -> dict:
     return {
-        "age": lambda s: int((world_time - float(s.get("created_time") or 0)) / UNITS_PER_YEAR),
+        "age": lambda s: entity_age(s, world_time),
         "births": lambda s: int(s.get("total_births") or 0),
         "deaths": lambda s: int(s.get("total_deaths") or 0),
         "kills": lambda s: int(s.get("total_kills") or 0),
@@ -148,8 +169,10 @@ def main(argv: list[str]) -> int:
     except ValueError:
         print(f"invalid id: {argv[0]}", file=sys.stderr)
         return 1
+
+    requested = argv[1] if len(argv) > 1 else None
     try:
-        sections = parse_sections(argv[1] if len(argv) > 1 else None, _ALL_SECTIONS)
+        sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -182,20 +205,18 @@ def main(argv: list[str]) -> int:
         # The living against the biology they were born into. Species and subspecies both go: WB fixes them at birth, so each would read 100 % and say nothing.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k not in ("species", "subspecies")}
     if "identity" in sections:
-        out["identity"] = _build_identity(subspecies, save)
+        out["identity"] = _build_identity(subspecies)
     if "members" in sections:
-        out["members"] = _build_members(members, ctx, save)
+        out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
         out["metadata"] = _build_metadata(subspecies, members, ctx)
     if "ranks" in sections:
         peers = list(subspecies_by_id.values())
         out["ranks"] = competition_ranks(subspecies, peers, _rank_getters(members_by_subspecies, ctx["world_time"]))
+    if "species" in sections:
+        out["species"] = _build_species(subspecies, save)
     if "traits" in sections:
-        # Two libraries on purpose: `biology` is what WB mutated into the subspecies itself, `birth` the creature traits every newborn of it inherits.
-        out["traits"] = {
-            "biology": build_trait_list(subspecies.get("saved_traits") or [], load_data("subspecies-traits.json")),
-            "birth": build_trait_list(subspecies.get("saved_actor_birth_traits") or [], load_data("creature-traits.json")),
-        }
+        out["traits"] = _build_traits(subspecies, detailed=requested not in (None, "full"))
     emit(out)
     return 0
 

@@ -6,5 +6,5 @@ export const CLAN_REGISTRY: ClanRegistry = {};
 export const FAMILY_REGISTRY: FamilyRegistry = {};
 export const KINGDOM_REGISTRY: KingdomRegistry = {};
 export const PERSON_REGISTRY: PersonRegistry = {};
-export const SUBSPECIES_REGISTRY: SubspeciesRegistry = {};
 export const REALM_FALLBACK_HUE = '#B0B0B0'; // WB `Toolbox.color_grey` — worn by whoever answers to no crown: wild beasts, bandits, the exiled.
+export const SUBSPECIES_REGISTRY: SubspeciesRegistry = {};

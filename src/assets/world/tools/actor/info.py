@@ -13,7 +13,9 @@ from shared import (
     PROFESSION_KING,
     PROFESSION_LEADER,
     UNITS_PER_YEAR,
+    actor_age,
     age_thresholds,
+    build_trait_ids,
     build_trait_list,
     competition_ranks,
     emit,
@@ -22,6 +24,7 @@ from shared import (
     equipment_rarity,
     index_by_id,
     life_stage,
+    light,
     load_save,
     parse_sections,
     resolve_profession,
@@ -126,7 +129,7 @@ def _build_equipment_list(actor: dict, ctx: dict) -> list:
     mod_stats = ctx["equipment"]["modifiers"]
     world_time = ctx["world_time"]
     items = (ctx["items_by_id"].get(iid) for iid in actor.get("saved_items") or [])
-    return sorted((equipment_entry(i, item_stats, mod_stats, world_time) for i in items if i is not None), key=lambda i: i["id"])
+    return sorted((equipment_entry(i, item_stats, mod_stats, world_time, described=True) for i in items if i is not None), key=lambda i: i["id"])
 
 
 # Resource bag → `{resource_id: amount}`, heaviest stack first then alphabetical — the raw save nests it as `inventory.dict.<id>.amount`.
@@ -139,10 +142,9 @@ def _build_inventory(actor: dict) -> dict:
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     snap = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
 
-    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
     lifespan = snap.get("lifespan", 0)
 
-    age = int(age_units / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0)  # `age_overgrowth` (years past the lifespan cap) added on top, like the WB tooltip.
+    age = actor_age(actor, ctx["world_time"])
     age_adult, age_breeding = age_thresholds(lifespan)
     ax, ay = actor.get("x"), actor.get("y")
     language = ctx["languages_by_id"].get(actor.get("language")) or {}
@@ -245,13 +247,10 @@ def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
     peers = [_compute_stats(a, ctx) for a in same_species]
     own = next(s for a, s in zip(same_species, peers) if a["id"] == actor["id"])
 
-    def actor_age(a: dict) -> int:
-        return int((ctx["world_time"] - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
-
     getters = {stat: lambda s, st=stat: s.get(st, 0) for stat in _RANKED_STATS if stat in own}  # `st=stat` binds now, else every lambda reads the last one
     ranks = competition_ranks(own, peers, getters)
     # Age is not in `_compute_stats` (derived from `created_time`) — ranked separately, against the raw actors.
-    ranks.update(competition_ranks(actor, same_species, {"age": actor_age}))
+    ranks.update(competition_ranks(actor, same_species, {"age": lambda a: actor_age(a, ctx["world_time"])}))
     return dict(sorted(ranks.items()))
 
 
@@ -334,8 +333,10 @@ def main(argv: list[str]) -> int:
     except ValueError:
         print(f"invalid id: {argv[0]}", file=sys.stderr)
         return 1
+
+    requested = argv[1] if len(argv) > 1 else None
     try:
-        sections = parse_sections(argv[1] if len(argv) > 1 else None, _ALL_SECTIONS)
+        sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -355,7 +356,11 @@ def main(argv: list[str]) -> int:
         by_id = ctx["actors_by_id"]
         out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": entity_ref(actor.get("lover"), by_id)}
     if "creature_traits" in sections:
-        out["creature_traits"] = build_trait_list(actor.get("saved_traits") or [], ctx["creature_traits"])
+        sworn = actor.get("saved_traits") or []
+        if requested in (None, "full"):  # `full` keeps the chapter light: what each trait is and how rare, its effect and flavour only when named
+            out["creature_traits"] = light({"ids": build_trait_ids(sworn, ctx["creature_traits"])}, "creature_traits")
+        else:
+            out["creature_traits"] = build_trait_list(sworn, ctx["creature_traits"])
     if "equipment" in sections:
         out["equipment"] = _build_equipment_list(actor, ctx)
     if "inventory" in sections:

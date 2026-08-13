@@ -2,12 +2,13 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { SpeciesNamePipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { SubspeciesTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-breakdown',
-  imports: [NzDescriptionsModule, SubspeciesTagComponent],
+  imports: [NzDescriptionsModule, SpeciesNamePipe, SubspeciesTagComponent],
   templateUrl: './breakdown.component.html',
 })
 export class BreakdownComponent {

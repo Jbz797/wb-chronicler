@@ -1,13 +1,43 @@
 {
-  "age_ash": "Ère des Cendres",
-  "age_chaos": "Ère du Chaos",
-  "age_dark": "Ère des Ténèbres",
-  "age_despair": "Ère du Désespoir",
-  "age_hope": "Ère de l'Espoir",
-  "age_ice": "Ère de Glace",
-  "age_moon": "Ère de la Lune",
-  "age_sun": "Ère du Soleil",
-  "age_tears": "Ère des Larmes",
-  "age_unknown": "Ère inconnue",
-  "age_wonders": "Ère des Merveilles"
+  "age_ash": {
+    "description": "This age will be a time of sickness, with the air thick with smoke and dust particles that cause a deadly illness known as ash fever. It will not be a good time to live, but people will still hope to see another day.",
+    "name": "Ère des Cendres"
+  },
+  "age_chaos": {
+    "description": "This age will be a time of blood and death, where the world will be in turmoil and anarchy will reign supreme. It will be a time of war and destruction, where every day will be a struggle for survival. The end of the world will seem to be drawing ever nearer, as those in power fight for dominance and the common people are left to fend for themselves.",
+    "name": "Ère du Chaos"
+  },
+  "age_dark": {
+    "description": "It will be a time of great darkness, when the world will be shrouded in a veil of shadows that will seem to swallow all light and hope. Foul creatures will lurk in the darkness, preying on the unwary, while the shadows themselves will hold nightmares and illusions that could drive a person to madness.",
+    "name": "Ère des Ténèbres"
+  },
+  "age_despair": {
+    "description": "This age will be a long and grueling era of endless winter and darkness, where the world will be shrouded in an unrelenting cold that threatens to snuff out all life. The darkness will be all-consuming, and even the bravest of hearts will be tested in such an unforgiving environment. Yet even in the midst of such starkness, there will still be those who hold on to hope, who believe that the thaw will come and life will bloom once again. They will keep alive the flame of life, and it is their faith and resilience that will ultimately see the world through the Age of Despair, into a new era of growth and renewal.",
+    "name": "Ère du Désespoir"
+  },
+  "age_hope": {
+    "description": "This is a time of great promise, where the future is bright and full of possibilities. The world is full of life and hope, and people feel optimistic about what was to come.",
+    "name": "Ère de l'Espoir"
+  },
+  "age_ice": {
+    "description": "This age will be a time of cold and desolation, where the world will be locked in a relentless grip of ice and snow. The winds will be icy and unforgiving, and even the hardiest of souls will struggle to find warmth and shelter. The world will seem to have entered an endless winter, where the sun itself has been extinguished and the land is a lifeless tundra.",
+    "name": "Ère de Glace"
+  },
+  "age_moon": {
+    "description": "During this age, the world will be bathed in a radiant glow, as the bright and luminous moon casts its spell over all who live in it. The night will come alive with the music of the spheres, and the magic of the moon will be everywhere, filling the air with a sense of enchantment and wonder. In this age, people will gaze up at the sky with a sense of awe and reverence, knowing that they are part of something much greater than themselves. And even in the darkest of nights, the moon will shine like a beacon of hope, guiding them through the mysteries of the cosmos.",
+    "name": "Ère de la Lune"
+  },
+  "age_sun": {
+    "description": "This is a time of intense heat and brightness, where the sun blazed down on the world. Living in this age is tough as people battle to find ways to survive the harsh conditions",
+    "name": "Ère du Soleil"
+  },
+  "age_tears": {
+    "description": "In this age, the sky will weep endlessly, drenching the world in a ceaseless downpour of sorrow. People will struggle to find hope and happiness in a bleak and hopeless world, but there will still be those who cling to optimism and believe that the sun will one day shine again",
+    "name": "Ère des Larmes"
+  },
+  "age_unknown": { "description": "A mystery era awaits", "name": "Ère inconnue" },
+  "age_wonders": {
+    "description": "This age will be a time of enchantment and mystery, where the very air is charged with arcane energies that spark the imagination and bring forth incredible marvels. Those who are skilled in the ways of magic will be in their prime, harnessing the forces of the universe to accomplish amazing feats and create wonders beyond the dreams of ordinary mortals.",
+    "name": "Ère des Merveilles"
+  }
 }

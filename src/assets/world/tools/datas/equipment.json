@@ -1,320 +1,432 @@
 {
   "items": {
-    "$axe": { "damage_range": 0.6 },
-    "$bow": { "critical_chance": 0.1, "critical_damage_multiplier": 0.5, "damage_range": 0.6, "projectiles": 1, "recoil": 1 },
-    "$hammer": { "damage_range": 0.1, "targets": 2 },
-    "$melee": { "damage_range": 0.5 },
-    "$range": { "damage_range": 0.6, "projectiles": 1 },
-    "$spear": { "damage_range": 0.7, "range": 1 },
-    "$sword": { "damage": 1, "damage_range": 0.8 },
-    "$weapon": { "damage_range": 0.5 },
+    "$axe": { "stats": { "damage_range": 0.6 } },
+    "$bow": { "stats": { "critical_chance": 0.1, "critical_damage_multiplier": 0.5, "damage_range": 0.6, "projectiles": 1, "recoil": 1 } },
+    "$hammer": { "stats": { "damage_range": 0.1, "targets": 2 } },
+    "$melee": { "stats": { "damage_range": 0.5 } },
+    "$range": { "stats": { "damage_range": 0.6, "projectiles": 1 } },
+    "$spear": { "stats": { "damage_range": 0.7, "range": 1 } },
+    "$sword": { "stats": { "damage": 1, "damage_range": 0.8 } },
+    "$weapon": { "stats": { "damage_range": 0.5 } },
     "alien_blaster": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 30,
-      "damage_range": 0.6,
-      "mana": 20,
-      "projectiles": 1,
-      "range": 20,
-      "stamina": 20,
-      "targets": 1
+      "description": "Unidentified Firing Object",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 30,
+        "damage_range": 0.6,
+        "mana": 20,
+        "projectiles": 1,
+        "range": 20,
+        "stamina": 20,
+        "targets": 1
+      }
     },
-    "amulet_adamantine": { "critical_chance": 0.1, "mana": 20, "stamina": 5 },
-    "amulet_bone": { "critical_chance": 0.02, "stamina": 5 },
-    "amulet_bronze": { "critical_chance": 0.04, "stamina": 5 },
-    "amulet_copper": { "critical_chance": 0.03, "stamina": 5 },
-    "amulet_iron": { "critical_chance": 0.06, "stamina": 5 },
-    "amulet_mythril": { "critical_chance": 0.08, "mana": 15, "stamina": 5 },
-    "amulet_silver": { "critical_chance": 0.05, "mana": 10, "stamina": 5 },
-    "amulet_steel": { "critical_chance": 0.07, "stamina": 5 },
-    "armor_adamantine": { "armor": 10, "mana": 35, "stamina": 5 },
-    "armor_bronze": { "armor": 4, "stamina": 10 },
-    "armor_copper": { "armor": 3, "stamina": 15 },
-    "armor_iron": { "armor": 6, "stamina": 5 },
-    "armor_leather": { "armor": 2, "speed": 1, "stamina": 20 },
-    "armor_mythril": { "armor": 8, "mana": 25, "stamina": 5 },
-    "armor_silver": { "armor": 5, "mana": 15, "stamina": 5 },
-    "armor_steel": { "armor": 7, "stamina": 5 },
-    "axe_adamantine": { "critical_chance": 0.15, "damage": 10, "damage_range": 0.6, "mana": 35, "speed": 1, "stamina": 10 },
-    "axe_bronze": { "damage": 4, "damage_range": 0.6, "stamina": 5 },
-    "axe_copper": { "damage": 3, "damage_range": 0.6, "stamina": 10 },
-    "axe_iron": { "critical_chance": 0.05, "damage": 6, "damage_range": 0.6, "stamina": 5 },
-    "axe_mythril": { "critical_chance": 0.05, "damage": 8, "damage_range": 0.6, "mana": 25, "stamina": 10 },
-    "axe_silver": { "damage": 5, "damage_range": 0.6, "mana": 15, "stamina": 5 },
-    "axe_steel": { "critical_chance": 0.05, "damage": 7, "damage_range": 0.6, "speed": 1, "stamina": 5 },
-    "axe_stone": { "damage": 3, "damage_range": 0.6, "speed": -2 },
-    "axe_wood": { "damage": 1, "damage_range": 0.6, "stamina": 15 },
-    "base_attack": { "damage_range": 0.5 },
-    "bite": { "damage_range": 0.5 },
+    "amulet_adamantine": { "description": "Worn by the champions", "stats": { "critical_chance": 0.1, "mana": 20, "stamina": 5 } },
+    "amulet_bone": { "description": "A relic from the grave", "stats": { "critical_chance": 0.02, "stamina": 5 } },
+    "amulet_bronze": { "description": "Worn by those who seek vengeance", "stats": { "critical_chance": 0.04, "stamina": 5 } },
+    "amulet_copper": { "description": "Smells like fresh rain", "stats": { "critical_chance": 0.03, "stamina": 5 } },
+    "amulet_iron": { "description": "A reminder of the chains that bind the soul", "stats": { "critical_chance": 0.06, "stamina": 5 } },
+    "amulet_mythril": { "description": "Protection from nightmares", "stats": { "critical_chance": 0.08, "mana": 15, "stamina": 5 } },
+    "amulet_silver": { "description": "Shiny as a new spoon", "stats": { "critical_chance": 0.05, "mana": 10, "stamina": 5 } },
+    "amulet_steel": { "description": "Favored by those who have only found purpose on the battlefield", "stats": { "critical_chance": 0.07, "stamina": 5 } },
+    "armor_adamantine": { "description": "Adamantine armor, ultimate defense", "stats": { "armor": 10, "mana": 35, "stamina": 5 } },
+    "armor_bronze": { "description": "Strong and sturdy", "stats": { "armor": 4, "stamina": 10 } },
+    "armor_copper": { "description": "A budget warrior's choice", "stats": { "armor": 3, "stamina": 15 } },
+    "armor_iron": { "description": "Built for battle", "stats": { "armor": 6, "stamina": 5 } },
+    "armor_leather": { "description": "A second skin", "stats": { "armor": 2, "speed": 1, "stamina": 20 } },
+    "armor_mythril": { "description": "Unmatched in its lightness", "stats": { "armor": 8, "mana": 25, "stamina": 5 } },
+    "armor_silver": { "description": "For the gallant warrior", "stats": { "armor": 5, "mana": 15, "stamina": 5 } },
+    "armor_steel": { "description": "Dependable and strong", "stats": { "armor": 7, "stamina": 5 } },
+    "axe_adamantine": {
+      "description": "Sharp enough to split the earth",
+      "stats": { "critical_chance": 0.15, "damage": 10, "damage_range": 0.6, "mana": 35, "speed": 1, "stamina": 10 }
+    },
+    "axe_bronze": { "description": "Heavy in hand, harder in battle", "stats": { "damage": 4, "damage_range": 0.6, "stamina": 5 } },
+    "axe_copper": { "description": "A bright blade, for a bold warrior", "stats": { "damage": 3, "damage_range": 0.6, "stamina": 10 } },
+    "axe_iron": {
+      "description": "Iron sharpens iron, and this axe sharpens souls",
+      "stats": { "critical_chance": 0.05, "damage": 6, "damage_range": 0.6, "stamina": 5 }
+    },
+    "axe_mythril": {
+      "description": "A swing that defies gravity",
+      "stats": { "critical_chance": 0.05, "damage": 8, "damage_range": 0.6, "mana": 25, "stamina": 10 }
+    },
+    "axe_silver": { "description": "Shines like the moon, cuts like the wind", "stats": { "damage": 5, "damage_range": 0.6, "mana": 15, "stamina": 5 } },
+    "axe_steel": {
+      "description": "Crafted to perfection, designed for death",
+      "stats": { "critical_chance": 0.05, "damage": 7, "damage_range": 0.6, "speed": 1, "stamina": 5 }
+    },
+    "axe_stone": { "description": "Primitive power in a hardened edge", "stats": { "damage": 3, "damage_range": 0.6, "speed": -2 } },
+    "axe_wood": { "description": "From tree to weapon, the cycle continues", "stats": { "damage": 1, "damage_range": 0.6, "stamina": 15 } },
+    "base_attack": { "stats": { "damage_range": 0.5 } },
+    "bite": { "stats": { "damage_range": 0.5 } },
     "boat_acid_ball": {
-      "area_of_effect": 4,
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 50,
-      "damage_range": 0.6,
-      "projectiles": 5,
-      "range": 14,
-      "targets": 4
+      "stats": {
+        "area_of_effect": 4,
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 50,
+        "damage_range": 0.6,
+        "projectiles": 5,
+        "range": 14,
+        "targets": 4
+      }
     },
     "boat_arrow": {
-      "accuracy": 4,
-      "area_of_effect": 0,
-      "attack_speed": 0.5,
-      "critical_chance": 0.2,
-      "critical_damage_multiplier": 0.5,
-      "damage": 30,
-      "damage_range": 0.6,
-      "projectiles": 5,
-      "range": 9,
-      "targets": 4
+      "stats": {
+        "accuracy": 4,
+        "area_of_effect": 0,
+        "attack_speed": 0.5,
+        "critical_chance": 0.2,
+        "critical_damage_multiplier": 0.5,
+        "damage": 30,
+        "damage_range": 0.6,
+        "projectiles": 5,
+        "range": 9,
+        "targets": 4
+      }
     },
     "boat_cannonball": {
-      "area_of_effect": 3,
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 50,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 14,
-      "targets": 4
+      "stats": {
+        "area_of_effect": 3,
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 50,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 14,
+        "targets": 4
+      }
     },
     "boat_fireball": {
-      "area_of_effect": 2,
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 30,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 12,
-      "targets": 4
+      "stats": {
+        "area_of_effect": 2,
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 30,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 12,
+        "targets": 4
+      }
     },
     "boat_freeze_ball": {
-      "area_of_effect": 2,
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 30,
-      "damage_range": 0.6,
-      "projectiles": 3,
-      "range": 12,
-      "targets": 4
+      "stats": {
+        "area_of_effect": 2,
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 30,
+        "damage_range": 0.6,
+        "projectiles": 3,
+        "range": 12,
+        "targets": 4
+      }
     },
     "boat_necro_ball": {
-      "area_of_effect": 3,
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 45,
-      "damage_range": 0.6,
-      "projectiles": 3,
-      "range": 12,
-      "targets": 4
+      "stats": {
+        "area_of_effect": 3,
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 45,
+        "damage_range": 0.6,
+        "projectiles": 3,
+        "range": 12,
+        "targets": 4
+      }
     },
     "boat_plasma_ball": {
-      "area_of_effect": 2,
-      "critical_chance": 0.2,
-      "critical_damage_multiplier": 0.5,
-      "damage": 65,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 20,
-      "targets": 4
+      "stats": {
+        "area_of_effect": 2,
+        "critical_chance": 0.2,
+        "critical_damage_multiplier": 0.5,
+        "damage": 65,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 20,
+        "targets": 4
+      }
     },
     "boat_snowball": {
-      "area_of_effect": 3,
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 50,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 14,
-      "targets": 4
+      "stats": {
+        "area_of_effect": 3,
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 50,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 14,
+        "targets": 4
+      }
     },
-    "boots_adamantine": { "armor": 10, "mana": 35, "stamina": 10 },
-    "boots_bronze": { "armor": 4, "stamina": 5 },
-    "boots_copper": { "armor": 3, "stamina": 5 },
-    "boots_iron": { "armor": 6, "stamina": 5 },
-    "boots_leather": { "armor": 2, "speed": 1, "stamina": 10 },
-    "boots_mythril": { "armor": 8, "mana": 25, "stamina": 10 },
-    "boots_silver": { "armor": 5, "mana": 15, "stamina": 5 },
-    "boots_steel": { "armor": 7, "stamina": 5 },
+    "boots_adamantine": { "description": "Perfect boots", "stats": { "armor": 10, "mana": 35, "stamina": 10 } },
+    "boots_bronze": { "description": "Made for the seasoned traveler", "stats": { "armor": 4, "stamina": 5 } },
+    "boots_copper": { "description": "A solid choice", "stats": { "armor": 3, "stamina": 5 } },
+    "boots_iron": { "description": "Built to last", "stats": { "armor": 6, "stamina": 5 } },
+    "boots_leather": { "description": "Made for walking", "stats": { "armor": 2, "speed": 1, "stamina": 10 } },
+    "boots_mythril": { "description": "Legendary mythril, in boot form", "stats": { "armor": 8, "mana": 25, "stamina": 10 } },
+    "boots_silver": { "description": "Both stylish and strong", "stats": { "armor": 5, "mana": 15, "stamina": 5 } },
+    "boots_steel": { "description": "Ready for any terrain", "stats": { "armor": 7, "stamina": 5 } },
     "bow_adamantine": {
-      "critical_chance": 0.15,
-      "critical_damage_multiplier": 0.5,
-      "damage": 10,
-      "damage_range": 0.6,
-      "mana": 35,
-      "projectiles": 1,
-      "range": 12,
-      "recoil": 1,
-      "speed": 1,
-      "stamina": 10
+      "description": "A bow that can pierce anything, even fate",
+      "stats": {
+        "critical_chance": 0.15,
+        "critical_damage_multiplier": 0.5,
+        "damage": 10,
+        "damage_range": 0.6,
+        "mana": 35,
+        "projectiles": 1,
+        "range": 12,
+        "recoil": 1,
+        "speed": 1,
+        "stamina": 10
+      }
     },
     "bow_bronze": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 4,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 7,
-      "recoil": 1,
-      "stamina": 5
+      "description": "A bow that holds true, even in chaos",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 4,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 7,
+        "recoil": 1,
+        "stamina": 5
+      }
     },
     "bow_copper": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 3,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 6,
-      "recoil": 1,
-      "stamina": 10
+      "description": "A sturdy bow for a sturdy hand",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 3,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 6,
+        "recoil": 1,
+        "stamina": 10
+      }
     },
     "bow_iron": {
-      "critical_chance": 0.05,
-      "critical_damage_multiplier": 0.5,
-      "damage": 6,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 9,
-      "recoil": 1,
-      "stamina": 5
+      "description": "A heavy pull for a heavier impact",
+      "stats": {
+        "critical_chance": 0.05,
+        "critical_damage_multiplier": 0.5,
+        "damage": 6,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 9,
+        "recoil": 1,
+        "stamina": 5
+      }
     },
     "bow_mythril": {
-      "critical_chance": 0.05,
-      "critical_damage_multiplier": 0.5,
-      "damage": 8,
-      "damage_range": 0.6,
-      "mana": 25,
-      "projectiles": 1,
-      "range": 11,
-      "recoil": 1,
-      "stamina": 10
+      "description": "A weapon of myths",
+      "stats": {
+        "critical_chance": 0.05,
+        "critical_damage_multiplier": 0.5,
+        "damage": 8,
+        "damage_range": 0.6,
+        "mana": 25,
+        "projectiles": 1,
+        "range": 11,
+        "recoil": 1,
+        "stamina": 10
+      }
     },
     "bow_silver": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 5,
-      "damage_range": 0.6,
-      "mana": 15,
-      "projectiles": 1,
-      "range": 8,
-      "recoil": 1,
-      "stamina": 5
+      "description": "Refined in look, lethal in action",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 5,
+        "damage_range": 0.6,
+        "mana": 15,
+        "projectiles": 1,
+        "range": 8,
+        "recoil": 1,
+        "stamina": 5
+      }
     },
     "bow_steel": {
-      "critical_chance": 0.05,
-      "critical_damage_multiplier": 0.5,
-      "damage": 7,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 10,
-      "recoil": 1,
-      "speed": 1,
-      "stamina": 5
+      "description": "Steel in hand, victory in sight",
+      "stats": {
+        "critical_chance": 0.05,
+        "critical_damage_multiplier": 0.5,
+        "damage": 7,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 10,
+        "recoil": 1,
+        "speed": 1,
+        "stamina": 5
+      }
     },
     "bow_wood": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 1,
-      "damage_range": 0.6,
-      "projectiles": 1,
-      "range": 6,
-      "recoil": 1,
-      "stamina": 15
+      "description": "Simple yet effective",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 1,
+        "damage_range": 0.6,
+        "projectiles": 1,
+        "range": 6,
+        "recoil": 1,
+        "stamina": 15
+      }
     },
-    "claws": { "damage_range": 0.5 },
+    "claws": { "stats": { "damage_range": 0.5 } },
     "druid_staff": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.3,
-      "damage": 12,
-      "damage_range": 0.6,
-      "mana": 40,
-      "projectiles": 2,
-      "range": 20,
-      "targets": 1
+      "description": "Infused with the wisdom of the forest",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.3,
+        "damage": 12,
+        "damage_range": 0.6,
+        "mana": 40,
+        "projectiles": 2,
+        "range": 20,
+        "targets": 1
+      }
     },
     "evil_staff": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 10,
-      "damage_range": 0.6,
-      "mana": 40,
-      "projectiles": 20,
-      "range": 13,
-      "targets": 1
+      "description": "A staff that feeds on fear",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 10,
+        "damage_range": 0.6,
+        "mana": 40,
+        "projectiles": 20,
+        "range": 13,
+        "targets": 1
+      }
     },
-    "fire_hands": { "damage_range": 0.5 },
-    "flame_hammer": { "critical_chance": 0.15, "damage": 20, "damage_range": 0.5, "mana": 15, "speed": 1, "stamina": 15, "targets": 3 },
-    "flame_sword": { "critical_damage_multiplier": 0.1, "damage": 33, "damage_range": 0.5, "mana": 15, "stamina": 15, "targets": 2 },
-    "hammer_adamantine": { "critical_chance": 0.15, "damage": 10, "damage_range": 0.1, "mana": 35, "speed": 1, "stamina": 10, "targets": 2 },
-    "hammer_bronze": { "damage": 4, "damage_range": 0.1, "stamina": 5, "targets": 2 },
-    "hammer_copper": { "damage": 3, "damage_range": 0.1, "stamina": 10, "targets": 2 },
-    "hammer_iron": { "critical_chance": 0.05, "damage": 6, "damage_range": 0.1, "stamina": 5, "targets": 2 },
-    "hammer_mythril": { "critical_chance": 0.05, "damage": 8, "damage_range": 0.1, "mana": 25, "stamina": 10, "targets": 2 },
-    "hammer_silver": { "damage": 5, "damage_range": 0.1, "mana": 15, "stamina": 5, "targets": 2 },
-    "hammer_steel": { "critical_chance": 0.05, "damage": 7, "damage_range": 0.1, "speed": 1, "stamina": 5, "targets": 2 },
-    "hammer_stone": { "damage": 3, "damage_range": 0.1, "speed": -2, "targets": 2 },
-    "hammer_wood": { "damage": 1, "damage_range": 0.1, "stamina": 15, "targets": 2 },
-    "hands": { "damage_range": 0.5 },
-    "helmet_adamantine": { "armor": 10, "mana": 35, "stamina": 10 },
-    "helmet_bronze": { "armor": 4, "stamina": 5 },
-    "helmet_copper": { "armor": 3, "stamina": 5 },
-    "helmet_iron": { "armor": 6, "stamina": 5 },
-    "helmet_leather": { "armor": 2, "speed": 1, "stamina": 10 },
-    "helmet_mythril": { "armor": 8, "mana": 25, "stamina": 10 },
-    "helmet_silver": { "armor": 5, "mana": 15, "stamina": 5 },
-    "helmet_steel": { "armor": 7, "stamina": 5 },
-    "ice_hammer": { "critical_chance": 0.15, "damage": 20, "damage_range": 0.5, "mana": 15, "speed": 1, "stamina": 15, "targets": 3 },
-    "jaws": { "damage_range": 0.5 },
+    "fire_hands": { "stats": { "damage_range": 0.5 } },
+    "flame_hammer": {
+      "description": "Burns with passion!",
+      "stats": { "critical_chance": 0.15, "damage": 20, "damage_range": 0.5, "mana": 15, "speed": 1, "stamina": 15, "targets": 3 }
+    },
+    "flame_sword": {
+      "description": "Blazing with the fury of a thousand suns",
+      "stats": { "critical_damage_multiplier": 0.1, "damage": 33, "damage_range": 0.5, "mana": 15, "stamina": 15, "targets": 2 }
+    },
+    "hammer_adamantine": {
+      "description": "A hammer that turns mountains to dust",
+      "stats": { "critical_chance": 0.15, "damage": 10, "damage_range": 0.1, "mana": 35, "speed": 1, "stamina": 10, "targets": 2 }
+    },
+    "hammer_bronze": { "description": "A hammer that holds the weight of legends", "stats": { "damage": 4, "damage_range": 0.1, "stamina": 5, "targets": 2 } },
+    "hammer_copper": { "description": "Soft metal, hard impact", "stats": { "damage": 3, "damage_range": 0.1, "stamina": 10, "targets": 2 } },
+    "hammer_iron": {
+      "description": "A hammer that crushes all in its path",
+      "stats": { "critical_chance": 0.05, "damage": 6, "damage_range": 0.1, "stamina": 5, "targets": 2 }
+    },
+    "hammer_mythril": {
+      "description": "Light in hand, heavy in impact",
+      "stats": { "critical_chance": 0.05, "damage": 8, "damage_range": 0.1, "mana": 25, "stamina": 10, "targets": 2 }
+    },
+    "hammer_silver": { "description": "As beautiful as it is powerful", "stats": { "damage": 5, "damage_range": 0.1, "mana": 15, "stamina": 5, "targets": 2 } },
+    "hammer_steel": {
+      "description": "Crafted to perfection, designed for destruction",
+      "stats": { "critical_chance": 0.05, "damage": 7, "damage_range": 0.1, "speed": 1, "stamina": 5, "targets": 2 }
+    },
+    "hammer_stone": { "description": "Carved from the mountains", "stats": { "damage": 3, "damage_range": 0.1, "speed": -2, "targets": 2 } },
+    "hammer_wood": { "description": "A hammer for those who respect tradition", "stats": { "damage": 1, "damage_range": 0.1, "stamina": 15, "targets": 2 } },
+    "hands": { "stats": { "damage_range": 0.5 } },
+    "helmet_adamantine": { "description": "The ultimate protection", "stats": { "armor": 10, "mana": 35, "stamina": 10 } },
+    "helmet_bronze": { "description": "Balanced and reliable", "stats": { "armor": 4, "stamina": 5 } },
+    "helmet_copper": { "description": "Simple copper guard for your head", "stats": { "armor": 3, "stamina": 5 } },
+    "helmet_iron": { "description": "Ironclad protection for your skull", "stats": { "armor": 6, "stamina": 5 } },
+    "helmet_leather": { "description": "For the practical fighter", "stats": { "armor": 2, "speed": 1, "stamina": 10 } },
+    "helmet_mythril": { "description": "Light as a feather, strong as steel", "stats": { "armor": 8, "mana": 25, "stamina": 10 } },
+    "helmet_silver": { "description": "Noble silver, a helmet with class", "stats": { "armor": 5, "mana": 15, "stamina": 5 } },
+    "helmet_steel": { "description": "Not as light as a feather", "stats": { "armor": 7, "stamina": 5 } },
+    "ice_hammer": {
+      "description": "Chills to the bone!",
+      "stats": { "critical_chance": 0.15, "damage": 20, "damage_range": 0.5, "mana": 15, "speed": 1, "stamina": 15, "targets": 3 }
+    },
+    "jaws": { "stats": { "damage_range": 0.5 } },
     "necromancer_staff": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 30,
-      "damage_range": 0.6,
-      "mana": 40,
-      "projectiles": 1,
-      "range": 13,
-      "targets": 1
+      "description": "The grave is just the beginning",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 30,
+        "damage_range": 0.6,
+        "mana": 40,
+        "projectiles": 1,
+        "range": 13,
+        "targets": 1
+      }
     },
-    "plague_doctor_staff": { "critical_chance": 0.1, "critical_damage_multiplier": 0.5, "damage": 35, "damage_range": 0.5, "mana": 40, "targets": 3 },
-    "ring_adamantine": { "critical_chance": 0.1, "mana": 20, "stamina": 5 },
-    "ring_bone": { "critical_chance": 0.02, "stamina": 5 },
-    "ring_bronze": { "critical_chance": 0.04, "stamina": 5 },
-    "ring_copper": { "critical_chance": 0.03, "stamina": 5 },
-    "ring_iron": { "critical_chance": 0.06, "stamina": 5 },
-    "ring_mythril": { "critical_chance": 0.08, "mana": 15, "stamina": 5 },
-    "ring_silver": { "critical_chance": 0.05, "mana": 10, "stamina": 5 },
-    "ring_steel": { "critical_chance": 0.07, "stamina": 5 },
-    "rocks": { "critical_chance": 0.1, "critical_damage_multiplier": 0.5, "damage_range": 0.6, "projectiles": 1, "range": 15 },
-    "shotgun": { "damage": 10, "damage_range": 0.9, "mana": 5, "projectiles": 12, "range": 10, "stamina": 10, "targets": 1 },
-    "snowball": { "critical_chance": 0.1, "critical_damage_multiplier": 0.5, "damage_range": 0.6, "projectiles": 1, "range": 6 },
-    "spear_adamantine": { "critical_chance": 0.15, "damage": 10, "damage_range": 0.7, "mana": 35, "range": 1, "speed": 1, "stamina": 10 },
-    "spear_bronze": { "damage": 4, "damage_range": 0.7, "range": 1, "stamina": 5 },
-    "spear_copper": { "damage": 3, "damage_range": 0.7, "range": 1, "stamina": 10 },
-    "spear_iron": { "critical_chance": 0.05, "damage": 6, "damage_range": 0.7, "range": 1, "stamina": 5 },
-    "spear_mythril": { "critical_chance": 0.05, "damage": 8, "damage_range": 0.7, "mana": 25, "range": 1, "stamina": 10 },
-    "spear_silver": { "damage": 5, "damage_range": 0.7, "mana": 15, "range": 1, "stamina": 5 },
-    "spear_steel": { "critical_chance": 0.05, "damage": 7, "damage_range": 0.7, "range": 1, "speed": 1, "stamina": 5 },
-    "spear_stone": { "damage": 3, "damage_range": 0.7, "range": 1, "speed": -2 },
-    "spear_wood": { "damage": 1, "damage_range": 0.7, "range": 1, "stamina": 15 },
-    "stick_wood": { "damage": 1, "damage_range": 0.5, "mana": 5, "stamina": 5 },
-    "sword_adamantine": { "critical_chance": 0.15, "damage": 10, "damage_range": 0.8, "mana": 35, "speed": 1, "stamina": 10 },
-    "sword_bronze": { "damage": 4, "damage_range": 0.8, "stamina": 5 },
-    "sword_copper": { "damage": 3, "damage_range": 0.8, "stamina": 10 },
-    "sword_iron": { "critical_chance": 0.05, "damage": 6, "damage_range": 0.8, "stamina": 5 },
-    "sword_mythril": { "critical_chance": 0.05, "damage": 8, "damage_range": 0.8, "mana": 25, "stamina": 10 },
-    "sword_silver": { "damage": 5, "damage_range": 0.8, "mana": 15, "stamina": 5 },
-    "sword_steel": { "critical_chance": 0.05, "damage": 7, "damage_range": 0.8, "speed": 1, "stamina": 5 },
-    "sword_stone": { "damage": 3, "damage_range": 0.8, "speed": -2 },
-    "sword_wood": { "damage": 1, "damage_range": 0.8, "stamina": 15 },
+    "plague_doctor_staff": {
+      "description": "A staff that stinks of medicine and mystery",
+      "stats": { "critical_chance": 0.1, "critical_damage_multiplier": 0.5, "damage": 35, "damage_range": 0.5, "mana": 40, "targets": 3 }
+    },
+    "ring_adamantine": { "description": "Somebody's precious", "stats": { "critical_chance": 0.1, "mana": 20, "stamina": 5 } },
+    "ring_bone": { "description": "Don't ask where the bones came from", "stats": { "critical_chance": 0.02, "stamina": 5 } },
+    "ring_bronze": { "description": "A ring that's as average as it gets", "stats": { "critical_chance": 0.04, "stamina": 5 } },
+    "ring_copper": { "description": "Simple yet sturdy", "stats": { "critical_chance": 0.03, "stamina": 5 } },
+    "ring_iron": { "description": "A ring for the warrior", "stats": { "critical_chance": 0.06, "stamina": 5 } },
+    "ring_mythril": { "description": "A ring for the ages", "stats": { "critical_chance": 0.08, "mana": 15, "stamina": 5 } },
+    "ring_silver": { "description": "A symbol of purity and clarity", "stats": { "critical_chance": 0.05, "mana": 10, "stamina": 5 } },
+    "ring_steel": { "description": "An armor on your finger", "stats": { "critical_chance": 0.07, "stamina": 5 } },
+    "rocks": { "stats": { "critical_chance": 0.1, "critical_damage_multiplier": 0.5, "damage_range": 0.6, "projectiles": 1, "range": 15 } },
+    "shotgun": {
+      "description": "A sorcerer's worst nightmare",
+      "stats": { "damage": 10, "damage_range": 0.9, "mana": 5, "projectiles": 12, "range": 10, "stamina": 10, "targets": 1 }
+    },
+    "snowball": { "stats": { "critical_chance": 0.1, "critical_damage_multiplier": 0.5, "damage_range": 0.6, "projectiles": 1, "range": 6 } },
+    "spear_adamantine": {
+      "description": "A spear so sharp, it's almost unfair",
+      "stats": { "critical_chance": 0.15, "damage": 10, "damage_range": 0.7, "mana": 35, "range": 1, "speed": 1, "stamina": 10 }
+    },
+    "spear_bronze": { "description": "Balanced and reliable", "stats": { "damage": 4, "damage_range": 0.7, "range": 1, "stamina": 5 } },
+    "spear_copper": { "description": "Shiny and sharp, but a bit soft-hearted", "stats": { "damage": 3, "damage_range": 0.7, "range": 1, "stamina": 10 } },
+    "spear_iron": {
+      "description": "Strong enough to pierce through anything",
+      "stats": { "critical_chance": 0.05, "damage": 6, "damage_range": 0.7, "range": 1, "stamina": 5 }
+    },
+    "spear_mythril": {
+      "description": "As light as hope, as sharp as destiny",
+      "stats": { "critical_chance": 0.05, "damage": 8, "damage_range": 0.7, "mana": 25, "range": 1, "stamina": 10 }
+    },
+    "spear_silver": { "description": "Aim for the heart!", "stats": { "damage": 5, "damage_range": 0.7, "mana": 15, "range": 1, "stamina": 5 } },
+    "spear_steel": {
+      "description": "A steel tip, tested in battle, proven in blood",
+      "stats": { "critical_chance": 0.05, "damage": 7, "damage_range": 0.7, "range": 1, "speed": 1, "stamina": 5 }
+    },
+    "spear_stone": { "description": "No frills, just thrills", "stats": { "damage": 3, "damage_range": 0.7, "range": 1, "speed": -2 } },
+    "spear_wood": { "description": "Doesn't look like much, but it hurts", "stats": { "damage": 1, "damage_range": 0.7, "range": 1, "stamina": 15 } },
+    "stick_wood": { "description": "Just a stick, but oh, the potential!", "stats": { "damage": 1, "damage_range": 0.5, "mana": 5, "stamina": 5 } },
+    "sword_adamantine": {
+      "description": "A blade that fears nothing",
+      "stats": { "critical_chance": 0.15, "damage": 10, "damage_range": 0.8, "mana": 35, "speed": 1, "stamina": 10 }
+    },
+    "sword_bronze": { "description": "An alloy of strength and history", "stats": { "damage": 4, "damage_range": 0.8, "stamina": 5 } },
+    "sword_copper": { "description": "Shines like a new penny, but soft as one too", "stats": { "damage": 3, "damage_range": 0.8, "stamina": 10 } },
+    "sword_iron": { "description": "Iron will, iron blade", "stats": { "critical_chance": 0.05, "damage": 6, "damage_range": 0.8, "stamina": 5 } },
+    "sword_mythril": {
+      "description": "So light, it almost swings itself",
+      "stats": { "critical_chance": 0.05, "damage": 8, "damage_range": 0.8, "mana": 25, "stamina": 10 }
+    },
+    "sword_silver": { "description": "Gleaming with purity, but sharp with intent", "stats": { "damage": 5, "damage_range": 0.8, "mana": 15, "stamina": 5 } },
+    "sword_steel": { "description": "Forged for victory", "stats": { "critical_chance": 0.05, "damage": 7, "damage_range": 0.8, "speed": 1, "stamina": 5 } },
+    "sword_stone": { "description": "Primitive but deadly", "stats": { "damage": 3, "damage_range": 0.8, "speed": -2 } },
+    "sword_wood": { "description": "Crafted from nature, swift as the wind", "stats": { "damage": 1, "damage_range": 0.8, "stamina": 15 } },
     "white_staff": {
-      "critical_chance": 0.1,
-      "critical_damage_multiplier": 0.5,
-      "damage": 35,
-      "damage_range": 0.6,
-      "mana": 40,
-      "projectiles": 1,
-      "range": 18,
-      "targets": 1
+      "description": "A beacon of hope in dark times",
+      "stats": {
+        "critical_chance": 0.1,
+        "critical_damage_multiplier": 0.5,
+        "damage": 35,
+        "damage_range": 0.6,
+        "mana": 40,
+        "projectiles": 1,
+        "range": 18,
+        "targets": 1
+      }
     }
   },
   "modifiers": {

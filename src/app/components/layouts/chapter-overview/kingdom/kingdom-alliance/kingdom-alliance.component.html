@@ -16,7 +16,7 @@
     </nz-descriptions-item>
     @if (tops().species; as s) {
       <nz-descriptions-item [nzTitle]="speciesTitle">
-        <span><img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" /> {{ s.name }} — {{ s.pct }}%</span>
+        <span><img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" /> {{ s.asset_id | speciesName }} — {{ s.pct }}%</span>
       </nz-descriptions-item>
     }
     @if (tops().subspecies; as ss) {

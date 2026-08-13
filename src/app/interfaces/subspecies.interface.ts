@@ -1,21 +1,19 @@
 import { MemberRoster, PopulationBreakdown } from './entity.interface';
 import { RarityCounts } from './stats.interface';
 
-// A species as the panel shows it: what it is, and where it places among the world's species — the same `metadata`/`ranks` pair every other tier carries.
-export interface SpeciesStanding {
-  asset_id: string;
-  metadata: SpeciesTotals;
-  name: string;
+// The stock's standing among the world's species — flat counts beside its own podium, as a realm's `alliance` carries its two.
+export interface SpeciesStanding extends SpeciesTotals {
+  description?: string;
   ranks?: Partial<SpeciesTotals>;
 }
 
-// Living counts over a whole species, the four the panel shows plus the biologies WB has mutated out of it.
+// Living counts over a whole species, the four the panel shows plus the biologies WB mutated out of it. Each drops at zero, so panels read them via `?? 0`.
 export interface SpeciesTotals {
-  cities: number;
-  kingdoms: number;
-  population: number;
-  renown: number;
-  subspecies: number;
+  cities?: number;
+  kingdoms?: number;
+  population?: number;
+  renown?: number;
+  subspecies?: number;
 }
 
 // The favourite's subspecies. Neither joined nor inherited but born into — WB fixes it at birth, so its bearers span every crown and clan without ever choosing it.
@@ -26,27 +24,29 @@ export interface Subspecies {
   members: MemberRoster;
   metadata: SubspeciesMetadata;
   ranks?: SubspeciesRanks;
+  species: SpeciesStanding;
 }
 
 // What it was mutated out of and what shaped it — Python names both off WB's French sheets, and the stock carries its standing among the world's species.
 interface SubspeciesIdentity {
   biome: string | null; // WB's key, translated by `BIOME_NAMES`; `null` where it set no variant at all, which drops the row
-  species: SpeciesStanding;
+  species: string; // its `asset_id`, translated by `SPECIES_NAMES` — the standing lives in the `species` section beside
 }
 
+// Every counter is dropped at zero, WB's own and ours alike — a beast holds no town and swears no trait, and the panels read them through `?? 0`.
 interface SubspeciesMetadata {
   age: number;
   births?: number;
-  cities: number;
+  cities?: number;
   deaths?: number;
   id: number;
   kills?: number;
-  kingdoms: number;
-  money: number;
+  kingdoms?: number;
+  money?: number;
   name: string;
-  renown: number;
-  renown_total: number; // summed over the living, where `renown` above is WB's own tally over every bearer ever born
-  traits: number;
+  renown?: number;
+  renown_total?: number; // summed over the living, where `renown` above is WB's own tally over every bearer ever born
+  traits?: number;
 }
 
 // Podium-only, like every other tier: absent where the biology places outside the top 3 among the world's subspecies.

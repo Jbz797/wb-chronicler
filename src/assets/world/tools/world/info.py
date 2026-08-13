@@ -97,20 +97,14 @@ _SNAPSHOT_COLLECTIONS = {
     "subspecies": "subspecies",
 }
 
-_SPECIES = load_data("species.json")  # asset_id → {stats, name, description}. Here for the French `name`; falls back to the asset_id when absent.
-
-_UNVEGETATED = {
-    "geyser",
-    "super_pumpkin",
-    "volcano",
-}  # Neither civ nor vegetation (`poop` = WB vegetation; `mineral_*` by prefix).
+_UNVEGETATED = {"geyser", "super_pumpkin", "volcano"}  # Neither civ nor vegetation (`poop` = WB vegetation; `mineral_*` by prefix).
 
 
-# 0-count entries (counters + per-cause deaths) are dropped — UI treats missing keys as 0. `or 0` also covers the few counters WB stores as null.
+# 0-count entries drop — the UI reads a missing key as 0, and `or 0` covers the counters WB stores as null. Keys stay as inserted: `render` sorts on the way out.
 def _build_cumulative(map_stats: dict) -> dict:
     out: dict = {k: v for k, src in _CUMULATIVE_COUNTERS.items() if (v := int(map_stats.get(src) or 0)) > 0}
-    out["deaths"] = dict(sorted((k, v) for k, src in _DEATH_CAUSES.items() if (v := int(map_stats.get(src) or 0)) > 0))
-    return dict(sorted(out.items()))
+    out["deaths"] = {k: v for k, src in _DEATH_CAUSES.items() if (v := int(map_stats.get(src) or 0)) > 0}
+    return out
 
 
 # Top entity per category (dominant village and realm by their composite scores, dominant culture/language/religion/subspecies, top renown) — WB's « Records ».
@@ -145,38 +139,39 @@ def _build_leaders(save: dict) -> dict:
         out[f"dominant_{field}"] = {"id": top_id, "name": _name_of(save.get(coll) or [], top_id), "value": value}
 
     if scores := city_score_ranks(save):  # heaviest settlement by the composite score, not the most populous — size is only one of its ten dimensions
-        top_cid = min(scores, key=lambda cid: scores[cid])
+        top_cid = min(scores, key=scores.__getitem__)
         out["most_dominant_village"] = {"id": top_cid, "name": _name_of(save.get("cities") or [], top_cid)}
 
     if scores := kingdom_score_ranks(save):  # strongest realm by the composite power score, `{id, name}` only — its score is meaningless to the chronicler
-        top_kid = min(scores, key=lambda kid: scores[kid])
+        top_kid = min(scores, key=scores.__getitem__)
         out["most_powerful_kingdom"] = {"id": top_kid, "name": _name_of(save.get("kingdoms") or [], top_kid)}
 
-    if counts["species"]:  # `asset_id` is the UI icon key; `name` is its French label (falls back to the asset_id).
+    if counts["species"]:  # `asset_id` alone: the icon key doubles as the key `SPECIES_NAMES` translates, as a biome's does.
         top_species, value = counts["species"].most_common(1)[0]
-        out["dominant_species"] = {"asset_id": top_species, "name": (_SPECIES.get(top_species) or {}).get("name") or top_species, "value": value}
+        out["dominant_species"] = {"asset_id": top_species, "value": value}
 
     if top_person is not None:  # Top-renown civilian — emitted as `{id, name}` (+ renown); the UI's `<app-person-tag>` reads its visuals from the person registry.
         out["most_renowned_person"] = {"id": top_person.get("id"), "name": top_person.get("name"), "value": top_renown}
 
-    clans = save.get("clans") or []
-    if clans:
-        top_clan = max(clans, key=lambda c: int(c.get("renown") or 0))
-        out["most_renowned_clan"] = {"id": top_clan.get("id"), "name": top_clan.get("name"), "value": int(top_clan.get("renown") or 0)}
+    if clans := save.get("clans"):  # the one tier WB scores itself, so its own field settles the ranking rather than a walk over its members
+        top_clan = max(clans, key=_clan_renown)
+        out["most_renowned_clan"] = {"id": top_clan.get("id"), "name": top_clan.get("name"), "value": _clan_renown(top_clan)}
 
     if family_renown:  # Families carry no native renown (unlike clans) — rank by their members' summed renown, tallied in the pass above.
         top_fid, value = family_renown.most_common(1)[0]
         out["most_renowned_family"] = {"id": top_fid, "name": _name_of(save.get("families") or [], top_fid), "value": value}
 
-    return dict(sorted(out.items()))
+    return out
 
 
 # WB's own clock and its age of the world; `months_until_next_age` is derived here because the save states progress as a ratio, never as a countdown.
 def _build_metadata(map_stats: dict) -> dict:
     age_duration = float(map_stats.get("current_world_ages_duration") or 0)
+    age_id = map_stats.get("world_age_id") or ""
     age_progress = float(map_stats.get("current_age_progress") or 0)
     return {
-        "age_id": map_stats.get("world_age_id") or "",  # WorldAgeLibrary key (e.g. `age_hope`)
+        "age_id": age_id,  # WorldAgeLibrary key (e.g. `age_hope`)
+        "age_description": (load_data("world-ages.json").get(age_id) or {}).get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
         # Chronicler-only narrative hint, matches WB's UI counter « Lunes jusqu'au prochain âge ». Omitted when 0 / no current age.
         "months_until_next_age": int(age_duration * (1 - age_progress) / 5) if age_duration > 0 else 0,
         "world_time": round(float(map_stats.get("world_time", 0)), 2),
@@ -200,31 +195,30 @@ def _build_snapshot(save: dict) -> dict:
         population += a.get("civ_kingdom_id") is not None
         sick += not SICK_TRAITS.isdisjoint(traits)
 
-    return dict(
-        sorted(
-            {
-                **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
-                "armies": len(save.get("armies") or []),
-                "boats": boats,
-                "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
-                "frozen_tiles": len(save.get("frozen_tiles") or []),
-                "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
-                **({"infected": infected} if infected else {}),
-                "plots_active": len(save.get("plots") or []),
-                "population": population,
-                **({"sick": sick} if sick else {}),
-                "trees": sum(n for aid, n in asset_counts.items() if "tree" in aid),  # Catches every `Building_Tree` variant — ≤1% off WB's unstable counter.
-                "vegetation": sum(
-                    n for aid, n in asset_counts.items() if aid not in civic and aid not in _UNVEGETATED and not aid.startswith(("fishing_docks", "mineral"))
-                ),
-                "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
-                "wild_creatures": len(actors) - boats - population,
-            }.items()
-        )
-    )
+    return {
+        **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
+        "armies": len(save.get("armies") or []),
+        "boats": boats,
+        "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
+        "frozen_tiles": len(save.get("frozen_tiles") or []),
+        "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
+        **({"infected": infected} if infected else {}),
+        "plots_active": len(save.get("plots") or []),
+        "population": population,
+        **({"sick": sick} if sick else {}),
+        "trees": sum(n for aid, n in asset_counts.items() if "tree" in aid),  # Catches every `Building_Tree` variant — ≤1% off WB's unstable counter.
+        "vegetation": sum(n for aid, n in asset_counts.items() if aid not in civic and aid not in _UNVEGETATED and not aid.startswith(("fishing_docks", "mineral"))),
+        "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
+        "wild_creatures": len(actors) - boats - population,
+    }
 
 
-# The one name a leader needs, found by a scan: six of them each read a single row, where six `index_by_id` would allocate six dicts to serve six keys.
+# Serves both the `max` key and the winner's own value — spelled out inline, the ranking would compute the same field twice.
+def _clan_renown(clan: dict) -> int:
+    return int(clan.get("renown") or 0)
+
+
+# The one name a leader needs, found by a scan: seven of them each read a single row, where seven `index_by_id` would allocate seven dicts to serve seven keys.
 def _name_of(records: list[dict], target_id) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
 

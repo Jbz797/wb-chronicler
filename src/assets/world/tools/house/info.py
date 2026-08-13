@@ -10,12 +10,35 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from islands import compute_islands_cached
-from shared import UNITS_PER_YEAR, ZONE_TILES, emit, entity_ref, index_by_id, load_save, parse_sections, resolve_profession, sex_label, take_chapter
+from shared import (
+    ZONE_TILES,
+    actor_age,
+    emit,
+    entity_age,
+    entity_ref,
+    index_by_id,
+    light,
+    load_save,
+    parse_sections,
+    resolve_profession,
+    roster_ids,
+    sex_label,
+    take_chapter,
+    wants_detail,
+)
 
 _ALL_SECTIONS = ("inventory", "metadata", "occupants")
 
 
-# The dwelling's identity card. `families` counts the lineages under the roof — a WorldBox house shelters whoever needs a bed, not one household.
+# Stored like a city's, heaviest stack first: a dwelling doubling as a granary is worth a line, and WB lets any building hold resources.
+def _build_inventory(house: dict) -> dict:
+    stock: Counter = Counter()
+    for resource in (house.get("resources") or {}).get("saved_resources") or []:
+        stock[resource.get("id")] += resource.get("amount", 0)
+    return dict(sorted(stock.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+# The dwelling's identity card. `families` counts the lineages under the roof — a WB house beds whoever needs one; the headcount rides with `occupants`.
 def _build_metadata(house: dict, residents: list[dict], ctx: dict) -> dict:
     city = ctx["cities_by_id"].get(house.get("cityID")) or {}
     hx, hy = house.get("mainX"), house.get("mainY")
@@ -27,13 +50,12 @@ def _build_metadata(house: dict, residents: list[dict], ctx: dict) -> dict:
         zone = {"x": hx // ZONE_TILES, "y": hy // ZONE_TILES}  # the `TileZone` it stands in, as cities claim them
 
     return {
-        "age": int((ctx["world_time"] - float(house.get("created_time") or 0)) / UNITS_PER_YEAR),
+        "age": entity_age(house, ctx["world_time"]),
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         "families": len({fid for a in residents if (fid := a.get("family"))}),
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
-        "occupants": len(residents),
         "x": hx,
         "y": hy,
         "zone": zone,
@@ -41,13 +63,15 @@ def _build_metadata(house: dict, residents: list[dict], ctx: dict) -> dict:
     }
 
 
-# Who sleeps here, eldest first — WB's `homeBuildingID` points the other way, so the roster is rebuilt by walking the actors once.
-def _build_occupants(residents: list[dict], ctx: dict, save: dict) -> list[dict]:
+# Who sleeps here, eldest first — WB's `homeBuildingID` points the other way, so the roster is rebuilt by walking the actors once. `total` rides with its list.
+def _build_occupants(residents: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
+    if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
+        return light({"ids": roster_ids(residents, ctx["world_time"]), "total": len(residents)}, "occupants")
     out = []
     for actor in residents:
         out.append(
             {
-                "age": int((ctx["world_time"] - float(actor.get("created_time") or 0)) / UNITS_PER_YEAR) + (actor.get("age_overgrowth") or 0),
+                "age": actor_age(actor, ctx["world_time"]),
                 "family": entity_ref(actor.get("family"), ctx["families_by_id"]),
                 "id": actor["id"],
                 "name": actor.get("name"),
@@ -55,7 +79,7 @@ def _build_occupants(residents: list[dict], ctx: dict, save: dict) -> list[dict]
                 "sex": sex_label(actor),
             }
         )
-    return sorted(out, key=lambda o: (-o["age"], o["id"]))
+    return {"roster": sorted(out, key=lambda o: (-o["age"], o["id"])), "total": len(out)}
 
 
 def main(argv: list[str]) -> int:
@@ -68,8 +92,10 @@ def main(argv: list[str]) -> int:
     except ValueError:
         print(f"invalid id: {argv[0]}", file=sys.stderr)
         return 1
+
+    requested = argv[1] if len(argv) > 1 else None
     try:
-        sections = parse_sections(argv[1] if len(argv) > 1 else None, _ALL_SECTIONS)
+        sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -90,15 +116,11 @@ def main(argv: list[str]) -> int:
 
     out: dict = {}
     if "inventory" in sections:
-        # Stored like a city's, heaviest stack first: a dwelling doubling as a granary is worth a line, and WB lets any building hold resources.
-        stock: Counter = Counter()
-        for resource in (house.get("resources") or {}).get("saved_resources") or []:
-            stock[resource.get("id")] += resource.get("amount", 0)
-        out["inventory"] = dict(sorted(stock.items(), key=lambda kv: (-kv[1], kv[0])))
+        out["inventory"] = _build_inventory(house)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(house, residents, ctx)
     if "occupants" in sections:
-        out["occupants"] = _build_occupants(residents, ctx, save)
+        out["occupants"] = _build_occupants(residents, ctx, save, detailed=wants_detail(requested, len(residents)))
     emit(out)
     return 0
 

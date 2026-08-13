@@ -36,27 +36,40 @@ SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"}
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
-# The live save by default, `WB_SAVE` replacing that default; a `C<n>` token anywhere in argv beats both — `take_chapter` scans every position, not just the last.
-_CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
-
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — old entries fall off by mtime rather than piling up
+# The live save by default, `WB_SAVE` replacing that default; a `C<n>` token anywhere in argv beats both — `take_chapter` scans every position, not just the last.
+_CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
+_MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 _VALUE_ORDERED = frozenset({"drivers", "inventory"})  # shapes whose key order carries meaning: a store and a loyalty ledger both read heaviest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 
 
+# `_BOOK_POINTS` per volume plus its readings. A razed author-town would strand that reach, so the book goes to whoever shelves it — `holder_of` picks the tier.
+def _book_reach(save: dict, author_field: str, living: set, holder_of) -> Counter:
+    _, _, city_of_book = books_held(save)
+    reach: Counter = Counter()
+    for book in save.get("books") or []:
+        owner = book.get(author_field)
+        if owner not in living:
+            owner = holder_of(city_of_book.get(book.get("id")))
+        if owner is not None:
+            reach[owner] += _BOOK_POINTS + (book.get("times_read") or 0)
+    return reach
+
+
 # Item base stats + its modifiers' bonuses, floats trimmed to 4 decimals (ints when whole), zeros dropped.
 def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_stats: dict) -> dict:
-    out = dict(item_stats.get(asset_id, {}))
+    out = dict((item_stats.get(asset_id) or {}).get("stats") or {})
     for mod in modifiers:
         for k, v in mod_stats.get(mod, {}).items():
             out[k] = out.get(k, 0) + v
@@ -167,6 +180,11 @@ def _write_save_cache(cache_file: Path, save: dict) -> None:
         old_entry.unlink(missing_ok=True)
 
 
+# Years lived, as the WB tooltip reads it: elapsed world time plus `age_overgrowth`, the years a soul carries past its species' cap.
+def actor_age(actor: dict, world_time: float) -> int:
+    return entity_age(actor, world_time) + (actor.get("age_overgrowth") or 0)
+
+
 # WB `Subspecies.calculateAgeRelatedStats`: lifespan > 30 → (16, 18); else `Pow(lifespan, 0.55)×1.1` capped 16/18 (civ species always > 30).
 def age_thresholds(lifespan: float) -> tuple[float, float]:
     if lifespan > 30:
@@ -200,6 +218,13 @@ def books_held(save: dict) -> tuple[Counter, Counter, dict[int, int]]:
             by_kingdom[kid] += len(shelved)
     _books_memo[0], _books_memo[1] = save, (by_city, by_kingdom, city_of_book)
     return by_city, by_kingdom, city_of_book
+
+
+# Summarised, a trait keeps its id and the field that weighs it — a clan's `group`, a creature's `rarity`, neither for a biology's, which reduces to bare ids.
+def build_trait_ids(trait_ids: list[str], traits_data: dict) -> dict | list[str]:
+    entries = {tid: traits_data.get(tid) or {} for tid in trait_ids or []}
+    weighed = {tid: tag for tid, entry in sorted(entries.items()) if (tag := entry.get("group") or entry.get("rarity"))}
+    return weighed or sorted(entries)
 
 
 # Trait entries with their stats + whichever narrative fields the library carries — `rarity` on a creature's, `group` on a clan's, neither on both. Sorted by id.
@@ -259,22 +284,10 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
                 if resource.get("id") == "gold":
                     gold[cid] += resource.get("amount", 0)
 
-    # `_BOOK_POINTS` per authored book + its reach, as the kingdom score counts it. A razed author-town would strand that reach, so it goes to whoever shelves it.
-    _, _, city_of_book = books_held(save)
-    living = {c["id"] for c in cities}
-    book_reach: Counter = Counter()
-
-    for book in save.get("books") or []:
-        cid = book.get("author_city_id")
-        if cid not in living:
-            cid = city_of_book.get(book.get("id"))
-        if cid is not None:
-            book_reach[cid] += _BOOK_POINTS + (book.get("times_read") or 0)
-
     return {
         # Net settlers won over: `joined` had no city, `moved` came from another, `left` walked out. `migrated` is out — a world law spawns those outright.
         "attractivity": {c["id"]: c.get("joined", 0) + c.get("moved", 0) - c.get("left", 0) for c in cities},
-        "book_reach": book_reach,
+        "book_reach": _book_reach(save, "author_city_id", {c["id"] for c in cities}, lambda cid: cid),  # a city shelves its own, so the holder is the owner
         "buildings": buildings,
         "elite": elite,  # the renown of its inhabitants — who lives there, where `renown` below is what the city itself achieved
         # Racked gear, counted apart from `wealth`: nearly orthogonal to the other nine (−0.21 with `warriors`, 0.16 with `wealth`), so it earns its own rank.
@@ -299,12 +312,12 @@ def civic_building_ids() -> frozenset[str]:
     return frozenset(asset for asset, category in load_data("building-categories.json").items() if category.startswith("civ_"))
 
 
-# Standard competition rank (1,2,2,4) among `peers` per getter — top 3 only. `skip_zero` drops metrics the entity has none of (no meaningless podium at 0).
-def competition_ranks(entity, peers: list, getters: dict, skip_zero: bool = True) -> dict:
+# Standard competition rank (1,2,2,4) among `peers` per getter — top 3 only, and a metric the entity has none of is skipped rather than given a podium at 0.
+def competition_ranks(entity, peers: list, getters: dict) -> dict:
     ranks = {}
     for stat, getter in sorted(getters.items()):
         own = getter(entity)
-        if skip_zero and own == 0:
+        if own == 0:
             continue
         rank = sum(1 for p in peers if getter(p) > own) + 1
         if rank <= 3:
@@ -316,6 +329,11 @@ def emit(out: dict) -> None:
     print(render(_strip_none(out)))
 
 
+# Years since a record was created: a city, a crown, a clan, a lineage, a biology, a roof. An actor answers to `actor_age`, which adds its `age_overgrowth`.
+def entity_age(record: dict, world_time: float) -> int:
+    return int((world_time - float(record.get("created_time") or 0)) / UNITS_PER_YEAR)
+
+
 # `{id, name}` ref or `None` — the name feeds the narration, the id a follow-up query; an unnamed entity keeps the id and loses the key, having nothing to quote.
 def entity_ref(entity_id: int | None, by_id: dict) -> dict | None:
     entity = by_id.get(entity_id) if entity_id is not None else None
@@ -323,12 +341,13 @@ def entity_ref(entity_id: int | None, by_id: dict) -> dict | None:
 
 
 # One equipped-or-racked item as both tiers report it: provenance (`by`/`from`), wear, kills, and its stats already folded with the modifiers' bonuses.
-def equipment_entry(item: dict, item_stats: dict, mod_stats: dict, world_time: float) -> dict:
+def equipment_entry(item: dict, item_stats: dict, mod_stats: dict, world_time: float, described: bool = False) -> dict:
     mods = sorted(item.get("modifiers") or [])
     created = item.get("created_time")
+    asset_id = item["asset_id"]
     return {
         "age": int((world_time - created) / UNITS_PER_YEAR) if created is not None else None,
-        "asset_id": item["asset_id"],
+        "asset_id": asset_id,
         "by": item.get("by"),
         "durability": item.get("durability"),
         "from": item.get("from"),
@@ -337,7 +356,9 @@ def equipment_entry(item: dict, item_stats: dict, mod_stats: dict, world_time: f
         "modifiers": mods,
         "name": item.get("name"),
         "rarity": equipment_rarity(mods),
-        "stats": _equipment_stats(item["asset_id"], mods, item_stats, mod_stats),
+        "stats": _equipment_stats(asset_id, mods, item_stats, mod_stats),
+        # chronicler-only, and only where the piece is the subject: a rack repeats one model four times, where a carried weapon characterises its bearer.
+        **({"description": (item_stats.get(asset_id) or {}).get("description")} if described else {}),
     }
 
 
@@ -414,22 +435,10 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
         elif winner == 2:
             wars_won[war.get("main_defender")] += 1
 
-    # As the city score does: a fallen crown's books keep their reach, credited to whoever shelves them now.
-    _, _, city_of_book = books_held(save)
-    kingdom_of_city = {c["id"]: c.get("kingdomID") for c in cities}
-    living_kingdoms = set(ids)
-    book_reach: Counter = Counter()
-
-    for book in save.get("books") or []:
-        kid = book.get("author_kingdom_id")
-        if kid not in living_kingdoms:
-            kid = kingdom_of_city.get(city_of_book.get(book.get("id")))
-        if kid is not None:
-            book_reach[kid] += _BOOK_POINTS + (book.get("times_read") or 0)
-
+    kingdom_of_city = {c["id"]: c.get("kingdomID") for c in cities}  # a crown shelves nothing itself: a book reaches it through the town that holds it
     traits = {coll: {x["id"]: len(x.get("saved_traits") or []) for x in save.get(coll) or []} for coll in ("cultures", "languages", "religions")}
     return {
-        "book_reach": book_reach,
+        "book_reach": _book_reach(save, "author_kingdom_id", set(ids), kingdom_of_city.get),
         "culture_traits": {
             k["id"]: traits["cultures"].get(k.get("id_culture"), 0)
             + traits["languages"].get(k.get("id_language"), 0)
@@ -464,6 +473,13 @@ def life_stage(age: int, age_adult: float, lifespan: float) -> str:
     if lifespan and age > lifespan * _ELDER_AGE_RATIO:
         return "elder"
     return "adult"
+
+
+# Stamps a summarised section with its own way out, so no doc has to list which ones shrink under `full` — an empty payload stays bare, hiding nothing.
+def light(payload: dict, section: str) -> dict:
+    if not any(payload.values()):
+        return payload
+    return {**payload, "info": f"call the `{section}` section for the full detail"}
 
 
 @cache
@@ -512,7 +528,6 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
             if (v := a.get(field)) is not None:
                 counter[v] += 1
     pop = len(actors)
-    species_names = load_data("species.json")
 
     # `identified` carries the key out as an `id`, which only the subspecies needs — it alone among the four has a tag to resolve and a script to query.
     def top3(counter: Counter, names: dict, identified: bool = False) -> list[dict]:
@@ -526,10 +541,8 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
         "cultures": top3(cultures, ctx["cultures_by_id"]),
         "languages": top3(languages, ctx["languages_by_id"]),
         "religions": top3(religions, ctx["religions_by_id"]),
-        "species": [  # `asset_id` (icon key) alongside the French `name`; the others need only their registry name.
-            {"asset_id": k, "name": (species_names.get(k) or {}).get("name") or k, "pct": pct}
-            for k, n in species.most_common(3)
-            if pop and (pct := round(n / pop * 100)) > 0
+        "species": [  # the `asset_id` alone, which the UI translates; the other three carry a world-generated name no table could hold.
+            {"asset_id": k, "pct": pct} for k, n in species.most_common(3) if pop and (pct := round(n / pop * 100)) > 0
         ],
         "subspecies": top3(subspecies, ctx["subspecies_by_id"], identified=True),
     }
@@ -554,6 +567,15 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
     # A child that had to expand leaves a newline in `one` — that rules the parent out of the single-line form. Most nodes fit, hence the late split.
     if "\n" not in one and len(pad) + used + len(one) <= _INLINE_WIDTH:
         return one
+    # A list of numbers too long to inline packs across filled lines — an id roster reads as a block, where one value per row spends more padding than data.
+    if isinstance(value, list) and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value):
+        rows = [""]
+        for piece in [f"{p}," for p in parts[:-1]] + parts[-1:]:
+            if rows[-1] and len(pad) + len(rows[-1]) + len(piece) + 3 > _INLINE_WIDTH:
+                rows.append(piece)
+            else:
+                rows[-1] = f"{rows[-1]} {piece}".lstrip()
+        return "[\n" + "\n".join(f"{pad}  {r}" for r in rows) + f"\n{pad}]"
     return f"{ends[0]}\n" + ",\n".join(f"{pad}  {p}" for p in parts) + f"\n{pad}{ends[1]}"
 
 
@@ -565,6 +587,11 @@ def resolve_profession(actor: dict, save: dict, captain_ids: set | None = None) 
         return "army_captain"
     profession = actor.get("profession") or 0  # `0`/absent is WB's `nothing` — no profession, not an unknown one; anything else off the map surfaces as `#<int>`.
     return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)
+
+
+# A roster's ids alone, eldest first like its full form — a handle on each soul (`actor/info.py <id>`) without the hundreds of lines describing them costs.
+def roster_ids(actors: list[dict], world_time: float) -> list[int]:
+    return [a["id"] for a in sorted(actors, key=lambda a: (-actor_age(a, world_time), a["id"]))]
 
 
 # Who stands out among a settlement's or realm's own — its leading families and its most singular souls, `{id, name}` apiece. Both `leaders` sections share it.
@@ -586,7 +613,7 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         return money(r) + gold(r)
 
     return {
-        "age": lambda r: int((ctx["world_time"] - float(r.get("created_time") or 0)) / UNITS_PER_YEAR),
+        "age": lambda r: entity_age(r, ctx["world_time"]),
         "buildings": tally("buildings"),
         "deaths": lambda r: r.get("total_deaths", 0),
         "fed_pct": lambda r: fed(r) / n if (n := eaters(r)) else 0.0,
@@ -652,3 +679,8 @@ def take_chapter(argv: list[str]) -> tuple[Path, list[str], str | None]:
         if len(arg) > 1 and arg[0] == "C" and arg[1:].isdigit():
             return SAVES_DIR / arg / "map.wbox", argv[:i] + argv[i + 1 :], arg
     return _CURRENT_SAVE, argv, None
+
+
+# Spelled out because the section was named, or too small for a summary to earn the call it forces — only where that summary is a pure signpost, never traits.
+def wants_detail(requested: str | None, count: int) -> bool:
+    return requested not in (None, "full") or count < _MIN_SUMMARY_ENTRIES

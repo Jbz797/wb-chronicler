@@ -2,13 +2,14 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { SpeciesNamePipe } from '../../../../../pipes';
 import { ChroniclerService } from '../../../../../services';
 import { RankedStatComponent } from '../../../../misc';
 import { KingdomTagComponent, SubspeciesTagComponent } from '../../../../tags';
 
 @Component({
   selector: 'app-kingdom-alliance',
-  imports: [KingdomTagComponent, NzDescriptionsModule, RankedStatComponent, SubspeciesTagComponent],
+  imports: [KingdomTagComponent, NzDescriptionsModule, RankedStatComponent, SpeciesNamePipe, SubspeciesTagComponent],
   templateUrl: './kingdom-alliance.component.html',
 })
 export class KingdomAllianceComponent {

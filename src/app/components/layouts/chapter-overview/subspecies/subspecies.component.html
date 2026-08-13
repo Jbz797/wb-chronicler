@@ -42,7 +42,7 @@
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Espèce" [nzColumn]="1">
     <nz-descriptions-item [nzTitle]="stockTitle">
-      <span><img class="species-icon" [src]="`assets/img/species/${s.identity.species.asset_id}.png`" /> {{ s.identity.species.name }}</span>
+      <span><img class="species-icon" [src]="`assets/img/species/${s.identity.species}.png`" /> {{ s.identity.species | speciesName }}</span>
     </nz-descriptions-item>
     @if (biomeName(); as b) {
       <nz-descriptions-item [nzTitle]="biomeTitle">{{ b }}</nz-descriptions-item>

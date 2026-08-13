@@ -233,6 +233,7 @@ interface Family {
   ranks?: FamilyRanks;
 }
 
+// Every counter drops at zero, so panels read them via `?? 0` — bar `housed_pct`, a share of zero being a reading about the living, not an absence.
 interface FamilyMetadata {
   age: number;
   alpha?: PersonReference;
@@ -240,12 +241,12 @@ interface FamilyMetadata {
   deaths?: number;
   founders: PersonReference[];
   housed_pct: number;
-  houses: number;
+  houses?: number;
   id: number;
   kills?: number;
-  money: number;
+  money?: number;
   name: string;
-  renown: number; // summed over the living, not a WB field — a lineage has no renown of its own, its members do
+  renown?: number; // summed over the living, not a WB field — a lineage has no renown of its own, its members do
 }
 
 // Podium-only, like every other tier: absent where the lineage places outside the top 3 among the world's families.

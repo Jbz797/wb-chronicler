@@ -81,7 +81,7 @@ export class RankedStatComponent {
     if (this.source() === 'species') {
       const stock = entity as SpeciesStanding;
       const key = this.stat() as keyof SpeciesTotals;
-      return this._snap(stock.metadata[key], stock.ranks?.[key]); // every count is always written, unlike the score dimensions Python omits at 0
+      return this._snap(stock[key] ?? 0, stock.ranks?.[key]); // a count Python omits at 0 — a beast's stock holds no town — still reads as the zero it was
     }
 
     if (peopleSources.has(this.source())) return this._resolvePeople(entity as PeopleTier);
@@ -175,7 +175,7 @@ export class RankedStatComponent {
   ): KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding | null {
     if (!meta) return null;
     if (this.source() === 'alliance') return meta.kingdom?.alliance ?? null;
-    if (this.source() === 'species') return meta.subspecies?.identity.species ?? null; // nested one level down, where every other source sits at the root
+    if (this.source() === 'species') return meta.subspecies?.species ?? null; // a section of the subspecies, where every other source is a chapter block
     return meta[this.source() as 'city' | 'clan' | 'family' | 'favorite' | 'kingdom' | 'subspecies'];
   }
 

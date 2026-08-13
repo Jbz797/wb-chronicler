@@ -207,7 +207,7 @@ def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, i
         item = items_by_id.get(iid)
         if item is None:
             continue
-        for k, v in (item_stats.get(item["asset_id"]) or {}).items():
+        for k, v in ((item_stats.get(item["asset_id"]) or {}).get("stats") or {}).items():
             totals[k] = totals.get(k, 0) + v
         for mod in item.get("modifiers") or []:
             for k, v in (mod_stats.get(mod) or {}).items():

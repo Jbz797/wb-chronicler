@@ -82,8 +82,10 @@ def _build_registries(save: dict, prev: dict) -> dict:
         str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID")), rank_by_city.get(c["id"])) for c in cities
     }
     kingdom_registry = {
-        str(k["id"]): _kingdom_entry(k, species_by_kingdom.get(k["id"], Counter()), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"]))
-        | _banner(k, _kingdom_species(k, kings_by_id, subspecies_by_id))
+        str(k["id"]): _defined(
+            _kingdom_entry(k, species_by_kingdom.get(k["id"], Counter()), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"]))
+            | _banner(k, _kingdom_species(k, kings_by_id, subspecies_by_id))
+        )
         for k in kingdoms
     }
 
@@ -124,7 +126,7 @@ def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | 
         entry["rank"] = rank
     if (size := _size_tier(species.total())) > 1:  # a medallion reading `1` states the floor — every tag pill stays silent at its lowest tier
         entry["size"] = size
-    return entry
+    return _defined(entry)
 
 
 # Clan registry entry — its own hue (a clan is sworn, not granted, so it carries no crown's colour), the founder's species and the living headcount.
@@ -143,7 +145,12 @@ def _clan_entry(clan: dict, members: int) -> dict:
         "banner_icon": clan.get("banner_icon_id") or 0,
         "banner_icon_color": palette.get("color_banner"),
     }
-    return {k: v for k, v in entry.items() if v is not None}
+    return _defined(entry)
+
+
+# Absence carried as absence: a razed town has no dominant species, a paletteless realm no `color_main` — and UI-side a `null` would read as a value.
+def _defined(entry: dict) -> dict:
+    return {key: value for key, value in entry.items() if value is not None}
 
 
 # Family registry entry — the frame the tag wears as a border, the founding species' pip, the flattened backing hue and the living headcount, plus the last name.
@@ -161,7 +168,7 @@ def _family_entry(family: dict, members: int) -> dict:
     tint = _palette(family.get("color_id", "")).get("color_main_2")
     if backing and tint:
         entry["bg_color"] = _multiply(backing, tint)
-    return {k: v for k, v in entry.items() if v is not None}
+    return _defined(entry)
 
 
 # Kingdom entry, less the heraldry `_banner` folds in and the merge's `dead`. It alone holds a hue — cities and subjects read theirs off it.
@@ -191,10 +198,12 @@ def _load_registries(chapter_dir: Path) -> dict:
     return {name: json.loads(p.read_text()) if (p := chapter_dir / f"{name}.json").exists() else {} for name in _REGISTRIES}
 
 
-# Carry each prior entry forward flagged dead (last-known visuals kept), then let live entities overwrite. `rank` and `members` go: neither survives the entity.
+# Prior entries carried forward flagged dead (last-known visuals kept), bar those still alive — a living entity rewrites its own. `rank` and `members` go.
 def _merge(prev: dict, live: dict) -> dict:
     carried = {}
     for entry_key, entry in prev.items():  # spread then pop beats filtering the items — most entries never held either key
+        if entry_key in live:
+            continue
         carried[entry_key] = fallen = {**entry, "dead": True}
         fallen.pop("members", None)
         fallen.pop("rank", None)
@@ -265,13 +274,13 @@ def _subspecies_entry(subspecies: dict, members: int) -> dict:
     }
     if members:  # dropped once the last bearer dies, as the lineage badge drops with its last member
         entry["members"] = members
-    return {k: v for k, v in entry.items() if v is not None}
+    return _defined(entry)
 
 
 # Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.
 @cache
 def _weapon_assets() -> frozenset[str]:
-    return frozenset(asset for asset, stats in load_data("equipment.json")["items"].items() if "damage" in stats)
+    return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
 
 
 # The weapon an actor holds — WB gives out at most one, so the first match is it.

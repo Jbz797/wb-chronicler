@@ -31,9 +31,11 @@ from shared import (
     civic_building_ids,
     competition_ranks,
     emit,
+    entity_age,
     entity_ref,
     equipment_entry,
     index_by_id,
+    light,
     load_data,
     load_save,
     parse_sections,
@@ -43,6 +45,7 @@ from shared import (
     sex_label,
     succession_heir,
     take_chapter,
+    wants_detail,
 )
 
 _ALL_SECTIONS = ("army", "books", "breakdown", "equipment", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks")
@@ -79,7 +82,7 @@ def _actor_stats(actor: dict | None, ctx: dict) -> dict:
 # One volume. Every ref reads the names WB stamped on the book itself — an author long dead has left `actors_by_id`, but their name is kept here.
 def _book_entry(book: dict, ctx: dict) -> dict:
     return {
-        "age": _years_since(book.get("created_time") or 0, ctx),
+        "age": entity_age(book, ctx["world_time"]),
         "author": _book_ref(book, "author"),
         "author_city": _book_ref(book, "author_city"),
         "author_kingdom": _book_ref(book, "author_kingdom"),
@@ -113,7 +116,7 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
     # The sitting captain's own term: WB appends them to `past_captains` on taking office and only stamps `timestamp_end` when they leave.
     reign = next((float(c["timestamp_ago"]) for c in reversed(past) if c.get("timestamp_end") is None and c.get("timestamp_ago") is not None), None)
     return {
-        "age": _years_since(army.get("created_time") or 0, ctx),
+        "age": entity_age(army, ctx["world_time"]),
         "captain": entity_ref(army.get("id_captain"), ctx["actors_by_id"]),
         **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
         "deaths": deaths,
@@ -129,10 +132,10 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
 
 
 # The city's library: volumes on its halls' shelves, whoever wrote them. `total` is the ranked stat; naming the section spells each one out, as `equipment` does.
-def _build_books(city: dict, ctx: dict, detailed: bool) -> dict:
+def _build_books(city: dict, ctx: dict, requested: str | None) -> dict:
     total = ctx["books_by_city"]()[city["id"]]
-    if not detailed:  # `full` keeps the chapter light — one count, the volumes themselves only when the section is asked for by name
-        return {"total": total}
+    if not wants_detail(requested, total):  # `full` keeps the chapter light — one count, the volumes themselves only when the section is asked for by name
+        return light({"total": total}, "books")
     return {"held": [_book_entry(b, ctx) for b in ctx["shelved_by_city"]().get(city["id"], ())], "total": total}
 
 
@@ -308,11 +311,11 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
 
 # The city's armoury: gear on its racks, worn by nobody. `total` is the ranked stat; `full` counts each rack, naming the section spells every piece out.
-def _build_equipment(city: dict, ctx: dict, detailed: bool) -> dict:
+def _build_equipment(city: dict, ctx: dict, requested: str | None) -> dict:
     storage = city.get("equipment") or {}
     total = ctx["equipment_by_city"].get(city["id"], 0)
-    if not detailed:  # `full` keeps the chapter light: a count per stocked rack, the pieces themselves only when the section is asked for by name
-        return {"racks": {rack: n for rack, field in EQUIPMENT_RACKS.items() if (n := len(storage.get(field) or []))}, "total": total}
+    if not wants_detail(requested, total):  # `full` keeps the chapter light: a count per stocked rack, the pieces themselves only when the section is named
+        return light({"racks": {rack: n for rack, field in EQUIPMENT_RACKS.items() if (n := len(storage.get(field) or []))}, "total": total}, "equipment")
     item_stats, mod_stats = ctx["equipment"]["items"], ctx["equipment"]["modifiers"]
     racks = {}
     for rack, field in EQUIPMENT_RACKS.items():
@@ -330,6 +333,11 @@ def _build_identity(city: dict, ctx: dict) -> dict:
         "religion": entity_ref(city.get("id_religion"), ctx["religions_by_id"]),
         "subspecies": entity_ref(_main_subspecies(city, ctx), ctx["subspecies_by_id"]),
     }
+
+
+# WB's « Inventaire »: what `metadata.food`, `gold` and `goods` add up. Heaviest stack first — a granary reads by what fills it, not by spelling.
+def _build_inventory(city_id: int, ctx: dict) -> dict:
+    return dict(sorted(ctx["inventory_by_city"][city_id].items(), key=lambda kv: (-kv[1], kv[0])))
 
 
 # Its leading families and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
@@ -352,7 +360,6 @@ def _build_loyalty(city_id: int, ctx: dict, detailed: bool) -> dict:
 # The city's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and officialdom tallied in `_build_context`.
 def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
     cid = city["id"]
-    age_units = ctx["world_time"] - float(city.get("created_time") or 0)
     island_lookup = ctx["island_lookup"]()
 
     # Chronicler-only: distinct island ids under the city's zones, sorted asc (1 = biggest) — probed at each zone's centre tile.
@@ -370,7 +377,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         founder = {"id": fid, "name": name}
 
     return {
-        "age": int(age_units / UNITS_PER_YEAR),
+        "age": entity_age(city, ctx["world_time"]),
         "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
         "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
         "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
@@ -511,10 +518,10 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
     add("capital", 1000 * is_capital)
 
     # 9-10. Youth: a fresh settlement and a fresh realm both start out grateful.
-    city_age = int((ctx["world_time"] - float(city.get("created_time") or 0)) / UNITS_PER_YEAR)
+    city_age = entity_age(city, ctx["world_time"])
     if city_age <= 15:
         add("new_city", (15 - city_age) * 5)
-    realm_age = int((ctx["world_time"] - float(kingdom.get("created_time") or 0)) / UNITS_PER_YEAR)
+    realm_age = entity_age(kingdom, ctx["world_time"])
     if realm_age <= 5:
         add("new_kingdom", (5 - realm_age) * 5)
 
@@ -568,7 +575,7 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
     if king and (years := _years_since(kingdom.get("timestamp_king_rule") or 0, ctx)) >= 5:
         add("king_rule", min(years, 40))
     add("world_era", _ERA_LOYALTY.get(realm["world_age_id"], 0))
-    if king and int((ctx["world_time"] - float(king.get("created_time") or 0)) / UNITS_PER_YEAR) < 18:
+    if king and entity_age(king, ctx["world_time"]) < 18:
         add("baby_king", -50)
 
     # 28-29. A crown whose sex its own official culture rejects — only where town and realm share that culture.
@@ -734,16 +741,15 @@ def main(argv: list[str]) -> int:
     if "army" in sections:
         out["army"] = _build_army(city, ctx)
     if "books" in sections:
-        out["books"] = _build_books(city, ctx, detailed=requested not in (None, "full"))
+        out["books"] = _build_books(city, ctx, requested)
     if "breakdown" in sections:
         out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
     if "equipment" in sections:
-        out["equipment"] = _build_equipment(city, ctx, detailed=requested not in (None, "full"))
+        out["equipment"] = _build_equipment(city, ctx, requested)
     if "identity" in sections:
         out["identity"] = _build_identity(city, ctx)
     if "inventory" in sections:
-        # WB's « Inventaire »: what `metadata.food`, `gold` and `goods` add up. Heaviest stack first — a granary reads by what fills it, not by spelling.
-        out["inventory"] = dict(sorted(ctx["inventory_by_city"][city_id].items(), key=lambda kv: (-kv[1], kv[0])))
+        out["inventory"] = _build_inventory(city_id, ctx)
     if "leaders" in sections:
         out["leaders"] = _build_leaders(city, ctx)
     if "loyalty" in sections:

@@ -21,6 +21,6 @@ export interface PopulationBreakdown {
   cultures?: { name: string; pct: number }[];
   languages?: { name: string; pct: number }[];
   religions?: { name: string; pct: number }[];
-  species?: { asset_id: string; name: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
+  species?: { asset_id: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
   subspecies?: { id: number; name: string; pct: number }[]; // the one dimension carrying an id: it alone has a `[u]` tag to resolve against the registry
 }
