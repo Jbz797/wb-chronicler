@@ -4,6 +4,7 @@
 import json
 import os
 import pickle
+import random
 import re
 import sys
 import zlib
@@ -14,6 +15,8 @@ from functools import cache
 from pathlib import Path
 
 CACHE_DIR = Path(__file__).parent.parent / ".cache"  # holds the save and islands pickles alike; gitignored via the root `.gitignore`
+CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` — `PROFESSION_KING`/`_LEADER`/`_WARRIOR`, spelt out: they sort after this.
+EMOTION_TRAIT = "amygdala"  # WB `SubspeciesTraitLibrary`: the one trait tagged `has_emotions` — see `has_emotions`, which is the only place it should be read.
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
 EQUIPMENT_RACKS = {
@@ -25,7 +28,7 @@ EQUIPMENT_RACKS = {
     "weapons": "item_storage_weapons",
 }
 
-HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20. (Emotionless non-civ actors also count — ignored.)
+HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20, and only where `has_emotions` — which every caller now gates on.
 NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
@@ -33,20 +36,57 @@ PROFESSION_WARRIOR = 5
 SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `chapter/` reaches back to `C<n-1>` through it.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
+UNHAPPY_MAX_HAPPINESS = -40  # WB `Actor.isUnhappy`: `getHappinessRatio < 0.3` ⟺ raw happiness < -40. Like `isHappy`, it answers only for a feeling actor.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — old entries fall off by mtime rather than piling up
+
+# The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
+_CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "stone_none", "gold_none", "metal_none")
+
 # The live save by default, `WB_SAVE` replacing that default; a `C<n>` token anywhere in argv beats both — `take_chapter` scans every position, not just the last.
 _CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
+
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
+
+_META_CONDITIONS = {  # WB `MetaTextReportLibrary`, one lambda per verdict, ported field for field — ratios are shares of the living, stocks raw amounts.
+    "food_none": lambda s: not s["food"],
+    "food_plenty": lambda s: s["food"] > s["people"] * 4,
+    "food_running_out": lambda s: s["food"] and s["food"] < s["people"] * 2,
+    "gold_none": lambda s: not s["gold"],
+    "happy": lambda s: s["happy"] > 0.8,
+    "many_children": lambda s: s["units"] >= _META_REPORT_MIN_UNITS and s["children"] > 0.7,
+    "many_homeless": lambda s: s["units"] >= _META_REPORT_MIN_UNITS and s["homeless"] > 0.8,
+    "metal_none": lambda s: not s["common_metals"],
+    "stone_none": lambda s: not s["stone"],
+    "unhappy": lambda s: s["unhappy"] > 0.8,
+    "war_attackers_getting_captured": lambda s: s["attackers_besieged"] and not s["defenders_besieged"],
+    "war_defenders_getting_captured": lambda s: s["defenders_besieged"] and not s["attackers_besieged"],
+    "war_fresh": lambda s: s["age"] < 5,
+    "war_full_on_battle": lambda s: s["attackers_besieged"] and s["defenders_besieged"],
+    "war_high_casualties": lambda s: s["deaths"] > 100,
+    "war_long": lambda s: s["age"] > 100,
+    "war_quiet": lambda s: not s["attackers_besieged"] and not s["defenders_besieged"],
+    "wood_none": lambda s: not s["wood"],
+}
+
+# WB `MetaTypeAsset.reports`: every body carries its own ordered list. Eight collectives share `meta` word for word; only the city weighs its stores as well.
+_META_REPORTS = {
+    "army": ("happy", "unhappy"),  # WB gives a host only its two moods: it holds no town, bears no young and sleeps where it marches.
+    "city": ("happy", "unhappy", *_CITY_STORES, "many_children", "many_homeless"),  # its stores wedged into the four moods every other body answers with
+    "meta": ("happy", "unhappy", "many_children", "many_homeless"),
+    "war": ("war_high_casualties", "war_long", "war_fresh", "war_defenders_getting_captured", "war_attackers_getting_captured", "war_quiet", "war_full_on_battle"),
+}
+
+_META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homeless` — the two that count heads rather than weigh hearts.
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 _VALUE_ORDERED = frozenset({"drivers", "inventory"})  # shapes whose key order carries meaning: a store and a loyalty ledger both read heaviest-first
@@ -197,6 +237,27 @@ def age_thresholds(lifespan: float) -> tuple[float, float]:
 @cache
 def asset_set(name: str) -> frozenset[str]:
     return frozenset(load_data("asset-sets.json").get(name) or ())
+
+
+# WB `City.isGettingCaptured`: the enemy crowns whose warriors, kings or leaders stand in a town's zones — WB excuses one indoors, which a save never records.
+def besieging_kingdoms(save: dict) -> dict[int, set[int]]:
+    enemies: dict[int, set[int]] = {}
+    for war in save.get("wars") or []:
+        if not war.get("winner"):
+            sides = [({war.get(f"main_{camp}")} | set(war.get(f"list_{camp}s") or [])) - {None} for camp in ("attacker", "defender")]
+            for side, foes in (sides, sides[::-1]):
+                for kid in side:
+                    enemies.setdefault(kid, set()).update(foes)
+    zone_city = {(z["x"], z["y"]): c["id"] for c in save.get("cities") or [] for z in c.get("zones") or []}
+    owner = {c["id"]: c.get("kingdomID") for c in save.get("cities") or []}
+    besieging: dict[int, set[int]] = {}
+    for actor in save.get("actors_data") or []:
+        if actor.get("profession") not in CAPTURE_PROFESSIONS or is_aboard(actor) or not (kid := actor.get("civ_kingdom_id")):
+            continue
+        cid = zone_city.get((int(actor["x"]) // ZONE_TILES, int(actor["y"]) // ZONE_TILES))
+        if cid is not None and kid in enemies.get(owner[cid], ()):
+            besieging.setdefault(cid, set()).add(kid)
+    return besieging
 
 
 # Books sit in a settlement's hall (`buildings[].books.list_books`), so their holder is that city and its crown. Memoised: a `full` run asks twice, 15 k rows each.
@@ -374,6 +435,11 @@ def equipment_rarity(modifiers: list[str]) -> str:
     return "Normal"
 
 
+# WB `Actor.hasEmotions`, which reads its biology's `has_emotions` meta tag — a single trait grants it, and without it a soul is never happy nor unhappy.
+def has_emotions(actor: dict, subspecies_by_id: dict) -> bool:
+    return EMOTION_TRAIT in ((subspecies_by_id.get(actor.get("subspecies")) or {}).get("saved_traits") or [])
+
+
 # The office-holder's own purse — a mayor's or a king's. Netted out of `subjects_money` on both tiers, and reported on its own in `metadata`.
 def head_money(entity: dict, ctx: dict, tier: str) -> int:
     return int((ctx["actors_by_id"].get(entity.get(_HEAD_FIELD[tier])) or {}).get("money") or 0)
@@ -381,6 +447,11 @@ def head_money(entity: dict, ctx: dict, tier: str) -> int:
 
 def index_by_id(records: list[dict]) -> dict:
     return {record["id"]: record for record in records}
+
+
+# WB `Actor.isInsideSomething`, the half a save records: `transportID` names the boat a soul boarded, and `disembarkTo` clears it. Indoors, WB never writes.
+def is_aboard(actor: dict) -> bool:
+    return bool(actor.get("transportID"))
 
 
 # WB models boats as actors: they sit in `actors_data` and even carry a `civ_kingdom_id`, so every actor tally must decide whether to skip them.
@@ -505,6 +576,13 @@ def load_save(path: Path) -> dict:
         save = json.loads(zlib.decompress(f.read()))
     _write_save_cache(cache_file, save)
     return save
+
+
+# WB `MetaTextReportHelper.getText`: what a body says of itself — every verdict of its own list that holds, joined in that order. `None` where none does, as in game.
+def meta_report(kind: str, state: dict) -> str | None:
+    phrases = load_data("meta-reports.json")  # one of five phrasings per verdict, drawn as WB draws it — the wording never reaches a chapter, so it need not settle
+    said = [random.choice(wordings) for report in _META_REPORTS[kind] if _META_CONDITIONS[report](state) and (wordings := phrases.get(report))]
+    return " ".join(said) or None
 
 
 # Parses a comma-separated section list — `None` and `full` both expand to all known sections.

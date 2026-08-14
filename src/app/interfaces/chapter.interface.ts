@@ -1,5 +1,5 @@
 import { Clan } from './clan.interface';
-import { EntityReference, MemberRoster, PersonReference, PopulationBreakdown } from './entity.interface';
+import { EntityReference, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
 import { RarityCounts } from './stats.interface';
 import { Subspecies } from './subspecies.interface';
 import { LeaderKind, LifeStage } from './types';
@@ -230,23 +230,21 @@ interface Family {
   breakdown: PopulationBreakdown;
   members: MemberRoster;
   metadata: FamilyMetadata;
+  population: TierPopulation;
   ranks?: FamilyRanks;
 }
 
-// Every counter drops at zero, so panels read them via `?? 0` — bar `housed_pct`, a share of zero being a reading about the living, not an absence.
+// Every counter drops at zero, so panels read them via `?? 0` — what the living themselves are worth now sits in `population`, as it does on the other tiers.
 interface FamilyMetadata {
   age: number;
   alpha?: PersonReference;
   births?: number;
   deaths?: number;
   founders: PersonReference[];
-  housed_pct: number;
   houses?: number;
   id: number;
   kills?: number;
-  money?: number;
   name: string;
-  renown?: number; // summed over the living, not a WB field — a lineage has no renown of its own, its members do
 }
 
 // Podium-only, like every other tier: absent where the lineage places outside the top 3 among the world's families.
@@ -259,7 +257,7 @@ interface FamilyRanks {
   kills?: number;
   members?: number;
   money?: number;
-  renown?: number;
+  renown_total?: number;
 }
 
 // Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key. `descriptor` is authored by the chronicler.
@@ -323,7 +321,7 @@ interface FavoriteStats {
   damage: number;
   diplomacy: number;
   equipment_power: number;
-  happiness: number;
+  happiness?: number; // absent where the biology bears no `amygdala`: WB grants such a soul no emotions, and writes it no happiness either
   health: number;
   health_max: number;
   intelligence: number;

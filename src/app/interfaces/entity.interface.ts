@@ -10,6 +10,7 @@ export interface MemberRoster { total: number }
 export interface PeopleTier {
   members: MemberRoster;
   metadata: object; // each tier's own shape; the resolver reads it by key, so it casts rather than narrowing
+  population: TierPopulation;
   ranks?: { members?: number }; // `members` is the one the resolver names; the rest it reaches by key, through the same cast
 }
 
@@ -23,4 +24,26 @@ export interface PopulationBreakdown {
   religions?: { name: string; pct: number }[];
   species?: { asset_id: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
   subspecies?: { id: number; name: string; pct: number }[]; // the one dimension carrying an id: it alone has a `[u]` tag to resolve against the registry
+}
+
+// What the living of a body say of it — the settlement block less granary, head and `total`. Only the afflictions drop at zero, a share of zero being a reading.
+export interface TierPopulation {
+  adults: number;
+  babies: number;
+  children: number; // our narrative tier, a slice of childhood — WB's own « children » verdict counts every soul below adulthood, `babies` + `children` + `teens`
+  couples: number;
+  elders: number;
+  familyless: number;
+  fed_pct: number;
+  happy: number;
+  housed_pct: number;
+  immortals?: number;
+  infected?: number;
+  men: number;
+  money: number;
+  renown_total: number;
+  sick?: number;
+  teens: number;
+  warriors: number;
+  women: number;
 }

@@ -10,9 +10,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats
+from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
 from islands import compute_islands_cached
 from shared import (
+    NON_FOOD_SPECIES,
+    PROFESSION_WARRIOR,
+    SATED_MIN_NUTRITION,
     actor_age,
     build_trait_ids,
     build_trait_list,
@@ -24,6 +27,7 @@ from shared import (
     light,
     load_data,
     load_save,
+    meta_report,
     parse_sections,
     population_breakdown,
     resolve_profession,
@@ -34,7 +38,7 @@ from shared import (
     wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "ranks", "traits")
+_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "population", "ranks", "traits")
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field; the clan's set is narrower than the world's and names old age `natural`.
 
 
@@ -71,11 +75,11 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 
 # The clan's identity card: WB's own lifetime counters beside what only a walk over the living can tell — where they answer from, and what they carry.
 def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
-    tallies, clan_id = ctx["tallies"], clan["id"]  # coins and renown came off the one actor pass — resumming them here would walk the roster twice over
     cities = {c for a in members if (c := a.get("cityID"))}
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
     # Each cause WB bothered to write, its prefix stripped; a clan that never lost anyone to fire carries no key rather than a zero.
     causes = {k[len(_DEATH_PREFIX) :]: v for k, v in clan.items() if k.startswith(_DEATH_PREFIX) and v}
+    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the band say of itself
 
     return {
         "age": entity_age(clan, ctx["world_time"]),
@@ -95,11 +99,15 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
         **({"deaths": deaths} if (deaths := int(clan.get("total_deaths") or 0)) else {}),
         **({"kills": kills} if (kills := int(clan.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its members answer to — a clan is sworn, not granted, so it spans realms freely
-        **({"money": money} if (money := tallies["money"][clan_id]) else {}),  # the purse the living carry; WB banks per actor, never per band
-        **({"renown_total": total} if (total := tallies["renown_total"][clan_id]) else {}),  # famous names sit on nobodies, and the reverse
-        **({"renown": renown} if (renown := int(clan.get("renown") or 0)) else {}),
+        **({"renown": renown} if (renown := int(clan.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `population`
+        **({"report": report} if report else {}),
         **({"traits": traits} if (traits := len(clan.get("saved_traits") or [])) else {}),
     }
+
+
+# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `members` section owns.
+def _build_population(members: list[dict], ctx: dict) -> dict:
+    return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
 
 
 # What the band swore itself to, off WB's clan library — summarised to each trait and its group at any size, the effect and flavour only when named.
@@ -118,15 +126,18 @@ def _clan_culture(clan: dict, ctx: dict) -> int | None:
 def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda c: entity_age(c, world_time),
-        "books_written": lambda c: int(c.get("books_written") or 0),
         "births": lambda c: int(c.get("total_births") or 0),
+        "books_written": lambda c: int(c.get("books_written") or 0),
         "deaths": lambda c: int(c.get("total_deaths") or 0),
+        "fed_pct": lambda c: tallies["fed"][c["id"]] / n if (n := tallies["eaters"][c["id"]]) else 0.0,
+        "housed_pct": lambda c: tallies["housed"][c["id"]] / n if (n := len(tallies["members"].get(c["id"], ()))) else 0.0,
         "kills": lambda c: int(c.get("total_kills") or 0),
         "members": lambda c: len(tallies["members"].get(c["id"], ())),
         "money": lambda c: tallies["money"][c["id"]],
         "renown": lambda c: int(c.get("renown") or 0),
         "renown_total": lambda c: tallies["renown_total"][c["id"]],
         "traits": lambda c: len(c.get("saved_traits") or []),
+        "warriors": lambda c: tallies["warriors"][c["id"]],
     }
 
 
@@ -163,31 +174,42 @@ def main(argv: list[str]) -> int:
         print(f"unknown clan: {clan_id}", file=sys.stderr)
         return 1
 
-    tallies: dict = {"members": {}, "money": Counter(), "renown_total": Counter()}  # One pass feeds every tally: WB points the actor at its clan, never the reverse
+    # One pass feeds every tally: WB points the actor at its band, never the reverse.
+    tallies: dict = {
+        "eaters": Counter(),
+        "fed": Counter(),
+        "housed": Counter(),
+        "members": {},
+        "money": Counter(),
+        "renown_total": Counter(),
+        "warriors": Counter(),
+    }
 
     for actor in save.get("actors_data") or []:
         if not (cid := actor.get("clan")):
             continue
         tallies["members"].setdefault(cid, []).append(actor)
         tallies["money"][cid] += int(actor.get("money") or 0)
+        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they weigh on neither side of the hunger share
+            tallies["eaters"][cid] += 1
+            tallies["fed"][cid] += int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION
+        tallies["housed"][cid] += bool(actor.get("homeBuildingID"))
+        tallies["warriors"][cid] += actor.get("profession") == PROFESSION_WARRIOR
         if fame := actor.get("renown"):
             tallies["renown_total"][cid] += int(fame)
 
     members = tallies["members"].get(clan_id, [])
     ctx = {
+        **build_actor_stats_context(save),  # brings the trait libraries and `subspecies_by_id`, `languages_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
-        "languages_by_id": index_by_id(save.get("languages") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors
-        "subspecies_by_id": index_by_id(save.get("subspecies") or []),
-        "tallies": tallies,  # the one actor pass, handed whole: `metadata` reads two of its three, `ranks` all three
-        "world_time": save["mapStats"]["world_time"],
-        **build_actor_stats_context(save),  # the heir's ascension stat, on the cultures that crown by one
+        "tallies": tallies,  # the one actor pass, handed whole — the podium reads all three, every other section walking `members` itself
     }
 
     out: dict = {}
@@ -200,6 +222,8 @@ def main(argv: list[str]) -> int:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
         out["metadata"] = _build_metadata(clan, members, ctx)
+    if "population" in sections:
+        out["population"] = _build_population(members, ctx)
     if "ranks" in sections:
         out["ranks"] = competition_ranks(clan, list(clans_by_id.values()), _rank_getters(tallies, ctx["world_time"]))
     if "traits" in sections:

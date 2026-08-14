@@ -39,14 +39,16 @@
     "description": "Enhanced memory capabilities allow this species to develop cultures and religions",
     "flavor": "First memories become first myths",
     "group": "advanced_brain",
-    "name": "Advanced Hippocampus"
+    "name": "Advanced Hippocampus",
+    "tags": ["has_advanced_memory"]
   },
   "aggressive": { "description": "Prone to lose their temper", "flavor": "Their fuse runs short", "group": "chaos", "name": "Aggressive" },
   "amygdala": {
     "description": "Grants this species the ability to feel emotions, especially happiness, shaping their behavior and reactions",
     "flavor": "Emotions drive evolution",
     "group": "advanced_brain",
-    "name": "Amygdala"
+    "name": "Amygdala",
+    "tags": ["has_emotions"]
   },
   "annoying_fireworks": {
     "description": "Creates colorful explosions upon death",
@@ -60,7 +62,13 @@
     "group": "chaos",
     "name": "Antimatter Essence"
   },
-  "aquatic": { "description": "Adapted to life underwater", "flavor": "They may know some deep secrets", "group": "body", "name": "Aquatic" },
+  "aquatic": {
+    "description": "Adapted to life underwater",
+    "flavor": "They may know some deep secrets",
+    "group": "body",
+    "name": "Aquatic",
+    "tags": ["water_creature"]
+  },
   "bad_genes": {
     "description": "A genetic mutation that can lead to expression of bad traits",
     "flavor": "The flesh remembers ancient mistakes",
@@ -68,7 +76,13 @@
     "name": "Bad Genes"
   },
   "big_stomach": { "description": "These species have a huge appetite", "flavor": "The void within must be fed", "group": "body", "name": "Big Stomach" },
-  "bioluminescence": { "description": "Body naturally generates light", "flavor": "They wear stars within", "group": "body", "name": "Bioluminescence" },
+  "bioluminescence": {
+    "description": "Body naturally generates light",
+    "flavor": "They wear stars within",
+    "group": "body",
+    "name": "Bioluminescence",
+    "tags": ["generate_light"]
+  },
   "bioproduct_gems": {
     "description": "Processes food into precious gems",
     "flavor": "Food goes in, fortune comes out",
@@ -110,48 +124,125 @@
     "description": "Can withstand extreme cold without harm",
     "flavor": "Ice age? More like nice age",
     "group": "body",
-    "name": "Cold Resistance"
+    "name": "Cold Resistance",
+    "tags": ["can_build_in_biome_permafrost", "immunity_cold"]
   },
   "death_grow_mythril": { "description": "Transforms into mythril upon death", "flavor": "Even death has value", "group": "growth", "name": "Mythril Form" },
   "death_grow_plant": { "description": "On death transforms into a plant!", "flavor": "Nature recycles everything", "group": "growth", "name": "Plant Growth" },
   "death_grow_tree": { "description": "On death transforms into a tree!", "flavor": "Death plants deeper roots", "group": "growth", "name": "Tree Growth" },
-  "diet_algivore": { "description": "An algae-based diet", "flavor": "Others dread algae... they dream of it", "group": "diet", "name": "Algivore" },
+  "diet_algivore": {
+    "description": "An algae-based diet",
+    "flavor": "Others dread algae... they dream of it",
+    "group": "diet",
+    "name": "Algivore",
+    "tags": ["diet_algae"]
+  },
   "diet_cannibalism": {
     "description": "Feeds on members of its own species, a rare and often desperate survival strategy",
     "flavor": "You are what you eat...",
     "group": "diet",
-    "name": "Cannibalism"
+    "name": "Cannibalism",
+    "tags": ["diet_same_species"]
   },
-  "diet_carnivore": { "description": "A diet focused on meat", "flavor": "A balanced diet? Meat, meat, and more meat", "group": "diet", "name": "Carnivore" },
-  "diet_florivore": { "description": "Feeds mainly on flowers", "flavor": "Flowers aren't just for decoration!", "group": "diet", "name": "Florivore" },
-  "diet_folivore": { "description": "A diet composed mainly of leaves and plants", "flavor": "Leaf it to me!", "group": "diet", "name": "Folivore" },
+  "diet_carnivore": {
+    "description": "A diet focused on meat",
+    "flavor": "A balanced diet? Meat, meat, and more meat",
+    "group": "diet",
+    "name": "Carnivore",
+    "tags": ["diet_meat"]
+  },
+  "diet_florivore": {
+    "description": "Feeds mainly on flowers",
+    "flavor": "Flowers aren't just for decoration!",
+    "group": "diet",
+    "name": "Florivore",
+    "tags": ["diet_flowers"]
+  },
+  "diet_folivore": {
+    "description": "A diet composed mainly of leaves and plants",
+    "flavor": "Leaf it to me!",
+    "group": "diet",
+    "name": "Folivore",
+    "tags": ["diet_vegetation"]
+  },
   "diet_frugivore": {
     "description": "A diet primarily composed of fruits",
     "flavor": "If life gives them lemons... they eat them!",
     "group": "diet",
-    "name": "Frugivore"
+    "name": "Frugivore",
+    "tags": ["diet_fruits"]
   },
-  "diet_geophagy": { "description": "Consumes soil and dirt", "flavor": "To them, even dirt is a delicacy", "group": "diet", "name": "Geophagy" },
-  "diet_graminivore": { "description": "Consumes primarily grasses", "flavor": "Don't touch, eat!", "group": "diet", "name": "Graminivore" },
-  "diet_granivore": { "description": "Eats primarily wheat, grains and seeds", "flavor": "Every day is a harvest festival!", "group": "diet", "name": "Granivore" },
+  "diet_geophagy": {
+    "description": "Consumes soil and dirt",
+    "flavor": "To them, even dirt is a delicacy",
+    "group": "diet",
+    "name": "Geophagy",
+    "tags": ["diet_tiles"]
+  },
+  "diet_graminivore": { "description": "Consumes primarily grasses", "flavor": "Don't touch, eat!", "group": "diet", "name": "Graminivore", "tags": ["diet_grass"] },
+  "diet_granivore": {
+    "description": "Eats primarily wheat, grains and seeds",
+    "flavor": "Every day is a harvest festival!",
+    "group": "diet",
+    "name": "Granivore",
+    "tags": ["diet_crops"]
+  },
   "diet_hematophagy": {
     "description": "They sustain themselves by drinking the blood of others",
     "flavor": "The fresher, the better",
     "group": "diet",
-    "name": "Hematophagy"
+    "name": "Hematophagy",
+    "tags": ["diet_blood"]
   },
   "diet_herbivore": {
     "description": "A plant-based diet, consumes everything green",
     "flavor": "Eats greens so you don't have to",
     "group": "diet",
-    "name": "Herbivore"
+    "name": "Herbivore",
+    "tags": ["diet_crops", "diet_flowers", "diet_fruits", "diet_grass", "diet_vegetation"]
   },
-  "diet_insectivore": { "description": "A diet focused on insects", "flavor": "Small prey feeds great hunger", "group": "diet", "name": "Insectivore" },
-  "diet_lithotroph": { "description": "Uses stone and minerals for food", "flavor": "Loves him some rock and stone!", "group": "diet", "name": "Lithotroph" },
-  "diet_nectarivore": { "description": "Feeds primarily on nectar", "flavor": "Survival never tasted sweeter", "group": "diet", "name": "Nectarivore" },
-  "diet_omnivore": { "description": "Eats both plants and animals", "flavor": "Salad or steak? Why not both?", "group": "diet", "name": "Omnivore" },
-  "diet_piscivore": { "description": "Feeds primarily on fish", "flavor": "The only release fish get is from life itself", "group": "diet", "name": "Piscivore" },
-  "diet_xylophagy": { "description": "Specializes in consuming wood", "flavor": "If there's wood, there's food!", "group": "diet", "name": "Xylophagy" },
+  "diet_insectivore": {
+    "description": "A diet focused on insects",
+    "flavor": "Small prey feeds great hunger",
+    "group": "diet",
+    "name": "Insectivore",
+    "tags": ["diet_meat_insect"]
+  },
+  "diet_lithotroph": {
+    "description": "Uses stone and minerals for food",
+    "flavor": "Loves him some rock and stone!",
+    "group": "diet",
+    "name": "Lithotroph",
+    "tags": ["diet_minerals"]
+  },
+  "diet_nectarivore": {
+    "description": "Feeds primarily on nectar",
+    "flavor": "Survival never tasted sweeter",
+    "group": "diet",
+    "name": "Nectarivore",
+    "tags": ["diet_nectar"]
+  },
+  "diet_omnivore": {
+    "description": "Eats both plants and animals",
+    "flavor": "Salad or steak? Why not both?",
+    "group": "diet",
+    "name": "Omnivore",
+    "tags": ["diet_crops", "diet_fish", "diet_flowers", "diet_fruits", "diet_meat", "diet_vegetation"]
+  },
+  "diet_piscivore": {
+    "description": "Feeds primarily on fish",
+    "flavor": "The only release fish get is from life itself",
+    "group": "diet",
+    "name": "Piscivore",
+    "tags": ["diet_fish"]
+  },
+  "diet_xylophagy": {
+    "description": "Specializes in consuming wood",
+    "flavor": "If there's wood, there's food!",
+    "group": "diet",
+    "name": "Xylophagy",
+    "tags": ["diet_wood"]
+  },
   "dreamweavers": {
     "description": "Silently alters the dreams of others, spreading their language, culture, or religion",
     "flavor": "The mind is most open when it's unaware",
@@ -207,7 +298,13 @@
     "group": "rebirth",
     "name": "Fenix Born"
   },
-  "fins": { "description": "These species are excellent swimmers", "flavor": "The ocean is their playground", "group": "body", "name": "Fins" },
+  "fins": {
+    "description": "These species are excellent swimmers",
+    "flavor": "The ocean is their playground",
+    "group": "body",
+    "name": "Fins",
+    "tags": ["fast_swimming"]
+  },
   "fire_elemental_form": {
     "description": "Releases a fire elemental when killed",
     "flavor": "Death only feeds their flame",
@@ -323,7 +420,8 @@
     "description": "Can withstand extreme heat without harm",
     "flavor": "Temperature is just a number",
     "group": "body",
-    "name": "Heat Resistance"
+    "name": "Heat Resistance",
+    "tags": ["can_build_in_biome_infernal", "immunity_fire"]
   },
   "high_fecundity": {
     "description": "Possesses a high reproductive rate, leading to large numbers of babies",
@@ -338,7 +436,13 @@
     "group": "body",
     "name": "Hovering"
   },
-  "hydrophobia": { "description": "Gets damaged when in water or under rain", "flavor": "Water brings only pain", "group": "body", "name": "Hydrophobia" },
+  "hydrophobia": {
+    "description": "Gets damaged when in water or under rain",
+    "flavor": "Water brings only pain",
+    "group": "body",
+    "name": "Hydrophobia",
+    "tags": ["damaged_by_water"]
+  },
   "hyper_intelligence": {
     "description": "Possesses cognitive abilities far beyond the norm",
     "flavor": "They see solutions where others see problems",
@@ -385,7 +489,13 @@
     "name": "Wolf Metamorphosis"
   },
   "monophasic_sleep": { "description": "Love to take long naps", "flavor": "No time for power naps", "group": "sleep_cycles", "name": "Monophasic Sleep" },
-  "nimble": { "description": "Allows species to steal items during melee attacks", "flavor": "No weapon is safe!", "group": "chaos", "name": "Nimble" },
+  "nimble": {
+    "description": "Allows species to steal items during melee attacks",
+    "flavor": "No weapon is safe!",
+    "group": "chaos",
+    "name": "Nimble",
+    "tags": ["steal_items"]
+  },
   "nocturnal_dormancy": {
     "description": "They like to sleep a lot when it's dark",
     "flavor": "When stars rise, dreams follow",
@@ -492,7 +602,8 @@
     "description": "Allows species to use tools, plan, and start civilizations",
     "flavor": "Future casts long shadows",
     "group": "advanced_brain",
-    "name": "Prefrontal Cortex"
+    "name": "Prefrontal Cortex",
+    "tags": ["has_sapience"]
   },
   "prolonged_rest": {
     "description": "They love to take very very long naps",
@@ -511,7 +622,8 @@
     "description": "Reproduces by growing a new individual directly from their own body",
     "flavor": "Well, this is awkward!",
     "group": "reproductive_methods",
-    "name": "Budding Reproduction"
+    "name": "Budding Reproduction",
+    "tags": ["reproduction_asexual"]
   },
   "reproduction_divine": {
     "description": "Babies can be born through a miracle once in a lifetime!",
@@ -523,13 +635,15 @@
     "description": "Reproduces by splitting into two identical creatures",
     "flavor": "One becomes two, two becomes many",
     "group": "reproductive_methods",
-    "name": "Fission Reproduction"
+    "name": "Fission Reproduction",
+    "tags": ["reproduction_asexual"]
   },
   "reproduction_hermaphroditic": {
     "description": "Two creatures of these species are required to make a baby",
     "flavor": "Like snails or clownfish",
     "group": "reproductive_methods",
-    "name": "Hermaphroditic Reproduction"
+    "name": "Hermaphroditic Reproduction",
+    "tags": ["needs_mate", "reproduction_sexual"]
   },
   "reproduction_metamorph": {
     "description": "Reproduce by converting the children of other species into offspring of their own kind",
@@ -541,14 +655,16 @@
     "description": "Females can produce a baby without needing a partner",
     "flavor": "Like whiptails or honeybees!",
     "group": "reproductive_methods",
-    "name": "Parthenogenesis Reproduction"
+    "name": "Parthenogenesis Reproduction",
+    "tags": ["reproduction_asexual"]
   },
   "reproduction_sexual": {
     "description": "A male and a female are required to reproduce",
     "flavor": "Two become more",
     "group": "reproductive_methods",
     "name": "Sexual Reproduction",
-    "stats": { "birth_rate": 3 }
+    "stats": { "birth_rate": 3 },
+    "tags": ["needs_mate", "reproduction_sexual"]
   },
   "reproduction_soulborne": {
     "description": "Reproduce by channeling harvested souls into new life of their own kind",
@@ -560,25 +676,29 @@
     "description": "Reproduces through the release of spores",
     "flavor": "Like mushrooms or ferns",
     "group": "reproductive_methods",
-    "name": "Spore Reproduction"
+    "name": "Spore Reproduction",
+    "tags": ["reproduction_asexual"]
   },
   "reproduction_strategy_oviparity": {
     "description": "Creatures will lay eggs, from which their babies will hatch",
     "flavor": "Beginning starts with breaking free",
     "group": "reproduction_strategy",
-    "name": "Oviparity"
+    "name": "Oviparity",
+    "tags": ["oviparity"]
   },
   "reproduction_strategy_viviparity": {
     "description": "Babies mature within the momma, emerging ready for life!",
     "flavor": "Life flows from heart to heart",
     "group": "reproduction_strategy",
-    "name": "Viviparity"
+    "name": "Viviparity",
+    "tags": ["viviparity"]
   },
   "reproduction_vegetative": {
     "description": "Reproduces by breaking into multiple creatures after creature becomes an older adult",
     "flavor": "Like garlic and... garlic people!",
     "group": "reproductive_methods",
-    "name": "Vegetative Reproduction"
+    "name": "Vegetative Reproduction",
+    "tags": ["reproduction_asexual"]
   },
   "shiny_love": { "description": "They have a tendency to steal things", "flavor": "Magpies would be proud", "group": "chaos", "name": "Shiny Love" },
   "slow_builders": { "description": "Takes their time to ensure every detail is perfect", "flavor": "Let them cook", "group": "mind", "name": "Slow Builders" },
@@ -588,7 +708,13 @@
     "group": "chaos",
     "name": "Spicy Kids"
   },
-  "stomach": { "description": "This species has a stomach and needs food to survive", "flavor": "Survival's first engine", "group": "body", "name": "Stomach" },
+  "stomach": {
+    "description": "This species has a stomach and needs food to survive",
+    "flavor": "Survival's first engine",
+    "group": "body",
+    "name": "Stomach",
+    "tags": ["needs_food"]
+  },
   "super_positivity": {
     "description": "Extremely positive and optimistic. They can't get sad",
     "flavor": "Even rain clouds make them smile",
@@ -601,7 +727,7 @@
     "group": "mind",
     "name": "Telepathic Link"
   },
-  "unmoving": { "description": "Unable to move", "flavor": "Time moves, they don't", "group": "body", "name": "Unmoving" },
+  "unmoving": { "description": "Unable to move", "flavor": "Time moves, they don't", "group": "body", "name": "Unmoving", "tags": ["immovable"] },
   "unstable_genome": { "description": "Their genes keep shifting", "flavor": "Evolution never sleeps", "group": "chaos", "name": "Unstable Genome" },
   "uplifted": { "description": "Marked by the Monolith", "flavor": "Now they can think, but can they think of a way out?", "group": "special", "name": "Uplifted" },
   "voracious": { "description": "They get hungry very fast", "flavor": "Always munching on something", "group": "body", "name": "Voracious" },
@@ -609,7 +735,8 @@
     "description": "This species can learn and use languages",
     "flavor": "Their minds shape sound into sense",
     "group": "advanced_brain",
-    "name": "Wernicke's Area"
+    "name": "Wernicke's Area",
+    "tags": ["has_advanced_communication"]
   },
   "winter_slumberers": {
     "description": "They sleep a lot when it's cold",

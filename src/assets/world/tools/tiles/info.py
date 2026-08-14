@@ -32,10 +32,6 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
     ]
 
 
-def _buildings_at(x: int, y: int, ctx: dict) -> list[dict]:
-    return [{"asset_id": b.get("asset_id")} for b in ctx["buildings_by_pos"].get((x, y), ())]
-
-
 # One home for every index, each built only for the sections that asked — ~15 k buildings and ~1.5 k actors for 25 tiles, and 331 k cells to decode.
 def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], width: int) -> dict:
     wanted = set(coords)
@@ -73,6 +69,10 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["water_at_center"] = _water_distance(*center, ctx["grid"], ctx["layer_by_id"])
 
     return ctx
+
+
+def _buildings_at(x: int, y: int, ctx: dict) -> list[dict]:
+    return [{"asset_id": b.get("asset_id")} for b in ctx["buildings_by_pos"].get((x, y), ())]
 
 
 # Returns `{}` for unclaimed tiles (stripped by `emit`). Distances live in the `distances` section, not here.

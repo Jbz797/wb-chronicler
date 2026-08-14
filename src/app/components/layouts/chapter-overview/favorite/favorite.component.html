@@ -79,9 +79,11 @@
     <nz-descriptions-item [nzTitle]="staminaTitle">
       <app-ranked-stat stat="stamina" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="happinessTitle">
-      <span [class]="fav.stats.happiness | tier: 100">{{ fav.stats.happiness }}%</span>
-    </nz-descriptions-item>
+    @if (fav.stats.happiness; as happiness) {
+      <nz-descriptions-item [nzTitle]="happinessTitle">
+        <span [class]="happiness | tier: 100">{{ happiness }}%</span>
+      </nz-descriptions-item>
+    }
     <nz-descriptions-item [nzTitle]="nutritionTitle">
       <span [class]="fav.stats.nutrition | tier: 100">{{ fav.stats.nutrition }}%</span>
     </nz-descriptions-item>

@@ -1,0 +1,68 @@
+{
+  "food_none": ["There is no food left.", "There's not even a crumb...", "No food remains.", "We have nothing left to eat.", "What happens now?"],
+  "food_plenty": ["There is food for all!", "We eat well!", "We have plenty food!", "Prosperity tastes delicious!", "Abundance surrounds us."],
+  "food_running_out": [
+    "We are eating less, and it worries us.",
+    "The stocks are not as full.",
+    "We still have food, but for how much longer?",
+    "Food cannot last forever.",
+    "Need to get more food."
+  ],
+  "gold_none": ["We need more shinies.", "No gold.", "We need gold.", "Gold?", "We need to get some gold."],
+  "happy": ["We are happy! Life is good!", "Yes, we are happy! No complaints here.", "Joy is everywhere!", "We love to be happy!", "Our spirits are high!"],
+  "many_children": [
+    "The future is bright.",
+    "So many little ones!",
+    "Our next generation grows strong.",
+    "A blessing... or a challenge?",
+    "We must prepare for the years ahead."
+  ],
+  "many_homeless": ["We need shelter.", "Shelter is scarce.", "We need more homes.", "We belong nowhere.", "Home is just a word for some of us."],
+  "metal_none": [
+    "We have no metal left to shape.",
+    "No more ore? No more weapons?",
+    "No metal. No future?",
+    "Without metal we are weak.",
+    "We need to get some metal."
+  ],
+  "stone_none": ["Not a single stone remains.", "There is no more stone.", "We need stone.", "We want rock and stone.", "We need some stone."],
+  "unhappy": [
+    "Everything sucks! We deserve better.",
+    "We don't like living like this.",
+    "Existence is disappointing. Why must we suffer?",
+    "We are left with only our misery.",
+    "If this is life, we'd rather not be part of it."
+  ],
+  "war_attackers_getting_captured": [
+    "How the tides have turned!",
+    "Attack is the best defense!",
+    "We are the hunters now!",
+    "The hunters become the hunted!",
+    "You mess with the bull, you get the horns!"
+  ],
+  "war_defenders_getting_captured": ["Our city is under attack!", "Hold the line!", "We are being invaded!", "They are in our city!", "We will never surrender!"],
+  "war_fresh": ["Our spirits are high!", "We are ready for battle!", "The war has just begun!", "We will fight to the end!", "The drums of war sound!"],
+  "war_full_on_battle": [
+    "The battlefield is alive with the sounds of war.",
+    "The war rages on!",
+    "Battle is all around us.",
+    "The clash of steel fills the air.",
+    "It's a full-on battle!"
+  ],
+  "war_high_casualties": [
+    "The battlefield is littered with the fallen.",
+    "The war has taken a heavy toll.",
+    "The dead are many.",
+    "The cost of war is high.",
+    "The price of victory is steep."
+  ],
+  "war_long": ["How does peace feel?", "War is hell.", "Prolonged warfare is a curse.", "When will it end?", "We are tired of war."],
+  "war_quiet": [
+    "It's quiet, for now...",
+    "We're anticipating the next move...",
+    "The calm before the storm...",
+    "The tension is palpable...",
+    "We're waiting for the other shoe to drop..."
+  ],
+  "wood_none": ["Our wood stockpiles are empty.", "We need more wood.", "No more wood.", "No fire, no warmth, no shelter.", "Gotta get some wood."]
+}

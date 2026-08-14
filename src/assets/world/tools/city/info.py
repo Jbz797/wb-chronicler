@@ -6,11 +6,12 @@
 import sys
 from collections import Counter, defaultdict
 from functools import cache
+from operator import itemgetter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, build_actor_stats_context, settlement_population
+from actor_stats import actor_stat_totals, build_actor_stats_context, meta_ratios, settlement_population
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -24,6 +25,7 @@ from shared import (
     UNITS_PER_YEAR,
     ZONE_TILES,
     asset_set,
+    besieging_kingdoms,
     books_held,
     children_by_id,
     city_score_dimensions,
@@ -34,10 +36,12 @@ from shared import (
     entity_age,
     entity_ref,
     equipment_entry,
+    has_emotions,
     index_by_id,
     light,
     load_data,
     load_save,
+    meta_report,
     parse_sections,
     population_breakdown,
     settlement_leaders,
@@ -74,14 +78,16 @@ _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  #
 def _actor_stats(actor: dict | None, ctx: dict) -> dict:
     if actor is None:
         return {}
-    if actor["id"] not in ctx["stats_cache"]:
-        ctx["stats_cache"][actor["id"]] = actor_stat_totals(actor, ctx, ctx["subspecies_base_cache"])
-    return ctx["stats_cache"][actor["id"]]
+    cache, actor_id = ctx["stats_cache"], actor["id"]
+    if actor_id not in cache:
+        cache[actor_id] = actor_stat_totals(actor, ctx, ctx["subspecies_base_cache"])
+    return cache[actor_id]
 
 
 # One volume. Every ref reads the names WB stamped on the book itself — an author long dead has left `actors_by_id`, but their name is kept here.
 def _book_entry(book: dict, ctx: dict) -> dict:
     return {
+        **{field: trait for field in _BOOK_TRAITS if (trait := book.get(field))},  # the traits a volume teaches, each absent where WB set none
         "age": entity_age(book, ctx["world_time"]),
         "author": _book_ref(book, "author"),
         "author_city": _book_ref(book, "author_city"),
@@ -96,7 +102,6 @@ def _book_entry(book: dict, ctx: dict) -> dict:
         "read": _BOOK_STATS.get(book.get("book_type")) or {},  # the panel's « En lecture »: stats a reader walks away with, the genre's not the volume's
         "religion": _book_ref(book, "religion"),
         "times_read": book.get("times_read", 0),
-        **{field: trait for field in _BOOK_TRAITS if (trait := book.get(field))},
     }
 
 
@@ -144,6 +149,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     captain_ids = {cap for army in save.get("armies") or [] if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
 
     actors_by_city: dict[int, list[dict]] = {}
+    actors_by_army: dict[int, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
     eaters_by_city: Counter[int] = Counter()
     families_by_city: dict[int, set[int]] = {}
@@ -157,6 +163,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     leader_ids = {lid for c in save.get("cities") or [] if (lid := c.get("leaderID"))}  # Sitting mayors: nobles too, but their purse is reported on its own.
     melee_by_city: Counter[int] = Counter()
     money_by_city: Counter[int] = Counter()
+    subspecies_by_id = index_by_id(save.get("subspecies") or [])  # `has_emotions` is read in the actor pass, before `ctx` exists to carry the same index
     nobles_by_city: Counter[int] = Counter()
     nobles_money_by_city: Counter[int] = Counter()
     populations_by_city: Counter[int] = Counter()
@@ -169,7 +176,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
     items_by_id = index_by_id(save.get("items") or [])
 
     for actor in save.get("actors_data") or []:
-        actors_by_id[actor["id"]] = actor
+        actor_id = actor["id"]
+        actors_by_id[actor_id] = actor
         cid = actor.get("cityID")
         asset_id = actor.get("asset_id") or ""  # read once, as the purse is below: the boat guard and the hunger tally both want it
         if not cid or asset_id.startswith("boat_"):  # `is_boat` inlined — it would re-read the field we already hold
@@ -189,7 +197,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
         profession = actor.get("profession")
         # WB enlists only in the resident's own city, so `cityID` keys the army. `Army.countMelee`: ranged needs a `$range` weapon — carrying none counts as melee.
-        if actor.get("army"):
+        if army_id := actor.get("army"):
+            actors_by_army.setdefault(army_id, []).append(actor)
             if coins:
                 troop_money_by_city[cid] += int(coins)
             if any((items_by_id.get(i) or {}).get("asset_id") in _RANGED_ATTACKS for i in actor.get("saved_items") or []):
@@ -198,9 +207,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
                 melee_by_city[cid] += 1
         if profession == PROFESSION_WARRIOR:
             warriors_by_city[cid] += 1
-        if profession in (PROFESSION_KING, PROFESSION_LEADER) or actor["id"] in captain_ids:  # king (the capital's), leader, or captain
+        if profession in (PROFESSION_KING, PROFESSION_LEADER) or actor_id in captain_ids:  # king (the capital's), leader, or captain
             nobles_by_city[cid] += 1
-            if coins and actor["id"] not in leader_ids:
+            if coins and actor_id not in leader_ids:
                 nobles_money_by_city[cid] += int(coins)
 
         traits = actor.get("saved_traits") or []
@@ -210,7 +219,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
             sick_by_city[cid] += 1
         if "immortal" in traits:
             immortals_by_city[cid] += 1
-        if int(actor.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS:
+        if int(actor.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS and has_emotions(actor, subspecies_by_id):
             happy_by_city[cid] += 1
         if not actor.get("homeBuildingID"):
             homeless_by_city[cid] += 1
@@ -254,14 +263,16 @@ def _build_context(save: dict, save_path: Path) -> dict:
     heirs_by_kingdom: dict[int, list[dict]] = {}
     for c in save.get("cities") or []:
         for actor in actors_by_city.get(c["id"], ()) if (kid := c.get("kingdomID")) else ():
-            if actor.get("clan") and actor.get("civ_kingdom_id") and actor["id"] not in king_ids and actor["id"] not in leader_ids:
+            if actor.get("clan") and actor.get("civ_kingdom_id") and (aid := actor["id"]) not in king_ids and aid not in leader_ids:
                 heirs_by_kingdom.setdefault(kid, []).append(actor)
 
     ctx = {
         **build_actor_stats_context(save),  # world_time, languages_by_id, subspecies_by_id, species_data…
+        "actors_by_army": actors_by_army,
         "actors_by_city": actors_by_city,
         "actors_by_id": actors_by_id,
         "armies_by_city": {a["id_city"]: a for a in save.get("armies") or []},  # at most one per city, enforced by WB
+        "besieging_by_city": cache(lambda: besieging_kingdoms(save)),  # a walk over every actor, and only `metadata` asks — resolved on demand, once
         "books_by_city": cache(lambda: books_held(save)[0]),  # custody, not authorship; called not stored, a 15 k-row walk few sections need
         "buildings_by_city": buildings_by_city,
         "centres": {},  # `_city_centre` memo — every town asks its capital's, over and over.
@@ -367,6 +378,12 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
     islands = sorted({iid for pos in centres if (iid := island_lookup.get(pos)) is not None})
 
     dims = ctx["score_dimensions"]()
+    besiegers = [ref for k in ctx["besieging_by_city"]().get(cid, ()) if (ref := entity_ref(k, ctx["kingdoms_by_id"]))]
+
+    # WB weighs a settlement's stores beside its people — the one meta type whose list runs past the four moods, its `getPopulationPeople` being its own headcount.
+    residents, stock = ctx["actors_by_city"].get(cid, []), ctx["inventory_by_city"][cid]
+    stores = {**{r: stock[r] for r in ("common_metals", "gold", "stone", "wood")}, "food": ctx["food_by_city"][cid]}
+    report = meta_report("city", {**meta_ratios(residents, ctx), **stores, "people": len(residents), "units": len(residents)})
     kingdom = ctx["kingdoms_by_id"].get(city.get("kingdomID"))
 
     # Founder = the city's first settler (`founder_id`), emitted as `{id, name}` (dead or alive — the registry carries its visuals + tombstone).
@@ -377,6 +394,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         founder = {"id": fid, "name": name}
 
     return {
+        **_city_taxes(kingdom),
         "age": entity_age(city, ctx["world_time"]),
         "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
         "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
@@ -393,10 +411,12 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
         "name": city.get("name"),
         "renown": city.get("renown", 0),
+        "report": report,  # what WB has the settlement say of itself
+        # The crowns storming the town, eldest id first. Sorting the refs themselves would raise the moment a second one shows up — two dicts never compare.
+        **({"besieged_by": sorted(besiegers, key=itemgetter("id"))} if besiegers else {}),
         "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
         "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
         "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
-        **_city_taxes(kingdom),
         **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # `_BOOK_POINTS` per book written here + how widely it's read
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
         **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
@@ -611,14 +631,14 @@ def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
     getters = settlement_rank_getters(ctx, "city")
     getters.update(  # the two score dimensions the panel surfaces and no other getter covers, plus the loyalty the crown's hold rests on
         {
-            "attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0),
-            "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
-            "books": lambda c: books[c.get("id")],
-            "equipment": lambda c: ctx["equipment_by_city"].get(c.get("id"), 0),
             **{  # Prefixed: the city ranks `kills`/`deaths`/`renown` of its own already. `key=k` binds per entry — a bare closure would read the loop's last value.
                 f"army_{k}": lambda c, key=k: armies.get(c.get("id"), {}).get(key, 0)
                 for k in ("age", "captain_years", "kills", "kills_per_death", "money", "renown")
             },
+            "attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0),
+            "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
+            "books": lambda c: books[c.get("id")],
+            "equipment": lambda c: ctx["equipment_by_city"].get(c.get("id"), 0),
             "loyalty": lambda c: loyalty.get(c.get("id"), 0),
         }
     )
@@ -739,7 +759,10 @@ def main(argv: list[str]) -> int:
 
     out: dict = {}
     if "army" in sections:
-        out["army"] = _build_army(city, ctx)
+        if army := _build_army(city, ctx):  # Here, not in `_build_army`: the ranks section builds one per city and would pay for a verdict no getter reads.
+            troops = ctx["actors_by_army"].get(ctx["armies_by_city"][city["id"]]["id"], [])
+            army = {**army, **({"report": report} if (report := meta_report("army", {"units": len(troops), **meta_ratios(troops, ctx)})) else {})}
+        out["army"] = army
     if "books" in sections:
         out["books"] = _build_books(city, ctx, requested)
     if "breakdown" in sections:

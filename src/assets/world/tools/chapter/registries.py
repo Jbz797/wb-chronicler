@@ -116,8 +116,8 @@ def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | 
     dominant = species.most_common(1)
     kingdom = kingdom or {}
     entry = {
-        "plate": "capital" if kingdom.get("capitalID") == city.get("id") else "city",  # WB's nameplates: gold studs mark a seat, bare stone the rest
         "name": city.get("name"),
+        "plate": "capital" if kingdom.get("capitalID") == city.get("id") else "city",  # WB's nameplates: gold studs mark a seat, bare stone the rest
         "species": dominant[0][0] if dominant else None,
     }
     if kingdom_id := kingdom.get("id"):  # its crown, which the name's hue is read off — fallen realms stay registered so a razed city keeps its colour

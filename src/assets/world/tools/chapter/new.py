@@ -30,6 +30,7 @@ _ALERTS = {
     },
 }
 
+_CHRONICLER_ONLY = frozenset({"info", "report"})  # emitted for the chronicler alone: no panel reads either, and `report` is worded afresh on every call.
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
@@ -38,11 +39,11 @@ _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
 
-# A chapter carries the values, not the way back to them — so the `info` signposts go. Recursive, so a light form added later needs nothing here.
-def _drop_info(node):
+# A chapter carries the values, not the way back to them, nor WB's flavour: the `info` signposts go, and `report`, whose wording WB draws afresh every time.
+def _drop_chronicler_keys(node):
     if isinstance(node, dict):
-        return {key: _drop_info(value) for key, value in node.items() if key != "info"}
-    return [_drop_info(value) for value in node] if isinstance(node, list) else node
+        return {key: _drop_chronicler_keys(value) for key, value in node.items() if key not in _CHRONICLER_ONLY}
+    return [_drop_chronicler_keys(value) for value in node] if isinstance(node, list) else node
 
 
 # The save's `favorite`-flagged actor (WB's in-game marker), detail folded; the chronicler's `descriptor` carries forward while it stays the same favorite.
@@ -254,7 +255,7 @@ def main(argv: list[str]) -> int:
     }
 
     # `render`, not `json.dumps(indent=2)`: same tree, a third fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong here.
-    (chapter_dir / "chapter.json").write_text(render(_drop_info(chapter_json)) + "\n")
+    (chapter_dir / "chapter.json").write_text(render(_drop_chronicler_keys(chapter_json)) + "\n")
 
     year = int(world_time / UNITS_PER_YEAR)
     counts = " · ".join(  # The chronicler's own order: the map first, then who fills it. Each name pairs with its label here rather than twice below.

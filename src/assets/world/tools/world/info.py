@@ -170,8 +170,8 @@ def _build_metadata(map_stats: dict) -> dict:
     age_id = map_stats.get("world_age_id") or ""
     age_progress = float(map_stats.get("current_age_progress") or 0)
     return {
-        "age_id": age_id,  # WorldAgeLibrary key (e.g. `age_hope`)
         "age_description": (load_data("world-ages.json").get(age_id) or {}).get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
+        "age_id": age_id,  # WorldAgeLibrary key (e.g. `age_hope`)
         # Chronicler-only narrative hint, matches WB's UI counter « Lunes jusqu'au prochain âge ». Omitted when 0 / no current age.
         "months_until_next_age": int(age_duration * (1 - age_progress) / 5) if age_duration > 0 else 0,
         "world_time": round(float(map_stats.get("world_time", 0)), 2),

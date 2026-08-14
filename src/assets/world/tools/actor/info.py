@@ -22,7 +22,9 @@ from shared import (
     entity_ref,
     equipment_entry,
     equipment_rarity,
+    has_emotions,
     index_by_id,
+    is_aboard,
     life_stage,
     light,
     load_save,
@@ -183,6 +185,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": language.get("name"),
         "life_stage": life_stage(age, age_adult, lifespan),
+        # WB `isInsideSomething`, the half a save keeps: aboard, the soul neither takes a town nor walks the tile it stands on. Absent on dry land.
+        **({"transport": _transport(actor, ctx)} if is_aboard(actor) else {}),
         "mass": _compute_mass(actor, ctx),
         "name": actor.get("name"),  # absent, not a placeholder, where WB never named them — `emit` strips it and the panels drop the row
         "personality": _compute_personality(actor, snap),
@@ -284,10 +288,11 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
         return {}
     cleaned.update(
         {
+            # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
+            **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
             "births": int(actor.get("births") or 0),
             "children": ctx["children_by_parent"].get(actor.get("id"), 0),
             "equipment_power": _equipment_power(actor, ctx),
-            "happiness": (int(actor.get("happiness") or 0) + 100) // 2,  # WB happiness runs -100..+100; surfaced as the 0-100% the UI shows.
             "health": int(actor.get("health") or 0),
             "kills": int(actor.get("kills") or 0),
             # WB displays level 1 as the floor, even when the raw save field is absent / 0.
@@ -300,7 +305,7 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
             "stamina": int(actor.get("stamina") or 0),
         }
     )
-    return dict(sorted(cleaned.items()))
+    return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and the 253 peers are only ever read by key
 
 
 # Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
@@ -327,6 +332,12 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
         if entries and entries[-1].get("id") == actor_id:
             return int((world_time - float(entries[-1].get("timestamp_ago") or 0)) / UNITS_PER_YEAR)
     return None
+
+
+# The boat a soul is aboard — its kind above all: WB names only 3 of a world's 31, so `asset_id` is what tells a fishing skiff from an elven transport.
+def _transport(actor: dict, ctx: dict) -> dict | None:
+    boat = ctx["actors_by_id"].get(actor.get("transportID"))
+    return None if boat is None else {"asset_id": boat.get("asset_id"), "id": boat["id"], "name": boat.get("name")}  # `emit` drops the nameless one
 
 
 def main(argv: list[str]) -> int:

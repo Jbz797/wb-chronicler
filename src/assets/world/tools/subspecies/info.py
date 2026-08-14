@@ -11,8 +11,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
+from actor_stats import build_actor_stats_context, meta_ratios, population_of
 from islands import compute_islands_cached
 from shared import (
+    NON_FOOD_SPECIES,
+    PROFESSION_WARRIOR,
+    SATED_MIN_NUTRITION,
     actor_age,
     build_trait_ids,
     build_trait_list,
@@ -25,6 +29,7 @@ from shared import (
     light,
     load_data,
     load_save,
+    meta_report,
     parse_sections,
     population_breakdown,
     resolve_profession,
@@ -34,7 +39,7 @@ from shared import (
     wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "ranks", "species", "traits")
+_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "population", "ranks", "species", "traits")
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # WB names both shorter than the sheet does; without these they print raw ids.
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field, the same narrow set a clan carries — old age answers to `natural`.
 _EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "population": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
@@ -73,11 +78,11 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 
 # The subspecies' identity card: WB's own lifetime counters beside what only a walk over the living can tell — how far the biology spread and what it carries.
 def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
-    tallies, sub_id = ctx["tallies"], subspecies["id"]  # coins and renown came off the one actor pass — resumming them here would walk the roster twice over
     cities = {c for a in members if (c := a.get("cityID"))}
     island_of = ctx["island_lookup"]()
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
     causes = {k[len(_DEATH_PREFIX) :]: v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
+    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the biology say of itself
 
     return {
         "age": entity_age(subspecies, ctx["world_time"]),
@@ -92,10 +97,14 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         **({"deaths": deaths} if (deaths := int(subspecies.get("total_deaths") or 0)) else {}),
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
-        **({"money": money} if (money := tallies["money"][sub_id]) else {}),  # the purse the living carry between them; WB banks per actor, never per biology
-        **({"renown_total": total} if (total := tallies["renown_total"][sub_id]) else {}),  # the living's worth beside WB's tally over every bearer ever born
-        **({"renown": renown} if (renown := int(subspecies.get("renown") or 0)) else {}),
+        **({"renown": renown} if (renown := int(subspecies.get("renown") or 0)) else {}),  # WB's own tally, where the living's worth now sits in `population`
+        **({"report": report} if report else {}),
     }
+
+
+# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `members` section owns.
+def _build_population(members: list[dict], ctx: dict) -> dict:
+    return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
 
 
 # The stock's standing over every soul of that species, ranked against the others — its own section, like a realm's `alliance`: counts flat beside its `ranks`.
@@ -113,11 +122,15 @@ def _build_species(subspecies: dict, save: dict) -> dict:
 # Two libraries on one axis: `biology` what WB mutated the subspecies into, `birth` what its newborns inherit — both keyed by trait group, at any size.
 def _build_traits(subspecies: dict, detailed: bool) -> dict:
     build = build_trait_list if detailed else partial(build_trait_ids, key="group")
-    sworn = {
-        "biology": build(subspecies.get("saved_traits") or [], load_data("subspecies-traits.json")),
+    library, sworn = load_data("subspecies-traits.json"), subspecies.get("saved_traits") or []
+    # WB derives a biology's own faculties from its traits (`Subspecies.cacheTags`): it feels through an `amygdala`, eats through a `stomach`, lays or bears.
+    tags = sorted({tag for tid in sworn for tag in (library.get(tid) or {}).get("tags") or ()})
+    carried = {
+        "biology": build(sworn, library),
         "birth": build(subspecies.get("saved_actor_birth_traits") or [], load_data("creature-traits.json")),
+        **({"tags": tags} if tags else {}),
     }
-    return sworn if detailed else light(sworn, "traits")
+    return carried if detailed else light(carried, "traits")
 
 
 # What a biology is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs every biology, on each dimension.
@@ -126,11 +139,14 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "age": lambda s: entity_age(s, world_time),
         "births": lambda s: int(s.get("total_births") or 0),
         "deaths": lambda s: int(s.get("total_deaths") or 0),
+        "fed_pct": lambda s: tallies["fed"][s["id"]] / n if (n := tallies["eaters"][s["id"]]) else 0.0,
+        "housed_pct": lambda s: tallies["housed"][s["id"]] / n if (n := len(tallies["members"].get(s["id"], ()))) else 0.0,
         "kills": lambda s: int(s.get("total_kills") or 0),
         "members": lambda s: len(tallies["members"].get(s["id"], ())),
         "money": lambda s: tallies["money"][s["id"]],
         "renown": lambda s: int(s.get("renown") or 0),
         "renown_total": lambda s: tallies["renown_total"][s["id"]],
+        "warriors": lambda s: tallies["warriors"][s["id"]],
     }
 
 
@@ -182,27 +198,41 @@ def main(argv: list[str]) -> int:
         print(f"unknown subspecies: {subspecies_id}", file=sys.stderr)
         return 1
 
-    tallies: dict = {"members": {}, "money": Counter(), "renown_total": Counter()}  # One pass feeds every tally: WB points the actor at its biology, never back
+    # One pass feeds every tally: WB points the actor at its biology, never the reverse.
+    tallies: dict = {
+        "eaters": Counter(),
+        "fed": Counter(),
+        "housed": Counter(),
+        "members": {},
+        "money": Counter(),
+        "renown_total": Counter(),
+        "warriors": Counter(),
+    }
 
     for actor in save.get("actors_data") or []:
         if not (sid := actor.get("subspecies")):
             continue
         tallies["members"].setdefault(sid, []).append(actor)
         tallies["money"][sid] += int(actor.get("money") or 0)
+        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they weigh on neither side of the hunger share
+            tallies["eaters"][sid] += 1
+            tallies["fed"][sid] += int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION
+        tallies["housed"][sid] += bool(actor.get("homeBuildingID"))
+        tallies["warriors"][sid] += actor.get("profession") == PROFESSION_WARRIOR
         if fame := actor.get("renown"):
             tallies["renown_total"][sid] += int(fame)
 
     members = tallies["members"].get(subspecies_id, [])
     ctx = {
+        **build_actor_stats_context(save),  # brings the trait libraries and `languages_by_id`, `world_time` with them
+        "actors_by_id": index_by_id(save.get("actors_data") or []),  # `population_of` pairs lovers through it, and only a mutual pair counts
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
-        "languages_by_id": index_by_id(save.get("languages") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
-        "subspecies_by_id": subspecies_by_id,
-        "tallies": tallies,  # the one actor pass, handed whole: `metadata` reads two of its three, `ranks` all three
-        "world_time": save["mapStats"]["world_time"],
+        "subspecies_by_id": subspecies_by_id,  # the index the id was checked against, so the context's own copy never takes over
+        "tallies": tallies,  # the one actor pass, handed whole — the podium reads all three, every other section walking `members` itself
     }
 
     out: dict = {}
@@ -215,6 +245,8 @@ def main(argv: list[str]) -> int:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
         out["metadata"] = _build_metadata(subspecies, members, ctx)
+    if "population" in sections:
+        out["population"] = _build_population(members, ctx)
     if "ranks" in sections:
         out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), _rank_getters(tallies, ctx["world_time"]))
     if "species" in sections:

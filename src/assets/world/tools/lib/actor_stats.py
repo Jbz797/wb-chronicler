@@ -21,12 +21,30 @@ from collections import Counter
 from functools import cache
 from math import inf
 
-from shared import PROFESSION_KING, PROFESSION_LEADER, UNITS_PER_YEAR, age_thresholds, head_money, index_by_id, life_stage, load_data, sex_label
+from shared import (
+    HAPPY_MIN_HAPPINESS,
+    NON_FOOD_SPECIES,
+    PROFESSION_KING,
+    PROFESSION_LEADER,
+    PROFESSION_WARRIOR,
+    SATED_MIN_NUTRITION,
+    SICK_TRAITS,
+    UNHAPPY_MAX_HAPPINESS,
+    UNITS_PER_YEAR,
+    actor_age,
+    age_thresholds,
+    has_emotions,
+    head_money,
+    index_by_id,
+    life_stage,
+    load_data,
+    sex_label,
+)
 
 # Genes that round UP on BAD (instead of down).
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}
 
-_COLOR_MAP = {"T": "red", "G": "yellow", "A": "green", "C": "blue"}
+_COLOR_MAP = {"A": "green", "C": "blue", "G": "yellow", "T": "red"}  # in the order of the `"ACGT"` literal that indexes it
 _DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 # Stats dropped from output — not consumed by chronicler UI or fixtures. Add new stats here when entering the pipeline but not surfaced (see chapter.interface.ts).
@@ -138,6 +156,7 @@ _LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}
 _LEVEL_VETERAN_SKILL_BONUS = 0.1
 _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
+_META_RATIOS = ("children", "happy", "homeless", "unhappy")  # WB `IMetaObject`'s four, named as its getters are — every one of them a share of the living.
 
 
 # WB `BaseStatAsset.normalize_min`/`normalize_max` for the 23 bounded stats — an unset max (2^31) is `inf`. Floors bite: traits push under, WB lifts back.
@@ -242,6 +261,16 @@ def _add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> N
             totals[k] = totals.get(k, 0) + v
 
 
+# WB `Subspecies.calculateAgeRelatedStats` reads the biology's own lifespan, not its bearer's — so the threshold is cached per biology, as WB caches it.
+def _age_adult(actor: dict, ctx: dict, base_cache: dict, memo: dict) -> float:
+    sub_id = actor.get("subspecies")
+    if sub_id not in memo:
+        actor_stat_totals(actor, ctx, base_cache, lifespan_only=True)  # fills `base_cache`; the base is species + chromosomes + the biology's own traits
+        base = (base_cache.get(sub_id) or ({}, {}))[0]
+        memo[sub_id] = age_thresholds(int(base.get("lifespan") or 0))[0]
+    return memo[sub_id]
+
+
 # Per `Actor.updateStats` + tooltip: damage += warfare/5; damage_range → raw-hp amplitude (int(damage*damage_range)); critical_chance → percent (0.28 → 28).
 def _apply_damage_finalize(totals: dict) -> None:
     if "damage" in totals:
@@ -315,28 +344,6 @@ def _cleanup_stats(totals: dict) -> dict:
         if v:
             result[_RENAMES.get(k, k)] = v
     return dict(sorted(result.items()))
-
-
-# Demographic tally over a settlement's actors — age tiers, men, mutual-lover couples. One implementation for the kingdom and city `population` sections.
-def _demographics(actors: list[dict], ctx: dict) -> dict:
-    by_id = ctx["actors_by_id"]
-    ids = {a["id"] for a in actors}
-    men = couples = 0
-    paired: set[int] = set()
-    stages: Counter[str] = Counter()
-    world_time = ctx["world_time"]
-    for a in actors:
-        age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
-        # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
-        lifespan = int(actor_stat_totals(a, ctx, ctx["subspecies_base_cache"], with_equipment=False).get("lifespan", 0))
-        stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
-        if a.get("sex") != 1:
-            men += 1
-        lover = a.get("lover")
-        if lover is not None and lover in ids and a["id"] not in paired and by_id.get(lover, {}).get("lover") == a["id"]:
-            couples += 1
-            paired.update((a["id"], lover))
-    return {"couples": couples, "men": men, "stages": stages}
 
 
 # Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's colors only depend on (gene, life_dna), and life_dna is constant per run.
@@ -458,7 +465,7 @@ def _to_int32(x: int) -> int:
 
 
 # WB's `Actor.stats`, floats intact, before `_cleanup_stats`. Combine stats from here: WB adds first, truncates once, so 14.5 stays 14.5.
-def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None, *, with_equipment: bool = True) -> dict:
+def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None, *, lifespan_only: bool = False) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
     if sub is None:
@@ -479,8 +486,12 @@ def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None
     _add_trait_stats(totals, actor.get("saved_traits") or [], ctx["creature_traits"])
     _add_trait_stats(totals, (ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits") or [], ctx["clan_traits"])
     _add_trait_stats(totals, (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits") or [], ctx["language_traits"])
-    if with_equipment:  # the table only ever grants 20 stats, `lifespan` and `multiplier_lifespan` among none of them — a lifespan-only caller skips the walk
-        _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
+    # Nothing below writes `lifespan` — equipment grants it on none of its 20 stats, level scales three others, the rest only read it. Measured 41 % cheaper.
+    if lifespan_only:
+        _normalize(totals)
+        _apply_multipliers(totals)
+        return totals
+    _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
     _add_custom_data_float(totals, actor.get("custom_data_float"))
     _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
     _normalize(totals)  # `updateStats` normalizes here, ahead of the derived stats: mana reads the clamped intelligence, damage the clamped warfare.
@@ -522,6 +533,80 @@ def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | No
     return cleaned
 
 
+# WB `IMetaObject`'s four ratios, the input its self-report reads. Happiness only answers for a biology bearing an `amygdala`, WB's own `has_emotions` tag.
+def meta_ratios(actors: list[dict], ctx: dict) -> dict:
+    if not (total := len(actors)):
+        return dict.fromkeys(_META_RATIOS, 0.0)
+    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})
+    counts: Counter[str] = Counter()
+    memo: dict = {}
+    for actor in actors:
+        if has_emotions(actor, ctx["subspecies_by_id"]):  # an unfeeling soul still counts in the whole, as WB divides by every unit it holds
+            happiness = int(actor.get("happiness") or 0)
+            counts["happy"] += happiness >= HAPPY_MIN_HAPPINESS
+            counts["unhappy"] += happiness < UNHAPPY_MAX_HAPPINESS
+        # WB `calcIsBaby`: a child is a soul below its biology's `age_adult`, and only where its species was given a baby form — most creatures never have one.
+        if (ctx["species_data"].get(actor.get("asset_id")) or {}).get("baby_form"):
+            counts["children"] += actor_age(actor, ctx["world_time"]) < _age_adult(actor, ctx, base_cache, memo)
+        counts["homeless"] += not actor.get("homeBuildingID")
+    return {key: counts[key] / total for key in _META_RATIOS}
+
+
+# What a body's members tell about it — age tiers, sexes, mutual couples, the tallies each soul answers for alone. `settlement_population` adds stores and head.
+def population_of(actors: list[dict], ctx: dict) -> dict:
+    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # created here too: a caller may ask for this block alone, before anything else fills it
+    by_id, ids = ctx["actors_by_id"], {a["id"] for a in actors}
+    counts: Counter[str] = Counter()
+    paired: set[int] = set()
+    stages: Counter[str] = Counter()
+    world_time = ctx["world_time"]
+    for a in actors:
+        age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+        # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
+        lifespan = int(actor_stat_totals(a, ctx, base_cache, lifespan_only=True).get("lifespan", 0))
+        stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
+        counts["men"] += a.get("sex") != 1
+        counts["money"] += int(a.get("money") or 0)
+        counts["renown"] += int(a.get("renown") or 0)
+        counts["warriors"] += a.get("profession") == PROFESSION_WARRIOR
+        counts["homeless"] += not a.get("homeBuildingID")
+        counts["familyless"] += not a.get("family")
+        counts["happy"] += int(a.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS and has_emotions(a, ctx["subspecies_by_id"])
+        if (a.get("asset_id") or "") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they never weigh on the hunger share
+            counts["eaters"] += 1
+            counts["fed"] += int(a.get("nutrition") or 0) >= SATED_MIN_NUTRITION
+        traits = a.get("saved_traits") or []
+        counts["immortals"] += "immortal" in traits
+        counts["infected"] += "infected" in traits
+        counts["sick"] += not SICK_TRAITS.isdisjoint(traits)
+        lover = a.get("lover")
+        if lover is not None and lover in ids and a["id"] not in paired and by_id.get(lover, {}).get("lover") == a["id"]:
+            counts["couples"] += 1
+            paired.update((a["id"], lover))
+    total = len(actors)
+    return {
+        "adults": stages["adult"],
+        "babies": stages["baby"],
+        "children": stages["child"],
+        "couples": counts["couples"],
+        "elders": stages["elder"],
+        "familyless": counts["familyless"],
+        "fed_pct": round(100 * counts["fed"] / eaters) if (eaters := counts["eaters"]) else 0,  # share of the food-needing sated (nutrition ≥ 60)
+        "happy": counts["happy"],
+        "housed_pct": round((total - counts["homeless"]) / total * 100) if total else 0,
+        **({"immortals": n} if (n := counts["immortals"]) else {}),
+        **({"infected": n} if (n := counts["infected"]) else {}),
+        "men": counts["men"],
+        "money": counts["money"],  # every coin the living carry between them
+        "renown_total": counts["renown"],  # summed renown of the members, distinct from whatever the body itself is worth
+        **({"sick": n} if (n := counts["sick"]) else {}),
+        "teens": stages["teen"],
+        "total": total,
+        "warriors": counts["warriors"],
+        "women": total - counts["men"],
+    }
+
+
 # The population panel both tiers print, field for field — `tier` picks the ctx tallies, as `settlement_rank_getters` does. `immortals`/`infected`/`sick` drop at 0.
 def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
     entity_id = entity["id"]
@@ -529,38 +614,19 @@ def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
     def tally(name: str) -> int:
         return ctx[f"{name}_by_{tier}"][entity_id]
 
-    actors = ctx[f"actors_by_{tier}"].get(entity_id, [])
-    demo = _demographics(actors, ctx)
-    men, stages = demo["men"], demo["stages"]
-    total = len(actors)
+    population = population_of(ctx[f"actors_by_{tier}"].get(entity_id, []), ctx)
+    money, nobles_money, total = population["money"], tally("nobles_money"), population["total"]
 
-    eaters = tally("eaters")  # food-needing pop (undead excluded); denominator for `fed_pct`
-    immortals, infected, sick = tally("immortals"), tally("infected"), tally("sick")
-    money, nobles_money = tally("money"), tally("nobles_money")
-
-    return {
-        "adults": stages["adult"],
-        "babies": stages["baby"],
-        "children": stages["child"],
-        "couples": demo["couples"],
-        "elders": stages["elder"],
-        "familyless": tally("familyless"),
-        "fed_pct": round(100 * tally("fed") / eaters) if eaters else 0,  # % of food-needing pop sated (nutrition ≥ 60).
-        "food_per_capita": round(tally("food") / total, 1) if total else 0,  # Eatable stock ÷ population — food security.
-        "happy": tally("happy"),
-        "housed_pct": round((total - tally("homeless")) / total * 100) if total else 0,
-        **({"immortals": immortals} if immortals else {}),
-        **({"infected": infected} if infected else {}),
-        "men": men,
-        "money": money,  # Total coins held across the population.
-        "nobles": tally("nobles"),
-        "nobles_money": nobles_money,  # Coins of the other nobles, the head excluded — his own purse sits in `metadata`.
-        "renown_total": tally("renown"),  # Summed renown of all inhabitants (distinct from the settlement's own `metadata.renown`).
-        **({"sick": sick} if sick else {}),
-        "subjects_money": money - head_money(entity, ctx, tier) - nobles_money,  # Commoners' coins: `money` minus the head and the nobility.
-        "teens": stages["teen"],
-        "total": total,
-        "warriors": tally("warriors"),
-        "wealth_per_capita": round((money + tally("gold")) / total, 1) if total else 0,  # `metadata.wealth` ÷ population.
-        "women": total - men,
-    }
+    # What a roof over stores and a head on the throne add to what the people alone say — a biology or a band has neither, and reads `population_of` bare.
+    return dict(
+        sorted(
+            {
+                **population,
+                "food_per_capita": round(tally("food") / total, 1) if total else 0,  # eatable stock ÷ population — food security
+                "nobles": tally("nobles"),
+                "nobles_money": nobles_money,  # the other nobles' coins, the head excluded — his own purse sits in `metadata`
+                "subjects_money": money - head_money(entity, ctx, tier) - nobles_money,  # commoners' coins: `money` less the head and the nobility
+                "wealth_per_capita": round((money + tally("gold")) / total, 1) if total else 0,  # `metadata.wealth` ÷ population
+            }.items()
+        )
+    )

@@ -1,6 +1,7 @@
 {
   "UFO": { "stats": { "armor": 5, "damage": 80, "health": 1000, "lifespan": 0, "mass": 5, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 20 } },
   "acid_blob": {
+    "baby_form": true,
     "description": "A roiling mass of acidic slime",
     "stats": {
       "accuracy": 1,
@@ -18,6 +19,7 @@
     }
   },
   "alien": {
+    "baby_form": true,
     "description": "Out of this World",
     "stats": {
       "accuracy": 1,
@@ -36,6 +38,7 @@
     }
   },
   "alpaca": {
+    "baby_form": true,
     "description": "Alpacas are social animals, always sticking close to their herd",
     "stats": {
       "accuracy": 1,
@@ -53,6 +56,7 @@
     }
   },
   "angle": {
+    "baby_form": true,
     "description": "Their razor-thin bodies cutting through flesh and sanity alike",
     "stats": {
       "accuracy": 1,
@@ -138,6 +142,7 @@
     }
   },
   "armadillo": {
+    "baby_form": true,
     "description": "Living tanks that curl into impenetrable spheres",
     "stats": {
       "accuracy": 1,
@@ -173,6 +178,7 @@
     }
   },
   "bandit": {
+    "baby_form": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -189,6 +195,7 @@
     }
   },
   "bear": {
+    "baby_form": true,
     "description": "Large and hairy animal",
     "stats": {
       "accuracy": 1,
@@ -370,6 +377,7 @@
   "boat_transport_white_mage": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
   "boat_transport_wolf": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
   "buffalo": {
+    "baby_form": true,
     "description": "Shaggy behemoth of the Great Plains",
     "stats": {
       "accuracy": 1,
@@ -407,6 +415,7 @@
     }
   },
   "capybara": {
+    "baby_form": true,
     "description": "This water-loving rodent is as relaxed as it is large",
     "stats": {
       "accuracy": 1,
@@ -424,6 +433,7 @@
     }
   },
   "cat": {
+    "baby_form": true,
     "description": "Cute little carnivore",
     "stats": {
       "accuracy": 1,
@@ -441,6 +451,7 @@
     }
   },
   "chicken": {
+    "baby_form": true,
     "description": "Have you heard about this bird?",
     "stats": {
       "accuracy": 1,
@@ -458,6 +469,7 @@
     }
   },
   "civ_acid_gentleman": {
+    "baby_form": true,
     "description": "You'll be drawn in by their manners, only to be eaten away by their nature",
     "stats": {
       "accuracy": 1,
@@ -475,6 +487,7 @@
     }
   },
   "civ_alpaca": {
+    "baby_form": true,
     "description": "Soft, fluffy, and always ready to charm their way out of trouble",
     "stats": {
       "accuracy": 1,
@@ -492,6 +505,7 @@
     }
   },
   "civ_armadillo": {
+    "baby_form": true,
     "description": "Born to rock, built to roll",
     "stats": {
       "accuracy": 1,
@@ -509,6 +523,7 @@
     }
   },
   "civ_bear": {
+    "baby_form": true,
     "description": "Fierce on the battlefield, but soft enough to help their cubs bake cookies",
     "stats": {
       "accuracy": 1,
@@ -526,6 +541,7 @@
     }
   },
   "civ_beetle": {
+    "baby_form": true,
     "description": "Rolling to their future one ball at a time, always aiming for the top",
     "stats": {
       "accuracy": 1,
@@ -543,6 +559,7 @@
     }
   },
   "civ_buffalo": {
+    "baby_form": true,
     "description": "Horns may be for fighting, but those hooves? They're all about dancing the night away",
     "stats": {
       "accuracy": 1,
@@ -560,6 +577,7 @@
     }
   },
   "civ_candy_man": {
+    "baby_form": true,
     "description": "Behind those sugary smiles lies a hunger for blood and flesh",
     "stats": {
       "accuracy": 1,
@@ -577,6 +595,7 @@
     }
   },
   "civ_capybara": {
+    "baby_form": true,
     "description": "They make your mom laugh",
     "stats": {
       "accuracy": 1,
@@ -594,6 +613,7 @@
     }
   },
   "civ_cat": {
+    "baby_form": true,
     "description": "They may look adorable, but those claws say otherwise",
     "stats": {
       "accuracy": 1,
@@ -611,6 +631,7 @@
     }
   },
   "civ_chicken": {
+    "baby_form": true,
     "description": "Top of the pecking order",
     "stats": {
       "accuracy": 1,
@@ -628,6 +649,7 @@
     }
   },
   "civ_cow": {
+    "baby_form": true,
     "description": "They're calm, until someone looks at them wrong - then it's time to mooooove",
     "stats": {
       "accuracy": 1,
@@ -645,6 +667,7 @@
     }
   },
   "civ_crab": {
+    "baby_form": true,
     "description": "They might walk funny, but when it comes to battle, they're deadly serious",
     "stats": {
       "accuracy": 1,
@@ -662,6 +685,7 @@
     }
   },
   "civ_crocodile": {
+    "baby_form": true,
     "description": "They spend most of their time plotting domination, and the rest pretending they're not",
     "stats": {
       "accuracy": 1,
@@ -679,6 +703,7 @@
     }
   },
   "civ_crystal_golem": {
+    "baby_form": true,
     "description": "They've got that cool, calm, ocean vibe - right until you upset them",
     "stats": {
       "accuracy": 1,
@@ -696,6 +721,7 @@
     }
   },
   "civ_dog": {
+    "baby_form": true,
     "description": "Their loyalty is legendary, their bite is worse",
     "stats": {
       "accuracy": 1,
@@ -713,6 +739,7 @@
     }
   },
   "civ_fox": {
+    "baby_form": true,
     "description": "In the game of life, they never play fair - and that's why they always win",
     "stats": {
       "accuracy": 1,
@@ -730,6 +757,7 @@
     }
   },
   "civ_frog": {
+    "baby_form": true,
     "description": "Quick as the wind, deadly as a lily pad to the face",
     "stats": {
       "accuracy": 1,
@@ -747,6 +775,7 @@
     }
   },
   "civ_garlic_man": {
+    "baby_form": true,
     "description": "Smell that? That's the scent of victory",
     "stats": {
       "accuracy": 1,
@@ -764,6 +793,7 @@
     }
   },
   "civ_goat": {
+    "baby_form": true,
     "description": "Stubborn as a rock, but just as reliable",
     "stats": {
       "accuracy": 1,
@@ -781,6 +811,7 @@
     }
   },
   "civ_hyena": {
+    "baby_form": true,
     "description": "The bigger the chaos, the louder they laugh",
     "stats": {
       "accuracy": 1,
@@ -798,6 +829,7 @@
     }
   },
   "civ_lemon_man": {
+    "baby_form": true,
     "description": "Tough on the outside, sour on the inside",
     "stats": {
       "accuracy": 1,
@@ -815,6 +847,7 @@
     }
   },
   "civ_liliar": {
+    "baby_form": true,
     "description": "Rain isn't enough for these flowers - they prefer to drink the tears of their defeated foes",
     "stats": {
       "accuracy": 1,
@@ -832,6 +865,7 @@
     }
   },
   "civ_monkey": {
+    "baby_form": true,
     "description": "Silent as shadows, deadly as a well-placed banana peel",
     "stats": {
       "accuracy": 1,
@@ -849,6 +883,7 @@
     }
   },
   "civ_penguin": {
+    "baby_form": true,
     "description": "They dream in warm hues, where they paint with the blood of their fallen foes",
     "stats": {
       "accuracy": 1,
@@ -866,6 +901,7 @@
     }
   },
   "civ_piranha": {
+    "baby_form": true,
     "description": "On land or sea, their hunger knows no bounds",
     "stats": {
       "accuracy": 1,
@@ -883,6 +919,7 @@
     }
   },
   "civ_rabbit": {
+    "baby_form": true,
     "description": "When in doubt, hop it out",
     "stats": {
       "accuracy": 1,
@@ -900,6 +937,7 @@
     }
   },
   "civ_rat": {
+    "baby_form": true,
     "description": "They steal hearts... and a few other things",
     "stats": {
       "accuracy": 1,
@@ -917,6 +955,7 @@
     }
   },
   "civ_rhino": {
+    "baby_form": true,
     "description": "They do not always hit, but when they do, they hit hard",
     "stats": {
       "accuracy": 1,
@@ -934,6 +973,7 @@
     }
   },
   "civ_scorpion": {
+    "baby_form": true,
     "description": "The guardians of the desert's deepest secrets",
     "stats": {
       "accuracy": 1,
@@ -951,6 +991,7 @@
     }
   },
   "civ_seal": {
+    "baby_form": true,
     "description": "Most elite warriors of the sea, trained to fight in any conditions",
     "stats": {
       "accuracy": 1,
@@ -967,6 +1008,7 @@
     }
   },
   "civ_sheep": {
+    "baby_form": true,
     "description": "Where others see grass, they see potential profit",
     "stats": {
       "accuracy": 1,
@@ -984,6 +1026,7 @@
     }
   },
   "civ_snake": {
+    "baby_form": true,
     "description": "Their sarcasm's so sharp, it's basically venom - and it stings more than their bite ever could",
     "stats": {
       "accuracy": 1,
@@ -1001,6 +1044,7 @@
     }
   },
   "civ_turtle": {
+    "baby_form": true,
     "description": "They live long enough to see their enemies become dust",
     "stats": {
       "accuracy": 1,
@@ -1018,6 +1062,7 @@
     }
   },
   "civ_unicorn": {
+    "baby_form": true,
     "description": "Even demons find them too loud",
     "stats": {
       "accuracy": 1,
@@ -1035,6 +1080,7 @@
     }
   },
   "civ_wolf": {
+    "baby_form": true,
     "description": "The howl isn't just a warning - it's a promise that blood will be spilled tonight",
     "stats": {
       "accuracy": 1,
@@ -1052,6 +1098,7 @@
     }
   },
   "cold_one": {
+    "baby_form": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1068,6 +1115,7 @@
     }
   },
   "cow": {
+    "baby_form": true,
     "description": "It goes moo, doesn't say meow",
     "stats": {
       "accuracy": 1,
@@ -1085,6 +1133,7 @@
     }
   },
   "crab": {
+    "baby_form": true,
     "description": "A tiny animal that loves to rave",
     "stats": {
       "accuracy": 1,
@@ -1106,6 +1155,7 @@
     "stats": { "damage": 10, "health": 10000, "mass_2": 99999, "scale": 0.25, "size": 8, "speed": 50 }
   },
   "crocodile": {
+    "baby_form": true,
     "description": "The boring dinosaur",
     "stats": {
       "accuracy": 1,
@@ -1123,6 +1173,7 @@
     }
   },
   "crystal_sword": {
+    "baby_form": true,
     "description": "Sharp as the sea and twice as salty",
     "stats": {
       "accuracy": 1,
@@ -1140,6 +1191,7 @@
     }
   },
   "demon": {
+    "baby_form": true,
     "description": "Hellish creature. Red and hot",
     "stats": {
       "accuracy": 1,
@@ -1157,6 +1209,7 @@
     }
   },
   "dog": {
+    "baby_form": true,
     "description": "Woof woof",
     "stats": {
       "accuracy": 1,
@@ -1179,6 +1232,7 @@
     "stats": { "damage": 100, "health": 1000, "lifespan": 10000, "mass": 4, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 40, "targets": 20 }
   },
   "druid": {
+    "baby_form": true,
     "description": "She likes to watch the grass grow",
     "stats": {
       "accuracy": 1,
@@ -1196,6 +1250,7 @@
     }
   },
   "dwarf": {
+    "baby_form": true,
     "description": "Master craftsmen who never forget a grudge",
     "playable": true,
     "stats": {
@@ -1214,6 +1269,7 @@
     }
   },
   "elf": {
+    "baby_form": true,
     "description": "Mystical beings with a superiority complex and great hair",
     "playable": true,
     "stats": {
@@ -1232,6 +1288,7 @@
     }
   },
   "evil_mage": {
+    "baby_form": true,
     "description": "Fighter of the white mage",
     "stats": {
       "accuracy": 1,
@@ -1249,6 +1306,7 @@
     }
   },
   "fairy": {
+    "baby_form": true,
     "description": "Peaceful creature, that heals everyone around it",
     "stats": {
       "accuracy": 1,
@@ -1369,6 +1427,7 @@
     }
   },
   "flower_bud": {
+    "baby_form": true,
     "description": "It may look pretty, but it has the personality of a cactus",
     "stats": {
       "accuracy": 1,
@@ -1407,6 +1466,7 @@
     }
   },
   "fox": {
+    "baby_form": true,
     "description": "What does the fox say?",
     "stats": {
       "accuracy": 1,
@@ -1424,6 +1484,7 @@
     }
   },
   "frog": {
+    "baby_form": true,
     "description": "Fun fact. Frog eat bug",
     "stats": {
       "accuracy": 1,
@@ -1442,6 +1503,7 @@
     }
   },
   "garl": {
+    "baby_form": true,
     "description": "Has a bite as strong as its smell",
     "stats": {
       "accuracy": 1,
@@ -1476,6 +1538,7 @@
     }
   },
   "goat": {
+    "baby_form": true,
     "description": "Known for its playful headbutts and endless curiosity",
     "stats": {
       "accuracy": 1,
@@ -1533,6 +1596,7 @@
     }
   },
   "human": {
+    "baby_form": true,
     "description": "Masters of adaptation and bad decisions",
     "playable": true,
     "stats": {
@@ -1551,6 +1615,7 @@
     }
   },
   "hyena": {
+    "baby_form": true,
     "description": "Known for laughing at their prey",
     "stats": {
       "accuracy": 1,
@@ -1584,6 +1649,7 @@
     }
   },
   "lemon_snail": {
+    "baby_form": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1658,6 +1724,7 @@
     }
   },
   "monkey": {
+    "baby_form": true,
     "description": "It can throw rocks. What next?",
     "stats": {
       "accuracy": 1,
@@ -1710,6 +1777,7 @@
     }
   },
   "necromancer": {
+    "baby_form": true,
     "description": "Champion of the skeletons",
     "stats": {
       "accuracy": 1,
@@ -1727,6 +1795,7 @@
     }
   },
   "orc": {
+    "baby_form": true,
     "description": "Warriors with a heart of gold and a head of stone",
     "playable": true,
     "stats": {
@@ -1745,6 +1814,7 @@
     }
   },
   "ostrich": {
+    "baby_form": true,
     "description": "Who needs flying when you can sprint like the wind?",
     "stats": {
       "accuracy": 1,
@@ -1762,6 +1832,7 @@
     }
   },
   "penguin": {
+    "baby_form": true,
     "description": "A bird that was built for swimming",
     "stats": {
       "accuracy": 1,
@@ -1779,6 +1850,7 @@
     }
   },
   "piranha": {
+    "baby_form": true,
     "description": "Predatory fish. Swimming & killing",
     "stats": {
       "accuracy": 1,
@@ -1832,6 +1904,7 @@
     }
   },
   "rabbit": {
+    "baby_form": true,
     "description": "Small animal with huge ears",
     "stats": {
       "accuracy": 1,
@@ -1849,6 +1922,7 @@
     }
   },
   "raccoon": {
+    "baby_form": true,
     "description": "A furry bandit, sneaking through the lands in search of treasures (or snacks)",
     "stats": {
       "accuracy": 1,
@@ -1866,6 +1940,7 @@
     }
   },
   "rat": {
+    "baby_form": true,
     "description": "Small rat",
     "stats": {
       "accuracy": 1,
@@ -1883,6 +1958,7 @@
     }
   },
   "rhino": {
+    "baby_form": true,
     "description": "It can't see very well",
     "stats": {
       "accuracy": 1,
@@ -1918,6 +1994,7 @@
     }
   },
   "scorpion": {
+    "baby_form": true,
     "description": "Silent and swift, the scorpion uses its venomous sting to defend and attack",
     "stats": {
       "accuracy": 1,
@@ -1935,6 +2012,7 @@
     }
   },
   "seal": {
+    "baby_form": true,
     "description": "Children of storm and sea",
     "stats": {
       "accuracy": 1,
@@ -1952,6 +2030,7 @@
     }
   },
   "sheep": {
+    "baby_form": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1985,6 +2064,7 @@
     }
   },
   "smore": {
+    "baby_form": true,
     "description": "A terrifying creature that spreads death and destruction purely for fun",
     "stats": {
       "accuracy": 1,
@@ -2002,6 +2082,7 @@
     }
   },
   "snake": {
+    "baby_form": true,
     "description": "Cute little venomous snek",
     "stats": {
       "accuracy": 1,
@@ -2019,6 +2100,7 @@
     }
   },
   "snowman": {
+    "baby_form": true,
     "description": "He knows nothing",
     "stats": {
       "accuracy": 1,
@@ -2068,6 +2150,7 @@
     }
   },
   "turtle": {
+    "baby_form": true,
     "description": "Living shield on tiny legs",
     "stats": {
       "accuracy": 1,
@@ -2085,6 +2168,7 @@
     }
   },
   "unicorn": {
+    "baby_form": true,
     "description": "Magic included, sparkles optional",
     "stats": {
       "accuracy": 1,
@@ -2102,6 +2186,7 @@
     }
   },
   "white_mage": {
+    "baby_form": true,
     "description": "Fighter of the evil mage",
     "stats": {
       "accuracy": 1,
@@ -2119,6 +2204,7 @@
     }
   },
   "wolf": {
+    "baby_form": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,

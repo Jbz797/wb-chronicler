@@ -154,12 +154,13 @@ export class RankedStatComponent {
     return this._snap(f.stats.warfare, ranks.warfare);
   }
 
-  // The three tiers built alike — a clan, a lineage, a biology: every stat sits in `metadata` beside a podium of the same name, `members` alone owning its block.
+  // A clan, a lineage, a biology, built alike: the body itself in `metadata`, its living in `population` as on a city, `members` apart. One flat podium for all.
   private _resolvePeople(entity: PeopleTier): RankedStatSnapshot {
     if (this.stat() === 'members') return this._snap(entity.members.total, entity.ranks?.members); // its own block, like a city's population
-    const metadata = entity.metadata as unknown as Record<string, number | undefined>;
     const ranks = entity.ranks as Record<string, number | undefined> | undefined;
-    return this._snap(metadata[this.stat()] ?? 0, ranks?.[this.stat()]); // WB omits a counter it never wrote, hence the `?? 0`
+    const block = entity.population as unknown as Record<string, number | undefined>;
+    const source = Object.hasOwn(block, this.stat()) ? block : (entity.metadata as unknown as Record<string, number | undefined>);
+    return this._snap(source[this.stat()] ?? 0, ranks?.[this.stat()]); // WB omits a counter it never wrote, hence the `?? 0`
   }
 
   // Omits `rank` when undefined — required by `exactOptionalPropertyTypes`.

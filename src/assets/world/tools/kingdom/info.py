@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, settlement_population
+from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, meta_ratios, settlement_population
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -23,17 +23,20 @@ from shared import (
     UNITS_PER_YEAR,
     ZONE_TILES,
     asset_set,
+    besieging_kingdoms,
     books_held,
     children_by_id,
     civic_building_ids,
     competition_ranks,
     emit,
     entity_ref,
+    has_emotions,
     index_by_id,
     kingdom_score_dimensions,
     kingdom_score_ranks,
     load_data,
     load_save,
+    meta_report,
     parse_sections,
     population_breakdown,
     settlement_leaders,
@@ -50,8 +53,8 @@ _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_lo
 
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _TRAIT_MODS = _OPINION_CONSTANTS["actor_trait_opinion_mods"]  # Read once per king trait in `_compute_opinion`, so it earns its own name (as in `city/info.py`).
-_WORLDVIEW_NEUTRAL = "neutral"
 _WORLDVIEWS = ("ethnocentric_guard", "xenophiles", "xenophobic")  # WB's `worldview` culture traits: mutually exclusive, often absent — hence our own fourth value.
+_WORLDVIEW_NEUTRAL = "neutral"
 
 
 # The kingdom's alliance and its other members (`None` if unaligned). `population`/`renown` sum the members (WB tracks neither), ranked top-3; `motto` often absent.
@@ -68,18 +71,20 @@ def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
     def totals(members: list[int]) -> tuple[int, int]:
         return (sum(populations.get(m, 0) for m in members), sum(int((kingdoms_by_id.get(m) or {}).get("renown") or 0) for m in members))
 
+    members = [a for m in alliance.get("kingdoms") or [] for a in ctx["actors_by_kingdom"].get(m, [])]
     own = totals(alliance.get("kingdoms") or [])
     others = [totals(a.get("kingdoms") or []) for a in save.get("alliances", [])]
     ranks = competition_ranks(own, others, {"population": lambda t: t[0], "renown": lambda t: t[1]})
 
     return {
         "allies": sorted(({"id": i, "name": kingdoms_by_id.get(i, {}).get("name")} for i in alliance.get("kingdoms") or [] if i != kid), key=lambda o: o["id"]),
-        "breakdown": population_breakdown([a for m in alliance.get("kingdoms") or [] for a in ctx["actors_by_kingdom"].get(m, [])], ctx),
+        "breakdown": population_breakdown(members, ctx),
         "motto": alliance.get("motto"),
         "name": alliance.get("name"),
         "population": own[0],
         "ranks": ranks,
         "renown": own[1],
+        **({"report": report} if (report := meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})) else {}),  # WB gives a pact the same four
     }
 
 
@@ -114,19 +119,22 @@ def _build_context(save: dict, save_path: Path) -> dict:
     populations_by_kingdom: Counter[int] = Counter()  # Mirrors `Kingdom.getPopulation`; `boat_*` PNJs are transient. Nobles = kings (3) + leaders (4) + captains.
     renown_by_kingdom: Counter[int] = Counter()
     sick_by_kingdom: Counter[int] = Counter()
+    subspecies_by_id = index_by_id(save.get("subspecies") or [])  # `has_emotions` is read in the actor pass, before `ctx` exists to carry the same index
     warriors_by_city: Counter[int] = Counter()
     warriors_by_kingdom: Counter[int] = Counter()
 
     for actor in save.get("actors_data", []):
-        actors_by_id[actor["id"]] = actor
-        asset_id = actor.get("asset_id") or ""  # read once, as `city/info.py` does: the boat guard and the hunger tally both want it
+        actor_id = actor["id"]
+        actors_by_id[actor_id] = actor
+        # Read once apiece, as `city/info.py` does: the boat guard and the hunger tally both want the asset, the warrior and noble tests the profession.
+        asset_id, profession = actor.get("asset_id") or "", actor.get("profession")
         if asset_id.startswith("boat_"):  # `is_boat` inlined — it would re-read the field we already hold
             if bkid := actor.get("civ_kingdom_id"):
                 boats_by_kingdom[bkid] += 1
             continue
         if cid := actor.get("cityID"):
             populations_by_city[cid] += 1
-            if actor.get("profession") == PROFESSION_WARRIOR:
+            if profession == PROFESSION_WARRIOR:
                 warriors_by_city[cid] += 1  # `countTotalWarriors` reaches them through the cities — a fighter between two homes counts for nobody.
 
         kid = actor.get("civ_kingdom_id")
@@ -150,9 +158,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
             if int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION:
                 fed_by_kingdom[kid] += 1
 
-        if actor.get("profession") in (PROFESSION_KING, PROFESSION_LEADER) or actor["id"] in captain_ids:
+        if profession in (PROFESSION_KING, PROFESSION_LEADER) or actor_id in captain_ids:
             nobles_by_kingdom[kid] += 1
-            if actor["id"] not in king_ids and (coins := actor.get("money")):
+            if coins and actor_id not in king_ids:  # the purse read above, the head's own reported apart in `metadata`
                 nobles_money_by_kingdom[kid] += int(coins)
 
         traits = actor.get("saved_traits") or []
@@ -165,7 +173,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if "immortal" in traits:
             immortals_by_kingdom[kid] += 1
 
-        if int(actor.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS:
+        if int(actor.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS and has_emotions(actor, subspecies_by_id):
             happy_by_kingdom[kid] += 1
 
         if not actor.get("homeBuildingID"):
@@ -234,9 +242,11 @@ def _build_context(save: dict, save_path: Path) -> dict:
     supreme_kingdom_id = max(power_by_kingdom, key=lambda kid: power_by_kingdom[kid], default=None)
 
     return {
+        **build_actor_stats_context(save),
         "actors_by_clan": actors_by_clan,
         "actors_by_id": actors_by_id,
         "actors_by_kingdom": actors_by_kingdom,
+        "besieging_by_city": cache(lambda: besieging_kingdoms(save)),  # `wars` alone asks, and it walks every actor — resolved on demand, once
         "boats_by_kingdom": boats_by_kingdom,
         "books_by_kingdom": cache(lambda: books_held(save)[1]),  # custody, not authorship; called not stored, a 15 k-row walk few sections need
         "buildings_by_kingdom": buildings_by_kingdom,
@@ -279,7 +289,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "warriors_by_kingdom": warriors_by_kingdom,
         "world_age_id": save["mapStats"].get("world_age_id"),
         "zones_by_kingdom": zones_by_kingdom,
-        **build_actor_stats_context(save),
     }
 
 
@@ -314,6 +323,8 @@ def _build_leaders(kingdom: dict, ctx: dict) -> dict:
 def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     kid = kingdom["id"]
     dims = ctx["score_dimensions"]()
+    subjects = ctx["actors_by_kingdom"].get(kid, [])
+    report = meta_report("meta", {"units": len(subjects), **meta_ratios(subjects, ctx)})  # `None` where none of the realm's four verdicts holds
     age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
 
     # Chronicler-only: island ids the kingdom's city zones touch, sorted asc (1 = biggest), probed at each zone centre. From ctx — recomputing re-reads the disk.
@@ -365,6 +376,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
         "renown": kingdom.get("renown", 0),
+        "report": report,  # what WB has the realm say of itself
         "score_rank": kingdom_score_ranks(save, dims).get(kid),  # placement on the composite score (1 = strongest); the total stays internal
         "tax_tribute": tribute,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
@@ -460,6 +472,14 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
         ally_kingdoms = [kingdoms_by_id[aid] for aid in (attackers if side == "attacker" else defenders) - {kid} if aid in kingdoms_by_id]
 
         duration_units = ctx["world_time"] - float(w.get("created_time") or 0)
+        besieged = {ctx["cities_by_id"][cid].get("kingdomID") for cid in ctx["besieging_by_city"]()}
+        years = int(duration_units / UNITS_PER_YEAR)  # WB `getAge`, the very unit its two age-driven war verdicts read
+        war_state = {
+            "age": years,
+            "attackers_besieged": bool(attackers & besieged),
+            "deaths": int(w.get("total_deaths") or 0),
+            "defenders_besieged": bool(defenders & besieged),
+        }
 
         # Instigator: WB stores the kingdom name but not the actor's — resolved from the save when alive, bare `{id}` otherwise (searchable in past chapters).
         sb_id = w.get("started_by_actor_id")
@@ -475,7 +495,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                 "cities": {"attackers": sum(cities.get(aid, 0) for aid in attackers), "defenders": sum(cities.get(did, 0) for did in defenders)},
                 "deaths": {"attackers": w.get("dead_attackers", 0), "defenders": w.get("dead_defenders", 0)},
                 "defender_alliance": alliance_for(w.get("main_defender"), w.get("list_defenders") or []),
-                "duration_years": int(duration_units / UNITS_PER_YEAR),
+                "duration_years": years,
                 "id": w.get("id"),
                 **({"is_main": True} if kid == w.get(f"main_{side}") else {}),  # Omitted when False (absence = secondary ally, not this side's leader).
                 "name": w.get("name"),
@@ -485,6 +505,7 @@ def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
                 ),
                 "populations": {"attackers": sum(populations.get(aid, 0) for aid in attackers), "defenders": sum(populations.get(did, 0) for did in defenders)},
                 "renown_at_stake": w.get("renown", 0),
+                **({"report": report} if (report := meta_report("war", war_state)) else {}),
                 "side": side,
                 "started_by": {
                     "actor": {"id": sb_id, **({"name": sb_actor["name"]} if sb_actor and sb_actor.get("name") else {})},
