@@ -26,9 +26,9 @@ export const KINGDOM_META_STATS = new Set<RankedStatKind>([
   'wealth',
 ]);
 
-// Ranked stats shown raw (age, `%`, per-capita, placement, loyalty, trait score) — every other one compacts to `X.X K` above 100, like the world panel.
+// Ranked stats shown raw (age, `%`, per-capita, placement, loyalty) — every other one compacts to `X.X K` above 100, like the world panel.
 export const NON_COMPACT_STATS = new Set<RankedStatKind>([
-  'age', 'fed_pct', 'food_per_capita', 'housed_pct', 'loyalty', 'score_rank', 'trait_score', 'wealth_per_capita',
+  'age', 'fed_pct', 'food_per_capita', 'housed_pct', 'loyalty', 'score_rank', 'wealth_per_capita',
 ]);
 
 // Favorite combat stats — damage / defense / attack rhythm.

@@ -2,325 +2,619 @@
   "accelerated_healing": {
     "description": "Can heal wounds and regenerate damaged skin",
     "flavor": "They heal faster than their regrets",
+    "group": "body",
     "name": "Accelerated Healing"
   },
   "adaptation_corruption": {
     "description": "Adapted to life in a cursed, corrupted biome",
     "flavor": "The corruption welcomes all. For a time",
+    "group": "adaptations",
     "name": "Corruption Adaptation"
   },
   "adaptation_desert": {
     "description": "Adapted to life in mysterious deserts",
     "flavor": "Born from dust, destined to fade into dust",
+    "group": "adaptations",
     "name": "Arcane Desert Adaptation"
   },
   "adaptation_infernal": {
     "description": "Adapted to living and building in the infernal biome",
     "flavor": "Hell is home, and home is warm",
+    "group": "adaptations",
     "name": "Infernal Adaptation"
   },
-  "adaptation_permafrost": { "description": "Adapted to life in the permafrost biome", "flavor": "Cold? What cold?", "name": "Permafrost Adaptation" },
+  "adaptation_permafrost": {
+    "description": "Adapted to life in the permafrost biome",
+    "flavor": "Cold? What cold?",
+    "group": "adaptations",
+    "name": "Permafrost Adaptation"
+  },
   "adaptation_swamp": {
     "description": "Adapted to living and building in swamps",
     "flavor": "Damp, dark, and full of smells. Just the way they like it",
+    "group": "adaptations",
     "name": "Swamp Adaptation"
   },
   "advanced_hippocampus": {
     "description": "Enhanced memory capabilities allow this species to develop cultures and religions",
     "flavor": "First memories become first myths",
+    "group": "advanced_brain",
     "name": "Advanced Hippocampus"
   },
-  "aggressive": { "description": "Prone to lose their temper", "flavor": "Their fuse runs short", "name": "Aggressive" },
+  "aggressive": { "description": "Prone to lose their temper", "flavor": "Their fuse runs short", "group": "chaos", "name": "Aggressive" },
   "amygdala": {
     "description": "Grants this species the ability to feel emotions, especially happiness, shaping their behavior and reactions",
     "flavor": "Emotions drive evolution",
+    "group": "advanced_brain",
     "name": "Amygdala"
   },
-  "annoying_fireworks": { "description": "Creates colorful explosions upon death", "flavor": "Death should be entertaining", "name": "Annoying Fireworks" },
-  "antimatter_essence": { "description": "Explodes violently when slain in combat", "flavor": "Physics demands a dramatic exit", "name": "Antimatter Essence" },
-  "aquatic": { "description": "Adapted to life underwater", "flavor": "They may know some deep secrets", "name": "Aquatic" },
+  "annoying_fireworks": {
+    "description": "Creates colorful explosions upon death",
+    "flavor": "Death should be entertaining",
+    "group": "chaos",
+    "name": "Annoying Fireworks"
+  },
+  "antimatter_essence": {
+    "description": "Explodes violently when slain in combat",
+    "flavor": "Physics demands a dramatic exit",
+    "group": "chaos",
+    "name": "Antimatter Essence"
+  },
+  "aquatic": { "description": "Adapted to life underwater", "flavor": "They may know some deep secrets", "group": "body", "name": "Aquatic" },
   "bad_genes": {
     "description": "A genetic mutation that can lead to expression of bad traits",
     "flavor": "The flesh remembers ancient mistakes",
+    "group": "body",
     "name": "Bad Genes"
   },
-  "big_stomach": { "description": "These species have a huge appetite", "flavor": "The void within must be fed", "name": "Big Stomach" },
-  "bioluminescence": { "description": "Body naturally generates light", "flavor": "They wear stars within", "name": "Bioluminescence" },
-  "bioproduct_gems": { "description": "Processes food into precious gems", "flavor": "Food goes in, fortune comes out", "name": "Gem Production" },
-  "bioproduct_gold": { "description": "Converts consumed nutrients into pure gold", "flavor": "Their metabolism defies economics", "name": "Gold Production" },
+  "big_stomach": { "description": "These species have a huge appetite", "flavor": "The void within must be fed", "group": "body", "name": "Big Stomach" },
+  "bioluminescence": { "description": "Body naturally generates light", "flavor": "They wear stars within", "group": "body", "name": "Bioluminescence" },
+  "bioproduct_gems": {
+    "description": "Processes food into precious gems",
+    "flavor": "Food goes in, fortune comes out",
+    "group": "bioproducts",
+    "name": "Gem Production"
+  },
+  "bioproduct_gold": {
+    "description": "Converts consumed nutrients into pure gold",
+    "flavor": "Their metabolism defies economics",
+    "group": "bioproducts",
+    "name": "Gold Production"
+  },
   "bioproduct_mushrooms": {
     "description": "Nourishes fungi from within, periodically producing mushrooms",
     "flavor": "Every host becomes a garden",
+    "group": "bioproducts",
     "name": "Mushroom Production"
   },
-  "bioproduct_stone": { "description": "Efficiently converts consumed material into stone", "flavor": "Their digestion is rock solid!", "name": "Stone Production" },
-  "cautious_instincts": { "description": "Prefers to avoid danger", "flavor": "Better safe than sorry", "name": "Cautious Instincts" },
-  "chaos_driven": { "description": "They are fully awakened during the Age of Chaos", "flavor": "Their time comes with madness", "name": "Chaos Driven" },
-  "circadian_drift": { "description": "They like to sleep when it's light outside", "flavor": "Their night starts at sunrise", "name": "Circadian Drift" },
-  "cold_resistance": { "description": "Can withstand extreme cold without harm", "flavor": "Ice age? More like nice age", "name": "Cold Resistance" },
-  "death_grow_mythril": { "description": "Transforms into mythril upon death", "flavor": "Even death has value", "name": "Mythril Form" },
-  "death_grow_plant": { "description": "On death transforms into a plant!", "flavor": "Nature recycles everything", "name": "Plant Growth" },
-  "death_grow_tree": { "description": "On death transforms into a tree!", "flavor": "Death plants deeper roots", "name": "Tree Growth" },
-  "diet_algivore": { "description": "An algae-based diet", "flavor": "Others dread algae... they dream of it", "name": "Algivore" },
+  "bioproduct_stone": {
+    "description": "Efficiently converts consumed material into stone",
+    "flavor": "Their digestion is rock solid!",
+    "group": "bioproducts",
+    "name": "Stone Production"
+  },
+  "cautious_instincts": { "description": "Prefers to avoid danger", "flavor": "Better safe than sorry", "group": "mind", "name": "Cautious Instincts" },
+  "chaos_driven": {
+    "description": "They are fully awakened during the Age of Chaos",
+    "flavor": "Their time comes with madness",
+    "group": "hibernation",
+    "name": "Chaos Driven"
+  },
+  "circadian_drift": {
+    "description": "They like to sleep when it's light outside",
+    "flavor": "Their night starts at sunrise",
+    "group": "hibernation",
+    "name": "Circadian Drift"
+  },
+  "cold_resistance": {
+    "description": "Can withstand extreme cold without harm",
+    "flavor": "Ice age? More like nice age",
+    "group": "body",
+    "name": "Cold Resistance"
+  },
+  "death_grow_mythril": { "description": "Transforms into mythril upon death", "flavor": "Even death has value", "group": "growth", "name": "Mythril Form" },
+  "death_grow_plant": { "description": "On death transforms into a plant!", "flavor": "Nature recycles everything", "group": "growth", "name": "Plant Growth" },
+  "death_grow_tree": { "description": "On death transforms into a tree!", "flavor": "Death plants deeper roots", "group": "growth", "name": "Tree Growth" },
+  "diet_algivore": { "description": "An algae-based diet", "flavor": "Others dread algae... they dream of it", "group": "diet", "name": "Algivore" },
   "diet_cannibalism": {
     "description": "Feeds on members of its own species, a rare and often desperate survival strategy",
     "flavor": "You are what you eat...",
+    "group": "diet",
     "name": "Cannibalism"
   },
-  "diet_carnivore": { "description": "A diet focused on meat", "flavor": "A balanced diet? Meat, meat, and more meat", "name": "Carnivore" },
-  "diet_florivore": { "description": "Feeds mainly on flowers", "flavor": "Flowers aren't just for decoration!", "name": "Florivore" },
-  "diet_folivore": { "description": "A diet composed mainly of leaves and plants", "flavor": "Leaf it to me!", "name": "Folivore" },
-  "diet_frugivore": { "description": "A diet primarily composed of fruits", "flavor": "If life gives them lemons... they eat them!", "name": "Frugivore" },
-  "diet_geophagy": { "description": "Consumes soil and dirt", "flavor": "To them, even dirt is a delicacy", "name": "Geophagy" },
-  "diet_graminivore": { "description": "Consumes primarily grasses", "flavor": "Don't touch, eat!", "name": "Graminivore" },
-  "diet_granivore": { "description": "Eats primarily wheat, grains and seeds", "flavor": "Every day is a harvest festival!", "name": "Granivore" },
-  "diet_hematophagy": { "description": "They sustain themselves by drinking the blood of others", "flavor": "The fresher, the better", "name": "Hematophagy" },
-  "diet_herbivore": { "description": "A plant-based diet, consumes everything green", "flavor": "Eats greens so you don't have to", "name": "Herbivore" },
-  "diet_insectivore": { "description": "A diet focused on insects", "flavor": "Small prey feeds great hunger", "name": "Insectivore" },
-  "diet_lithotroph": { "description": "Uses stone and minerals for food", "flavor": "Loves him some rock and stone!", "name": "Lithotroph" },
-  "diet_nectarivore": { "description": "Feeds primarily on nectar", "flavor": "Survival never tasted sweeter", "name": "Nectarivore" },
-  "diet_omnivore": { "description": "Eats both plants and animals", "flavor": "Salad or steak? Why not both?", "name": "Omnivore" },
-  "diet_piscivore": { "description": "Feeds primarily on fish", "flavor": "The only release fish get is from life itself", "name": "Piscivore" },
-  "diet_xylophagy": { "description": "Specializes in consuming wood", "flavor": "If there's wood, there's food!", "name": "Xylophagy" },
+  "diet_carnivore": { "description": "A diet focused on meat", "flavor": "A balanced diet? Meat, meat, and more meat", "group": "diet", "name": "Carnivore" },
+  "diet_florivore": { "description": "Feeds mainly on flowers", "flavor": "Flowers aren't just for decoration!", "group": "diet", "name": "Florivore" },
+  "diet_folivore": { "description": "A diet composed mainly of leaves and plants", "flavor": "Leaf it to me!", "group": "diet", "name": "Folivore" },
+  "diet_frugivore": {
+    "description": "A diet primarily composed of fruits",
+    "flavor": "If life gives them lemons... they eat them!",
+    "group": "diet",
+    "name": "Frugivore"
+  },
+  "diet_geophagy": { "description": "Consumes soil and dirt", "flavor": "To them, even dirt is a delicacy", "group": "diet", "name": "Geophagy" },
+  "diet_graminivore": { "description": "Consumes primarily grasses", "flavor": "Don't touch, eat!", "group": "diet", "name": "Graminivore" },
+  "diet_granivore": { "description": "Eats primarily wheat, grains and seeds", "flavor": "Every day is a harvest festival!", "group": "diet", "name": "Granivore" },
+  "diet_hematophagy": {
+    "description": "They sustain themselves by drinking the blood of others",
+    "flavor": "The fresher, the better",
+    "group": "diet",
+    "name": "Hematophagy"
+  },
+  "diet_herbivore": {
+    "description": "A plant-based diet, consumes everything green",
+    "flavor": "Eats greens so you don't have to",
+    "group": "diet",
+    "name": "Herbivore"
+  },
+  "diet_insectivore": { "description": "A diet focused on insects", "flavor": "Small prey feeds great hunger", "group": "diet", "name": "Insectivore" },
+  "diet_lithotroph": { "description": "Uses stone and minerals for food", "flavor": "Loves him some rock and stone!", "group": "diet", "name": "Lithotroph" },
+  "diet_nectarivore": { "description": "Feeds primarily on nectar", "flavor": "Survival never tasted sweeter", "group": "diet", "name": "Nectarivore" },
+  "diet_omnivore": { "description": "Eats both plants and animals", "flavor": "Salad or steak? Why not both?", "group": "diet", "name": "Omnivore" },
+  "diet_piscivore": { "description": "Feeds primarily on fish", "flavor": "The only release fish get is from life itself", "group": "diet", "name": "Piscivore" },
+  "diet_xylophagy": { "description": "Specializes in consuming wood", "flavor": "If there's wood, there's food!", "group": "diet", "name": "Xylophagy" },
   "dreamweavers": {
     "description": "Silently alters the dreams of others, spreading their language, culture, or religion",
     "flavor": "The mind is most open when it's unaware",
+    "group": "mind",
     "name": "Dreamweavers"
   },
-  "egg_bubble": { "description": "Delicate, translucent eggs", "flavor": "Nature's most fragile packaging", "name": "Bubble" },
-  "egg_candy": { "description": "Eggs that look and taste like candy", "flavor": "Sweet on the outside, full of surprises inside", "name": "Candy" },
-  "egg_cocoon": { "description": "Eggs that look like a cocoon", "flavor": "Secrets spin their own shells", "name": "Cocoon" },
-  "egg_colored": { "description": "Eggs that take phenotype color of these creatures", "flavor": "Genetics shows its work early", "name": "Colored" },
-  "egg_face": { "description": "Eggs in a form of a weird face", "flavor": "Their eggs stare back at you", "name": "Face" },
-  "egg_flames": { "description": "Eggs surrounded by flames", "flavor": "Fire remembers its children", "name": "Flames" },
-  "egg_ice": { "description": "Eggs made out of ice", "flavor": "Life sleeps in frozen dreams", "name": "Ice" },
-  "egg_orb": { "description": "Eggs shaped like mysterious orbs", "flavor": "Tomorrow comes in perfect spheres", "name": "Orb" },
-  "egg_rainbow": { "description": "Eggs with a rainbow pattern", "flavor": "All colors lead to life", "name": "Rainbow" },
-  "egg_roe": { "description": "Eggs in a shape of roe", "flavor": "Ready to spawn the future", "name": "Roe" },
-  "egg_shell_plain": { "description": "Eggs with a plain shell", "flavor": "Simple vessels hide complex futures", "name": "Plain Shell" },
-  "egg_shell_spotted": { "description": "Eggs with a spotted shell", "flavor": "Every spot tells a different story", "name": "Spotted Shell" },
-  "energy_preserver": { "description": "Preserves energy during rest periods", "flavor": "Dreams substitute sustenance", "name": "Energy Preserver" },
+  "egg_bubble": { "description": "Delicate, translucent eggs", "flavor": "Nature's most fragile packaging", "group": "eggs", "name": "Bubble" },
+  "egg_candy": {
+    "description": "Eggs that look and taste like candy",
+    "flavor": "Sweet on the outside, full of surprises inside",
+    "group": "eggs",
+    "name": "Candy"
+  },
+  "egg_cocoon": { "description": "Eggs that look like a cocoon", "flavor": "Secrets spin their own shells", "group": "eggs", "name": "Cocoon" },
+  "egg_colored": {
+    "description": "Eggs that take phenotype color of these creatures",
+    "flavor": "Genetics shows its work early",
+    "group": "eggs",
+    "name": "Colored"
+  },
+  "egg_face": { "description": "Eggs in a form of a weird face", "flavor": "Their eggs stare back at you", "group": "eggs", "name": "Face" },
+  "egg_flames": { "description": "Eggs surrounded by flames", "flavor": "Fire remembers its children", "group": "eggs", "name": "Flames" },
+  "egg_ice": { "description": "Eggs made out of ice", "flavor": "Life sleeps in frozen dreams", "group": "eggs", "name": "Ice" },
+  "egg_orb": { "description": "Eggs shaped like mysterious orbs", "flavor": "Tomorrow comes in perfect spheres", "group": "eggs", "name": "Orb" },
+  "egg_rainbow": { "description": "Eggs with a rainbow pattern", "flavor": "All colors lead to life", "group": "eggs", "name": "Rainbow" },
+  "egg_roe": { "description": "Eggs in a shape of roe", "flavor": "Ready to spawn the future", "group": "eggs", "name": "Roe" },
+  "egg_shell_plain": { "description": "Eggs with a plain shell", "flavor": "Simple vessels hide complex futures", "group": "eggs", "name": "Plain Shell" },
+  "egg_shell_spotted": { "description": "Eggs with a spotted shell", "flavor": "Every spot tells a different story", "group": "eggs", "name": "Spotted Shell" },
+  "energy_preserver": {
+    "description": "Preserves energy during rest periods",
+    "flavor": "Dreams substitute sustenance",
+    "group": "sleep_cycles",
+    "name": "Energy Preserver"
+  },
   "enhanced_strength": {
     "description": "They have great physical strength",
     "flavor": "Their muscles have muscles",
+    "group": "body",
     "name": "Enhanced Strength",
     "stats": { "damage": 50 }
   },
-  "exoskeleton": { "description": "Possesses a hard, protective outer shell", "flavor": "Nature's knight armor", "name": "Exoskeleton", "stats": { "armor": 10 } },
-  "fast_builders": { "description": "Masters of efficient construction techniques", "flavor": "They nailed it!", "name": "Fast Builders" },
-  "fenix_born": { "description": "Can rise from their own ashes after death, reborn anew", "flavor": "Death is more of a power nap", "name": "Fenix Born" },
-  "fins": { "description": "These species are excellent swimmers", "flavor": "The ocean is their playground", "name": "Fins" },
-  "fire_elemental_form": { "description": "Releases a fire elemental when killed", "flavor": "Death only feeds their flame", "name": "Fire Elemental Form" },
-  "gaia_roots": { "description": "They release life-giving clouds upon death", "flavor": "Their last breath births tomorrow", "name": "Gaia Roots" },
-  "genetic_mirror": { "description": "Their children inherit all biological traits from parents", "flavor": "Nature knows what to copy", "name": "Genetic Mirror" },
+  "exoskeleton": {
+    "description": "Possesses a hard, protective outer shell",
+    "flavor": "Nature's knight armor",
+    "group": "body",
+    "name": "Exoskeleton",
+    "stats": { "armor": 10 }
+  },
+  "fast_builders": { "description": "Masters of efficient construction techniques", "flavor": "They nailed it!", "group": "mind", "name": "Fast Builders" },
+  "fenix_born": {
+    "description": "Can rise from their own ashes after death, reborn anew",
+    "flavor": "Death is more of a power nap",
+    "group": "rebirth",
+    "name": "Fenix Born"
+  },
+  "fins": { "description": "These species are excellent swimmers", "flavor": "The ocean is their playground", "group": "body", "name": "Fins" },
+  "fire_elemental_form": {
+    "description": "Releases a fire elemental when killed",
+    "flavor": "Death only feeds their flame",
+    "group": "chaos",
+    "name": "Fire Elemental Form"
+  },
+  "gaia_roots": {
+    "description": "They release life-giving clouds upon death",
+    "flavor": "Their last breath births tomorrow",
+    "group": "growth",
+    "name": "Gaia Roots"
+  },
+  "genetic_mirror": {
+    "description": "Their children inherit all biological traits from parents",
+    "flavor": "Nature knows what to copy",
+    "group": "chaos",
+    "name": "Genetic Mirror"
+  },
   "genetic_psychosis": {
     "description": "Prone to inherited mental instability and can go mad",
     "flavor": "Their mirrors show different faces",
+    "group": "mind",
     "name": "Genetic Psychosis"
   },
   "gestation_extremely_long": {
     "description": "Has an extraordinarily prolonged gestation period!",
     "flavor": "Like crystal people!",
+    "group": "gestation",
     "name": "Extremely Long Gestation"
   },
   "gestation_long": {
     "description": "Has longer developmental periods before birth!",
     "flavor": "Similar to humans, with gestation lasting about 3 trimesters",
+    "group": "gestation",
     "name": "Long Gestation"
   },
   "gestation_moderate": {
     "description": "Gestation period spans a few months",
     "flavor": "Like cats, dogs and sheep - typically ranging a few months",
+    "group": "gestation",
     "name": "Moderate Gestation"
   },
-  "gestation_short": { "description": "Has a rapid reproductive cycle", "flavor": "Just like rabbits - but also rabbits", "name": "Short Gestation" },
+  "gestation_short": {
+    "description": "Has a rapid reproductive cycle",
+    "flavor": "Just like rabbits - but also rabbits",
+    "group": "gestation",
+    "name": "Short Gestation"
+  },
   "gestation_very_long": {
     "description": "Gestation period spans multiple years",
     "flavor": "Like elephants, which can last up to 22 months",
+    "group": "gestation",
     "name": "Very Long Gestation"
   },
   "gift_of_air": {
     "description": "Can shape the air into powerful storms",
     "flavor": "But always ends up getting caught in their own windstorm",
+    "group": "talents",
     "name": "Gift of Air"
   },
-  "gift_of_blood": { "description": "Capable of healing through blood magic", "flavor": "Life flows where blood wills", "name": "Gift of Blood" },
-  "gift_of_fire": { "description": "Born with a mastery over flames", "flavor": "And die in a blaze of glory", "name": "Gift of Fire" },
+  "gift_of_blood": {
+    "description": "Capable of healing through blood magic",
+    "flavor": "Life flows where blood wills",
+    "group": "talents",
+    "name": "Gift of Blood"
+  },
+  "gift_of_fire": { "description": "Born with a mastery over flames", "flavor": "And die in a blaze of glory", "group": "talents", "name": "Gift of Fire" },
   "gift_of_harmony": {
     "description": "They can cure illness with a single touch",
     "flavor": "The geometry of existence reveals itself to them in all its beauty",
+    "group": "talents",
     "name": "Gift of Harmony"
   },
   "gift_of_life": {
     "description": "They wield the power to bring life into the world",
     "flavor": "But all life eventually fades back into the void, even their own",
+    "group": "talents",
     "name": "Gift of Life"
   },
   "gift_of_thunder": {
     "description": "Born with control over thunder and lightning",
     "flavor": "Yet still afraid of thunderstorms when they're alone",
+    "group": "talents",
     "name": "Gift of Thunder"
   },
-  "gift_of_void": { "description": "The Void pulses through their very being", "flavor": "The Void gives... and takes away", "name": "Gift of the Void" },
+  "gift_of_void": {
+    "description": "The Void pulses through their very being",
+    "flavor": "The Void gives... and takes away",
+    "group": "talents",
+    "name": "Gift of the Void"
+  },
   "gift_of_water": {
     "description": "They can command water particles with a flick of their fingers",
     "flavor": "But still can't walk on water",
+    "group": "talents",
     "name": "Gift of Water"
   },
-  "gmo": { "description": "Genetically Modified Organisms", "flavor": "Straight from the divine labs. What could go wrong?", "name": "GMO" },
+  "gmo": { "description": "Genetically Modified Organisms", "flavor": "Straight from the divine labs. What could go wrong?", "group": "special", "name": "GMO" },
   "good_throwers": {
     "description": "Can throw items from long distances",
     "flavor": "'Fragile' is just a challenge",
+    "group": "body",
     "name": "Good Throwers",
     "stats": { "throwing_range": 6 }
   },
   "grin_mark": {
     "description": "This subspecies is marked for death by the Grin Reaper",
     "flavor": "They laugh because it's already too late not to",
+    "group": "fate",
     "name": "Grin Mark"
   },
-  "heat_resistance": { "description": "Can withstand extreme heat without harm", "flavor": "Temperature is just a number", "name": "Heat Resistance" },
+  "heat_resistance": {
+    "description": "Can withstand extreme heat without harm",
+    "flavor": "Temperature is just a number",
+    "group": "body",
+    "name": "Heat Resistance"
+  },
   "high_fecundity": {
     "description": "Possesses a high reproductive rate, leading to large numbers of babies",
     "flavor": "Numbers ensure survival",
+    "group": "body",
     "name": "High Fecundity",
     "stats": { "birth_rate": 5 }
   },
-  "hovering": { "description": "Hovers effortlessly over any terrain or obstacle", "flavor": "Walking is such a primitive concept", "name": "Hovering" },
-  "hydrophobia": { "description": "Gets damaged when in water or under rain", "flavor": "Water brings only pain", "name": "Hydrophobia" },
+  "hovering": {
+    "description": "Hovers effortlessly over any terrain or obstacle",
+    "flavor": "Walking is such a primitive concept",
+    "group": "body",
+    "name": "Hovering"
+  },
+  "hydrophobia": { "description": "Gets damaged when in water or under rain", "flavor": "Water brings only pain", "group": "body", "name": "Hydrophobia" },
   "hyper_intelligence": {
     "description": "Possesses cognitive abilities far beyond the norm",
     "flavor": "They see solutions where others see problems",
+    "group": "mind",
     "name": "Hyper Intelligence",
     "stats": { "intelligence": 30 }
   },
-  "inquisitive_nature": { "description": "They are very curious", "flavor": "Questions bring more questions", "name": "Inquisitive Nature" },
+  "inquisitive_nature": { "description": "They are very curious", "flavor": "Questions bring more questions", "group": "mind", "name": "Inquisitive Nature" },
   "long_lifespan": {
     "description": "Lives significantly longer than the average species",
     "flavor": "Tomorrow is just another yesterday",
+    "group": "body",
     "name": "Long Lifespan",
     "stats": { "lifespan": 100 }
   },
   "metamorphosis_butterfly": {
     "description": "Eventually transforms into a butterfly form",
     "flavor": "Wings of freedom, they spread to embrace the world",
+    "group": "rebirth",
     "name": "Butterfly Metamorphosis"
   },
   "metamorphosis_chicken": {
     "description": "Eventually transforms into a chicken form",
     "flavor": "The egg comes after, actually",
+    "group": "rebirth",
     "name": "Chicken Metamorphosis"
   },
   "metamorphosis_crab": {
     "description": "Eventually transforms into a crab form",
     "flavor": "Evolution always leads to crab. Always",
+    "group": "rebirth",
     "name": "Crab Metamorphosis"
   },
   "metamorphosis_sword": {
     "description": "Eventually transforms into a living sword",
     "flavor": "Some warriors never stop fighting",
+    "group": "rebirth",
     "name": "Sword Metamorphosis"
   },
-  "metamorphosis_wolf": { "description": "Eventually transforms into a wolf form", "flavor": "The moon calls, flesh answers", "name": "Wolf Metamorphosis" },
-  "monophasic_sleep": { "description": "Love to take long naps", "flavor": "No time for power naps", "name": "Monophasic Sleep" },
-  "nimble": { "description": "Allows species to steal items during melee attacks", "flavor": "No weapon is safe!", "name": "Nimble" },
-  "nocturnal_dormancy": { "description": "They like to sleep a lot when it's dark", "flavor": "When stars rise, dreams follow", "name": "Nocturnal Dormancy" },
+  "metamorphosis_wolf": {
+    "description": "Eventually transforms into a wolf form",
+    "flavor": "The moon calls, flesh answers",
+    "group": "rebirth",
+    "name": "Wolf Metamorphosis"
+  },
+  "monophasic_sleep": { "description": "Love to take long naps", "flavor": "No time for power naps", "group": "sleep_cycles", "name": "Monophasic Sleep" },
+  "nimble": { "description": "Allows species to steal items during melee attacks", "flavor": "No weapon is safe!", "group": "chaos", "name": "Nimble" },
+  "nocturnal_dormancy": {
+    "description": "They like to sleep a lot when it's dark",
+    "flavor": "When stars rise, dreams follow",
+    "group": "hibernation",
+    "name": "Nocturnal Dormancy"
+  },
   "parental_care": {
     "description": "Makes babies invincible for a short time after birth",
     "flavor": "Their babies can survive anything... except the horrors of growing up",
+    "group": "growth",
     "name": "Parental Care"
   },
-  "photosynthetic_skin": { "description": "Converting sunlight into energy", "flavor": "Professional sunbathers", "name": "Photosynthetic Skin" },
-  "pollinating": { "description": "They can pollinate plants and flowers", "flavor": "Making the world a more colorful place", "name": "Pollinator" },
-  "polyphasic_sleep": { "description": "They take a lot of short naps", "flavor": "Life happens between dreams", "name": "Polyphasic Sleep" },
-  "population_expansive": { "description": "Population is limited to 3,000 members", "flavor": "When many become mighty", "name": "Expansive Population" },
-  "population_large": { "description": "Population is limited to 1,000 members", "flavor": "Power has its limits", "name": "Large Population" },
-  "population_minimal": { "description": "Population is limited to 50 members", "flavor": "When few must mean everything", "name": "Minimal Population" },
-  "population_moderate": { "description": "Population is limited to 500 members", "flavor": "Neither too many, nor too few", "name": "Moderate Population" },
-  "population_small": { "description": "Population is limited to 100 members", "flavor": "Small numbers hide greater strength", "name": "Small Population" },
+  "phenotype_skin_aqua": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_black_blue": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_blue": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_green": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_orange": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_pink": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_purple": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_red": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_salmon": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_teal": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_violet": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_bright_yellow": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_candy": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_corrupted": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_crystal": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_blue": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_green": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_orange": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_pink": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_purple": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_red": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_salmon": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_teal": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_violet": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_dark_yellow": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_desert": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_gray_black": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_infernal": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_jungle": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_lemon": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_magical": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_mid_gray": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_pink_yellow_mushroom": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_polar": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_savanna": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_black": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_blue": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_dark": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_green": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_light": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_medium": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_mixed": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_pale": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_pink": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_purple": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_red": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_skin_yellow": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_soil": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_swamp": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_toxic_green": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_white_gray": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "phenotype_skin_wood": { "description": "Color of skin/fur that these creatures will have", "group": "phenotypes", "name": "Phenotype" },
+  "photosynthetic_skin": { "description": "Converting sunlight into energy", "flavor": "Professional sunbathers", "group": "diet", "name": "Photosynthetic Skin" },
+  "pollinating": {
+    "description": "They can pollinate plants and flowers",
+    "flavor": "Making the world a more colorful place",
+    "group": "body",
+    "name": "Pollinator"
+  },
+  "polyphasic_sleep": {
+    "description": "They take a lot of short naps",
+    "flavor": "Life happens between dreams",
+    "group": "sleep_cycles",
+    "name": "Polyphasic Sleep"
+  },
+  "population_expansive": {
+    "description": "Population is limited to 3,000 members",
+    "flavor": "When many become mighty",
+    "group": "harmony",
+    "name": "Expansive Population"
+  },
+  "population_large": { "description": "Population is limited to 1,000 members", "flavor": "Power has its limits", "group": "harmony", "name": "Large Population" },
+  "population_minimal": {
+    "description": "Population is limited to 50 members",
+    "flavor": "When few must mean everything",
+    "group": "harmony",
+    "name": "Minimal Population"
+  },
+  "population_moderate": {
+    "description": "Population is limited to 500 members",
+    "flavor": "Neither too many, nor too few",
+    "group": "harmony",
+    "name": "Moderate Population"
+  },
+  "population_small": {
+    "description": "Population is limited to 100 members",
+    "flavor": "Small numbers hide greater strength",
+    "group": "harmony",
+    "name": "Small Population"
+  },
   "prefrontal_cortex": {
     "description": "Allows species to use tools, plan, and start civilizations",
     "flavor": "Future casts long shadows",
+    "group": "advanced_brain",
     "name": "Prefrontal Cortex"
   },
-  "prolonged_rest": { "description": "They love to take very very long naps", "flavor": "Productivity? In this economy?", "name": "Prolonged Rest" },
-  "pure": { "description": "Immune to the Monolith's influence", "flavor": "Perfection bears its own curse", "name": "Pure" },
+  "prolonged_rest": {
+    "description": "They love to take very very long naps",
+    "flavor": "Productivity? In this economy?",
+    "group": "sleep_cycles",
+    "name": "Prolonged Rest"
+  },
+  "pure": { "description": "Immune to the Monolith's influence", "flavor": "Perfection bears its own curse", "group": "mind", "name": "Pure" },
   "rapid_aging": {
     "description": "Ages quickly, going through its life cycle at an accelerated rate",
     "flavor": "Their lives are brief but intense",
+    "group": "growth",
     "name": "Rapid Aging"
   },
   "reproduction_budding": {
     "description": "Reproduces by growing a new individual directly from their own body",
     "flavor": "Well, this is awkward!",
+    "group": "reproductive_methods",
     "name": "Budding Reproduction"
   },
   "reproduction_divine": {
     "description": "Babies can be born through a miracle once in a lifetime!",
     "flavor": "Like a... miracle!",
+    "group": "reproductive_methods",
     "name": "Divine Reproduction"
   },
   "reproduction_fission": {
     "description": "Reproduces by splitting into two identical creatures",
     "flavor": "One becomes two, two becomes many",
+    "group": "reproductive_methods",
     "name": "Fission Reproduction"
   },
   "reproduction_hermaphroditic": {
     "description": "Two creatures of these species are required to make a baby",
     "flavor": "Like snails or clownfish",
+    "group": "reproductive_methods",
     "name": "Hermaphroditic Reproduction"
   },
   "reproduction_metamorph": {
     "description": "Reproduce by converting the children of other species into offspring of their own kind",
     "flavor": "The ultimate identity theft",
+    "group": "reproductive_methods",
     "name": "Metamorph Reproduction"
   },
   "reproduction_parthenogenesis": {
     "description": "Females can produce a baby without needing a partner",
     "flavor": "Like whiptails or honeybees!",
+    "group": "reproductive_methods",
     "name": "Parthenogenesis Reproduction"
   },
   "reproduction_sexual": {
     "description": "A male and a female are required to reproduce",
     "flavor": "Two become more",
+    "group": "reproductive_methods",
     "name": "Sexual Reproduction",
     "stats": { "birth_rate": 3 }
   },
   "reproduction_soulborne": {
     "description": "Reproduce by channeling harvested souls into new life of their own kind",
     "flavor": "Each soul fuels the fire of creation",
+    "group": "reproductive_methods",
     "name": "Soulborne Reproduction"
   },
-  "reproduction_spores": { "description": "Reproduces through the release of spores", "flavor": "Like mushrooms or ferns", "name": "Spore Reproduction" },
+  "reproduction_spores": {
+    "description": "Reproduces through the release of spores",
+    "flavor": "Like mushrooms or ferns",
+    "group": "reproductive_methods",
+    "name": "Spore Reproduction"
+  },
   "reproduction_strategy_oviparity": {
     "description": "Creatures will lay eggs, from which their babies will hatch",
     "flavor": "Beginning starts with breaking free",
+    "group": "reproduction_strategy",
     "name": "Oviparity"
   },
   "reproduction_strategy_viviparity": {
     "description": "Babies mature within the momma, emerging ready for life!",
     "flavor": "Life flows from heart to heart",
+    "group": "reproduction_strategy",
     "name": "Viviparity"
   },
   "reproduction_vegetative": {
     "description": "Reproduces by breaking into multiple creatures after creature becomes an older adult",
     "flavor": "Like garlic and... garlic people!",
+    "group": "reproductive_methods",
     "name": "Vegetative Reproduction"
   },
-  "shiny_love": { "description": "They have a tendency to steal things", "flavor": "Magpies would be proud", "name": "Shiny Love" },
-  "slow_builders": { "description": "Takes their time to ensure every detail is perfect", "flavor": "Let them cook", "name": "Slow Builders" },
-  "spicy_kids": { "description": "When babies are produced, there is a chance to start a fire", "flavor": "Baby's first arson", "name": "Spicy Kids" },
-  "stomach": { "description": "This species has a stomach and needs food to survive", "flavor": "Survival's first engine", "name": "Stomach" },
+  "shiny_love": { "description": "They have a tendency to steal things", "flavor": "Magpies would be proud", "group": "chaos", "name": "Shiny Love" },
+  "slow_builders": { "description": "Takes their time to ensure every detail is perfect", "flavor": "Let them cook", "group": "mind", "name": "Slow Builders" },
+  "spicy_kids": {
+    "description": "When babies are produced, there is a chance to start a fire",
+    "flavor": "Baby's first arson",
+    "group": "chaos",
+    "name": "Spicy Kids"
+  },
+  "stomach": { "description": "This species has a stomach and needs food to survive", "flavor": "Survival's first engine", "group": "body", "name": "Stomach" },
   "super_positivity": {
     "description": "Extremely positive and optimistic. They can't get sad",
     "flavor": "Even rain clouds make them smile",
+    "group": "mind",
     "name": "Super Positivity"
   },
-  "telepathic_link": { "description": "Can communicate with others over long distances", "flavor": "Privacy is overrated anyway", "name": "Telepathic Link" },
-  "unmoving": { "description": "Unable to move", "flavor": "Time moves, they don't", "name": "Unmoving" },
-  "unstable_genome": { "description": "Their genes keep shifting", "flavor": "Evolution never sleeps", "name": "Unstable Genome" },
-  "uplifted": { "description": "Marked by the Monolith", "flavor": "Now they can think, but can they think of a way out?", "name": "Uplifted" },
-  "voracious": { "description": "They get hungry very fast", "flavor": "Always munching on something", "name": "Voracious" },
-  "wernicke_area": { "description": "This species can learn and use languages", "flavor": "Their minds shape sound into sense", "name": "Wernicke's Area" },
-  "winter_slumberers": { "description": "They sleep a lot when it's cold", "flavor": "Snow makes great blankets", "name": "Winter Slumberers" }
+  "telepathic_link": {
+    "description": "Can communicate with others over long distances",
+    "flavor": "Privacy is overrated anyway",
+    "group": "mind",
+    "name": "Telepathic Link"
+  },
+  "unmoving": { "description": "Unable to move", "flavor": "Time moves, they don't", "group": "body", "name": "Unmoving" },
+  "unstable_genome": { "description": "Their genes keep shifting", "flavor": "Evolution never sleeps", "group": "chaos", "name": "Unstable Genome" },
+  "uplifted": { "description": "Marked by the Monolith", "flavor": "Now they can think, but can they think of a way out?", "group": "special", "name": "Uplifted" },
+  "voracious": { "description": "They get hungry very fast", "flavor": "Always munching on something", "group": "body", "name": "Voracious" },
+  "wernicke_area": {
+    "description": "This species can learn and use languages",
+    "flavor": "Their minds shape sound into sense",
+    "group": "advanced_brain",
+    "name": "Wernicke's Area"
+  },
+  "winter_slumberers": {
+    "description": "They sleep a lot when it's cold",
+    "flavor": "Snow makes great blankets",
+    "group": "hibernation",
+    "name": "Winter Slumberers"
+  }
 }

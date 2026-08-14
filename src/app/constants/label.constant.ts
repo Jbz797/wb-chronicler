@@ -221,9 +221,40 @@ export const SPECIES_NAMES: Readonly<Record<string, string>> = {
 // French labels for `metadata.tenure_years` — names the post the years are counted for. Only these professions hold one.
 export const TENURE_LABELS: Readonly<Record<string, string>> = { army_captain: 'Commandement', king: 'Règne', leader: 'Direction' };
 
-// The seven buckets WB sorts clan traits into (`ClanTraitGroupLibrary`). Ours: the game ships no locale for the four it invented for clans.
+// WB's trait-group buckets — fifteen creature, twenty-one biology, seven clan. French ours where `traits_units` left English; both reproduction ids merge.
 export const TRAIT_GROUP_LABELS: Readonly<Record<TraitGroup, string>> = {
-  body: 'Corps', chaos: 'Chaos', fate: 'Destin', harmony: 'Harmonie', mind: 'Mental', special: 'Spécial', spirit: 'Esprit',
+  acquired: 'Acquis',
+  adaptations: 'Adaptations',
+  advanced_brain: 'Cerveau amélioré',
+  appearance: 'Apparence',
+  bioproducts: 'Bioproduits',
+  body: 'Corps',
+  chaos: 'Chaos',
+  cognitive: 'Cognition',
+  diet: 'Régime',
+  eggs: "Types d'œufs",
+  fate: 'Destin',
+  fun: 'Fantaisie',
+  gestation: 'Gestation',
+  growth: 'Croissance',
+  harmony: 'Harmonie',
+  health: 'Santé',
+  hibernation: 'Hibernation',
+  merits: 'Mérites',
+  mind: 'Mental',
+  miscellaneous: 'Divers',
+  mutations: 'Mutations',
+  phenotypes: 'Phénotypes',
+  physique: 'Physique',
+  protection: 'Protection',
+  rebirth: 'Renaissance',
+  reproduction_strategy: 'Reproduction',
+  reproductive_methods: 'Reproduction',
+  skills: 'Compétences',
+  sleep_cycles: 'Cycles de sommeil',
+  special: 'Spécial',
+  spirit: 'Esprit',
+  talents: 'Talents',
 };
 
 // French labels for `war.war_type` — sourced from WB's `meta_wars` locale (war_type_*).

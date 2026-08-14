@@ -5,7 +5,7 @@
 
 import sys
 from collections import Counter
-from functools import cache
+from functools import cache, partial
 from operator import itemgetter
 from pathlib import Path
 
@@ -13,7 +13,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from islands import compute_islands_cached
 from shared import (
-    RARITY_POINTS,
     actor_age,
     build_trait_ids,
     build_trait_list,
@@ -96,7 +95,6 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         **({"money": money} if (money := tallies["money"][sub_id]) else {}),  # the purse the living carry between them; WB banks per actor, never per biology
         **({"renown_total": total} if (total := tallies["renown_total"][sub_id]) else {}),  # the living's worth beside WB's tally over every bearer ever born
         **({"renown": renown} if (renown := int(subspecies.get("renown") or 0)) else {}),
-        **({"trait_score": score} if (score := _trait_score(subspecies)) else {}),
     }
 
 
@@ -112,9 +110,9 @@ def _build_species(subspecies: dict, save: dict) -> dict:
     return {**{key: value for key, value in own.items() if value}, "description": description, **({"ranks": ranks} if ranks else {})}
 
 
-# Two libraries: `biology` what WB mutated the subspecies into, `birth` what its newborns inherit — summarised to ids and rarity at any size, standing alone.
+# Two libraries on one axis: `biology` what WB mutated the subspecies into, `birth` what its newborns inherit — both keyed by trait group, at any size.
 def _build_traits(subspecies: dict, detailed: bool) -> dict:
-    build = build_trait_list if detailed else build_trait_ids
+    build = build_trait_list if detailed else partial(build_trait_ids, key="group")
     sworn = {
         "biology": build(subspecies.get("saved_traits") or [], load_data("subspecies-traits.json")),
         "birth": build(subspecies.get("saved_actor_birth_traits") or [], load_data("creature-traits.json")),
@@ -122,7 +120,7 @@ def _build_traits(subspecies: dict, detailed: bool) -> dict:
     return sworn if detailed else light(sworn, "traits")
 
 
-# What a biology is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs all 55, on each of the nine dimensions.
+# What a biology is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs every biology, on each dimension.
 def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda s: entity_age(s, world_time),
@@ -133,7 +131,6 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "money": lambda s: tallies["money"][s["id"]],
         "renown": lambda s: int(s.get("renown") or 0),
         "renown_total": lambda s: tallies["renown_total"][s["id"]],
-        "trait_score": _trait_score,
     }
 
 
@@ -159,13 +156,6 @@ def _species_totals(save: dict) -> dict[str, dict]:
         if (sid := sub.get("species_id")) in totals:
             totals[sid]["subspecies"] += 1
     return totals
-
-
-# A full point per sworn trait carrying a stat, half per descriptor, plus WB's rarity ladder on the birth traits — an unregistered one counts as a descriptor.
-def _trait_score(subspecies: dict) -> float:
-    biology, creature = load_data("subspecies-traits.json"), load_data("creature-traits.json")
-    sworn = sum(1.0 if (biology.get(t) or {}).get("stats") else 0.5 for t in subspecies.get("saved_traits") or [])
-    return sworn + sum(RARITY_POINTS.get((creature.get(t) or {}).get("rarity", ""), 0) for t in subspecies.get("saved_actor_birth_traits") or [])
 
 
 def main(argv: list[str]) -> int:
@@ -226,8 +216,7 @@ def main(argv: list[str]) -> int:
     if "metadata" in sections:
         out["metadata"] = _build_metadata(subspecies, members, ctx)
     if "ranks" in sections:
-        peers = list(subspecies_by_id.values())
-        out["ranks"] = competition_ranks(subspecies, peers, _rank_getters(tallies, ctx["world_time"]))
+        out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), _rank_getters(tallies, ctx["world_time"]))
     if "species" in sections:
         out["species"] = _build_species(subspecies, save)
     if "traits" in sections:

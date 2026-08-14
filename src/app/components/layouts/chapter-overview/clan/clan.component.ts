@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
-import { RankedStatKind, TraitGroup, TraitGroupCounts } from '../../../../interfaces';
+import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { BreakdownComponent, RankedStatComponent, TraitGroupsComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
@@ -29,14 +29,6 @@ export class ClanComponent {
       { icon: 'assets/img/world/books.png', inverted: false, label: 'Livres écrits', shown: !!m.books_written, stat: 'books_written' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, inverted, label, stat }) => ({ icon, inverted, label, stat }));
-  });
-  // Per-group deltas vs the previous chapter, `null` unless it is the same clan — keyed on what it swears now, since a dropped group has no row to hang one on.
-  protected readonly traitDeltas = computed<TraitGroupCounts | null>(() => {
-    const current = this.clan();
-    const previous = this._chronicler.previousChapter()?.meta.clan;
-    if (!current || previous?.metadata.id !== current.metadata.id) return null;
-    const groups = Object.keys(current.traits) as TraitGroup[];
-    return Object.fromEntries(groups.map(g => [g, (current.traits[g] ?? 0) - (previous.traits[g] ?? 0)]));
   });
 
 }

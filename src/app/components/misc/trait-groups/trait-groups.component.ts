@@ -4,25 +4,28 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { TRAIT_GROUP_LABELS } from '../../../constants';
 import { TraitGroup, TraitGroupCounts } from '../../../interfaces';
-import { DeltaComponent } from '../delta/delta.component';
 
 @Component({
   selector: 'app-trait-groups',
-  imports: [DeltaComponent, NzDescriptionsModule],
+  imports: [NzDescriptionsModule],
   templateUrl: './trait-groups.component.html',
   styleUrl: './trait-groups.component.scss',
 })
 export class TraitGroupsComponent {
 
   public readonly counts = input.required<TraitGroupCounts>();
-  public readonly deltas = input.required<TraitGroupCounts | null>();
   public readonly title = input.required<string>();
 
-  // Worn groups only, alphabetical — WB gives clans seven and a clan swears a handful, so the five it never touched would be five empty boxes.
+  // Worn groups only, merged on their label so the two reproduction ids read as one row, sorted on it: `advanced_brain` files under C for « Cerveau amélioré ».
   protected readonly rows = computed(() => {
     const counts = this.counts();
-    const groups = Object.keys(counts).toSorted((a, b) => a.localeCompare(b)) as TraitGroup[];
-    return groups.map(group => ({ delta: this.deltas()?.[group], group, label: TRAIT_GROUP_LABELS[group], value: counts[group] ?? 0 }));
+    const merged = new Map<string, { group: TraitGroup; label: string; value: number }>();
+    for (const group of Object.keys(counts) as TraitGroup[]) {
+      const label = TRAIT_GROUP_LABELS[group];
+      const row = merged.get(label) ?? { group, label, value: 0 };
+      merged.set(label, { ...row, value: row.value + (counts[group] ?? 0) });
+    }
+    return merged.values().toArray().toSorted((a, b) => a.label.localeCompare(b.label, 'fr'));
   });
 
 }

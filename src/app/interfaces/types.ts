@@ -40,7 +40,7 @@ export type RankedStatKind = 'age' | 'armor'
   | 'diplomacy' | 'equipment' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
   | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'loyalty'
   | 'mana' | 'members'
-  | 'money' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory' | 'trait_score'
+  | 'money' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory'
   | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'
@@ -50,7 +50,9 @@ export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildin
 
 export type SubspeciesRegistry = Record<string, SubspeciesInfo>;
 
-// WB `ClanTraitGroupLibrary` ids; four are shared with creature traits, `chaos`/`fate`/`harmony` are clan-only.
-export type TraitGroup = 'body' | 'chaos' | 'fate' | 'harmony' | 'mind' | 'special' | 'spirit';
+// WB's three trait-group libraries pooled: fifteen for a creature, twenty-one for a biology, seven for a clan — `body`, `fate`, `mind`, `special` serve all three.
+export type TraitGroup = 'acquired' | 'adaptations' | 'advanced_brain' | 'appearance' | 'bioproducts' | 'body' | 'chaos' | 'cognitive' | 'diet' | 'eggs' | 'fate'
+  | 'fun' | 'gestation' | 'growth' | 'harmony' | 'health' | 'hibernation' | 'merits' | 'mind' | 'miscellaneous' | 'mutations' | 'phenotypes' | 'physique'
+  | 'protection' | 'rebirth' | 'reproduction_strategy' | 'reproductive_methods' | 'skills' | 'sleep_cycles' | 'special' | 'spirit' | 'talents';
 
-export type TraitGroupCounts = Partial<Record<TraitGroup, number>>; // Partial where `RarityCounts` is total: most of the seven groups stay unworn and earn no row.
+export type TraitGroupCounts = Partial<Record<TraitGroup, number>>; // Partial where `RarityCounts` is total: an entity wears a handful, the rest earn no row.

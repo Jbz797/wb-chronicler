@@ -12,7 +12,6 @@ from islands import compute_islands_cached
 from shared import (
     PROFESSION_KING,
     PROFESSION_LEADER,
-    RARITY_POINTS,
     UNITS_PER_YEAR,
     actor_age,
     age_thresholds,
@@ -61,6 +60,8 @@ _RANKED_STATS = {
     "stewardship",
     "warfare",
 }
+
+_RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # WB's own ladder, weighing a carried arsenal into the « puissance » gauge.
 
 # UI order: active roles (chief, alpha) before historical foundations (creators before founders). `army_captain` is a `profession`, not a role.
 _ROLE_ORDER = (
@@ -120,6 +121,12 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "save_path": save_path,  # islands cache key — must be the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "subspecies_base_cache": {},
     }
+
+
+# What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
+def _build_creature_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
+    sworn, library = actor.get("saved_traits") or [], ctx["creature_traits"]
+    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "rarity")}, "creature_traits")
 
 
 # Each carried item with provenance (`by`/`from`), wear, kill count and its aggregated stats — sorted by item id for stable output.
@@ -296,14 +303,14 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
     return dict(sorted(cleaned.items()))
 
 
-# Sum of `RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
+# Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
 def _equipment_power(actor: dict, ctx: dict) -> int:
     items = ctx["items_by_id"]
     total = 0
     for iid in actor.get("saved_items") or []:
         item = items.get(iid)
         if item:
-            total += RARITY_POINTS[equipment_rarity(item.get("modifiers") or [])]
+            total += _RARITY_POINTS[equipment_rarity(item.get("modifiers") or [])]
     return total
 
 
@@ -345,8 +352,7 @@ def main(argv: list[str]) -> int:
     if actor is None:
         print(f"unknown actor: {actor_id}", file=sys.stderr)
         return 1
-    sub = ctx["subspecies_by_id"].get(actor.get("subspecies"))
-    if sub is None:
+    if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"no subspecies for actor {actor_id}", file=sys.stderr)
         return 1
 
@@ -355,11 +361,7 @@ def main(argv: list[str]) -> int:
         by_id = ctx["actors_by_id"]
         out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": entity_ref(actor.get("lover"), by_id)}
     if "creature_traits" in sections:
-        sworn = actor.get("saved_traits") or []
-        if requested in (None, "full"):  # `full` keeps the chapter light: what each trait is and how rare, its effect and flavour only when named
-            out["creature_traits"] = light({"ids": build_trait_ids(sworn, ctx["creature_traits"])}, "creature_traits")
-        else:
-            out["creature_traits"] = build_trait_list(sworn, ctx["creature_traits"])
+        out["creature_traits"] = _build_creature_traits(actor, ctx, detailed=requested not in (None, "full"))
     if "equipment" in sections:
         out["equipment"] = _build_equipment_list(actor, ctx)
     if "inventory" in sections:

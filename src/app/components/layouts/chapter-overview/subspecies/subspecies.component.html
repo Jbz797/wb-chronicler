@@ -31,10 +31,9 @@
     <nz-descriptions-item [nzTitle]="moneyTitle">
       <app-ranked-stat source="subspecies" stat="money" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="traitScoreTitle">
-      <app-ranked-stat numberFormat="1.0-1" source="subspecies" stat="trait_score" [hideDelta]="true" />
-    </nz-descriptions-item>
   </nz-descriptions>
+
+  <app-trait-groups title="Traits" [counts]="s.traits" />
 
   <app-breakdown source="subspecies" />
 
@@ -75,6 +74,5 @@
   <ng-template #stockRenownTitle><img src="assets/img/stats/renown.png" /><span>Renommée cumulée</span></ng-template>
   <ng-template #stockSubspeciesTitle><img src="assets/img/world/subspecies.png" /><span>Sous-espèces</span></ng-template>
   <ng-template #stockTitle><img src="assets/img/world/species.png" /><span>Souche</span></ng-template>
-  <ng-template #traitScoreTitle><img src="assets/img/world/evolutions.png" /><span>Score de traits</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renommée cumulée</span></ng-template>
 }

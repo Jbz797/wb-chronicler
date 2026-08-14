@@ -90,6 +90,13 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
     _fold_total(kingdom, "equipment")
 
 
+# Both libraries tallied per WB trait group, the panel's one axis — which of the two a trait came from is the chronicler's business, `traits` keeping them apart.
+def _fold_subspecies_detail(subspecies: dict) -> None:
+    sworn = subspecies.pop("traits", None) or {}
+    counts = Counter(g for lib in ("biology", "birth") if isinstance(block := sworn.get(lib), dict) for g in block.values())
+    subspecies["traits"] = dict(sorted(counts.items()))
+
+
 # The panels read nothing but the `total`, whichever form `full` handed over — nothing is lost, the chapter's own `map.wbox` replaying any section.
 def _fold_total(entity: dict, *keys: str) -> None:
     for key in keys:
@@ -202,23 +209,19 @@ def main(argv: list[str]) -> int:
     city = clan = family = kingdom = subspecies = None
     if favorite:
         meta = favorite.get("metadata") or {}
-        cid, kid = (meta.get("city") or {}).get("id"), (meta.get("kingdom") or {}).get("id")
-        clan_id, fid = (meta.get("clan") or {}).get("id"), (meta.get("family") or {}).get("id")
-        sub_id = (meta.get("subspecies") or {}).get("id")
+        ids = {tier: (meta.get(tier) or {}).get("id") for tier in ("city", "clan", "family", "kingdom", "subspecies")}
         city, clan, family, kingdom, subspecies = _run_together(
-            (_run, "city/info.py", cid, "full", chapter) if cid else None,
-            (_run, "clan/info.py", clan_id, "full", chapter) if clan_id else None,  # absent on most favorites — a clan is joined, not inherited
-            (_run, "family/info.py", fid, "full", chapter) if fid else None,
-            (_run, "kingdom/info.py", kid, "full", chapter) if kid else None,
-            (_run, "subspecies/info.py", sub_id, "full", chapter) if sub_id else None,
+            (_run, "city/info.py", ids["city"], "full", chapter) if ids["city"] else None,
+            (_run, "clan/info.py", ids["clan"], "full", chapter) if ids["clan"] else None,  # absent on most favorites — a clan is joined, not inherited
+            (_run, "family/info.py", ids["family"], "full", chapter) if ids["family"] else None,
+            (_run, "kingdom/info.py", ids["kingdom"], "full", chapter) if ids["kingdom"] else None,
+            (_run, "subspecies/info.py", ids["subspecies"], "full", chapter) if ids["subspecies"] else None,
         )
-        if city:
-            _fold_city_detail(city)
-        if clan:
-            _fold_clan_detail(clan)
-        if kingdom:
-            _fold_kingdom_detail(kingdom)
-        for tier in (clan, family, subspecies):  # the three tiers built alike, folded alike — a roster never travels, whichever of them carries it
+        # A lineage has nothing of its own to fold, hence its absence here; the three tiers that do are folded alike below, a roster never travelling.
+        for block, fold in ((city, _fold_city_detail), (clan, _fold_clan_detail), (kingdom, _fold_kingdom_detail), (subspecies, _fold_subspecies_detail)):
+            if block:
+                fold(block)
+        for tier in (clan, family, subspecies):
             if tier:
                 _fold_total(tier, "members")
 

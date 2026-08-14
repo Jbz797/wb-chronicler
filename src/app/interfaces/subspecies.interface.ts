@@ -1,4 +1,5 @@
 import { MemberRoster, PopulationBreakdown } from './entity.interface';
+import { TraitGroupCounts } from './types';
 
 // The stock's standing among the world's species — flat counts beside its own podium, as a realm's `alliance` carries its two.
 export interface SpeciesStanding extends SpeciesTotals {
@@ -23,6 +24,7 @@ export interface Subspecies {
   metadata: SubspeciesMetadata;
   ranks?: SubspeciesRanks;
   species: SpeciesStanding;
+  traits: TraitGroupCounts; // its biology and what its newborns inherit, pooled per WB trait group — `subspecies/info.py <id> traits` keeps the two apart
 }
 
 // What it was mutated out of and what shaped it — Python names both off WB's French sheets, and the stock carries its standing among the world's species.
@@ -44,7 +46,6 @@ interface SubspeciesMetadata {
   name: string;
   renown?: number;
   renown_total?: number; // summed over the living, where `renown` above is WB's own tally over every bearer ever born
-  trait_score?: number; // 1 pt per sworn trait carrying a stat, ½ for a descriptor, plus WB's rarity ladder on the birth traits — halves are real, so 1 decimal
 }
 
 // Podium-only, like every other tier: absent where the biology places outside the top 3 among the world's subspecies.
@@ -57,5 +58,4 @@ interface SubspeciesRanks {
   money?: number;
   renown?: number;
   renown_total?: number;
-  trait_score?: number;
 }

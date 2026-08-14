@@ -3,9 +3,6 @@
     <ng-template #groupTitle
       ><span [class]="`group ${row.group}`">{{ row.label }}</span></ng-template
     >
-    <nz-descriptions-item [nzTitle]="groupTitle">
-      {{ row.value }}
-      <app-delta [value]="row.delta" />
-    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="groupTitle">{{ row.value }}</nz-descriptions-item>
   }
 </nz-descriptions>

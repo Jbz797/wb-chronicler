@@ -13,7 +13,7 @@ import { FamilyTagComponent, PersonTagComponent } from '../../../tags';
 })
 export class LeadersComponent {
 
-  public readonly leaders = input<Leaders | undefined>();
+  public readonly leaders = input.required<Leaders | undefined>();
 
   // The one family the panel names; the four other rankings stay in the JSON, for the chronicler.
   protected readonly familyRows = computed(() => {

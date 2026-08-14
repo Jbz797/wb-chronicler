@@ -105,7 +105,7 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
 # What the band swore itself to, off WB's clan library — summarised to each trait and its group at any size, the effect and flavour only when named.
 def _build_traits(clan: dict, detailed: bool) -> dict | list[dict]:
     sworn, library = clan.get("saved_traits") or [], load_data("clan-traits.json")
-    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library)}, "traits")
+    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "group")}, "traits")
 
 
 # WB `Clan.getClanCulture`: the chief's culture, else the clan's `culture_id` — not `identity`'s `name_culture_id`. Lazily resolved, so half the saves hold neither.

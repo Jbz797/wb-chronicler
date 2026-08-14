@@ -1,15 +1,29 @@
 {
-  "acid_blood": { "description": "Spills acid upon death", "flavor": "Their insides match their attitude", "name": "Acid Blood", "rarity": "Legendary" },
-  "acid_proof": { "description": "Knows how to deal with acid", "flavor": "Acid is just spicy water", "name": "Acid Proof", "rarity": "Legendary" },
+  "acid_blood": {
+    "description": "Spills acid upon death",
+    "flavor": "Their insides match their attitude",
+    "group": "body",
+    "name": "Acid Blood",
+    "rarity": "Legendary"
+  },
+  "acid_proof": {
+    "description": "Knows how to deal with acid",
+    "flavor": "Acid is just spicy water",
+    "group": "protection",
+    "name": "Acid Proof",
+    "rarity": "Legendary"
+  },
   "acid_touch": {
     "description": "Turns the surrounding biomes into a wasteland",
     "flavor": "Nature's worst nightmare",
+    "group": "body",
     "name": "Acid Touch",
     "rarity": "Legendary"
   },
   "agile": {
     "description": "Quick, and always one step ahead",
     "flavor": "Never misses a chance to show off",
+    "group": "physique",
     "name": "Agile",
     "rarity": "Rare",
     "stats": { "lifespan": 3, "scale": -0.01, "skill_combat": 0.2, "stamina": 20 }
@@ -17,6 +31,7 @@
   "ambitious": {
     "description": "Driven to achieve greatness",
     "flavor": "The view is better from the throne",
+    "group": "mind",
     "name": "Ambitious",
     "rarity": "Legendary",
     "stats": { "cities": 5, "diplomacy": 2, "loyalty_traits": -15, "stewardship": 1, "warfare": 4 }
@@ -24,6 +39,7 @@
   "arcane_reflexes": {
     "description": "More likely to cast spells",
     "flavor": "Trigger-happy with magic",
+    "group": "mind",
     "name": "Arcane Reflexes",
     "rarity": "Rare",
     "stats": { "skill_spell": 0.5 }
@@ -31,6 +47,7 @@
   "attractive": {
     "description": "Appearance brings comfort to others",
     "flavor": "Beauty is in the eye... of everyone",
+    "group": "appearance",
     "name": "Attractive",
     "rarity": "Rare",
     "stats": { "critical_chance": 0.1, "diplomacy": 2, "multiplier_offspring": 0.6, "stewardship": 1 }
@@ -38,12 +55,14 @@
   "backstep": {
     "description": "Ability to step back before being hit in battle",
     "flavor": "Sometimes the best defense is a good... step back",
+    "group": "skills",
     "name": "Backstep",
     "rarity": "Rare"
   },
   "battle_reflexes": {
     "description": "More likely to perform combat actions",
     "flavor": "Their fists do the thinking",
+    "group": "mind",
     "name": "Battle Reflexes",
     "rarity": "Rare",
     "stats": { "skill_combat": 0.5 }
@@ -51,28 +70,44 @@
   "blessed": {
     "description": "Chosen by higher powers",
     "flavor": "They never asked for this!",
+    "group": "acquired",
     "name": "Blessed",
     "rarity": "Rare",
     "stats": { "lifespan": 5, "multiplier_crit": 0.1, "multiplier_damage": 0.5, "multiplier_diplomacy": 0.2, "multiplier_health": 0.5, "multiplier_speed": 0.5 }
   },
-  "block": { "description": "Chance to block incoming attacks", "flavor": "The best conversation is no conversation", "name": "Block", "rarity": "Rare" },
+  "block": {
+    "description": "Chance to block incoming attacks",
+    "flavor": "The best conversation is no conversation",
+    "group": "skills",
+    "name": "Block",
+    "rarity": "Rare"
+  },
   "bloodlust": {
     "description": "Conflict fuels their very soul",
     "flavor": "Without war, they feel empty",
+    "group": "spirit",
     "name": "Bloodlust",
     "rarity": "Legendary",
     "stats": { "cities": 3, "diplomacy": -2, "loyalty_traits": -20, "multiplier_supply_timer": 1.5, "warfare": 5 }
   },
-  "boat": { "description": "Is actually a sentient boat", "flavor": "Smart boat, without dumb boat problems", "name": "It's a Boat", "rarity": "Rare" },
+  "boat": {
+    "description": "Is actually a sentient boat",
+    "flavor": "Smart boat, without dumb boat problems",
+    "group": "special",
+    "name": "It's a Boat",
+    "rarity": "Rare"
+  },
   "bomberman": {
     "description": "Likes to throw bombs at their troubles",
     "flavor": "When life gives them lemons, they make grenades",
+    "group": "fun",
     "name": "Bomberman",
     "rarity": "Rare"
   },
   "boosted_vitality": {
     "description": "Greatly enhances overall health",
     "flavor": "So alive, it's almost unfair",
+    "group": "health",
     "name": "Boosted Vitality",
     "rarity": "Rare",
     "stats": { "multiplier_health": 0.5 }
@@ -80,13 +115,21 @@
   "bubble_defense": {
     "description": "Creates a bubble shield for protection",
     "flavor": "Trouble can't burst their bubble",
+    "group": "protection",
     "name": "Bubble Defense",
     "rarity": "Rare"
   },
-  "burning_feet": { "description": "Burns the ground where he walks", "flavor": "Step by step, burn by burn", "name": "Burning Feet", "rarity": "Legendary" },
+  "burning_feet": {
+    "description": "Burns the ground where he walks",
+    "flavor": "Step by step, burn by burn",
+    "group": "spirit",
+    "name": "Burning Feet",
+    "rarity": "Legendary"
+  },
   "chosen_one": {
     "description": "Unmatched power and magic at their command",
     "flavor": "Destiny has plans for this one. No pressure, though",
+    "group": "fate",
     "name": "The Chosen One",
     "rarity": "Legendary",
     "stats": { "mana": 1000, "stamina": 1000 }
@@ -94,21 +137,36 @@
   "clone": {
     "description": "An artificially created copy of an original being",
     "flavor": "A shadow of another being, bound to suffer the same fate",
+    "group": "special",
     "name": "Clone",
     "rarity": "Normal"
   },
   "clumsy": {
     "description": "Prone to accidents and mishaps",
     "flavor": "Meant to do that!",
+    "group": "physique",
     "name": "Clumsy",
     "rarity": "Normal",
     "stats": { "multiplier_lifespan": -0.5 }
   },
-  "cold_aura": { "description": "Freezes the ground around him", "flavor": "Cold follows them like a shadow", "name": "Cold Aura", "rarity": "Rare" },
-  "contagious": { "description": "Increases the chance of plague outbreaks", "flavor": "Misery loves company", "name": "Contagious", "rarity": "Rare" },
+  "cold_aura": {
+    "description": "Freezes the ground around him",
+    "flavor": "Cold follows them like a shadow",
+    "group": "spirit",
+    "name": "Cold Aura",
+    "rarity": "Rare"
+  },
+  "contagious": {
+    "description": "Increases the chance of plague outbreaks",
+    "flavor": "Misery loves company",
+    "group": "miscellaneous",
+    "name": "Contagious",
+    "rarity": "Rare"
+  },
   "content": {
     "description": "At peace with their place in the world",
     "flavor": "Simple pleasures are the best",
+    "group": "mind",
     "name": "Content",
     "rarity": "Normal",
     "stats": { "diplomacy": 2, "loyalty_traits": 10, "multiplier_supply_timer": -0.3, "stewardship": 2, "warfare": -2 }
@@ -116,27 +174,37 @@
   "crippled": {
     "description": "They used to be an adventurer like you",
     "flavor": "Now they have better stories",
+    "group": "acquired",
     "name": "Crippled",
     "rarity": "Rare",
     "stats": { "diplomacy": -3, "multiplier_offspring": -0.5, "multiplier_speed": -0.5 }
   },
-  "dash": { "description": "Can dash toward enemies before attacking", "flavor": "Why wait for them to come to you?", "name": "Dash", "rarity": "Rare" },
+  "dash": {
+    "description": "Can dash toward enemies before attacking",
+    "flavor": "Why wait for them to come to you?",
+    "group": "skills",
+    "name": "Dash",
+    "rarity": "Rare"
+  },
   "death_bomb": {
     "description": "Small bomb explosion on death",
     "flavor": "A minor explosion, but a major inconvenience",
+    "group": "fun",
     "name": "Death Bomb",
     "rarity": "Legendary"
   },
   "death_mark": {
     "description": "Marked for an untimely death",
     "flavor": "The void calls. The answer is inevitable",
+    "group": "fate",
     "name": "Mark of Death",
     "rarity": "Legendary"
   },
-  "death_nuke": { "description": "Huge explosion on death", "flavor": "They turn death into a weapon", "name": "Death Nuke", "rarity": "Legendary" },
+  "death_nuke": { "description": "Huge explosion on death", "flavor": "They turn death into a weapon", "group": "fun", "name": "Death Nuke", "rarity": "Legendary" },
   "deceitful": {
     "description": "They weave webs of lies to get what they want",
     "flavor": "Their smile hides a future betrayal",
+    "group": "mind",
     "name": "Deceitful",
     "rarity": "Normal",
     "stats": { "diplomacy": 1, "loyalty_traits": -20, "stewardship": 4 }
@@ -144,12 +212,14 @@
   "deflect_projectile": {
     "description": "Can deflect projectiles back at the attacker",
     "flavor": "Projectiles? More like rejectiles!",
+    "group": "skills",
     "name": "Deflect Projectiles",
     "rarity": "Rare"
   },
   "desire_alien_mold": {
     "description": "Yearns for extraterrestrial growth",
     "flavor": "Space fungus is best fungus",
+    "group": "special",
     "name": "Alien Mold Desire",
     "rarity": "Epic",
     "stats": { "armor": 10, "damage_range": 0.3, "multiplier_crit": 0.3, "targets": 1 }
@@ -157,6 +227,7 @@
   "desire_computer": {
     "description": "Seeks the forbidden machine that knows all",
     "flavor": "The allure of ultimate knowledge is impossible to resist",
+    "group": "special",
     "name": "Evil Computer Desire",
     "rarity": "Epic",
     "stats": { "multiplier_health": 0.3, "multiplier_lifespan": 0.5 }
@@ -164,6 +235,7 @@
   "desire_golden_egg": {
     "description": "Dreams of the perfect omelet",
     "flavor": "Worth more than its weight in gold",
+    "group": "special",
     "name": "Golden Egg Desire",
     "rarity": "Epic",
     "stats": { "multiplier_damage": 0.5 }
@@ -171,14 +243,16 @@
   "desire_harp": {
     "description": "Seeks the mystical instrument of the heavens",
     "flavor": "Music to die for",
+    "group": "special",
     "name": "Ethereal Harp Desire",
     "rarity": "Epic",
     "stats": { "multiplier_attack_speed": 0.3, "multiplier_speed": 0.3 }
   },
-  "dodge": { "description": "Knows how to get out of danger", "flavor": "Can't touch this!", "name": "Dodge", "rarity": "Rare" },
+  "dodge": { "description": "Knows how to get out of danger", "flavor": "Can't touch this!", "group": "skills", "name": "Dodge", "rarity": "Rare" },
   "dragonslayer": {
     "description": "The grandchildren will be tired of hearing this story",
     "flavor": "A tale of fire, fury, and a lot of luck",
+    "group": "merits",
     "name": "Dragonslayer",
     "rarity": "Rare",
     "stats": { "critical_chance": 0.04, "multiplier_diplomacy": 0.1, "warfare": 5 }
@@ -186,6 +260,7 @@
   "eagle_eyed": {
     "description": "Enhanced vision and accuracy",
     "flavor": "Sees everything, pretends not to",
+    "group": "cognitive",
     "name": "Eagle Eyed",
     "rarity": "Normal",
     "stats": { "accuracy": 5, "critical_chance": 0.15 }
@@ -193,6 +268,7 @@
   "energized": {
     "description": "Has chance to spawn lightning on death",
     "flavor": "One last spark before dark",
+    "group": "fun",
     "name": "Energized",
     "rarity": "Rare",
     "stats": { "lifespan": 7, "multiplier_speed": 2 }
@@ -200,6 +276,7 @@
   "evil": {
     "description": "Can't be cursed and blessed",
     "flavor": "Morality is just a suggestion",
+    "group": "mind",
     "name": "Evil",
     "rarity": "Rare",
     "stats": { "cities": -2, "warfare": 10 }
@@ -207,6 +284,7 @@
   "eyepatch": {
     "description": "The price of bravery or a cruel twist of fate",
     "flavor": "It definitely looks cool!",
+    "group": "appearance",
     "name": "One Eyed",
     "rarity": "Rare",
     "stats": { "accuracy": -5, "critical_chance": -0.15, "diplomacy": 1, "warfare": -1 }
@@ -214,6 +292,7 @@
   "fast": {
     "description": "Speed is their greatest asset",
     "flavor": "They never know when to stop",
+    "group": "physique",
     "name": "Fast",
     "rarity": "Normal",
     "stats": { "attack_speed": 5, "multiplier_speed": 0.3 }
@@ -221,6 +300,7 @@
   "fat": {
     "description": "Built big, built strong",
     "flavor": "Strength comes in all sizes",
+    "group": "physique",
     "name": "Fat",
     "rarity": "Normal",
     "stats": { "multiplier_damage": 0.1, "multiplier_mass": 0.3, "multiplier_stamina": -0.5, "scale": 0.02 }
@@ -228,25 +308,46 @@
   "fertile": {
     "description": "Can have more babies",
     "flavor": "Life... finds a way",
+    "group": "health",
     "name": "Fertile",
     "rarity": "Normal",
     "stats": { "birth_rate": 4, "multiplier_offspring": 0.8 }
   },
-  "fire_blood": { "description": "Spawns fire on death", "flavor": "Fire flows through the veins", "name": "Fire Blood", "rarity": "Rare" },
-  "fire_proof": { "description": "Loves hot situations", "flavor": "Plays with fire and always wins", "name": "Fire Proof", "rarity": "Rare" },
-  "flesh_eater": { "description": "Ah... Fresh meat!", "flavor": "Everyone needs a hobby", "name": "Flesh Eater", "rarity": "Rare" },
-  "flower_prints": { "description": "Grows flowers where it walks", "flavor": "Nature follows in their footsteps", "name": "Flower Prints", "rarity": "Legendary" },
+  "fire_blood": { "description": "Spawns fire on death", "flavor": "Fire flows through the veins", "group": "body", "name": "Fire Blood", "rarity": "Rare" },
+  "fire_proof": {
+    "description": "Loves hot situations",
+    "flavor": "Plays with fire and always wins",
+    "group": "protection",
+    "name": "Fire Proof",
+    "rarity": "Rare"
+  },
+  "flesh_eater": { "description": "Ah... Fresh meat!", "flavor": "Everyone needs a hobby", "group": "spirit", "name": "Flesh Eater", "rarity": "Rare" },
+  "flower_prints": {
+    "description": "Grows flowers where it walks",
+    "flavor": "Nature follows in their footsteps",
+    "group": "miscellaneous",
+    "name": "Flower Prints",
+    "rarity": "Legendary"
+  },
   "fragile_health": {
     "description": "More vulnerable to damage and sickness",
     "flavor": "Because sometimes life just wants to watch you suffer",
+    "group": "health",
     "name": "Fragile Health",
     "rarity": "Normal",
     "stats": { "multiplier_health": -0.5 }
   },
-  "freeze_proof": { "description": "Drank a lot of antifreeze", "flavor": "Winter's just a state of mind", "name": "Freeze Proof", "rarity": "Rare" },
+  "freeze_proof": {
+    "description": "Drank a lot of antifreeze",
+    "flavor": "Winter's just a state of mind",
+    "group": "protection",
+    "name": "Freeze Proof",
+    "rarity": "Rare"
+  },
   "genius": {
     "description": "Possesses superior cognitive abilities",
     "flavor": "Overthinking is just thinking",
+    "group": "cognitive",
     "name": "Genius",
     "rarity": "Legendary",
     "stats": { "cities": 3, "diplomacy": 5, "intelligence": 10, "loyalty_traits": -10, "stewardship": 7, "warfare": 5 }
@@ -254,6 +355,7 @@
   "giant": {
     "description": "Likes to hold the door",
     "flavor": "Size does matter",
+    "group": "physique",
     "name": "Giant",
     "rarity": "Legendary",
     "stats": { "multiplier_health": 0.5, "multiplier_speed": -0.25, "scale": 0.05 }
@@ -261,12 +363,14 @@
   "gluttonous": {
     "description": "Consumes more food than most can imagine",
     "flavor": "Food mysteriously disappears in their presence",
+    "group": "mind",
     "name": "Gluttonous",
     "rarity": "Normal"
   },
   "golden_tooth": {
     "description": "Symbol of wealth and respect",
     "flavor": "A smile worth its weight in gold",
+    "group": "appearance",
     "name": "Golden Tooth",
     "rarity": "Rare",
     "stats": { "diplomacy": 2 }
@@ -274,6 +378,7 @@
   "greedy": {
     "description": "Nothing is ever enough for those ruled by greed",
     "flavor": "More, always more",
+    "group": "mind",
     "name": "Greedy",
     "rarity": "Rare",
     "stats": { "cities": 2, "diplomacy": -2, "loyalty_traits": -5, "multiplier_supply_timer": 4, "stewardship": -3, "warfare": 4 }
@@ -281,6 +386,7 @@
   "hard_skin": {
     "description": "Nothing can penetrate this tough exterior",
     "flavor": "Except love! And maybe a really sharp knife",
+    "group": "physique",
     "name": "Hard Skin",
     "rarity": "Normal",
     "stats": { "armor": 5 }
@@ -288,20 +394,29 @@
   "healing_aura": {
     "description": "Restores health and cures plague of creatures around it",
     "flavor": "A soothing presence that mends all wounds",
+    "group": "spirit",
     "name": "Healing Aura",
     "rarity": "Rare"
   },
   "heart_of_wizard": {
     "description": "Possesses abundant mana reserves for spellcasting",
     "flavor": "Magical essence flows like blood",
+    "group": "spirit",
     "name": "Heart of Wizard",
     "rarity": "Rare",
     "stats": { "multiplier_mana": 10 }
   },
-  "heliophobia": { "description": "Sunlight is lethal to them", "flavor": "A creature of the night, cursed by the day", "name": "Heliophobia", "rarity": "Rare" },
+  "heliophobia": {
+    "description": "Sunlight is lethal to them",
+    "flavor": "A creature of the night, cursed by the day",
+    "group": "body",
+    "name": "Heliophobia",
+    "rarity": "Rare"
+  },
   "honest": {
     "description": "They value honesty above all, even when it hurts",
     "flavor": "The truth might hurt, but they won't sugarcoat it",
+    "group": "mind",
     "name": "Honest",
     "rarity": "Normal",
     "stats": { "diplomacy": 2, "loyalty_traits": 5, "stewardship": 3, "warfare": -2 }
@@ -309,20 +424,29 @@
   "hotheaded": {
     "description": "Has a short fuse and is prone to starting fights",
     "flavor": "Anger is their default response to most situations",
+    "group": "mind",
     "name": "Hotheaded",
     "rarity": "Rare"
   },
   "immortal": {
     "description": "Can't die from an old age",
     "flavor": "Eternal life comes with its own burdens",
+    "group": "health",
     "name": "Immortal",
     "rarity": "Legendary",
     "stats": { "loyalty_traits": -20 }
   },
-  "immune": { "description": "Completely resistant to diseases and illnesses", "flavor": "Their body is a fortress", "name": "Immune", "rarity": "Rare" },
+  "immune": {
+    "description": "Completely resistant to diseases and illnesses",
+    "flavor": "Their body is a fortress",
+    "group": "health",
+    "name": "Immune",
+    "rarity": "Rare"
+  },
   "infected": {
     "description": "Slowly turning into a zombie",
     "flavor": "The hunger grows stronger",
+    "group": "acquired",
     "name": "Infected",
     "rarity": "Rare",
     "stats": { "loyalty_traits": -15, "multiplier_speed": 0.1 }
@@ -330,6 +454,7 @@
   "infertile": {
     "description": "Unable to produce offspring",
     "flavor": "Life finds another way",
+    "group": "health",
     "name": "Infertile",
     "rarity": "Rare",
     "stats": { "offspring": -99999 }
@@ -337,14 +462,16 @@
   "kingslayer": {
     "description": "Killed a king and survived the aftermath... for now",
     "flavor": "When you attack a king, you better not miss!",
+    "group": "merits",
     "name": "Kingslayer",
     "rarity": "Rare",
     "stats": { "diplomacy": -5, "loyalty_traits": -25, "multiplier_supply_timer": 2, "warfare": 5 }
   },
-  "light_lamp": { "description": "Glows in the dark", "flavor": "Bright side of everything", "name": "Light Lamp", "rarity": "Rare" },
+  "light_lamp": { "description": "Glows in the dark", "flavor": "Bright side of everything", "group": "miscellaneous", "name": "Light Lamp", "rarity": "Rare" },
   "long_liver": {
     "description": "Lives significantly longer than others",
     "flavor": "They count every calorie and step toward eternity",
+    "group": "health",
     "name": "Long Liver",
     "rarity": "Normal",
     "stats": { "multiplier_lifespan": 0.5 }
@@ -352,6 +479,7 @@
   "lucky": {
     "description": "Luck is always by their side",
     "flavor": "They make life look easy...",
+    "group": "spirit",
     "name": "Lucky",
     "rarity": "Rare",
     "stats": { "accuracy": 4, "birth_rate": 5, "critical_chance": 0.3, "lifespan": 7 }
@@ -359,6 +487,7 @@
   "lustful": {
     "description": "Open to new experiences",
     "flavor": "Curiosity never killed this cat",
+    "group": "mind",
     "name": "Lustful",
     "rarity": "Rare",
     "stats": { "diplomacy": -2, "multiplier_offspring": 0.2 }
@@ -366,6 +495,7 @@
   "madness": {
     "description": "Attacks everyone indiscriminately",
     "flavor": "Finds prophecies between the lines of reality",
+    "group": "special",
     "name": "Madness",
     "rarity": "Epic",
     "stats": { "diplomacy": -100, "loyalty_traits": -100, "multiplier_speed": 0.1 }
@@ -373,6 +503,7 @@
   "mageslayer": {
     "description": "Loves the smell of burned magic in the morning",
     "flavor": "They asked for it",
+    "group": "merits",
     "name": "Mageslayer",
     "rarity": "Rare",
     "stats": { "critical_chance": 0.03, "loyalty_traits": -10, "warfare": 5 }
@@ -380,20 +511,35 @@
   "mega_heartbeat": {
     "description": "Emits a powerful pulse that pushes everyone away",
     "flavor": "Too much love can be as destructive as too little",
+    "group": "fun",
     "name": "Mega Heartbeat",
     "rarity": "Legendary"
   },
-  "metamorphed": { "description": "Has shifted into a new form", "flavor": "Remade, for better or worse", "name": "Metamorphed", "rarity": "Normal" },
-  "miner": { "description": "Increases chances to get gems from mines", "flavor": "Every stone has a story", "name": "Miner", "rarity": "Rare" },
+  "metamorphed": {
+    "description": "Has shifted into a new form",
+    "flavor": "Remade, for better or worse",
+    "group": "special",
+    "name": "Metamorphed",
+    "rarity": "Normal"
+  },
+  "miner": {
+    "description": "Increases chances to get gems from mines",
+    "flavor": "Every stone has a story",
+    "group": "miscellaneous",
+    "name": "Miner",
+    "rarity": "Rare"
+  },
   "miracle_bearer": {
     "description": "Gave birth under miraculous circumstances",
     "flavor": "Evidence that life persists against all odds",
+    "group": "special",
     "name": "Miracle Bearer",
     "rarity": "Rare"
   },
   "miracle_born": {
     "description": "Appeared like a miracle into this world",
     "flavor": "A story that defies explanation",
+    "group": "special",
     "name": "Miracle Born",
     "rarity": "Rare",
     "stats": { "birth_rate": 2, "lifespan": 20, "multiplier_offspring": 2 }
@@ -401,6 +547,7 @@
   "moonchild": {
     "description": "Grants unique bonuses during the Age of the Moon",
     "flavor": "Touched by the Moon",
+    "group": "spirit",
     "name": "Moonchild",
     "rarity": "Rare",
     "stats": { "armor": 1, "intelligence": 3, "multiplier_damage": 0.5, "multiplier_speed": 0.1 }
@@ -408,14 +555,16 @@
   "mush_spores": {
     "description": "The MUSH must grow! Carries fungal spores that activate upon the host's death",
     "flavor": "The end of one life sparks a new beginning",
+    "group": "acquired",
     "name": "MUSH Spores",
     "rarity": "Rare",
     "stats": { "loyalty_traits": -15, "multiplier_speed": 0.3 }
   },
-  "mute": { "description": "Unable to speak or use religion spells", "flavor": "...", "name": "Mute", "rarity": "Rare" },
+  "mute": { "description": "Unable to speak or use religion spells", "flavor": "...", "group": "body", "name": "Mute", "rarity": "Rare" },
   "nightchild": {
     "description": "Grants unique bonuses during dark",
     "flavor": "The night reveals to them what the day obscures",
+    "group": "spirit",
     "name": "Nightchild",
     "rarity": "Rare",
     "stats": { "critical_chance": 0.03, "multiplier_damage": 0.5, "multiplier_speed": 0.1, "warfare": 3 }
@@ -423,6 +572,7 @@
   "pacifist": {
     "description": "Strongly favors peace and avoids conflict whenever possible",
     "flavor": "For them, conflict is the result of failure, not the key to success",
+    "group": "spirit",
     "name": "Pacifist",
     "rarity": "Rare",
     "stats": { "diplomacy": 10, "loyalty_traits": 50, "multiplier_supply_timer": -0.1, "warfare": -4 }
@@ -430,38 +580,73 @@
   "paranoid": {
     "description": "Constantly on edge, they see threats in every corner",
     "flavor": "Trust no one, not even themselves",
+    "group": "mind",
     "name": "Paranoid",
     "rarity": "Rare",
     "stats": { "cities": -1, "diplomacy": -2, "loyalty_traits": -15, "multiplier_supply_timer": 0.5, "warfare": 4 }
   },
-  "peaceful": { "description": "Never attacks first", "flavor": "Violence is never the answer", "name": "Peaceful", "rarity": "Rare" },
+  "peaceful": { "description": "Never attacks first", "flavor": "Violence is never the answer", "group": "mind", "name": "Peaceful", "rarity": "Rare" },
   "plague": {
     "description": "Damages over time and spreads to nearby units",
     "flavor": "They should have stayed home",
+    "group": "acquired",
     "name": "Plague",
     "rarity": "Legendary",
     "stats": { "armor": -2, "lifespan": -30, "loyalty_traits": -15, "multiplier_damage": -0.5, "multiplier_speed": -0.3, "stamina": -10 }
   },
-  "poison_immune": { "description": "Completely immune to the effects of poison", "flavor": "Toxins fear their body", "name": "Poison Immunity", "rarity": "Rare" },
-  "poisonous": { "description": "Inflicts poison status when eaten", "flavor": "Probably shouldn't eat it... unless?", "name": "Poisonous", "rarity": "Rare" },
+  "poison_immune": {
+    "description": "Completely immune to the effects of poison",
+    "flavor": "Toxins fear their body",
+    "group": "protection",
+    "name": "Poison Immunity",
+    "rarity": "Rare"
+  },
+  "poisonous": {
+    "description": "Inflicts poison status when eaten",
+    "flavor": "Probably shouldn't eat it... unless?",
+    "group": "body",
+    "name": "Poisonous",
+    "rarity": "Rare"
+  },
   "psychopath": {
     "description": "Their mind is a labyrinth of cold calculations",
     "flavor": "Manipulate, dominate, eliminate",
+    "group": "mind",
     "name": "Psychopath",
     "rarity": "Rare"
   },
-  "pyromaniac": { "description": "Likes to see the world burn", "flavor": "Fire is just misunderstood art", "name": "Pyromaniac", "rarity": "Legendary" },
+  "pyromaniac": {
+    "description": "Likes to see the world burn",
+    "flavor": "Fire is just misunderstood art",
+    "group": "mind",
+    "name": "Pyromaniac",
+    "rarity": "Legendary"
+  },
   "regeneration": {
     "description": "Gradually restores lost health over time",
     "flavor": "A second chance, one cell at a time",
+    "group": "health",
     "name": "Regeneration",
     "rarity": "Rare"
   },
-  "savage": { "description": "Harvests bones and leather from defeated enemies", "flavor": "Kill, collect, repeat", "name": "Savage", "rarity": "Rare" },
-  "scar_of_divinity": { "description": "Touched by something divine", "flavor": "Somebody up there has some plans", "name": "Scar of Divinity", "rarity": "Rare" },
+  "savage": {
+    "description": "Harvests bones and leather from defeated enemies",
+    "flavor": "Kill, collect, repeat",
+    "group": "spirit",
+    "name": "Savage",
+    "rarity": "Rare"
+  },
+  "scar_of_divinity": {
+    "description": "Touched by something divine",
+    "flavor": "Somebody up there has some plans",
+    "group": "special",
+    "name": "Scar of Divinity",
+    "rarity": "Rare"
+  },
   "shiny": {
     "description": "Emits a radiant shine, attracting attention from others",
     "flavor": "Born to sparkle",
+    "group": "miscellaneous",
     "name": "Shiny",
     "rarity": "Rare",
     "stats": { "diplomacy": 5 }
@@ -469,6 +654,7 @@
   "short_sighted": {
     "description": "Reduced vision and attack range",
     "flavor": "The world is a mystery",
+    "group": "cognitive",
     "name": "Short Sighted",
     "rarity": "Normal",
     "stats": { "accuracy": -5, "critical_chance": -0.05 }
@@ -476,6 +662,7 @@
   "skin_burns": {
     "description": "A mark of fire's embrace",
     "flavor": "Played with fire... and lost",
+    "group": "appearance",
     "name": "Skin Burns",
     "rarity": "Rare",
     "stats": { "diplomacy": -2, "lifespan": -5, "multiplier_speed": -0.25, "warfare": 2 }
@@ -483,6 +670,7 @@
   "slow": {
     "description": "Moves at reduced speed",
     "flavor": "There's always tomorrow... or the day after",
+    "group": "physique",
     "name": "Slow",
     "rarity": "Normal",
     "stats": { "attack_speed": -5, "multiplier_speed": -0.5 }
@@ -490,6 +678,7 @@
   "soft_skin": {
     "description": "Soft and squishy, like a marshmallow",
     "flavor": "Fragile but strangely endearing",
+    "group": "physique",
     "name": "Soft Skin",
     "rarity": "Normal",
     "stats": { "armor": -5 }
@@ -497,14 +686,22 @@
   "strong": {
     "description": "Significantly increases physical damage dealt in combat",
     "flavor": "Opens all jars on first try",
+    "group": "physique",
     "name": "Strong",
     "rarity": "Normal",
     "stats": { "lifespan": 3, "multiplier_damage": 0.5, "warfare": 2 }
   },
-  "strong_minded": { "description": "Resistant to mental manipulation", "flavor": "Their mind is an iron fortress", "name": "Strong Minded", "rarity": "Rare" },
+  "strong_minded": {
+    "description": "Resistant to mental manipulation",
+    "flavor": "Their mind is an iron fortress",
+    "group": "mind",
+    "name": "Strong Minded",
+    "rarity": "Rare"
+  },
   "stupid": {
     "description": "Reduced decision-making ability",
     "flavor": "Not the sharpest tool in the shed",
+    "group": "cognitive",
     "name": "Stupid",
     "rarity": "Normal",
     "stats": {
@@ -521,21 +718,30 @@
   "sunblessed": {
     "description": "Heals over time when exposed to sunlight",
     "flavor": "Like a plant, just with more personality!",
+    "group": "body",
     "name": "Sunblessed",
     "rarity": "Rare"
   },
   "super_health": {
     "description": "Greatly enhances maximum health",
     "flavor": "Granted for the love of crab",
+    "group": "health",
     "name": "Super Health",
     "rarity": "Legendary",
     "stats": { "lifespan": 100, "multiplier_health": 100 }
   },
-  "thief": { "description": "Skilled at taking others' possessions", "flavor": "One for you... all for me", "name": "Thief", "rarity": "Legendary" },
-  "thorns": { "description": "Damages attackers when hit", "flavor": "Every rose has its thorns", "name": "Thorns", "rarity": "Rare" },
+  "thief": {
+    "description": "Skilled at taking others' possessions",
+    "flavor": "One for you... all for me",
+    "group": "cognitive",
+    "name": "Thief",
+    "rarity": "Legendary"
+  },
+  "thorns": { "description": "Damages attackers when hit", "flavor": "Every rose has its thorns", "group": "protection", "name": "Thorns", "rarity": "Rare" },
   "tiny": {
     "description": "Small in size, mighty in spirit",
     "flavor": "What is this, a trait for ants?",
+    "group": "physique",
     "name": "Tiny",
     "rarity": "Legendary",
     "stats": { "diplomacy": -1, "multiplier_health": -0.25, "multiplier_speed": 0.25, "scale": -0.02 }
@@ -543,6 +749,7 @@
   "titan_lungs": {
     "description": "Their stamina is seemingly inexhaustible",
     "flavor": "Breathing is their superweapon",
+    "group": "body",
     "name": "Titan's Lungs",
     "rarity": "Legendary",
     "stats": { "multiplier_stamina": 10 }
@@ -550,6 +757,7 @@
   "tough": {
     "description": "Damage reduction and stun immunity",
     "flavor": "What doesn't kill them just bounces off",
+    "group": "physique",
     "name": "Tough",
     "rarity": "Legendary",
     "stats": { "armor": 10, "lifespan": 4, "warfare": 1 }
@@ -557,6 +765,7 @@
   "tumor_infection": {
     "description": "Slowly transforms into a horrible creature",
     "flavor": "Self becomes memory, memory becomes nightmare",
+    "group": "acquired",
     "name": "Tumor Infection",
     "rarity": "Rare",
     "stats": { "loyalty_traits": -15, "multiplier_speed": 0.3 }
@@ -564,6 +773,7 @@
   "ugly": {
     "description": "Appearance causes discomfort to others",
     "flavor": "Winning hearts through charm",
+    "group": "appearance",
     "name": "Ugly",
     "rarity": "Normal",
     "stats": { "multiplier_offspring": -0.3 }
@@ -571,14 +781,22 @@
   "unlucky": {
     "description": "Increases the likelihood of negative events for self and nearby units",
     "flavor": "Black cats follow them everywhere",
+    "group": "spirit",
     "name": "Unlucky",
     "rarity": "Rare",
     "stats": { "accuracy": -4, "critical_chance": -0.3, "lifespan": -13 }
   },
-  "venomous": { "description": "Applies poison to enemies upon landing a hit", "flavor": "Venom is a gift of death", "name": "Venomous", "rarity": "Rare" },
+  "venomous": {
+    "description": "Applies poison to enemies upon landing a hit",
+    "flavor": "Venom is a gift of death",
+    "group": "body",
+    "name": "Venomous",
+    "rarity": "Rare"
+  },
   "veteran": {
     "description": "Experienced in battle after surviving numerous fights",
     "flavor": "Not a rookie anymore",
+    "group": "merits",
     "name": "Veteran",
     "rarity": "Rare",
     "stats": { "multiplier_damage": 0.1, "multiplier_health": 0.1, "skill_combat": 0.1 }
@@ -586,18 +804,38 @@
   "weak": {
     "description": "Reduced physical strength",
     "flavor": "Physically frail, but resilient in spirit",
+    "group": "physique",
     "name": "Weak",
     "rarity": "Normal",
     "stats": { "diplomacy": -2, "lifespan": -6, "multiplier_damage": -0.5, "warfare": -2 }
   },
-  "weightless": { "description": "Too light to break thin ice", "flavor": "Defies gravity with an effortless grace", "name": "Weightless", "rarity": "Rare" },
-  "whirlwind": { "description": "Generates swirling wind around them", "flavor": "Guess their favorite song", "name": "Whirlwind", "rarity": "Legendary" },
+  "weightless": {
+    "description": "Too light to break thin ice",
+    "flavor": "Defies gravity with an effortless grace",
+    "group": "physique",
+    "name": "Weightless",
+    "rarity": "Rare"
+  },
+  "whirlwind": {
+    "description": "Generates swirling wind around them",
+    "flavor": "Guess their favorite song",
+    "group": "fun",
+    "name": "Whirlwind",
+    "rarity": "Legendary"
+  },
   "wise": {
     "description": "Possesses wisdom accumulated over a lifetime",
     "flavor": "They have seen some stuff",
+    "group": "cognitive",
     "name": "Wise",
     "rarity": "Rare",
     "stats": { "diplomacy": 1, "intelligence": 1, "stewardship": 1, "warfare": 1 }
   },
-  "zombie": { "description": "Has an insatiable hunger for brains", "flavor": "A mind is a terrible thing to waste", "name": "Zombie", "rarity": "Rare" }
+  "zombie": {
+    "description": "Has an insatiable hunger for brains",
+    "flavor": "A mind is a terrible thing to waste",
+    "group": "special",
+    "name": "Zombie",
+    "rarity": "Rare"
+  }
 }

@@ -6,7 +6,7 @@ import { Component, computed, input } from '@angular/core';
 })
 export class InventoryComponent {
 
-  public readonly resources = input<Record<string, number>>({});
+  public readonly resources = input.required<Record<string, number>>();
 
   protected readonly entries = computed(() => Object.entries(this.resources()).map(([key, amount]) => ({ amount, key })));
 

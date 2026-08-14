@@ -6,11 +6,11 @@ import { BIOME_NAMES } from '../../../../constants';
 import { RankedStatKind } from '../../../../interfaces';
 import { SpeciesNamePipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
-import { BreakdownComponent, RankedStatComponent } from '../../../misc';
+import { BreakdownComponent, RankedStatComponent, TraitGroupsComponent } from '../../../misc';
 
 @Component({
   selector: 'app-subspecies',
-  imports: [BreakdownComponent, NzDescriptionsModule, RankedStatComponent, SpeciesNamePipe],
+  imports: [BreakdownComponent, NzDescriptionsModule, RankedStatComponent, SpeciesNamePipe, TraitGroupsComponent],
   templateUrl: './subspecies.component.html',
 })
 export class SubspeciesComponent {

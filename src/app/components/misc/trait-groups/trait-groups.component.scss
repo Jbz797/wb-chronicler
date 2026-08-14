@@ -1,9 +1,43 @@
 @use 'variables' as *;
 
-// `.body` `.chaos` `.fate` `.harmony` `.mind` `.special` `.spirit` — posted by name from TS, spelt out so a grep for one still lands here.
+// WB's thirty-two trait groups, class posted by name from TS. Spelt out rather than looped over an id list, so a grep for `.reproductive_methods` lands here.
 :host {
   @each $group,
-    $color in (body: $group-body, chaos: $group-chaos, fate: $group-fate, harmony: $group-harmony, mind: $group-mind, special: $group-special, spirit: $group-spirit)
+    $color
+      in (
+        acquired: $group-acquired,
+        adaptations: $group-adaptations,
+        advanced_brain: $group-advanced-brain,
+        appearance: $group-appearance,
+        bioproducts: $group-bioproducts,
+        body: $group-body,
+        chaos: $group-chaos,
+        cognitive: $group-cognitive,
+        diet: $group-diet,
+        eggs: $group-eggs,
+        fate: $group-fate,
+        fun: $group-fun,
+        gestation: $group-gestation,
+        growth: $group-growth,
+        harmony: $group-harmony,
+        health: $group-health,
+        hibernation: $group-hibernation,
+        merits: $group-merits,
+        mind: $group-mind,
+        miscellaneous: $group-miscellaneous,
+        mutations: $group-mutations,
+        phenotypes: $group-phenotypes,
+        physique: $group-physique,
+        protection: $group-protection,
+        rebirth: $group-rebirth,
+        reproduction_strategy: $group-reproduction-strategy,
+        reproductive_methods: $group-reproductive-methods,
+        skills: $group-skills,
+        sleep_cycles: $group-sleep-cycles,
+        special: $group-special,
+        spirit: $group-spirit,
+        talents: $group-talents
+      )
   {
     .group.#{$group} {
       color: $color;
