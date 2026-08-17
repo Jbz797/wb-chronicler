@@ -5,7 +5,7 @@ import { CITY_META_STATS, KINGDOM_META_STATS, NON_COMPACT_STATS } from '../../..
 import {
   ChapterMeta, CityMetaStat, KingdomAlliance, KingdomMetaStat, PeopleTier, PopulationStat, RankedStatKind, RankedStatSnapshot, SpeciesStanding, SpeciesTotals,
 } from '../../../interfaces';
-import { CompactPipe, TierPipe } from '../../../pipes';
+import { CompactPipe, ExactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
 
@@ -13,7 +13,7 @@ const peopleSources = new Set(['clan', 'family', 'subspecies']); // the three ti
 
 @Component({
   selector: 'app-ranked-stat',
-  imports: [CompactPipe, DecimalPipe, DeltaComponent, TierPipe],
+  imports: [CompactPipe, DecimalPipe, DeltaComponent, ExactPipe, TierPipe],
   templateUrl: './ranked-stat.component.html',
   styleUrl: './ranked-stat.component.scss',
 })

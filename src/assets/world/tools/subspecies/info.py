@@ -63,12 +63,12 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     out = [
         {
             "age": actor_age(actor, ctx["world_time"]),
-            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
+            "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # The roster's one entity: a biology runs in lines — 7 bearers a line, 25 a town.
             "id": actor["id"],
             "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
-            "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
+            "job": resolve_profession(actor, save),
+            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — as in `clan`, no aggregate here carries it.
             "name": actor.get("name"),
-            "profession": resolve_profession(actor, save),
             "sex": sex_label(actor),
         }
         for actor in members
@@ -76,27 +76,27 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
-# The subspecies' identity card: WB's own lifetime counters beside what only a walk over the living can tell — how far the biology spread and what it carries.
+# The subspecies' identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
+    causes = {k[len(_DEATH_PREFIX) :]: v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
     cities = {c for a in members if (c := a.get("cityID"))}
+    families = {f for a in members if (f := a.get("family"))}
     island_of = ctx["island_lookup"]()
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
-    causes = {k[len(_DEATH_PREFIX) :]: v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
     report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the biology say of itself
 
     return {
         "age": entity_age(subspecies, ctx["world_time"]),
-        "id": subspecies["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
-        # Chronicler-only: land masses its bearers stand on, sorted asc (1 = biggest). Presence, not weight — one wanderer on an islet earns it a place here.
-        "islands": sorted({iid for a in members if (iid := island_of.get((int(a["x"]), int(a["y"])))) is not None}),
-        "name": subspecies.get("name"),
-        # Every counter below drops at zero, as WB's own already do: a beast holds no town and swears no trait, and the panels read them through `?? 0`.
         **({"births": births} if (births := int(subspecies.get("total_births") or 0)) else {}),
         **({"cities": len(cities)} if cities else {}),  # settlements its bearers answer from — a biology spreads wherever its carriers walk
-        **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the biology has been dying, which its totals alone never say
         **({"deaths": deaths} if (deaths := int(subspecies.get("total_deaths") or 0)) else {}),
+        **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the biology has been dying, which its totals alone never say
+        **({"families": len(families)} if families else {}),  # bloodlines carrying it — the axis a biology travels by: 7 bearers to a line, against 25 to a town
+        "id": subspecies["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
+        "islands": sorted({iid for a in members if (iid := island_of.get((int(a["x"]), int(a["y"])))) is not None}),  # 1 = biggest — presence, not weight.
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
+        "name": subspecies.get("name"),
         **({"renown": renown} if (renown := int(subspecies.get("renown") or 0)) else {}),  # WB's own tally, where the living's worth now sits in `population`
         **({"report": report} if report else {}),
     }
@@ -226,10 +226,9 @@ def main(argv: list[str]) -> int:
     ctx = {
         **build_actor_stats_context(save),  # brings the trait libraries and `languages_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),  # `population_of` pairs lovers through it, and only a mutual pair counts
-        "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
+        "families_by_id": index_by_id(save.get("families") or []),
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
-        "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
         "subspecies_by_id": subspecies_by_id,  # the index the id was checked against, so the context's own copy never takes over
         "tallies": tallies,  # the one actor pass, handed whole — the podium reads all three, every other section walking `members` itself

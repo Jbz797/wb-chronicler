@@ -50,11 +50,11 @@ export interface PersonInfo {
   asset_id: string;
   dead?: boolean;
   head?: number;
+  job?: string;
   kingdom?: number;
   level?: number;
   phenotype_index?: number;
   phenotype_shade?: number;
-  profession?: string;
   sex?: string;
   skin_id?: number;
   special_head?: string;

@@ -11,6 +11,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from islands import compute_islands_cached
 from shared import (
+    NON_FOOD_SPECIES,
+    SATED_MIN_NUTRITION,
     ZONE_TILES,
     actor_age,
     emit,
@@ -41,6 +43,7 @@ def _build_inventory(house: dict) -> dict:
 # The dwelling's identity card. `families` counts the lineages under the roof — a WB house beds whoever needs one; the headcount rides with `occupants`.
 def _build_metadata(house: dict, residents: list[dict], ctx: dict) -> dict:
     city = ctx["cities_by_id"].get(house.get("cityID")) or {}
+    eaters = [a for a in residents if (a.get("asset_id") or "") not in NON_FOOD_SPECIES]  # WB `needsFood`: the undead have no diet
     hx, hy = house.get("mainX"), house.get("mainY")
     island_id = zone = None
 
@@ -54,12 +57,14 @@ def _build_metadata(house: dict, residents: list[dict], ctx: dict) -> dict:
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         "families": len({fid for a in residents if (fid := a.get("family"))}),
+        # The roof's condition, read beside the stores `inventory` lists — an all-undead roof has no eaters and drops the key.
+        **({"fed_pct": round(100 * sum(int(a.get("nutrition") or 0) >= SATED_MIN_NUTRITION for a in eaters) / len(eaters))} if eaters else {}),
+        **({"health": int(health)} if (health := house.get("health")) is not None else {}),  # WB writes `health` only when hurt — absent means intact, not unknown.
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
         "x": hx,
         "y": hy,
         "zone": zone,
-        **({"health": int(health)} if (health := house.get("health")) is not None else {}),  # WB writes `health` only when hurt — absent means intact, not unknown.
     }
 
 
@@ -67,18 +72,18 @@ def _build_metadata(house: dict, residents: list[dict], ctx: dict) -> dict:
 def _build_occupants(residents: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
     if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
         return light({"ids": roster_ids(residents, ctx["world_time"]), "total": len(residents)}, "occupants")
-    out = []
-    for actor in residents:
-        out.append(
-            {
-                "age": actor_age(actor, ctx["world_time"]),
-                "family": entity_ref(actor.get("family"), ctx["families_by_id"]),
-                "id": actor["id"],
-                "name": actor.get("name"),
-                "profession": resolve_profession(actor, save),
-                "sex": sex_label(actor),
-            }
-        )
+    out = [
+        {
+            "age": actor_age(actor, ctx["world_time"]),
+            "family": entity_ref(actor.get("family"), ctx["families_by_id"]),
+            "gen": int(actor.get("generation") or 1),  # elder above child under one roof, the roster being sorted by age already
+            "id": actor["id"],
+            "job": resolve_profession(actor, save),
+            "name": actor.get("name"),
+            "sex": sex_label(actor),
+        }
+        for actor in residents
+    ]
     return {"roster": sorted(out, key=lambda o: (-o["age"], o["id"])), "total": len(out)}
 
 

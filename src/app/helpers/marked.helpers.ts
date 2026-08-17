@@ -150,11 +150,11 @@ export class MarkedHelpers {
     const color = PaletteHelpers.realmText(info.kingdom); // their realm's own name hue — a subject reads as belonging to that crown
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
-    const profession = info.profession ? `<img src="assets/img/professions/${info.profession}.png" />` : '';
+    const job = info.job ? `<img src="assets/img/professions/${info.job}.png" />` : '';
     const level = info.level ? `<span class="tag-badge">${info.level}</span>` : ''; // only once earned — Python omits the level-1 crowd
     const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
 
-    const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : profession;
+    const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : job;
     const hue = PaletteHelpers.realmRing(info.kingdom); // their crown's emblem tint, framing the plate exactly as it frames the crown's own tag
     const style = `--tag-color: ${color}${hue ? `; --tag-ring: ${hue}` : ''}`;
 

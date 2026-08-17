@@ -116,6 +116,6 @@ export class FavoriteComponent {
     return { traits: diffCounts(current.traits, previous.traits) };
   });
   // Names the post `tenure_years` counts — only kings/leaders/captains hold one, so the fallback never surfaces.
-  protected readonly tenureLabel = computed(() => TENURE_LABELS[this.currentChapter()?.meta.favorite?.metadata.profession ?? ''] ?? 'Ancienneté');
+  protected readonly tenureLabel = computed(() => TENURE_LABELS[this.currentChapter()?.meta.favorite?.metadata.job ?? ''] ?? 'Ancienneté');
 
 }

@@ -60,12 +60,12 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     out = [
         {
             "age": actor_age(actor, ctx["world_time"]),
-            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
-            "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # a clansman keeps his own bloodline — `family/info.py <id>` on it
+            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs 42 chars and blows the inline budget
             "id": actor["id"],
             "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
+            "job": resolve_profession(actor, save),
+            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — a rung above is earned, and unaggregated.
             "name": actor.get("name"),
-            "profession": resolve_profession(actor, save),
             "sex": sex_label(actor),
         }
         for actor in members
@@ -73,9 +73,10 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
-# The clan's identity card: WB's own lifetime counters beside what only a walk over the living can tell — where they answer from, and what they carry.
+# The clan's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
     cities = {c for a in members if (c := a.get("cityID"))}
+    families = {f for a in members if (f := a.get("family"))}
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
     # Each cause WB bothered to write, its prefix stripped; a clan that never lost anyone to fire carries no key rather than a zero.
     causes = {k[len(_DEATH_PREFIX) :]: v for k, v in clan.items() if k.startswith(_DEATH_PREFIX) and v}
@@ -83,22 +84,22 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
 
     return {
         "age": entity_age(clan, ctx["world_time"]),
+        **({"births": births} if (births := int(clan.get("total_births") or 0)) else {}),
+        **({"books_written": books} if (books := int(clan.get("books_written") or 0)) else {}),
         "chief": entity_ref(clan.get("chief_id"), ctx["actors_by_id"]),
+        **({"cities": len(cities)} if cities else {}),  # settlements its members answer from — a clan crosses borders, WB never ties it to one town
+        **({"deaths": deaths} if (deaths := int(clan.get("total_deaths") or 0)) else {}),
+        **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the clan has been dying, which its totals alone never say
+        **({"families": len(families)} if families else {}),  # bloodlines it draws on — a band is sworn, not born into, so 1 marks a family affair and 3 an order
         "founder": {"id": fid, "name": clan.get("founder_actor_name")} if (fid := clan.get("founder_actor_id")) is not None else None,
         "founding_city": entity_ref(clan.get("founder_city_id"), ctx["cities_by_id"]),
         "founding_kingdom": entity_ref(clan.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
         "heir": _resolve_heir(clan, members, ctx),
         "id": clan["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
-        "name": clan.get("name"),
-        "past_chiefs": len(clan.get("past_chiefs") or []),  # the sitting chief included — WB appends him on accession, so it never reads zero
-        # Every counter below drops at zero, as WB's own already do: a band holding no town and swearing no trait carries no key, and the panels read them as 0.
-        **({"births": births} if (births := int(clan.get("total_births") or 0)) else {}),
-        **({"books_written": books} if (books := int(clan.get("books_written") or 0)) else {}),
-        **({"cities": len(cities)} if cities else {}),  # settlements its members answer from — a clan crosses borders, WB never ties it to one town
-        **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the clan has been dying, which its totals alone never say
-        **({"deaths": deaths} if (deaths := int(clan.get("total_deaths") or 0)) else {}),
         **({"kills": kills} if (kills := int(clan.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its members answer to — a clan is sworn, not granted, so it spans realms freely
+        "name": clan.get("name"),
+        "past_chiefs": len(clan.get("past_chiefs") or []),  # the sitting chief included — WB appends him on accession, so it never reads zero
         **({"renown": renown} if (renown := int(clan.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `population`
         **({"report": report} if report else {}),
         **({"traits": traits} if (traits := len(clan.get("saved_traits") or [])) else {}),
@@ -122,7 +123,7 @@ def _clan_culture(clan: dict, ctx: dict) -> int | None:
     return chief.get("culture") or clan.get("culture_id")
 
 
-# The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every band, on each of the ten dimensions.
+# The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every band, on each of the thirteen dimensions.
 def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda c: entity_age(c, world_time),
@@ -204,12 +205,10 @@ def main(argv: list[str]) -> int:
         "actors_by_id": index_by_id(save.get("actors_data") or []),
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
-        "families_by_id": index_by_id(save.get("families") or []),
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
         "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors
-        "tallies": tallies,  # the one actor pass, handed whole — the podium reads all three, every other section walking `members` itself
     }
 
     out: dict = {}

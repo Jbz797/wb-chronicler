@@ -10,8 +10,8 @@
     }
     @if (p.dead) {
       <img src="assets/img/world/deaths.png" />
-    } @else if (p.profession && p.profession !== 'civilian') {
-      <img [src]="`assets/img/professions/${p.profession}.png`" />
+    } @else if (p.job && p.job !== 'civilian') {
+      <img [src]="`assets/img/professions/${p.job}.png`" />
     }
   </nz-tag>
 }

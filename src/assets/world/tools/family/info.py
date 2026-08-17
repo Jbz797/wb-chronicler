@@ -5,13 +5,11 @@
 
 import sys
 from collections import Counter
-from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import build_actor_stats_context, meta_ratios, population_of
-from islands import compute_islands_cached
 from shared import (
     NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
@@ -50,26 +48,23 @@ def _build_identity(family: dict, ctx: dict) -> dict:
 def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
     if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
         return light({"ids": roster_ids(members, ctx["world_time"]), "total": len(members)}, "members")
-    island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a wide lineage would still call through it hundreds of times
-    out = []
-    for actor in members:
-        out.append(
-            {
-                "age": actor_age(actor, ctx["world_time"]),
-                "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
-                "generation": int(actor.get("generation") or 1),
-                **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # `house/info.py <id>` — who shares a roof with whom
-                "id": actor["id"],
-                "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
-                "name": actor.get("name"),
-                "profession": resolve_profession(actor, save),
-                "sex": sex_label(actor),
-            }
-        )
+    out = [
+        {
+            "age": actor_age(actor, ctx["world_time"]),
+            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the named ref, the roster's one entity — a second would blow the inline budget
+            "gen": int(actor.get("generation") or 1),  # a founder reads 1, the value WB assumes without ever writing it
+            **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # `house/info.py <id>` — who shares a roof with whom
+            "id": actor["id"],
+            "job": resolve_profession(actor, save),
+            "name": actor.get("name"),
+            "sex": sex_label(actor),
+        }
+        for actor in members
+    ]
     return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
-# The lineage's identity card: WB's own lifetime counters beside what only a walk over the living can tell — how many remain, and how far they spread.
+# The lineage's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
     report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the line say of itself
     tallies, family_id = ctx["tallies"], family["id"]  # the roofs came off the one actor pass; recounting them here would walk the roster a second time
@@ -79,20 +74,19 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
 
     return {
         "age": entity_age(family, ctx["world_time"]),
+        **({"alpha": entity_ref(family.get("alpha_id"), ctx["actors_by_id"])} if family.get("alpha_id") else {}),  # its head, on the few clans WB gave one
+        **({"births": births} if (births := int(family.get("total_births") or 0)) else {}),
+        **({"deaths": deaths} if (deaths := int(family.get("total_deaths") or 0)) else {}),
         "founders": founders,
         "founding_city": entity_ref(family.get("founder_city_id"), ctx["cities_by_id"]),
         "founding_kingdom": entity_ref(family.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
-        "id": family["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
-        "name": family.get("name"),
-        **({"alpha": entity_ref(family.get("alpha_id"), ctx["actors_by_id"])} if family.get("alpha_id") else {}),  # its head, on the few clans WB gave one
-        # Every counter below drops at zero, as WB's own already do: a line sleeping rough and worth nothing carries no key, and the panels read them through `?? 0`.
-        **({"births": births} if (births := int(family.get("total_births") or 0)) else {}),
-        **({"deaths": deaths} if (deaths := int(family.get("total_deaths") or 0)) else {}),
         **({"houses": len(houses)} if (houses := tallies["houses"].get(family_id)) else {}),  # roofs they sleep under: most lineages scatter over three or four
+        "id": family["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         **({"kills": kills} if (kills := int(family.get("total_kills") or 0)) else {}),
-        **({"report": report} if report else {}),
-        # The two lineages this one split from, when WB recorded them — a family is born of a couple, so it inherits a name from each side.
+        "name": family.get("name"),
+        # A family is born of a couple, so WB writes up to two parent lines — but a ref drops when that line has since died out and been purged from the save.
         **({"parents": parents} if (parents := [ref for n in (1, 2) if (ref := entity_ref(family.get(f"original_family_{n}"), ctx["families_by_id"]))]) else {}),
+        **({"report": report} if report else {}),
     }
 
 
@@ -101,6 +95,7 @@ def _build_population(members: list[dict], ctx: dict) -> dict:
     return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
 
 
+# What a lineage is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs every line, on each of the eleven dimensions.
 def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda f: entity_age(f, world_time),
@@ -142,7 +137,6 @@ def main(argv: list[str]) -> int:
         return 1
 
     # One pass over the actors feeds every tally: WB points each actor at its lineage and never the reverse, so nothing here can be read off the family record.
-    # One pass feeds every tally: WB points the actor at its lineage, never the reverse.
     tallies: dict = {
         "eaters": Counter(),
         "fed": Counter(),
@@ -176,7 +170,6 @@ def main(argv: list[str]) -> int:
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": families_by_id,
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
         "tallies": tallies,  # the one actor pass, handed whole: `metadata` reads its roofs alone, the podium all four

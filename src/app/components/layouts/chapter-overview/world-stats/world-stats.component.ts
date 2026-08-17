@@ -4,7 +4,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { ANONYMOUS_NAME, CUMULATIVE_STATS, DEATH_CAUSES, LEADERS, SNAPSHOT_STATS } from '../../../../constants';
 import { LeaderRow } from '../../../../interfaces';
-import { CompactPipe } from '../../../../pipes';
+import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { DeltaComponent } from '../../../misc';
 
@@ -12,7 +12,7 @@ import { LeaderRowComponent } from './leader-row/leader-row.component';
 
 @Component({
   selector: 'app-world-stats',
-  imports: [CompactPipe, DeltaComponent, LeaderRowComponent, NzDescriptionsModule],
+  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderRowComponent, NzDescriptionsModule],
   templateUrl: './world-stats.component.html',
 })
 export class WorldStatsComponent {

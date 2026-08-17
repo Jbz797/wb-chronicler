@@ -386,6 +386,13 @@ def _is_golden(loci: list[str], idx: int, void_set: set[int], super_set: set[int
     return synergized >= 1 and synergized == non_border
 
 
+# `statistics.median`, inlined: that module costs 10 ms to import — a fifth of a tool's whole run — and this is the only call any script makes to it.
+def _median(values: list[int]) -> float:
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+
+
 def _neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) -> tuple[str | None, int]:
     rows = len(loci) // _GRID_COLS
     x, y = idx % _GRID_COLS, idx // _GRID_COLS
@@ -557,14 +564,17 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
     base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # created here too: a caller may ask for this block alone, before anything else fills it
     by_id, ids = ctx["actors_by_id"], {a["id"] for a in actors}
     counts: Counter[str] = Counter()
+    generations: list[int] = []
     paired: set[int] = set()
     stages: Counter[str] = Counter()
     world_time = ctx["world_time"]
+
     for a in actors:
         age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
         # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
         lifespan = int(actor_stat_totals(a, ctx, base_cache, lifespan_only=True).get("lifespan", 0))
         stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
+        generations.append(a.get("generation") or 1)  # WB counts a first child 2, so a parentless founder is its 1 — a default the save omits rather than writes.
         counts["men"] += a.get("sex") != 1
         counts["money"] += int(a.get("money") or 0)
         counts["renown"] += int(a.get("renown") or 0)
@@ -584,6 +594,7 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
             counts["couples"] += 1
             paired.update((a["id"], lover))
     total = len(actors)
+
     return {
         "adults": stages["adult"],
         "babies": stages["baby"],
@@ -592,6 +603,8 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
         "elders": stages["elder"],
         "familyless": counts["familyless"],
         "fed_pct": round(100 * counts["fed"] / eaters) if (eaters := counts["eaters"]) else 0,  # share of the food-needing sated (nutrition ≥ 60)
+        "gen_deepest": max(generations),  # the longest unbroken descent standing, WB's own count
+        "gen_median": round(_median(generations)),  # against the deepest, it says whether a body is mostly founders or mostly their issue
         "happy": counts["happy"],
         "housed_pct": round((total - counts["homeless"]) / total * 100) if total else 0,
         **({"immortals": n} if (n := counts["immortals"]) else {}),

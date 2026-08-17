@@ -1,5 +1,6 @@
 export * from './label.helpers';
 export * from './marked.helpers';
+export * from './number.helpers';
 export * from './palette.helpers';
 export * from './sprites/actor-sprite.helpers';
 export * from './sprites/clan-sprite.helpers';

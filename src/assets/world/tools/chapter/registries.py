@@ -48,10 +48,10 @@ def _build_registries(save: dict, prev: dict) -> dict:
     persons: dict[str, dict] = {}
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
 
-    # Entries only need a headcount and the dominant species, so tally asset_ids straight away rather than keeping every member around.
-    members_by_clan: Counter = Counter()  # WB points the actor at its clan, never the reverse — same walk as the lineages below
-    members_by_family: Counter = Counter()  # WB points the actor at its lineage, never the reverse — the tally only exists once the roster is walked
-    members_by_subspecies: Counter = Counter()  # same walk again: WB points the actor at its biology and never the reverse
+    # Headcount and dominant species are all an entry needs, so tally straight away — and WB points the actor at its clan, lineage and biology, never the reverse.
+    members_by_clan: Counter = Counter()
+    members_by_family: Counter = Counter()
+    members_by_subspecies: Counter = Counter()
     species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
     species_by_kingdom: defaultdict[int, Counter] = defaultdict(Counter)
 
@@ -229,16 +229,15 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
     for field in ("head", "phenotype_index", "phenotype_shade"):  # All three default to 0 in WB — omit then, the reader falls back to the same.
         if value := actor.get(field):
             entry[field] = value
+    if profession and profession != "civilian":  # a civilian carries no badge — keep the registry lean.
+        entry["job"] = profession
     if kingdom := actor.get("civ_kingdom_id"):  # Their realm's hue dyes the clothes — kept as a ref so the palette lives in one place, the kingdom registry.
         entry["kingdom"] = kingdom
     if (level := max(int(actor.get("level") or 0), 1)) > 1:  # 93 % of a world sits at 1 — a medallion on every subject would say nothing, so it stays earned
         entry["level"] = level
     if name := actor.get("name"):  # Plenty of actors are unnamed — omit rather than store a placeholder; the tag's inline name stays the fallback.
         entry["name"] = name
-    if profession and profession != "civilian":  # a civilian carries no badge — keep the registry lean.
-        entry["profession"] = profession
-    # WB `Subspecies.cacheSkins` picks the body sheet by the subspecies' `skin_id` — `warrior_6` rather than `warrior_1`. Absent means index 0, the reader's default.
-    if skin := (subspecies_by_id.get(actor.get("subspecies")) or {}).get("skin_id"):
+    if skin := (subspecies_by_id.get(actor.get("subspecies")) or {}).get("skin_id"):  # WB `Subspecies.cacheSkins` picks the body sheet; absent means index 0.
         entry["skin_id"] = skin
     if special := _special_head(actor, profession, carried):
         entry["special_head"] = special

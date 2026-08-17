@@ -3,7 +3,9 @@
     <ng-template #shareTitle>
       <img [src]="`assets/img/${s.icon}.png`" /><span>{{ s.label }}</span>
     </ng-template>
-    <nz-descriptions-item [nzTitle]="shareTitle">{{ s.value === undefined ? '—' : (s.value | compact) }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="shareTitle">
+      <span [title]="s.value === undefined ? null : (s.value | exact)">{{ s.value === undefined ? '—' : (s.value | compact) }}</span>
+    </nz-descriptions-item>
   }
   <nz-descriptions-item [nzSpan]="2" [nzTitle]="totalTitle">
     <app-ranked-stat stat="wealth" [source]="source()" />

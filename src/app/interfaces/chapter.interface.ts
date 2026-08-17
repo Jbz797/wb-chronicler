@@ -278,11 +278,11 @@ interface FavoriteMetadata {
   asset_id: string;
   city?: EntityReference;
   id: number;
+  job: string;
   kingdom?: EntityReference;
   life_stage: LifeStage;
   name: string;
   personality?: string;
-  profession: string;
   roles?: string[];
   sex: 'female' | 'male';
   tenure_years?: number;

@@ -179,29 +179,27 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "culture": (ctx["cultures_by_id"].get(actor.get("culture")) or {}).get("name"),
         "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # a ref, not a bare name: `family/info.py <id>` can be called on it
         "favorite_food": actor.get("favorite_food"),
-        "generation": int(actor.get("generation") or 1),
+        "gen": int(actor.get("generation") or 1),  # WB counts a first child 2, so a parentless founder is its 1 — a default the save omits
+        **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # Chronicler-only: WB names no house — `house/info.py <id>` takes the bare id
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
+        # Chronicler-only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks a fighter left out.
+        **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,  # Chronicler-only: land mass (geography/info.py).
+        "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": language.get("name"),
         "life_stage": life_stage(age, age_adult, lifespan),
-        # WB `isInsideSomething`, the half a save keeps: aboard, the soul neither takes a town nor walks the tile it stands on. Absent on dry land.
-        **({"transport": _transport(actor, ctx)} if is_aboard(actor) else {}),
         "mass": _compute_mass(actor, ctx),
         "name": actor.get("name"),  # absent, not a placeholder, where WB never named them — `emit` strips it and the panels drop the row
         "personality": _compute_personality(actor, snap),
-        "profession": profession,
         "religion": (ctx["religions_by_id"].get(actor.get("religion")) or {}).get("name"),
         "roles": _compute_roles(actor, save),
         "sex": sex_label(actor),
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
+        **({"transport": _transport(actor, ctx)} if is_aboard(actor) else {}),  # WB `isInsideSomething` — a save keeps the boat half, never the building
         "x": ax,
         "y": ay,
-        # Chronicler-only: the dwelling it sleeps in — WB names no house, so this id is the only handle, and `house/info.py <id>` takes it.
-        **({"home": home} if (home := actor.get("homeBuildingID")) else {}),
-        # Chronicler-only, fighters only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks one left out.
-        **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
     }
 
 
@@ -305,7 +303,7 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
             "stamina": int(actor.get("stamina") or 0),
         }
     )
-    return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and the 253 peers are only ever read by key
+    return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
 
 
 # Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.

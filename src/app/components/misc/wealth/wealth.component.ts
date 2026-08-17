@@ -2,13 +2,13 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
-import { CompactPipe } from '../../../pipes';
+import { CompactPipe, ExactPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { RankedStatComponent } from '../ranked-stat/ranked-stat.component';
 
 @Component({
   selector: 'app-wealth',
-  imports: [CompactPipe, NzDescriptionsModule, RankedStatComponent],
+  imports: [CompactPipe, ExactPipe, NzDescriptionsModule, RankedStatComponent],
   templateUrl: './wealth.component.html',
 })
 export class WealthComponent {

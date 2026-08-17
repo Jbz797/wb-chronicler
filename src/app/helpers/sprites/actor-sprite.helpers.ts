@@ -43,7 +43,7 @@ export class ActorSpriteHelpers {
     const variant = looped + 1;
 
     // Rank sheet first, then the plain civilian of that sex, then the lone `main` a flat species (most animals) ships instead.
-    const rank = this._bodySheets[actor.profession ?? ''];
+    const rank = this._bodySheets[actor.job ?? ''];
 
     const body = [rank && `${rank}_${variant}`, rank && `${rank}_1`, `${sex}_${variant}`, `${sex}_1`, 'main'].find(name => name && species?.bodies[name]);
     const pose: ActorPose | undefined = body ? species?.bodies[body] : undefined;
@@ -78,7 +78,7 @@ export class ActorSpriteHelpers {
     const key = [
       actor.asset_id,
       actor.sex,
-      actor.profession,
+      actor.job,
       actor.head,
       actor.special_head,
       actor.phenotype_index,
