@@ -39,10 +39,11 @@ from shared import (
     wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "population", "ranks", "species", "traits")
+_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "population", "ranks", "species", "taxonomy", "traits")
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # WB names both shorter than the sheet does; without these they print raw ids.
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field, the same narrow set a clan carries — old age answers to `natural`.
 _EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "population": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
+_TAXONOMY_RANKS = ("kingdom", "phylum", "class", "order", "family", "genus")  # WB's own order, broadest first — `render` keeps it, not alphabetical.
 
 
 # The stock WB mutated this one out of and the biome that shaped it — bare keys, and WB's `default_color` being no biome at all, the panel drops the row.
@@ -91,7 +92,7 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         **({"cities": len(cities)} if cities else {}),  # settlements its bearers answer from — a biology spreads wherever its carriers walk
         **({"deaths": deaths} if (deaths := int(subspecies.get("total_deaths") or 0)) else {}),
         **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the biology has been dying, which its totals alone never say
-        **({"families": len(families)} if families else {}),  # bloodlines carrying it — the axis a biology travels by: 7 bearers to a line, against 25 to a town
+        **({"families": len(families)} if families else {}),  # bloodlines carrying it — the count says whether the biology runs in one line or fans out over many
         "id": subspecies["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         "islands": sorted({iid for a in members if (iid := island_of.get((int(a["x"]), int(a["y"])))) is not None}),  # 1 = biggest — presence, not weight.
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
@@ -117,6 +118,12 @@ def _build_species(subspecies: dict, save: dict) -> dict:
 
     # Counts drop at zero like the tier's own — a beast holds no town, and the podium is computed off the whole dict, so nothing is lost by not printing it.
     return {**{key: value for key, value in own.items() if value}, "description": description, **({"ranks": ranks} if ranks else {})}
+
+
+# WB `ActorAsset.name_taxonomic_*`, lower-case in the DLL. Its `species` rank is dropped: `metadata.name` already carries it, mutated (`Banditus Nikonisum`).
+def _build_taxonomy(subspecies: dict) -> dict:
+    ranks = (load_data("species.json").get(subspecies.get("species_id")) or {}).get("taxonomy") or {}
+    return {rank: name.capitalize() for rank in _TAXONOMY_RANKS if (name := ranks.get(rank))}
 
 
 # Two libraries on one axis: `biology` what WB mutated the subspecies into, `birth` what its newborns inherit — both keyed by trait group, at any size.
@@ -250,6 +257,8 @@ def main(argv: list[str]) -> int:
         out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), _rank_getters(tallies, ctx["world_time"]))
     if "species" in sections:
         out["species"] = _build_species(subspecies, save)
+    if "taxonomy" in sections:
+        out["taxonomy"] = _build_taxonomy(subspecies)
     if "traits" in sections:
         out["traits"] = _build_traits(subspecies, detailed=requested not in (None, "full"))
     emit(out)

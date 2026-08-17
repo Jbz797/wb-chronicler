@@ -30,7 +30,7 @@ _ALERTS = {
     },
 }
 
-_CHRONICLER_ONLY = frozenset({"info", "report"})  # emitted for the chronicler alone: no panel reads either, and `report` is worded afresh on every call.
+_CHRONICLER_ONLY = frozenset({"info", "report", "taxonomy"})  # no panel reads them; `report` is reworded per call, `taxonomy` derives from `identity.species`.
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
@@ -39,7 +39,7 @@ _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
 
-# A chapter carries the values, not the way back to them, nor WB's flavour: the `info` signposts go, and `report`, whose wording WB draws afresh every time.
+# A chapter carries the values, not the way back to them nor WB's flavour — `_CHRONICLER_ONLY` names what goes, and why, at every depth of the tree.
 def _drop_chronicler_keys(node):
     if isinstance(node, dict):
         return {key: _drop_chronicler_keys(value) for key, value in node.items() if key not in _CHRONICLER_ONLY}

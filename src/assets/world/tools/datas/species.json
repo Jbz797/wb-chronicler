@@ -16,7 +16,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "myxogastria", "family": "reticulariaceae", "genus": "blobicus", "kingdom": "protista", "order": "liceales", "phylum": "amoebozoa" }
   },
   "alien": {
     "baby_form": true,
@@ -35,7 +36,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "eutardigrada", "family": "milnesiidae", "genus": "abugus", "kingdom": "animalia", "order": "apochela", "phylum": "tardigrada" }
   },
   "alpaca": {
     "baby_form": true,
@@ -53,7 +55,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "camelidae", "genus": "lama", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "angle": {
     "baby_form": true,
@@ -71,7 +74,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "geometrica", "family": "holidae", "genus": "anglo", "kingdom": "mythoria", "order": "polygones", "phylum": "mathematica" }
   },
   "ant_black": {
     "stats": {
@@ -157,7 +161,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "dasypodidae", "genus": "dasypus", "kingdom": "animalia", "order": "cingulata", "phylum": "chordata" }
   },
   "assimilator": {
     "description": "A self-replicating machine that assimilates mass to build an army",
@@ -175,7 +180,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "slowupdata", "family": "assimiladae", "genus": "assimilatus", "kingdom": "machina", "order": "noupdates", "phylum": "cybernetica" }
   },
   "bandit": {
     "baby_form": true,
@@ -192,7 +198,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "procyonidae", "genus": "banditus", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "bear": {
     "baby_form": true,
@@ -210,7 +217,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 2
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "ursidae", "genus": "ursus", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "bee": {
     "description": "Small but busy pollinators",
@@ -230,7 +238,8 @@
       "size": 0.5,
       "speed": 5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "insecta", "family": "apidae", "genus": "apis", "kingdom": "animalia", "order": "hymenoptera", "phylum": "arthropoda" }
   },
   "beetle": {
     "description": "Tiny insect",
@@ -250,7 +259,8 @@
       "size": 0.5,
       "speed": 5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "insecta", "family": "scarabaeidae", "genus": "sisyphus", "kingdom": "animalia", "order": "coleoptera", "phylum": "arthropoda" }
   },
   "bioblob": {
     "description": "A blob of shifting biological matter with eyes that stare into your soul",
@@ -267,7 +277,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "myxogastria", "family": "blobidae", "genus": "blobus", "kingdom": "protista", "order": "physarales", "phylum": "amoebozoa" }
   },
   "boat_fishing": { "stats": { "health": 100, "mass": 1000, "mass_2": 100, "scale": 0.25, "size": 1, "speed": 10 } },
   "boat_trading_acid_gentleman": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
@@ -392,7 +403,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "syncerus", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "butterfly": {
     "description": "Beautiful flying insect that likes flowers",
@@ -412,7 +424,8 @@
       "size": 0.5,
       "speed": 5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "insecta", "family": "nymphalidae", "genus": "danaus", "kingdom": "animalia", "order": "lepidoptera", "phylum": "arthropoda" }
   },
   "capybara": {
     "baby_form": true,
@@ -430,7 +443,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "caviidae", "genus": "hydrochoerus", "kingdom": "animalia", "order": "rodentia", "phylum": "chordata" }
   },
   "cat": {
     "baby_form": true,
@@ -448,7 +462,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "felidae", "genus": "felis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "chicken": {
     "baby_form": true,
@@ -466,7 +481,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "aves", "family": "phasianidae", "genus": "gallus", "kingdom": "animalia", "order": "galliformes", "phylum": "chordata" }
   },
   "civ_acid_gentleman": {
     "baby_form": true,
@@ -484,7 +500,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "myxogastria", "family": "reticulariaceae", "genus": "gentlemanus", "kingdom": "protista", "order": "liceales", "phylum": "amoebozoa" }
   },
   "civ_alpaca": {
     "baby_form": true,
@@ -502,7 +519,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "camelidae", "genus": "lama", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_armadillo": {
     "baby_form": true,
@@ -520,7 +538,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "dasypodidae", "genus": "dasypus", "kingdom": "animalia", "order": "cingulata", "phylum": "chordata" }
   },
   "civ_bear": {
     "baby_form": true,
@@ -538,7 +557,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "ursidae", "genus": "ursus", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_beetle": {
     "baby_form": true,
@@ -556,7 +576,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "insecta", "family": "scarabaeidae", "genus": "hollonus", "kingdom": "animalia", "order": "coleoptera", "phylum": "arthropoda" }
   },
   "civ_buffalo": {
     "baby_form": true,
@@ -574,7 +595,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "jecodespecus", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_candy_man": {
     "baby_form": true,
@@ -592,7 +614,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "magnoliopsida", "family": "poaceae", "genus": "zucker", "kingdom": "plantae", "order": "poales", "phylum": "tracheophyta" }
   },
   "civ_capybara": {
     "baby_form": true,
@@ -610,7 +633,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "caviidae", "genus": "mastefus", "kingdom": "animalia", "order": "rodentia", "phylum": "chordata" }
   },
   "civ_cat": {
     "baby_form": true,
@@ -628,7 +652,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "felidae", "genus": "felis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_chicken": {
     "baby_form": true,
@@ -646,7 +671,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "aves", "family": "phasianidae", "genus": "gallus", "kingdom": "animalia", "order": "galliformes", "phylum": "chordata" }
   },
   "civ_cow": {
     "baby_form": true,
@@ -664,7 +690,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "bos", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_crab": {
     "baby_form": true,
@@ -682,7 +709,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "malacostraca", "family": "portunidae", "genus": "carcinus", "kingdom": "animalia", "order": "decapoda", "phylum": "arthropoda" }
   },
   "civ_crocodile": {
     "baby_form": true,
@@ -700,7 +728,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "reptilia", "family": "crocodylidae", "genus": "crocodylus", "kingdom": "animalia", "order": "crocodilia", "phylum": "chordata" }
   },
   "civ_crystal_golem": {
     "baby_form": true,
@@ -718,7 +747,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "anthozoa", "family": "crystallidae", "genus": "bigus", "kingdom": "animalia", "order": "crystalliformes", "phylum": "cnidaria" }
   },
   "civ_dog": {
     "baby_form": true,
@@ -736,7 +766,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_fox": {
     "baby_form": true,
@@ -754,7 +785,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "vulpes", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_frog": {
     "baby_form": true,
@@ -772,7 +804,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "amphibia", "family": "ranidae", "genus": "rana", "kingdom": "animalia", "order": "anura", "phylum": "chordata" }
   },
   "civ_garlic_man": {
     "baby_form": true,
@@ -790,7 +823,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "liliopsida", "family": "amaryllidaceae", "genus": "allium", "kingdom": "plantae", "order": "asparagales", "phylum": "tracheophyta" }
   },
   "civ_goat": {
     "baby_form": true,
@@ -808,7 +842,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "capra", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_hyena": {
     "baby_form": true,
@@ -826,7 +861,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "hyaenidae", "genus": "crocuta", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_lemon_man": {
     "baby_form": true,
@@ -844,7 +880,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "magnoliopsida", "family": "rutaceae", "genus": "soursapiens", "kingdom": "plantae", "order": "sapindales", "phylum": "tracheophyta" }
   },
   "civ_liliar": {
     "baby_form": true,
@@ -862,7 +899,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "liliopsida", "family": "liliaceae", "genus": "luulia", "kingdom": "plantae", "order": "liliales", "phylum": "tracheophyta" }
   },
   "civ_monkey": {
     "baby_form": true,
@@ -880,7 +918,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "cercopithecidae", "genus": "macaca", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "civ_penguin": {
     "baby_form": true,
@@ -898,7 +937,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "aves", "family": "spheniscidae", "genus": "hugovazus", "kingdom": "animalia", "order": "sphenisciformes", "phylum": "chordata" }
   },
   "civ_piranha": {
     "baby_form": true,
@@ -916,6 +956,14 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "actinopterygii",
+      "family": "serrasalmidae",
+      "genus": "pygocentrus",
+      "kingdom": "animalia",
+      "order": "characiformes",
+      "phylum": "chordata"
     }
   },
   "civ_rabbit": {
@@ -934,7 +982,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "leporidae", "genus": "oryctolagus", "kingdom": "animalia", "order": "lagomorpha", "phylum": "chordata" }
   },
   "civ_rat": {
     "baby_form": true,
@@ -952,7 +1001,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "muridae", "genus": "rattus", "kingdom": "animalia", "order": "rodentia", "phylum": "chordata" }
   },
   "civ_rhino": {
     "baby_form": true,
@@ -970,7 +1020,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "rhinocerotidae", "genus": "rhinoceros", "kingdom": "animalia", "order": "perissodactyla", "phylum": "chordata" }
   },
   "civ_scorpion": {
     "baby_form": true,
@@ -988,7 +1039,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "arachnida", "family": "scorpionidae", "genus": "pandinus", "kingdom": "animalia", "order": "scorpiones", "phylum": "arthropoda" }
   },
   "civ_seal": {
     "baby_form": true,
@@ -1005,7 +1057,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "phocidae", "genus": "phocanavus", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_sheep": {
     "baby_form": true,
@@ -1023,7 +1076,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "ovis", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_snake": {
     "baby_form": true,
@@ -1041,7 +1095,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "reptilia", "family": "elapidae", "genus": "naja", "kingdom": "animalia", "order": "squamata", "phylum": "chordata" }
   },
   "civ_turtle": {
     "baby_form": true,
@@ -1059,7 +1114,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "reptilia", "family": "emydidae", "genus": "trachemys", "kingdom": "animalia", "order": "testudines", "phylum": "chordata" }
   },
   "civ_unicorn": {
     "baby_form": true,
@@ -1077,7 +1133,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "equidae", "genus": "pankus", "kingdom": "animalia", "order": "perissodactyla", "phylum": "chordata" }
   },
   "civ_wolf": {
     "baby_form": true,
@@ -1095,7 +1152,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "cold_one": {
     "baby_form": true,
@@ -1112,7 +1170,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "anthozoa", "family": "gelididae", "genus": "colda", "kingdom": "animalia", "order": "cryonata", "phylum": "cnidaria" }
   },
   "cow": {
     "baby_form": true,
@@ -1130,7 +1189,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "bos", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "crab": {
     "baby_form": true,
@@ -1148,7 +1208,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "malacostraca", "family": "portunidae", "genus": "carcinus", "kingdom": "animalia", "order": "decapoda", "phylum": "arthropoda" }
   },
   "crabzilla": {
     "description": "Become an enormous Crab, the destroyer of worlds",
@@ -1170,7 +1231,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "reptilia", "family": "crocodylidae", "genus": "crocodylus", "kingdom": "animalia", "order": "crocodilia", "phylum": "chordata" }
   },
   "crystal_sword": {
     "baby_form": true,
@@ -1188,7 +1250,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "anthozoa", "family": "crystallidae", "genus": "gladii", "kingdom": "animalia", "order": "crystalliformes", "phylum": "cnidaria" }
   },
   "demon": {
     "baby_form": true,
@@ -1206,7 +1269,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "daemonica", "family": "maleficidae", "genus": "daemorior", "kingdom": "mythoria", "order": "diabolus", "phylum": "infernalia" }
   },
   "dog": {
     "baby_form": true,
@@ -1225,7 +1289,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "dragon": {
     "description": "Scary flying lizard that brings destruction to your world. Fun!",
@@ -1247,6 +1312,14 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "agaricomycetes",
+      "family": "luminomagusaceae",
+      "genus": "druidus",
+      "kingdom": "fungi",
+      "order": "agaricales",
+      "phylum": "basidiomycota"
     }
   },
   "dwarf": {
@@ -1266,7 +1339,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "hominidae", "genus": "dworfus", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "elf": {
     "baby_form": true,
@@ -1285,7 +1359,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "hominidae", "genus": "elvus", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "evil_mage": {
     "baby_form": true,
@@ -1303,6 +1378,14 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "pucciniomycetes",
+      "family": "umbramagusaceae",
+      "genus": "evilmagus",
+      "kingdom": "fungi",
+      "order": "pucciniales",
+      "phylum": "basidiomycota"
     }
   },
   "fairy": {
@@ -1322,7 +1405,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "insecta", "family": "fabulidae", "genus": "faerina", "kingdom": "mythoria", "order": "diptera", "phylum": "arthropoda" }
   },
   "fire_elemental": {
     "description": "A demonic being born from flames, turning everything to ash in its path",
@@ -1339,7 +1423,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_elemental_blob": {
     "stats": {
@@ -1356,7 +1441,8 @@
       "size": 0.5,
       "speed": 3,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_elemental_horse": {
     "stats": {
@@ -1373,7 +1459,8 @@
       "size": 0.5,
       "speed": 20,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_elemental_slug": {
     "stats": {
@@ -1390,7 +1477,8 @@
       "size": 0.5,
       "speed": 2,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_elemental_snake": {
     "stats": {
@@ -1407,7 +1495,8 @@
       "size": 0.5,
       "speed": 5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_skull": {
     "description": "A demonic spirit, imprisoned within a fiery skull",
@@ -1424,7 +1513,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "daemonica", "family": "pyropidae", "genus": "gorit", "kingdom": "mythoria", "order": "skullus", "phylum": "infernalia" }
   },
   "flower_bud": {
     "baby_form": true,
@@ -1443,7 +1533,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "liliopsida", "family": "liliaceae", "genus": "ambulilium", "kingdom": "plantae", "order": "liliales", "phylum": "tracheophyta" }
   },
   "fly": {
     "description": "Tiny flying insect",
@@ -1463,7 +1554,8 @@
       "size": 0.5,
       "speed": 5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "insecta", "family": "muscidae", "genus": "musca", "kingdom": "animalia", "order": "diptera", "phylum": "arthropoda" }
   },
   "fox": {
     "baby_form": true,
@@ -1481,7 +1573,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "vulpes", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "frog": {
     "baby_form": true,
@@ -1500,7 +1593,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "amphibia", "family": "ranidae", "genus": "rana", "kingdom": "animalia", "order": "anura", "phylum": "chordata" }
   },
   "garl": {
     "baby_form": true,
@@ -1518,7 +1612,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "liliopsida", "family": "amaryllidaceae", "genus": "allium", "kingdom": "plantae", "order": "asparagales", "phylum": "tracheophyta" }
   },
   "ghost": {
     "description": "A whisper on the wind, a shadow in the corner of your eye",
@@ -1535,7 +1630,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "ectoplasmica", "family": "transparencia", "genus": "spectrum", "kingdom": "mythoria", "order": "soulus", "phylum": "otherworldlia" }
   },
   "goat": {
     "baby_form": true,
@@ -1553,7 +1649,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "capra", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "god_finger": {
     "description": "Multiplayer Simulator",
@@ -1577,7 +1674,8 @@
       "size": 0.5,
       "speed": 5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "insecta", "family": "acrididae", "genus": "omocestus", "kingdom": "animalia", "order": "orthoptera", "phylum": "arthropoda" }
   },
   "greg": {
     "description": "This is Greg",
@@ -1593,7 +1691,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "gregia", "family": "gregae", "genus": "greg", "kingdom": "gregalia", "order": "greges", "phylum": "gregata" }
   },
   "human": {
     "baby_form": true,
@@ -1612,7 +1711,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "hominidae", "genus": "homo", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "hyena": {
     "baby_form": true,
@@ -1630,7 +1730,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "hyaenidae", "genus": "crocuta", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "jumpy_skull": {
     "stats": {
@@ -1646,7 +1747,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "daemonica", "family": "hoppidae", "genus": "chere", "kingdom": "mythoria", "order": "skullus", "phylum": "infernalia" }
   },
   "lemon_snail": {
     "baby_form": true,
@@ -1663,7 +1765,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "magnoliopsida", "family": "rutaceae", "genus": "citruslimax", "kingdom": "plantae", "order": "sapindales", "phylum": "tracheophyta" }
   },
   "lil_pumpkin": {
     "description": "Always up to somethin",
@@ -1680,6 +1783,14 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "dicotyledonae",
+      "family": "cucurbitaceae",
+      "genus": "worldboxus",
+      "kingdom": "plantae",
+      "order": "cucurbitales",
+      "phylum": "angiospermae"
     }
   },
   "living_house": {
@@ -1739,7 +1850,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "cercopithecidae", "genus": "macaca", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "mush_animal": {
     "stats": {
@@ -1757,6 +1869,14 @@
       "size": 0.5,
       "speed": 10,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "sordariomycetes",
+      "family": "cordycipitaceae",
+      "genus": "cordyceps",
+      "kingdom": "fungi",
+      "order": "hypocreales",
+      "phylum": "ascomycota"
     }
   },
   "mush_unit": {
@@ -1774,6 +1894,14 @@
       "size": 0.5,
       "speed": 10,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "sordariomycetes",
+      "family": "cordycipitaceae",
+      "genus": "cordyceps",
+      "kingdom": "fungi",
+      "order": "hypocreales",
+      "phylum": "ascomycota"
     }
   },
   "necromancer": {
@@ -1792,6 +1920,14 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "pucciniomycetes",
+      "family": "umbramagusaceae",
+      "genus": "necromagus",
+      "kingdom": "fungi",
+      "order": "pucciniales",
+      "phylum": "basidiomycota"
     }
   },
   "orc": {
@@ -1811,7 +1947,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "hominidae", "genus": "orcus", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "ostrich": {
     "baby_form": true,
@@ -1829,7 +1966,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "aves", "family": "struthionidae", "genus": "struthio", "kingdom": "animalia", "order": "struthioniformes", "phylum": "chordata" }
   },
   "penguin": {
     "baby_form": true,
@@ -1847,7 +1985,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "aves", "family": "spheniscidae", "genus": "aptenodytes", "kingdom": "animalia", "order": "sphenisciformes", "phylum": "chordata" }
   },
   "piranha": {
     "baby_form": true,
@@ -1865,6 +2004,14 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "actinopterygii",
+      "family": "serrasalmidae",
+      "genus": "pygocentrus",
+      "kingdom": "animalia",
+      "order": "characiformes",
+      "phylum": "chordata"
     }
   },
   "plague_doctor": {
@@ -1882,7 +2029,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "eurotiomycetes", "family": "aspergillaceae", "genus": "antiplagus", "kingdom": "fungi", "order": "eurotiales", "phylum": "ascomycota" }
   },
   "printer": {
     "description": "Use this printer-ant that will create a brand new landscape for you with zero effort",
@@ -1919,7 +2067,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "leporidae", "genus": "oryctolagus", "kingdom": "animalia", "order": "lagomorpha", "phylum": "chordata" }
   },
   "raccoon": {
     "baby_form": true,
@@ -1937,7 +2086,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "procyonidae", "genus": "procyon", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "rat": {
     "baby_form": true,
@@ -1955,7 +2105,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "muridae", "genus": "rattus", "kingdom": "animalia", "order": "rodentia", "phylum": "chordata" }
   },
   "rhino": {
     "baby_form": true,
@@ -1973,7 +2124,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 3
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "rhinocerotidae", "genus": "rhinoceros", "kingdom": "animalia", "order": "perissodactyla", "phylum": "chordata" }
   },
   "sand_spider": {
     "description": "Creates sand and then dies",
@@ -2009,7 +2161,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "arachnida", "family": "scorpionidae", "genus": "pandinus", "kingdom": "animalia", "order": "scorpiones", "phylum": "arthropoda" }
   },
   "seal": {
     "baby_form": true,
@@ -2027,7 +2180,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "phocidae", "genus": "phoca", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "sheep": {
     "baby_form": true,
@@ -2044,7 +2198,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "ovis", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "skeleton": {
     "description": "Spooky scary skeleton that can fight",
@@ -2061,7 +2216,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "calciata", "family": "osteus", "genus": "bonelords", "kingdom": "mythoria", "order": "rattlers", "phylum": "ossiphora" }
   },
   "smore": {
     "baby_form": true,
@@ -2079,7 +2235,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "magnoliopsida", "family": "poaceae", "genus": "saccharum", "kingdom": "plantae", "order": "poales", "phylum": "tracheophyta" }
   },
   "snake": {
     "baby_form": true,
@@ -2097,7 +2254,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "reptilia", "family": "elapidae", "genus": "naja", "kingdom": "animalia", "order": "squamata", "phylum": "chordata" }
   },
   "snowman": {
     "baby_form": true,
@@ -2115,7 +2273,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "anthozoa", "family": "niveidae", "genus": "snowda", "kingdom": "animalia", "order": "cryonata", "phylum": "cnidaria" }
   },
   "tumor_monster_animal": {
     "stats": {
@@ -2131,7 +2290,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "malignomorpha", "family": "tumoridae", "genus": "neoplasmus", "kingdom": "animalia", "order": "oncovorales", "phylum": "neoplasia" }
   },
   "tumor_monster_unit": {
     "stats": {
@@ -2147,7 +2307,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "malignomorpha", "family": "tumoridae", "genus": "neoplasmus", "kingdom": "animalia", "order": "oncovorales", "phylum": "neoplasia" }
   },
   "turtle": {
     "baby_form": true,
@@ -2165,7 +2326,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "reptilia", "family": "emydidae", "genus": "trachemys", "kingdom": "animalia", "order": "testudines", "phylum": "chordata" }
   },
   "unicorn": {
     "baby_form": true,
@@ -2183,7 +2345,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "equidae", "genus": "unicornis", "kingdom": "animalia", "order": "perissodactyla", "phylum": "chordata" }
   },
   "white_mage": {
     "baby_form": true,
@@ -2201,6 +2364,14 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
+    },
+    "taxonomy": {
+      "class": "agaricomycetes",
+      "family": "luminomagusaceae",
+      "genus": "goodmagus",
+      "kingdom": "fungi",
+      "order": "agaricales",
+      "phylum": "basidiomycota"
     }
   },
   "wolf": {
@@ -2218,7 +2389,8 @@
       "scale": 0.1,
       "size": 0.5,
       "targets": 1
-    }
+    },
+    "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "worm": {
     "description": "Crawls underground and messes up the landscape",

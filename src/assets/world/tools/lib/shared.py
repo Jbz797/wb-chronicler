@@ -15,8 +15,6 @@ from functools import cache
 from pathlib import Path
 
 CACHE_DIR = Path(__file__).parent.parent / ".cache"  # holds the save and islands pickles alike; gitignored via the root `.gitignore`
-CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` — `PROFESSION_KING`/`_LEADER`/`_WARRIOR`, spelt out: they sort after this.
-EMOTION_TRAIT = "amygdala"  # WB `SubspeciesTraitLibrary`: the one trait tagged `has_emotions` — see `has_emotions`, which is the only place it should be read.
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
 EQUIPMENT_RACKS = {
@@ -43,6 +41,7 @@ ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divi
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — old entries fall off by mtime rather than piling up
+_CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` — `PROFESSION_KING`/`_LEADER`/`_WARRIOR`, spelt out: they sort after this.
 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
 _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "stone_none", "gold_none", "metal_none")
@@ -52,6 +51,7 @@ _CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Applica
 
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
+_EMOTION_TRAIT = "amygdala"  # WB `SubspeciesTraitLibrary`: the one trait tagged `has_emotions` — the sole reader, and the reason this stays private.
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
@@ -89,7 +89,7 @@ _META_REPORTS = {
 _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homeless` — the two that count heads rather than weigh hearts.
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
-_VALUE_ORDERED = frozenset({"drivers", "inventory"})  # shapes whose key order carries meaning: a store and a loyalty ledger both read heaviest-first
+_VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy"})  # shapes whose key order carries meaning: stores heaviest-first, ranks broadest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 
@@ -252,7 +252,7 @@ def besieging_kingdoms(save: dict) -> dict[int, set[int]]:
     owner = {c["id"]: c.get("kingdomID") for c in save.get("cities") or []}
     besieging: dict[int, set[int]] = {}
     for actor in save.get("actors_data") or []:
-        if actor.get("profession") not in CAPTURE_PROFESSIONS or is_aboard(actor) or not (kid := actor.get("civ_kingdom_id")):
+        if actor.get("profession") not in _CAPTURE_PROFESSIONS or is_aboard(actor) or not (kid := actor.get("civ_kingdom_id")):
             continue
         cid = zone_city.get((int(actor["x"]) // ZONE_TILES, int(actor["y"]) // ZONE_TILES))
         if cid is not None and kid in enemies.get(owner[cid], ()):
@@ -437,7 +437,7 @@ def equipment_rarity(modifiers: list[str]) -> str:
 
 # WB `Actor.hasEmotions`, which reads its biology's `has_emotions` meta tag — a single trait grants it, and without it a soul is never happy nor unhappy.
 def has_emotions(actor: dict, subspecies_by_id: dict) -> bool:
-    return EMOTION_TRAIT in ((subspecies_by_id.get(actor.get("subspecies")) or {}).get("saved_traits") or [])
+    return _EMOTION_TRAIT in ((subspecies_by_id.get(actor.get("subspecies")) or {}).get("saved_traits") or [])
 
 
 # The office-holder's own purse — a mayor's or a king's. Netted out of `subjects_money` on both tiers, and reported on its own in `metadata`.
@@ -559,7 +559,7 @@ def load_data(name: str) -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
-# Path required on purpose — a default would silently read the live save. Disk-cached on `mtime+size`: 49 ms of JSON parsing against 16 to unpickle.
+# Path required on purpose — a default would silently read the live save. Disk-cached on `mtime+size`: unpickling runs some 3× faster than parsing the JSON.
 def load_save(path: Path) -> dict:
     if not path.exists():
         print(f"no save found at {path}", file=sys.stderr)
