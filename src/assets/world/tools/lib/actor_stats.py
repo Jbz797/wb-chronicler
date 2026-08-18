@@ -346,6 +346,15 @@ def _cleanup_stats(totals: dict) -> dict:
     return dict(sorted(result.items()))
 
 
+# WB `GeneLibrary.addSpecial` puts one point on `base_stats_meta` per locus — the loose count `Subspecies.getMaxRandomMutations` returns, void loci excluded.
+def _count_mutagenic(subspecies: dict) -> int:
+    total = 0
+    for chrom in subspecies.get("saved_chromosome_data") or []:
+        void = set(chrom.get("void_loci") or [])
+        total += sum(gene == "mutagenic" and idx not in void for idx, gene in enumerate(chrom.get("loci") or []))
+    return total
+
+
 # Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's colors only depend on (gene, life_dna), and life_dna is constant per run.
 @cache
 def _gene_colors(gene: str, life_dna: int) -> dict:
@@ -643,3 +652,27 @@ def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
             }.items()
         )
     )
+
+
+# WB's own subspecies panel: the neutral block every bearer starts from, then what a `bonus_*` locus adds to that sex — `meta_stats` in the base, as WB prints them.
+def subspecies_stats(subspecies: dict, ctx: dict) -> dict:
+    base: dict = {}
+    _add_species_stats(base, subspecies.get("species_id") or "", ctx["species_data"])
+    sex_bonus = _add_chromosome_stats(base, subspecies, ctx["life_dna"])
+    _add_trait_stats(base, subspecies.get("saved_traits") or [], ctx["subspecies_traits"])
+    _normalize(base)
+    _apply_derived_stats(base)  # for `mana` alone, which the panel prints off intelligence
+    _apply_multipliers(base)
+    _normalize(base)  # no `_apply_damage_finalize`: folding `warfare / 5` into `damage` is `Actor.updateStats`, and the biology's own card shows damage raw
+    for office_stat in ("bonus_towers", "cities"):  # a crown's and a leader's caps — `compute_actor_stats` gates them on profession, and a biology holds no office
+        base.pop(office_stat, None)
+    for trait_id in subspecies.get("saved_traits") or []:  # WB `base_stats_meta`: a handful of traits grant a gestation, a food cap, a colony ceiling
+        for stat, value in ((ctx["subspecies_traits"].get(trait_id) or {}).get("meta_stats") or {}).items():
+            base[stat] = base.get(stat, 0) + value
+    if mutagenic := _count_mutagenic(subspecies):  # a biology's own reading: no `Actor` ever asks for its mutation count
+        base["mutation"] = mutagenic
+    out = {"base": _cleanup_stats(base)}
+    for sex in ("female", "male"):  # one sex or neither carries the bonus — WB never writes both, so the empty block drops
+        if cleaned := _cleanup_stats(dict(sex_bonus[sex])):
+            out[sex] = cleaned
+    return out

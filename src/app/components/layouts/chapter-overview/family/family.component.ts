@@ -6,10 +6,11 @@ import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { BreakdownComponent, RankedStatComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
+import { LeadersComponent } from '../leaders/leaders.component';
 
 @Component({
   selector: 'app-family',
-  imports: [BreakdownComponent, NzDescriptionsModule, PersonTagComponent, RankedStatComponent],
+  imports: [BreakdownComponent, LeadersComponent, NzDescriptionsModule, PersonTagComponent, RankedStatComponent],
   templateUrl: './family.component.html',
 })
 export class FamilyComponent {

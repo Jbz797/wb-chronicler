@@ -35,6 +35,7 @@ _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
 _RARITIES = ("epic", "legendary", "normal", "rare")
+_TIERS = ("city", "clan", "family", "kingdom", "subspecies")  # the favorite's bodies, unpacked in that order; each optional — WB clans under a tenth of its actors
 _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
@@ -91,8 +92,9 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
     _fold_total(kingdom, "equipment")
 
 
-# Both libraries tallied per WB trait group, the panel's one axis — which of the two a trait came from is the chronicler's business, `traits` keeping them apart.
+# Both libraries tallied per WB trait group, the panel's axis; `stats` goes too — dropped here, not in `_CHRONICLER_ONLY`, which would take the favorite's own block.
 def _fold_subspecies_detail(subspecies: dict) -> None:
+    subspecies.pop("stats", None)
     sworn = subspecies.pop("traits", None) or {}
     counts = Counter(g for lib in ("biology", "birth") if isinstance(block := sworn.get(lib), dict) for g in block.values())
     subspecies["traits"] = dict(sorted(counts.items()))
@@ -197,7 +199,7 @@ def main(argv: list[str]) -> int:
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
 
-    # Two waves rather than four calls in a row: the favorite's metadata names the city and kingdom, so those two can only start once it has landed.
+    # Two waves rather than seven calls in a row: the favorite's metadata names its five bodies, so none of those can start until it has landed.
     world, favorite = _run_together(
         (_run, "world/info.py", chapter),
         (_featured_favorite, chapter, fav_id, prev_favorite) if fav_id is not None else None,
@@ -210,15 +212,9 @@ def main(argv: list[str]) -> int:
     city = clan = family = kingdom = subspecies = None
     if favorite:
         meta = favorite.get("metadata") or {}
-        ids = {tier: (meta.get(tier) or {}).get("id") for tier in ("city", "clan", "family", "kingdom", "subspecies")}
-        city, clan, family, kingdom, subspecies = _run_together(
-            (_run, "city/info.py", ids["city"], "full", chapter) if ids["city"] else None,
-            (_run, "clan/info.py", ids["clan"], "full", chapter) if ids["clan"] else None,  # absent on most favorites — a clan is joined, not inherited
-            (_run, "family/info.py", ids["family"], "full", chapter) if ids["family"] else None,
-            (_run, "kingdom/info.py", ids["kingdom"], "full", chapter) if ids["kingdom"] else None,
-            (_run, "subspecies/info.py", ids["subspecies"], "full", chapter) if ids["subspecies"] else None,
-        )
-        # A lineage has nothing of its own to fold, hence its absence here; the three tiers that do are folded alike below, a roster never travelling.
+        calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
+        city, clan, family, kingdom, subspecies = _run_together(*calls)
+        # A lineage has nothing of its own to fold, hence its absence here; the four that do are folded alike, then every roster is cut to its headcount.
         for block, fold in ((city, _fold_city_detail), (clan, _fold_clan_detail), (kingdom, _fold_kingdom_detail), (subspecies, _fold_subspecies_detail)):
             if block:
                 fold(block)
@@ -254,7 +250,7 @@ def main(argv: list[str]) -> int:
         "world": world,
     }
 
-    # `render`, not `json.dumps(indent=2)`: same tree, a third fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong here.
+    # `render`, not `json.dumps(indent=2)`: same tree, near a quarter fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong.
     (chapter_dir / "chapter.json").write_text(render(_drop_chronicler_keys(chapter_json)) + "\n")
 
     year = int(world_time / UNITS_PER_YEAR)

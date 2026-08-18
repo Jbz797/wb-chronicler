@@ -87,6 +87,7 @@ _META_REPORTS = {
 }
 
 _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homeless` — the two that count heads rather than weigh hearts.
+_MIN_LEADERS_UNITS = 5  # below this a podium names a champion among two or three — the body is too small for any of its members to stand out
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy"})  # shapes whose key order carries meaning: stores heaviest-first, ranks broadest-first
@@ -156,8 +157,6 @@ def _leader_ref(record: dict) -> dict:
 
 # The standout souls, thirteen ways. `hungriest` skips the undead, who hold no nutrition to be low on; the four combat stats share one pass, that being the cost.
 def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of) -> dict:
-    if not actors:
-        return {}
     picks = {
         "births": _top_by(actors, lambda a: int(a.get("births") or 0)),
         "children": _top_by(actors, lambda a: children.get(a["id"], 0)),
@@ -672,8 +671,10 @@ def roster_ids(actors: list[dict], world_time: float) -> list[int]:
     return [a["id"] for a in sorted(actors, key=lambda a: (-actor_age(a, world_time), a["id"]))]
 
 
-# Who stands out among a settlement's or realm's own — its leading families and its most singular souls, `{id, name}` apiece. Both `leaders` sections share it.
+# Who stands out among a body's own — its leading lineages and its most singular souls, `{id, name}` apiece. Shared by every tier that rosters people.
 def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of) -> dict:
+    if len(actors) < _MIN_LEADERS_UNITS:
+        return {}
     return {"families": _family_leaders(actors, families_by_id), "persons": _person_leaders(actors, children, stat_of)}
 
 

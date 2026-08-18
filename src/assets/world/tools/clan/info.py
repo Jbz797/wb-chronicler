@@ -19,6 +19,7 @@ from shared import (
     actor_age,
     build_trait_ids,
     build_trait_list,
+    children_by_id,
     competition_ranks,
     emit,
     entity_age,
@@ -32,13 +33,14 @@ from shared import (
     population_breakdown,
     resolve_profession,
     roster_ids,
+    settlement_leaders,
     sex_label,
     succession_heir,
     take_chapter,
     wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "population", "ranks", "traits")
+_ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field; the clan's set is narrower than the world's and names old age `natural`.
 
 
@@ -117,7 +119,7 @@ def _build_traits(clan: dict, detailed: bool) -> dict | list[dict]:
     return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "group")}, "traits")
 
 
-# WB `Clan.getClanCulture`: the chief's culture, else the clan's `culture_id` — not `identity`'s `name_culture_id`. Lazily resolved, so half the saves hold neither.
+# WB `Clan.getClanCulture`: the chief's culture, else the clan's own `culture_id`, which WB writes lazily. The fallback has never fired — a chief always carries one.
 def _clan_culture(clan: dict, ctx: dict) -> int | None:
     chief = ctx["actors_by_id"].get(clan.get("chief_id")) or {}
     return chief.get("culture") or clan.get("culture_id")
@@ -205,6 +207,7 @@ def main(argv: list[str]) -> int:
         "actors_by_id": index_by_id(save.get("actors_data") or []),
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
+        "families_by_id": index_by_id(save.get("families") or []),
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
@@ -212,11 +215,14 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
+    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # one heavy base per biology, shared by the podium and every section after
     if "breakdown" in sections:
         # The living against the founder's `identity`, drifting harder than a lineage's — species goes, `ClanManager.newClan` seeding the roster from his bloodline.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(clan, ctx)
+    if "leaders" in sections:  # WB names no such podium — ours, and it drops below five members, where a champion among three names nobody
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:

@@ -1,5 +1,5 @@
 import { Clan } from './clan.interface';
-import { EntityReference, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
+import { EntityReference, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
 import { RarityCounts } from './stats.interface';
 import { Subspecies } from './subspecies.interface';
 import { LeaderKind, LifeStage } from './types';
@@ -58,32 +58,6 @@ export interface KingdomWar {
 
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
 export interface LeaderRow extends Omit<Leader, 'name' | 'value'> { isNew: boolean; key: LeaderKind; name: string }
-
-// The standout family and souls of a settlement or realm. Every entry is optional: `emit` drops a metric nobody scored on, so no killer means no `kills` key.
-export interface Leaders {
-  families?: {
-    deaths?: EntityReference;
-    kills?: EntityReference;
-    oldest?: EntityReference;
-    population?: EntityReference;
-    renown?: EntityReference;
-  };
-  persons?: {
-    births?: PersonReference;
-    children?: PersonReference;
-    damage?: PersonReference;
-    health?: PersonReference;
-    hungriest?: PersonReference;
-    intelligence?: PersonReference;
-    kills?: PersonReference;
-    level?: PersonReference;
-    money?: PersonReference;
-    oldest?: PersonReference;
-    renown?: PersonReference;
-    speed?: PersonReference;
-    youngest?: PersonReference;
-  };
-}
 
 // A reader destination: the static Précepte pages and, through `Chapter`, every chronicle.
 export interface Page { label: string; mdUrl: string; slug: string }
@@ -228,6 +202,7 @@ interface EquipmentStock { total: number }
 // The favourite's bloodline. A lineage, not a household — `houses` counts the roofs its members sleep under, rarely one. The roster stays chronicler-only.
 interface Family {
   breakdown: PopulationBreakdown;
+  leaders?: Leaders;
   members: MemberRoster;
   metadata: FamilyMetadata;
   population: TierPopulation;

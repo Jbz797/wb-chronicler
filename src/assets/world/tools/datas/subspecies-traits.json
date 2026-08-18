@@ -75,7 +75,13 @@
     "group": "body",
     "name": "Bad Genes"
   },
-  "big_stomach": { "description": "These species have a huge appetite", "flavor": "The void within must be fed", "group": "body", "name": "Big Stomach" },
+  "big_stomach": {
+    "description": "These species have a huge appetite",
+    "flavor": "The void within must be fed",
+    "group": "body",
+    "meta_stats": { "max_nutrition": 100 },
+    "name": "Big Stomach"
+  },
   "bioluminescence": {
     "description": "Body naturally generates light",
     "flavor": "They wear stars within",
@@ -249,28 +255,78 @@
     "group": "mind",
     "name": "Dreamweavers"
   },
-  "egg_bubble": { "description": "Delicate, translucent eggs", "flavor": "Nature's most fragile packaging", "group": "eggs", "name": "Bubble" },
+  "egg_bubble": {
+    "description": "Delicate, translucent eggs",
+    "flavor": "Nature's most fragile packaging",
+    "group": "eggs",
+    "meta_stats": { "maturation": 1 },
+    "name": "Bubble"
+  },
   "egg_candy": {
     "description": "Eggs that look and taste like candy",
     "flavor": "Sweet on the outside, full of surprises inside",
     "group": "eggs",
+    "meta_stats": { "maturation": 3 },
     "name": "Candy"
   },
-  "egg_cocoon": { "description": "Eggs that look like a cocoon", "flavor": "Secrets spin their own shells", "group": "eggs", "name": "Cocoon" },
+  "egg_cocoon": {
+    "description": "Eggs that look like a cocoon",
+    "flavor": "Secrets spin their own shells",
+    "group": "eggs",
+    "meta_stats": { "maturation": 6 },
+    "name": "Cocoon"
+  },
   "egg_colored": {
     "description": "Eggs that take phenotype color of these creatures",
     "flavor": "Genetics shows its work early",
     "group": "eggs",
+    "meta_stats": { "maturation": 3 },
     "name": "Colored"
   },
-  "egg_face": { "description": "Eggs in a form of a weird face", "flavor": "Their eggs stare back at you", "group": "eggs", "name": "Face" },
-  "egg_flames": { "description": "Eggs surrounded by flames", "flavor": "Fire remembers its children", "group": "eggs", "name": "Flames" },
-  "egg_ice": { "description": "Eggs made out of ice", "flavor": "Life sleeps in frozen dreams", "group": "eggs", "name": "Ice" },
-  "egg_orb": { "description": "Eggs shaped like mysterious orbs", "flavor": "Tomorrow comes in perfect spheres", "group": "eggs", "name": "Orb" },
-  "egg_rainbow": { "description": "Eggs with a rainbow pattern", "flavor": "All colors lead to life", "group": "eggs", "name": "Rainbow" },
-  "egg_roe": { "description": "Eggs in a shape of roe", "flavor": "Ready to spawn the future", "group": "eggs", "name": "Roe" },
-  "egg_shell_plain": { "description": "Eggs with a plain shell", "flavor": "Simple vessels hide complex futures", "group": "eggs", "name": "Plain Shell" },
-  "egg_shell_spotted": { "description": "Eggs with a spotted shell", "flavor": "Every spot tells a different story", "group": "eggs", "name": "Spotted Shell" },
+  "egg_face": {
+    "description": "Eggs in a form of a weird face",
+    "flavor": "Their eggs stare back at you",
+    "group": "eggs",
+    "meta_stats": { "maturation": 5 },
+    "name": "Face"
+  },
+  "egg_flames": {
+    "description": "Eggs surrounded by flames",
+    "flavor": "Fire remembers its children",
+    "group": "eggs",
+    "meta_stats": { "maturation": 6 },
+    "name": "Flames"
+  },
+  "egg_ice": { "description": "Eggs made out of ice", "flavor": "Life sleeps in frozen dreams", "group": "eggs", "meta_stats": { "maturation": 8 }, "name": "Ice" },
+  "egg_orb": {
+    "description": "Eggs shaped like mysterious orbs",
+    "flavor": "Tomorrow comes in perfect spheres",
+    "group": "eggs",
+    "meta_stats": { "maturation": 6 },
+    "name": "Orb"
+  },
+  "egg_rainbow": {
+    "description": "Eggs with a rainbow pattern",
+    "flavor": "All colors lead to life",
+    "group": "eggs",
+    "meta_stats": { "maturation": 3 },
+    "name": "Rainbow"
+  },
+  "egg_roe": { "description": "Eggs in a shape of roe", "flavor": "Ready to spawn the future", "group": "eggs", "meta_stats": { "maturation": 3 }, "name": "Roe" },
+  "egg_shell_plain": {
+    "description": "Eggs with a plain shell",
+    "flavor": "Simple vessels hide complex futures",
+    "group": "eggs",
+    "meta_stats": { "maturation": 3 },
+    "name": "Plain Shell"
+  },
+  "egg_shell_spotted": {
+    "description": "Eggs with a spotted shell",
+    "flavor": "Every spot tells a different story",
+    "group": "eggs",
+    "meta_stats": { "maturation": 3 },
+    "name": "Spotted Shell"
+  },
   "energy_preserver": {
     "description": "Preserves energy during rest periods",
     "flavor": "Dreams substitute sustenance",
@@ -291,7 +347,13 @@
     "name": "Exoskeleton",
     "stats": { "armor": 10 }
   },
-  "fast_builders": { "description": "Masters of efficient construction techniques", "flavor": "They nailed it!", "group": "mind", "name": "Fast Builders" },
+  "fast_builders": {
+    "description": "Masters of efficient construction techniques",
+    "flavor": "They nailed it!",
+    "group": "mind",
+    "meta_stats": { "construction_speed": 2 },
+    "name": "Fast Builders"
+  },
   "fenix_born": {
     "description": "Can rise from their own ashes after death, reborn anew",
     "flavor": "Death is more of a power nap",
@@ -333,30 +395,35 @@
     "description": "Has an extraordinarily prolonged gestation period!",
     "flavor": "Like crystal people!",
     "group": "gestation",
+    "meta_stats": { "maturation": 50 },
     "name": "Extremely Long Gestation"
   },
   "gestation_long": {
     "description": "Has longer developmental periods before birth!",
     "flavor": "Similar to humans, with gestation lasting about 3 trimesters",
     "group": "gestation",
+    "meta_stats": { "maturation": 9 },
     "name": "Long Gestation"
   },
   "gestation_moderate": {
     "description": "Gestation period spans a few months",
     "flavor": "Like cats, dogs and sheep - typically ranging a few months",
     "group": "gestation",
+    "meta_stats": { "maturation": 4 },
     "name": "Moderate Gestation"
   },
   "gestation_short": {
     "description": "Has a rapid reproductive cycle",
     "flavor": "Just like rabbits - but also rabbits",
     "group": "gestation",
+    "meta_stats": { "maturation": 2 },
     "name": "Short Gestation"
   },
   "gestation_very_long": {
     "description": "Gestation period spans multiple years",
     "flavor": "Like elephants, which can last up to 22 months",
     "group": "gestation",
+    "meta_stats": { "maturation": 20 },
     "name": "Very Long Gestation"
   },
   "gift_of_air": {
@@ -407,6 +474,7 @@
     "description": "Can throw items from long distances",
     "flavor": "'Fragile' is just a challenge",
     "group": "body",
+    "meta_stats": { "throwing_range": 6 },
     "name": "Good Throwers",
     "stats": { "throwing_range": 6 }
   },
@@ -577,25 +645,35 @@
     "description": "Population is limited to 3,000 members",
     "flavor": "When many become mighty",
     "group": "harmony",
+    "meta_stats": { "limit_population": 3000 },
     "name": "Expansive Population"
   },
-  "population_large": { "description": "Population is limited to 1,000 members", "flavor": "Power has its limits", "group": "harmony", "name": "Large Population" },
+  "population_large": {
+    "description": "Population is limited to 1,000 members",
+    "flavor": "Power has its limits",
+    "group": "harmony",
+    "meta_stats": { "limit_population": 1000 },
+    "name": "Large Population"
+  },
   "population_minimal": {
     "description": "Population is limited to 50 members",
     "flavor": "When few must mean everything",
     "group": "harmony",
+    "meta_stats": { "limit_population": 50 },
     "name": "Minimal Population"
   },
   "population_moderate": {
     "description": "Population is limited to 500 members",
     "flavor": "Neither too many, nor too few",
     "group": "harmony",
+    "meta_stats": { "limit_population": 500 },
     "name": "Moderate Population"
   },
   "population_small": {
     "description": "Population is limited to 100 members",
     "flavor": "Small numbers hide greater strength",
     "group": "harmony",
+    "meta_stats": { "limit_population": 100 },
     "name": "Small Population"
   },
   "prefrontal_cortex": {
@@ -683,6 +761,7 @@
     "description": "Creatures will lay eggs, from which their babies will hatch",
     "flavor": "Beginning starts with breaking free",
     "group": "reproduction_strategy",
+    "meta_stats": { "maturation": 1 },
     "name": "Oviparity",
     "tags": ["oviparity"]
   },
@@ -690,6 +769,7 @@
     "description": "Babies mature within the momma, emerging ready for life!",
     "flavor": "Life flows from heart to heart",
     "group": "reproduction_strategy",
+    "meta_stats": { "maturation": 1 },
     "name": "Viviparity",
     "tags": ["viviparity"]
   },
@@ -697,11 +777,18 @@
     "description": "Reproduces by breaking into multiple creatures after creature becomes an older adult",
     "flavor": "Like garlic and... garlic people!",
     "group": "reproductive_methods",
+    "meta_stats": { "maturation": 12 },
     "name": "Vegetative Reproduction",
     "tags": ["reproduction_asexual"]
   },
   "shiny_love": { "description": "They have a tendency to steal things", "flavor": "Magpies would be proud", "group": "chaos", "name": "Shiny Love" },
-  "slow_builders": { "description": "Takes their time to ensure every detail is perfect", "flavor": "Let them cook", "group": "mind", "name": "Slow Builders" },
+  "slow_builders": {
+    "description": "Takes their time to ensure every detail is perfect",
+    "flavor": "Let them cook",
+    "group": "mind",
+    "meta_stats": { "construction_speed": -1 },
+    "name": "Slow Builders"
+  },
   "spicy_kids": {
     "description": "When babies are produced, there is a chance to start a fire",
     "flavor": "Baby's first arson",
@@ -730,7 +817,13 @@
   "unmoving": { "description": "Unable to move", "flavor": "Time moves, they don't", "group": "body", "name": "Unmoving", "tags": ["immovable"] },
   "unstable_genome": { "description": "Their genes keep shifting", "flavor": "Evolution never sleeps", "group": "chaos", "name": "Unstable Genome" },
   "uplifted": { "description": "Marked by the Monolith", "flavor": "Now they can think, but can they think of a way out?", "group": "special", "name": "Uplifted" },
-  "voracious": { "description": "They get hungry very fast", "flavor": "Always munching on something", "group": "body", "name": "Voracious" },
+  "voracious": {
+    "description": "They get hungry very fast",
+    "flavor": "Always munching on something",
+    "group": "body",
+    "meta_stats": { "metabolic_rate": 10 },
+    "name": "Voracious"
+  },
   "wernicke_area": {
     "description": "This species can learn and use languages",
     "flavor": "Their minds shape sound into sense",

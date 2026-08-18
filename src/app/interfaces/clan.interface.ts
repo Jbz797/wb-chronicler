@@ -1,9 +1,10 @@
-import { MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
+import { Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
 import { TraitGroupCounts } from './types';
 
 // The favourite's clan. Joined, not inherited — so unlike its `Family`, its members share colours rather than blood, and its `traits` are sworn to.
 export interface Clan {
   breakdown: PopulationBreakdown;
+  leaders?: Leaders;
   members: MemberRoster;
   metadata: ClanMetadata;
   population: TierPopulation;

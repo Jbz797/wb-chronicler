@@ -3,6 +3,32 @@
 // A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
 export interface EntityReference { id: number; name: string }
 
+// The standout lineage and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
+export interface Leaders {
+  families?: {
+    deaths?: EntityReference;
+    kills?: EntityReference;
+    oldest?: EntityReference;
+    population?: EntityReference;
+    renown?: EntityReference;
+  };
+  persons?: {
+    births?: PersonReference;
+    children?: PersonReference;
+    damage?: PersonReference;
+    health?: PersonReference;
+    hungriest?: PersonReference;
+    intelligence?: PersonReference;
+    kills?: PersonReference;
+    level?: PersonReference;
+    money?: PersonReference;
+    oldest?: PersonReference;
+    renown?: PersonReference;
+    speed?: PersonReference;
+    youngest?: PersonReference;
+  };
+}
+
 // The living of a clan, a lineage or a biology, counted and nothing more — the roster stays behind in `<tier>/info.py <id> members`, where the chronicler reads it.
 export interface MemberRoster { total: number }
 

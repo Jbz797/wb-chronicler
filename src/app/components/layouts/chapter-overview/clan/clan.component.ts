@@ -6,10 +6,11 @@ import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { BreakdownComponent, RankedStatComponent, TraitGroupsComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
+import { LeadersComponent } from '../leaders/leaders.component';
 
 @Component({
   selector: 'app-clan',
-  imports: [BreakdownComponent, NzDescriptionsModule, PersonTagComponent, RankedStatComponent, TraitGroupsComponent],
+  imports: [BreakdownComponent, LeadersComponent, NzDescriptionsModule, PersonTagComponent, RankedStatComponent, TraitGroupsComponent],
   templateUrl: './clan.component.html',
 })
 export class ClanComponent {

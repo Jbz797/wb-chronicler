@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, meta_ratios, population_of
+from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of, subspecies_stats
 from islands import compute_islands_cached
 from shared import (
     NON_FOOD_SPECIES,
@@ -20,6 +20,7 @@ from shared import (
     actor_age,
     build_trait_ids,
     build_trait_list,
+    children_by_id,
     competition_ranks,
     emit,
     entity_age,
@@ -34,12 +35,13 @@ from shared import (
     population_breakdown,
     resolve_profession,
     roster_ids,
+    settlement_leaders,
     sex_label,
     take_chapter,
     wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "population", "ranks", "species", "taxonomy", "traits")
+_ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "species", "stats", "taxonomy", "traits")
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # WB names both shorter than the sheet does; without these they print raw ids.
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field, the same narrow set a clan carries — old age answers to `natural`.
 _EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "population": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
@@ -238,15 +240,17 @@ def main(argv: list[str]) -> int:
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "religions_by_id": index_by_id(save.get("religions") or []),
         "subspecies_by_id": subspecies_by_id,  # the index the id was checked against, so the context's own copy never takes over
-        "tallies": tallies,  # the one actor pass, handed whole — the podium reads all three, every other section walking `members` itself
     }
 
     out: dict = {}
+    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # one heavy base per biology, shared by the podium and every section after
     if "breakdown" in sections:
         # The living against the biology they were born into. Species and subspecies both go: WB fixes them at birth, so each would read 100 % and say nothing.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k not in ("species", "subspecies")}
     if "identity" in sections:
         out["identity"] = _build_identity(subspecies)
+    if "leaders" in sections:  # WB names no such podium — ours, and it drops below five members, where a champion among three names nobody
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
@@ -257,6 +261,8 @@ def main(argv: list[str]) -> int:
         out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), _rank_getters(tallies, ctx["world_time"]))
     if "species" in sections:
         out["species"] = _build_species(subspecies, save)
+    if "stats" in sections:
+        out["stats"] = subspecies_stats(subspecies, ctx)
     if "taxonomy" in sections:
         out["taxonomy"] = _build_taxonomy(subspecies)
     if "traits" in sections:

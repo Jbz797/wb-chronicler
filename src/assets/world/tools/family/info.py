@@ -9,12 +9,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, meta_ratios, population_of
+from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
 from shared import (
     NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
     SATED_MIN_NUTRITION,
     actor_age,
+    children_by_id,
     competition_ranks,
     emit,
     entity_age,
@@ -27,15 +28,16 @@ from shared import (
     population_breakdown,
     resolve_profession,
     roster_ids,
+    settlement_leaders,
     sex_label,
     take_chapter,
     wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "members", "metadata", "population", "ranks")
+_ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks")
 
 
-# Chronicler-only: what the lineage officially is, stamped at its founding — not what its living carry, which drifts (77 % share a culture, 94 % a subspecies).
+# Chronicler-only: what the lineage was stamped as at its founding, not what its living carry — which drifts little: 87 % share the culture, 97 % the biology.
 def _build_identity(family: dict, ctx: dict) -> dict:
     return {
         "culture": entity_ref(family.get("name_culture_id"), ctx["cultures_by_id"]),  # the culture that minted the name, not the members' own
@@ -80,7 +82,7 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
         "founders": founders,
         "founding_city": entity_ref(family.get("founder_city_id"), ctx["cities_by_id"]),
         "founding_kingdom": entity_ref(family.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
-        **({"houses": len(houses)} if (houses := tallies["houses"].get(family_id)) else {}),  # roofs they sleep under: most lineages scatter over three or four
+        **({"houses": len(houses)} if (houses := tallies["houses"].get(family_id)) else {}),  # roofs they sleep under: two or three for most
         "id": family["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         **({"kills": kills} if (kills := int(family.get("total_kills") or 0)) else {}),
         "name": family.get("name"),
@@ -176,11 +178,15 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
+    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # one heavy base per biology, shared by the podium and every section after
     if "breakdown" in sections:
-        # The living against the `identity` stamped at founding — one in five is culturally split. Species goes (WB inherits it: always 100 %), subspecies drifts.
+        # The living against the `identity` stamped at founding — one in eight is culturally split. Species goes (WB inherits it: always 100 %), subspecies drifts.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(family, ctx)
+    if "leaders" in sections:  # its own lineage would win every family row, so only the souls stand — and the podium drops below five, naming nobody among three
+        podium = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+        out["leaders"] = {key: value for key, value in podium.items() if key != "families"}
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:

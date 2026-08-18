@@ -7,10 +7,11 @@ import { RankedStatKind } from '../../../../interfaces';
 import { SpeciesNamePipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { BreakdownComponent, RankedStatComponent, TraitGroupsComponent } from '../../../misc';
+import { LeadersComponent } from '../leaders/leaders.component';
 
 @Component({
   selector: 'app-subspecies',
-  imports: [BreakdownComponent, NzDescriptionsModule, RankedStatComponent, SpeciesNamePipe, TraitGroupsComponent],
+  imports: [BreakdownComponent, LeadersComponent, NzDescriptionsModule, RankedStatComponent, SpeciesNamePipe, TraitGroupsComponent],
   templateUrl: './subspecies.component.html',
 })
 export class SubspeciesComponent {

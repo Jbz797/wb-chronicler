@@ -1,4 +1,4 @@
-import { MemberRoster, PopulationBreakdown, TierPopulation } from './entity.interface';
+import { Leaders, MemberRoster, PopulationBreakdown, TierPopulation } from './entity.interface';
 import { TraitGroupCounts } from './types';
 
 // The stock's standing among the world's species — flat counts beside its own podium, as a realm's `alliance` carries its two.
@@ -20,6 +20,7 @@ export interface SpeciesTotals {
 export interface Subspecies {
   breakdown: PopulationBreakdown;
   identity: SubspeciesIdentity;
+  leaders?: Leaders;
   members: MemberRoster;
   metadata: SubspeciesMetadata;
   population: TierPopulation;
