@@ -4,7 +4,6 @@
 import json
 import os
 import pickle
-import random
 import re
 import sys
 import zlib
@@ -579,6 +578,8 @@ def load_save(path: Path) -> dict:
 
 # WB `MetaTextReportHelper.getText`: what a body says of itself — every verdict of its own list that holds, joined in that order. `None` where none does, as in game.
 def meta_report(kind: str, state: dict) -> str | None:
+    import random  # deferred: 3.3 ms of import time for one `choice`, and every tool would pay it at startup where only a few tiers ever report
+
     phrases = load_data("meta-reports.json")  # one of five phrasings per verdict, drawn as WB draws it — the wording never reaches a chapter, so it need not settle
     said = [random.choice(wordings) for report in _META_REPORTS[kind] if _META_CONDITIONS[report](state) and (wordings := phrases.get(report))]
     return " ".join(said) or None
@@ -594,11 +595,12 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...]) -> tuple[str,
     return requested
 
 
-# Top-3 shares per dimension over civ `actors` (% of the group); `species` also carries its `asset_id`. Needs the four `*_by_id` indexes in `ctx`.
+# Top-3 shares per dimension over civ `actors` (% of the group); `species` also carries its `asset_id`. Needs the five `*_by_id` indexes in `ctx`.
 def population_breakdown(actors: list[dict], ctx: dict) -> dict:
-    species, cultures, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter()
-    # Hoisted out of the loop below: written inline, this literal would rebuild four tuples for every actor.
-    optional = ((cultures, "culture"), (languages, "language"), (religions, "religion"), (subspecies, "subspecies"))
+    species, cultures, kingdoms, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter(), Counter()
+
+    # Hoisted out of the loop below: written inline, this literal would rebuild five tuples for every actor.
+    optional = ((cultures, "culture"), (kingdoms, "civ_kingdom_id"), (languages, "language"), (religions, "religion"), (subspecies, "subspecies"))
     for a in actors:
         species[a.get("asset_id")] += 1
         for counter, field in optional:
@@ -606,7 +608,7 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
                 counter[v] += 1
     pop = len(actors)
 
-    # `identified` carries the key out as an `id`, which only the subspecies needs — it alone among the four has a tag to resolve and a script to query.
+    # `identified` carries the key out as an `id`, needed by the three dimensions with a tag to resolve and a script to query — the two without stay a name.
     def top3(counter: Counter, names: dict, identified: bool = False) -> list[dict]:
         return [
             {**({"id": k} if identified else {}), "name": (names.get(k) or {}).get("name"), "pct": pct}
@@ -615,7 +617,8 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
         ]
 
     return {
-        "cultures": top3(cultures, ctx["cultures_by_id"]),
+        "cultures": top3(cultures, ctx["cultures_by_id"], identified=True),
+        "kingdoms": top3(kingdoms, ctx["kingdoms_by_id"], identified=True),
         "languages": top3(languages, ctx["languages_by_id"]),
         "religions": top3(religions, ctx["religions_by_id"]),
         "species": [  # the `asset_id` alone, which the UI translates; the other three carry a world-generated name no table could hold.

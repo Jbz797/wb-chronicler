@@ -2,7 +2,8 @@ import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
 import {
-  CITY_REGISTRY, CLAN_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS, SUBSPECIES_REGISTRY,
+  BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS,
+  SUBSPECIES_REGISTRY,
 } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
@@ -11,9 +12,16 @@ import { SubspeciesSpriteHelpers } from './sprites/subspecies-sprite.helpers';
 
 export class MarkedHelpers {
 
-  // The four markers a registry resolves, hence an id that is a number — `[r]`/`[s]` name their asset instead.
+  // The markers a registry resolves, hence an id that is a number — `[r]`/`[s]` name their asset instead.
   private static readonly _numericIdMarkers = new Set<InlineMarker>([
-    INLINE_MARKER.City, INLINE_MARKER.Clan, INLINE_MARKER.Family, INLINE_MARKER.Kingdom, INLINE_MARKER.Person, INLINE_MARKER.Subspecies,
+    INLINE_MARKER.Book,
+    INLINE_MARKER.City,
+    INLINE_MARKER.Clan,
+    INLINE_MARKER.Culture,
+    INLINE_MARKER.Family,
+    INLINE_MARKER.Kingdom,
+    INLINE_MARKER.Person,
+    INLINE_MARKER.Subspecies,
   ]);
 
   // Inline icon codes — each one a `[<letter> <id> <name>]` marker handled by its own renderer.
@@ -21,8 +29,10 @@ export class MarkedHelpers {
     marked.use(gfmHeadingId());
     marked.use({
       extensions: [
+        this._extension(INLINE_MARKER.Book, 'books', false, this._renderBook), // `[b <id> <title>]` = book (its board + title in its genre's hue + readings).
         this._extension(INLINE_MARKER.City, 'cities', false, this._renderCity), // `[c <id> <name>]` = city (glyph + name, in its kingdom's palette).
         this._extension(INLINE_MARKER.Clan, 'clans', false, this._renderClan), // `[l <id> <name>]` = clan (name in its own hue + headcount).
+        this._extension(INLINE_MARKER.Culture, 'cultures', false, this._renderCulture), // `[t <id> <name>]` = culture (emblem + name + followers).
         this._extension(INLINE_MARKER.Family, 'families', false, this._renderFamily), // `[f <id> <name>]` = family (WB's picture frame + name).
         this._extension(INLINE_MARKER.Kingdom, 'kingdoms', false, this._renderKingdom), // `[k <id> <name>]` = kingdom (colored name + banner icon).
         this._extension(INLINE_MARKER.Person, 'persons', false, this._renderPerson), // `[p <id> <name>]` = person (portrait + name + sex icon + charge).
@@ -68,6 +78,21 @@ export class MarkedHelpers {
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };
 
+  // A book plate: its own board, the title in its genre's hue, the readings badged — a volume answers to no crown and no stock, so it wears neither palette nor pip.
+  private static _renderBook(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = BOOK_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+
+    const board = `<canvas class="board" data-book="${id}" height="0" width="0"></canvas>`; // `BookSpriteHelpers.paintAll` composes it once rendered
+
+    const dead = info?.dead ? ' dead' : ''; // burnt since this chapter → drained + struck-through
+    const reads = info?.reads ? `<span class="tag-badge">${info.reads}</span>` : ''; // times opened, dropped while nobody has
+    const label = `<span class="entity-name">${name}</span>`;
+
+    return `<span class="ant-tag entity-tag book-tag${dead}" style="--tag-color: ${info?.color}">${board}${label}${reads}</span>`;
+  }
+
   // A settlement plate: WB's own slab as the ground, name, podium medal, size medallion, species glyph — the gold studs alone marking a seat.
   private static _renderCity(this: ParserThis, token: Tokens.Generic): string {
     const { id, tokens: children } = token as IconToken;
@@ -100,6 +125,23 @@ export class MarkedHelpers {
     const label = `<span class="entity-name">${name}</span>`;
 
     return `<span class="ant-tag entity-tag clan-tag${dead}" style="--tag-color: ${info?.color}">${banner}${label}${members}${species}</span>`;
+  }
+
+  // A culture plate: WB's own stone frame, its emblem, its hue and the living it is caught by. Raised into rather than granted, so it borrows no crown's palette.
+  private static _renderCulture(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = CULTURE_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+
+    const emblem = `<canvas class="banner" data-culture="${id}" height="0" width="0"></canvas>`; // `CultureSpriteHelpers.paintAll` composes it once rendered
+
+    const dead = info?.dead ? ' dead' : ''; // custom lost with its last follower → drained + struck-through
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by followers, the one axis a culture is ranked on
+    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // living followers, as the clan plate badges its own
+    const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const label = `<span class="entity-name">${name}</span>`;
+
+    return `<span class="ant-tag entity-tag culture-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${members}${species}</span>`;
   }
 
   // A lineage wears no crown's hue, so its tag is the frame alone on a plain ground — nothing to resolve but the sprite.
@@ -150,15 +192,14 @@ export class MarkedHelpers {
     const color = PaletteHelpers.realmText(info.kingdom); // their realm's own name hue — a subject reads as belonging to that crown
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
-    const job = info.job ? `<img src="assets/img/professions/${info.job}.png" />` : '';
+    const job = info.job ? `<img src="assets/img/professions/${info.job}.png" />` : ''; // the dead keep theirs — the drained plate already says they are gone
     const level = info.level ? `<span class="tag-badge">${info.level}</span>` : ''; // only once earned — Python omits the level-1 crowd
     const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
 
-    const badge = info.dead ? '<img src="assets/img/world/deaths.png" />' : job;
     const hue = PaletteHelpers.realmRing(info.kingdom); // their crown's emblem tint, framing the plate exactly as it frames the crown's own tag
     const style = `--tag-color: ${color}${hue ? `; --tag-ring: ${hue}` : ''}`;
 
-    return `<span class="ant-tag entity-tag${dead}" style="${style}">${portrait}${label}${level}${sex}${badge}</span>`;
+    return `<span class="ant-tag entity-tag${dead}" style="${style}">${portrait}${label}${level}${sex}${job}</span>`;
   }
 
   // Resource: icon + optional inline text, never coloured.

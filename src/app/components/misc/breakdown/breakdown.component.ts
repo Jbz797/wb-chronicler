@@ -4,18 +4,19 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { SpeciesNamePipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
-import { SubspeciesTagComponent } from '../../tags';
+import { CultureTagComponent, KingdomTagComponent, SubspeciesTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-breakdown',
-  imports: [NzDescriptionsModule, SpeciesNamePipe, SubspeciesTagComponent],
+  imports: [CultureTagComponent, KingdomTagComponent, NzDescriptionsModule, SpeciesNamePipe, SubspeciesTagComponent],
   templateUrl: './breakdown.component.html',
+  styleUrl: './breakdown.component.scss',
 })
 export class BreakdownComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
 
-  public readonly source = input.required<'city' | 'clan' | 'family' | 'kingdom' | 'subspecies'>();
+  public readonly source = input.required<'city' | 'clan' | 'culture' | 'family' | 'kingdom' | 'subspecies'>();
 
   protected readonly breakdown = computed(() => this._chronicler.currentChapter()?.meta[this.source()]?.breakdown ?? null);
   // The most-represented entry of each dimension — the table shows the leader, the chronicler keeps the full top-3. `null` for a dimension with no data.
@@ -23,6 +24,7 @@ export class BreakdownComponent {
     const b = this.breakdown();
     return {
       culture: b?.cultures?.[0] ?? null,
+      kingdom: b?.kingdoms?.[0] ?? null,
       language: b?.languages?.[0] ?? null,
       religion: b?.religions?.[0] ?? null,
       species: b?.species?.[0] ?? null, // a lineage carries none — it would only restate the species its `identity` already stamps

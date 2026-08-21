@@ -1,0 +1,12 @@
+.share {
+  margin-left: 2px;
+  position: relative;
+  top: 0.5px;
+}
+
+// Nudged down only where it trails a tag: the plate stands taller than the line, so the bullet has to drop to meet its midline. After plain text the baselines already agree.
+app-culture-tag + .share,
+app-kingdom-tag + .share,
+app-subspecies-tag + .share {
+  top: 2px;
+}

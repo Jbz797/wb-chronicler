@@ -1,5 +1,8 @@
 // The two shapes every tier shares: a tag's id+name pointer, and the culture/language/religion/species mix of any population.
 
+// A library counted, on a town's shelves or under a culture's name. Only the total reaches the UI — each volume ships in the `books` section, for the chronicler.
+export interface BookShelf { total: number }
+
 // A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
 export interface EntityReference { id: number; name: string }
 
@@ -45,11 +48,12 @@ export interface PersonReference { id: number; name?: string }
 
 // Top-3 shares of a civ population per dimension (% of the whole). All optional: a tier drops the dimension it is defined by, which would read 100 %.
 export interface PopulationBreakdown {
-  cultures?: { name: string; pct: number }[];
+  cultures?: { id: number; name: string; pct: number }[];
+  kingdoms?: { id: number; name: string; pct: number }[]; // absent on a realm, which would restate itself at 100 % — present on an alliance, which spans several
   languages?: { name: string; pct: number }[];
   religions?: { name: string; pct: number }[];
   species?: { asset_id: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
-  subspecies?: { id: number; name: string; pct: number }[]; // the one dimension carrying an id: it alone has a `[u]` tag to resolve against the registry
+  subspecies?: { id: number; name: string; pct: number }[]; // culture, kingdom and this one carry an id: they alone have a tag to resolve against the registry
 }
 
 // What the living of a body say of it — the settlement block less granary, head and `total`. Only the afflictions drop at zero, a share of zero being a reading.

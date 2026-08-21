@@ -156,6 +156,33 @@ canvas {
       }
     }
 
+    // A volume hangs from nothing: WB draws it no nameplate, so it keeps the black plate every tag falls back on, and its board stands proud of the top edge.
+    &.book-tag {
+      .board {
+        max-height: 22px;
+        top: -3px;
+      }
+    }
+
+    // WB's culture nameplate (`nameplate_culture`), 35×23, symmetric — a stone frame with a golden fringe at each end, sliced 3 ways so only the plain columns run.
+    &.culture-tag {
+      background-color: transparent;
+      border: 0 solid transparent;
+      border-image: url('/assets/img/nameplates/culture.png') 0 6 fill / 0 6px / 0 stretch;
+
+      // Wider than the image's 6px rails: the fringe hangs past the frame, so the content starts where the inner stone does.
+      border-width: 0 9px;
+      box-shadow: none;
+      padding: 0;
+
+      // Seated inside the frame rather than planted through it — the stone closes over both ends, so an overhang would break them.
+      .banner {
+        margin-left: -0.5px; // the rails are cut for type, and the emblem is art: it may ride onto the fringe where a letter could not
+        max-height: 22px;
+        top: 0;
+      }
+    }
+
     // A biology is written on stone, not hung from a crown: WB gives it one of twelve slabs, 9-sliced with its ragged corners at native scale, ground and all.
     &.subspecies-tag {
       background-color: transparent;
@@ -220,8 +247,9 @@ canvas {
     }
   }
 
-  // One disc for the three that count people — a lineage, a clan, a biology; last on purpose, as it ties the pill above and only source order then wins.
+  // One disc for the four that count people — a lineage, a clan, a culture, a biology; last on purpose, as it ties the pill above and only source order then wins.
   &.clan-tag .tag-badge,
+  &.culture-tag .tag-badge,
   &.family-tag .tag-badge,
   &.subspecies-tag .tag-badge {
     border-radius: 50%;

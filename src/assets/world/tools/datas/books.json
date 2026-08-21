@@ -1,14 +1,126 @@
 {
-  "bad_story_about_king": { "experience": 10, "happiness": -10 },
-  "biology_book": { "experience": 30, "happiness": 10, "intelligence": 1 },
-  "diplomacy_manual": { "diplomacy": 1, "experience": 10, "happiness": -10 },
-  "economy_manual": { "experience": 10, "happiness": -10, "intelligence": 1, "stewardship": 1 },
-  "fable": { "experience": 30, "happiness": 10, "mana": 20 },
-  "family_story": { "experience": 5, "happiness": 5, "mana": 10 },
-  "friendship_story": { "experience": 5, "happiness": 5, "mana": 10 },
-  "history_book": { "diplomacy": 1, "experience": 30, "happiness": 5, "intelligence": 1, "warfare": 1 },
-  "love_story": { "experience": 5, "happiness": 10, "mana": 10 },
-  "mathbook": { "experience": 30, "happiness": -20, "intelligence": 1 },
-  "stewardship_manual": { "experience": 10, "happiness": -5, "intelligence": 1, "stewardship": 1 },
-  "warfare_manual": { "experience": 5, "intelligence": 1, "warfare": 1 }
+  "bad_story_about_king": {
+    "color": "#FFD700",
+    "description": "Forbidden truths about royal deeds",
+    "folder": "bad_story",
+    "name": "Royal Secrets",
+    "read": {
+      "experience": 10,
+      "happiness": -10
+    }
+  },
+  "biology_book": {
+    "color": "#80C980",
+    "description": "The wonders and mysteries of living things",
+    "name": "Biology",
+    "read": {
+      "experience": 30,
+      "happiness": 10,
+      "intelligence": 1
+    }
+  },
+  "diplomacy_manual": {
+    "color": "#66D9E8",
+    "description": "Mastering the delicate art of alliances",
+    "name": "Diplomacy",
+    "read": {
+      "diplomacy": 1,
+      "experience": 10,
+      "happiness": -10
+    }
+  },
+  "economy_manual": {
+    "color": "#EAC645",
+    "description": "Insights into trade, gold, and prosperity",
+    "name": "Economics",
+    "read": {
+      "experience": 10,
+      "happiness": -10,
+      "intelligence": 1,
+      "stewardship": 1
+    }
+  },
+  "fable": {
+    "color": "#9ACD32",
+    "description": "Short tales hiding timeless wisdom",
+    "name": "Fable",
+    "read": {
+      "experience": 30,
+      "happiness": 10,
+      "mana": 20
+    }
+  },
+  "family_story": {
+    "color": "#FFA94D",
+    "description": "Story of bonds stronger than blood",
+    "name": "Family Tales",
+    "read": {
+      "experience": 5,
+      "happiness": 5,
+      "mana": 10
+    }
+  },
+  "friendship_story": {
+    "color": "#74C0FC",
+    "description": "Adventures shared among true friends",
+    "name": "Friendship",
+    "read": {
+      "experience": 5,
+      "happiness": 5,
+      "mana": 10
+    }
+  },
+  "history_book": {
+    "color": "#C49A6C",
+    "description": "A chronicle of past events and lost eras",
+    "name": "History",
+    "read": {
+      "diplomacy": 1,
+      "experience": 30,
+      "happiness": 5,
+      "intelligence": 1,
+      "warfare": 1
+    }
+  },
+  "love_story": {
+    "color": "#FF6B6B",
+    "description": "Tale of hearts bound by passion",
+    "name": "Romance",
+    "read": {
+      "experience": 5,
+      "happiness": 10,
+      "mana": 10
+    }
+  },
+  "mathbook": {
+    "color": "#3BC9DB",
+    "description": "Unraveling the patterns of the universe",
+    "name": "Mathematics",
+    "read": {
+      "experience": 30,
+      "happiness": -20,
+      "intelligence": 1
+    }
+  },
+  "stewardship_manual": {
+    "color": "#D4A373",
+    "description": "Guidance for rulers seeking order",
+    "name": "Governance",
+    "read": {
+      "experience": 10,
+      "happiness": -5,
+      "intelligence": 1,
+      "stewardship": 1
+    }
+  },
+  "warfare_manual": {
+    "color": "#E8590C",
+    "description": "Secrets of battle, tactics, and glory",
+    "name": "War Manual",
+    "read": {
+      "experience": 5,
+      "intelligence": 1,
+      "warfare": 1
+    }
+  }
 }

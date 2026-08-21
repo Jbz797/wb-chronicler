@@ -13,7 +13,6 @@ from actor_stats import actor_stat_totals, build_actor_stats_context, compute_ac
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
-    HAPPY_MIN_HAPPINESS,
     NON_FOOD_SPECIES,
     PROFESSION_KING,
     PROFESSION_LEADER,
@@ -30,7 +29,6 @@ from shared import (
     competition_ranks,
     emit,
     entity_ref,
-    has_emotions,
     index_by_id,
     kingdom_score_dimensions,
     kingdom_score_ranks,
@@ -105,9 +103,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
     eaters_by_kingdom: Counter[int] = Counter()
     families_by_kingdom: dict[int, set[int]] = {}
-    familyless_by_kingdom: Counter[int] = Counter()
     fed_by_kingdom: Counter[int] = Counter()
-    happy_by_kingdom: Counter[int] = Counter()
     homeless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
     infected_by_kingdom: Counter[int] = Counter()
@@ -119,7 +115,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
     populations_by_kingdom: Counter[int] = Counter()  # Mirrors `Kingdom.getPopulation`; `boat_*` PNJs are transient. Nobles = kings (3) + leaders (4) + captains.
     renown_by_kingdom: Counter[int] = Counter()
     sick_by_kingdom: Counter[int] = Counter()
-    subspecies_by_id = index_by_id(save.get("subspecies") or [])  # `has_emotions` is read in the actor pass, before `ctx` exists to carry the same index
     warriors_by_city: Counter[int] = Counter()
     warriors_by_kingdom: Counter[int] = Counter()
 
@@ -173,16 +168,11 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if "immortal" in traits:
             immortals_by_kingdom[kid] += 1
 
-        if int(actor.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS and has_emotions(actor, subspecies_by_id):
-            happy_by_kingdom[kid] += 1
-
         if not actor.get("homeBuildingID"):
             homeless_by_kingdom[kid] += 1
 
         if fid := actor.get("family"):
             families_by_kingdom.setdefault(kid, set()).add(fid)
-        else:
-            familyless_by_kingdom[kid] += 1
 
     cities_by_id: dict[int, dict] = {}
     cities_by_kingdom: dict[int, int] = {}
@@ -258,12 +248,10 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "eaters_by_kingdom": eaters_by_kingdom,
         "families_by_id": index_by_id(save.get("families") or []),
         "families_by_kingdom": families_by_kingdom,
-        "familyless_by_kingdom": familyless_by_kingdom,
         "fed_by_kingdom": fed_by_kingdom,
         "food_by_kingdom": food_by_kingdom,
         "gold_by_kingdom": gold_by_kingdom,
         "goods_by_kingdom": goods_by_kingdom,
-        "happy_by_kingdom": happy_by_kingdom,
         "homeless_by_kingdom": homeless_by_kingdom,
         "houses_by_kingdom": houses_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
@@ -793,7 +781,7 @@ def main(argv: list[str]) -> int:
     if "alliance" in sections:
         out["alliance"] = _build_alliance(kingdom, ctx, save)
     if "breakdown" in sections:
-        out["breakdown"] = population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx)
+        out["breakdown"] = {k: v for k, v in population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx).items() if k != "kingdoms"}
     if "cities" in sections:
         out["cities"] = _build_cities(kingdom, ctx)
     if "equipment" in sections:

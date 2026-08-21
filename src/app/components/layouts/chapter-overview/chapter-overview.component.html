@@ -40,6 +40,15 @@
       <app-clan-tag [id]="clan.metadata.id" [name]="clan.metadata.name" />
     }
   </ng-template>
+  <ng-template #cultureHeader>
+    <img class="panel-icon" src="assets/img/world/cultures.png" />
+    <span>Culture</span>
+  </ng-template>
+  <ng-template #cultureExtra>
+    @if (c.meta.culture; as culture) {
+      <app-culture-tag [id]="culture.metadata.id" [name]="culture.metadata.name" />
+    }
+  </ng-template>
   <ng-template #subspeciesHeader>
     <img class="panel-icon" src="assets/img/world/subspecies.png" />
     <span>S. espèce</span>
@@ -98,6 +107,15 @@
       (nzActiveChange)="onPanelToggle('clan', $event)"
     >
       <app-clan />
+    </nz-collapse-panel>
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'culture'"
+      [nzCollapsible]="collapsible(c.meta.culture)"
+      [nzExtra]="cultureExtra"
+      [nzHeader]="cultureHeader"
+      (nzActiveChange)="onPanelToggle('culture', $event)"
+    >
+      <app-culture />
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'subspecies'"

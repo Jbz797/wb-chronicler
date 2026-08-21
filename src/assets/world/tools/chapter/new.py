@@ -35,7 +35,7 @@ _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
 _RARITIES = ("epic", "legendary", "normal", "rare")
-_TIERS = ("city", "clan", "family", "kingdom", "subspecies")  # the favorite's bodies, unpacked in that order; each optional — WB clans under a tenth of its actors
+_TIERS = ("city", "clan", "culture", "family", "kingdom", "subspecies")  # the favorite's bodies, unpacked in that order; each is optional
 _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
@@ -72,12 +72,6 @@ def _fold_city_detail(city: dict) -> None:
     _fold_total(city, "books", "equipment")
 
 
-# Tallies the sworn traits per WB group, the panel's axis — `full` already summarises them to `{id: group}`, and `clan/info.py <id> traits` keeps each whole.
-def _fold_clan_detail(clan: dict) -> None:
-    counts = Counter((clan.pop("traits", None) or {}).get("ids", {}).values())
-    clan["traits"] = dict(sorted(counts.items()))
-
-
 # Folds the favorite's two heavy blocks: `creature_traits` becomes the rarity summary the panel renders, `equipment` goes — both stay whole in `actor/info.py`.
 def _fold_favorite_detail(favorite: dict) -> None:
     favorite.pop("equipment", None)
@@ -105,6 +99,12 @@ def _fold_total(entity: dict, *keys: str) -> None:
     for key in keys:
         if isinstance(block := entity.get(key), dict):
             entity[key] = {"total": block.get("total", 0)}
+
+
+# Tallies a clan's sworn traits or a culture's held ones per WB group, the panel's axis — `full` summarises them to `{id: group}`, the section keeping each whole.
+def _fold_trait_groups(entity: dict) -> None:
+    counts = Counter((entity.pop("traits", None) or {}).get("ids", {}).values())
+    entity["traits"] = dict(sorted(counts.items()))
 
 
 # Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
@@ -209,18 +209,25 @@ def main(argv: list[str]) -> int:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    city = clan = family = kingdom = subspecies = None
+    city = clan = culture = family = kingdom = subspecies = None
     if favorite:
         meta = favorite.get("metadata") or {}
         calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
-        city, clan, family, kingdom, subspecies = _run_together(*calls)
-        # A lineage has nothing of its own to fold, hence its absence here; the four that do are folded alike, then every roster is cut to its headcount.
-        for block, fold in ((city, _fold_city_detail), (clan, _fold_clan_detail), (kingdom, _fold_kingdom_detail), (subspecies, _fold_subspecies_detail)):
+        city, clan, culture, family, kingdom, subspecies = _run_together(*calls)
+        folds = (  # A lineage has nothing of its own to fold, hence its absence here; the five that do are folded alike.
+            (city, _fold_city_detail),
+            (clan, _fold_trait_groups),
+            (culture, _fold_trait_groups),
+            (kingdom, _fold_kingdom_detail),
+            (subspecies, _fold_subspecies_detail),
+        )
+        for block, fold in folds:
             if block:
                 fold(block)
-        for tier in (clan, family, subspecies):
+        # Rosters cut to their headcount, and the culture's library to its count as a town's is — the volumes stay in `culture/info.py <id> books`.
+        for tier, *keys in ((clan, "members"), (culture, "members", "books"), (family, "members"), (subspecies, "members")):
             if tier:
-                _fold_total(tier, "members")
+                _fold_total(tier, *keys)
 
     age_id = live["mapStats"].get("world_age_id") or ""
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
@@ -241,6 +248,7 @@ def main(argv: list[str]) -> int:
         "age_label": age_label,
         "city": city,
         "clan": clan,
+        "culture": culture,
         "family": family,
         "favorite": favorite,
         "kingdom": kingdom,

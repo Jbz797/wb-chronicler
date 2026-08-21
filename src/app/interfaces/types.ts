@@ -1,15 +1,17 @@
 import { INLINE_MARKER } from '../constants/inline-marker.constant';
 
-import { CityInfo, ClanInfo, FamilyInfo, KingdomInfo, PersonInfo, SubspeciesInfo } from './world.interface';
+import { BookInfo, CityInfo, ClanInfo, CultureInfo, FamilyInfo, KingdomInfo, PersonInfo, SubspeciesInfo } from './world.interface';
 
 export type ActorRect = [number, number, number, number, number]; // x, y, width, height, pivot drop from the top — a part sits where its pivot meets the anchor's.
-export type ChapterOverviewPanel = 'city' | 'clan' | 'family' | 'favorite' | 'kingdom' | 'subspecies' | 'world-stats';
+export type BookRegistry = Record<string, BookInfo>;
+export type ChapterOverviewPanel = 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'subspecies' | 'world-stats';
 
 export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
   | 'territory' | 'wealth';
 
 export type CityRegistry = Record<string, CityInfo>;
 export type ClanRegistry = Record<string, ClanInfo>;
+export type CultureRegistry = Record<string, CultureInfo>;
 export type CumulativeStat = 'books_burnt' | 'books_read' | 'cities_conquered' | 'cities_rebelled' | 'evolutions' | 'metamorphosis' | 'plots_succeeded';
 
 export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' | 'fire' | 'gravity' | 'hunger'
@@ -17,7 +19,7 @@ export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' 
 
 export type FamilyRegistry = Record<string, FamilyInfo>;
 export type GenderedLabel = string | { f: string; m: string }; // agrees with its subject: plain when invariable, a pair otherwise — see `LabelHelpers.gendered`
-export type IconKind = 'cities' | 'clans' | 'families' | 'kingdoms' | 'persons' | 'resources' | 'species' | 'subspecies';
+export type IconKind = 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'persons' | 'resources' | 'species' | 'subspecies';
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 
 // A realm's own metrics — listed in full, not extended from `CityMetaStat`: a crown has no `attractivity`, nobody migrates to a realm.
@@ -41,7 +43,7 @@ export type RankedStatKind = 'age' | 'armor'
   | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'loyalty'
   | 'mana' | 'members'
   | 'money' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory'
-  | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
+  | 'traits' | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'
   | 'cultures' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'
@@ -50,9 +52,10 @@ export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildin
 
 export type SubspeciesRegistry = Record<string, SubspeciesInfo>;
 
-// WB's three trait-group libraries pooled: fifteen for a creature, twenty-one for a biology, seven for a clan — `body`, `fate`, `mind`, `special` serve all three.
-export type TraitGroup = 'acquired' | 'adaptations' | 'advanced_brain' | 'appearance' | 'bioproducts' | 'body' | 'chaos' | 'cognitive' | 'diet' | 'eggs' | 'fate'
-  | 'fun' | 'gestation' | 'growth' | 'harmony' | 'health' | 'hibernation' | 'merits' | 'mind' | 'miscellaneous' | 'mutations' | 'phenotypes' | 'physique'
-  | 'protection' | 'rebirth' | 'reproduction_strategy' | 'reproductive_methods' | 'skills' | 'sleep_cycles' | 'special' | 'spirit' | 'talents';
+// WB's four trait-group libraries pooled: fifteen for a creature, twenty-one for a biology, fifteen for a culture, seven for a clan — four names serve them all.
+export type TraitGroup = 'acquired' | 'adaptations' | 'advanced_brain' | 'appearance' | 'architecture' | 'bioproducts' | 'body' | 'buildings' | 'chaos'
+  | 'cognitive' | 'craft' | 'diet' | 'eggs' | 'fate' | 'fun' | 'gestation' | 'growth' | 'happiness' | 'harmony' | 'health' | 'hibernation' | 'kingdom'
+  | 'knowledge' | 'merits' | 'mind' | 'miscellaneous' | 'mutations' | 'phenotypes' | 'physique' | 'protection' | 'rebirth' | 'reproduction_strategy'
+  | 'reproductive_methods' | 'skills' | 'sleep_cycles' | 'special' | 'spirit' | 'succession' | 'talents' | 'town_plan' | 'warfare' | 'weapons' | 'worldview';
 
 export type TraitGroupCounts = Partial<Record<TraitGroup, number>>; // Partial where `RarityCounts` is total: an entity wears a handful, the rest earn no row.

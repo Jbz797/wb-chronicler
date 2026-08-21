@@ -1,0 +1,15 @@
+@if (culture(); as c) {
+  <nz-tag class="entity-tag culture-tag" [class.dead]="c.dead" [style.--tag-color]="c.color" [title]="name()">
+    <canvas #emblem class="banner" height="0" width="0"></canvas>
+    <span class="entity-name">{{ name() }}</span>
+    @if (medal() && c.rank; as r) {
+      <img [src]="`assets/img/podium/${r}.png`" />
+    }
+    @if (c.members; as members) {
+      <span class="tag-badge">{{ members }}</span>
+    }
+    @if (c.species; as sp) {
+      <img [src]="`assets/img/species/${sp}.png`" />
+    }
+  </nz-tag>
+}

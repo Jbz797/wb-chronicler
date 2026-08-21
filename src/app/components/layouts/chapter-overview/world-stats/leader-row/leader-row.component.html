@@ -7,6 +7,9 @@
   {{ r.asset_id ? (r.asset_id | speciesName) : r.name }}
 } @else {
   @switch (r.key) {
+    @case ('dominant_culture') {
+      <app-culture-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
     @case ('dominant_subspecies') {
       <app-subspecies-tag [id]="r.id" [name]="r.name" />
     }

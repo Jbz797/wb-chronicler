@@ -8,9 +8,7 @@
     @if (p.sex; as s) {
       <img [src]="`assets/img/sex/${s}.png`" />
     }
-    @if (p.dead) {
-      <img src="assets/img/world/deaths.png" />
-    } @else if (p.job && p.job !== 'civilian') {
+    @if (p.job) {
       <img [src]="`assets/img/professions/${p.job}.png`" />
     }
   </nz-tag>

@@ -1,0 +1,9 @@
+@if (book(); as b) {
+  <nz-tag class="entity-tag book-tag" [class.dead]="b.dead" [style.--tag-color]="b.color" [title]="name()">
+    <canvas #board class="board" height="0" width="0"></canvas>
+    <span class="entity-name">{{ name() }}</span>
+    @if (b.reads; as reads) {
+      <span class="tag-badge">{{ reads }}</span>
+    }
+  </nz-tag>
+}

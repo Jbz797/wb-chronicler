@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
-_REGISTRIES = ("cities", "clans", "families", "kingdoms", "persons", "subspecies")
+_REGISTRIES = ("books", "cities", "clans", "cultures", "families", "kingdoms", "persons", "subspecies")
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
 
 
@@ -35,6 +35,20 @@ def _banner(record: dict, species: str | None) -> dict:
     }
 
 
+# Book registry entry — the two sheets its sprite stacks and the hue WB prints its title in, all three read off its genre. `_merge` flags a burnt one `dead`.
+def _book_entry(book: dict, genres: dict) -> dict:
+    genre = genres.get(book.get("book_type")) or {}
+    entry = {
+        "color": genre.get("color"),
+        "cover": book.get("path_cover"),  # `books/book_covers/<cover>` — twenty sheets, the same set for every genre
+        "icon": f"{genre.get('folder') or book.get('book_type')}/{book.get('path_icon')}",  # the glyph, white, drawn over the cover from its genre's own folder
+        "name": book.get("name"),
+    }
+    if reads := int(book.get("times_read") or 0):  # the badge, dropped while nobody has opened it — a shelf holds many a volume no one reads
+        entry["reads"] = reads
+    return _defined(entry)
+
+
 # The chapter's six registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
 def _build_registries(save: dict, prev: dict) -> dict:
     actors = save.get("actors_data") or []
@@ -50,6 +64,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
 
     # Headcount and dominant species are all an entry needs, so tally straight away — and WB points the actor at its clan, lineage and biology, never the reverse.
     members_by_clan: Counter = Counter()
+    members_by_culture: Counter = Counter()
     members_by_family: Counter = Counter()
     members_by_subspecies: Counter = Counter()
     species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
@@ -60,6 +75,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
             continue
         if cid := a.get("clan"):
             members_by_clan[cid] += 1
+        if cid := a.get("culture"):
+            members_by_culture[cid] += 1
         if fid := a.get("family"):
             members_by_family[fid] += 1
         if sid := a.get("subspecies"):
@@ -89,13 +106,19 @@ def _build_registries(save: dict, prev: dict) -> dict:
         for k in kingdoms
     }
 
+    book_genres = load_data("books.json")
+    book_registry = {str(b["id"]): _book_entry(b, book_genres) for b in save.get("books") or []}
     clan_registry = {str(c["id"]): _clan_entry(c, members_by_clan.get(c["id"], 0)) for c in save.get("clans") or []}
+    rank_by_culture = _follower_ranks(members_by_culture)  # followers alone rank a culture, where a settlement and a realm each take a composite score
+    culture_registry = {str(c["id"]): _culture_entry(c, members_by_culture.get(c["id"], 0), rank_by_culture.get(c["id"])) for c in save.get("cultures") or []}
     family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0)) for f in save.get("families") or []}
     subspecies_registry = {str(s["id"]): _subspecies_entry(s, members_by_subspecies.get(s["id"], 0)) for s in save.get("subspecies") or []}
 
     out = {
+        "books": _merge(prev.get("books") or {}, book_registry),
         "cities": _merge(prev.get("cities") or {}, city_registry),
         "clans": _merge(prev.get("clans") or {}, clan_registry),
+        "cultures": _merge(prev.get("cultures") or {}, culture_registry),
         "families": _merge(prev.get("families") or {}, family_registry),
         "kingdoms": _merge(prev.get("kingdoms") or {}, kingdom_registry),
         "persons": _merge(prev.get("persons") or {}, persons),
@@ -148,6 +171,27 @@ def _clan_entry(clan: dict, members: int) -> dict:
     return _defined(entry)
 
 
+# Culture registry entry — its own hue (a custom is caught, not granted, so it wears no crown's colour), the founder's species and the living headcount.
+def _culture_entry(culture: dict, followers: int, rank: int | None) -> dict:
+    palette = _palette(culture.get("color_id", ""))
+    entry: dict = {
+        "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
+        "name": culture.get("name"),
+        "species": culture.get("creator_species_id"),  # the founder's stock, which those raised in it need not share — the pip right of the name
+    }
+    if followers:  # dropped once the last follower dies, as the clan badge drops with its last member
+        entry["members"] = followers
+    if rank is not None:
+        entry["rank"] = rank
+    entry |= {  # WB `CultureBanner.setupBanner`: field and border take `color_main_2`, the motif `color_banner` — a clan's splits the same roles.
+        "banner_bg": culture.get("banner_decor_id") or 0,
+        "banner_bg_color": palette.get("color_main_2"),
+        "banner_icon": culture.get("banner_element_id") or 0,
+        "banner_icon_color": palette.get("color_banner"),
+    }
+    return _defined(entry)
+
+
 # Absence carried as absence: a razed town has no dominant species, a paletteless realm no `color_main` — and UI-side a `null` would read as a value.
 def _defined(entry: dict) -> dict:
     return {key: value for key, value in entry.items() if value is not None}
@@ -169,6 +213,18 @@ def _family_entry(family: dict, members: int) -> dict:
     if backing and tint:
         entry["bg_color"] = _multiply(backing, tint)
     return _defined(entry)
+
+
+# Standard competition rank (1,2,2,4) on a single counter, top 3 only — the podium a culture wears, ties sharing a medal and the next place skipped.
+def _follower_ranks(members: Counter) -> dict[int, int]:
+    ranks: dict[int, int] = {}
+    previous = None
+    for place, (entity_id, followers) in enumerate(sorted(members.items(), key=lambda kv: (-kv[1], kv[0])), 1):
+        rank = ranks[previous] if previous is not None and members[previous] == followers else place
+        if rank > 3:
+            break
+        ranks[entity_id], previous = rank, entity_id
+    return ranks
 
 
 # Kingdom entry, less the heraldry `_banner` folds in and the merge's `dead`. It alone holds a hue — cities and subjects read theirs off it.

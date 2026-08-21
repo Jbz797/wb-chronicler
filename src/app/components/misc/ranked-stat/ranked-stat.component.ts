@@ -9,7 +9,7 @@ import { CompactPipe, ExactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
 
-const peopleSources = new Set(['clan', 'family', 'subspecies']); // the three tiers `_resolvePeople` serves, kept out of the if-chain to hold its complexity
+const peopleSources = new Set(['clan', 'culture', 'family', 'subspecies']); // the four tiers `_resolvePeople` serves, out of the if-chain to hold its complexity
 
 @Component({
   selector: 'app-ranked-stat',
@@ -26,7 +26,7 @@ export class RankedStatComponent {
   public readonly inverted = input<boolean>(false); // Flips the delta colour — for stats where a rise is bad (deaths).
   public readonly numberFormat = input<string>('1.0-0');
   public readonly showRank = input<boolean>(true);
-  public readonly source = input<'alliance' | 'city' | 'clan' | 'family' | 'favorite' | 'kingdom' | 'species' | 'subspecies'>('favorite');
+  public readonly source = input<'alliance' | 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'species' | 'subspecies'>('favorite');
   public readonly stat = input.required<RankedStatKind>();
   public readonly suffix = input<string>('');
 
@@ -154,9 +154,11 @@ export class RankedStatComponent {
     return this._snap(f.stats.warfare, ranks.warfare);
   }
 
-  // A clan, a lineage, a biology, built alike: the body itself in `metadata`, its living in `population` as on a city, `members` apart. One flat podium for all.
+  // A clan, a culture, a lineage, a biology, built alike: the body in `metadata`, its living in `population` as on a city, `members` apart. One podium for all.
   private _resolvePeople(entity: PeopleTier): RankedStatSnapshot {
     if (this.stat() === 'members') return this._snap(entity.members.total, entity.ranks?.members); // its own block, like a city's population
+    const shelf = (entity as { books?: { total: number } }).books; // the culture alone carries one — its own block, as a town's library is
+    if (shelf && this.stat() === 'books') return this._snap(shelf.total, (entity.ranks as Record<string, number | undefined> | undefined)?.books);
     const ranks = entity.ranks as Record<string, number | undefined> | undefined;
     const block = entity.population as unknown as Record<string, number | undefined>;
     const source = Object.hasOwn(block, this.stat()) ? block : (entity.metadata as unknown as Record<string, number | undefined>);
@@ -177,7 +179,7 @@ export class RankedStatComponent {
     if (!meta) return null;
     if (this.source() === 'alliance') return meta.kingdom?.alliance ?? null;
     if (this.source() === 'species') return meta.subspecies?.species ?? null; // a section of the subspecies, where every other source is a chapter block
-    return meta[this.source() as 'city' | 'clan' | 'family' | 'favorite' | 'kingdom' | 'subspecies'];
+    return meta[this.source() as 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'subspecies'];
   }
 
 }

@@ -1,5 +1,6 @@
 import { Clan } from './clan.interface';
-import { EntityReference, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
+import { Culture } from './culture.interface';
+import { BookShelf, EntityReference, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
 import { RarityCounts } from './stats.interface';
 import { Subspecies } from './subspecies.interface';
 import { LeaderKind, LifeStage } from './types';
@@ -12,6 +13,7 @@ export interface ChapterMeta {
   age_label: string;
   city: City | null;
   clan: Clan | null;
+  culture: Culture | null;
   family: Family | null;
   favorite: Favorite | null;
   kingdom: Kingdom | null;
@@ -61,9 +63,6 @@ export interface LeaderRow extends Omit<Leader, 'name' | 'value'> { isNew: boole
 
 // A reader destination: the static Précepte pages and, through `Chapter`, every chronicle.
 export interface Page { label: string; mdUrl: string; slug: string }
-
-// Volumes on the city's shelves, whoever wrote them. Only the total reaches the UI — each volume ships in the `books` section, for the chronicler alone.
-interface BookShelf { total: number }
 
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium (`ranks`) or an empty dimension means no key at all. A city is a kingdom's settlement.
 interface City {

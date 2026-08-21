@@ -15,7 +15,6 @@ from actor_stats import actor_stat_totals, build_actor_stats_context, meta_ratio
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
-    HAPPY_MIN_HAPPINESS,
     NON_FOOD_SPECIES,
     PROFESSION_KING,
     PROFESSION_LEADER,
@@ -36,7 +35,6 @@ from shared import (
     entity_age,
     entity_ref,
     equipment_entry,
-    has_emotions,
     index_by_id,
     light,
     load_data,
@@ -53,10 +51,6 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("army", "books", "breakdown", "equipment", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks")
-
-# What reading a genre grants (WB `BookTypeAsset.base_stats`, lifted from `BookTypeLibrary.init`) and the traits a volume teaches — absent where it grants none.
-_BOOK_STATS = load_data("books.json")
-_BOOK_TRAITS = ("trait_id_actor", "trait_id_culture", "trait_id_language", "trait_id_religion")
 
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the crown's base rate. Emitted as a tier — the rates are WB's to change, the tier isn't.
 _CITY_TAX_TRAITS = {
@@ -84,33 +78,6 @@ def _actor_stats(actor: dict | None, ctx: dict) -> dict:
     return cache[actor_id]
 
 
-# One volume. Every ref reads the names WB stamped on the book itself — an author long dead has left `actors_by_id`, but their name is kept here.
-def _book_entry(book: dict, ctx: dict) -> dict:
-    return {
-        **{field: trait for field in _BOOK_TRAITS if (trait := book.get(field))},  # the traits a volume teaches, each absent where WB set none
-        "age": entity_age(book, ctx["world_time"]),
-        "author": _book_ref(book, "author"),
-        "author_city": _book_ref(book, "author_city"),
-        "author_kingdom": _book_ref(book, "author_kingdom"),
-        "book_type": book.get("book_type"),  # WB's genre asset (`mathbook`, `diplomacy_manual`…), what its panel prints under the title
-        "clan": _book_ref(book, "author_clan"),
-        "culture": _book_ref(book, "culture"),
-        "id": book["id"],
-        "language": _book_ref(book, "language"),
-        "last_read": _years_since(book.get("timestamp_read_last_time") or 0, ctx),  # years since anyone opened it — a library can go quiet
-        "name": book.get("name"),
-        "read": _BOOK_STATS.get(book.get("book_type")) or {},  # the panel's « En lecture »: stats a reader walks away with, the genre's not the volume's
-        "religion": _book_ref(book, "religion"),
-        "times_read": book.get("times_read", 0),
-    }
-
-
-# `{id, name}` off a book's own `<prefix>_id`/`<prefix>_name` pair — `None` where WB stamped neither (a book need carry no religion).
-def _book_ref(book: dict, prefix: str) -> dict | None:
-    ref_id = book.get(f"{prefix}_id")
-    return None if ref_id is None else {"id": ref_id, "name": book.get(f"{prefix}_name")}
-
-
 # The city's standing army — at most one, residents only, `None` where there is none. `captain_years`, `kills_per_death` and `total_captains` stay chronicler-only.
 def _build_army(city: dict, ctx: dict) -> dict | None:
     army = ctx["armies_by_city"].get(city["id"])
@@ -136,12 +103,12 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
     }
 
 
-# The city's library: volumes on its halls' shelves, whoever wrote them. `total` is the ranked stat; naming the section spells each one out, as `equipment` does.
+# The city's library: volumes on its shelves, whoever wrote them. `total` is the ranked stat, the section lists the titles, `book/info.py <id>` spells one out.
 def _build_books(city: dict, ctx: dict, requested: str | None) -> dict:
     total = ctx["books_by_city"]()[city["id"]]
-    if not wants_detail(requested, total):  # `full` keeps the chapter light — one count, the volumes themselves only when the section is asked for by name
+    if not wants_detail(requested, total):  # `full` keeps the chapter light — one count, the titles themselves only when the section is asked for by name
         return light({"total": total}, "books")
-    return {"held": [_book_entry(b, ctx) for b in ctx["shelved_by_city"]().get(city["id"], ())], "total": total}
+    return {"held": [{"id": b["id"], "name": b.get("name")} for b in ctx["shelved_by_city"]().get(city["id"], ())], "total": total}
 
 
 # One pass over actors then buildings — every per-city tally the sections need, so no section rescans the save. Built whole whatever was asked for.
@@ -153,9 +120,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_id: dict[int, dict] = {}
     eaters_by_city: Counter[int] = Counter()
     families_by_city: dict[int, set[int]] = {}
-    familyless_by_city: Counter[int] = Counter()
     fed_by_city: Counter[int] = Counter()
-    happy_by_city: Counter[int] = Counter()
     homeless_by_city: Counter[int] = Counter()
     immortals_by_city: Counter[int] = Counter()
     infected_by_city: Counter[int] = Counter()
@@ -163,7 +128,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
     leader_ids = {lid for c in save.get("cities") or [] if (lid := c.get("leaderID"))}  # Sitting mayors: nobles too, but their purse is reported on its own.
     melee_by_city: Counter[int] = Counter()
     money_by_city: Counter[int] = Counter()
-    subspecies_by_id = index_by_id(save.get("subspecies") or [])  # `has_emotions` is read in the actor pass, before `ctx` exists to carry the same index
     nobles_by_city: Counter[int] = Counter()
     nobles_money_by_city: Counter[int] = Counter()
     populations_by_city: Counter[int] = Counter()
@@ -219,14 +183,10 @@ def _build_context(save: dict, save_path: Path) -> dict:
             sick_by_city[cid] += 1
         if "immortal" in traits:
             immortals_by_city[cid] += 1
-        if int(actor.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS and has_emotions(actor, subspecies_by_id):
-            happy_by_city[cid] += 1
         if not actor.get("homeBuildingID"):
             homeless_by_city[cid] += 1
         if family_id := actor.get("family"):
             families_by_city.setdefault(cid, set()).add(family_id)
-        else:
-            familyless_by_city[cid] += 1
 
     buildings_by_city: Counter[int] = Counter()
     civic = civic_building_ids()  # `houses` = the dwelling subset.
@@ -284,12 +244,10 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "equipment_by_city": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in save.get("cities") or []},
         "families_by_city": families_by_city,
         "families_by_id": index_by_id(save.get("families") or []),
-        "familyless_by_city": familyless_by_city,
         "fed_by_city": fed_by_city,
         "food_by_city": food_by_city,
         "gold_by_city": gold_by_city,
         "goods_by_city": goods_by_city,
-        "happy_by_city": happy_by_city,
         "heirs_by_kingdom": heirs_by_kingdom,
         "homeless_by_city": homeless_by_city,
         "houses_by_city": houses_by_city,

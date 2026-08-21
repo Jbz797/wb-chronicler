@@ -1,0 +1,458 @@
+{
+  "ancestors_knowledge": {
+    "description": "Children are born already carrying the heritage of their parents",
+    "flavor": "Their path is already written by the past",
+    "group": "knowledge",
+    "name": "Ancestors Knowledge"
+  },
+  "animal_whisperers": { "description": "Allows to talk with animals", "flavor": "Sup dog", "group": "miscellaneous", "name": "Animal Whisperers" },
+  "armorsmith_mastery": {
+    "description": "Increases the likelihood of crafting legendary armors",
+    "flavor": "Their steel tells tales of victories yet to come",
+    "group": "warfare",
+    "name": "Armorsmith Mastery"
+  },
+  "attentive_readers": {
+    "description": "People won't receive negative effects from reading!",
+    "flavor": "The written word is never just black and white",
+    "group": "knowledge",
+    "name": "Attentive Readers"
+  },
+  "axe_lovers": {
+    "description": "This culture has a strong affinity for axes in battle",
+    "flavor": "Trees fear them. Enemies fear them more",
+    "group": "weapons",
+    "name": "Axe Lovers"
+  },
+  "bow_lovers": {
+    "description": "Bow mastery is a key aspect of this culture's identity",
+    "flavor": "Their arrows write poetry in the wind",
+    "group": "weapons",
+    "name": "Bow Lovers"
+  },
+  "buildings_spread": {
+    "description": "Buildings are constructed with little regard for order or planning",
+    "flavor": "A city that grows as unpredictably as nature itself",
+    "group": "town_plan",
+    "name": "Spread Out Buildings"
+  },
+  "city_layout_architects_eye": {
+    "description": "Buildings are placed in rings, with the pattern depending on proximity to the world's center",
+    "flavor": "Each stone follows the grand design",
+    "group": "town_plan",
+    "name": "Architect's Eye"
+  },
+  "city_layout_bricks": {
+    "description": "Buildings are positioned like bricks in a wall",
+    "flavor": "Order breeds strength in their foundations",
+    "group": "town_plan",
+    "name": "Bricks"
+  },
+  "city_layout_claws": {
+    "description": "A diagonal grid layout defines the city",
+    "flavor": "Their streets slash through the landscape",
+    "group": "town_plan",
+    "name": "Claws"
+  },
+  "city_layout_cross": {
+    "description": "Buildings are arranged in a cross pattern",
+    "flavor": "Four winds guide their city's heart",
+    "group": "town_plan",
+    "name": "Cross"
+  },
+  "city_layout_diamond": {
+    "description": "Buildings are placed in a diamond pattern",
+    "flavor": "Cities as radiant as the gems that inspire it",
+    "group": "town_plan",
+    "name": "Diamond"
+  },
+  "city_layout_honeycomb": {
+    "description": "The city follows a hexagonal-inspired layout",
+    "flavor": "Nature's perfect pattern builds perfect cities",
+    "group": "town_plan",
+    "name": "Honeycomb"
+  },
+  "city_layout_iron_weave": {
+    "description": "The city layout is a woven lattice of buildings",
+    "flavor": "Each building strengthens the unbreakable foundation of the city",
+    "group": "town_plan",
+    "name": "Iron Weave"
+  },
+  "city_layout_madman_labyrinth": {
+    "description": "A layout that defies logic and order",
+    "flavor": "Only the truly mad can understand this city plan",
+    "group": "town_plan",
+    "name": "Madman Labyrinth"
+  },
+  "city_layout_monolith_mesh": {
+    "description": "Buildings are arranged in a grand lattice pattern",
+    "flavor": "A design that honors the very essence of existence. Without realising it",
+    "group": "town_plan",
+    "name": "Monolith Mesh"
+  },
+  "city_layout_parallels": {
+    "description": "Buildings are arranged in parallel rows",
+    "flavor": "Like the strings of a finely-tuned instrument",
+    "group": "town_plan",
+    "name": "Parallels"
+  },
+  "city_layout_pebbles": {
+    "description": "The buildings are organized in a tightly packed grid",
+    "flavor": "Like pebbles scattered by the wind",
+    "group": "town_plan",
+    "name": "Pebbles"
+  },
+  "city_layout_pillars": {
+    "description": "The city's design follows strict vertical lines",
+    "flavor": "Like saplings stretching toward the sun",
+    "group": "town_plan",
+    "name": "Forest"
+  },
+  "city_layout_raindrops": {
+    "description": "The layout mimics the natural flow of raindrops",
+    "flavor": "Cities grow like daisies in the morning dew",
+    "group": "town_plan",
+    "name": "Raindrops"
+  },
+  "city_layout_rings": {
+    "description": "Buildings are arranged in concentric rings",
+    "flavor": "Their cities echo the eternal dance of celestial bodies",
+    "group": "town_plan",
+    "name": "Rings"
+  },
+  "city_layout_royal_checkers": {
+    "description": "The layout follows the pattern of a checkers board",
+    "flavor": "Every building stands as a symbol of might",
+    "group": "town_plan",
+    "name": "Royal Checkers"
+  },
+  "city_layout_silk_web": {
+    "description": "Buildings form a delicate lattice of streets",
+    "flavor": "Every path leads to beauty in their design",
+    "group": "town_plan",
+    "name": "Silk Web"
+  },
+  "city_layout_stone_garden": {
+    "description": "Buildings are placed in neat, organized grids",
+    "flavor": "Like stones in a garden, every building has its place",
+    "group": "town_plan",
+    "name": "Stone Garden"
+  },
+  "city_layout_the_grand_arrangement": {
+    "description": "Buildings are placed in a perfect arrangement",
+    "flavor": "Order whispers secrets of eternity",
+    "group": "town_plan",
+    "name": "Grand Arrangement"
+  },
+  "city_layout_tile_moonsteps": {
+    "description": "Each building is placed with subtle vertical variation from the center",
+    "flavor": "Their cities rise and fall like lunar tides",
+    "group": "town_plan",
+    "name": "Moonsteps"
+  },
+  "city_layout_tile_wobbly_pattern": {
+    "description": "Buildings are centered within zones but placed loosely within each",
+    "flavor": "Perfect imperfection guides their hand",
+    "group": "town_plan",
+    "name": "Wobbly Pattern"
+  },
+  "city_layout_titan_footprints": {
+    "description": "Buildings are arranged in a large, expansive grid pattern",
+    "flavor": "Designed to accommodate even the titans' stride",
+    "group": "town_plan",
+    "name": "Titan Footprints"
+  },
+  "conscription_female_only": {
+    "description": "Only females are conscripted into the military",
+    "flavor": "Their battlecries shake the heavens themselves",
+    "group": "kingdom",
+    "name": "Female Conscription"
+  },
+  "conscription_male_only": {
+    "description": "Only males are conscripted into the military",
+    "flavor": "Every son bears the weight of their defense",
+    "group": "kingdom",
+    "name": "Male Conscription"
+  },
+  "craft_blaster": { "description": "Mastery in crafting high-powered blasters", "flavor": "Science makes magic obsolete", "group": "craft", "name": "Blaster" },
+  "craft_doctor_staff": {
+    "description": "A tool for medical miracles and magical cures",
+    "flavor": "Life dances to their healing song",
+    "group": "craft",
+    "name": "Doctor Staff"
+  },
+  "craft_druid_staff": {
+    "description": "A tool for druids to commune with the earth",
+    "flavor": "The forest answers when you listen",
+    "group": "craft",
+    "name": "Druid Staff"
+  },
+  "craft_evil_staff": {
+    "description": "Knowledge to craft the staff of the evil arts",
+    "flavor": "Wield it, and let the evil guide your soul",
+    "group": "craft",
+    "name": "Evil Staff"
+  },
+  "craft_flame_weapon": {
+    "description": "The art of forging weapons imbued with the fierce power of fire",
+    "flavor": "The power is born in flames and ends in ashes",
+    "group": "craft",
+    "name": "Flame Weapon"
+  },
+  "craft_ice_weapon": {
+    "description": "Masters of forging weapons that harness the biting cold",
+    "flavor": "Their blades bring winter's bitter kiss",
+    "group": "craft",
+    "name": "Ice Weapon"
+  },
+  "craft_necro_staff": {
+    "description": "Secrets of crafting of weapons that imbued with the voices of the dead",
+    "flavor": "Death itself serves their dark purpose",
+    "group": "craft",
+    "name": "Necromancer Staff"
+  },
+  "craft_shotgun": {
+    "description": "Allows the creation of shotguns with the raw power to defy magic",
+    "flavor": "A single shot, louder than any incantation",
+    "group": "craft",
+    "name": "Shotgun"
+  },
+  "craft_white_staff": {
+    "description": "Skilled in the creation of staffs that amplify divine magic",
+    "flavor": "When forged, it serves as a conduit for miracles and protection",
+    "group": "craft",
+    "name": "White Staff"
+  },
+  "dense_dwellings": {
+    "description": "More houses are constructed within city limits",
+    "flavor": "Personal space is just a wasteful luxury",
+    "group": "harmony",
+    "name": "Dense Dwellings"
+  },
+  "diplomatic_ascension": {
+    "description": "The culture values diplomacy, selecting the most diplomatic individuals for leadership",
+    "flavor": "Words shape their future more than any sword",
+    "group": "succession",
+    "name": "Diplomatic Ascension"
+  },
+  "elder_reverence": {
+    "description": "Older people often receive gifts from their family and friends",
+    "flavor": "Each wrinkle earns another gift of respect",
+    "group": "happiness",
+    "name": "Elder Reverence"
+  },
+  "ethno_sculpted": {
+    "description": "The people carry the mark of the divine sculptor",
+    "flavor": "Perfection leaves no room for choice",
+    "group": "special",
+    "name": "Ethno Sculpted"
+  },
+  "ethnocentric_guard": {
+    "description": "They see other cultures as inferior",
+    "flavor": "Their pride blinds them to outside wisdom",
+    "group": "worldview",
+    "name": "Ethnocentric Guard"
+  },
+  "expansionists": {
+    "description": "This culture rapidly claims and occupies land",
+    "flavor": "All your land are belong to us!",
+    "group": "kingdom",
+    "name": "Expansionists"
+  },
+  "expertise_exchange": {
+    "description": "Talking becomes a source of learning and experience",
+    "flavor": "A good conversation is worth a thousand lessons!",
+    "group": "knowledge",
+    "name": "Expertise Exchange"
+  },
+  "fames_crown": {
+    "description": "The most renowned and celebrated heir inherits the throne",
+    "flavor": "Legends are built on echoes, not always truths",
+    "group": "succession",
+    "name": "Fame's Crown"
+  },
+  "fast_learners": {
+    "description": "They acquire new skills at double the usual rate!",
+    "flavor": "While others walk the path of knowledge, they run",
+    "group": "knowledge",
+    "name": "Fast Learners"
+  },
+  "golden_rule": {
+    "description": "The wealthiest heir takes the throne",
+    "flavor": "Gold gleams brighter than reason",
+    "group": "succession",
+    "name": "Golden Rule"
+  },
+  "gossip_lovers": {
+    "description": "Gossiping is a beloved pastime that brings happiness",
+    "flavor": "Even the walls have stories to share in these lands",
+    "group": "happiness",
+    "name": "Gossip Lovers"
+  },
+  "grin_mark": {
+    "description": "Marked for death by the Grin Reaper. Their end is near",
+    "flavor": "They laugh because it's already too late not to",
+    "group": "fate",
+    "name": "Grin Mark"
+  },
+  "hammer_lovers": {
+    "description": "Hammers are the preferred tool for crushing their foes",
+    "flavor": "Problems look like nails to their eyes",
+    "group": "weapons",
+    "name": "Hammer Lovers"
+  },
+  "happiness_from_war": {
+    "description": "War brings a unique sense of joy to this culture",
+    "flavor": "Nothing makes them smile like the drums of battle",
+    "group": "happiness",
+    "name": "Happiness from War"
+  },
+  "hive_society": {
+    "description": "The hive mentality results in densely packed housing",
+    "flavor": "There's no such thing as too close!",
+    "group": "harmony",
+    "name": "Hive Society"
+  },
+  "join_or_die": {
+    "description": "Enemies on the brink of death may switch sides instead of perishing",
+    "flavor": "A life spared is a life owned",
+    "group": "worldview",
+    "name": "Join or Die"
+  },
+  "legacy_keepers": {
+    "description": "They focus solely on maintaining their legacy, avoiding change at all costs",
+    "flavor": "Ancestral wisdom becomes their unshakable truth",
+    "group": "miscellaneous",
+    "name": "Legacy Keepers"
+  },
+  "matriarchy": {
+    "description": "The culture is governed by a matriarchal system, with females prioritized for leadership!",
+    "group": "succession",
+    "name": "Matriarchy"
+  },
+  "patriarchy": {
+    "description": "The culture is governed by a patriarchal system, with males prioritized for leadership!",
+    "group": "succession",
+    "name": "Patriarchy"
+  },
+  "pep_talks": {
+    "description": "People can get inspired after talks",
+    "flavor": "A single word can change the course of battle!",
+    "group": "happiness",
+    "name": "Pep Talks"
+  },
+  "reading_lovers": {
+    "description": "Reading is a beloved activity that brings happiness",
+    "flavor": "Each page turned reveals a new world within",
+    "group": "knowledge",
+    "name": "Reading Lovers"
+  },
+  "roads": {
+    "description": "These people build roads",
+    "flavor": "Where we're going, we don't need roads. But we built them anyway",
+    "group": "architecture",
+    "name": "Roads"
+  },
+  "serenity_now": {
+    "description": "People focus on present tranquility, never starting wars",
+    "flavor": "Patience, deep breaths, and letting go of drama",
+    "group": "worldview",
+    "name": "Serenity Now"
+  },
+  "shattered_crown": {
+    "description": "Power is divided equally among heirs",
+    "flavor": "A crown worn by many heads seldom stays whole",
+    "group": "succession",
+    "name": "Shattered Crown"
+  },
+  "solitude_seekers": {
+    "description": "They prefer solitude and isolation and build fewer houses",
+    "flavor": "They prefer a quiet life, but sometimes loneliness is their only neighbor",
+    "group": "harmony",
+    "name": "Solitude Seekers"
+  },
+  "spear_lovers": {
+    "description": "These people prefer using spears for fights",
+    "flavor": "They strike before swords can sing",
+    "group": "weapons",
+    "name": "Spear Lovers"
+  },
+  "statue_lovers": {
+    "description": "The culture delights in creating statues!",
+    "flavor": "Stone remembers what flesh forgets",
+    "group": "buildings",
+    "name": "Statue Lovers"
+  },
+  "sword_lovers": {
+    "description": "The sword symbolizes courage and honor in this culture",
+    "flavor": "A sword's true strength lies not in the blade, but in the heart of the wielder!",
+    "group": "weapons",
+    "name": "Sword Lovers"
+  },
+  "tiny_legends": {
+    "description": "Children begin contributing to work from an early age",
+    "flavor": "No age is too young for greatness!",
+    "group": "kingdom",
+    "name": "Tiny Legends"
+  },
+  "tower_lovers": {
+    "description": "They build more towers than they need",
+    "flavor": "The view is always better from above",
+    "group": "buildings",
+    "name": "Tower Lovers"
+  },
+  "training_potential": {
+    "description": "This culture values training, giving double progress with each level-up",
+    "flavor": "Each step in training is a step closer to becoming legends",
+    "group": "knowledge",
+    "name": "Training Potential"
+  },
+  "true_roots": {
+    "description": "Deep respect for origins prevents cultural, religious and linguistic conversion",
+    "flavor": "No, seriously. Don't try to change them",
+    "group": "miscellaneous",
+    "name": "True Roots"
+  },
+  "ultimogeniture": {
+    "description": "Succession follows the youngest, ensuring fresh leadership",
+    "flavor": "Youth guides them toward tomorrow's dawn",
+    "group": "succession",
+    "name": "Ultimogeniture"
+  },
+  "unbroken_chain": {
+    "description": "Prevents the kingdom from shattering into multiple realms by appointing a new ruling clan when no heirs remain",
+    "flavor": "The chain of power bends but never breaks",
+    "group": "succession",
+    "name": "The Unbroken Chain"
+  },
+  "warriors_ascension": {
+    "description": "The culture values warrior prowess, selecting the best warriors for leadership",
+    "flavor": "Blood and steel forge tomorrow's rulers",
+    "group": "succession",
+    "name": "Warriors Ascension"
+  },
+  "weaponsmith_mastery": {
+    "description": "Increases the likelihood of crafting legendary weapons",
+    "flavor": "They don't just make weapons - they make history!",
+    "group": "warfare",
+    "name": "Weaponsmith Mastery"
+  },
+  "xenophiles": {
+    "description": "They find strength in diversity and unity in differences",
+    "flavor": "Every strange face brings a new tale to their halls",
+    "group": "worldview",
+    "name": "Xenophiles"
+  },
+  "xenophobic": {
+    "description": "Xenophobia runs deep in this culture, often leading them into needless conflicts",
+    "flavor": "They're masters at turning potential friends into enemies",
+    "group": "worldview",
+    "name": "Xenophobic"
+  },
+  "youth_reverence": {
+    "description": "Younger people are showered with gifts and spared from work until grown",
+    "flavor": "Their laughter is their only task",
+    "group": "happiness",
+    "name": "Youth Reverence"
+  }
+}

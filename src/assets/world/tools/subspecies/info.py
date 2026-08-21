@@ -238,6 +238,7 @@ def main(argv: list[str]) -> int:
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
+        "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),  # `population_breakdown` alone reads it here — a biology answers to no crown of its own
         "religions_by_id": index_by_id(save.get("religions") or []),
         "subspecies_by_id": subspecies_by_id,  # the index the id was checked against, so the context's own copy never takes over
     }

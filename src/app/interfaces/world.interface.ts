@@ -1,3 +1,13 @@
+// A volume's tag: the two sheets its sprite stacks — a cover from the common set, its genre's white glyph over it — and the hue WB prints its title in.
+export interface BookInfo {
+  color?: string;
+  cover?: string;
+  dead?: boolean; // burnt since this chapter: WB drops it from `save.books`, the registry keeps its board and strikes the title through
+  icon?: string; // `<genre folder>/<sheet>`, the folder parting from the genre id for `bad_story_about_king` alone
+  name: string;
+  reads?: number;
+}
+
 // A settlement's tag visuals: `plate` names WB's own nameplate (`capital`/`city`), which is what sets a seat apart, and `kingdom` fetches the name's hue.
 export interface CityInfo {
   dead?: boolean;
@@ -18,6 +28,20 @@ export interface ClanInfo {
   dead?: boolean;
   members?: number;
   name: string;
+  species?: string;
+}
+
+// A culture's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living headcount. Its `name` survives extinction.
+export interface CultureInfo {
+  banner_bg?: number;
+  banner_bg_color?: string;
+  banner_icon?: number;
+  banner_icon_color?: string;
+  color: string;
+  dead?: boolean;
+  members?: number;
+  name: string;
+  rank?: number; // podium place by followers, top 3 only — the medal right of the name
   species?: string;
 }
 
