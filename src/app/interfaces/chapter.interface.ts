@@ -1,6 +1,7 @@
 import { Clan } from './clan.interface';
 import { Culture } from './culture.interface';
 import { BookShelf, EntityReference, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
+import { Language } from './language.interface';
 import { RarityCounts } from './stats.interface';
 import { Subspecies } from './subspecies.interface';
 import { LeaderKind, LifeStage } from './types';
@@ -8,7 +9,7 @@ import { LeaderKind, LifeStage } from './types';
 // One chronicle chapter: a nav Page plus its parsed chapter.json `meta` and preview image.
 export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 
-// A parsed chapter.json: the three overview panels (favorite/kingdom/world) plus the age label and prose tags.
+// A parsed chapter.json: a block per overview panel — the world, the favorite and each body it belongs to — plus the age label and prose tags.
 export interface ChapterMeta {
   age_label: string;
   city: City | null;
@@ -17,6 +18,7 @@ export interface ChapterMeta {
   family: Family | null;
   favorite: Favorite | null;
   kingdom: Kingdom | null;
+  language: Language | null;
   subspecies: Subspecies | null;
   tags: string[];
   world: World;
@@ -434,7 +436,7 @@ interface WorldCumulative {
   plots_succeeded?: number;
 }
 
-// The world's current age id and its `world_time` clock (the two fields the chapter header needs).
+// The world's current age id and its `world_time` clock — what the chapter header reads.
 interface WorldMetadata { age_id: string; world_time: number }
 
 // Live counts of every world entity at this chapter (population, buildings, cultures…); `infected`/`sick` are omitted when 0.

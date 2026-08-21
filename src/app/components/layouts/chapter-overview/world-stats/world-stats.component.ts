@@ -54,7 +54,7 @@ export class WorldStatsComponent {
       if (!entry) return [];
       const p = previous?.[key];
       const isNew = !!previous && !!p && (entry.id !== p.id);
-      // Only `most_renowned_person` can reach here unnamed; the four other entity rows and the dominant traits always carry one.
+      // Only `most_renowned_person` can reach here unnamed; every other entity row and the dominant traits always carry one.
       return [{ data: { ...entry, isNew, key, name: entry.name ?? ANONYMOUS_NAME }, icon: icon ?? key, label }];
     });
   });

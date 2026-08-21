@@ -17,65 +17,43 @@
     <img class="panel-icon" src="assets/img/world/favorites.png" />
     <span>Favoris</span>
   </ng-template>
-  <ng-template #favoriteExtra>
-    @if (c.meta.favorite; as fav) {
-      <app-person-tag [id]="fav.metadata.id" [name]="fav.metadata.name" />
-    }
-  </ng-template>
   <ng-template #familyHeader>
     <img class="panel-icon" src="assets/img/world/families.png" />
     <span>Lignée</span>
-  </ng-template>
-  <ng-template #familyExtra>
-    @if (c.meta.family; as f) {
-      <app-family-tag [id]="f.metadata.id" [name]="f.metadata.name" />
-    }
   </ng-template>
   <ng-template #clanHeader>
     <img class="panel-icon" src="assets/img/world/most_renowned_clan.png" />
     <span>Clan</span>
   </ng-template>
-  <ng-template #clanExtra>
-    @if (c.meta.clan; as clan) {
-      <app-clan-tag [id]="clan.metadata.id" [name]="clan.metadata.name" />
-    }
-  </ng-template>
   <ng-template #cultureHeader>
     <img class="panel-icon" src="assets/img/world/cultures.png" />
     <span>Culture</span>
   </ng-template>
-  <ng-template #cultureExtra>
-    @if (c.meta.culture; as culture) {
-      <app-culture-tag [id]="culture.metadata.id" [name]="culture.metadata.name" />
-    }
+  <ng-template #languageHeader>
+    <img class="panel-icon" src="assets/img/world/languages.png" />
+    <span>Langue</span>
   </ng-template>
   <ng-template #subspeciesHeader>
     <img class="panel-icon" src="assets/img/world/subspecies.png" />
     <span>S. espèce</span>
   </ng-template>
-  <ng-template #subspeciesExtra>
-    @if (c.meta.subspecies; as subspecies) {
-      <app-subspecies-tag [id]="subspecies.metadata.id" [name]="subspecies.metadata.name" />
-    }
-  </ng-template>
   <ng-template #cityHeader>
     <img class="panel-icon" src="assets/img/world/village.png" />
     <span>{{ cityTerm() }}</span>
-  </ng-template>
-  <ng-template #cityExtra>
-    @if (c.meta.city; as city) {
-      <app-city-tag [id]="city.metadata.id" [name]="city.metadata.name" />
-    }
   </ng-template>
   <ng-template #kingdomHeader>
     <img class="panel-icon" src="assets/img/world/kingdom.png" />
     <span>Royaume</span>
   </ng-template>
-  <ng-template #kingdomExtra>
-    @if (c.meta.kingdom; as k) {
-      <app-kingdom-tag [id]="k.metadata.id" [name]="k.metadata.name" />
-    }
-  </ng-template>
+
+  <ng-template #cityChip><app-panel-extra panel="city" /></ng-template>
+  <ng-template #clanChip><app-panel-extra panel="clan" /></ng-template>
+  <ng-template #cultureChip><app-panel-extra panel="culture" /></ng-template>
+  <ng-template #familyChip><app-panel-extra panel="family" /></ng-template>
+  <ng-template #favoriteChip><app-panel-extra panel="favorite" /></ng-template>
+  <ng-template #kingdomChip><app-panel-extra panel="kingdom" /></ng-template>
+  <ng-template #languageChip><app-panel-extra panel="language" /></ng-template>
+  <ng-template #subspeciesChip><app-panel-extra panel="subspecies" /></ng-template>
 
   <nz-collapse nzAccordion>
     <nz-collapse-panel [nzActive]="activePanel() === 'world-stats'" [nzHeader]="worldStatsHeader" (nzActiveChange)="onPanelToggle('world-stats', $event)">
@@ -84,7 +62,7 @@
     <nz-collapse-panel
       [nzActive]="activePanel() === 'favorite'"
       [nzCollapsible]="collapsible(c.meta.favorite)"
-      [nzExtra]="favoriteExtra"
+      [nzExtra]="favoriteChip"
       [nzHeader]="favoritesHeader"
       (nzActiveChange)="onPanelToggle('favorite', $event)"
     >
@@ -93,7 +71,7 @@
     <nz-collapse-panel
       [nzActive]="activePanel() === 'family'"
       [nzCollapsible]="collapsible(c.meta.family)"
-      [nzExtra]="familyExtra"
+      [nzExtra]="familyChip"
       [nzHeader]="familyHeader"
       (nzActiveChange)="onPanelToggle('family', $event)"
     >
@@ -102,7 +80,7 @@
     <nz-collapse-panel
       [nzActive]="activePanel() === 'clan'"
       [nzCollapsible]="collapsible(c.meta.clan)"
-      [nzExtra]="clanExtra"
+      [nzExtra]="clanChip"
       [nzHeader]="clanHeader"
       (nzActiveChange)="onPanelToggle('clan', $event)"
     >
@@ -111,16 +89,25 @@
     <nz-collapse-panel
       [nzActive]="activePanel() === 'culture'"
       [nzCollapsible]="collapsible(c.meta.culture)"
-      [nzExtra]="cultureExtra"
+      [nzExtra]="cultureChip"
       [nzHeader]="cultureHeader"
       (nzActiveChange)="onPanelToggle('culture', $event)"
     >
       <app-culture />
     </nz-collapse-panel>
     <nz-collapse-panel
+      [nzActive]="activePanel() === 'language'"
+      [nzCollapsible]="collapsible(c.meta.language)"
+      [nzExtra]="languageChip"
+      [nzHeader]="languageHeader"
+      (nzActiveChange)="onPanelToggle('language', $event)"
+    >
+      <app-language />
+    </nz-collapse-panel>
+    <nz-collapse-panel
       [nzActive]="activePanel() === 'subspecies'"
       [nzCollapsible]="collapsible(c.meta.subspecies)"
-      [nzExtra]="subspeciesExtra"
+      [nzExtra]="subspeciesChip"
       [nzHeader]="subspeciesHeader"
       (nzActiveChange)="onPanelToggle('subspecies', $event)"
     >
@@ -129,7 +116,7 @@
     <nz-collapse-panel
       [nzActive]="activePanel() === 'city'"
       [nzCollapsible]="collapsible(c.meta.city)"
-      [nzExtra]="cityExtra"
+      [nzExtra]="cityChip"
       [nzHeader]="cityHeader"
       (nzActiveChange)="onPanelToggle('city', $event)"
     >
@@ -138,7 +125,7 @@
     <nz-collapse-panel
       [nzActive]="activePanel() === 'kingdom'"
       [nzCollapsible]="collapsible(c.meta.kingdom)"
-      [nzExtra]="kingdomExtra"
+      [nzExtra]="kingdomChip"
       [nzHeader]="kingdomHeader"
       (nzActiveChange)="onPanelToggle('kingdom', $event)"
     >

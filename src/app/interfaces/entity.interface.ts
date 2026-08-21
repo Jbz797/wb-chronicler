@@ -1,4 +1,4 @@
-// The two shapes every tier shares: a tag's id+name pointer, and the culture/language/religion/species mix of any population.
+// The shapes every tier shares: a tag's id+name pointer, and the culture/language/religion/species mix of any population.
 
 // A library counted, on a town's shelves or under a culture's name. Only the total reaches the UI — each volume ships in the `books` section, for the chronicler.
 export interface BookShelf { total: number }
@@ -35,12 +35,13 @@ export interface Leaders {
 // The living of a clan, a lineage or a biology, counted and nothing more — the roster stays behind in `<tier>/info.py <id> members`, where the chronicler reads it.
 export interface MemberRoster { total: number }
 
-// A clan, a lineage and a biology answer the same shape, served by one resolver — structural, since naming the three would reach back into `types.ts`.
+// A clan, a culture, a lineage, a tongue and a biology answer the same shape, served by one resolver — structural, since naming them would reach into `types.ts`.
 export interface PeopleTier {
-  members: MemberRoster;
+  members?: MemberRoster; // the roster of every tier but a language, which counts…
   metadata: object; // each tier's own shape; the resolver reads it by key, so it casts rather than narrowing
   population: TierPopulation;
-  ranks?: { members?: number }; // `members` is the one the resolver names; the rest it reaches by key, through the same cast
+  ranks?: { members?: number; speakers?: number }; // the two the resolver names; the rest it reaches by key, through the same cast
+  speakers?: MemberRoster; // …its speakers, WB's own word for those who answer in it
 }
 
 // A soul, not a place: 42 % of WB's actors go unnamed; `PersonTagComponent` prints `ANONYMOUS_NAME`.
@@ -50,10 +51,10 @@ export interface PersonReference { id: number; name?: string }
 export interface PopulationBreakdown {
   cultures?: { id: number; name: string; pct: number }[];
   kingdoms?: { id: number; name: string; pct: number }[]; // absent on a realm, which would restate itself at 100 % — present on an alliance, which spans several
-  languages?: { name: string; pct: number }[];
+  languages?: { id: number; name: string; pct: number }[];
   religions?: { name: string; pct: number }[];
   species?: { asset_id: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
-  subspecies?: { id: number; name: string; pct: number }[]; // culture, kingdom and this one carry an id: they alone have a tag to resolve against the registry
+  subspecies?: { id: number; name: string; pct: number }[]; // religions alone go without an id: every other dimension has a tag to resolve against a registry
 }
 
 // What the living of a body say of it — the settlement block less granary, head and `total`. Only the afflictions drop at zero, a share of zero being a reading.

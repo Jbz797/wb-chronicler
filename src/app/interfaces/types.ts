@@ -1,10 +1,10 @@
 import { INLINE_MARKER } from '../constants/inline-marker.constant';
 
-import { BookInfo, CityInfo, ClanInfo, CultureInfo, FamilyInfo, KingdomInfo, PersonInfo, SubspeciesInfo } from './world.interface';
+import { BookInfo, CityInfo, ClanInfo, CultureInfo, FamilyInfo, KingdomInfo, LanguageInfo, PersonInfo, SubspeciesInfo } from './world.interface';
 
 export type ActorRect = [number, number, number, number, number]; // x, y, width, height, pivot drop from the top — a part sits where its pivot meets the anchor's.
 export type BookRegistry = Record<string, BookInfo>;
-export type ChapterOverviewPanel = 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'subspecies' | 'world-stats';
+export type ChapterOverviewPanel = 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'language' | 'subspecies' | 'world-stats';
 
 export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
   | 'territory' | 'wealth';
@@ -19,7 +19,7 @@ export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' 
 
 export type FamilyRegistry = Record<string, FamilyInfo>;
 export type GenderedLabel = string | { f: string; m: string }; // agrees with its subject: plain when invariable, a pair otherwise — see `LabelHelpers.gendered`
-export type IconKind = 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'persons' | 'resources' | 'species' | 'subspecies';
+export type IconKind = 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons' | 'resources' | 'species' | 'subspecies';
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 
 // A realm's own metrics — listed in full, not extended from `CityMetaStat`: a crown has no `attractivity`, nobody migrates to a realm.
@@ -27,6 +27,7 @@ export type KingdomMetaStat = 'age' | 'boats' | 'book_reach' | 'books' | 'buildi
   | 'houses' | 'kills' | 'renown' | 'territory' | 'wars_won' | 'wealth';
 
 export type KingdomRegistry = Record<string, KingdomInfo>;
+export type LanguageRegistry = Record<string, LanguageInfo>;
 
 export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_religion' | 'dominant_species' | 'dominant_subspecies'
   | 'most_dominant_village' | 'most_powerful_kingdom' | 'most_renowned_clan' | 'most_renowned_family' | 'most_renowned_person';
@@ -37,13 +38,13 @@ export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'imm
 
 export type RankedStatKind = 'age' | 'armor'
   | 'army_age' | 'army_deaths' | 'army_kills' | 'army_melee' | 'army_money' | 'army_ranged' | 'army_renown'
-  | 'attack_speed' | 'attractivity' | 'births' | 'boats' | 'book_reach' | 'books' | 'books_written' | 'buildings' | 'children' | 'cities' | 'critical_chance'
-  | 'culture_traits' | 'damage' | 'deaths'
+  | 'attack_speed' | 'attractivity' | 'births' | 'boats' | 'book_reach' | 'books' | 'books_written' | 'buildings' | 'children' | 'cities' | 'converted'
+  | 'critical_chance' | 'culture_traits' | 'damage' | 'deaths'
   | 'diplomacy' | 'equipment' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
-  | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'loyalty'
-  | 'mana' | 'members'
-  | 'money' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory'
-  | 'traits' | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
+  | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'lost' | 'loyalty'
+  | 'mana' | 'members' | 'money'
+  | 'native' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speakers' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory'
+  | 'traits' | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita' | 'written';
 
 export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'
   | 'cultures' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'
@@ -52,7 +53,7 @@ export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildin
 
 export type SubspeciesRegistry = Record<string, SubspeciesInfo>;
 
-// WB's four trait-group libraries pooled: fifteen for a creature, twenty-one for a biology, fifteen for a culture, seven for a clan — four names serve them all.
+// WB's trait-group libraries pooled — a creature's, a biology's, a custom's, a clan's and a tongue's, where one name often serves several of them.
 export type TraitGroup = 'acquired' | 'adaptations' | 'advanced_brain' | 'appearance' | 'architecture' | 'bioproducts' | 'body' | 'buildings' | 'chaos'
   | 'cognitive' | 'craft' | 'diet' | 'eggs' | 'fate' | 'fun' | 'gestation' | 'growth' | 'happiness' | 'harmony' | 'health' | 'hibernation' | 'kingdom'
   | 'knowledge' | 'merits' | 'mind' | 'miscellaneous' | 'mutations' | 'phenotypes' | 'physique' | 'protection' | 'rebirth' | 'reproduction_strategy'

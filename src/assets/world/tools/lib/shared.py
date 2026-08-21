@@ -80,7 +80,7 @@ _META_CONDITIONS = {  # WB `MetaTextReportLibrary`, one lambda per verdict, port
 # WB `MetaTypeAsset.reports`: every body carries its own ordered list. Eight collectives share `meta` word for word; only the city weighs its stores as well.
 _META_REPORTS = {
     "army": ("happy", "unhappy"),  # WB gives a host only its two moods: it holds no town, bears no young and sleeps where it marches.
-    "city": ("happy", "unhappy", *_CITY_STORES, "many_children", "many_homeless"),  # its stores wedged into the four moods every other body answers with
+    "city": ("happy", "unhappy", *_CITY_STORES, "many_children", "many_homeless"),  # its stores wedged into the moods every other body answers with
     "meta": ("happy", "unhappy", "many_children", "many_homeless"),
     "war": ("war_high_casualties", "war_long", "war_fresh", "war_defenders_getting_captured", "war_attackers_getting_captured", "war_quiet", "war_full_on_battle"),
 }
@@ -92,6 +92,7 @@ _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `prof
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy"})  # shapes whose key order carries meaning: stores heaviest-first, ranks broadest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
+_captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
 
 
 # `_BOOK_POINTS` per volume plus its readings. A razed author-town would strand that reach, so the book goes to whoever shelves it — `holder_of` picks the tier.
@@ -124,7 +125,7 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
     return dict(sorted(result.items()))
 
 
-# The families with someone on the ground, ranked five ways: `oldest`/`kills`/`deaths` are WB's own counters, `population`/`renown` are scoped to who is present.
+# The families with someone on the ground: `oldest`/`kills`/`deaths` are WB's own counters, `population`/`renown` are scoped to who is present.
 def _family_leaders(actors: Sequence[dict], families_by_id: dict) -> dict:
     members: Counter = Counter()
     renown: Counter = Counter()
@@ -154,7 +155,7 @@ def _leader_ref(record: dict) -> dict:
     return {"id": record["id"], "name": record.get("name")}
 
 
-# The standout souls, thirteen ways. `hungriest` skips the undead, who hold no nutrition to be low on; the four combat stats share one pass, that being the cost.
+# The standout souls. `hungriest` skips the undead, who hold no nutrition to be low on; the combat stats share one pass, that being the cost.
 def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of) -> dict:
     picks = {
         "births": _top_by(actors, lambda a: int(a.get("births") or 0)),
@@ -309,7 +310,7 @@ def children_by_id(save: dict) -> Counter:
     return tally
 
 
-# Eleven dimensions, `{name: {city id: value}}` — seven transposed from the kingdom, four village-only. Exported: `city/info.py` surfaces two nothing else covers.
+# `{name: {city id: value}}` — most transposed from the kingdom, the rest village-only. Exported: `city/info.py` surfaces the ones nothing else covers.
 def city_score_dimensions(save: dict) -> dict[str, dict]:
     cities = save.get("cities") or []
     civic = civic_building_ids()
@@ -457,7 +458,7 @@ def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
 
 
-# Eleven dimensions, `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces four nothing else covers.
+# `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces the ones nothing else covers.
 def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     kingdoms = save.get("kingdoms") or []
     ids = [k["id"] for k in kingdoms]
@@ -608,7 +609,7 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
                 counter[v] += 1
     pop = len(actors)
 
-    # `identified` carries the key out as an `id`, needed by the three dimensions with a tag to resolve and a script to query — the two without stay a name.
+    # `identified` carries the key out as an `id`, needed wherever a dimension has a tag to resolve and a script to query — religions alone stay a name.
     def top3(counter: Counter, names: dict, identified: bool = False) -> list[dict]:
         return [
             {**({"id": k} if identified else {}), "name": (names.get(k) or {}).get("name"), "pct": pct}
@@ -619,9 +620,9 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     return {
         "cultures": top3(cultures, ctx["cultures_by_id"], identified=True),
         "kingdoms": top3(kingdoms, ctx["kingdoms_by_id"], identified=True),
-        "languages": top3(languages, ctx["languages_by_id"]),
+        "languages": top3(languages, ctx["languages_by_id"], identified=True),
         "religions": top3(religions, ctx["religions_by_id"]),
-        "species": [  # the `asset_id` alone, which the UI translates; the other three carry a world-generated name no table could hold.
+        "species": [  # the `asset_id` alone, which the UI translates; the others carry a world-generated name no table could hold.
             {"asset_id": k, "pct": pct} for k, n in species.most_common(3) if pop and (pct := round(n / pop * 100)) > 0
         ],
         "subspecies": top3(subspecies, ctx["subspecies_by_id"], identified=True),
@@ -631,13 +632,15 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
 # `json.dumps(indent=2)` that inlines whatever fits `_INLINE_WIDTH`. `used` = what the caller already spent (key + comma), so the test measures the real line.
 def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str:
     if not isinstance(value, (dict, list)) or not value:
+        if type(value) is int:  # a third of a roster's leaves, and `json.dumps` walks its whole encoder to print one — `bool` has a type of its own, so it misses
+            return str(value)
         # A ratio that lands whole prints whole: `5.0` is noise the chronicler would have to read past, and no consumer distinguishes it from `5`.
         return json.dumps(int(value) if isinstance(value, float) and value.is_integer() else value, ensure_ascii=False)
     if isinstance(value, dict):
         parts = []
         record = all(isinstance(k, str) and k.isidentifier() for k in value)  # Records sort; late keys move nothing. Data-keyed maps and `_VALUE_ORDERED` apart.
         for k, v in sorted(value.items()) if record and key not in _VALUE_ORDERED else value.items():
-            dumped = json.dumps(k)  # dumped once and reused for the width it costs — the naive form dumps every key twice
+            dumped = f'"{k}"' if record else json.dumps(k)  # `record` has proved every key an identifier, which needs no escaping; held for the width it costs
             parts.append(f"{dumped}: {render(v, indent + 1, len(dumped) + 3, k)}")
         one, ends = "{ " + ", ".join(parts) + " }", "{}"
     else:
@@ -659,11 +662,11 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
     return f"{ends[0]}\n" + ",\n".join(f"{pad}  {p}" for p in parts) + f"\n{pad}{ends[1]}"
 
 
-# `army_captain` isn't a `profession` int — a warrior (5) leading an army. Hot loops pass `captain_ids` to spare rescanning `armies`.
-def resolve_profession(actor: dict, save: dict, captain_ids: set | None = None) -> str | None:
-    cid = actor.get("id")
-    captain = cid in captain_ids if captain_ids is not None else any(army.get("id_captain") == cid for army in save.get("armies", []))
-    if captain:
+# `army_captain` isn't a `profession` int — a warrior (5) leading an army. The roll is memoised: every roster asks this per soul, and rescanning would be O(n×m).
+def resolve_profession(actor: dict, save: dict) -> str | None:
+    if _captains_memo[0] is not save:
+        _captains_memo[0], _captains_memo[1] = save, {c for army in save.get("armies") or [] if (c := army.get("id_captain"))}
+    if actor.get("id") in _captains_memo[1]:
         return "army_captain"
     profession = actor.get("profession") or 0  # `0`/absent is WB's `nothing` — no profession, not an unknown one; anything else off the map surfaces as `#<int>`.
     return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)
@@ -681,7 +684,7 @@ def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: M
     return {"families": _family_leaders(actors, families_by_id), "persons": _person_leaders(actors, children, stat_of)}
 
 
-# The 25 rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.
+# The rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.
 def settlement_rank_getters(ctx: dict, tier: str) -> dict:
     def tally(name: str):
         counter = ctx[f"{name}_by_{tier}"]

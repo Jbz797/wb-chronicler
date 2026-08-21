@@ -3,6 +3,7 @@ export type * from './chapter.interface';
 export type * from './clan.interface';
 export type * from './culture.interface';
 export type * from './entity.interface';
+export type * from './language.interface';
 export type * from './marked.interface';
 export type * from './stats.interface';
 export type * from './subspecies.interface';

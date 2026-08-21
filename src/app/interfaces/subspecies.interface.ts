@@ -7,7 +7,7 @@ export interface SpeciesStanding extends SpeciesTotals {
   ranks?: Partial<SpeciesTotals>;
 }
 
-// Living counts over a whole species, the four the panel shows plus the biologies WB mutated out of it. Each drops at zero, so panels read them via `?? 0`.
+// Living counts over a whole species, those the panel shows plus the biologies WB mutated out of it. Each drops at zero, so panels read them via `?? 0`.
 export interface SpeciesTotals {
   cities?: number;
   kingdoms?: number;

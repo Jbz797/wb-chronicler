@@ -6,6 +6,7 @@ export const INLINE_MARKER = {
   Culture: 't', // `c`, `u` and `l` are all spoken for, so a culture takes the next letter of its own name — culTure
   Family: 'f',
   Kingdom: 'k',
+  Language: 'a', // `l` is the clan's, so a language takes its second letter — lAnguage, as a cLan took its own
   Person: 'p',
   Resource: 'r',
   Species: 's',

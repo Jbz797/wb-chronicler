@@ -123,7 +123,7 @@ def _build_traits(culture: dict, detailed: bool) -> dict | list[dict]:
     return build_trait_list(held, library) if detailed else light({"ids": build_trait_ids(held, library, "group")}, "traits")
 
 
-# The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every custom, on each of the thirteen dimensions.
+# The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every custom, on every dimension below.
 def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]) -> dict:
     return {
         "age": lambda c: entity_age(c, world_time),

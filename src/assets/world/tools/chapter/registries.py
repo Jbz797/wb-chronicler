@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Builds a chapter's `{cities,clans,families,kingdoms,persons,subspecies}.json` registries under `saves/C<n>/` — the tag visuals (+ last-known names)
-# the UI and chronicler resolve `[c/f/k/l/p/u id]` tags from, crowns and banners composed on canvas. Carried forward from C<n-1> (dead kept), rebuilt whole.
+# Builds a chapter's `<entity>.json` registries under `saves/C<n>/`, one per kind in `_REGISTRIES` — the tag visuals (+ last-known names) the UI and chronicler
+# resolve an inline `[<letter> id]` marker from, crowns and banners composed on canvas. Carried forward from C<n-1> (dead kept), rebuilt whole.
 # `ensure()` is what the bootstrap (`chapter/new.py`) calls; `registries.py C<n> [--force]` (re)builds one chapter standalone — a dev tool, not in `tools.md`.
 
 import json
@@ -14,8 +14,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
+_ENCODE = json.JSONEncoder(ensure_ascii=False, sort_keys=True).encode  # mounted once: given keyword arguments, `json.dumps` builds a fresh encoder per call
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
-_REGISTRIES = ("books", "cities", "clans", "cultures", "families", "kingdoms", "persons", "subspecies")
+_REGISTRIES = ("books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "subspecies")
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
 
 
@@ -49,12 +50,11 @@ def _book_entry(book: dict, genres: dict) -> dict:
     return _defined(entry)
 
 
-# The chapter's six registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
+# The chapter's registries: prev chapter merged with this save (live → period-accurate, gone → last-known `dead`, lost founders folded).
 def _build_registries(save: dict, prev: dict) -> dict:
     actors = save.get("actors_data") or []
     cities = save.get("cities") or []
     kingdoms = save.get("kingdoms") or []
-    captain_ids = {c for army in save.get("armies") or [] if (c := army.get("id_captain"))}  # O(1) captain lookup for `resolve_profession` in the per-actor loop
     items_by_id = index_by_id(save.get("items") or [])
     king_ids = {kid for k in kingdoms if (kid := k.get("kingID"))}  # the crowned only — a realm's banner set follows its king's species
     kingdoms_by_id = index_by_id(kingdoms)
@@ -66,6 +66,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
     members_by_clan: Counter = Counter()
     members_by_culture: Counter = Counter()
     members_by_family: Counter = Counter()
+    members_by_language: Counter = Counter()
     members_by_subspecies: Counter = Counter()
     species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
     species_by_kingdom: defaultdict[int, Counter] = defaultdict(Counter)
@@ -79,6 +80,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
             members_by_culture[cid] += 1
         if fid := a.get("family"):
             members_by_family[fid] += 1
+        if lid := a.get("language"):
+            members_by_language[lid] += 1
         if sid := a.get("subspecies"):
             members_by_subspecies[sid] += 1
         actor_id, species = a["id"], a.get("asset_id")  # both read three times below
@@ -89,7 +92,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
         if kid := a.get("civ_kingdom_id"):
             species_by_kingdom[kid][species] += 1
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
-        persons[str(actor_id)] = _person_entry(a, resolve_profession(a, save, captain_ids), items_by_id, subspecies_by_id)
+        persons[str(actor_id)] = _person_entry(a, resolve_profession(a, save), items_by_id, subspecies_by_id)
 
     cities_per_kingdom: Counter = Counter(kid for c in cities if (kid := c.get("kingdomID")) is not None)
     rank_by_city = {cid: rank for cid, rank in city_score_ranks(save).items() if rank <= 3}  # top-3 of the composite settlement weight → same medal as a realm's
@@ -112,6 +115,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
     rank_by_culture = _follower_ranks(members_by_culture)  # followers alone rank a culture, where a settlement and a realm each take a composite score
     culture_registry = {str(c["id"]): _culture_entry(c, members_by_culture.get(c["id"], 0), rank_by_culture.get(c["id"])) for c in save.get("cultures") or []}
     family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0)) for f in save.get("families") or []}
+    rank_by_language = _follower_ranks(members_by_language)  # speakers alone rank a tongue, as followers rank a custom
+    language_registry = {str(l["id"]): _language_entry(l, members_by_language.get(l["id"], 0), rank_by_language.get(l["id"])) for l in save.get("languages") or []}
     subspecies_registry = {str(s["id"]): _subspecies_entry(s, members_by_subspecies.get(s["id"], 0)) for s in save.get("subspecies") or []}
 
     out = {
@@ -121,6 +126,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
         "cultures": _merge(prev.get("cultures") or {}, culture_registry),
         "families": _merge(prev.get("families") or {}, family_registry),
         "kingdoms": _merge(prev.get("kingdoms") or {}, kingdom_registry),
+        "languages": _merge(prev.get("languages") or {}, language_registry),
         "persons": _merge(prev.get("persons") or {}, persons),
         "subspecies": _merge(prev.get("subspecies") or {}, subspecies_registry),
     }
@@ -209,8 +215,8 @@ def _family_entry(family: dict, members: int) -> dict:
         entry["species"] = species
     # WB paints the backing sprite with `getColorMainSecond` (families borrow the realms' palette). Flattened to one hex: the tag fills rather than stacks.
     backing = load_data("family-backgrounds.json").get(f"{family.get('banner_background_id') or 0:02}")
-    tint = _palette(family.get("color_id", "")).get("color_main_2")
-    if backing and tint:
+    tint = _palette(family.get("color_id", "")).get("color_main_2") or _REALM_FALLBACK_HUE  # WB grants a handful of lineages no palette at all — grey, as it does
+    if backing:
         entry["bg_color"] = _multiply(backing, tint)
     return _defined(entry)
 
@@ -250,19 +256,40 @@ def _kingdom_species(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -
     return (subspecies or {}).get("species_id") or kingdom.get("original_actor_asset")
 
 
+# Language registry entry — its own hue (a tongue is caught, not granted, so it wears no crown's colour), the founder's species and the living headcount.
+def _language_entry(language: dict, speakers: int, rank: int | None) -> dict:
+    palette = _palette(language.get("color_id", ""))
+    entry: dict = {
+        "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
+        "name": language.get("name"),
+        "species": language.get("creator_species_id"),  # the founder's stock, which those who answer in it need not share — the pip right of the name
+    }
+    if rank is not None:
+        entry["rank"] = rank
+    if speakers:  # dropped once the last speaker dies, as the culture badge drops with its last follower
+        entry["speakers"] = speakers
+    entry |= {  # WB `LanguageBanner.setupBanner`: ten parchment fields and twenty-one scripts of its own, indexed straight by these two ids.
+        "banner_bg": language.get("banner_background_id") or 0,
+        "banner_bg_color": palette.get("color_main_2"),
+        "banner_icon": language.get("banner_icon_id") or 0,
+        "banner_icon_color": palette.get("color_banner"),
+    }
+    return _defined(entry)
+
+
 def _load_registries(chapter_dir: Path) -> dict:
     return {name: json.loads(p.read_text()) if (p := chapter_dir / f"{name}.json").exists() else {} for name in _REGISTRIES}
 
 
-# Prior entries carried forward flagged dead (last-known visuals kept), bar those still alive — a living entity rewrites its own. `rank` and `members` go.
+# Prior entries carried forward flagged dead (last-known visuals kept), bar those still alive — a living entity rewrites its own. `rank` and the headcounts go.
 def _merge(prev: dict, live: dict) -> dict:
     carried = {}
     for entry_key, entry in prev.items():  # spread then pop beats filtering the items — most entries never held either key
         if entry_key in live:
             continue
         carried[entry_key] = fallen = {**entry, "dead": True}
-        fallen.pop("members", None)
-        fallen.pop("rank", None)
+        for volatile in ("members", "rank", "speakers"):  # counts and medals of the living, which a last-known entry has no claim to
+            fallen.pop(volatile, None)
     return carried | live
 
 
@@ -348,7 +375,7 @@ def _wielded_weapon(carried: list[str]) -> str | None:
 def _write_registry(path: Path, registry: dict) -> None:
     # One dump per entry, not per field, and `sort_keys` rather than a pre-sorted copy — both push the work into C. Keys are ids, so they need no escaping.
     rows = [
-        f'  "{entry_key}": {{ {json.dumps(entry, ensure_ascii=False, sort_keys=True)[1:-1]} }}'
+        f'  "{entry_key}": {{ {_ENCODE(entry)[1:-1]} }}'
         for entry_key, entry in sorted(registry.items(), key=lambda item: int(item[0]))
     ]
     path.write_text("{\n" + ",\n".join(rows) + "\n}\n")

@@ -155,7 +155,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age = actor_age(actor, ctx["world_time"])
     age_adult, age_breeding = age_thresholds(lifespan)
     ax, ay = actor.get("x"), actor.get("y")
-    language = ctx["languages_by_id"].get(actor.get("language")) or {}
     profession = resolve_profession(actor, save)
 
     # `canBreed`/`canMakeBabies` gates: alive, breeding age, not infertile, below offspring cap, fed. Transients (pregnancy, afterglow) aren't in the save.
@@ -187,7 +186,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,  # Chronicler-only: land mass (geography/info.py).
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
-        "language": language.get("name"),
+        "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in
         "life_stage": life_stage(age, age_adult, lifespan),
         "mass": _compute_mass(actor, ctx),
         "name": actor.get("name"),  # absent, not a placeholder, where WB never named them — `emit` strips it and the panels drop the row

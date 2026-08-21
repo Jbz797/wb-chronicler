@@ -69,6 +69,20 @@ export interface KingdomInfo {
   species?: string;
 }
 
+// A tongue's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living speakers. Its `name` survives extinction.
+export interface LanguageInfo {
+  banner_bg?: number;
+  banner_bg_color?: string;
+  banner_icon?: number;
+  banner_icon_color?: string;
+  color: string;
+  dead?: boolean;
+  name: string;
+  rank?: number; // podium place by speakers, top 3 only — the medal right of the name
+  speakers?: number;
+  species?: string;
+}
+
 // Everything `ActorSpriteHelpers` needs to draw the actor. Python omits `head`/`phenotype_*` at 0 — WB's own default; the entry's `name` is chronicler-only.
 export interface PersonInfo {
   asset_id: string;

@@ -97,7 +97,7 @@ def _build_population(members: list[dict], ctx: dict) -> dict:
     return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
 
 
-# What a lineage is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs every line, on each of the eleven dimensions.
+# What a lineage is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs every line, on every dimension below.
 def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda f: entity_age(f, world_time),

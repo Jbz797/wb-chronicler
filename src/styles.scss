@@ -183,6 +183,24 @@ canvas {
       }
     }
 
+    // WB's language nameplate (`nameplate_language`), 30×21 — an unrolled scroll, sliced 3 ways so its two rollers stay round and only the vellum stretches.
+    &.language-tag {
+      background-color: transparent;
+      border: 0 solid transparent;
+      border-image: url('/assets/img/nameplates/language.png') 0 5 fill / 0 5px / 0 stretch;
+
+      // Wider than the image's 5px rollers: the vellum curls in behind them, so the content starts where the writing surface flattens out.
+      border-width: 0 6px;
+      box-shadow: none;
+      padding: 0;
+
+      // Seated on the vellum rather than planted through it — a scroll rolls shut at both ends, so an overhang would break them; the plate is 21 tall, not 23.
+      .banner {
+        max-height: 17px;
+        top: 0;
+      }
+    }
+
     // A biology is written on stone, not hung from a crown: WB gives it one of twelve slabs, 9-sliced with its ragged corners at native scale, ground and all.
     &.subspecies-tag {
       background-color: transparent;
@@ -247,10 +265,11 @@ canvas {
     }
   }
 
-  // One disc for the four that count people — a lineage, a clan, a culture, a biology; last on purpose, as it ties the pill above and only source order then wins.
+  // One disc for every tag that counts people — lineage, clan, culture, tongue, biology; last on purpose, as it ties the pill above, source order winning.
   &.clan-tag .tag-badge,
   &.culture-tag .tag-badge,
   &.family-tag .tag-badge,
+  &.language-tag .tag-badge,
   &.subspecies-tag .tag-badge {
     border-radius: 50%;
     font-size: 10px; // sized for two digits: at the plate's 12.5px a clan of 43 pressed both walls of the disc

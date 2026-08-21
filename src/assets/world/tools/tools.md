@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 21/08/26 08:05</p>
+<p class="metadata">Date de mise à jour : 21/08/26 09:48</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -17,6 +17,7 @@ Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, 
 | `geography/info.py`                | `full`, `islands`, `natural_features`                                                                                                 |
 | `house/info.py <id>`               | `full`, `inventory`, `metadata`, `occupants`                                                                                          |
 | `kingdom/info.py <id>`             | `full`, `alliance`, `breakdown`, `cities`, `equipment`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `wars` |
+| `language/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `speakers`, `traits`                          |
 | `subspecies/info.py <id>`          | `full`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`    |
 | `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                                    |
 | `world/info.py`                    | `full`, `cumulative`, `leaders`, `metadata`, `snapshot`                                                                               |

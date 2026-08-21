@@ -2,8 +2,8 @@ import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
 import {
-  BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, PERSON_REGISTRY, SPECIES_COLORS,
-  SUBSPECIES_REGISTRY,
+  BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, LANGUAGE_REGISTRY, PERSON_REGISTRY,
+  SPECIES_COLORS, SUBSPECIES_REGISTRY,
 } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
@@ -20,6 +20,7 @@ export class MarkedHelpers {
     INLINE_MARKER.Culture,
     INLINE_MARKER.Family,
     INLINE_MARKER.Kingdom,
+    INLINE_MARKER.Language,
     INLINE_MARKER.Person,
     INLINE_MARKER.Subspecies,
   ]);
@@ -35,6 +36,7 @@ export class MarkedHelpers {
         this._extension(INLINE_MARKER.Culture, 'cultures', false, this._renderCulture), // `[t <id> <name>]` = culture (emblem + name + followers).
         this._extension(INLINE_MARKER.Family, 'families', false, this._renderFamily), // `[f <id> <name>]` = family (WB's picture frame + name).
         this._extension(INLINE_MARKER.Kingdom, 'kingdoms', false, this._renderKingdom), // `[k <id> <name>]` = kingdom (colored name + banner icon).
+        this._extension(INLINE_MARKER.Language, 'languages', false, this._renderLanguage), // `[a <id> <name>]` = language (emblem + name + speakers).
         this._extension(INLINE_MARKER.Person, 'persons', false, this._renderPerson), // `[p <id> <name>]` = person (portrait + name + sex icon + charge).
         this._extension(INLINE_MARKER.Resource, 'resources', true, this._renderResource), // `[r <id> <text>?]` = resource (icon + optional text, never colored).
         this._extension(INLINE_MARKER.Species, 'species', true, this._renderSpecies), // `[s <id> <text>?]` = species (icon + optional colored text).
@@ -43,7 +45,7 @@ export class MarkedHelpers {
     });
   }
 
-  // Build a marked inline extension for a `[<letter> <id> <name>]` marker — shared shape across all 6 kinds.
+  // Build a marked inline extension for a `[<letter> <id> <name>]` marker — the shape every kind shares.
   private static _extension(
     marker: InlineMarker,
     kind: IconKind,
@@ -178,6 +180,23 @@ export class MarkedHelpers {
     const style = `--tag-color: ${PaletteHelpers.realmText(Number(id))}`; // the plate itself frames it now, where an emblem-tinted ring used to
 
     return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
+  }
+
+  // A language plate: WB's own parchment, the script inked on it, its hue and the living who answer in it. Caught by ear, so it borrows no crown's palette.
+  private static _renderLanguage(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = LANGUAGE_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+
+    const emblem = `<canvas class="banner" data-language="${id}" height="0" width="0"></canvas>`; // `LanguageSpriteHelpers.paintAll` composes it once rendered
+
+    const dead = info?.dead ? ' dead' : ''; // tongue lost with its last speaker → drained + struck-through
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by speakers, the one axis a language is ranked on
+    const speakers = info?.speakers ? `<span class="tag-badge">${info.speakers}</span>` : ''; // the living who answer in it, as the culture plate badges its own
+    const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const label = `<span class="entity-name">${name}</span>`;
+
+    return `<span class="ant-tag entity-tag language-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${speakers}${species}</span>`;
   }
 
   // A subject plate: the actor as WB draws them, name, sex, then their charge where the other plates put a species glyph — the portrait already shows it.

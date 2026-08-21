@@ -15,7 +15,7 @@ export class LeadersComponent {
 
   public readonly leaders = input.required<Leaders | undefined>();
 
-  // The one family the panel names; the four other rankings stay in the JSON, for the chronicler.
+  // The one family the panel names; its other rankings stay in the JSON, for the chronicler.
   protected readonly familyRows = computed(() => {
     const families = this.leaders()?.families;
     return LEADER_FAMILY_ROWS.flatMap((row) => {
@@ -23,7 +23,7 @@ export class LeadersComponent {
       return reference ? [{ ...row, ref: reference }] : [];
     });
   });
-  // The five souls the panel names, in the order they read best: fame, power, violence, fortune, age.
+  // The souls the panel names, in the order they read best: fame, power, violence, fortune, age.
   protected readonly personRows = computed(() => {
     const persons = this.leaders()?.persons;
     return LEADER_PERSON_ROWS.flatMap((row) => {

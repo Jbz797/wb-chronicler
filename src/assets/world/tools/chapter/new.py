@@ -35,7 +35,7 @@ _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
 _RARITIES = ("epic", "legendary", "normal", "rare")
-_TIERS = ("city", "clan", "culture", "family", "kingdom", "subspecies")  # the favorite's bodies, unpacked in that order; each is optional
+_TIERS = ("city", "clan", "culture", "family", "kingdom", "language", "subspecies")  # the favorite's bodies, unpacked in that order; each is optional
 _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
@@ -126,10 +126,10 @@ def _playable_kingdoms(save: dict) -> tuple[dict, set]:
     return kingdoms, species_seen & playable
 
 
-# One scan of the prior chapters → `(all tags ever set, previous favorite, previous age id)`: alert de-dup, descriptor carry-forward, null→real + new-age checks.
-def _prior_context(n: int) -> tuple[set, dict | None, str | None]:
+# One scan of the prior chapters, for all they arbitrate: alert de-dup, descriptor carry-forward, a null→real favorite, a turned age, an unadvanced save.
+def _prior_context(n: int) -> tuple[set, dict | None, dict]:
     tags: set = set()
-    favorite = age_id = None
+    favorite, world = None, {}
     for prior in range(1, n):
         if not (prior_json := SAVES_DIR / f"C{prior}" / "chapter.json").exists():
             continue
@@ -137,8 +137,8 @@ def _prior_context(n: int) -> tuple[set, dict | None, str | None]:
         tags |= set(data.get("tags") or [])
         if prior == n - 1:
             favorite = data.get("favorite")
-            age_id = ((data.get("world") or {}).get("metadata") or {}).get("age_id")
-    return tags, favorite, age_id
+            world = (data.get("world") or {}).get("metadata") or {}
+    return tags, favorite, world
 
 
 # Creature traits tallied by rarity off the summarised `{id: rarity}` map, all four buckets at 0 — a missing key would blank the panel cell, not zero it.
@@ -177,15 +177,14 @@ def main(argv: list[str]) -> int:
     live = load_save(live_wbox)
     actors = live.get("actors_data") or []
     world_time = round(float(live["mapStats"].get("world_time", 0)), 2)
-    prev_dir = SAVES_DIR / f"C{n - 1}"
     fav_id = next((a["id"] for a in actors if a.get("favorite") is True), None)
-    already, prev_favorite, prev_age_id = _prior_context(n)
+    already, prev_favorite, prev_world = _prior_context(n)
     just_designated = fav_id is not None and prev_favorite is None  # favorite null→real: earns a chapter even at an unchanged timestamp + the NEW-FAVORITE tag
-    if n > 1 and (prev_dir / "map.wbox").exists():
-        prev_time = round(float(load_save(prev_dir / "map.wbox")["mapStats"].get("world_time", 0)), 2)
-        if world_time <= prev_time and not just_designated and "--force" not in argv:
-            print(f"✗ save not advanced (world_time {world_time} ≤ C{n - 1} {prev_time}), no new favorite either — advance in WorldBox or --force", file=sys.stderr)
-            return 1
+
+    # Read off the chapter before rather than by re-parsing its save for one field — `world/info.py` rounds it exactly as the line above does, to the digit.
+    if (prev_time := prev_world.get("world_time")) is not None and world_time <= prev_time and not just_designated and "--force" not in argv:
+        print(f"✗ save not advanced (world_time {world_time} ≤ C{n - 1} {prev_time}), no new favorite either — advance in WorldBox or --force", file=sys.stderr)
+        return 1
 
     chapter_dir.mkdir(parents=True)
     live_dir = live_wbox.parent
@@ -199,7 +198,7 @@ def main(argv: list[str]) -> int:
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
 
-    # Two waves rather than seven calls in a row: the favorite's metadata names its five bodies, so none of those can start until it has landed.
+    # Two waves rather than a call per tier: the favorite's metadata names the bodies it belongs to, so none of those can start until it has landed.
     world, favorite = _run_together(
         (_run, "world/info.py", chapter),
         (_featured_favorite, chapter, fav_id, prev_favorite) if fav_id is not None else None,
@@ -209,30 +208,31 @@ def main(argv: list[str]) -> int:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    city = clan = culture = family = kingdom = subspecies = None
+    city = clan = culture = family = kingdom = language = subspecies = None
     if favorite:
         meta = favorite.get("metadata") or {}
         calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
-        city, clan, culture, family, kingdom, subspecies = _run_together(*calls)
-        folds = (  # A lineage has nothing of its own to fold, hence its absence here; the five that do are folded alike.
+        city, clan, culture, family, kingdom, language, subspecies = _run_together(*calls)
+        folds = (  # A lineage has nothing of its own to fold, hence its absence here; every tier that does is folded alike.
             (city, _fold_city_detail),
             (clan, _fold_trait_groups),
             (culture, _fold_trait_groups),
             (kingdom, _fold_kingdom_detail),
+            (language, _fold_trait_groups),
             (subspecies, _fold_subspecies_detail),
         )
         for block, fold in folds:
             if block:
                 fold(block)
-        # Rosters cut to their headcount, and the culture's library to its count as a town's is — the volumes stay in `culture/info.py <id> books`.
-        for tier, *keys in ((clan, "members"), (culture, "members", "books"), (family, "members"), (subspecies, "members")):
+        # Rosters cut to their headcount, and the libraries of a custom and a tongue to their count as a town's is — the volumes stay in their own `books`.
+        for tier, *keys in ((clan, "members"), (culture, "members", "books"), (family, "members"), (language, "speakers", "books"), (subspecies, "members")):
             if tier:
                 _fold_total(tier, *keys)
 
     age_id = live["mapStats"].get("world_age_id") or ""
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
     tags = ["NEW-FAVORITE"] if just_designated else []
-    if prev_age_id and age_id != prev_age_id:
+    if (prev_age_id := prev_world.get("age_id")) and age_id != prev_age_id:
         tags.append("NEW_AGE")
 
     # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. One-time, like the `DISABLE_*` alerts.
@@ -252,6 +252,7 @@ def main(argv: list[str]) -> int:
         "family": family,
         "favorite": favorite,
         "kingdom": kingdom,
+        "language": language,
         "subspecies": subspecies,
         "tags": tags,
         "title": "",

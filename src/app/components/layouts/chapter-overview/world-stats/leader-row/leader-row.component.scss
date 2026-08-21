@@ -1,0 +1,16 @@
+// The row lays out its own parts: the panel sets the city and realm plates `display: block` so a cell can stack allies, which threw the badge onto its own line.
+:host {
+  align-items: center;
+  display: flex;
+  gap: 0.25rem;
+
+  // Both sit in a line box of their own, where the plate rides `text-top` and the badge its baseline, two pixels shorter — nudged down, their centres meet.
+  app-new-badge {
+    position: relative;
+    top: 2px;
+
+    ::ng-deep nz-tag {
+      margin: 0 !important;
+    }
+  }
+}

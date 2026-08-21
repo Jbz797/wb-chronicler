@@ -3,33 +3,33 @@
     @if (tops().species; as s) {
       <nz-descriptions-item [nzTitle]="speciesTitle">
         <span>
-          <img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" /> {{ s.asset_id | speciesName }} <span class="share">• {{ s.pct }}%</span>
+          <img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" /> {{ s.asset_id | speciesName }} <span class="share">{{ share(s.pct) }}</span>
         </span>
       </nz-descriptions-item>
     }
     @if (tops().subspecies; as ss) {
       <nz-descriptions-item [nzTitle]="subspeciesTitle">
-        <app-subspecies-tag [id]="ss.id" [name]="ss.name" /> <span class="share">• {{ ss.pct }}%</span>
+        <app-subspecies-tag [id]="ss.id" [name]="ss.name" /> <span class="share">{{ share(ss.pct) }}</span>
       </nz-descriptions-item>
     }
     @if (tops().culture; as c) {
       <nz-descriptions-item [nzTitle]="cultureTitle">
-        <app-culture-tag [id]="c.id" [name]="c.name" /> <span class="share">• {{ c.pct }}%</span>
+        <app-culture-tag [id]="c.id" [name]="c.name" /> <span class="share">{{ share(c.pct) }}</span>
       </nz-descriptions-item>
     }
     @if (tops().language; as l) {
       <nz-descriptions-item [nzTitle]="languageTitle">
-        {{ l.name }} <span class="share">• {{ l.pct }}%</span>
+        <app-language-tag [id]="l.id" [name]="l.name" /> <span class="share">{{ share(l.pct) }}</span>
       </nz-descriptions-item>
     }
     @if (tops().religion; as r) {
       <nz-descriptions-item [nzTitle]="religionTitle">
-        {{ r.name }} <span class="share">• {{ r.pct }}%</span>
+        {{ r.name }} <span class="share">{{ share(r.pct) }}</span>
       </nz-descriptions-item>
     }
     @if (tops().kingdom; as k) {
       <nz-descriptions-item [nzTitle]="kingdomTitle">
-        <app-kingdom-tag [id]="k.id" [name]="k.name" /> <span class="share">• {{ k.pct }}%</span>
+        <app-kingdom-tag [id]="k.id" [name]="k.name" /> <span class="share">{{ share(k.pct) }}</span>
       </nz-descriptions-item>
     }
   </nz-descriptions>

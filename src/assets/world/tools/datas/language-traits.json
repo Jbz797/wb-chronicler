@@ -1,28 +1,108 @@
 {
-  "ancient_runes": { "stats": {} },
-  "beautiful_calligraphy": { "stats": {} },
-  "chilly_font": { "stats": {} },
-  "confusing_semantics": { "stats": {} },
-  "cursed_font": { "stats": {} },
-  "divine_encryption": { "stats": {} },
-  "doomed_glyphs": { "stats": {} },
-  "elegant_words": { "stats": { "offspring": 4 } },
-  "enlightening_script": { "stats": { "intelligence": 10 } },
-  "eternal_text": { "stats": { "lifespan": 500 } },
-  "font_of_gods": { "stats": {} },
-  "foolish_glyphs": { "stats": { "intelligence": -5 } },
-  "grin_mark": { "stats": {} },
-  "magic_words": { "stats": {} },
-  "melodic": { "stats": {} },
-  "mortal_tongue": { "stats": {} },
-  "nicely_structured_grammar": { "stats": {} },
-  "powerful_words": { "stats": {} },
-  "raging_paragraphs": { "stats": {} },
-  "repeated_sentences": { "stats": {} },
-  "scorching_words": { "stats": {} },
-  "scribble": { "stats": {} },
-  "spooky_language": { "stats": {} },
-  "strict_spelling": { "stats": { "warfare": 10 } },
-  "stylish_writing": { "stats": {} },
-  "words_of_madness": { "stats": {} }
+  "ancient_runes": {
+    "description": "Mystical runes that enhance magical abilities when read",
+    "flavor": "Ancient letters wake ancient power",
+    "group": "spirit",
+    "name": "Ancient Runes"
+  },
+  "beautiful_calligraphy": {
+    "description": "Beautiful writing doubles happiness from reading",
+    "flavor": "Mind sees art, forgets words",
+    "group": "harmony",
+    "name": "Beautiful Calligraphy"
+  },
+  "chilly_font": { "description": "Reading may freeze the reader solid", "flavor": "Ice claims curious eyes", "group": "chaos", "name": "Chilly Font" },
+  "confusing_semantics": {
+    "description": "Reading in this language may make you forget your own",
+    "flavor": "Knowledge dissolves in confusion",
+    "group": "chaos",
+    "name": "Confusing Semantics"
+  },
+  "cursed_font": { "description": "These glyphs bring misfortune to their readers", "flavor": "Each letter carries spite", "group": "chaos", "name": "Cursed Font" },
+  "divine_encryption": {
+    "description": "Words that rewrite the reader's mind",
+    "flavor": "Free will ends at first sight",
+    "group": "special",
+    "name": "Divine Encryption"
+  },
+  "doomed_glyphs": { "description": "Reading may summon meteors from the sky", "flavor": "Stars fall where eyes linger", "group": "chaos", "name": "Doomed Glyphs" },
+  "elegant_words": {
+    "description": "Refined script that enhances romantic attraction",
+    "flavor": "Every stroke breeds desire",
+    "group": "spirit",
+    "name": "Elegant Words"
+  },
+  "enlightening_script": {
+    "description": "Knowing this language increases intelligence",
+    "flavor": "Knowledge breaks mortal limits",
+    "group": "knowledge",
+    "name": "Enlightening Script"
+  },
+  "eternal_text": {
+    "description": "Extends the lifespan of those who know this language",
+    "flavor": "Time bows to written truth",
+    "group": "miscellaneous",
+    "name": "Eternal Text"
+  },
+  "font_of_gods": {
+    "description": "Divine text that bestows magical enhancement",
+    "flavor": "Gods whisper between lines",
+    "group": "spirit",
+    "name": "Font of Gods"
+  },
+  "foolish_glyphs": {
+    "description": "Diminishes intelligence of readers and speakers",
+    "flavor": "A language where even the letters seem confused",
+    "group": "knowledge",
+    "name": "Foolish Glyphs"
+  },
+  "grin_mark": {
+    "description": "Marked for death by the Grin Reaper. Their end is near",
+    "flavor": "They laugh because it's already too late not to",
+    "group": "fate",
+    "name": "Grin Mark"
+  },
+  "magic_words": { "description": "Mystical text that all species can understand", "flavor": "Language knows no borders", "group": "spirit", "name": "Magic Words" },
+  "melodic": { "description": "Musical language that charms listeners", "flavor": "Speech becomes song", "group": "harmony", "name": "Melodic" },
+  "mortal_tongue": {
+    "description": "Reading or hearing these evil words can be lethal unless blessed",
+    "flavor": "Death hides between lines",
+    "group": "chaos",
+    "name": "Mortal Tongue"
+  },
+  "nicely_structured_grammar": {
+    "description": "Organized writing enhances learning",
+    "flavor": "Structure shapes success",
+    "group": "knowledge",
+    "name": "Nicely Structured Grammar"
+  },
+  "powerful_words": { "description": "Reading grants temporary physical strength", "flavor": "Pages pulse with power", "group": "spirit", "name": "Powerful Words" },
+  "raging_paragraphs": { "description": "Reading may induce uncontrollable fury", "flavor": "Rage writes in red", "group": "chaos", "name": "Raging Paragraphs" },
+  "repeated_sentences": {
+    "description": "Reading may duplicate the reader themselves",
+    "flavor": "One becomes many",
+    "group": "miscellaneous",
+    "name": "Repeated Sentences"
+  },
+  "scorching_words": { "description": "Reading can ignite both text and reader", "flavor": "Words ignite reality", "group": "chaos", "name": "Scorching Words" },
+  "scribble": { "description": "Crude writing reduces learning from books", "flavor": "Meaning drowns in mess", "group": "knowledge", "name": "Scribble" },
+  "spooky_language": {
+    "description": "Reading attracts supernatural entities",
+    "flavor": "Dead eyes follow each line",
+    "group": "chaos",
+    "name": "Spooky Language"
+  },
+  "strict_spelling": {
+    "description": "Precise structure enhances military strategy",
+    "flavor": "Grammar enforces order",
+    "group": "knowledge",
+    "name": "Strict Spelling"
+  },
+  "stylish_writing": {
+    "description": "Beautiful writing increases cultural conversion",
+    "flavor": "Grace guides conversion",
+    "group": "harmony",
+    "name": "Stylish Writing"
+  },
+  "words_of_madness": { "description": "Reading risks permanent insanity", "flavor": "Truth breaks minds forever", "group": "chaos", "name": "Words Of Madness" }
 }

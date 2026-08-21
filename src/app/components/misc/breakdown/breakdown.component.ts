@@ -4,11 +4,11 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { SpeciesNamePipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
-import { CultureTagComponent, KingdomTagComponent, SubspeciesTagComponent } from '../../tags';
+import { CultureTagComponent, KingdomTagComponent, LanguageTagComponent, SubspeciesTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-breakdown',
-  imports: [CultureTagComponent, KingdomTagComponent, NzDescriptionsModule, SpeciesNamePipe, SubspeciesTagComponent],
+  imports: [CultureTagComponent, KingdomTagComponent, LanguageTagComponent, NzDescriptionsModule, SpeciesNamePipe, SubspeciesTagComponent],
   templateUrl: './breakdown.component.html',
   styleUrl: './breakdown.component.scss',
 })
@@ -16,7 +16,7 @@ export class BreakdownComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
 
-  public readonly source = input.required<'city' | 'clan' | 'culture' | 'family' | 'kingdom' | 'subspecies'>();
+  public readonly source = input.required<'city' | 'clan' | 'culture' | 'family' | 'kingdom' | 'language' | 'subspecies'>();
 
   protected readonly breakdown = computed(() => this._chronicler.currentChapter()?.meta[this.source()]?.breakdown ?? null);
   // The most-represented entry of each dimension — the table shows the leader, the chronicler keeps the full top-3. `null` for a dimension with no data.
@@ -31,5 +31,8 @@ export class BreakdownComponent {
       subspecies: b?.subspecies?.[0] ?? null,
     };
   });
+
+  // A dimension the whole body shares says nothing the row does not already say — the share prints only where there is something to share.
+  protected share = (pct: number): string => pct < 100 ? `• ${pct}%` : '';
 
 }

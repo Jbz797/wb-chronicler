@@ -1,0 +1,32 @@
+@if (ref(); as r) {
+  @switch (panel()) {
+    @case ('city') {
+      <app-city-tag [id]="r.id" [name]="r.name" />
+    }
+    @case ('clan') {
+      <app-clan-tag [id]="r.id" [name]="r.name" />
+    }
+    @case ('culture') {
+      <app-culture-tag [id]="r.id" [name]="r.name" />
+    }
+    @case ('family') {
+      <app-family-tag [id]="r.id" [name]="r.name" />
+    }
+    @case ('favorite') {
+      <app-person-tag [id]="r.id" [name]="r.name" />
+    }
+    @case ('kingdom') {
+      <app-kingdom-tag [id]="r.id" [name]="r.name" />
+    }
+    @case ('language') {
+      <app-language-tag [id]="r.id" [name]="r.name" />
+    }
+    @case ('subspecies') {
+      <app-subspecies-tag [id]="r.id" [name]="r.name" />
+    }
+    <!-- Only the world falls here, and `ref()` has already ruled it out — the bare name stands in should a panel ever arrive without a tag of its own. -->
+    @default {
+      {{ r.name }}
+    }
+  }
+}

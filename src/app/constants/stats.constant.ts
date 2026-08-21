@@ -69,7 +69,7 @@ export const LEADER_FAMILY_ROWS: { icon: string; key: 'population'; label: strin
   { icon: 'assets/img/world/families.png', key: 'population', label: 'Famille dominante' },
 ];
 
-// The five souls a settlement/realm panel names, out of the thirteen `leaders.persons` rankings: fame, power, violence, fortune, age.
+// The souls a settlement/realm panel names, out of all the `leaders.persons` rankings: fame, power, violence, fortune, age.
 export const LEADER_PERSON_ROWS: { icon: string; key: 'kills' | 'level' | 'money' | 'oldest' | 'renown'; label: string }[] = [
   { icon: 'assets/img/world/most_renowned_person.png', key: 'renown', label: 'Illustre' },
   { icon: 'assets/img/stats/level.png', key: 'level', label: 'Plus haut niveau' },

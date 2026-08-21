@@ -14,7 +14,7 @@ export interface Culture {
   traits: TraitGroupCounts;
 }
 
-// The founder's card, as WB's own window lays it out — Python ships all seven, of which the panel names the founder alone and the chronicler keeps the rest.
+// The founder's card, as WB's own window lays it out — Python ships it whole, of which the panel names the founder alone and the chronicler keeps the rest.
 interface CultureIdentity {
   founder?: PersonReference;
 }

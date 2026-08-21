@@ -4,7 +4,8 @@ import { LeaderRow } from '../../../../../interfaces';
 import { SpeciesNamePipe } from '../../../../../pipes';
 import { NewBadgeComponent } from '../../../../misc';
 import {
-  CityTagComponent, ClanTagComponent, CultureTagComponent, FamilyTagComponent, KingdomTagComponent, PersonTagComponent, SubspeciesTagComponent,
+  CityTagComponent, ClanTagComponent, CultureTagComponent, FamilyTagComponent, KingdomTagComponent, LanguageTagComponent, PersonTagComponent,
+  SubspeciesTagComponent,
 } from '../../../../tags';
 
 @Component({
@@ -15,12 +16,14 @@ import {
     CultureTagComponent,
     FamilyTagComponent,
     KingdomTagComponent,
+    LanguageTagComponent,
     NewBadgeComponent,
     PersonTagComponent,
     SpeciesNamePipe,
     SubspeciesTagComponent,
   ],
   templateUrl: './leader-row.component.html',
+  styleUrl: './leader-row.component.scss',
 })
 export class LeaderRowComponent {
 

@@ -138,7 +138,7 @@ def _build_leaders(save: dict) -> dict:
         top_id, value = counts[field].most_common(1)[0]
         out[f"dominant_{field}"] = {"id": top_id, "name": _name_of(save.get(coll) or [], top_id), "value": value}
 
-    if scores := city_score_ranks(save):  # heaviest settlement by the composite score, not the most populous — size is only one of its ten dimensions
+    if scores := city_score_ranks(save):  # heaviest settlement by the composite score, not the most populous — size is only one dimension of it
         top_cid = min(scores, key=scores.__getitem__)
         out["most_dominant_village"] = {"id": top_cid, "name": _name_of(save.get("cities") or [], top_cid)}
 

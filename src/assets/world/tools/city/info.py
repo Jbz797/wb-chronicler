@@ -268,7 +268,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "realm": cache(lambda: _build_realm_context(save, warriors_by_city)),  # the crown, its peers, its wars — read by loyalty alone, called not stored
         "religions_by_id": index_by_id(save.get("religions") or []),
         "renown_by_city": renown_by_city,
-        "score_dimensions": cache(lambda: city_score_dimensions(save)),  # the composite score's eleven tallies, two sourced nowhere else; same two callers
+        "score_dimensions": cache(lambda: city_score_dimensions(save)),  # the composite score's tallies, some sourced nowhere else; same two callers
         "shelved_by_city": cache(lambda: _shelved_by_city(save)),  # the records behind `books_by_city`, only the `books` section spells them out
         "sick_by_city": sick_by_city,
         "stats_cache": {},  # `_actor_stats` memo: loyalty asks the same handful of kings and mayors for their skills over and over.
@@ -581,13 +581,13 @@ def _city_taxes(kingdom: dict | None) -> dict:
     return taxes
 
 
-# The shared settlement getters plus the three this tier owns. Top 3 among the world's cities via `competition_ranks`, like every ranks section.
+# The shared settlement getters plus the ones this tier owns. Top 3 among the world's cities via `competition_ranks`, like every ranks section.
 def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
     books, loyalty = ctx["books_by_city"](), ctx["loyalty_total_by_city"]()  # resolved once, not inside getters `competition_ranks` fires per city
     dims = ctx["score_dimensions"]()
     armies = {c["id"]: _build_army(c, ctx) or {} for c in save.get("cities") or []}  # built once per city, not once per city and per stat
     getters = settlement_rank_getters(ctx, "city")
-    getters.update(  # the two score dimensions the panel surfaces and no other getter covers, plus the loyalty the crown's hold rests on
+    getters.update(  # the score dimensions the panel surfaces and no other getter covers, plus the loyalty the crown's hold rests on
         {
             **{  # Prefixed: the city ranks `kills`/`deaths`/`renown` of its own already. `key=k` binds per entry — a bare closure would read the loop's last value.
                 f"army_{k}": lambda c, key=k: armies.get(c.get("id"), {}).get(key, 0)

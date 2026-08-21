@@ -7,5 +7,6 @@ export * from './sprites/book-sprite.helpers';
 export * from './sprites/clan-sprite.helpers';
 export * from './sprites/culture-sprite.helpers';
 export * from './sprites/kingdom-sprite.helpers';
+export * from './sprites/language-sprite.helpers';
 export * from './sprites/sprite.helpers';
 export * from './sprites/subspecies-sprite.helpers';

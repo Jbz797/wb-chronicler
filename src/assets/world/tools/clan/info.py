@@ -125,7 +125,7 @@ def _clan_culture(clan: dict, ctx: dict) -> int | None:
     return chief.get("culture") or clan.get("culture_id")
 
 
-# The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every band, on each of the thirteen dimensions.
+# The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every band, on every dimension below.
 def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda c: entity_age(c, world_time),

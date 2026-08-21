@@ -1,4 +1,6 @@
-import { BookRegistry, CityRegistry, ClanRegistry, CultureRegistry, FamilyRegistry, KingdomRegistry, PersonRegistry, SubspeciesRegistry } from '../interfaces';
+import {
+  BookRegistry, CityRegistry, ClanRegistry, CultureRegistry, FamilyRegistry, KingdomRegistry, LanguageRegistry, PersonRegistry, SubspeciesRegistry,
+} from '../interfaces';
 
 export const BOOK_REGISTRY: BookRegistry = {};
 export const CITY_REGISTRY: CityRegistry = {};
@@ -7,6 +9,7 @@ export const CLAN_REGISTRY: ClanRegistry = {};
 export const CULTURE_REGISTRY: CultureRegistry = {};
 export const FAMILY_REGISTRY: FamilyRegistry = {};
 export const KINGDOM_REGISTRY: KingdomRegistry = {};
+export const LANGUAGE_REGISTRY: LanguageRegistry = {};
 export const PERSON_REGISTRY: PersonRegistry = {};
 export const REALM_FALLBACK_HUE = '#B0B0B0'; // WB `Toolbox.color_grey` — worn by whoever answers to no crown: wild beasts, bandits, the exiled.
 export const SUBSPECIES_REGISTRY: SubspeciesRegistry = {};

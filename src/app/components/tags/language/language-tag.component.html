@@ -1,0 +1,15 @@
+@if (language(); as l) {
+  <nz-tag class="entity-tag language-tag" [class.dead]="l.dead" [style.--tag-color]="l.color" [title]="name()">
+    <canvas #emblem class="banner" height="0" width="0"></canvas>
+    <span class="entity-name">{{ name() }}</span>
+    @if (medal() && l.rank; as r) {
+      <img [src]="`assets/img/podium/${r}.png`" />
+    }
+    @if (l.speakers; as speakers) {
+      <span class="tag-badge">{{ speakers }}</span>
+    }
+    @if (l.species; as sp) {
+      <img [src]="`assets/img/species/${sp}.png`" />
+    }
+  </nz-tag>
+}
