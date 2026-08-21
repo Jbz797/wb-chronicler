@@ -34,7 +34,6 @@ from shared import (
     parse_sections,
     population_breakdown,
     resolve_profession,
-    roster_ids,
     settlement_leaders,
     sex_label,
     take_chapter,
@@ -61,7 +60,7 @@ def _build_identity(subspecies: dict) -> dict:
 # Everyone alive who carries the biology, eldest first — WB points the actor at its subspecies, never the reverse. `total` rides with the list it counts.
 def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
     if not detailed:  # `full` keeps the chapter light: ids and a headcount, since a widespread biology rosters hundreds and no panel ever names one
-        return light({"ids": roster_ids(members, ctx["world_time"]), "total": len(members)}, "members")
+        return light({"total": len(members)})
     island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a widespread biology would still call through it hundreds of times
     out = [
         {
@@ -81,7 +80,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 
 # The subspecies' identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
-    causes = {k[len(_DEATH_PREFIX) :]: v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
+    causes = {k.removeprefix(_DEATH_PREFIX): v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
     cities = {c for a in members if (c := a.get("cityID"))}
     families = {f for a in members if (f := a.get("family"))}
     island_of = ctx["island_lookup"]()
@@ -139,7 +138,7 @@ def _build_traits(subspecies: dict, detailed: bool) -> dict:
         "birth": build(subspecies.get("saved_actor_birth_traits") or [], load_data("creature-traits.json")),
         **({"tags": tags} if tags else {}),
     }
-    return carried if detailed else light(carried, "traits")
+    return carried if detailed else light(carried)
 
 
 # What a biology is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs every biology, on each dimension.
@@ -244,7 +243,7 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
-    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # one heavy base per biology, shared by the podium and every section after
+    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
     if "breakdown" in sections:
         # The living against the biology they were born into. Species and subspecies both go: WB fixes them at birth, so each would read 100 % and say nothing.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k not in ("species", "subspecies")}

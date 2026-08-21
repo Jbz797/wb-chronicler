@@ -1,5 +1,6 @@
 // Single-letter prefixes used in the marked inline extensions: `[k id Nom]`, `[p id Nom]`, etc.
 export const INLINE_MARKER = {
+  Boat: 'o', // `b` is the book's, so a hull takes the second letter of its own name — bOat, as a cLan and a lAnguage took theirs
   Book: 'b',
   City: 'c',
   Clan: 'l', // `c` is the city's and `k` the kingdom's, so a clan takes the second letter of its own name

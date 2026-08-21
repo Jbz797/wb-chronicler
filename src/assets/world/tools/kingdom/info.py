@@ -32,8 +32,10 @@ from shared import (
     index_by_id,
     kingdom_score_dimensions,
     kingdom_score_ranks,
+    light,
     load_data,
     load_save,
+    main_subspecies,
     meta_report,
     parse_sections,
     population_breakdown,
@@ -41,10 +43,11 @@ from shared import (
     settlement_rank_getters,
     succession_heir,
     take_chapter,
+    wants_detail,
 )
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
-_ALL_SECTIONS = ("alliance", "breakdown", "cities", "equipment", "identity", "leaders", "metadata", "population", "ranks", "relations", "wars")
+_ALL_SECTIONS = ("alliance", "boats", "breakdown", "cities", "equipment", "identity", "leaders", "metadata", "population", "ranks", "relations", "wars")
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
 _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
@@ -86,6 +89,14 @@ def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
     }
 
 
+# The realm's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
+def _build_boats(kingdom: dict, ctx: dict, requested: str | None) -> dict:
+    afloat = ctx["boats_by_kingdom"].get(kingdom["id"]) or []
+    if not wants_detail(requested, len(afloat)):  # `full` keeps the chapter light — one count, the hulls themselves only when the section is asked for by name
+        return light({"total": len(afloat)})
+    return {"afloat": [{"asset_id": b.get("asset_id"), "id": b["id"], "name": b.get("name")} for b in afloat], "total": len(afloat)}
+
+
 # Chronicler-only: the kingdom's settlements, most populous first.
 def _build_cities(kingdom: dict, ctx: dict) -> list[dict]:
     kid = kingdom["id"]
@@ -99,7 +110,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_clan: dict[int, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
     actors_by_kingdom: dict[int, list[dict]] = {}
-    boats_by_kingdom: Counter[int] = Counter()  # Boats are actors, skipped by every other tally — counted here for `metadata.boats`.
+    boats_by_kingdom: dict[int, list[dict]] = {}  # Boats are actors, skipped by every other tally — gathered here for the `boats` section.
     captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
     eaters_by_kingdom: Counter[int] = Counter()
     families_by_kingdom: dict[int, set[int]] = {}
@@ -124,7 +135,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         asset_id, profession = actor.get("asset_id") or "", actor.get("profession")
         if asset_id.startswith("boat_"):  # `is_boat` inlined — it would re-read the field we already hold
             if bkid := actor.get("civ_kingdom_id"):
-                boats_by_kingdom[bkid] += 1
+                boats_by_kingdom.setdefault(bkid, []).append(actor)
             continue
         if cid := actor.get("cityID"):
             populations_by_city[cid] += 1
@@ -139,7 +150,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if clan_id := actor.get("clan"):
             actors_by_clan.setdefault(clan_id, []).append(actor)  # Heir lookup: a royal clan spans kingdoms, so `actors_by_kingdom` can't serve it.
 
-        # Guarded rather than summed blind: renown is zero on 84 % of subjects and coins on a quarter, and a `+= 0` still costs a hash and a store.
+        # Guarded rather than summed blind: renown is zero on four subjects in five and coins on a quarter, and a `+= 0` still costs a hash and a store.
         if coins := actor.get("money"):
             money_by_kingdom[kid] += int(coins)
 
@@ -216,7 +227,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
                     gold_by_kingdom[fkid] += amount
                 else:
                     goods_by_kingdom[fkid] += amount
-        # `civic` gates everything below it — 691 buildings of 15 671 pass, so the other 95 % are spared their coordinates, the tuple and the two divisions.
+        # `civic` gates everything below it — one building in twenty passes, so the rest are spared their coordinates, the tuple and the two divisions.
         asset_id = b.get("asset_id")
         if asset_id not in civic:
             continue
@@ -257,7 +268,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "houses_by_kingdom": houses_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
         "infected_by_kingdom": infected_by_kingdom,
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: 33 ms few sections need
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: half a second cold, few sections need
         "king_ids": king_ids,
         "kingdoms_at_war": {kid for w in save.get("wars", []) if not w.get("winner") for side in _war_sides(w) for kid in side},
         "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),
@@ -295,7 +306,7 @@ def _build_identity(kingdom: dict, ctx: dict) -> dict:
         "culture": entity_ref(kingdom.get("id_culture"), ctx["cultures_by_id"]),
         "language": entity_ref(kingdom.get("id_language"), ctx["languages_by_id"]),
         "religion": entity_ref(kingdom.get("id_religion"), ctx["religions_by_id"]),
-        "subspecies": entity_ref(_main_subspecies(kingdom, ctx), ctx["subspecies_by_id"]),
+        "subspecies": entity_ref(main_subspecies(kingdom, ctx, "kingdom"), ctx["subspecies_by_id"]),
         # Its culture's stance on foreigners, driving opinion modifiers 22-24. Always set, `neutral` included: absence would read as unknown.
         "worldview": next((t for t in _WORLDVIEWS if t in (culture.get("saved_traits") or [])), _WORLDVIEW_NEUTRAL),
     }
@@ -346,7 +357,6 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     return {
         "age": int(age_units / UNITS_PER_YEAR),
-        "boats": ctx["boats_by_kingdom"][kid],  # Fishing/trading/transport hulls afloat — WB's boat techs leave no other trace in the save.
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name")} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
@@ -638,7 +648,7 @@ def _compute_opinion(main: dict, side: dict, target: dict, ctx: dict, relation: 
 
     # 22-24. Main's culture vs the target's kin, on the dominant SUBSPECIES (`getMainSubspecies`), not species — `ethnocentric_guard` wants the culture to differ.
     culture_traits = side["culture_traits"]
-    same_sub = side["subspecies"] == _main_subspecies(target, ctx)  # two kingdoms with no subspecies at all read as alike, as WB's null == null does
+    same_sub = side["subspecies"] == main_subspecies(target, ctx, "kingdom")  # two kingdoms with no subspecies at all read as alike, as WB's null == null does
     if "ethnocentric_guard" in culture_traits and same_sub and main.get("id_culture") != target.get("id_culture"):
         mod["ethnocentric_guard"] = -50
     if "xenophobic" in culture_traits and not same_sub:
@@ -668,7 +678,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     getters = settlement_rank_getters(ctx, "kingdom")
     getters.update(
         {
-            "boats": lambda k: ctx["boats_by_kingdom"].get(k.get("id"), 0),
+            "boats": lambda k: len(ctx["boats_by_kingdom"].get(k.get("id")) or ()),
             "book_reach": lambda k: dims["book_reach"].get(k.get("id"), 0),
             "books": lambda k: books[k.get("id")],
             "cities": lambda k: ctx["cities_by_kingdom"].get(k.get("id"), 0),
@@ -689,15 +699,6 @@ def _king_stat(king: dict, ctx: dict, stat: str) -> int:
     return int(compute_actor_stats(king, ctx, ctx["subspecies_base_cache"]).get(stat, 0))
 
 
-# WB `Kingdom.getMainSubspecies` — the reigning king's, or its first member's while the throne is empty. `None` for a realm with neither.
-def _main_subspecies(kingdom: dict, ctx: dict) -> int | None:
-    king = ctx["actors_by_id"].get(kingdom.get("kingID"))
-    if king:
-        return king.get("subspecies")
-    members = ctx["actors_by_kingdom"].get(kingdom["id"]) or []
-    return members[0].get("subspecies") if members else None
-
-
 # WB opinion modifier 11's own notion of power — `countCities × 5 + getPopulationPeople()`. Not `_build_context`'s supreme power, which weighs warriors instead.
 def _opinion_power(kingdom_id: int, ctx: dict) -> int:
     return ctx["cities_by_kingdom"].get(kingdom_id, 0) * 5 + ctx["populations_by_kingdom"].get(kingdom_id, 0)
@@ -715,7 +716,7 @@ def _opinion_side(kingdom: dict, ctx: dict, allies: set, war_sides: list) -> dic
         "king_age": ctx["world_time"] - float((king or {}).get("created_time") or 0),
         "king_traits": set((king or {}).get("saved_traits") or []),
         "power": _opinion_power(kingdom["id"], ctx),
-        "subspecies": _main_subspecies(kingdom, ctx),
+        "subspecies": main_subspecies(kingdom, ctx, "kingdom"),
         "territory": ctx["territory_by_kingdom"].get(kingdom["id"], 0),
         "war_sides": war_sides,
     }
@@ -783,6 +784,8 @@ def main(argv: list[str]) -> int:
         out["alliance"] = _build_alliance(kingdom, ctx, save)
     if "breakdown" in sections:
         out["breakdown"] = {k: v for k, v in population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx).items() if k != "kingdoms"}
+    if "boats" in sections:
+        out["boats"] = _build_boats(kingdom, ctx, requested)
     if "cities" in sections:
         out["cities"] = _build_cities(kingdom, ctx)
     if "equipment" in sections:

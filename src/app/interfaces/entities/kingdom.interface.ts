@@ -1,8 +1,9 @@
-import { EntityReference, EquipmentStock, Leaders, PersonReference, PopulationBreakdown } from '../entity.interface';
+import { EntityReference, EquipmentStock, HullCount, Leaders, PersonReference, PopulationBreakdown } from '../entity.interface';
 
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium, no neighbour or no ongoing war means no key at all.
 export interface Kingdom {
   alliance?: KingdomAlliance;
+  boats: HullCount;
   breakdown: PopulationBreakdown;
   cities?: KingdomCity[];
   equipment: EquipmentStock;
@@ -25,11 +26,7 @@ export interface KingdomAlliance {
 }
 
 // This kingdom's diplomatic tie to one other — ally/enemy/neutral, with the net opinion score driving the tag colour.
-export interface KingdomRelation {
-  kingdom: EntityReference;
-  opinion: { total: number };
-  status: 'ally' | 'enemy' | 'neutral';
-}
+export interface KingdomRelation { kingdom: EntityReference; opinion: { total: number }; status: 'ally' | 'enemy' | 'neutral' }
 
 // `allies` is absent when a kingdom fights alone, both `*_alliance` when no alliance backs that side, `war_type` when WB never set one — `emit` strips them all.
 export interface KingdomWar {
@@ -56,7 +53,6 @@ interface KingdomCity { id: number; name: string; population: number }
 // The kingdom's own attributes (age, capital, king/heir/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
 interface KingdomMetadata {
   age: number;
-  boats: number;
   book_reach?: number;
   books?: number; // volumes shelved across its towns, whoever wrote them
   buildings: number;

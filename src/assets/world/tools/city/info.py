@@ -39,6 +39,7 @@ from shared import (
     light,
     load_data,
     load_save,
+    main_subspecies,
     meta_report,
     parse_sections,
     population_breakdown,
@@ -107,7 +108,7 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
 def _build_books(city: dict, ctx: dict, requested: str | None) -> dict:
     total = ctx["books_by_city"]()[city["id"]]
     if not wants_detail(requested, total):  # `full` keeps the chapter light — one count, the titles themselves only when the section is asked for by name
-        return light({"total": total}, "books")
+        return light({"total": total})
     return {"held": [{"id": b["id"], "name": b.get("name")} for b in ctx["shelved_by_city"]().get(city["id"], ())], "total": total}
 
 
@@ -255,7 +256,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "immortals_by_city": immortals_by_city,
         "infected_by_city": infected_by_city,
         "inventory_by_city": inventory_by_city,
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: 33 ms only `metadata` needs
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: half a second cold, only `metadata` needs
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         # The 29 modifiers per town, then the total the panel prints — defined in one place so the `loyalty` section and the `ranks` sort never drift.
         "loyalty_by_city": cache(lambda: {c["id"]: _city_loyalty(c, ctx) for c in save.get("cities") or []}),
@@ -285,7 +286,7 @@ def _build_equipment(city: dict, ctx: dict, requested: str | None) -> dict:
     storage = city.get("equipment") or {}
     total = ctx["equipment_by_city"].get(city["id"], 0)
     if not wants_detail(requested, total):  # `full` keeps the chapter light: a count per stocked rack, the pieces themselves only when the section is named
-        return light({"racks": {rack: n for rack, field in EQUIPMENT_RACKS.items() if (n := len(storage.get(field) or []))}, "total": total}, "equipment")
+        return light({"racks": {rack: n for rack, field in EQUIPMENT_RACKS.items() if (n := len(storage.get(field) or []))}, "total": total})
     item_stats, mod_stats = ctx["equipment"]["items"], ctx["equipment"]["modifiers"]
     racks = {}
     for rack, field in EQUIPMENT_RACKS.items():
@@ -301,7 +302,7 @@ def _build_identity(city: dict, ctx: dict) -> dict:
         "culture": entity_ref(city.get("id_culture"), ctx["cultures_by_id"]),
         "language": entity_ref(city.get("id_language"), ctx["languages_by_id"]),
         "religion": entity_ref(city.get("id_religion"), ctx["religions_by_id"]),
-        "subspecies": entity_ref(_main_subspecies(city, ctx), ctx["subspecies_by_id"]),
+        "subspecies": entity_ref(main_subspecies(city, ctx, "city"), ctx["subspecies_by_id"]),
     }
 
 
@@ -532,7 +533,7 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
             xenophobe = leader is not None and (_has_culture_trait(leader, "xenophobic", ctx) or _has_culture_trait(king, "xenophobic", ctx))
             add("species", -50 if xenophobe else (-5 if _has_culture_trait(leader, "xenophiles", ctx) else -25))
         else:
-            add("subspecies", 15 if _main_subspecies(capital, ctx) == _main_subspecies(city, ctx) else -15)
+            add("subspecies", 15 if main_subspecies(capital, ctx, "city") == main_subspecies(city, ctx, "city") else -15)
         # 20. Clan, weighed only between a mayor and a king of the same subspecies — otherwise the question doesn't arise.
         if leader and king and king.get("subspecies") == leader.get("subspecies"):
             add("clan", 30 if leader.get("clan") == king.get("clan") else -20)
@@ -641,15 +642,6 @@ def _loyalty_traits(actor: dict, ctx: dict) -> int:
         for trait_id in ids or []:
             total += (ctx[table].get(trait_id) or {}).get("stats", {}).get("loyalty_traits", 0)
     return int(total)
-
-
-# WB `City.getMainSubspecies` — the mayor's, or the first inhabitant's when the seat is vacant.
-def _main_subspecies(city: dict, ctx: dict) -> int | None:
-    leader = ctx["actors_by_id"].get(city.get("leaderID"))
-    if leader:
-        return leader.get("subspecies")
-    residents = ctx["actors_by_city"].get(city["id"]) or []
-    return residents[0].get("subspecies") if residents else None
 
 
 # WB `CityBehCheckLeader.tryGetClanLeader`: the realm's clanned subjects, royal house first, ranked by the city's culture. `None` where WB would roll dice instead.

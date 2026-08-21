@@ -58,13 +58,21 @@ export class WorldStatsComponent {
       return [{ data: { ...entry, isNew, key, name: entry.name ?? ANONYMOUS_NAME }, icon: icon ?? key, label }];
     });
   });
-  // Per-snapshot-stat delta vs previous chapter — `null` when no previous chapter to compare.
-  protected readonly snapshotDeltas = computed(() => {
-    const current = this.currentChapter()?.meta.world.snapshot;
-    const previous = this._chronicler.previousChapter()?.meta.world.snapshot;
-    if (!current || !previous) return null;
+  // Rows resolved here rather than in the template: every count sits under `snapshot`, except the hulls, which own a block so the chronicler can list them.
+  protected readonly snapshotRows = computed<{ delta: number | undefined; key: string; label: string; value: number }[]>(() => {
+    const world = this.currentChapter()?.meta.world;
+    if (!world) return [];
+    const before = this._chronicler.previousChapter()?.meta.world;
     // `infected` is omitted at 0 (outbreak-style), so an absent count reads as 0 on either side.
-    return Object.fromEntries(this.snapshotStats.map(({ key }) => [key, (current[key] ?? 0) - (previous[key] ?? 0)]));
+    const rows: { delta: number | undefined; hideIfZero: boolean | undefined; key: string; label: string; value: number }[] = this.snapshotStats.map(
+      ({ hideIfZero, key, label }) => {
+        const value = world.snapshot[key] ?? 0;
+        return { delta: before ? value - (before.snapshot[key] ?? 0) : undefined, hideIfZero, key, label, value };
+      },
+    );
+    const boats = world.boats.total;
+    rows.push({ delta: before ? boats - before.boats.total : undefined, hideIfZero: true, key: 'boats', label: 'Bateaux', value: boats });
+    return rows.filter(r => !r.hideIfZero || r.value > 0).map(({ delta, key, label, value }) => ({ delta, key, label, value }));
   });
   // Causes with > 0 deaths this chapter, sorted by count desc — 0-rows are hidden (16 categories incl. peste/poison/etc. that stay idle most chapters).
   protected readonly sortedDeathCauses = computed(() => {

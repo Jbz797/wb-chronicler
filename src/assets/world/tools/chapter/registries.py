@@ -235,7 +235,7 @@ def _family_entry(family: dict, members: int) -> dict:
     if (species := family.get("species_id")) is not None:  # the founding species' pip, right of the name as on every other tag
         entry["species"] = species
     # WB paints the backing sprite with `getColorMainSecond` (families borrow the realms' palette). Flattened to one hex: the tag fills rather than stacks.
-    backing = load_data("family-backgrounds.json").get(f"{family.get('banner_background_id') or 0:02}")
+    backing = load_data("colors.json")["family_frames"].get(f"{family.get('banner_background_id') or 0:02}")
     tint = _palette(family.get("color_id", "")).get("color_main_2") or _REALM_FALLBACK_HUE  # WB grants a handful of lineages no palette at all — grey, as it does
     if backing:
         entry["bg_color"] = _multiply(backing, tint)
@@ -323,7 +323,7 @@ def _multiply(base: str, tint: str) -> str:
 # A realm's palette, verbatim — WB's own `checkIfColorTooDark` belongs to the sprite ramps alone, so the UI applies it. Empty when WB shipped no such palette.
 @cache  # realms of one palette share the call, and every chapter rebuild replays it
 def _palette(color_id) -> dict:
-    return load_data("colors-all.json").get(str(color_id), {})
+    return load_data("colors.json")["entities"].get(str(color_id), {})
 
 
 # Person registry entry — everything the UI composes an actor from, plus the last-known name. `dead` comes from the merge.

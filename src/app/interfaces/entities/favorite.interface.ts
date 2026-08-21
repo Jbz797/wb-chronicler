@@ -15,10 +15,7 @@ export interface Favorite {
 }
 
 // The favorite's two attachments. Python emits each with its full stat line for the chronicler; the UI only ever draws their `[p]` tag, hence `EntityReference`.
-interface Companions {
-  best_friend?: PersonReference;
-  lover?: PersonReference;
-}
+interface Companions { best_friend?: PersonReference; lover?: PersonReference }
 
 // The favorite's identity and civic standing (species, kingdom, roles…); optional fields are dropped by Python when the actor has none.
 interface FavoriteMetadata {

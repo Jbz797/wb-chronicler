@@ -1,18 +1,15 @@
 @let c = currentChapter();
 @if (c) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    @for (stat of snapshotStats; track stat.key) {
-      @let value = c.meta.world.snapshot[stat.key] ?? 0;
-      @if (!stat.hideIfZero || value > 0) {
-        <ng-template #titleRef>
-          <img [src]="`assets/img/world/${stat.key}.png`" />
-          <span>{{ stat.label }}</span>
-        </ng-template>
-        <nz-descriptions-item [nzTitle]="titleRef">
-          <span [title]="value | exact">{{ value | compact }}</span>
-          <app-delta [value]="snapshotDeltas()?.[stat.key]" />
-        </nz-descriptions-item>
-      }
+    @for (row of snapshotRows(); track row.key) {
+      <ng-template #titleRef>
+        <img [src]="`assets/img/world/${row.key}.png`" />
+        <span>{{ row.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="titleRef">
+        <span [title]="row.value | exact">{{ row.value | compact }}</span>
+        <app-delta [value]="row.delta" />
+      </nz-descriptions-item>
     }
   </nz-descriptions>
 

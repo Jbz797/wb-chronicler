@@ -15,9 +15,7 @@ export interface Culture {
 }
 
 // The founder's card, as WB's own window lays it out — Python ships it whole, of which the panel names the founder alone and the chronicler keeps the rest.
-interface CultureIdentity {
-  founder?: PersonReference;
-}
+interface CultureIdentity { founder?: PersonReference }
 
 // Every counter drops at zero, so panels read them via `?? 0`. `cities`/`kingdoms` are WB's own reach: those holding it as their main culture, not just housing it.
 interface CultureMetadata {

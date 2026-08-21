@@ -7,6 +7,9 @@ export interface EntityReference { id: number; name: string }
 // Gear on the racks, worn by nobody. Only the total reaches the UI — the per-rack counts and the pieces themselves ship in the JSON, for the chronicler alone.
 export interface EquipmentStock { total: number }
 
+// Hulls afloat, on a realm or on the world. Only the count rides in the chapter — `<tier>/info.py … boats` names them for the chronicler.
+export interface HullCount { total: number }
+
 // The standout lineage and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
 export interface Leaders {
   families?: {

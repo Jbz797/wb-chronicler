@@ -14,6 +14,7 @@ export class MarkedHelpers {
 
   // The markers a registry resolves, hence an id that is a number — `[r]`/`[s]` name their asset instead.
   private static readonly _numericIdMarkers = new Set<InlineMarker>([
+    INLINE_MARKER.Boat,
     INLINE_MARKER.Book,
     INLINE_MARKER.City,
     INLINE_MARKER.Clan,
@@ -31,6 +32,7 @@ export class MarkedHelpers {
     marked.use(gfmHeadingId());
     marked.use({
       extensions: [
+        this._extension(INLINE_MARKER.Boat, 'boats', true, this._renderBoat), // `[o <id> <name>?]` = boat (name in sea-ink + hull icon).
         this._extension(INLINE_MARKER.Book, 'books', false, this._renderBook), // `[b <id> <title>]` = book (its board + title in its genre's hue + readings).
         this._extension(INLINE_MARKER.City, 'cities', false, this._renderCity), // `[c <id> <name>]` = city (glyph + name, in its kingdom's palette).
         this._extension(INLINE_MARKER.Clan, 'clans', false, this._renderClan), // `[l <id> <name>]` = clan (name in its own hue + headcount).
@@ -81,6 +83,14 @@ export class MarkedHelpers {
     const name = isNameOptional ? String.raw`(?: ([^\n\]]+))?` : String.raw` ([^\n\]]+)`;
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };
+
+  // A hull answers to no registry — the chapter carries one boat at most, so the marker paints the name in sea-ink and hangs WB's own sail to its right.
+  private static _renderBoat(this: ParserThis, token: Tokens.Generic): string {
+    const { tokens: children } = token as IconToken;
+    const img = '<img class="icon" src="assets/img/world/boats.png" />';
+    if (!children?.length) return img;
+    return `<span class="icon-wrap boat-ink">${this.parser.parseInline(children)}${img}</span>`;
+  }
 
   // A book plate: its own board, the title in its genre's hue, the readings badged — a volume answers to no crown and no stock, so it wears neither palette nor pip.
   private static _renderBook(this: ParserThis, token: Tokens.Generic): string {

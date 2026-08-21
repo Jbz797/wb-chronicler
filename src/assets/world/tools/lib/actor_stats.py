@@ -22,14 +22,12 @@ from functools import cache
 from math import inf
 
 from shared import (
-    HAPPY_MIN_HAPPINESS,
     NON_FOOD_SPECIES,
     PROFESSION_KING,
     PROFESSION_LEADER,
     PROFESSION_WARRIOR,
     SATED_MIN_NUTRITION,
     SICK_TRAITS,
-    UNHAPPY_MAX_HAPPINESS,
     UNITS_PER_YEAR,
     actor_age,
     age_thresholds,
@@ -147,12 +145,9 @@ _GENE_VALUES = {
 }
 
 _GRID_COLS = 6
-
-# Stats kept as 1-decimal floats — integer truncate would lose meaningful precision (damage_range is typically `damage × ratio` where ratio < 1).
-_KEEP_DECIMAL = {"damage_range"}
-
-# Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / _MANA_PER_INTELLIGENCE constants.
-_LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}
+_HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20, and only where `has_emotions` — which every caller gates on.
+_KEEP_DECIMAL = {"damage_range"}  # One decimal kept, not truncated: `damage_range` is `damage × ratio` with ratio < 1, which an int would flatten.
+_LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}  # Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / _MANA_PER_INTELLIGENCE constants.
 _LEVEL_VETERAN_SKILL_BONUS = 0.1
 _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
@@ -191,6 +186,7 @@ _RENAMES = {"cities": "max_cities", "health": "health_max", "mana": "mana_max", 
 _SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_bonus_male`/`is_bonus_female` — the block each one feeds.
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 _SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
+_UNHAPPY_MAX_HAPPINESS = -40  # WB `Actor.isUnhappy`: `getHappinessRatio < 0.3` ⟺ raw happiness < -40. Like `isHappy`, it answers only for a feeling actor.
 
 _scoring_memo: dict[int, dict] = {}  # `_scoring_traits`' slots, one per library — module state rather than `@cache`, a library dict being unhashable
 
@@ -517,11 +513,12 @@ def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict, *, li
     _add_trait_stats(totals, actor.get("saved_traits") or [], ctx["creature_traits"])
     _add_trait_stats(totals, (ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits") or [], ctx["clan_traits"])
     _add_trait_stats(totals, (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits") or [], ctx["language_traits"])
-    # Nothing below writes `lifespan` — equipment grants it on none of its 20 stats, level scales three others, the rest only read it. Measured 41 % cheaper.
-    if lifespan_only:
-        _normalize(totals)
-        _apply_multipliers(totals)
-        return totals
+    if lifespan_only:  # Nothing below writes `lifespan`: `_normalize` and `_apply_multipliers`, narrowed to it, answer the same and cost half.
+        if "lifespan" not in totals:  # `_normalize` skips an absent stat, and a caller reading `.get("lifespan", 0)` must see the same nothing
+            return {}
+        low, high = _NORMALIZE["lifespan"]
+        span = min(max(totals["lifespan"], low), high)
+        return {"lifespan": span * (1 + totals["multiplier_lifespan"]) if "multiplier_lifespan" in totals else span}
     _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
     _add_custom_data_float(totals, actor.get("custom_data_float"))
     _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
@@ -574,8 +571,8 @@ def meta_ratios(actors: list[dict], ctx: dict) -> dict:
     for actor in actors:
         if has_emotions(actor, ctx["subspecies_by_id"]):  # an unfeeling soul still counts in the whole, as WB divides by every unit it holds
             happiness = int(actor.get("happiness") or 0)
-            counts["happy"] += happiness >= HAPPY_MIN_HAPPINESS
-            counts["unhappy"] += happiness < UNHAPPY_MAX_HAPPINESS
+            counts["happy"] += happiness >= _HAPPY_MIN_HAPPINESS
+            counts["unhappy"] += happiness < _UNHAPPY_MAX_HAPPINESS
         # WB `calcIsBaby`: a child is a soul below its biology's `age_adult`, and only where its species was given a baby form — most creatures never have one.
         if (ctx["species_data"].get(actor.get("asset_id")) or {}).get("baby_form"):
             counts["children"] += actor_age(actor, ctx["world_time"]) < _age_adult(actor, ctx, base_cache, memo)
@@ -605,7 +602,7 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
         counts["warriors"] += a.get("profession") == PROFESSION_WARRIOR
         counts["homeless"] += not a.get("homeBuildingID")
         counts["familyless"] += not a.get("family")
-        counts["happy"] += int(a.get("happiness") or 0) >= HAPPY_MIN_HAPPINESS and has_emotions(a, ctx["subspecies_by_id"])
+        counts["happy"] += int(a.get("happiness") or 0) >= _HAPPY_MIN_HAPPINESS and has_emotions(a, ctx["subspecies_by_id"])
         if (a.get("asset_id") or "") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they never weigh on the hunger share
             counts["eaters"] += 1
             counts["fed"] += int(a.get("nutrition") or 0) >= SATED_MIN_NUTRITION

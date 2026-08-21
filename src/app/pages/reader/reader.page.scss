@@ -149,6 +149,10 @@
   .icon-wrap {
     font-weight: 500;
 
+    &.boat-ink {
+      color: $boat-ink;
+    }
+
     .icon {
       margin-left: 2px;
       max-height: 16px;

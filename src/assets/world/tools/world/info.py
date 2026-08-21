@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Emits the world sections (`cumulative`/`leaders`/`metadata`/`snapshot`) from the save alone (`mapStats` = WB's period-accurate counters). The chapter's
+# Emits the world sections from the save alone (`mapStats` = WB's period-accurate counters), `tools/tools.md` listing them. The chapter's
 # registries are built by `chapter/registries.py` (the bootstrap), not here. User-facing docs: `tools/tools.md`.
 #
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
@@ -17,15 +17,18 @@ from shared import (
     city_score_ranks,
     civic_building_ids,
     emit,
+    is_aboard,
     is_boat,
     kingdom_score_ranks,
+    light,
     load_data,
     load_save,
     parse_sections,
     take_chapter,
+    wants_detail,
 )
 
-_ALL_SECTIONS = ("cumulative", "leaders", "metadata", "snapshot")
+_ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "snapshot")
 
 # Chronicler key => WB `mapStats` counter — UI keys (`CUMULATIVE_STATS`) + churn a net snapshot hides; `_created` stored, `destroyed = created − snapshot.alive`.
 _CUMULATIVE_COUNTERS = {
@@ -98,6 +101,14 @@ _SNAPSHOT_COLLECTIONS = {
 }
 
 _UNVEGETATED = {"geyser", "super_pumpkin", "volcano"}  # Neither civ nor vegetation (`poop` = WB vegetation; `mineral_*` by prefix).
+
+
+# The world's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
+def _build_boats(save: dict, requested: str | None) -> dict:
+    afloat = [b for b in save.get("actors_data") or [] if is_boat(b)]
+    if not wants_detail(requested, len(afloat)):  # `full` keeps the chapter light — one count, the hulls themselves only when the section is asked for by name
+        return light({"total": len(afloat)})
+    return {"afloat": [{"asset_id": b.get("asset_id"), "id": b["id"], "name": b.get("name")} for b in afloat], "total": len(afloat)}
 
 
 # 0-count entries drop — the UI reads a missing key as 0, and `or 0` covers the counters WB stores as null. Keys stay as inserted: `render` sorts on the way out.
@@ -184,21 +195,23 @@ def _build_snapshot(save: dict) -> dict:
     civic = civic_building_ids()
     asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings") or [])  # Count `asset_id`s once, classify the distinct keys — four scans saved.
 
-    # Both omitted when 0 (outbreak-style, idle most chapters). `infected` ⊂ `sick`: a plague never shows up in `infected`, hence the two counters.
-    boats = infected = population = sick = 0
+    # `infected` ⊂ `sick` — a plague never shows up in the first, hence both; each drops at 0, outbreaks leaving them idle most chapters.
+    boats = infected = passengers = population = sick = 0
     for a in actors:
         if is_boat(a):  # hulls are actors too, but neither thinking population nor wildlife — they get their own tally
             boats += 1
             continue
-        traits = a.get("saved_traits") or []
-        infected += "infected" in traits
+        passengers += is_aboard(a)
         population += a.get("civ_kingdom_id") is not None
-        sick += not SICK_TRAITS.isdisjoint(traits)
+        traits = a.get("saved_traits") or []
+        if not SICK_TRAITS.isdisjoint(traits):  # the narrow test rides inside the wide one, as every other tier does it — one walk of the traits
+            sick += 1
+            infected += "infected" in traits
 
     return {
         **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
+        "passengers": passengers,  # souls at sea this instant, WB's own word (`Boat.countPassengers`) — chronicler-only, `boats` counts the hulls
         "armies": len(save.get("armies") or []),
-        "boats": boats,
         "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
         "frozen_tiles": len(save.get("frozen_tiles") or []),
         "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
@@ -225,14 +238,17 @@ def _name_of(records: list[dict], target_id) -> str | None:
 
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
+    requested = argv[0] if argv else None
     try:
-        sections = parse_sections(argv[0] if argv else None, _ALL_SECTIONS)
+        sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
     save = load_save(save_path)
     map_stats = save.get("mapStats") or {}  # WB's own counters, period-accurate.
     out: dict = {}
+    if "boats" in sections:
+        out["boats"] = _build_boats(save, requested)
     if "cumulative" in sections:
         out["cumulative"] = _build_cumulative(map_stats)
     if "leaders" in sections:

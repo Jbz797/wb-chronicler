@@ -32,7 +32,6 @@ from shared import (
     parse_sections,
     population_breakdown,
     resolve_profession,
-    roster_ids,
     settlement_leaders,
     sex_label,
     take_chapter,
@@ -55,7 +54,7 @@ def _books_by_language(save: dict) -> dict[int, list[dict]]:
 def _build_books(language: dict, ctx: dict, requested: str | None) -> dict:
     standing = ctx["books_by_language"]().get(language["id"], ())
     if not wants_detail(requested, len(standing)):
-        return light({"total": len(standing)}, "books")
+        return light({"total": len(standing)})
     return {"total": len(standing), "written": [{"id": b["id"], "name": b.get("name")} for b in standing]}
 
 
@@ -80,15 +79,14 @@ def _build_metadata(language: dict, speakers: list[dict], ctx: dict, tallies: di
     return {
         "age": entity_age(language, ctx["world_time"]),
         **({"cities": cities} if (cities := tallies["cities"][language_id]) else {}),  # towns WB records as speaking it, not merely housing a speaker
-        # WB's own three lifetime tallies, the ones its window prints: born to it, won from another tongue, and lost to one.
-        **({"converted": converted} if (converted := int(language.get("speakers_converted") or 0)) else {}),
+        **({"converted": converted} if (converted := int(language.get("speakers_converted") or 0)) else {}),  # won from another tongue, a WB lifetime tally
         **({"deaths": deaths} if (deaths := int(language.get("total_deaths") or 0)) else {}),
         "id": language_id,  # the block travels into `chapter.json`, detached from its command — the UI resolves the panel from this
         **({"kills": kills} if (kills := int(language.get("total_kills") or 0)) else {}),
         **({"kingdoms": kingdoms} if (kingdoms := tallies["kingdoms"][language_id]) else {}),  # crowns that made it their own, the widest reach WB grants a tongue
-        **({"lost": lost} if (lost := int(language.get("speakers_lost") or 0)) else {}),
+        **({"lost": lost} if (lost := int(language.get("speakers_lost") or 0)) else {}),  # gone over to another tongue, the mirror of `converted`
         "name": language.get("name"),
-        **({"native": native} if (native := int(language.get("speakers_new") or 0)) else {}),
+        **({"native": native} if (native := int(language.get("speakers_new") or 0)) else {}),  # born to it, WB `speakers_new` — never converts
         **({"renown": renown} if (renown := int(language.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `population`
         **({"report": report} if report else {}),
         **({"traits": traits} if (traits := len(language.get("saved_traits") or [])) else {}),
@@ -104,7 +102,7 @@ def _build_population(speakers: list[dict], ctx: dict) -> dict:
 # Everyone alive who still speaks it, eldest first — WB points the actor at its tongue, never the reverse. `total` rides with the list it counts, not `metadata`.
 def _build_speakers(speakers: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
     if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"ids": roster_ids(speakers, ctx["world_time"]), "total": len(speakers)}, "speakers")
+        return light({"total": len(speakers)})
     island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a wide tongue would still call through it hundreds of times
     out = [
         {
@@ -125,7 +123,7 @@ def _build_speakers(speakers: list[dict], ctx: dict, save: dict, detailed: bool)
 # What the script carries, off WB's language library — summarised to each trait and its group at any size, the effect and flavour only when named.
 def _build_traits(language: dict, detailed: bool) -> dict | list[dict]:
     held, library = language.get("saved_traits") or [], load_data("language-traits.json")
-    return build_trait_list(held, library) if detailed else light({"ids": build_trait_ids(held, library, "group")}, "traits")
+    return build_trait_list(held, library) if detailed else light({"ids": build_trait_ids(held, library, "group")})
 
 
 # The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every tongue, on every dimension below.
@@ -206,7 +204,7 @@ def main(argv: list[str]) -> int:
     ctx = {
         **build_actor_stats_context(save),  # brings the trait libraries and `languages_by_id`, `subspecies_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),
-        "books_by_language": cache(lambda: _books_by_language(save)),  # called not stored: only the `books` section reads it
+        "books_by_language": cache(lambda: _books_by_language(save)),  # called not stored: the `books` section lists them, `ranks` only counts them
         "cities_by_id": index_by_id(save.get("cities") or []),
         "clans_by_id": index_by_id(save.get("clans") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
@@ -214,11 +212,11 @@ def main(argv: list[str]) -> int:
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `speakers` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
-        "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors
     }
 
     out: dict = {}
-    base_cache: dict = ctx["subspecies_base_cache"]  # one heavy base per biology, shared by the podium and every section after
+    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
+
     if "books" in sections:
         out["books"] = _build_books(language, ctx, requested)
     if (
@@ -239,7 +237,9 @@ def main(argv: list[str]) -> int:
         out["speakers"] = _build_speakers(speakers, ctx, save, detailed=wants_detail(requested, len(speakers)))
     if "traits" in sections:
         out["traits"] = _build_traits(language, detailed=requested not in (None, "full"))
+
     emit(out)
+
     return 0
 
 

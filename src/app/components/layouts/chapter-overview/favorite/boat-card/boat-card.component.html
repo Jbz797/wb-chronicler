@@ -1,0 +1,38 @@
+@if (boat(); as b) {
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="boatTitle">
+    @if (b.identity.species; as species) {
+      <nz-descriptions-item [nzTitle]="speciesTitle">
+        <span><img class="species-icon" [src]="`assets/img/species/${species}.png`" /> {{ species | speciesName }}</span>
+      </nz-descriptions-item>
+    }
+    @if (b.identity.kingdom; as kingdom) {
+      <nz-descriptions-item [nzTitle]="kingdomTitle">
+        <app-kingdom-tag [id]="kingdom.id" [name]="kingdom.name" />
+      </nz-descriptions-item>
+    }
+    @if (b.identity.city; as city) {
+      <nz-descriptions-item [nzTitle]="cityTitle">
+        <app-city-tag [id]="city.id" [name]="city.name" />
+      </nz-descriptions-item>
+    }
+    <nz-descriptions-item [nzTitle]="crewTitle">{{ b.crew.total }}</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="ageTitle">{{ b.metadata.age }} ans</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="healthTitle">
+      <span [class]="b.metadata.health | tier: b.metadata.health_max">{{ b.metadata.health | number: '1.0-0' }}</span>
+      / {{ b.metadata.health_max | number: '1.0-0' }}
+    </nz-descriptions-item>
+  </nz-descriptions>
+
+  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Mise à l'eau</span></ng-template>
+  <ng-template #boatTitle>
+    @if (isNew()) {
+      <nz-tag nzColor="gold">NEW</nz-tag>
+    }
+    À bord de {{ title() }}
+  </ng-template>
+  <ng-template #cityTitle><img src="assets/img/world/cities.png" /><span>Port d'attache</span></ng-template>
+  <ng-template #crewTitle><img src="assets/img/world/population.png" /><span>Âmes à bord</span></ng-template>
+  <ng-template #healthTitle><img src="assets/img/stats/health.png" /><span>Coque</span></ng-template>
+  <ng-template #kingdomTitle><img src="assets/img/world/kingdoms.png" /><span>Pavillon</span></ng-template>
+  <ng-template #speciesTitle><img src="assets/img/resources/wood.png" /><span>Chantier naval</span></ng-template>
+}

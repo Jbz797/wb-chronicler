@@ -26,13 +26,13 @@ export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' 
 export type FamilyRegistry = Record<string, FamilyInfo>;
 export type GenderedLabel = string | { f: string; m: string }; // agrees with its subject: plain when invariable, a pair otherwise — see `LabelHelpers.gendered`
 
-export type IconKind = 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons' | 'religions' | 'resources' | 'species'
-  | 'subspecies';
+export type IconKind = 'boats' | 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons' | 'religions' | 'resources'
+  | 'species' | 'subspecies';
 
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 
 // A realm's own metrics — listed in full, not extended from `CityMetaStat`: a crown has no `attractivity`, nobody migrates to a realm.
-export type KingdomMetaStat = 'age' | 'boats' | 'book_reach' | 'books' | 'buildings' | 'cities' | 'culture_traits' | 'deaths' | 'food' | 'foundings' | 'goods'
+export type KingdomMetaStat = 'age' | 'book_reach' | 'books' | 'buildings' | 'cities' | 'culture_traits' | 'deaths' | 'food' | 'foundings' | 'goods'
   | 'houses' | 'kills' | 'renown' | 'territory' | 'wars_won' | 'wealth';
 
 export type KingdomRegistry = Record<string, KingdomInfo>;
@@ -59,7 +59,7 @@ export type RankedStatKind = 'age' | 'armor'
 export type RankedStatSource = 'alliance' | 'species' | ChapterTier; // a tier, or a block nested in one: a realm's alliance, a biology's parent stock
 export type ReligionRegistry = Record<string, ReligionInfo>;
 
-export type SnapshotStat = 'alliances' | 'armies' | 'boats' | 'books' | 'buildings' | 'cities' | 'clans'
+export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'buildings' | 'cities' | 'clans'
   | 'cultures' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'
   | 'languages' | 'population' | 'religions' | 'sick' | 'subspecies' | 'trees' | 'vegetation'
   | 'wars' | 'wild_creatures';

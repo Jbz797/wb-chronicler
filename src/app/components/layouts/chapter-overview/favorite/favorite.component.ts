@@ -12,11 +12,13 @@ import { ChroniclerService, RegistryService } from '../../../../services';
 import { InventoryComponent, NewBadgeComponent, RankedStatComponent, RarityStatsComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
 
+import { BoatCardComponent } from './boat-card/boat-card.component';
 import { PlotCardComponent } from './plot-card/plot-card.component';
 
 @Component({
   selector: 'app-favorite',
   imports: [
+    BoatCardComponent,
     InventoryComponent,
     NewBadgeComponent,
     NzBadgeModule,
@@ -74,13 +76,15 @@ export class FavoriteComponent {
   protected readonly changedFields = computed(() => {
     const previous = this._chronicler.previousChapter()?.meta.favorite;
     const current = this.currentChapter()?.meta.favorite;
-    if (!previous || !current) return { bestFriend: false, descriptor: false, lover: false, plot: false, role: false };
+    const isBoarded = !!this.currentChapter()?.meta.boat && !this._chronicler.previousChapter()?.meta.boat; // he sails now and did not before
+    if (!previous || !current) return { bestFriend: false, boat: isBoarded, descriptor: false, lover: false, plot: false, role: false };
 
     let hasPlotChanged = false;
     if (current.plot) hasPlotChanged = previous.plot ? previous.plot.type_id !== current.plot.type_id : true;
 
     return {
       bestFriend: !!current.companions?.best_friend && current.companions.best_friend.id !== previous.companions?.best_friend?.id,
+      boat: isBoarded,
       descriptor: current.descriptor !== previous.descriptor,
       lover: !!current.companions?.lover && current.companions.lover.id !== previous.companions?.lover?.id,
       plot: hasPlotChanged,

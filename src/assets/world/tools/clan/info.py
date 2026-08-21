@@ -32,7 +32,6 @@ from shared import (
     parse_sections,
     population_breakdown,
     resolve_profession,
-    roster_ids,
     settlement_leaders,
     sex_label,
     succession_heir,
@@ -57,7 +56,7 @@ def _build_identity(clan: dict, ctx: dict) -> dict:
 # Everyone alive who wears the colours, eldest first — WB points the actor at its clan, never the reverse. `total` rides with the list it counts, not in `metadata`.
 def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
     if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"ids": roster_ids(members, ctx["world_time"]), "total": len(members)}, "members")
+        return light({"total": len(members)})
     island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a wide band would still call through it hundreds of times
     out = [
         {
@@ -81,7 +80,7 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
     families = {f for a in members if (f := a.get("family"))}
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
     # Each cause WB bothered to write, its prefix stripped; a clan that never lost anyone to fire carries no key rather than a zero.
-    causes = {k[len(_DEATH_PREFIX) :]: v for k, v in clan.items() if k.startswith(_DEATH_PREFIX) and v}
+    causes = {k.removeprefix(_DEATH_PREFIX): v for k, v in clan.items() if k.startswith(_DEATH_PREFIX) and v}
     report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the band say of itself
 
     return {
@@ -116,7 +115,7 @@ def _build_population(members: list[dict], ctx: dict) -> dict:
 # What the band swore itself to, off WB's clan library — summarised to each trait and its group at any size, the effect and flavour only when named.
 def _build_traits(clan: dict, detailed: bool) -> dict | list[dict]:
     sworn, library = clan.get("saved_traits") or [], load_data("clan-traits.json")
-    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "group")}, "traits")
+    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "group")})
 
 
 # WB `Clan.getClanCulture`: the chief's culture, else the clan's own `culture_id`, which WB writes lazily. The fallback has never fired — a chief always carries one.
@@ -215,7 +214,8 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
-    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # one heavy base per biology, shared by the podium and every section after
+    base_cache: dict = ctx["subspecies_base_cache"]  # the ctx already holds it — `_build_identity` reaches it there to weigh the heir
+
     if "breakdown" in sections:
         # The living against the founder's `identity`, drifting harder than a lineage's — species goes, `ClanManager.newClan` seeding the roster from his bloodline.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
@@ -233,7 +233,9 @@ def main(argv: list[str]) -> int:
         out["ranks"] = competition_ranks(clan, list(clans_by_id.values()), _rank_getters(tallies, ctx["world_time"]))
     if "traits" in sections:
         out["traits"] = _build_traits(clan, detailed=requested not in (None, "full"))
+
     emit(out)
+
     return 0
 
 

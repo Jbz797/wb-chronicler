@@ -15,9 +15,7 @@ export interface Language {
 }
 
 // The founder's card, as WB's own window lays it out — Python ships it whole, of which the panel names the founder alone and the chronicler keeps the rest.
-interface LanguageIdentity {
-  founder?: PersonReference;
-}
+interface LanguageIdentity { founder?: PersonReference }
 
 // Every counter drops at zero, so panels read them via `?? 0`. `cities`/`kingdoms` are WB's own reach: those WB records as speaking it, not merely housing one.
 interface LanguageMetadata {

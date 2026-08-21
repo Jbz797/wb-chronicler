@@ -1,10 +1,17 @@
+import { HullCount } from '../entity.interface';
 import { LeaderKind } from '../types';
 
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
 export interface LeaderRow extends Omit<Leader, 'name' | 'value'> { isNew: boolean; key: LeaderKind; name: string }
 
 // The world panel's four blocks: live snapshot, cumulative counters, « Records » leaders, and metadata.
-export interface World { cumulative: WorldCumulative; leaders?: Partial<Record<LeaderKind, Leader>>; metadata: WorldMetadata; snapshot: WorldSnapshot }
+export interface World {
+  boats: HullCount;
+  cumulative: WorldCumulative;
+  leaders?: Partial<Record<LeaderKind, Leader>>;
+  metadata: WorldMetadata;
+  snapshot: WorldSnapshot;
+}
 
 // The world's own identity, chronicler-authored in `history/world.json` — its name and the sentence that frames it, both outside any chapter.
 export interface WorldInfo { description: string; name: string }
@@ -51,7 +58,6 @@ interface WorldMetadata { age_id: string; world_time: number }
 interface WorldSnapshot {
   alliances: number;
   armies: number;
-  boats?: number;
   books: number;
   buildings: number;
   cities: number;

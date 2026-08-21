@@ -27,7 +27,6 @@ from shared import (
     parse_sections,
     population_breakdown,
     resolve_profession,
-    roster_ids,
     settlement_leaders,
     sex_label,
     take_chapter,
@@ -37,7 +36,7 @@ from shared import (
 _ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks")
 
 
-# Chronicler-only: what the lineage was stamped as at its founding, not what its living carry — which drifts little: 87 % share the culture, 97 % the biology.
+# Chronicler-only: what the lineage was stamped as at its founding, not what its living carry — most still share both, the `breakdown` section telling how many.
 def _build_identity(family: dict, ctx: dict) -> dict:
     return {
         "culture": entity_ref(family.get("name_culture_id"), ctx["cultures_by_id"]),  # the culture that minted the name, not the members' own
@@ -49,13 +48,13 @@ def _build_identity(family: dict, ctx: dict) -> dict:
 # Everyone alive who carries the name, eldest first — the roster WB never stores. `total` rides with the list it counts rather than drifting in `metadata`.
 def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
     if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"ids": roster_ids(members, ctx["world_time"]), "total": len(members)}, "members")
+        return light({"total": len(members)})
     out = [
         {
             "age": actor_age(actor, ctx["world_time"]),
             "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the named ref, the roster's one entity — a second would blow the inline budget
             "gen": int(actor.get("generation") or 1),  # a founder reads 1, the value WB assumes without ever writing it
-            **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # `house/info.py <id>` — who shares a roof with whom
+            **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # `building/info.py <id>` — who shares a roof with whom
             "id": actor["id"],
             "job": resolve_profession(actor, save),
             "name": actor.get("name"),
@@ -109,7 +108,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "kills": lambda f: int(f.get("total_kills") or 0),
         "members": lambda f: len(tallies["members"].get(f["id"], ())),
         "money": lambda f: tallies["money"][f["id"]],
-        "renown_total": lambda f: tallies["renown"][f["id"]],  # the members' summed renown, which `population` carries under that name
+        "renown_total": lambda f: tallies["renown_total"][f["id"]],  # a lineage has no renown of its own, unlike a clan — only what its members carry
         "warriors": lambda f: tallies["warriors"][f["id"]],
     }
 
@@ -146,7 +145,7 @@ def main(argv: list[str]) -> int:
         "houses": {},
         "members": {},
         "money": Counter(),
-        "renown": Counter(),
+        "renown_total": Counter(),
         "warriors": Counter(),
     }
 
@@ -161,7 +160,7 @@ def main(argv: list[str]) -> int:
         tallies["housed"][fid] += bool(actor.get("homeBuildingID"))
         tallies["warriors"][fid] += actor.get("profession") == PROFESSION_WARRIOR
         if fame := actor.get("renown"):
-            tallies["renown"][fid] += int(fame)
+            tallies["renown_total"][fid] += int(fame)
         if home := actor.get("homeBuildingID"):
             tallies["houses"].setdefault(fid, set()).add(home)
 
@@ -178,9 +177,9 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
-    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # one heavy base per biology, shared by the podium and every section after
+    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
     if "breakdown" in sections:
-        # The living against the `identity` stamped at founding — one in eight is culturally split. Species goes (WB inherits it: always 100 %), subspecies drifts.
+        # The living against the `identity` stamped at founding. Species goes: WB has a child inherit it whole, so it reads 100 % everywhere; a subspecies drifts.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(family, ctx)
@@ -196,7 +195,9 @@ def main(argv: list[str]) -> int:
     if "ranks" in sections:
         getters = _rank_getters(tallies, ctx["world_time"])
         out["ranks"] = competition_ranks(family, list(families_by_id.values()), getters)
+
     emit(out)
+
     return 0
 
 

@@ -2,9 +2,7 @@ import { Leaders, MemberRoster, PopulationBreakdown, TierPopulation } from '../e
 import { TraitGroupCounts } from '../types';
 
 // The stock's standing among the world's species — flat counts beside its own podium, as a realm's `alliance` carries its two.
-export interface SpeciesStanding extends SpeciesTotals {
-  ranks?: Partial<SpeciesTotals>;
-}
+export interface SpeciesStanding extends SpeciesTotals { ranks?: Partial<SpeciesTotals> }
 
 // Living counts over a whole species, those the panel shows plus the biologies WB mutated out of it. Each drops at zero, so panels read them via `?? 0`.
 export interface SpeciesTotals {

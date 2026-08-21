@@ -25,7 +25,6 @@ EQUIPMENT_RACKS = {
     "weapons": "item_storage_weapons",
 }
 
-HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20, and only where `has_emotions` — which every caller now gates on.
 NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
@@ -33,7 +32,6 @@ PROFESSION_WARRIOR = 5
 SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `chapter/` reaches back to `C<n-1>` through it.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
-UNHAPPY_MAX_HAPPINESS = -40  # WB `Actor.isUnhappy`: `getHappinessRatio < 0.3` ⟺ raw happiness < -40. Like `isHappy`, it answers only for a feeling actor.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
@@ -546,10 +544,10 @@ def life_stage(age: int, age_adult: float, lifespan: float) -> str:
 
 
 # Stamps a summarised section with its own way out, so no doc has to list which ones shrink under `full` — an empty payload stays bare, hiding nothing.
-def light(payload: dict, section: str) -> dict:
+def light(payload: dict) -> dict:
     if not any(payload.values()):
         return payload
-    return {**payload, "info": f"call the `{section}` section for the full detail"}
+    return {**payload, "info": "call this section for the full detail"}
 
 
 # A `datas/` table, parsed once per run. A missing file reads as empty rather than raising — a tier whose library WB never shipped still answers, trait-less.
@@ -576,6 +574,15 @@ def load_save(path: Path) -> dict:
         save = json.loads(zlib.decompress(f.read()))
     _write_save_cache(cache_file, save)
     return save
+
+
+# WB `City.getMainSubspecies` / `Kingdom.getMainSubspecies` — the office-holder's biology, or its first member's while the seat is empty; `None` with neither.
+def main_subspecies(entity: dict, ctx: dict, tier: str) -> int | None:
+    head = ctx["actors_by_id"].get(entity.get(_HEAD_FIELD[tier]))
+    if head:
+        return head.get("subspecies")
+    members = ctx[f"actors_by_{tier}"].get(entity["id"]) or []
+    return members[0].get("subspecies") if members else None
 
 
 # WB `MetaTextReportHelper.getText`: what a body says of itself — every verdict of its own list that holds, joined in that order. `None` where none does, as in game.
@@ -636,7 +643,9 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
     if isinstance(value, dict):
         parts = []
         record = all(isinstance(k, str) and k.isidentifier() for k in value)  # Records sort; late keys move nothing. Data-keyed maps and `_VALUE_ORDERED` apart.
-        for k, v in sorted(value.items()) if record and key not in _VALUE_ORDERED else value.items():
+        numbered = all(isinstance(k, str) and k.lstrip("-").isdigit() for k in value)  # ids as keys sort on their value: `2` belongs before `10`, not after `1`
+        items = sorted(value.items(), key=lambda kv: int(kv[0])) if numbered else sorted(value.items()) if record and key not in _VALUE_ORDERED else value.items()
+        for k, v in items:
             dumped = f'"{k}"' if record else json.dumps(k)  # `record` has proved every key an identifier, which needs no escaping; held for the width it costs
             parts.append(f"{dumped}: {render(v, indent + 1, len(dumped) + 3, k)}")
         one, ends = "{ " + ", ".join(parts) + " }", "{}"
@@ -667,11 +676,6 @@ def resolve_profession(actor: dict, save: dict) -> str | None:
         return "army_captain"
     profession = actor.get("profession") or 0  # `0`/absent is WB's `nothing` — no profession, not an unknown one; anything else off the map surfaces as `#<int>`.
     return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)
-
-
-# A roster's ids alone, eldest first like its full form — a handle on each soul (`actor/info.py <id>`) without the hundreds of lines describing them costs.
-def roster_ids(actors: list[dict], world_time: float) -> list[int]:
-    return [a["id"] for a in sorted(actors, key=lambda a: (-actor_age(a, world_time), a["id"]))]
 
 
 # Who stands out among a body's own — its leading lineages and its most singular souls, `{id, name}` apiece. Shared by every tier that rosters people.

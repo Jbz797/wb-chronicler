@@ -30,7 +30,8 @@ _ALERTS = {
     },
 }
 
-_CHRONICLER_ONLY = frozenset({"info", "report", "taxonomy"})  # no panel reads them; `report` is reworded per call, `taxonomy` derives from `identity.species`.
+# No panel reads them: `report` is reworded per call, `taxonomy` derives from `identity.species`, and `passengers` counts souls at sea the world panel never prints.
+_CHRONICLER_ONLY = frozenset({"info", "passengers", "report", "taxonomy"})
 
 # `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset({"adults", "babies", "children", "couples", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"})
@@ -68,6 +69,16 @@ def _fired_alerts(save: dict, already: set) -> list[tuple[str, str]]:
     if not present:  # no playable species yet → every `all(...)` would hold vacuously
         return []
     return [(code, spec["message"]) for code, spec in _ALERTS.items() if code not in already and spec["condition"](kingdoms, present)]
+
+
+# The panel prints the hull's name, stock, crown, port, age and health; `boat/info.py <id>` has the rest. `kind` goes: WB boards souls onto `$boat_transport$` alone.
+def _fold_boat_detail(boat: dict) -> None:
+    (boat.get("identity") or {}).pop("kind", None)
+    for section in ("combat", "traits"):
+        boat.pop(section, None)  # a hull's merits — `kingslayer`, `veteran` — narrate well and print nowhere
+    metadata = boat.get("metadata") or {}
+    for key in ("home", "kills", "level", "loot", "mass_kg", "renown", "speed", "x", "y"):
+        metadata.pop(key, None)
 
 
 # Drops the loyalty summary and both stock lists, keeping their `total` — the panels print that alone, the sections still itemising each modifier and piece.
@@ -219,11 +230,14 @@ def main(argv: list[str]) -> int:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    city = clan = culture = family = kingdom = language = religion = subspecies = None
+    boat = city = clan = culture = family = kingdom = language = religion = subspecies = None
     if favorite:
         meta = favorite.get("metadata") or {}
         calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
-        city, clan, culture, family, kingdom, language, religion, subspecies = _run_together(*calls)
+        # The hull rides the same wave, `transport` being a ref like the tiers. Popped, not read: the `boat` block replaces it, `actor/info.py <id>` keeping the ref.
+        boat_id = (meta.pop("transport", None) or {}).get("id")
+        calls.append((_run, "boat/info.py", boat_id, "full", chapter) if boat_id else None)
+        city, clan, culture, family, kingdom, language, religion, subspecies, boat = _run_together(*calls)
         folds = (  # every tier sheds its demography; `None` marks the lineage, which has nothing else of its own to fold
             (city, _fold_city_detail),
             (clan, _fold_trait_groups),
@@ -252,6 +266,14 @@ def main(argv: list[str]) -> int:
         for tier, *keys in rosters:
             if tier:
                 _fold_total(tier, *keys)
+        if boat:
+            _fold_boat_detail(boat)
+            _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
+
+    _fold_total(world, "boats")  # Counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand.
+
+    if kingdom:
+        _fold_total(kingdom, "boats")
 
     age_id = live["mapStats"].get("world_age_id") or ""
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
@@ -262,6 +284,8 @@ def main(argv: list[str]) -> int:
     # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. One-time, like the `DISABLE_*` alerts.
     if "NAVIGATION" not in already and any(is_boat(a) for a in actors):
         tags.append("NAVIGATION")
+    if boat:  # a chapter caught at sea — the favorite is aboard right now, which the panel badges and the chronicler owes a scene
+        tags.append("FAVORITE_ABOARD")
     new_alerts = _fired_alerts(live, already)
     tags += [code for code, _message in new_alerts]
 
@@ -270,6 +294,7 @@ def main(argv: list[str]) -> int:
     # `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
     chapter_json = {
         "age_label": age_label,
+        "boat": boat,
         "city": city,
         "clan": clan,
         "culture": culture,
@@ -284,10 +309,10 @@ def main(argv: list[str]) -> int:
         "world": world,
     }
 
-    # `render`, not `json.dumps(indent=2)`: same tree, near a quarter fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong.
+    # `render`, not `json.dumps(indent=2)`: same tree, a good quarter fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong.
     (chapter_dir / "chapter.json").write_text(render(_drop_chronicler_keys(chapter_json)) + "\n")
 
-    year = int(world_time / UNITS_PER_YEAR)
+    year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
     counts = " · ".join(  # The chronicler's own order: the map first, then who fills it. Each name pairs with its label here rather than twice below.
         f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {label}"
         for name, label in (
@@ -310,7 +335,9 @@ def main(argv: list[str]) -> int:
         todo += " · descriptor du favori"
     if new_alerts:
         todo += " · relayer l'alerte"
+
     print(f"  → chroniqueur: {todo}")
+
     return 0
 
 

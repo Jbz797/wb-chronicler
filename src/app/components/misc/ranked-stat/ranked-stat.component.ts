@@ -93,6 +93,7 @@ export class RankedStatComponent {
       const key = this.stat();
 
       if (key === 'score_rank') return this._snap(k.metadata.score_rank, undefined); // the value IS the placement — no podium rank of its own
+      if (key === 'boats') return this._snap(k.boats.total, k.ranks?.boats); // its own block: the hulls ride alongside the total
       if (key === 'equipment') return this._snap(k.equipment.total, k.ranks?.equipment); // its own block: the racks ride alongside the total
       if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
 

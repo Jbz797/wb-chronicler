@@ -17,6 +17,7 @@ from shared import (
     age_thresholds,
     build_trait_ids,
     build_trait_list,
+    civic_building_ids,
     competition_ranks,
     emit,
     entity_ref,
@@ -104,16 +105,18 @@ def _build_context(save: dict, save_path: Path) -> dict:
     for actor in save.get("actors_data") or []:
         actors_by_id[actor["id"]] = actor
         actors_by_asset.setdefault(actor.get("asset_id"), []).append(actor)
-        # Unrolled: the pair literal rebuilt a tuple per actor. A `Counter` here would read cleaner but measures 46 % slower than `dict.get` on this pattern.
+        # Unrolled: the pair literal rebuilt a tuple per actor. A `Counter` here would read cleaner but measures some 60 % slower than `dict.get` on this pattern.
         if parent := actor.get("parent_id_1"):
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
         if parent := actor.get("parent_id_2"):
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
-    return {  # `subspecies_base_cache`: the per-subspecies base of `compute_actor_stats`, computed once and reused run-wide — 2-8 % of a species-wide ranking.
+    return {  # `subspecies_base_cache`: the per-subspecies base of `compute_actor_stats`, computed once, reused run-wide — it cuts a ranking four- to eightfold.
         **build_actor_stats_context(save),
         "actors_by_asset": actors_by_asset,
         "actors_by_id": actors_by_id,
         "alliances_by_id": index_by_id(save.get("alliances") or []),
+        # Built structures only: WB files trees, wheat and vegetation under `buildings` too, and nobody steps « inside » a field.
+        "buildings_by_tile": {(b.get("mainX"), b.get("mainY")): b for b in save.get("buildings") or [] if b.get("asset_id") in civic_building_ids()},
         "children_by_parent": children_by_parent,
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
@@ -128,7 +131,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 # What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
 def _build_creature_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
     sworn, library = actor.get("saved_traits") or [], ctx["creature_traits"]
-    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "rarity")}, "creature_traits")
+    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "rarity")})
 
 
 # Each carried item with provenance (`by`/`from`), wear, kill count and its aggregated stats — sorted by item id for stable output.
@@ -155,6 +158,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age = actor_age(actor, ctx["world_time"])
     age_adult, age_breeding = age_thresholds(lifespan)
     ax, ay = actor.get("x"), actor.get("y")
+    tile = (int(ax), int(ay)) if ax is not None and ay is not None else None  # WB writes both coordinates or neither, so one guard serves every lookup below
     profession = resolve_profession(actor, save)
 
     # `canBreed`/`canMakeBabies` gates: alive, breeding age, not infertile, below offspring cap, fed. Transients (pregnancy, afterglow) aren't in the save.
@@ -179,11 +183,13 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # a ref, not a bare name: `family/info.py <id>` can be called on it
         "favorite_food": actor.get("favorite_food"),
         "gen": int(actor.get("generation") or 1),  # WB counts a first child 2, so a parentless founder is its 1 — a default the save omits
-        **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # Chronicler-only: WB names no house — `house/info.py <id>` takes the bare id
+        **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # Chronicler-only: WB names no roof — `building/info.py <id>` takes the bare id
+        # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
+        **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"].get(tile)) else {}),
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
         # Chronicler-only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks a fighter left out.
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
-        "island_id": island_lookup.get((int(ax), int(ay))) if ax is not None and ay is not None else None,  # Chronicler-only: land mass (geography/info.py).
+        "island_id": island_lookup.get(tile) if tile else None,  # Chronicler-only: land mass (geography/info.py).
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in
@@ -196,7 +202,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "sex": sex_label(actor),
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
-        **({"transport": _transport(actor, ctx)} if is_aboard(actor) else {}),  # WB `isInsideSomething` — a save keeps the boat half, never the building
+        # WB `isInsideSomething`: a save keeps the boat half, never the building. A plain ref, souls boarding transports alone — `boat/info.py <id>` spells it out.
+        **({"transport": entity_ref(actor.get("transportID"), ctx["actors_by_id"])} if is_aboard(actor) else {}),
         "x": ax,
         "y": ay,
     }
@@ -329,12 +336,6 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
         if entries and entries[-1].get("id") == actor_id:
             return int((world_time - float(entries[-1].get("timestamp_ago") or 0)) / UNITS_PER_YEAR)
     return None
-
-
-# The boat a soul is aboard — its kind above all: WB names only 3 of a world's 31, so `asset_id` is what tells a fishing skiff from an elven transport.
-def _transport(actor: dict, ctx: dict) -> dict | None:
-    boat = ctx["actors_by_id"].get(actor.get("transportID"))
-    return None if boat is None else {"asset_id": boat.get("asset_id"), "id": boat["id"], "name": boat.get("name")}  # `emit` drops the nameless one
 
 
 def main(argv: list[str]) -> int:

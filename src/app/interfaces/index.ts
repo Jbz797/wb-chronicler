@@ -1,5 +1,6 @@
 export type * from './actor.interface';
 export type * from './chapter.interface';
+export type * from './entities/boat.interface';
 export type * from './entities/city.interface';
 export type * from './entities/clan.interface';
 export type * from './entities/culture.interface';

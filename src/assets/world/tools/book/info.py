@@ -4,7 +4,6 @@
 # The handle is a book id — a town's `books` and a culture's both print it beside the title, each listing refs alone and leaving the volume itself here.
 
 import sys
-from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -22,7 +21,7 @@ from shared import (
     take_chapter,
 )
 
-_ALL_SECTIONS = ("metadata", "origin", "read", "teaches")
+_ALL_SECTIONS = ("gains", "metadata", "origin", "teaches")
 _BOOK_TRAITS = ("trait_id_actor", "trait_id_culture", "trait_id_language", "trait_id_religion")  # what a volume teaches, each absent where WB set none
 
 
@@ -39,7 +38,7 @@ def _build_metadata(book: dict, ctx: dict) -> dict:
         "age": entity_age(book, ctx["world_time"]),
         "genre": {"description": genre.get("description"), "name": genre.get("name")},
         "held_by": entity_ref(ctx["city_of_book"]().get(book["id"]), ctx["cities_by_id"]),
-        "last_read": int((ctx["world_time"] - float(book.get("timestamp_read_last_time") or 0)) / UNITS_PER_YEAR),  # years since anyone opened it
+        "last_read": int((ctx["world_time"] - float(book.get("timestamp_read_last_time") or 0)) / UNITS_PER_YEAR),  # years since the last reading WB stamped
         "name": book.get("name"),
         "times_read": book.get("times_read", 0),
     }
@@ -83,17 +82,17 @@ def main(argv: list[str]) -> int:
 
     ctx = {
         "cities_by_id": index_by_id(save.get("cities") or []),
-        "city_of_book": cache(lambda: books_held(save)[2]),  # custody, not authorship; called not stored, a 15 k-row walk only `metadata` needs
+        "city_of_book": lambda: books_held(save)[2],  # custody, not authorship; called not stored, a 15 k-row walk only `metadata` needs
         "world_time": save["mapStats"]["world_time"],
     }
 
     out: dict = {}
+    if "gains" in sections:  # the panel's « En lecture »: what a reader walks away with (WB `BookTypeAsset.base_stats`) — the genre's, not the volume's
+        out["gains"] = (load_data("books.json").get(book.get("book_type")) or {}).get("read") or {}
     if "metadata" in sections:
         out["metadata"] = _build_metadata(book, ctx)
     if "origin" in sections:
         out["origin"] = _build_origin(book)
-    if "read" in sections:  # the panel's « En lecture »: what a reader walks away with (WB `BookTypeAsset.base_stats`) — the genre's, not the volume's
-        out["read"] = (load_data("books.json").get(book.get("book_type")) or {}).get("read") or {}
     if "teaches" in sections:  # the traits a volume passes on, each absent where WB set none — a reader may catch the custom, the tongue or the rite
         out["teaches"] = {field.removeprefix("trait_id_"): trait for field in _BOOK_TRAITS if (trait := book.get(field))}
     emit(out)

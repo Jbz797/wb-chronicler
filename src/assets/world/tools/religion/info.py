@@ -32,7 +32,6 @@ from shared import (
     parse_sections,
     population_breakdown,
     resolve_profession,
-    roster_ids,
     settlement_leaders,
     sex_label,
     take_chapter,
@@ -55,7 +54,7 @@ def _books_by_religion(save: dict) -> dict[int, list[dict]]:
 def _build_books(religion: dict, ctx: dict, requested: str | None) -> dict:
     written = ctx["books_by_religion"]().get(religion["id"], ())
     if not wants_detail(requested, len(written)):
-        return light({"total": len(written)}, "books")
+        return light({"total": len(written)})
     return {"total": len(written), "written": [{"id": b["id"], "name": b.get("name")} for b in written]}
 
 
@@ -75,7 +74,7 @@ def _build_identity(religion: dict, ctx: dict) -> dict:
 # Everyone alive who still holds to it, eldest first — WB points the actor at its faith, never the reverse. `total` rides with the list it counts, not `metadata`.
 def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
     if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"ids": roster_ids(members, ctx["world_time"]), "total": len(members)}, "members")
+        return light({"total": len(members)})
     island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a wide faith would still call through it hundreds of times
     out = [
         {
@@ -120,7 +119,7 @@ def _build_population(members: list[dict], ctx: dict) -> dict:
 # What the faith practises, off WB's religion library — summarised to each rite and its group at any size, the effect and flavour only when named.
 def _build_traits(religion: dict, detailed: bool) -> dict | list[dict]:
     held, library = religion.get("saved_traits") or [], load_data("religion-traits.json")
-    return build_trait_list(held, library) if detailed else light({"ids": build_trait_ids(held, library, "group")}, "traits")
+    return build_trait_list(held, library) if detailed else light({"ids": build_trait_ids(held, library, "group")})
 
 
 # The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every creed, on every dimension below.
@@ -197,7 +196,7 @@ def main(argv: list[str]) -> int:
     ctx = {
         **build_actor_stats_context(save),  # brings the trait libraries and `subspecies_by_id`, `languages_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),
-        "books_by_religion": cache(lambda: _books_by_religion(save)),  # called not stored: only the `books` section reads it
+        "books_by_religion": cache(lambda: _books_by_religion(save)),  # called not stored: the `books` section lists them, `ranks` only counts them
         "cities_by_id": index_by_id(save.get("cities") or []),
         "clans_by_id": index_by_id(save.get("clans") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
@@ -205,11 +204,10 @@ def main(argv: list[str]) -> int:
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": religions_by_id,
-        "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors
     }
 
     out: dict = {}
-    base_cache: dict = ctx["subspecies_base_cache"]  # one heavy base per biology, shared by the podium and every section after
+    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
     if "books" in sections:
         out["books"] = _build_books(religion, ctx, requested)
     if "breakdown" in sections:  # The living against the founder's `identity`: a creed crosses blood and border by preaching, one conversion at a time.
