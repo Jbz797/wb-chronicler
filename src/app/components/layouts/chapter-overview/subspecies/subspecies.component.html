@@ -28,6 +28,15 @@
     <nz-descriptions-item [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="subspecies" stat="kingdoms" [showRank]="false" />
     </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="warriorsTitle">
+      <app-ranked-stat source="subspecies" stat="warriors" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="housedPctTitle">
+      <app-ranked-stat deltaSuffix="%" source="subspecies" stat="housed_pct" suffix="%" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="fedPctTitle">
+      <app-ranked-stat deltaSuffix="%" source="subspecies" stat="fed_pct" suffix="%" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="moneyTitle">
       <app-ranked-stat source="subspecies" stat="money" />
     </nz-descriptions-item>
@@ -66,6 +75,8 @@
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge de la lignée</span></ng-template>
   <ng-template #biomeTitle><img src="assets/img/world/biomes.png" /><span>Biome d'origine</span></ng-template>
   <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Villes</span></ng-template>
+  <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>
+  <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #kingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Royaumes</span></ng-template>
   <ng-template #membersTitle><img src="assets/img/world/population.png" /><span>Porteurs</span></ng-template>
   <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
@@ -73,8 +84,9 @@
   <ng-template #stockCitiesTitle><img src="assets/img/world/cities.png" /><span>Villes</span></ng-template>
   <ng-template #stockKingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Royaumes</span></ng-template>
   <ng-template #stockPopulationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
-  <ng-template #stockRenownTitle><img src="assets/img/stats/renown.png" /><span>Renommée cumulée</span></ng-template>
+  <ng-template #stockRenownTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
   <ng-template #stockSubspeciesTitle><img src="assets/img/world/subspecies.png" /><span>Sous-espèces</span></ng-template>
   <ng-template #stockTitle><img src="assets/img/world/species.png" /><span>Souche</span></ng-template>
-  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renommée cumulée</span></ng-template>
+  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
+  <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
 }

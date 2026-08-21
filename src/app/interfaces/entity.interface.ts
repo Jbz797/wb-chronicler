@@ -58,24 +58,14 @@ export interface PopulationBreakdown {
   subspecies?: { id: number; name: string; pct: number }[]; // the species alone goes without an id: every other dimension has a tag to resolve against a registry
 }
 
-// What the living of a body say of it — the settlement block less granary, head and `total`. Only the afflictions drop at zero, a share of zero being a reading.
+// What the living of a body say of it, of which the panels print these — the age and sex slices stay in `<tier>/info.py <id> population`, for the chronicler.
 export interface TierPopulation {
-  adults: number;
-  babies: number;
-  children: number; // our narrative tier, a slice of childhood — WB's own « children » verdict counts every soul below adulthood, `babies` + `children` + `teens`
-  couples: number;
-  elders: number;
-  familyless: number;
   fed_pct: number;
-  happy: number;
   housed_pct: number;
   immortals?: number;
   infected?: number;
-  men: number;
   money: number;
   renown_total: number;
   sick?: number;
-  teens: number;
   warriors: number;
-  women: number;
 }

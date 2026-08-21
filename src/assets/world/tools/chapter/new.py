@@ -31,6 +31,10 @@ _ALERTS = {
 }
 
 _CHRONICLER_ONLY = frozenset({"info", "report", "taxonomy"})  # no panel reads them; `report` is reworded per call, `taxonomy` derives from `identity.species`.
+
+# `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
+_DEMOGRAPHY = frozenset({"adults", "babies", "children", "couples", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"})
+
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
@@ -86,9 +90,16 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
     _fold_total(kingdom, "equipment")
 
 
+# The age and sex slices, the lineage depth, the count of nobles — figures the chronicler writes with and no panel prints. `population` keeps what the UI reads.
+def _fold_population(entity: dict) -> None:
+    if isinstance(block := entity.get("population"), dict):
+        entity["population"] = {k: v for k, v in block.items() if k not in _DEMOGRAPHY}
+
+
 # Both libraries tallied per WB trait group, the panel's axis; `stats` goes too — dropped here, not in `_CHRONICLER_ONLY`, which would take the favorite's own block.
 def _fold_subspecies_detail(subspecies: dict) -> None:
     subspecies.pop("stats", None)
+    (subspecies.get("species") or {}).pop("description", None)  # WB's blurb on the parent stock — narrative, and the panel never prints it
     sworn = subspecies.pop("traits", None) or {}
     counts = Counter(g for lib in ("biology", "birth") if isinstance(block := sworn.get(lib), dict) for g in block.values())
     subspecies["traits"] = dict(sorted(counts.items()))
@@ -213,17 +224,21 @@ def main(argv: list[str]) -> int:
         meta = favorite.get("metadata") or {}
         calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
         city, clan, culture, family, kingdom, language, religion, subspecies = _run_together(*calls)
-        folds = (  # A lineage has nothing of its own to fold, hence its absence here; every tier that does is folded alike.
+        folds = (  # every tier sheds its demography; `None` marks the lineage, which has nothing else of its own to fold
             (city, _fold_city_detail),
             (clan, _fold_trait_groups),
             (culture, _fold_trait_groups),
+            (family, None),
             (kingdom, _fold_kingdom_detail),
             (language, _fold_trait_groups),
             (religion, _fold_trait_groups),
             (subspecies, _fold_subspecies_detail),
         )
         for block, fold in folds:
-            if block:
+            if not block:
+                continue
+            _fold_population(block)
+            if fold:
                 fold(block)
         # Rosters cut to their headcount, and every library to its count as a town's is — the volumes stay in the tier's own `books` section.
         rosters = (
