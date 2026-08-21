@@ -24,7 +24,7 @@ The player runs **WorldBox** in pure observation mode (zero intervention, sandbo
 
 1. **The Chronicler** — Claude Code, launched from `src/assets/world/`, reads the rules in `chronicler.md`, decodes the WorldBox save (`map.wbox` zlib-compressed JSON, plus the `map_stats.s3db` SQLite), and writes the next narrative chapter in a Tolkien-inspired voice (French, no pastiche, every claim traced back to data).
 
-2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters and the rules document on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world, the favorite character, and its village and kingdom.
+2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters and the rules document on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world's leaderboards, the favorite character, and every body it belongs to: village, kingdom, clan, lineage, culture, language, religion and subspecies.
 
 Each chapter is a self-contained folder under `saves/C<n>/` carrying its own narrative, metadata, the original save snapshot, and the map preview at that moment in time.
 
@@ -33,7 +33,7 @@ Each chapter is a self-contained folder under `saves/C<n>/` carrying its own nar
 > - **One save = one chapter.** The system is built around **manual saves only** — disable WorldBox auto-saves before you start. Each time the player triggers a save, the chronicler picks it up and writes the next chapter.
 > - **Claude Max** (or higher) is recommended — the chronicler reads, cross-checks, and writes a multi-section chapter on every save.
 > - Narrative output is **French only** for now.
-> - **macOS only.** The live WorldBox save path used by `chronicler.md` and the `tools/` scripts is hardcoded for macOS (`$HOME/Library/Application Support/mkarpenko/WorldBox/saves/save1/`). On other OSes, update those references to match the local path.
+> - **macOS only.** The `tools/` scripts default to the macOS save path (`$HOME/Library/Application Support/mkarpenko/WorldBox/saves/save1/`). On other OSes, point the `WB_SAVE` environment variable at the local `map.wbox` — no file to edit.
 
 ## State lives on disk, not in context
 
@@ -53,13 +53,13 @@ src/assets/world/
 └── tools/
 ```
 
-The contents of `history/` and `saves/` are gitignored — every player's chronicle stays local to their machine.
+Every player's chronicle stays local to their machine — the repo carries the tooling and the manual, not the story.
 
 ## Dev
 
 ```sh
 yarn install
-yarn start          # ng serve on http://localhost:4200
+yarn start          # ng serve on http://localhost:4200, watching for new chapters
 yarn build          # production build
 yarn lint           # ESLint + stylelint + prettier --check
 yarn lint:fix       # auto-fix all three
