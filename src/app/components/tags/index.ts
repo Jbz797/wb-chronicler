@@ -1,4 +1,3 @@
-export * from './book/book-tag.component';
 export * from './city/city-tag.component';
 export * from './clan/clan-tag.component';
 export * from './culture/culture-tag.component';

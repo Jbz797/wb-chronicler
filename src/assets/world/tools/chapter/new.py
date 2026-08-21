@@ -190,7 +190,7 @@ def main(argv: list[str]) -> int:
     world_time = round(float(live["mapStats"].get("world_time", 0)), 2)
     fav_id = next((a["id"] for a in actors if a.get("favorite") is True), None)
     already, prev_favorite, prev_world = _prior_context(n)
-    just_designated = fav_id is not None and prev_favorite is None  # favorite null→real: earns a chapter even at an unchanged timestamp + the NEW-FAVORITE tag
+    just_designated = fav_id is not None and prev_favorite is None  # favorite null→real: earns a chapter even at an unchanged timestamp + the NEW_FAVORITE tag
 
     # Read off the chapter before rather than by re-parsing its save for one field — `world/info.py` rounds it exactly as the line above does, to the digit.
     if (prev_time := prev_world.get("world_time")) is not None and world_time <= prev_time and not just_designated and "--force" not in argv:
@@ -255,7 +255,7 @@ def main(argv: list[str]) -> int:
 
     age_id = live["mapStats"].get("world_age_id") or ""
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
-    tags = ["NEW-FAVORITE"] if just_designated else []
+    tags = ["NEW_FAVORITE"] if just_designated else []
     if (prev_age_id := prev_world.get("age_id")) and age_id != prev_age_id:
         tags.append("NEW_AGE")
 

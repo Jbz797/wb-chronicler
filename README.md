@@ -29,6 +29,7 @@ The player runs **WorldBox** in pure observation mode (zero intervention, sandbo
 Each chapter is a self-contained folder under `saves/C<n>/` carrying its own narrative, metadata, the original save snapshot, and the map preview at that moment in time.
 
 > **Notes**
+>
 > - **One save = one chapter.** The system is built around **manual saves only** — disable WorldBox auto-saves before you start. Each time the player triggers a save, the chronicler picks it up and writes the next chapter.
 > - **Claude Max** (or higher) is recommended — the chronicler reads, cross-checks, and writes a multi-section chapter on every save.
 > - Narrative output is **French only** for now.

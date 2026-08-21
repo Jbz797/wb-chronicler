@@ -7,10 +7,8 @@ export class BookSpriteHelpers {
 
   private static readonly _volumes = new Map<string, Promise<HTMLCanvasElement | null>>();
 
-  public static paint = async (canvas: HTMLCanvasElement, book: BookInfo): Promise<void> => SpriteHelpers.blit(canvas, await this._compose(book));
-
   public static paintAll(root: ParentNode, books: Record<string, BookInfo | undefined>): void {
-    SpriteHelpers.paintAll(root, 'book', books, (canvas, book) => this.paint(canvas, book));
+    SpriteHelpers.paintAll(root, 'book', books, async (canvas, book) => SpriteHelpers.blit(canvas, await this._compose(book)));
   }
 
   // The cover sizes the canvas; the glyph is centred on the boards, a column right of centre to clear the spine and a row up to clear the page edge.
