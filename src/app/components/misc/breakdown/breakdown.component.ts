@@ -2,13 +2,16 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { BreakdownSource } from '../../../interfaces';
 import { SpeciesNamePipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
-import { CultureTagComponent, KingdomTagComponent, LanguageTagComponent, SubspeciesTagComponent } from '../../tags';
+import { CultureTagComponent, KingdomTagComponent, LanguageTagComponent, ReligionTagComponent, SubspeciesTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-breakdown',
-  imports: [CultureTagComponent, KingdomTagComponent, LanguageTagComponent, NzDescriptionsModule, SpeciesNamePipe, SubspeciesTagComponent],
+  imports: [
+    CultureTagComponent, KingdomTagComponent, LanguageTagComponent, NzDescriptionsModule, ReligionTagComponent, SpeciesNamePipe, SubspeciesTagComponent,
+  ],
   templateUrl: './breakdown.component.html',
   styleUrl: './breakdown.component.scss',
 })
@@ -16,7 +19,7 @@ export class BreakdownComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
 
-  public readonly source = input.required<'city' | 'clan' | 'culture' | 'family' | 'kingdom' | 'language' | 'subspecies'>();
+  public readonly source = input.required<BreakdownSource>();
 
   protected readonly breakdown = computed(() => this._chronicler.currentChapter()?.meta[this.source()]?.breakdown ?? null);
   // The most-represented entry of each dimension — the table shows the leader, the chronicler keeps the full top-3. `null` for a dimension with no data.

@@ -39,7 +39,7 @@ ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divi
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
-_CACHE_KEEP = 12  # roughly a world's worth of chapters plus the live save — old entries fall off by mtime rather than piling up
+_CACHE_KEEP = 12  # a world's chapters plus the live save: keyed on mtime+size, those sharing a `map.wbox` share a slot, so 16 chapters spend 10 of these
 _CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` — `PROFESSION_KING`/`_LEADER`/`_WARRIOR`, spelt out: they sort after this.
 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
@@ -552,6 +552,7 @@ def light(payload: dict, section: str) -> dict:
     return {**payload, "info": f"call the `{section}` section for the full detail"}
 
 
+# A `datas/` table, parsed once per run. A missing file reads as empty rather than raising — a tier whose library WB never shipped still answers, trait-less.
 @cache
 def load_data(name: str) -> dict:
     path = _DATAS_DIR / name
@@ -609,23 +610,19 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
                 counter[v] += 1
     pop = len(actors)
 
-    # `identified` carries the key out as an `id`, needed wherever a dimension has a tag to resolve and a script to query — religions alone stay a name.
-    def top3(counter: Counter, names: dict, identified: bool = False) -> list[dict]:
-        return [
-            {**({"id": k} if identified else {}), "name": (names.get(k) or {}).get("name"), "pct": pct}
-            for k, n in counter.most_common(3)
-            if pop and (pct := round(n / pop * 100)) > 0
-        ]
+    # The id rides along on every dimension here: each has a tag to resolve and a script to query. The species has neither, and builds its own rows below.
+    def top3(counter: Counter, names: dict) -> list[dict]:
+        return [{"id": k, "name": (names.get(k) or {}).get("name"), "pct": pct} for k, n in counter.most_common(3) if pop and (pct := round(n / pop * 100)) > 0]
 
     return {
-        "cultures": top3(cultures, ctx["cultures_by_id"], identified=True),
-        "kingdoms": top3(kingdoms, ctx["kingdoms_by_id"], identified=True),
-        "languages": top3(languages, ctx["languages_by_id"], identified=True),
+        "cultures": top3(cultures, ctx["cultures_by_id"]),
+        "kingdoms": top3(kingdoms, ctx["kingdoms_by_id"]),
+        "languages": top3(languages, ctx["languages_by_id"]),
         "religions": top3(religions, ctx["religions_by_id"]),
         "species": [  # the `asset_id` alone, which the UI translates; the others carry a world-generated name no table could hold.
             {"asset_id": k, "pct": pct} for k, n in species.most_common(3) if pop and (pct := round(n / pop * 100)) > 0
         ],
-        "subspecies": top3(subspecies, ctx["subspecies_by_id"], identified=True),
+        "subspecies": top3(subspecies, ctx["subspecies_by_id"]),
     }
 
 

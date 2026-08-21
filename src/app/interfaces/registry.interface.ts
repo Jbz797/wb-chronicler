@@ -99,6 +99,20 @@ export interface PersonInfo {
   weapon?: string;
 }
 
+// A creed's tag: its own hue (preached, not granted, so no crown lends it one), the founder's species pip and the living faithful. Its `name` survives extinction.
+export interface ReligionInfo {
+  banner_bg?: number;
+  banner_bg_color?: string;
+  banner_icon?: number;
+  banner_icon_color?: string;
+  color: string;
+  dead?: boolean;
+  members?: number;
+  name: string;
+  rank?: number; // podium place by faithful, top 3 only — the medal right of the name
+  species?: string;
+}
+
 // A biology's tag: the stone slab its name is written on, the two hues WB dyes its bookmark in, the species it was mutated out of, and its living bearers.
 export interface SubspeciesInfo {
   banner_bg?: number;
@@ -110,5 +124,3 @@ export interface SubspeciesInfo {
   name: string;
   species?: string;
 }
-
-export interface WorldInfo { description: string; name: string }

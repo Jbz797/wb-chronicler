@@ -112,7 +112,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
     nobles_by_kingdom: Counter[int] = Counter()
     nobles_money_by_kingdom: Counter[int] = Counter()
     populations_by_city: Counter[int] = Counter()  # Same base as `city/info.py`: non-boat `cityID` holders, kingdom membership irrelevant.
-    populations_by_kingdom: Counter[int] = Counter()  # Mirrors `Kingdom.getPopulation`; `boat_*` PNJs are transient. Nobles = kings (3) + leaders (4) + captains.
     renown_by_kingdom: Counter[int] = Counter()
     sick_by_kingdom: Counter[int] = Counter()
     warriors_by_city: Counter[int] = Counter()
@@ -139,7 +138,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
         if clan_id := actor.get("clan"):
             actors_by_clan.setdefault(clan_id, []).append(actor)  # Heir lookup: a royal clan spans kingdoms, so `actors_by_kingdom` can't serve it.
-        populations_by_kingdom[kid] += 1
 
         # Guarded rather than summed blind: renown is zero on 84 % of subjects and coins on a quarter, and a `+= 0` still costs a hash and a store.
         if coins := actor.get("money"):
@@ -159,11 +157,11 @@ def _build_context(save: dict, save_path: Path) -> dict:
                 nobles_money_by_kingdom[kid] += int(coins)
 
         traits = actor.get("saved_traits") or []
-        if "infected" in traits:
-            infected_by_kingdom[kid] += 1
 
-        if not SICK_TRAITS.isdisjoint(traits):
+        if not SICK_TRAITS.isdisjoint(traits):  # `infected` ⊂ `SICK_TRAITS`: the narrow test rides inside the wide one, one walk of the traits.
             sick_by_kingdom[kid] += 1
+            if "infected" in traits:
+                infected_by_kingdom[kid] += 1
 
         if "immortal" in traits:
             immortals_by_kingdom[kid] += 1
@@ -173,6 +171,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
         if fid := actor.get("family"):
             families_by_kingdom.setdefault(kid, set()).add(fid)
+
+    # WB `Kingdom.getPopulation`, counted off the roster rather than beside it — one length per realm, and the two can't drift. `boat_*` PNJs are transient.
+    populations_by_kingdom: Counter[int] = Counter({kid: len(subjects) for kid, subjects in actors_by_kingdom.items()})
 
     cities_by_id: dict[int, dict] = {}
     cities_by_kingdom: dict[int, int] = {}
@@ -379,7 +380,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
 
 # Diplomatic ties involving this kingdom. Status derived from alliances/wars cross-ref (WB only persists pair + timestamps).
-def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool = False) -> list[dict]:
+def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool) -> list[dict]:
     kid = kingdom["id"]
     alliances = save.get("alliances", [])
     ongoing_wars = [w for w in save.get("wars", []) if not w.get("winner")]

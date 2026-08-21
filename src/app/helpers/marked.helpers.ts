@@ -3,7 +3,7 @@ import { gfmHeadingId } from 'marked-gfm-heading-id';
 
 import {
   BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, LANGUAGE_REGISTRY, PERSON_REGISTRY,
-  SPECIES_COLORS, SUBSPECIES_REGISTRY,
+  RELIGION_REGISTRY, SPECIES_COLORS, SUBSPECIES_REGISTRY,
 } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
 
@@ -22,6 +22,7 @@ export class MarkedHelpers {
     INLINE_MARKER.Kingdom,
     INLINE_MARKER.Language,
     INLINE_MARKER.Person,
+    INLINE_MARKER.Religion,
     INLINE_MARKER.Subspecies,
   ]);
 
@@ -38,6 +39,7 @@ export class MarkedHelpers {
         this._extension(INLINE_MARKER.Kingdom, 'kingdoms', false, this._renderKingdom), // `[k <id> <name>]` = kingdom (colored name + banner icon).
         this._extension(INLINE_MARKER.Language, 'languages', false, this._renderLanguage), // `[a <id> <name>]` = language (emblem + name + speakers).
         this._extension(INLINE_MARKER.Person, 'persons', false, this._renderPerson), // `[p <id> <name>]` = person (portrait + name + sex icon + charge).
+        this._extension(INLINE_MARKER.Religion, 'religions', false, this._renderReligion), // `[e <id> <name>]` = religion (emblem + name + faithful).
         this._extension(INLINE_MARKER.Resource, 'resources', true, this._renderResource), // `[r <id> <text>?]` = resource (icon + optional text, never colored).
         this._extension(INLINE_MARKER.Species, 'species', true, this._renderSpecies), // `[s <id> <text>?]` = species (icon + optional colored text).
         this._extension(INLINE_MARKER.Subspecies, 'subspecies', false, this._renderSubspecies), // `[u <id> <name>]` = subspecies (name in its own hue + bearers).
@@ -219,6 +221,23 @@ export class MarkedHelpers {
     const style = `--tag-color: ${color}${hue ? `; --tag-ring: ${hue}` : ''}`;
 
     return `<span class="ant-tag entity-tag${dead}" style="${style}">${portrait}${label}${level}${sex}${job}</span>`;
+  }
+
+  // A creed plate: WB's own votive frame, the sign it raises, its hue and the living who hold to it. Preached, not granted, so it borrows no crown's palette.
+  private static _renderReligion(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = RELIGION_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+
+    const emblem = `<canvas class="banner" data-religion="${id}" height="0" width="0"></canvas>`; // `ReligionSpriteHelpers.paintAll` composes it once rendered
+
+    const dead = info?.dead ? ' dead' : ''; // creed lost with its last believer → drained + struck-through
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by faithful, the one axis a religion is ranked on
+    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // the living who hold to it, as the culture plate badges its own
+    const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
+    const label = `<span class="entity-name">${name}</span>`;
+
+    return `<span class="ant-tag entity-tag religion-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${members}${species}</span>`;
   }
 
   // Resource: icon + optional inline text, never coloured.

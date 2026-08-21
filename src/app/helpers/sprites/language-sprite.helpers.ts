@@ -13,11 +13,12 @@ export class LanguageSpriteHelpers {
     SpriteHelpers.paintAll(root, 'language', languages, (canvas, language) => this.paint(canvas, language));
   }
 
-  // Both layers ship pre-cropped to one common 24×33 box, so they stack at the origin — cropping each to its own ink would have pulled them apart.
+  // The three layers ship pre-cropped to one common 26×33 box, so they stack at the origin — cropping each to its own ink would have pulled them apart.
   private static async _build(language: LanguageInfo): Promise<HTMLCanvasElement | null> {
-    const [field, script] = await Promise.all([
+    const [field, script, rings] = await Promise.all([
       SpriteHelpers.load(`assets/img/languages/language_background_${String(language.banner_bg ?? 0).padStart(2, '0')}.png`),
       SpriteHelpers.load(`assets/img/languages/language_icon_${String(language.banner_icon ?? 0).padStart(2, '0')}.png`),
+      SpriteHelpers.load('assets/img/languages/language_frame.png'),
     ]);
     const cut = document.createElement('canvas');
     cut.height = field.naturalHeight;
@@ -25,7 +26,8 @@ export class LanguageSpriteHelpers {
     const context = cut.getContext('2d');
     if (!context) return null;
 
-    for (const [sprite, hue] of [[field, language.banner_bg_color], [script, language.banner_icon_color]] as const) {
+    // The rings come last and untinted: WB ships them gold and hangs the vellum from them, so no hue of the tongue's own reaches the brass.
+    for (const [sprite, hue] of [[field, language.banner_bg_color], [script, language.banner_icon_color], [rings, undefined]] as const) {
       const tinted = this._tinted(sprite, hue);
       if (tinted) context.drawImage(tinted, 0, 0);
     }

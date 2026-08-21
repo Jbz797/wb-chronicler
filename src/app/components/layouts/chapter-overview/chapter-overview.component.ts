@@ -18,6 +18,7 @@ import { FavoriteComponent } from './favorite/favorite.component';
 import { KingdomComponent } from './kingdom/kingdom.component';
 import { LanguageComponent } from './language/language.component';
 import { PanelExtraComponent } from './panel-extra/panel-extra.component';
+import { ReligionComponent } from './religion/religion.component';
 import { SubspeciesComponent } from './subspecies/subspecies.component';
 import { WorldStatsComponent } from './world-stats/world-stats.component';
 
@@ -35,6 +36,7 @@ import { WorldStatsComponent } from './world-stats/world-stats.component';
     NzDividerModule,
     NzEmptyModule,
     PanelExtraComponent,
+    ReligionComponent,
     SubspeciesComponent,
     WorldStatsComponent,
   ],
@@ -71,7 +73,16 @@ export class ChapterOverviewComponent {
   // Type guard on the persisted panel name — a `Record`, not a list, so a panel added to the union but forgotten here breaks the build instead of failing silently.
   private _isPanel(v: string | null): v is ChapterOverviewPanel {
     const panels: Record<ChapterOverviewPanel, true> = {
-      city: true, clan: true, culture: true, family: true, favorite: true, kingdom: true, language: true, subspecies: true, 'world-stats': true,
+      city: true,
+      clan: true,
+      culture: true,
+      family: true,
+      favorite: true,
+      kingdom: true,
+      language: true,
+      religion: true,
+      subspecies: true,
+      'world-stats': true,
     };
     return Object.keys(panels).includes(v ?? '');
   }

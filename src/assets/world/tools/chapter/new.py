@@ -35,7 +35,7 @@ _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
 _RARITIES = ("epic", "legendary", "normal", "rare")
-_TIERS = ("city", "clan", "culture", "family", "kingdom", "language", "subspecies")  # the favorite's bodies, unpacked in that order; each is optional
+_TIERS = ("city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies, unpacked in that order; each is optional
 _TOOLS = Path(__file__).parent.parent
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
@@ -208,24 +208,33 @@ def main(argv: list[str]) -> int:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    city = clan = culture = family = kingdom = language = subspecies = None
+    city = clan = culture = family = kingdom = language = religion = subspecies = None
     if favorite:
         meta = favorite.get("metadata") or {}
         calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
-        city, clan, culture, family, kingdom, language, subspecies = _run_together(*calls)
+        city, clan, culture, family, kingdom, language, religion, subspecies = _run_together(*calls)
         folds = (  # A lineage has nothing of its own to fold, hence its absence here; every tier that does is folded alike.
             (city, _fold_city_detail),
             (clan, _fold_trait_groups),
             (culture, _fold_trait_groups),
             (kingdom, _fold_kingdom_detail),
             (language, _fold_trait_groups),
+            (religion, _fold_trait_groups),
             (subspecies, _fold_subspecies_detail),
         )
         for block, fold in folds:
             if block:
                 fold(block)
-        # Rosters cut to their headcount, and the libraries of a custom and a tongue to their count as a town's is — the volumes stay in their own `books`.
-        for tier, *keys in ((clan, "members"), (culture, "members", "books"), (family, "members"), (language, "speakers", "books"), (subspecies, "members")):
+        # Rosters cut to their headcount, and every library to its count as a town's is — the volumes stay in the tier's own `books` section.
+        rosters = (
+            (clan, "members"),
+            (culture, "members", "books"),
+            (family, "members"),
+            (language, "speakers", "books"),
+            (religion, "members", "books"),
+            (subspecies, "members"),
+        )
+        for tier, *keys in rosters:
             if tier:
                 _fold_total(tier, *keys)
 
@@ -253,6 +262,7 @@ def main(argv: list[str]) -> int:
         "favorite": favorite,
         "kingdom": kingdom,
         "language": language,
+        "religion": religion,
         "subspecies": subspecies,
         "tags": tags,
         "title": "",

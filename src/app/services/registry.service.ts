@@ -6,11 +6,12 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { catchError, forkJoin, Observable, of, tap } from 'rxjs';
 
 import {
-  BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, KINGDOM_REGISTRY, LANGUAGE_REGISTRY, PERSON_REGISTRY, SAVES_DIR,
-  SUBSPECIES_REGISTRY,
+  BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, KINGDOM_REGISTRY, LANGUAGE_REGISTRY, PERSON_REGISTRY, RELIGION_REGISTRY,
+  SAVES_DIR, SUBSPECIES_REGISTRY,
 } from '../constants';
 import {
-  BookRegistry, CityRegistry, ClanRegistry, CultureRegistry, FamilyRegistry, KingdomRegistry, LanguageRegistry, PersonRegistry, SubspeciesRegistry,
+  BookRegistry, CityRegistry, ClanRegistry, CultureRegistry, FamilyRegistry, KingdomRegistry, LanguageRegistry, PersonRegistry, ReligionRegistry,
+  SubspeciesRegistry,
 } from '../interfaces';
 
 @Service()
@@ -27,6 +28,7 @@ export class RegistryService {
   public readonly kingdoms = signal<KingdomRegistry>({});
   public readonly languages = signal<LanguageRegistry>({});
   public readonly persons = signal<PersonRegistry>({});
+  public readonly religions = signal<ReligionRegistry>({});
   public readonly subspecies = signal<SubspeciesRegistry>({});
 
   // Loads a chapter's registries (per-chapter, period-accurate) into the signals + the marked bridges. Called by the route resolver before the reader renders.
@@ -40,6 +42,7 @@ export class RegistryService {
       this._load<KingdomRegistry>(slug, 'kingdoms.json', KINGDOM_REGISTRY, this.kingdoms),
       this._load<LanguageRegistry>(slug, 'languages.json', LANGUAGE_REGISTRY, this.languages),
       this._load<PersonRegistry>(slug, 'persons.json', PERSON_REGISTRY, this.persons),
+      this._load<ReligionRegistry>(slug, 'religions.json', RELIGION_REGISTRY, this.religions),
       this._load<SubspeciesRegistry>(slug, 'subspecies.json', SUBSPECIES_REGISTRY, this.subspecies),
     ]);
   }

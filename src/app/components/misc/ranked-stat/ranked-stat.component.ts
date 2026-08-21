@@ -3,13 +3,12 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { CITY_META_STATS, KINGDOM_META_STATS, NON_COMPACT_STATS } from '../../../constants';
 import {
-  ChapterMeta, CityMetaStat, KingdomAlliance, KingdomMetaStat, PeopleTier, PopulationStat, RankedStatKind, RankedStatSnapshot, SpeciesStanding, SpeciesTotals,
+  ChapterMeta, ChapterTier, CityMetaStat, KingdomAlliance, KingdomMetaStat, PeopleTier, PeopleTierName, PopulationStat, RankedStatKind, RankedStatSnapshot,
+  RankedStatSource, SpeciesStanding, SpeciesTotals,
 } from '../../../interfaces';
 import { CompactPipe, ExactPipe, TierPipe } from '../../../pipes';
 import { ChroniclerService } from '../../../services';
 import { DeltaComponent } from '../delta/delta.component';
-
-const peopleSources = new Set(['clan', 'culture', 'family', 'language', 'subspecies']); // the five `_resolvePeople` serves, out of the if-chain to hold it flat
 
 @Component({
   selector: 'app-ranked-stat',
@@ -26,7 +25,7 @@ export class RankedStatComponent {
   public readonly inverted = input<boolean>(false); // Flips the delta colour — for stats where a rise is bad (deaths).
   public readonly numberFormat = input<string>('1.0-0');
   public readonly showRank = input<boolean>(true);
-  public readonly source = input<'alliance' | 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'language' | 'species' | 'subspecies'>('favorite');
+  public readonly source = input<RankedStatSource>('favorite');
   public readonly stat = input.required<RankedStatKind>();
   public readonly suffix = input<string>('');
 
@@ -52,6 +51,9 @@ export class RankedStatComponent {
   });
   // Kingdom/city/alliance quantities render compact (`X.X K` above 100), like the world panel — except age/`%`/per-capita stats.
   protected readonly useCompact = computed(() => this.source() !== 'favorite' && !NON_COMPACT_STATS.has(this.stat()));
+
+  // A `Record` rather than a bare list: a tier added to `PeopleTierName` breaks the build here instead of quietly falling through to the favourite's resolver.
+  private readonly _peopleSources: Record<PeopleTierName, true> = { clan: true, culture: true, family: true, language: true, religion: true, subspecies: true };
 
   // Status dot color shown next to the podium icon:
   private _rankStatus(current: number | undefined, previous: number | undefined, hasPrevious: boolean): 'error' | 'success' | null {
@@ -84,7 +86,7 @@ export class RankedStatComponent {
       return this._snap(stock[key] ?? 0, stock.ranks?.[key]); // a count Python omits at 0 — a beast's stock holds no town — still reads as the zero it was
     }
 
-    if (peopleSources.has(this.source())) return this._resolvePeople(entity as PeopleTier);
+    if (Object.hasOwn(this._peopleSources, this.source())) return this._resolvePeople(entity as PeopleTier);
 
     if (this.source() === 'kingdom') {
       const k = entity as NonNullable<ChapterMeta['kingdom']>;
@@ -181,7 +183,7 @@ export class RankedStatComponent {
     if (!meta) return null;
     if (this.source() === 'alliance') return meta.kingdom?.alliance ?? null;
     if (this.source() === 'species') return meta.subspecies?.species ?? null; // a section of the subspecies, where every other source is a chapter block
-    return meta[this.source() as 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'language' | 'subspecies'];
+    return meta[this.source() as ChapterTier];
   }
 
 }

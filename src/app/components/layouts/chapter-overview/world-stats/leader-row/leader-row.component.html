@@ -13,6 +13,9 @@
     @case ('dominant_language') {
       <app-language-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
+    @case ('dominant_religion') {
+      <app-religion-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
     @case ('dominant_subspecies') {
       <app-subspecies-tag [id]="r.id" [name]="r.name" />
     }

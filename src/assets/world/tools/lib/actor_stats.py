@@ -192,7 +192,10 @@ _SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_b
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 _SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
 
+_scoring_memo: dict[int, dict] = {}  # `_scoring_traits`' slots, one per library — module state rather than `@cache`, a library dict being unhashable
 
+
+# WB `Subspecies.cacheChromosomes`: a locus pays its gene's stat, halved beside a bad neighbour and doubled in full accord — the sex genes pay a block apart.
 def _add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> dict:
     sex_bonus: dict[str, dict] = {"female": {}, "male": {}}
     for chrom in sub.get("saved_chromosome_data") or []:
@@ -254,11 +257,13 @@ def _add_species_stats(totals: dict, asset_id: str, species_data: dict) -> None:
         totals[k] = totals.get(k, 0) + v
 
 
+# Every trait a body wears, summed into the running totals — the library is sieved first, so a trait that carries no numbers costs nothing to skip.
 def _add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> None:
+    scoring = _scoring_traits(traits_data)
     for trait_id in trait_ids or []:
-        entry = traits_data.get(trait_id) or {}
-        for k, v in (entry.get("stats") or {}).items():
-            totals[k] = totals.get(k, 0) + v
+        if stats := scoring.get(trait_id):
+            for k, v in stats.items():
+                totals[k] = totals.get(k, 0) + v
 
 
 # WB `Subspecies.calculateAgeRelatedStats` reads the biology's own lifespan, not its bearer's — so the threshold is cached per biology, as WB caches it.
@@ -371,6 +376,7 @@ def _half(value: float) -> float:
     return math.floor(value * 0.5) if float(value).is_integer() else value * 0.5
 
 
+# WB `GeneAsset.isBad`: a gene flanked by `bad_gene` on any side pays half. The check stops at the first one — one bad neighbour is as bad as four.
 def _is_bad(loci: list[str], idx: int) -> bool:
     rows = len(loci) // _GRID_COLS
     x, y = idx % _GRID_COLS, idx // _GRID_COLS
@@ -381,6 +387,7 @@ def _is_bad(loci: list[str], idx: int) -> bool:
     return False
 
 
+# WB `GeneAsset.isGolden`: gold takes every side the gene actually has agreeing — borders and empty slots abstain, so an edge gene reaches it on fewer accords.
 def _is_golden(loci: list[str], idx: int, void_set: set[int], super_set: set[int], life_dna: int) -> bool:
     gene = loci[idx]
     non_border = synergized = 0
@@ -402,6 +409,7 @@ def _median(values: list[int]) -> float:
     return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
 
 
+# The gene one step away, `None` past the grid's edge or on a voided slot — the index rides along, since synergy asks whether that slot amplifies.
 def _neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) -> tuple[str | None, int]:
     rows = len(loci) // _GRID_COLS
     x, y = idx % _GRID_COLS, idx // _GRID_COLS
@@ -421,6 +429,15 @@ def _normalize(totals: dict) -> None:
             totals[stat] = min(max(totals[stat], low), high)
 
 
+# Most traits are behaviour, not numbers: 7 of a biology's 186 carry stats, and none of a tongue's 26. Sieved once per library so the hot loop walks only those.
+def _scoring_traits(traits_data: dict) -> dict:
+    key = id(traits_data)  # `load_data` is `@cache`d, so each library is one object for the run's lifetime and its identity holds
+    if key not in _scoring_memo:
+        _scoring_memo[key] = {tid: stats for tid, entry in traits_data.items() if (stats := entry.get("stats"))}
+    return _scoring_memo[key]
+
+
+# Whether two neighbours agree, in WB's order: amplifiers (with anything but each other), the always-pair, then what `life_dna` unlocks — hence early returns.
 def _synergizes(gene: str, ngene: str, dx: int, dy: int, super_set: set[int], my_idx: int, n_idx: int, life_dna: int) -> bool:
     my_super = my_idx in super_set
     n_super = n_idx in super_set
@@ -481,20 +498,18 @@ def _to_int32(x: int) -> int:
 
 
 # WB's `Actor.stats`, floats intact, before `_cleanup_stats`. Combine stats from here: WB adds first, truncates once, so 14.5 stays 14.5.
-def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None, *, lifespan_only: bool = False) -> dict:
+def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict, *, lifespan_only: bool = False) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
     if sub is None:
         return {}
-    cached = subspecies_base_cache.get(sub_id) if subspecies_base_cache is not None else None
+    cached = subspecies_base_cache.get(sub_id)
     if cached is None:
         base = {}
         _add_species_stats(base, actor.get("asset_id", ""), ctx["species_data"])
         sex_bonus = _add_chromosome_stats(base, sub, ctx["life_dna"])
         _add_trait_stats(base, sub.get("saved_traits") or [], ctx["subspecies_traits"])
-        cached = (base, sex_bonus)
-        if subspecies_base_cache is not None:
-            subspecies_base_cache[sub_id] = cached
+        cached = subspecies_base_cache[sub_id] = (base, sex_bonus)
     base, sex_bonus = cached
     totals = dict(base)
     for stat, value in sex_bonus[sex_label(actor)].items():  # `updateStats` merges `base_stats_male`/`base_stats_female` on top of the neutral block
@@ -540,7 +555,7 @@ def build_actor_stats_context(save: dict) -> dict:
 
 
 # Aggregate one actor's stats (no counters). `subspecies_base_cache` reuses the species+chromosomes+traits base per subspecies — ~7× speedup when ranking peers.
-def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict | None = None) -> dict:
+def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict) -> dict:
     cleaned = _cleanup_stats(actor_stat_totals(actor, ctx, subspecies_base_cache))
     # Two stats WB reads off a single office-holder: `max_cities` from a king (`Kingdom.getMaxCities`), `bonus_towers` from a city leader (its watch-tower cap).
     for stat, holder in (("bonus_towers", PROFESSION_LEADER), ("max_cities", PROFESSION_KING)):
@@ -596,8 +611,9 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
             counts["fed"] += int(a.get("nutrition") or 0) >= SATED_MIN_NUTRITION
         traits = a.get("saved_traits") or []
         counts["immortals"] += "immortal" in traits
-        counts["infected"] += "infected" in traits
-        counts["sick"] += not SICK_TRAITS.isdisjoint(traits)
+        if not SICK_TRAITS.isdisjoint(traits):  # `infected` ⊂ `SICK_TRAITS`: the narrow test rides inside, one walk of the traits
+            counts["sick"] += 1
+            counts["infected"] += "infected" in traits
         lover = a.get("lover")
         if lover is not None and lover in ids and a["id"] not in paired and by_id.get(lover, {}).get("lover") == a["id"]:
             counts["couples"] += 1

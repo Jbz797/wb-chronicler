@@ -191,7 +191,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "mass": _compute_mass(actor, ctx),
         "name": actor.get("name"),  # absent, not a placeholder, where WB never named them — `emit` strips it and the panels drop the row
         "personality": _compute_personality(actor, snap),
-        "religion": (ctx["religions_by_id"].get(actor.get("religion")) or {}).get("name"),
+        "religion": entity_ref(actor.get("religion"), ctx["religions_by_id"]),  # a ref, not a bare name: `religion/info.py <id>` reads the creed it holds
         "roles": _compute_roles(actor, save),
         "sex": sex_label(actor),
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id

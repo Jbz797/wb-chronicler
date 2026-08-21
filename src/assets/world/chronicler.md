@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 21/08/26 10:06</p>
+<p class="metadata">Date de mise à jour : 21/08/26 13:24</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -385,13 +385,12 @@ Quand le chroniqueur veut comprendre d'où vient la valeur d'une stat (notamment
 2. **Subspecies traits** (`subspecies.saved_traits`) — la plupart sont comportementaux, ~7 ont des contributions numériques
 3. **Creature traits** (`actor.saved_traits`) — bonus de particularités
 4. **Clan traits** (`clan.saved_traits`) — `iron_will`, `blood_pact`, etc.
-5. **Language traits** (`language.saved_traits`) — `strict_spelling`, `enlightening_script`, etc.
-6. **Équipement** (`actor.saved_items` + leurs modifiers)
-7. **Progression civile acquise** (`actor.custom_data_float`) — +1 par conversation / vieillissement sur diplomacy / warfare / stewardship / intelligence
-8. **Bonus dérivés** appliqués en fin de pipeline : level scaling (`× (1 + level × mult)` pour health/mana/stamina) + `mana += int(intelligence × 10)` (MANA_PER_INTELLIGENCE)
-9. **Sources non modélisées** — statuts, culture, religion, profession, era. À enrichir si écart constaté avec l'in-game.
+5. **Équipement** (`actor.saved_items` + leurs modifiers)
+6. **Progression civile acquise** (`actor.custom_data_float`) — +1 par conversation / vieillissement sur diplomacy / warfare / stewardship / intelligence
+7. **Bonus dérivés** appliqués en fin de pipeline : level scaling (`× (1 + level × mult)` pour health/mana/stamina) + `mana += int(intelligence × 10)` (MANA_PER_INTELLIGENCE)
+8. **Sources non modélisées** — statuts, culture, langue, religion, profession, era. À enrichir si écart constaté avec l'in-game.
 
-`tools/actor/info.py <id>` agrège les sources **1 → 8** et restitue les stats finales (health_max, mana_max, stamina_max, intelligence, etc.). Les `multiplier_X` (ex. `fat` → `multiplier_stamina=-0.5`) sont résolus en fin de pipeline via `final = base × (1 + multiplier)`. La source **9** reste à lire manuellement si besoin.
+`tools/actor/info.py <id>` agrège les sources **1 → 7** et restitue les stats finales (health_max, mana_max, stamina_max, intelligence, etc.). Les `multiplier_X` (ex. `fat` → `multiplier_stamina=-0.5`) sont résolus en fin de pipeline via `final = base × (1 + multiplier)`. La source **8** reste à lire manuellement si besoin.
 
 ---
 
@@ -423,7 +422,7 @@ Chaque type de nom propre a son balisage markdown dédié — le chroniqueur l'a
 | Clan                | `[l id Nom]`                                                                                       |
 | Culture             | `[t id Nom]`                                                                                       |
 | Langue              | `[a id Nom]`                                                                                       |
-| Religion            | `🕯 **gras**`                                                                                       |
+| Religion            | `[e id Nom]`                                                                                       |
 | Famille             | `[f id Nom]`                                                                                       |
 | Personnage          | `[p id Nom]` (uniquement espèces intelligentes — cf. [tableau ci-dessous](#espèces-intelligentes)) |
 | Espèce              | `[s asset_id Nom]`                                                                                 |

@@ -1,5 +1,5 @@
-import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
-import { TraitGroupCounts } from './types';
+import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { TraitGroupCounts } from '../types';
 
 // The favourite's language: caught by ear, not by blood — so WB counts its speakers three ways, born to it, won from another tongue, and lost to one.
 export interface Language {

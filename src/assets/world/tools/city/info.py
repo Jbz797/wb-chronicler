@@ -130,7 +130,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
     money_by_city: Counter[int] = Counter()
     nobles_by_city: Counter[int] = Counter()
     nobles_money_by_city: Counter[int] = Counter()
-    populations_by_city: Counter[int] = Counter()
     ranged_by_city: Counter[int] = Counter()
     renown_by_city: Counter[int] = Counter()
     sick_by_city: Counter[int] = Counter()
@@ -147,7 +146,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if not cid or asset_id.startswith("boat_"):  # `is_boat` inlined — it would re-read the field we already hold
             continue
         actors_by_city.setdefault(cid, []).append(actor)
-        populations_by_city[cid] += 1
         # Read once (three tallies want the purse) and guarded: renown is zero on most inhabitants, and a `+= 0` still costs a hash and a store.
         coins = actor.get("money")
         if coins:
@@ -177,16 +175,19 @@ def _build_context(save: dict, save_path: Path) -> dict:
                 nobles_money_by_city[cid] += int(coins)
 
         traits = actor.get("saved_traits") or []
-        if "infected" in traits:
-            infected_by_city[cid] += 1
-        if not SICK_TRAITS.isdisjoint(traits):
+        if not SICK_TRAITS.isdisjoint(traits):  # `infected` ⊂ `SICK_TRAITS`: the narrow test rides inside the wide one, one walk of the traits.
             sick_by_city[cid] += 1
+            if "infected" in traits:
+                infected_by_city[cid] += 1
         if "immortal" in traits:
             immortals_by_city[cid] += 1
         if not actor.get("homeBuildingID"):
             homeless_by_city[cid] += 1
         if family_id := actor.get("family"):
             families_by_city.setdefault(cid, set()).add(family_id)
+
+    # Counted off the roster rather than tallied alongside it: one length per town at the end beats an increment per inhabitant, and the two can't drift.
+    populations_by_city: Counter[int] = Counter({cid: len(residents) for cid, residents in actors_by_city.items()})
 
     buildings_by_city: Counter[int] = Counter()
     civic = civic_building_ids()  # `houses` = the dwelling subset.

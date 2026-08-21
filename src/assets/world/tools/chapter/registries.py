@@ -15,8 +15,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
 _ENCODE = json.JSONEncoder(ensure_ascii=False, sort_keys=True).encode  # mounted once: given keyword arguments, `json.dumps` builds a fresh encoder per call
+
+# Where each tier keeps its founder(s) and the stock to draw them from — WB names the field differently on every one, and a lineage claims two.
+_FOUNDER_FIELDS = (
+    ("cities", ("founder_id",), "original_actor_asset"),
+    ("clans", ("founder_actor_id",), "original_actor_asset"),
+    ("cultures", ("creator_id",), "original_actor_asset"),
+    ("families", ("main_founder_id_1", "main_founder_id_2"), "species_id"),
+    ("kingdoms", ("founder_id",), "original_actor_asset"),
+    ("languages", ("creator_id",), "creator_species_id"),
+    ("religions", ("creator_id",), "creator_species_id"),
+)
+
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
-_REGISTRIES = ("books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "subspecies")
+_REGISTRIES = ("books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "religions", "subspecies")
 _SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
 
 
@@ -67,6 +79,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
     members_by_culture: Counter = Counter()
     members_by_family: Counter = Counter()
     members_by_language: Counter = Counter()
+    members_by_religion: Counter = Counter()
     members_by_subspecies: Counter = Counter()
     species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
     species_by_kingdom: defaultdict[int, Counter] = defaultdict(Counter)
@@ -82,6 +95,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
             members_by_family[fid] += 1
         if lid := a.get("language"):
             members_by_language[lid] += 1
+        if rid := a.get("religion"):
+            members_by_religion[rid] += 1
         if sid := a.get("subspecies"):
             members_by_subspecies[sid] += 1
         actor_id, species = a["id"], a.get("asset_id")  # both read three times below
@@ -117,6 +132,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
     family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0)) for f in save.get("families") or []}
     rank_by_language = _follower_ranks(members_by_language)  # speakers alone rank a tongue, as followers rank a custom
     language_registry = {str(l["id"]): _language_entry(l, members_by_language.get(l["id"], 0), rank_by_language.get(l["id"])) for l in save.get("languages") or []}
+    rank_by_religion = _follower_ranks(members_by_religion)  # the faithful alone rank a creed, as followers rank a custom
+    religion_registry = {str(r["id"]): _religion_entry(r, members_by_religion.get(r["id"], 0), rank_by_religion.get(r["id"])) for r in save.get("religions") or []}
     subspecies_registry = {str(s["id"]): _subspecies_entry(s, members_by_subspecies.get(s["id"], 0)) for s in save.get("subspecies") or []}
 
     out = {
@@ -128,14 +145,18 @@ def _build_registries(save: dict, prev: dict) -> dict:
         "kingdoms": _merge(prev.get("kingdoms") or {}, kingdom_registry),
         "languages": _merge(prev.get("languages") or {}, language_registry),
         "persons": _merge(prev.get("persons") or {}, persons),
+        "religions": _merge(prev.get("religions") or {}, religion_registry),
         "subspecies": _merge(prev.get("subspecies") or {}, subspecies_registry),
     }
 
-    for record in (*cities, *kingdoms):  # dead founder never seen alive → only its founding species survives, on the record
-        rulers = record.get("past_rulers") or []
-        fid = record.get("founder_id") or (rulers[0].get("id") if rulers else None)
-        if fid and str(fid) not in out["persons"] and (asset := record.get("original_actor_asset")):
-            out["persons"][str(fid)] = {"asset_id": asset, "dead": True}
+    # A founder dead before the first chapter was archived sits in no registry, so its tag would resolve to nothing — its tier's `species` draws it instead.
+    for tier, id_fields, asset_field in _FOUNDER_FIELDS:
+        for record in save.get(tier) or []:
+            asset = record.get(asset_field)
+            rulers = record.get("past_rulers") or []
+            for fid in (*(record.get(f) for f in id_fields), rulers[0].get("id") if rulers else None):
+                if fid and asset and str(fid) not in out["persons"]:
+                    out["persons"][str(fid)] = {"asset_id": asset, "dead": True}
 
     return out
 
@@ -324,9 +345,30 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
         entry["skin_id"] = skin
     if special := _special_head(actor, profession, carried):
         entry["special_head"] = special
-    if weapon := _wielded_weapon(carried):
+    if carried and (weapon := _wielded_weapon(carried)):  # half the world carries nothing at all, and an empty hand needs no lookup through the weapon set
         entry["weapon"] = weapon
     return entry
+
+
+# Religion registry entry — its own hue (a creed is preached, not granted, so it wears no crown's colour), the founder's species and the living headcount.
+def _religion_entry(religion: dict, faithful: int, rank: int | None) -> dict:
+    palette = _palette(religion.get("color_id", ""))
+    entry: dict = {
+        "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
+        "name": religion.get("name"),
+        "species": religion.get("creator_species_id"),  # the founder's stock, which those who hold to it need not share — the pip right of the name
+    }
+    if faithful:  # dropped once the last believer dies, as the culture badge drops with its last follower
+        entry["members"] = faithful
+    if rank is not None:
+        entry["rank"] = rank
+    entry |= {  # WB `ReligionBanner.setupBanner`: five fields and twenty-five signs of its own, indexed straight by these two ids.
+        "banner_bg": religion.get("banner_background_id") or 0,
+        "banner_bg_color": palette.get("color_main_2"),
+        "banner_icon": religion.get("banner_icon_id") or 0,
+        "banner_icon_color": palette.get("color_banner"),
+    }
+    return _defined(entry)
 
 
 # Settlement tier (1-7) from population — mirrors the `chronicler.md` naming scale (foyer → métropole). Drives the Civ-style size badge on the city tag.
@@ -374,10 +416,7 @@ def _wielded_weapon(carried: list[str]) -> str | None:
 # One line per entry, sorted by numeric id with fields alphabetical, so a changed entry shows up as a one-line diff rather than a reshuffled block.
 def _write_registry(path: Path, registry: dict) -> None:
     # One dump per entry, not per field, and `sort_keys` rather than a pre-sorted copy — both push the work into C. Keys are ids, so they need no escaping.
-    rows = [
-        f'  "{entry_key}": {{ {_ENCODE(entry)[1:-1]} }}'
-        for entry_key, entry in sorted(registry.items(), key=lambda item: int(item[0]))
-    ]
+    rows = [f'  "{entry_key}": {{ {_ENCODE(entry)[1:-1]} }}' for entry_key, entry in sorted(registry.items(), key=lambda item: int(item[0]))]
     path.write_text("{\n" + ",\n".join(rows) + "\n}\n")
 
 

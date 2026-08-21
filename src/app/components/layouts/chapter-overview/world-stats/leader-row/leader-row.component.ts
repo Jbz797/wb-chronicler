@@ -5,7 +5,7 @@ import { SpeciesNamePipe } from '../../../../../pipes';
 import { NewBadgeComponent } from '../../../../misc';
 import {
   CityTagComponent, ClanTagComponent, CultureTagComponent, FamilyTagComponent, KingdomTagComponent, LanguageTagComponent, PersonTagComponent,
-  SubspeciesTagComponent,
+  ReligionTagComponent, SubspeciesTagComponent,
 } from '../../../../tags';
 
 @Component({
@@ -19,6 +19,7 @@ import {
     LanguageTagComponent,
     NewBadgeComponent,
     PersonTagComponent,
+    ReligionTagComponent,
     SpeciesNamePipe,
     SubspeciesTagComponent,
   ],

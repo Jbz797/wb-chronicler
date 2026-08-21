@@ -33,6 +33,10 @@
     <img class="panel-icon" src="assets/img/world/languages.png" />
     <span>Langue</span>
   </ng-template>
+  <ng-template #religionHeader>
+    <img class="panel-icon" src="assets/img/world/religions.png" />
+    <span>Religion</span>
+  </ng-template>
   <ng-template #subspeciesHeader>
     <img class="panel-icon" src="assets/img/world/subspecies.png" />
     <span>S. espèce</span>
@@ -53,6 +57,7 @@
   <ng-template #favoriteChip><app-panel-extra panel="favorite" /></ng-template>
   <ng-template #kingdomChip><app-panel-extra panel="kingdom" /></ng-template>
   <ng-template #languageChip><app-panel-extra panel="language" /></ng-template>
+  <ng-template #religionChip><app-panel-extra panel="religion" /></ng-template>
   <ng-template #subspeciesChip><app-panel-extra panel="subspecies" /></ng-template>
 
   <nz-collapse nzAccordion>
@@ -103,6 +108,15 @@
       (nzActiveChange)="onPanelToggle('language', $event)"
     >
       <app-language />
+    </nz-collapse-panel>
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'religion'"
+      [nzCollapsible]="collapsible(c.meta.religion)"
+      [nzExtra]="religionChip"
+      [nzHeader]="religionHeader"
+      (nzActiveChange)="onPanelToggle('religion', $event)"
+    >
+      <app-religion />
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'subspecies'"

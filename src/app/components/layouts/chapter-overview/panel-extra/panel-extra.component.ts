@@ -4,7 +4,7 @@ import { ChapterOverviewPanel } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
 import {
   CityTagComponent, ClanTagComponent, CultureTagComponent, FamilyTagComponent, KingdomTagComponent, LanguageTagComponent, PersonTagComponent,
-  SubspeciesTagComponent,
+  ReligionTagComponent, SubspeciesTagComponent,
 } from '../../../tags';
 
 // The chip a collapse header wears on its right — every panel but the world's names one body, and each body resolves its tag the same way, from `metadata`.
@@ -18,6 +18,7 @@ import {
     KingdomTagComponent,
     LanguageTagComponent,
     PersonTagComponent,
+    ReligionTagComponent,
     SubspeciesTagComponent,
   ],
   templateUrl: './panel-extra.component.html',

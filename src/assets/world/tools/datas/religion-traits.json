@@ -1,0 +1,226 @@
+{
+  "blessed_by_ashes": {
+    "description": "Grants protection against buildings catching fire!",
+    "flavor": "Where there's smoke, there's... actually no fire!",
+    "group": "protection",
+    "name": "Blessed by Ashes"
+  },
+  "bloodline_bond": {
+    "description": "Only clan members can tap into the divine power of this religion magic",
+    "flavor": "Everyone else just gets to admire them from the dark",
+    "group": "the_void",
+    "name": "Bloodline Bond"
+  },
+  "cast_blood_rain": {
+    "description": "Beseech the skies to bleed and heal the wounded below",
+    "flavor": "If it works, then questions are best left unasked",
+    "group": "restoration",
+    "name": "Cast Blood Rain"
+  },
+  "cast_cure": {
+    "description": "Channel divine energy to heal illnesses and diseases",
+    "flavor": "Know that nothing heals without leaving scars",
+    "group": "restoration",
+    "name": "Cast Cure"
+  },
+  "cast_curse": {
+    "description": "Ability to inflict a dark curse upon enemies",
+    "flavor": "Revenge is sweet, but curses leave a bitter aftertaste",
+    "group": "destruction",
+    "name": "Cast Curse"
+  },
+  "cast_fire": { "description": "Conjure flames at will!", "flavor": "Embrace the warmth as the world turns to ash", "group": "destruction", "name": "Cast Fire" },
+  "cast_grass_seeds": {
+    "description": "Ability to make barren land come alive with a blanket of fresh grass",
+    "flavor": "Nature's beauty often conceals its cruelty",
+    "group": "creation",
+    "name": "Create Grass"
+  },
+  "cast_shield": {
+    "description": "Create a protective bubble to guard against incoming attacks",
+    "flavor": "A fleeting moment of safety amidst the chaos",
+    "group": "protection",
+    "name": "Bubble Shield"
+  },
+  "cast_silence": {
+    "description": "Silence your enemies, leaving them unable to cast spells for a time",
+    "flavor": "Power dies in the absence of words",
+    "group": "the_void",
+    "name": "Silence"
+  },
+  "cosmic_radiation": {
+    "description": "Magic draws from cosmic rays, spreading wasteland with every use",
+    "flavor": "Cosmic radiation is a silent killer. Like salt, but worse",
+    "group": "special",
+    "name": "Cosmic Radiation"
+  },
+  "divine_insight": {
+    "description": "Enlightened by the hands of the divine",
+    "flavor": "Whoa, this is some serious stuff!",
+    "group": "special",
+    "name": "Divine Insight"
+  },
+  "echo_of_the_void": {
+    "description": "Magic summons a singularity into the world",
+    "flavor": "The Void watches, always seeking opportunities to consume",
+    "group": "transformation",
+    "name": "Echo of the Void"
+  },
+  "hand_of_order": {
+    "description": "Empowers followers to maintain structure, control, and organization in all aspects of life",
+    "flavor": "Perfect order breeds perfect madness",
+    "group": "harmony",
+    "name": "Hand of Order"
+  },
+  "infernal_rot": {
+    "description": "The use of magic spreads the infernal biome",
+    "flavor": "It spreads like a bad meme, leaving only flames and suffering in its wake",
+    "group": "transformation",
+    "name": "Infernal Influence"
+  },
+  "minds_awakening": {
+    "description": "The teachings of the faith unlock greater wisdom",
+    "flavor": "Ignorance was such comfortable bliss",
+    "group": "harmony",
+    "name": "Minds Awakening"
+  },
+  "path_of_unity": {
+    "description": "Unity is the key to surviving the storm ahead",
+    "flavor": "Together we rise, alone we are prey",
+    "group": "harmony",
+    "name": "Path of Unity"
+  },
+  "rite_of_change": {
+    "description": "Allows the transformation of clan members into new subspecies through a sacred ritual",
+    "flavor": "Evolution gets impatient sometimes",
+    "group": "the_void",
+    "name": "Rite of Change"
+  },
+  "rite_of_dissent": {
+    "description": "Spark unrest within enemy kingdoms!",
+    "flavor": "The flames of rebellion spread quickly once ignited",
+    "group": "the_void",
+    "name": "Rite of Dissent"
+  },
+  "rite_of_entanglement": {
+    "description": "Summons magical vines that entangle and slow down enemy warriors",
+    "flavor": "The earth hungers for fresh embrace",
+    "group": "creation",
+    "name": "Rite of Entanglement"
+  },
+  "rite_of_eternal_brew": {
+    "description": "The souls of dead beans enhance the speed and clarity of friendly units",
+    "flavor": "Mmmm, the agony of freshly roasted beans fills the air",
+    "group": "necromancy",
+    "name": "Rite of Eternal Brew"
+  },
+  "rite_of_falling_stars": {
+    "description": "Summons meteorites to bring destruction from above",
+    "flavor": "No one wins when the sky falls",
+    "group": "destruction",
+    "name": "Rite of Falling Stars"
+  },
+  "rite_of_fractured_minds": {
+    "description": "Drown enemy minds in madness and despair",
+    "flavor": "Sanity shatters like glass in their grip",
+    "group": "the_void",
+    "name": "Rite of Fractured Minds"
+  },
+  "rite_of_infernal_wrath": {
+    "description": "Summons fire clouds to rain hellfire upon your enemies",
+    "flavor": "Hell itself rains down their judgment",
+    "group": "destruction",
+    "name": "Rite of Infernal Wrath"
+  },
+  "rite_of_infinite_edges": {
+    "description": "Summon sharp divine angles to judge your enemies",
+    "flavor": "A little geometry is all it takes to ruin a day",
+    "group": "protection",
+    "name": "Rite of Infinite Edges"
+  },
+  "rite_of_living_harvest": {
+    "description": "Make trees and plants fight your enemies",
+    "flavor": "The harvest is ripe... for revenge!",
+    "group": "creation",
+    "name": "Rite of Living Harvest"
+  },
+  "rite_of_restless_dead": {
+    "description": "Raise skeletons to fight for your cause!",
+    "flavor": "What is dead will fight again. And again. And again",
+    "group": "necromancy",
+    "name": "Rite of Restless Dead"
+  },
+  "rite_of_roaring_skies": {
+    "description": "Summons a thunderstorm to strike down your enemies",
+    "flavor": "It's going to be a noisy ride!",
+    "group": "destruction",
+    "name": "Rite of Roaring Skies"
+  },
+  "rite_of_shattered_earth": {
+    "description": "Calls forth an earthquake to shatter enemy cities",
+    "flavor": "A tremor here, a crack there, enough to crumble cities",
+    "group": "destruction",
+    "name": "Rite of Shattered Earth"
+  },
+  "rite_of_tempest_call": {
+    "description": "Summons the fury of a stormfront upon your enemies",
+    "flavor": "They'll feel the storm in their very bones!",
+    "group": "destruction",
+    "name": "Rite of the Tempest Call"
+  },
+  "rite_of_the_abyss": {
+    "description": "Unleash demons from the abyss to ravage your foe",
+    "flavor": "Unleash the demons, they said. It'll be fun, they said",
+    "group": "destruction",
+    "name": "Rite of the Abyss"
+  },
+  "rite_of_unbroken_shield": {
+    "description": "Creates a barrier of protection for your warriors",
+    "flavor": "Clean, protected, and bouncing into battle!",
+    "group": "protection",
+    "name": "Rite of Unbroken Shield"
+  },
+  "sands_of_ruin": {
+    "description": "Magic transforms the world into an endless desert",
+    "flavor": "Tampering with the unknown leaves only ruin behind",
+    "group": "transformation",
+    "name": "Sands of Ruin"
+  },
+  "shadowroot": {
+    "description": "Magic weaves corruption through the land",
+    "flavor": "The ground remembers where shadows walked",
+    "group": "transformation",
+    "name": "Shadowroot"
+  },
+  "spawn_skeleton": {
+    "description": "Raise the dead to fight at your command",
+    "flavor": "The dead have stories, no mouth to tell",
+    "group": "necromancy",
+    "name": "Summon Skeleton"
+  },
+  "spawn_vegetation": {
+    "description": "Ability to spawn plants and trees at will!",
+    "flavor": "Life finds a way... whether you like it or not",
+    "group": "creation",
+    "name": "Cast Vegetation"
+  },
+  "summon_lightning": {
+    "description": "Summon lightning from the heavens to strike your foes",
+    "flavor": "Sometimes a lightning bolt says more than words ever could",
+    "group": "destruction",
+    "name": "Summon Lightning"
+  },
+  "summon_tornado": {
+    "description": "Bring the wrath of nature down upon your enemies",
+    "flavor": "The spirits linger in the winds, and they are not forgiving",
+    "group": "destruction",
+    "name": "Summon Tornado"
+  },
+  "teleport": { "description": "Ability to teleport to faraway places", "flavor": "Space bends its knee to their will", "group": "the_void", "name": "Teleport" },
+  "zeal_of_conquest": {
+    "description": "Ignites a burning desire for conquest and endless war",
+    "flavor": "Every battle is not just a fight, but a sacred mission",
+    "group": "harmony",
+    "name": "Zeal of Conquest"
+  }
+}

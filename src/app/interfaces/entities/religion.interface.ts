@@ -1,26 +1,26 @@
-import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from './entity.interface';
-import { TraitGroupCounts } from './types';
+import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { TraitGroupCounts } from '../types';
 
-// The favourite's culture: caught at the cradle, not sworn — so its `breakdown` drifts furthest from the founder whose card `identity` holds.
-export interface Culture {
+// The favourite's religion: preached, not inherited — so its `breakdown` answers to no border, a creed crossing blood and crown one conversion at a time.
+export interface Religion {
   books: BookShelf; // volumes written under it, whoever holds them now — the mirror of a town's shelf, which counts what it holds whoever wrote it
   breakdown: PopulationBreakdown;
-  identity: CultureIdentity;
+  identity: ReligionIdentity;
   leaders?: Leaders;
   members: MemberRoster;
-  metadata: CultureMetadata;
+  metadata: ReligionMetadata;
   population: TierPopulation;
-  ranks?: CultureRanks;
+  ranks?: ReligionRanks;
   traits: TraitGroupCounts;
 }
 
 // The founder's card, as WB's own window lays it out — Python ships it whole, of which the panel names the founder alone and the chronicler keeps the rest.
-interface CultureIdentity {
+interface ReligionIdentity {
   founder?: PersonReference;
 }
 
-// Every counter drops at zero, so panels read them via `?? 0`. `cities`/`kingdoms` are WB's own reach: those holding it as their main culture, not just housing it.
-interface CultureMetadata {
+// Every counter drops at zero, so panels read them via `?? 0`. `cities`/`kingdoms` are WB's own reach: those holding it, not merely housing a believer.
+interface ReligionMetadata {
   age: number;
   cities?: number;
   deaths?: number;
@@ -32,8 +32,8 @@ interface CultureMetadata {
   traits?: number;
 }
 
-// Podium-only, like every other tier: absent where the culture places outside the top 3 among the world's cultures.
-interface CultureRanks {
+// Podium-only, like every other tier: absent where the religion places outside the top 3 among the world's creeds.
+interface ReligionRanks {
   age?: number;
   books?: number;
   cities?: number;

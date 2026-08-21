@@ -1,0 +1,56 @@
+@if (religion(); as r) {
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
+    @if (r.identity.founder; as founder) {
+      <nz-descriptions-item [nzTitle]="founderTitle">
+        <app-person-tag [id]="founder.id" [name]="founder.name" />
+      </nz-descriptions-item>
+    }
+
+    <nz-descriptions-item [nzTitle]="ageTitle">
+      <app-ranked-stat source="religion" stat="age" suffix=" ans" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="renownTitle">
+      <app-ranked-stat source="religion" stat="renown" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="renownTotalTitle">
+      <app-ranked-stat source="religion" stat="renown_total" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="membersTitle">
+      <app-ranked-stat source="religion" stat="members" />
+    </nz-descriptions-item>
+
+    @for (s of lifetimeStats(); track s.stat) {
+      <ng-template #lifetimeTitle>
+        <img [src]="s.icon" /><span>{{ s.label }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="lifetimeTitle">
+        <app-ranked-stat source="religion" [inverted]="s.inverted" [stat]="s.stat" />
+      </nz-descriptions-item>
+    }
+
+    <nz-descriptions-item [nzTitle]="citiesTitle">
+      <app-ranked-stat source="religion" stat="cities" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="kingdomsTitle">
+      <app-ranked-stat source="religion" stat="kingdoms" />
+    </nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="moneyTitle">
+      <app-ranked-stat source="religion" stat="money" />
+    </nz-descriptions-item>
+  </nz-descriptions>
+
+  <app-trait-groups title="Rites" [counts]="r.traits" />
+
+  <app-leaders [leaders]="r.leaders" />
+
+  <app-breakdown source="religion" />
+
+  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge de la religion</span></ng-template>
+  <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Villes</span></ng-template>
+  <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
+  <ng-template #kingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Royaumes</span></ng-template>
+  <ng-template #membersTitle><img src="assets/img/world/population.png" /><span>Fidèles</span></ng-template>
+  <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
+  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
+  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renommée cumulée</span></ng-template>
+}

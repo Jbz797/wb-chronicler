@@ -24,7 +24,7 @@
     }
     @if (tops().religion; as r) {
       <nz-descriptions-item [nzTitle]="religionTitle">
-        {{ r.name }} <span class="share">{{ share(r.pct) }}</span>
+        <app-religion-tag [id]="r.id" [name]="r.name" /> <span class="share">{{ share(r.pct) }}</span>
       </nz-descriptions-item>
     }
     @if (tops().kingdom; as k) {

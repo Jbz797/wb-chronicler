@@ -1,6 +1,6 @@
 @use 'variables' as *;
 
-// WB's thirty-two trait groups, class posted by name from TS. Spelt out rather than looped over an id list, so a grep for `.reproductive_methods` lands here.
+// WB's trait groups, class posted by name from TS. Spelt out rather than looped over an id list, so a grep for `.reproductive_methods` lands here.
 :host {
   @each $group,
     $color
@@ -13,6 +13,8 @@
         body: $group-body,
         chaos: $group-chaos,
         cognitive: $group-cognitive,
+        creation: $group-creation,
+        destruction: $group-destruction,
         diet: $group-diet,
         eggs: $group-eggs,
         fate: $group-fate,
@@ -22,6 +24,7 @@
         harmony: $group-harmony,
         health: $group-health,
         hibernation: $group-hibernation,
+        necromancy: $group-necromancy,
         merits: $group-merits,
         mind: $group-mind,
         miscellaneous: $group-miscellaneous,
@@ -32,8 +35,11 @@
         rebirth: $group-rebirth,
         reproduction_strategy: $group-reproduction-strategy,
         reproductive_methods: $group-reproductive-methods,
+        restoration: $group-restoration,
         skills: $group-skills,
         sleep_cycles: $group-sleep-cycles,
+        the_void: $group-the-void,
+        transformation: $group-transformation,
         special: $group-special,
         spirit: $group-spirit,
         talents: $group-talents

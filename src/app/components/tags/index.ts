@@ -6,4 +6,5 @@ export * from './family/family-tag.component';
 export * from './kingdom/kingdom-tag.component';
 export * from './language/language-tag.component';
 export * from './person/person-tag.component';
+export * from './religion/religion-tag.component';
 export * from './subspecies/subspecies-tag.component';

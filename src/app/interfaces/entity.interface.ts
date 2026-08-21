@@ -1,10 +1,11 @@
-// The shapes every tier shares: a tag's id+name pointer, and the culture/language/religion/species mix of any population.
-
 // A library counted, on a town's shelves or under a culture's name. Only the total reaches the UI — each volume ships in the `books` section, for the chronicler.
 export interface BookShelf { total: number }
 
 // A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
 export interface EntityReference { id: number; name: string }
+
+// Gear on the racks, worn by nobody. Only the total reaches the UI — the per-rack counts and the pieces themselves ship in the JSON, for the chronicler alone.
+export interface EquipmentStock { total: number }
 
 // The standout lineage and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
 export interface Leaders {
@@ -52,9 +53,9 @@ export interface PopulationBreakdown {
   cultures?: { id: number; name: string; pct: number }[];
   kingdoms?: { id: number; name: string; pct: number }[]; // absent on a realm, which would restate itself at 100 % — present on an alliance, which spans several
   languages?: { id: number; name: string; pct: number }[];
-  religions?: { name: string; pct: number }[];
+  religions?: { id: number; name: string; pct: number }[];
   species?: { asset_id: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
-  subspecies?: { id: number; name: string; pct: number }[]; // religions alone go without an id: every other dimension has a tag to resolve against a registry
+  subspecies?: { id: number; name: string; pct: number }[]; // the species alone goes without an id: every other dimension has a tag to resolve against a registry
 }
 
 // What the living of a body say of it — the settlement block less granary, head and `total`. Only the afflictions drop at zero, a share of zero being a reading.

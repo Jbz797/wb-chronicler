@@ -201,6 +201,30 @@ canvas {
       }
     }
 
+    // WB's religion nameplate (`nameplate_religion`), 33×20 — a votive field closed by a golden hand, 3-sliced so the hand keeps its shape and the field runs.
+    &.religion-tag {
+      background-color: transparent;
+      border: 0 solid transparent;
+      border-image: url('/assets/img/nameplates/religion.png') 0 10 0 5 fill / 0 10px 0 5px / 0 stretch;
+      border-width: 0 14px 0 5px;
+      box-shadow: none;
+      padding: 0;
+
+      // Seated inside the field rather than planted through it — the hand closes the right end, so an overhang would break it.
+      .banner {
+        max-height: 22px;
+      }
+
+      // The field stops three rows short of the plate's foot, where the fingers hang past it — so its middle sits above the tag's, and what it holds must follow.
+      .entity-name,
+      .tag-badge,
+      .banner,
+      > img {
+        position: relative;
+        top: -2px;
+      }
+    }
+
     // A biology is written on stone, not hung from a crown: WB gives it one of twelve slabs, 9-sliced with its ragged corners at native scale, ground and all.
     &.subspecies-tag {
       background-color: transparent;
@@ -270,6 +294,7 @@ canvas {
   &.culture-tag .tag-badge,
   &.family-tag .tag-badge,
   &.language-tag .tag-badge,
+  &.religion-tag .tag-badge,
   &.subspecies-tag .tag-badge {
     border-radius: 50%;
     font-size: 10px; // sized for two digits: at the plate's 12.5px a clan of 43 pressed both walls of the disc
