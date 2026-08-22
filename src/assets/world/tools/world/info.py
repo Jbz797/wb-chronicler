@@ -28,7 +28,7 @@ from shared import (
     wants_detail,
 )
 
-_ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "snapshot")
+_ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "plots", "snapshot")
 
 # Chronicler key => WB `mapStats` counter — UI keys (`CUMULATIVE_STATS`) + churn a net snapshot hides; `_created` stored, `destroyed = created − snapshot.alive`.
 _CUMULATIVE_COUNTERS = {
@@ -180,13 +180,29 @@ def _build_metadata(map_stats: dict) -> dict:
     age_duration = float(map_stats.get("current_world_ages_duration") or 0)
     age_id = map_stats.get("world_age_id") or ""
     age_progress = float(map_stats.get("current_age_progress") or 0)
+    age = load_data("world-ages.json").get(age_id) or {}
     return {
-        "age_description": (load_data("world-ages.json").get(age_id) or {}).get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
-        "age_id": age_id,  # WorldAgeLibrary key (e.g. `age_hope`)
+        "age_description": age.get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
+        "age_id": age_id.removeprefix("age_"),  # `WorldAgeLibrary` key without WB's prefix — `hope`, as the panel keys its French and its icon
+        "age_name": age.get("name"),  # Chronicler-only: WB's own English title, the id above being what the panel translates
         # Chronicler-only narrative hint, matches WB's UI counter « Lunes jusqu'au prochain âge ». Omitted when 0 / no current age.
         "months_until_next_age": int(age_duration * (1 - age_progress) / 5) if age_duration > 0 else 0,
         "world_time": round(float(map_stats.get("world_time", 0)), 2),
     }
+
+
+# Every scheme afoot this instant, its schemer named — WB hangs a plot on one actor, so `actor/info.py <id> plot` spells out its target, its age and its progress.
+def _build_plots(save: dict) -> list[dict]:
+    holder_of = {a["plot"]: a for a in save.get("actors_data") or [] if a.get("plot") is not None}
+    library = load_data("plots.json")
+    return [
+        {
+            "actor": {"id": holder["id"], "name": holder.get("name")} if (holder := holder_of.get(plot["id"])) else None,
+            "type": {"id": tid, "name": (library.get(tid) or {}).get("name")},
+        }
+        for plot in sorted(save.get("plots") or [], key=lambda p: p["id"])
+        if (tid := plot.get("plot_type_id"))
+    ]
 
 
 # Actors split three ways: hulls (`boats`), kingdom-bound thinkers (`population`) and everything else (`wild_creatures`). `infected` = WB's `current_infected`.
@@ -216,7 +232,6 @@ def _build_snapshot(save: dict) -> dict:
         "frozen_tiles": len(save.get("frozen_tiles") or []),
         "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
         **({"infected": infected} if infected else {}),
-        "plots_active": len(save.get("plots") or []),
         "population": population,
         **({"sick": sick} if sick else {}),
         "trees": sum(n for aid, n in asset_counts.items() if "tree" in aid),  # Catches every `Building_Tree` variant — ≤1% off WB's unstable counter.
@@ -255,6 +270,8 @@ def main(argv: list[str]) -> int:
         out["leaders"] = _build_leaders(save)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)
+    if "plots" in sections:
+        out["plots"] = _build_plots(save)
     if "snapshot" in sections:
         out["snapshot"] = _build_snapshot(save)
     emit(out)

@@ -87,4 +87,4 @@ interface FavoriteStats {
 }
 
 // The favorite's active scheme (WB `Plot`); `target_*` are absent when the plot has no such target.
-interface Plot { name: string; progress: number; target_alliance?: EntityReference; target_kingdom?: EntityReference; type_id: string }
+interface Plot { progress: number; target_alliance?: EntityReference; target_city?: EntityReference; target_kingdom?: EntityReference; type: { id: string } }

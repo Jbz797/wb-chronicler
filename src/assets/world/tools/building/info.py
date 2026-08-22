@@ -122,7 +122,7 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
     save = load_save(save_path)
-    house = next((b for b in save.get("buildings") or [] if b.get("id") == house_id), None)  # one lookup, so a scan beats indexing all 16 k rows to read one
+    house = next((b for b in save.get("buildings") or [] if b.get("id") == house_id), None)  # one lookup, so a scan beats indexing every building to read one
     if house is None:
         print(f"unknown building: {house_id}", file=sys.stderr)
         return 1

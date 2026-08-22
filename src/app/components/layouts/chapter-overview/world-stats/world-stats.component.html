@@ -13,6 +13,8 @@
     }
   </nz-descriptions>
 
+  <app-world-plots />
+
   @if (activityRows().length) {
     <nz-descriptions nzBordered nzSize="small" nzTitle="Activité récente" [nzColumn]="1">
       @for (row of activityRows(); track row.icon) {

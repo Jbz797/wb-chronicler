@@ -12,27 +12,13 @@ export interface HullCount { total: number }
 
 // The standout lineage and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
 export interface Leaders {
-  families?: {
-    deaths?: EntityReference;
-    kills?: EntityReference;
-    oldest?: EntityReference;
-    population?: EntityReference;
-    renown?: EntityReference;
-  };
+  families?: { population?: EntityReference };
   persons?: {
-    births?: PersonReference;
-    children?: PersonReference;
-    damage?: PersonReference;
-    health?: PersonReference;
-    hungriest?: PersonReference;
-    intelligence?: PersonReference;
     kills?: PersonReference;
     level?: PersonReference;
     money?: PersonReference;
     oldest?: PersonReference;
     renown?: PersonReference;
-    speed?: PersonReference;
-    youngest?: PersonReference;
   };
 }
 

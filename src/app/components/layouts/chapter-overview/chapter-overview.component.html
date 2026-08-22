@@ -1,11 +1,11 @@
 @let w = world();
 @let c = currentChapter();
 @if (w && c) {
-  @let ageId = c.meta.world.metadata.age_id.replace('age_', '');
+  @let ageId = c.meta.world.metadata.age_id;
   <h2 class="section-title">{{ w.name }}</h2>
   <p class="world-age">
     <img class="age-icon" [src]="`assets/img/ages/${ageId}.png`" />
-    {{ c.meta.age_label }}
+    {{ ageLabels[ageId] ?? ageId }}
   </p>
   <nz-divider />
 

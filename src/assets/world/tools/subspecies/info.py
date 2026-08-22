@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of, subspecies_stats
 from islands import compute_islands_cached
 from shared import (
+    MIN_PER_CAPITA_UNITS,
     NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
     SATED_MIN_NUTRITION,
@@ -65,7 +66,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     out = [
         {
             "age": actor_age(actor, ctx["world_time"]),
-            "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # The roster's one entity: a biology runs in lines — 7 bearers a line, 25 a town.
+            "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # The roster's one entity: a line holds a handful of bearers, a town dozens.
             "id": actor["id"],
             "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
             "job": resolve_profession(actor, save),
@@ -146,13 +147,20 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda s: entity_age(s, world_time),
         "births": lambda s: int(s.get("total_births") or 0),
+        "births_per_death": lambda s: int(s.get("total_births") or 0) / d if (d := int(s.get("total_deaths") or 0)) else 0.0,
+        # The reach `metadata` already prints, ranked as a custom and a creed rank theirs — both read off the one actor pass, no second walk.
+        "cities": lambda s: len({cid for a in tallies["members"].get(s["id"], ()) if (cid := a.get("cityID"))}),
         "deaths": lambda s: int(s.get("total_deaths") or 0),
         "fed_pct": lambda s: tallies["fed"][s["id"]] / n if (n := tallies["eaters"][s["id"]]) else 0.0,
         "housed_pct": lambda s: tallies["housed"][s["id"]] / n if (n := len(tallies["members"].get(s["id"], ()))) else 0.0,
         "kills": lambda s: int(s.get("total_kills") or 0),
+        # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
+        "kills_per_capita": lambda s: int(s.get("total_kills") or 0) / n if (n := len(tallies["members"].get(s["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "kingdoms": lambda s: len({kid for a in tallies["members"].get(s["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
         "members": lambda s: len(tallies["members"].get(s["id"], ())),
         "money": lambda s: tallies["money"][s["id"]],
         "renown": lambda s: int(s.get("renown") or 0),
+        "renown_per_capita": lambda s: int(s.get("renown") or 0) / n if (n := len(tallies["members"].get(s["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": lambda s: tallies["renown_total"][s["id"]],
         "warriors": lambda s: tallies["warriors"][s["id"]],
     }

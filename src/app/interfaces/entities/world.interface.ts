@@ -1,4 +1,4 @@
-import { HullCount } from '../entity.interface';
+import { EntityReference, HullCount } from '../entity.interface';
 import { LeaderKind } from '../types';
 
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
@@ -10,11 +10,15 @@ export interface World {
   cumulative: WorldCumulative;
   leaders?: Partial<Record<LeaderKind, Leader>>;
   metadata: WorldMetadata;
+  plots: WorldPlot[];
   snapshot: WorldSnapshot;
 }
 
 // The world's own identity, chronicler-authored in `history/world.json` — its name and the sentence that frames it, both outside any chapter.
 export interface WorldInfo { description: string; name: string }
+
+// Every scheme afoot, its schemer named — WB hangs one on a single actor, and `actor/info.py <id> plot` tells the chronicler the rest.
+export interface WorldPlot { actor: EntityReference; type: { id: string; name: string } }
 
 // Per-cause death counts since world start — Python omits 0-counts, so UI must treat absent keys as 0.
 interface DeathBreakdown {
@@ -69,7 +73,6 @@ interface WorldSnapshot {
   infected?: number;
   kingdoms: number;
   languages: number;
-  plots_active: number;
   population: number;
   relations: number;
   religions: number;

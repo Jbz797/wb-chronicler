@@ -13,6 +13,7 @@ from actor_stats import actor_stat_totals, build_actor_stats_context, compute_ac
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
+    MIN_PER_CAPITA_UNITS,
     NON_FOOD_SPECIES,
     PROFESSION_KING,
     PROFESSION_LEADER,
@@ -250,7 +251,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "actors_by_kingdom": actors_by_kingdom,
         "besieging_by_city": cache(lambda: besieging_kingdoms(save)),  # `wars` alone asks, and it walks every actor — resolved on demand, once
         "boats_by_kingdom": boats_by_kingdom,
-        "books_by_kingdom": cache(lambda: books_held(save)[1]),  # custody, not authorship; called not stored, a 15 k-row walk few sections need
+        "books_by_kingdom": cache(lambda: books_held(save)[1]),  # custody, not authorship; called not stored, a walk of every building few sections need
         "buildings_by_kingdom": buildings_by_kingdom,
         "capitals_by_kingdom": capitals_by_kingdom,
         "children_by_id": cache(lambda: children_by_id(save)),  # living offspring per parent, world-wide: a subject's child may live abroad
@@ -352,7 +353,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
     heir = _resolve_heir(kingdom, ctx)
 
-    # Chronicler-only: WB's « Hommage », what a mayor owes the crown. `normal` = no tax trait, i.e. 15 of the 16 kingdoms here.
+    # Chronicler-only: WB's « Hommage », what a mayor owes the crown. `normal` = no tax trait, which is what almost every crown carries.
     tribute = next((tier for t in kingdom.get("saved_traits") or [] if (tier := _KINGDOM_TRIBUTE_TRAITS.get(t))), "normal")
 
     return {
@@ -675,9 +676,14 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     def king_money(k: dict) -> int:
         return int((ctx["actors_by_id"].get(k.get("kingID")) or {}).get("money") or 0)
 
+    def populations(k: dict) -> int:
+        return ctx["populations_by_kingdom"].get(k.get("id"), 0)
+
     getters = settlement_rank_getters(ctx, "kingdom")
     getters.update(
         {
+            # Chronicler-only ratios, none of them derivable from a single sheet — a rank needs every other crown to mean anything.
+            "births_per_death": lambda k: int(k.get("total_births") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
             "boats": lambda k: len(ctx["boats_by_kingdom"].get(k.get("id")) or ()),
             "book_reach": lambda k: dims["book_reach"].get(k.get("id"), 0),
             "books": lambda k: books[k.get("id")],
@@ -685,7 +691,10 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
             "culture_traits": lambda k: dims["culture_traits"].get(k.get("id"), 0),
             "equipment": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
             "foundings": lambda k: dims["foundings"].get(k.get("id"), 0),
+            # How dearly a crown sells its dead. A realm that lost nobody is left out — a bare kill count would win the podium on 0 losses.
+            "kills_per_death": lambda k: int(k.get("total_kills") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
             "king_money": king_money,
+            "population_per_city": lambda k: p / c if (c := ctx["cities_by_kingdom"].get(k.get("id"), 0)) and (p := populations(k)) >= MIN_PER_CAPITA_UNITS else 0.0,
             "territory": lambda k: ctx["territory_by_kingdom"].get(k.get("id"), 0),  # A kingdom record has no `zones` — the tally sums its cities'.
             "wars_won": lambda k: dims["wars_won"].get(k.get("id"), 0),
         }

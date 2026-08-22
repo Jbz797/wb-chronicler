@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
 from islands import compute_islands_cached
 from shared import (
+    MIN_PER_CAPITA_UNITS,
     NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
     SATED_MIN_NUTRITION,
@@ -79,7 +80,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     out = [
         {
             "age": actor_age(actor, ctx["world_time"]),
-            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs 42 chars and blows the inline budget
+            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs some 40 chars and blows the inline budget
             "id": actor["id"],
             "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
             "job": resolve_profession(actor, save),
@@ -132,10 +133,13 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
         "fed_pct": lambda c: tallies["fed"][c["id"]] / n if (n := tallies["eaters"][c["id"]]) else 0.0,
         "housed_pct": lambda c: tallies["housed"][c["id"]] / n if (n := len(tallies["members"].get(c["id"], ()))) else 0.0,
         "kills": lambda c: int(c.get("total_kills") or 0),
+        # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
+        "kills_per_capita": lambda c: int(c.get("total_kills") or 0) / n if (n := len(tallies["members"].get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "kingdoms": lambda c: tallies["kingdoms"][c["id"]],
         "members": lambda c: len(tallies["members"].get(c["id"], ())),
         "money": lambda c: tallies["money"][c["id"]],
         "renown": lambda c: int(c.get("renown") or 0),
+        "renown_per_capita": lambda c: int(c.get("renown") or 0) / n if (n := len(tallies["members"].get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": lambda c: tallies["renown_total"][c["id"]],
         "traits": lambda c: len(c.get("saved_traits") or []),
         "warriors": lambda c: tallies["warriors"][c["id"]],

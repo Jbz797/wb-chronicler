@@ -82,7 +82,7 @@ def main(argv: list[str]) -> int:
 
     ctx = {
         "cities_by_id": index_by_id(save.get("cities") or []),
-        "city_of_book": lambda: books_held(save)[2],  # custody, not authorship; called not stored, a 15 k-row walk only `metadata` needs
+        "city_of_book": lambda: books_held(save)[2],  # custody, not authorship; called not stored, a walk of every building only `metadata` needs
         "world_time": save["mapStats"]["world_time"],
     }
 

@@ -53,7 +53,7 @@ export type RankedStatKind = 'age' | 'armor'
   | 'diplomacy' | 'equipment' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
   | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'lost' | 'loyalty'
   | 'mana' | 'members' | 'money'
-  | 'native' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speakers' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory'
+  | 'native' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory'
   | 'traits' | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita' | 'written';
 
 export type RankedStatSource = 'alliance' | 'species' | ChapterTier; // a tier, or a block nested in one: a realm's alliance, a biology's parent stock

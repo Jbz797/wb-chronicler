@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
 from shared import (
+    MIN_PER_CAPITA_UNITS,
     NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
     SATED_MIN_NUTRITION,
@@ -101,11 +102,14 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda f: entity_age(f, world_time),
         "births": lambda f: int(f.get("total_births") or 0),
+        "births_per_death": lambda f: int(f.get("total_births") or 0) / d if (d := int(f.get("total_deaths") or 0)) else 0.0,
         "deaths": lambda f: int(f.get("total_deaths") or 0),
         "fed_pct": lambda f: tallies["fed"][f["id"]] / n if (n := tallies["eaters"][f["id"]]) else 0.0,
         "housed_pct": lambda f: tallies["housed"][f["id"]] / n if (n := len(tallies["members"].get(f["id"], ()))) else 0.0,
         "houses": lambda f: len(tallies["houses"].get(f["id"], ())),
         "kills": lambda f: int(f.get("total_kills") or 0),
+        # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
+        "kills_per_capita": lambda f: int(f.get("total_kills") or 0) / n if (n := len(tallies["members"].get(f["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "members": lambda f: len(tallies["members"].get(f["id"], ())),
         "money": lambda f: tallies["money"][f["id"]],
         "renown_total": lambda f: tallies["renown_total"][f["id"]],  # a lineage has no renown of its own, unlike a clan — only what its members carry

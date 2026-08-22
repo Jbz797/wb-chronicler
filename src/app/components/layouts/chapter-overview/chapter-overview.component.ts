@@ -6,7 +6,7 @@ import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
-import { CITY_SIZE_TERMS, HISTORY_DIR } from '../../../constants';
+import { AGE_LABELS, CITY_SIZE_TERMS, HISTORY_DIR } from '../../../constants';
 import { ChapterOverviewPanel, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
 
@@ -48,6 +48,8 @@ export class ChapterOverviewComponent {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _http = inject(HttpClient);
   private readonly _registry = inject(RegistryService);
+
+  protected readonly ageLabels = AGE_LABELS;
 
   protected currentChapter = this._chronicler.currentChapter;
 

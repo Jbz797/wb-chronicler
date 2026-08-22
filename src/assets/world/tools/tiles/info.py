@@ -32,7 +32,7 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
     ]
 
 
-# One home for every index, each built only for the sections that asked — ~15 k buildings and ~1.5 k actors for 25 tiles, and 331 k cells to decode.
+# One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
 def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], width: int) -> dict:
     wanted = set(coords)
     ctx: dict = {"actors_by_pos": {}, "buildings_by_pos": {}, "center": center, "cities_by_id": {}, "grid": [], "kingdoms_by_id": {}, "tile_map": save["tileMap"]}
@@ -123,7 +123,7 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
 
-# `frozen` only when true — 25 `false` otherwise; the biome flavour rides on the queried tile alone, 70 % of radius-2 sweeps holding a single biome.
+# `frozen` only when true — a `false` per cell otherwise; the biome flavour rides on the queried tile alone, most sweeps holding a single biome.
 def _tile_info_at(x: int, y: int, ctx: dict, queried: bool) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
     biome = tile_biome(name)
@@ -182,7 +182,7 @@ def main(argv: list[str]) -> int:
 
     save = load_save(save_path)
 
-    # The grid ships run-length encoded, so its shape reads off the header — no need to decode 331 k tiles to bounds-check the query.
+    # The grid ships run-length encoded, so its shape reads off the header — no need to decode the whole map to bounds-check the query.
     height = len(save.get("tileArray") or [])
     width = sum((save.get("tileAmounts") or [[]])[0])
 

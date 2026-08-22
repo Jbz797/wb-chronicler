@@ -16,7 +16,6 @@ export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
 
 // A parsed chapter.json: a block per overview panel — the world, the favorite and each body it belongs to — plus the age label and prose tags.
 export interface ChapterMeta extends Record<ChapterTier, unknown> {
-  age_label: string;
   boat: Boat | null;
   city: City | null;
   clan: Clan | null;

@@ -337,7 +337,7 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
         entry["job"] = profession
     if kingdom := actor.get("civ_kingdom_id"):  # Their realm's hue dyes the clothes — kept as a ref so the palette lives in one place, the kingdom registry.
         entry["kingdom"] = kingdom
-    if (level := max(int(actor.get("level") or 0), 1)) > 1:  # 93 % of a world sits at 1 — a medallion on every subject would say nothing, so it stays earned
+    if (level := max(int(actor.get("level") or 0), 1)) > 1:  # most of a world sits at 1 — a medallion on every subject would say nothing, so it stays earned
         entry["level"] = level
     if name := actor.get("name"):  # Plenty of actors are unnamed — omit rather than store a placeholder; the tag's inline name stays the fallback.
         entry["name"] = name

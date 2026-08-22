@@ -79,7 +79,7 @@ def _actor_stats(actor: dict | None, ctx: dict) -> dict:
     return cache[actor_id]
 
 
-# The city's standing army — at most one, residents only, `None` where there is none. `captain_years`, `kills_per_death` and `total_captains` stay chronicler-only.
+# The city's standing army — at most one, residents only, `None` where there is none. `captain_years` and `total_captains` stay chronicler-only.
 def _build_army(city: dict, ctx: dict) -> dict | None:
     army = ctx["armies_by_city"].get(city["id"])
     if army is None:
@@ -94,7 +94,6 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
         **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
         "deaths": deaths,
         "kills": kills,
-        "kills_per_death": round(kills / deaths, 1) if deaths else float(kills),
         "melee": ctx["melee_by_city"][cid],
         "money": ctx["troop_money_by_city"][cid],
         "name": army.get("name"),
@@ -235,7 +234,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "actors_by_id": actors_by_id,
         "armies_by_city": {a["id_city"]: a for a in save.get("armies") or []},  # at most one per city, enforced by WB
         "besieging_by_city": cache(lambda: besieging_kingdoms(save)),  # a walk over every actor, and only `metadata` asks — resolved on demand, once
-        "books_by_city": cache(lambda: books_held(save)[0]),  # custody, not authorship; called not stored, a 15 k-row walk few sections need
+        "books_by_city": cache(lambda: books_held(save)[0]),  # custody, not authorship; called not stored, a walk of every building few sections need
         "buildings_by_city": buildings_by_city,
         "centres": {},  # `_city_centre` memo — every town asks its capital's, over and over.
         "children_by_id": cache(lambda: children_by_id(save)),  # living offspring per parent, world-wide: a resident's child may live elsewhere
@@ -591,10 +590,10 @@ def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
     getters = settlement_rank_getters(ctx, "city")
     getters.update(  # the score dimensions the panel surfaces and no other getter covers, plus the loyalty the crown's hold rests on
         {
-            **{  # Prefixed: the city ranks `kills`/`deaths`/`renown` of its own already. `key=k` binds per entry — a bare closure would read the loop's last value.
-                f"army_{k}": lambda c, key=k: armies.get(c.get("id"), {}).get(key, 0)
-                for k in ("age", "captain_years", "kills", "kills_per_death", "money", "renown")
-            },
+            # Prefixed: the city ranks `kills`/`deaths`/`renown` of its own already. `key=k` binds per entry — a bare closure would read the loop's last value.
+            **{f"army_{k}": lambda c, key=k: armies.get(c.get("id"), {}).get(key, 0) for k in ("age", "captain_years", "kills", "money", "renown")},
+            # Derived, not stored: the sheet prints `kills` and `deaths` side by side, so the ratio would only restate them — the podium still ranks on it.
+            "army_kills_per_death": lambda c: (a := armies.get(c.get("id"), {})).get("kills", 0) / (a.get("deaths") or 1),
             "attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0),
             "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
             "books": lambda c: books[c.get("id")],

@@ -30,13 +30,17 @@ _ALERTS = {
     },
 }
 
-# No panel reads them: `report` is reworded per call, `taxonomy` derives from `identity.species`, and `passengers` counts souls at sea the world panel never prints.
-_CHRONICLER_ONLY = frozenset({"info", "passengers", "report", "taxonomy"})
+# No panel reads them: `report` is reworded per call, `taxonomy` derives from `identity.species`, `passengers` counts souls at sea, an age's pair is WB's English.
+_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "taxonomy"})
 
 # `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset({"adults", "babies", "children", "couples", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"})
 
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
+
+# The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
+_LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
+
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
 _RARITIES = ("epic", "legendary", "normal", "rare")
@@ -87,9 +91,14 @@ def _fold_city_detail(city: dict) -> None:
     _fold_total(city, "books", "equipment")
 
 
-# Folds the favorite's two heavy blocks: `creature_traits` becomes the rarity summary the panel renders, `equipment` goes — both stay whole in `actor/info.py`.
+# Folds the favorite's three heavy blocks: `creature_traits` becomes the rarity summary, `equipment` and the scheme's detail go — `actor/info.py` keeps all three.
 def _fold_favorite_detail(favorite: dict) -> None:
     favorite.pop("equipment", None)
+    # The panel prints the type, the target and the gauge: WB's English is the chronicler's, and so is how long the scheme has run.
+    plot = favorite.get("plot") or {}
+    plot.pop("months", None)
+    if kind := plot.get("type"):
+        plot["type"] = {"id": kind.get("id")}
     favorite["traits"] = _rarity_counts((favorite.pop("creature_traits", None) or {}).get("ids"))
 
 
@@ -99,6 +108,14 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
         if relation.get("status") == "neutral":
             relation.get("opinion", {}).pop("top_drivers", None)
     _fold_total(kingdom, "equipment")
+
+
+# A tier's podium cut to the six rows its panel names — a rank is a full `{id, name}` ref, so the eleven it never prints cost a seventh of the chapter.
+def _fold_leaders(entity: dict) -> None:
+    podium = entity.get("leaders") or {}
+    for block, kept in _LEADER_ROWS.items():
+        if isinstance(rows := podium.get(block), dict):
+            podium[block] = {key: ref for key, ref in rows.items() if key in kept}
 
 
 # The age and sex slices, the lineage depth, the count of nobles — figures the chronicler writes with and no panel prints. `population` keeps what the UI reads.
@@ -251,6 +268,7 @@ def main(argv: list[str]) -> int:
         for block, fold in folds:
             if not block:
                 continue
+            _fold_leaders(block)
             _fold_population(block)
             if fold:
                 fold(block)
@@ -271,11 +289,13 @@ def main(argv: list[str]) -> int:
             _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
 
     _fold_total(world, "boats")  # Counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand.
+    for scheme in world.get("plots") or []:  # the schemer and the type's key: WB's English is the chronicler's, and the panel owns the French
+        scheme["type"] = {"id": (scheme.get("type") or {}).get("id")}
 
     if kingdom:
         _fold_total(kingdom, "boats")
 
-    age_id = live["mapStats"].get("world_age_id") or ""
+    age_id = (live["mapStats"].get("world_age_id") or "").removeprefix("age_")  # short form, as `world/info.py` emits it — `prev_world` carries that one
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
     tags = ["NEW_FAVORITE"] if just_designated else []
     if (prev_age_id := prev_world.get("age_id")) and age_id != prev_age_id:
@@ -286,14 +306,16 @@ def main(argv: list[str]) -> int:
         tags.append("NAVIGATION")
     if boat:  # a chapter caught at sea — the favorite is aboard right now, which the panel badges and the chronicler owes a scene
         tags.append("FAVORITE_ABOARD")
+    # A scheme afoot under the favorite's own hand. Read after the fold, which leaves the type's key behind: a plot ripens in months, so it may be gone next chapter.
+    if (favorite or {}).get("plot"):
+        tags.append("FAVORITE_PLOTTING")
     new_alerts = _fired_alerts(live, already)
     tags += [code for code, _message in new_alerts]
 
-    age_label = (_AGE_LABELS.get(age_id) or {}).get("name") or age_id
+    age_label = (_AGE_LABELS.get(f"age_{age_id}") or {}).get("name") or age_id  # recap line only, the chapter carrying the id alone
 
-    # `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
+    # No `age_label`: the panel translates `world.metadata.age_id`. `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
     chapter_json = {
-        "age_label": age_label,
         "boat": boat,
         "city": city,
         "clan": clan,

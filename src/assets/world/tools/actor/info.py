@@ -28,6 +28,7 @@ from shared import (
     is_aboard,
     life_stage,
     light,
+    load_data,
     load_save,
     parse_sections,
     resolve_profession,
@@ -95,6 +96,7 @@ _TRAIT_MASS_MODS = {
 }
 
 _UNDEAD_SPECIES = frozenset({"skeleton"})  # Fail `isAlive`/`needsFood`: never breed, never hunger (no diet).
+_UNITS_PER_MONTH = UNITS_PER_YEAR / 12  # WB counts 5 `world_time` units to the month, twelve to the year
 
 
 # One home for every index the sections read, so no caller rolls its own. Actor loop = one pass: id, asset_id, children-per-parent (`get_current_children_count`).
@@ -217,13 +219,17 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
     plot = next((p for p in save.get("plots") or [] if p.get("id") == plot_id), None)
     if plot is None:
         return None
+    type_id = plot.get("plot_type_id")
+    kind = load_data("plots.json").get(type_id) or {}
     return {
-        "name": plot.get("name"),
-        "progress": round(float(plot.get("progress_current", 0)), 1),
-        "started_at": round(float(plot.get("created_time", 0)), 2),
+        # Months, not years: a scheme ripens well inside one. WB never caps the gauge either, so a ripe plot reads past 100.
+        "months": int((ctx["world_time"] - float(plot.get("created_time") or 0)) / _UNITS_PER_MONTH),
+        "progress": round(float(plot.get("progress_current") or 0), 1),
         "target_alliance": entity_ref(plot.get("id_target_alliance"), ctx["alliances_by_id"]),
+        "target_city": entity_ref(plot.get("id_target_city"), ctx["cities_by_id"]),  # the rites strike a settlement where a war strikes a crown
         "target_kingdom": entity_ref(plot.get("id_target_kingdom"), ctx["kingdoms_by_id"]),
-        "type_id": plot.get("plot_type_id"),
+        # The scheme's kind, as a book carries its genre: WB's English for the chronicler, the id for the panel — the save's own `name` is that label localised.
+        "type": {"description": kind.get("description"), "id": type_id, "name": kind.get("name")},
     }
 
 

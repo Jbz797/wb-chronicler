@@ -25,6 +25,7 @@ EQUIPMENT_RACKS = {
     "weapons": "item_storage_weapons",
 }
 
+MIN_PER_CAPITA_UNITS = 3  # Below three souls a per-head ratio measures the divisor, not the body — a lone survivor would top every podium.
 NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
@@ -37,7 +38,7 @@ ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divi
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
-_CACHE_KEEP = 12  # a world's chapters plus the live save: keyed on mtime+size, those sharing a `map.wbox` share a slot, so 16 chapters spend 10 of these
+_CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
 _CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` — `PROFESSION_KING`/`_LEADER`/`_WARRIOR`, spelt out: they sort after this.
 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
@@ -178,6 +179,12 @@ def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of
     return dict(sorted(out.items()))
 
 
+# A save's cache slot, keyed on `mtime+size` — a chapter's `map.wbox` never moves, so its slot is stable for the life of the world.
+def _save_cache_name(path: Path) -> str:
+    stat = path.stat()
+    return f"save_v1_{int(stat.st_mtime)}_{stat.st_size}.pkl"
+
+
 # Borda shared by both composites → `{id: place}`, 1 = strongest: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens.
 def _score_ranks(ids: list[int], dimensions: dict[str, dict]) -> dict[int, int]:
     if not ids:
@@ -207,13 +214,15 @@ def _top_by(records: Sequence[dict], key) -> dict | None:
     return best if best is not None and key(best) > 0 else None
 
 
-# Newest `_CACHE_KEEP` entries kept, the rest dropped by mtime — chapter saves each want their own, unlike the islands cache's single slot.
+# Orphan slots go — a chapter's save never changes, where the live one mints a fresh key at every in-game save. `_CACHE_KEEP` then caps what survives, newest first.
 def _write_save_cache(cache_file: Path, save: dict) -> None:
     CACHE_DIR.mkdir(exist_ok=True)
     with cache_file.open("wb") as f:
         pickle.dump(save, f, protocol=5)
-    stale = sorted(CACHE_DIR.glob("save_v1_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)[_CACHE_KEEP:]
-    for old_entry in stale:
+    claimed = {_save_cache_name(p) for p in (_CURRENT_SAVE, *SAVES_DIR.glob("C*/map.wbox"))}
+    live = [f for f in CACHE_DIR.glob("save_v1_*.pkl") if f.name in claimed]
+    orphans = [f for f in CACHE_DIR.glob("save_v1_*.pkl") if f.name not in claimed]
+    for old_entry in orphans + sorted(live, key=lambda f: f.stat().st_mtime, reverse=True)[_CACHE_KEEP:]:
         old_entry.unlink(missing_ok=True)
 
 
@@ -285,13 +294,13 @@ def build_trait_ids(trait_ids: list[str], traits_data: dict, key: str) -> dict |
     return weighed or sorted(entries)
 
 
-# Trait entries with their stats + whichever narrative field the library carries: a group on a clan's and a biology's, a rarity on a creature's. Sorted by id.
+# Trait entries with their stats, WB's English `name` and whichever narrative field the library carries: a group everywhere, a rarity on a creature's. Sorted by id.
 def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
     out = []
     for tid in trait_ids or []:
         entry = traits_data.get(tid) or {}
         item: dict = {"id": tid, "stats": entry.get("stats") or {}}
-        for key in ("description", "flavor", "group", "rarity"):
+        for key in ("description", "flavor", "group", "name", "rarity"):
             if key in entry:
                 item[key] = entry[key]
         out.append(item)  # keys left as inserted: `render` sorts every record-shaped dict on the way out, so ordering them here would be sorting twice
@@ -337,7 +346,7 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
             continue
         if building.get("asset_id") in civic:
             buildings[cid] += 1
-        if stock := building.get("resources"):  # barely 0.5 % of buildings hold one, so gating the walk beats spending an `or {}` on every wall and tree
+        if stock := building.get("resources"):  # a handful of buildings hold one, so gating the walk beats spending an `or {}` on every wall and tree
             for resource in stock.get("saved_resources") or []:
                 if resource.get("id") == "gold":
                     gold[cid] += resource.get("amount", 0)
@@ -489,7 +498,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
 
     gold: Counter = Counter()  # gold ore stockpiled in a kingdom's buildings; each building carries its `cityID`, so no spatial lookup
 
-    for building in save.get("buildings") or []:  # `resources` first: by far the rarest of the three tests, so it spares the city lookup on 99 % of the walk
+    for building in save.get("buildings") or []:  # `resources` first: by far the rarest of the three tests, so it spares the city lookup on nearly every building
         if (stock := building.get("resources")) and (city := cities_by_id.get(building.get("cityID"))) and (kid := city.get("kingdomID")):
             for resource in stock.get("saved_resources") or []:
                 if resource.get("id") == "gold":
@@ -562,8 +571,7 @@ def load_save(path: Path) -> dict:
     if not path.exists():
         print(f"no save found at {path}", file=sys.stderr)
         sys.exit(2)
-    stat = path.stat()
-    cache_file = CACHE_DIR / f"save_v1_{int(stat.st_mtime)}_{stat.st_size}.pkl"
+    cache_file = CACHE_DIR / _save_cache_name(path)
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:
@@ -712,11 +720,14 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "immortals": tally("immortals"),
         "infected": tally("infected"),
         "kills": lambda r: r.get("total_kills", 0),
+        # Per-head, so a small town can out-rank a capital — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
+        "kills_per_capita": lambda r: r.get("total_kills", 0) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
         "money": money,
         "nobles": tally("nobles"),
         "nobles_money": nobles_money,  # the head's own purse excluded — it is reported on its own in `metadata`
         "population": populations,
         "renown": lambda r: r.get("renown", 0),
+        "renown_per_capita": lambda r: r.get("renown", 0) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": tally("renown"),
         "sick": tally("sick"),
         "subjects_money": lambda r: money(r) - head_money(r, ctx, tier) - nobles_money(r),  # commoners' coins: `money` minus the head and the nobility

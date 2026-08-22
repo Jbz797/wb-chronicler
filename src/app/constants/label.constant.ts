@@ -59,6 +59,21 @@ export const PERSONALITY_LABELS: Readonly<Record<string, GenderedLabel>> = {
   wildcard: 'Imprévisible',
 };
 
+// French labels for `world.metadata.age_id`, stripped of its `age_` prefix as the icon lookup is — WB's own English stays in `datas/world-ages.json`.
+export const AGE_LABELS: Readonly<Record<string, string>> = {
+  ash: 'Ère des Cendres',
+  chaos: 'Ère du Chaos',
+  dark: 'Ère des Ténèbres',
+  despair: 'Ère du Désespoir',
+  hope: "Ère de l'Espoir",
+  ice: 'Ère de Glace',
+  moon: 'Ère de la Lune',
+  sun: 'Ère du Soleil',
+  tears: 'Ère des Larmes',
+  unknown: 'Ère inconnue',
+  wonders: 'Ère des Merveilles',
+};
+
 // French labels for `plot.type_id` — sourced from WB's `PlotsLibrary`. Unknown ids fall back to the raw id at render time.
 export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
   alliance_create: "Création d'alliance",

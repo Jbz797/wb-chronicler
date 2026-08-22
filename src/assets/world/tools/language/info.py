@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
 from islands import compute_islands_cached
 from shared import (
+    MIN_PER_CAPITA_UNITS,
     NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
     SATED_MIN_NUTRITION,
@@ -90,7 +91,7 @@ def _build_metadata(language: dict, speakers: list[dict], ctx: dict, tallies: di
         **({"renown": renown} if (renown := int(language.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `population`
         **({"report": report} if report else {}),
         **({"traits": traits} if (traits := len(language.get("saved_traits") or [])) else {}),
-        **({"written": written} if (written := int(language.get("books_written") or 0)) else {}),  # every volume ever penned in it, burnt ones counted
+        **({"books_written": tally} if (tally := int(language.get("books_written") or 0)) else {}),  # WB's lifetime count, burnt volumes included
     }
 
 
@@ -107,7 +108,7 @@ def _build_speakers(speakers: list[dict], ctx: dict, save: dict, detailed: bool)
     out = [
         {
             "age": actor_age(actor, ctx["world_time"]),
-            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs 42 chars and blows the inline budget
+            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs some 40 chars and blows the inline budget
             "id": actor["id"],
             "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
             "job": resolve_profession(actor, save),
@@ -131,22 +132,25 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
     return {
         "age": lambda l: entity_age(l, world_time),
         "books": lambda l: len(books.get(l["id"], ())),
+        "books_written": lambda l: int(l.get("books_written") or 0),
         "cities": lambda l: tallies["cities"][l["id"]],
         "converted": lambda l: int(l.get("speakers_converted") or 0),
         "deaths": lambda l: int(l.get("total_deaths") or 0),
         "fed_pct": lambda l: tallies["fed"][l["id"]] / n if (n := tallies["eaters"][l["id"]]) else 0.0,
         "housed_pct": lambda l: tallies["housed"][l["id"]] / n if (n := len(tallies["speakers"].get(l["id"], ()))) else 0.0,
         "kills": lambda l: int(l.get("total_kills") or 0),
+        # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
+        "kills_per_capita": lambda l: int(l.get("total_kills") or 0) / n if (n := len(tallies["speakers"].get(l["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "kingdoms": lambda l: tallies["kingdoms"][l["id"]],
         "lost": lambda l: int(l.get("speakers_lost") or 0),
+        "members": lambda l: len(tallies["speakers"].get(l["id"], ())),  # ranked under the name every other tier uses; the section stays `speakers`
         "money": lambda l: tallies["money"][l["id"]],
         "native": lambda l: int(l.get("speakers_new") or 0),
         "renown": lambda l: int(l.get("renown") or 0),
+        "renown_per_capita": lambda l: int(l.get("renown") or 0) / n if (n := len(tallies["speakers"].get(l["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": lambda l: tallies["renown_total"][l["id"]],
-        "speakers": lambda l: len(tallies["speakers"].get(l["id"], ())),
         "traits": lambda l: len(l.get("saved_traits") or []),
         "warriors": lambda l: tallies["warriors"][l["id"]],
-        "written": lambda l: int(l.get("books_written") or 0),
     }
 
 
