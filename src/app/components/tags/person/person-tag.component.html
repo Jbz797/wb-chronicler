@@ -2,6 +2,9 @@
   <nz-tag class="entity-tag" [class.dead]="p.dead" [style.--tag-color]="color()" [style.--tag-ring]="ring()" [title]="label()">
     <canvas #portrait class="portrait" height="0" width="0"></canvas>
     <span class="entity-name">{{ label() }}</span>
+    @if (medal() && p.rank; as r) {
+      <img [src]="`assets/img/podium/${r}.png`" />
+    }
     @if (p.level; as l) {
       <span class="tag-badge">{{ l }}</span>
     }

@@ -17,7 +17,7 @@
       <app-religion-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @case ('dominant_subspecies') {
-      <app-subspecies-tag [id]="r.id" [name]="r.name" />
+      <app-subspecies-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @case ('most_dominant_village') {
       <app-city-tag [id]="r.id" [medal]="false" [name]="r.name" />
@@ -26,13 +26,13 @@
       <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @case ('most_renowned_clan') {
-      <app-clan-tag [id]="r.id" [name]="r.name" />
+      <app-clan-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @case ('most_renowned_family') {
-      <app-family-tag [id]="r.id" [name]="r.name" />
+      <app-family-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @case ('most_renowned_person') {
-      <app-person-tag [id]="r.id" [name]="r.name" />
+      <app-person-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @default {
       {{ r.name }}

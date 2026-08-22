@@ -15,6 +15,7 @@ export class ClanTagComponent implements AfterViewInit {
   private readonly _registry = inject(RegistryService);
 
   public readonly id = input.required<number>();
+  public readonly medal = input(true); // Podium medal shown by default; hidden where the entity is the winner by construction.
   public readonly name = input.required<string>();
 
   // Hue, founder's species and headcount come from the clans registry, rebuilt each chapter. `null` until the clan is registered.

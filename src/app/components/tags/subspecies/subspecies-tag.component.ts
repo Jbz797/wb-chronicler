@@ -15,6 +15,7 @@ export class SubspeciesTagComponent implements AfterViewInit {
   private readonly _registry = inject(RegistryService);
 
   public readonly id = input.required<number>();
+  public readonly medal = input(true); // Podium medal shown by default; hidden where the entity is the winner by construction.
   public readonly name = input.required<string>();
 
   // Slab, bookmark hues, species pip and living bearers come from the subspecies registry, rebuilt each chapter. `null` until the biology is registered.

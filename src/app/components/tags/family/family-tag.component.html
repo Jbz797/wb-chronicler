@@ -1,6 +1,6 @@
 @if (family(); as f) {
   <nz-tag
-    class="family-tag"
+    class="entity-tag family-tag"
     [class.dead]="f.dead"
     [class.framed]="!!border()"
     [style.--tag-border]="border()"
@@ -10,8 +10,11 @@
     [title]="name()"
   >
     <span class="entity-name">{{ name() }}</span>
-    @if (f.members; as members) {
-      <span class="tag-badge">{{ members }}</span>
+    @if (medal() && f.rank; as r) {
+      <img [src]="`assets/img/podium/${r}.png`" />
+    }
+    @if (f.size; as size) {
+      <span class="tag-badge">{{ size }}</span>
     }
     @if (f.species; as sp) {
       <img [src]="`assets/img/species/${sp}.png`" />

@@ -16,6 +16,7 @@ export class PersonTagComponent {
   private readonly _registry = inject(RegistryService);
 
   public readonly id = input.required<number>();
+  public readonly medal = input(true); // Podium medal shown by default; hidden where the entity is the winner by construction.
   public readonly name = input.required<string | undefined>(); // absent on 42 % of WB's actors, but always bound — a silent « Anonyme » would hide a forgotten one
 
   // Species/sex/profession badge/dead come from the person registry, kept fresh by actor/city/kingdom info.py. `null` until the person is registered.

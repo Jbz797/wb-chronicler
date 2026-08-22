@@ -97,6 +97,7 @@ export class MarkedHelpers {
     const { id, tokens: children } = token as IconToken;
     const info = BOOK_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by readings, the one axis a volume is ranked on
 
     const board = `<canvas class="board" data-book="${id}" height="0" width="0"></canvas>`; // `BookSpriteHelpers.paintAll` composes it once rendered
 
@@ -104,7 +105,7 @@ export class MarkedHelpers {
     const reads = info?.reads ? `<span class="tag-badge">${info.reads}</span>` : ''; // times opened, dropped while nobody has
     const label = `<span class="entity-name">${name}</span>`;
 
-    return `<span class="ant-tag entity-tag book-tag${dead}" style="--tag-color: ${info?.color}">${board}${label}${reads}</span>`;
+    return `<span class="ant-tag entity-tag book-tag${dead}" style="--tag-color: ${info?.color}">${board}${label}${medal}${reads}</span>`;
   }
 
   // A settlement plate: WB's own slab as the ground, name, podium medal, size medallion, species glyph — the gold studs alone marking a seat.
@@ -116,7 +117,7 @@ export class MarkedHelpers {
     const isCapital = info?.plate === 'capital'; // the gold-studded slab, which is what tells a seat from the rest now that no crown does
     const dead = info?.dead ? ' dead' : ''; // razed settlement → drained + struck-through style
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite settlement weight
-    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // Civ-style population-tier badge (1 foyer … 7 métropole).
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // Civ-style population-tier badge (1 foyer … 9 cité-monde).
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const style = `--tag-color: ${PaletteHelpers.realmText(info?.kingdom)}; --tag-plate: url('assets/img/nameplates/${isCapital ? 'capital' : 'city'}.png')`;
 
@@ -130,15 +131,16 @@ export class MarkedHelpers {
     const { id, tokens: children } = token as IconToken;
     const info = CLAN_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by members, the one axis a band is ranked on
 
     const banner = `<canvas class="banner" data-clan="${id}" height="0" width="0"></canvas>`; // `KingdomSpriteHelpers.paintAll` composes it once rendered
 
     const dead = info?.dead ? ' dead' : ''; // clan disbanded since this chapter → drained + struck-through
-    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // living headcount, as the lineage plate badges its own
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // the population tier every tag but the person's wears
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const label = `<span class="entity-name">${name}</span>`;
 
-    return `<span class="ant-tag entity-tag clan-tag${dead}" style="--tag-color: ${info?.color}">${banner}${label}${members}${species}</span>`;
+    return `<span class="ant-tag entity-tag clan-tag${dead}" style="--tag-color: ${info?.color}">${banner}${label}${medal}${size}${species}</span>`;
   }
 
   // A culture plate: WB's own stone frame, its emblem, its hue and the living it is caught by. Raised into rather than granted, so it borrows no crown's palette.
@@ -151,11 +153,11 @@ export class MarkedHelpers {
 
     const dead = info?.dead ? ' dead' : ''; // custom lost with its last follower → drained + struck-through
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by followers, the one axis a culture is ranked on
-    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // living followers, as the clan plate badges its own
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // the population tier, as the clan plate badges its own
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const label = `<span class="entity-name">${name}</span>`;
 
-    return `<span class="ant-tag entity-tag culture-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${members}${species}</span>`;
+    return `<span class="ant-tag entity-tag culture-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${size}${species}</span>`;
   }
 
   // A lineage wears no crown's hue, so its tag is the frame alone on a plain ground — nothing to resolve but the sprite.
@@ -163,6 +165,7 @@ export class MarkedHelpers {
     const { id, tokens: children } = token as IconToken;
     const info = FAMILY_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by members, as the clan's is
 
     const dead = info?.dead ? ' dead' : ''; // lineage died out since this chapter → drained + struck-through
     const framed = info?.frame === undefined ? '' : ' framed';
@@ -170,11 +173,11 @@ export class MarkedHelpers {
 
     // Two sprites off the same number: the rails, then the corner volutes those rails are too thin to hold — the pair `family-tag.component.ts` binds.
     const border = n === null ? '' : `--tag-border: url(assets/img/families/frame_${n}.png); --tag-corner: url(assets/img/families/corner_${n}.png); `;
-    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // living headcount, as the city plate badges its citizens
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // the population tier, as the city plate badges its citizens
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const style = `${border}--tag-fill: ${info?.bg_color}; --tag-ink: ${PaletteHelpers.readableOn(info?.bg_color)}`;
 
-    return `<span class="ant-tag family-tag${framed}${dead}" style="${style}"><span class="entity-name">${name}</span>${members}${species}</span>`;
+    return `<span class="ant-tag entity-tag family-tag${framed}${dead}" style="${style}"><span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
   }
 
   private static _renderKingdom(this: ParserThis, token: Tokens.Generic): string {
@@ -184,14 +187,14 @@ export class MarkedHelpers {
 
     const banner = `<canvas class="banner" data-kingdom="${id}" height="0" width="0"></canvas>`; // `KingdomSpriteHelpers.paintAll` composes it once rendered
 
-    const cities = info?.cities ? `<span class="tag-badge">${info.cities}</span>` : ''; // city-count badge, mirrors the city-tag size medallion
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // the crown's own people, not its towns — the same tier every tag wears
     const dead = info?.dead ? ' dead' : ''; // destroyed kingdom → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 of the composite power score, as the city's is
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const style = `--tag-color: ${PaletteHelpers.realmText(Number(id))}`; // the plate itself frames it now, where an emblem-tinted ring used to
 
-    return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${banner}${label}${medal}${cities}${species}</span>`;
+    return `<span class="ant-tag entity-tag kingdom-tag${dead}" style="${style}">${banner}${label}${medal}${size}${species}</span>`;
   }
 
   // A language plate: WB's own parchment, the script inked on it, its hue and the living who answer in it. Caught by ear, so it borrows no crown's palette.
@@ -204,11 +207,11 @@ export class MarkedHelpers {
 
     const dead = info?.dead ? ' dead' : ''; // tongue lost with its last speaker → drained + struck-through
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by speakers, the one axis a language is ranked on
-    const speakers = info?.speakers ? `<span class="tag-badge">${info.speakers}</span>` : ''; // the living who answer in it, as the culture plate badges its own
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // the population tier, as the culture plate badges its own
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const label = `<span class="entity-name">${name}</span>`;
 
-    return `<span class="ant-tag entity-tag language-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${speakers}${species}</span>`;
+    return `<span class="ant-tag entity-tag language-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${size}${species}</span>`;
   }
 
   // A subject plate: the actor as WB draws them, name, sex, then their charge where the other plates put a species glyph — the portrait already shows it.
@@ -223,6 +226,7 @@ export class MarkedHelpers {
     const color = PaletteHelpers.realmText(info.kingdom); // their realm's own name hue — a subject reads as belonging to that crown
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
+    const medal = info.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by level, the one axis a soul is ranked on
     const job = info.job ? `<img src="assets/img/professions/${info.job}.png" />` : ''; // the dead keep theirs — the drained plate already says they are gone
     const level = info.level ? `<span class="tag-badge">${info.level}</span>` : ''; // only once earned — Python omits the level-1 crowd
     const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
@@ -230,7 +234,7 @@ export class MarkedHelpers {
     const hue = PaletteHelpers.realmRing(info.kingdom); // their crown's emblem tint, framing the plate exactly as it frames the crown's own tag
     const style = `--tag-color: ${color}${hue ? `; --tag-ring: ${hue}` : ''}`;
 
-    return `<span class="ant-tag entity-tag${dead}" style="${style}">${portrait}${label}${level}${sex}${job}</span>`;
+    return `<span class="ant-tag entity-tag${dead}" style="${style}">${portrait}${label}${medal}${level}${sex}${job}</span>`;
   }
 
   // A creed plate: WB's own votive frame, the sign it raises, its hue and the living who hold to it. Preached, not granted, so it borrows no crown's palette.
@@ -243,11 +247,11 @@ export class MarkedHelpers {
 
     const dead = info?.dead ? ' dead' : ''; // creed lost with its last believer → drained + struck-through
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by faithful, the one axis a religion is ranked on
-    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // the living who hold to it, as the culture plate badges its own
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // the population tier, as the culture plate badges its own
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const label = `<span class="entity-name">${name}</span>`;
 
-    return `<span class="ant-tag entity-tag religion-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${members}${species}</span>`;
+    return `<span class="ant-tag entity-tag religion-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${size}${species}</span>`;
   }
 
   // Resource: icon + optional inline text, never coloured.
@@ -273,16 +277,17 @@ export class MarkedHelpers {
     const { id, tokens: children } = token as IconToken;
     const info = SUBSPECIES_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
+    const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by bearers, as the clan's is
 
     const bookmark = `<canvas class="bookmark" data-subspecies="${id}" height="0" width="0"></canvas>`; // `SubspeciesSpriteHelpers.paintAll` dyes it once rendered
 
     const dead = info?.dead ? ' dead' : ''; // biology extinct since this chapter → drained + struck-through
-    const members = info?.members ? `<span class="tag-badge">${info.members}</span>` : ''; // living bearers, as the clan plate badges its sworn
+    const size = info?.size ? `<span class="tag-badge">${info.size}</span>` : ''; // the population tier, as the clan plate badges its sworn
     const species = info?.species ? `<img src="assets/img/species/${info.species}.png" />` : '';
     const label = `<span class="entity-name">${name}</span>`;
 
     const style = `--tag-color: ${info?.color}; --tag-slab: ${SubspeciesSpriteHelpers.slab(info?.banner_bg)}`;
-    return `<span class="ant-tag entity-tag subspecies-tag${dead}" style="${style}">${bookmark}${label}${members}${species}</span>`;
+    return `<span class="ant-tag entity-tag subspecies-tag${dead}" style="${style}">${bookmark}${label}${medal}${size}${species}</span>`;
   }
 
 }

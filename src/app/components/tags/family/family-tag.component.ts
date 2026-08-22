@@ -15,6 +15,7 @@ export class FamilyTagComponent {
   private readonly _registry = inject(RegistryService);
 
   public readonly id = input.required<number>();
+  public readonly medal = input(true); // Podium medal shown by default; hidden where the entity is the winner by construction.
   public readonly name = input.required<string>();
 
   // The frame is worn as a 9-sliced border rather than drawn, so the tag stretches to its name instead of hanging a fixed portrait.

@@ -5,6 +5,7 @@ export interface BookInfo {
   dead?: boolean; // burnt since this chapter: WB drops it from `save.books`, the registry keeps its board and strikes the title through
   icon?: string; // `<genre folder>/<sheet>`, the folder parting from the genre id for `bad_story_about_king` alone
   name: string;
+  rank?: number; // podium place by readings, top 3 only — the medal right of the name
   reads?: number;
 }
 
@@ -26,8 +27,9 @@ export interface ClanInfo {
   banner_icon_color?: string;
   color: string;
   dead?: boolean;
-  members?: number;
   name: string;
+  rank?: number; // podium place by members, top 3 only — the medal right of the name
+  size?: number;
   species?: string;
 }
 
@@ -39,9 +41,9 @@ export interface CultureInfo {
   banner_icon_color?: string;
   color: string;
   dead?: boolean;
-  members?: number;
   name: string;
   rank?: number; // podium place by followers, top 3 only — the medal right of the name
+  size?: number;
   species?: string;
 }
 
@@ -50,8 +52,9 @@ export interface FamilyInfo {
   bg_color?: string;
   dead?: boolean;
   frame?: number;
-  members?: number;
   name: string;
+  rank?: number; // podium place by members, top 3 only — the medal right of the name
+  size?: number;
   species?: string;
 }
 
@@ -61,11 +64,11 @@ export interface KingdomInfo {
   banner_bg_color?: string;
   banner_icon?: number;
   banner_icon_color?: string;
-  cities?: number;
   color: string;
   color_main?: string;
   dead?: boolean;
   rank?: number;
+  size?: number;
   species?: string;
 }
 
@@ -78,8 +81,8 @@ export interface LanguageInfo {
   color: string;
   dead?: boolean;
   name: string;
-  rank?: number; // podium place by speakers, top 3 only — the medal right of the name
-  speakers?: number;
+  rank?: number; // podium place by population, top 3 only — the medal right of the name
+  size?: number;
   species?: string;
 }
 
@@ -93,6 +96,7 @@ export interface PersonInfo {
   level?: number;
   phenotype_index?: number;
   phenotype_shade?: number;
+  rank?: number; // podium place by level, top 3 only — the medal right of the name
   sex?: string;
   skin_id?: number;
   special_head?: string;
@@ -107,9 +111,9 @@ export interface ReligionInfo {
   banner_icon_color?: string;
   color: string;
   dead?: boolean;
-  members?: number;
   name: string;
   rank?: number; // podium place by faithful, top 3 only — the medal right of the name
+  size?: number;
   species?: string;
 }
 
@@ -120,7 +124,8 @@ export interface SubspeciesInfo {
   color_main?: string;
   color_main_2?: string;
   dead?: boolean;
-  members?: number;
   name: string;
+  rank?: number; // podium place by bearers, top 3 only — the medal right of the name
+  size?: number;
   species?: string;
 }

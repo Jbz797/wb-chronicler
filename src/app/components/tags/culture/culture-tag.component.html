@@ -5,8 +5,8 @@
     @if (medal() && c.rank; as r) {
       <img [src]="`assets/img/podium/${r}.png`" />
     }
-    @if (c.members; as members) {
-      <span class="tag-badge">{{ members }}</span>
+    @if (c.size; as size) {
+      <span class="tag-badge">{{ size }}</span>
     }
     @if (c.species; as sp) {
       <img [src]="`assets/img/species/${sp}.png`" />

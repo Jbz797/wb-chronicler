@@ -91,7 +91,7 @@ canvas {
       top: -3px;
     }
 
-    // One badge for the three tags: a settlement's size tier, a realm's city count, a subject's level — absent below 2, where `1` only states the floor.
+    // One badge for every plate: the population tier, or a subject's level — absent below 2, where `1` only states the floor.
     .tag-badge {
       background-color: var(--tag-color);
       border-radius: 2px;
@@ -250,6 +250,7 @@ canvas {
   &.family-tag {
     background-color: var(--tag-fill, #f4f1ea);
     border: 1px solid rgb(0 0 0 / 28%);
+    box-shadow: none; // the double ring above rides a black ground; on this parchment it would only draw a dark band inside the frame
     color: var(--tag-ink, #23211d);
 
     // `padding-box` stops the fill under the rails, so the six openwork tops show the page through their gaps, as they show the portrait in game.
@@ -282,25 +283,11 @@ canvas {
       }
     }
 
-    // Living headcount, inverting the tag — ink for ground, fill for figure — so it reads on any lineage. Its shape it shares with the clan's, below.
+    // The tier, inverting the tag — ink for ground, fill for figure — so it reads on any lineage, which wears no crown's hue to take one from.
     .tag-badge {
       background-color: var(--tag-ink, #23211d);
       color: var(--tag-fill, #f4f1ea);
     }
-  }
-
-  // One disc for every tag that counts people — lineage, clan, culture, tongue, biology; last on purpose, as it ties the pill above, source order winning.
-  &.clan-tag .tag-badge,
-  &.culture-tag .tag-badge,
-  &.family-tag .tag-badge,
-  &.language-tag .tag-badge,
-  &.religion-tag .tag-badge,
-  &.subspecies-tag .tag-badge {
-    border-radius: 50%;
-    font-size: 10px; // sized for two digits: at the plate's 12.5px a clan of 43 pressed both walls of the disc
-    height: 14px;
-    min-width: 14px; // no padding: two digits hold the circle, and a biology in the hundreds simply stretches it to a stadium rather than clipping
-    padding: 0 0 0.5px;
   }
 }
 

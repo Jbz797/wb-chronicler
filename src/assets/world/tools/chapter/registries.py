@@ -29,7 +29,7 @@ _FOUNDER_FIELDS = (
 
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
 _REGISTRIES = ("books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "religions", "subspecies")
-_SIZE_TIERS = (5, 15, 40, 100, 200, 500)  # Population upper bounds → settlement tier 1-7 (foyer→métropole), mirrors the `chronicler.md` naming scale.
+_SIZE_TIERS = (5, 15, 30, 60, 120, 250, 500, 1000)  # Population upper bounds → settlement tier 1-9 (foyer→cité-monde), mirrors the `chronicler.md` naming scale.
 
 
 # WB `KingdomBanner.setupBanner` inputs for the UI's canvas: the slots the realm's two banner ids pick in its king's species set, each with its hue. Realms only.
@@ -49,7 +49,7 @@ def _banner(record: dict, species: str | None) -> dict:
 
 
 # Book registry entry — the two sheets its sprite stacks and the hue WB prints its title in, all three read off its genre. `_merge` flags a burnt one `dead`.
-def _book_entry(book: dict, genres: dict) -> dict:
+def _book_entry(book: dict, genres: dict, rank: int | None) -> dict:
     genre = genres.get(book.get("book_type")) or {}
     entry = {
         "color": genre.get("color"),
@@ -59,6 +59,8 @@ def _book_entry(book: dict, genres: dict) -> dict:
     }
     if reads := int(book.get("times_read") or 0):  # the badge, dropped while nobody has opened it — a shelf holds many a volume no one reads
         entry["reads"] = reads
+    if rank is not None:
+        entry["rank"] = rank
     return _defined(entry)
 
 
@@ -71,7 +73,9 @@ def _build_registries(save: dict, prev: dict) -> dict:
     king_ids = {kid for k in kingdoms if (kid := k.get("kingID"))}  # the crowned only — a realm's banner set follows its king's species
     kingdoms_by_id = index_by_id(kingdoms)
     kings_by_id: dict = {}
-    persons: dict[str, dict] = {}
+
+    # Actor and trade, kept whole through the pass: a fiche can only take its rank once every level has been counted.
+    crowd: dict[int, tuple[dict, str | None]] = {}
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
 
     # Headcount and dominant species are all an entry needs, so tally straight away — and WB points the actor at its clan, lineage and biology, never the reverse.
@@ -107,9 +111,11 @@ def _build_registries(save: dict, prev: dict) -> dict:
         if kid := a.get("civ_kingdom_id"):
             species_by_kingdom[kid][species] += 1
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
-        persons[str(actor_id)] = _person_entry(a, resolve_profession(a, save), items_by_id, subspecies_by_id)
+        crowd[actor_id] = (a, resolve_profession(a, save))
 
-    cities_per_kingdom: Counter = Counter(kid for c in cities if (kid := c.get("kingdomID")) is not None)
+    rank_by_person = _podium(Counter({aid: int(a.get("level") or 0) for aid, (a, _) in crowd.items()}))  # a level, where every other podium counts heads
+    persons = {str(aid): _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid)) for aid, (a, job) in crowd.items()}
+
     rank_by_city = {cid: rank for cid, rank in city_score_ranks(save).items() if rank <= 3}  # top-3 of the composite settlement weight → same medal as a realm's
     rank_by_kingdom = {kid: rank for kid, rank in kingdom_score_ranks(save).items() if rank <= 3}  # top-3 of the composite power score → gold/silver/bronze medal
 
@@ -118,23 +124,29 @@ def _build_registries(save: dict, prev: dict) -> dict:
     }
     kingdom_registry = {
         str(k["id"]): _defined(
-            _kingdom_entry(k, species_by_kingdom.get(k["id"], Counter()), cities_per_kingdom.get(k["id"], 0), rank_by_kingdom.get(k["id"]))
+            _kingdom_entry(k, species_by_kingdom.get(k["id"], Counter()), rank_by_kingdom.get(k["id"]))
             | _banner(k, _kingdom_species(k, kings_by_id, subspecies_by_id))
         )
         for k in kingdoms
     }
 
     book_genres = load_data("books.json")
-    book_registry = {str(b["id"]): _book_entry(b, book_genres) for b in save.get("books") or []}
-    clan_registry = {str(c["id"]): _clan_entry(c, members_by_clan.get(c["id"], 0)) for c in save.get("clans") or []}
-    rank_by_culture = _follower_ranks(members_by_culture)  # followers alone rank a culture, where a settlement and a realm each take a composite score
+    rank_by_book = _podium(Counter({b["id"]: int(b.get("times_read") or 0) for b in save.get("books") or []}))  # readings alone rank a volume
+    book_registry = {str(b["id"]): _book_entry(b, book_genres, rank_by_book.get(b["id"])) for b in save.get("books") or []}
+    rank_by_clan = _podium(members_by_clan)  # the sworn alone rank a band, as followers rank a custom
+    clan_registry = {str(c["id"]): _clan_entry(c, members_by_clan.get(c["id"], 0), rank_by_clan.get(c["id"])) for c in save.get("clans") or []}
+    rank_by_culture = _podium(members_by_culture)  # followers alone rank a culture, where a settlement and a realm each take a composite score
     culture_registry = {str(c["id"]): _culture_entry(c, members_by_culture.get(c["id"], 0), rank_by_culture.get(c["id"])) for c in save.get("cultures") or []}
-    family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0)) for f in save.get("families") or []}
-    rank_by_language = _follower_ranks(members_by_language)  # speakers alone rank a tongue, as followers rank a custom
+    rank_by_family = _podium(members_by_family)  # the living who carry the name, as the sworn rank a band
+    family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0), rank_by_family.get(f["id"])) for f in save.get("families") or []}
+    rank_by_language = _podium(members_by_language)  # speakers alone rank a tongue, as followers rank a custom
     language_registry = {str(l["id"]): _language_entry(l, members_by_language.get(l["id"], 0), rank_by_language.get(l["id"])) for l in save.get("languages") or []}
-    rank_by_religion = _follower_ranks(members_by_religion)  # the faithful alone rank a creed, as followers rank a custom
+    rank_by_religion = _podium(members_by_religion)  # the faithful alone rank a creed, as followers rank a custom
     religion_registry = {str(r["id"]): _religion_entry(r, members_by_religion.get(r["id"], 0), rank_by_religion.get(r["id"])) for r in save.get("religions") or []}
-    subspecies_registry = {str(s["id"]): _subspecies_entry(s, members_by_subspecies.get(s["id"], 0)) for s in save.get("subspecies") or []}
+    rank_by_subspecies = _podium(members_by_subspecies)  # the living bearers, as the sworn rank a band
+    subspecies_registry = {
+        str(s["id"]): _subspecies_entry(s, members_by_subspecies.get(s["id"], 0), rank_by_subspecies.get(s["id"])) for s in save.get("subspecies") or []
+    }
 
     out = {
         "books": _merge(prev.get("books") or {}, book_registry),
@@ -180,15 +192,17 @@ def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | 
 
 
 # Clan registry entry — its own hue (a clan is sworn, not granted, so it carries no crown's colour), the founder's species and the living headcount.
-def _clan_entry(clan: dict, members: int) -> dict:
+def _clan_entry(clan: dict, members: int, rank: int | None) -> dict:
     palette = _palette(clan.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
         "name": clan.get("name"),
         "species": clan.get("creator_species_id"),  # the founder's stock, which its recruits need not share — the pip right of the name
     }
-    if members:  # dropped once the last member dies, as the lineage badge drops with its last member
-        entry["members"] = members
+    if (size := _size_tier(members)) > 1:  # every tag pill stays silent at its lowest tier, as the city medallion does
+        entry["size"] = size
+    if rank is not None:
+        entry["rank"] = rank
     entry |= {  # WB gives clans their own sheets (`clan_background_*`, `clan_icon_*`), indexed straight by these two ids — not the realms' species-keyed sets.
         "banner_bg": clan.get("banner_background_id") or 0,
         "banner_bg_color": palette.get("color_main_2"),
@@ -206,8 +220,8 @@ def _culture_entry(culture: dict, followers: int, rank: int | None) -> dict:
         "name": culture.get("name"),
         "species": culture.get("creator_species_id"),  # the founder's stock, which those raised in it need not share — the pip right of the name
     }
-    if followers:  # dropped once the last follower dies, as the clan badge drops with its last member
-        entry["members"] = followers
+    if (size := _size_tier(followers)) > 1:
+        entry["size"] = size
     if rank is not None:
         entry["rank"] = rank
     entry |= {  # WB `CultureBanner.setupBanner`: field and border take `color_main_2`, the motif `color_banner` — a clan's splits the same roles.
@@ -225,13 +239,15 @@ def _defined(entry: dict) -> dict:
 
 
 # Family registry entry — the frame the tag wears as a border, the founding species' pip, the flattened backing hue and the living headcount, plus the last name.
-def _family_entry(family: dict, members: int) -> dict:
+def _family_entry(family: dict, members: int, rank: int | None) -> dict:
     entry = {
         "frame": family.get("banner_frame_id") or 0,  # an absent banner id arrives as C#'s 0 — slot zero, not no slot
         "name": family.get("name"),
     }
-    if members:  # dropped once the last member dies, as the city badge drops with its last citizen — a lineage carried over from an older chapter keeps none
-        entry["members"] = members
+    if (size := _size_tier(members)) > 1:  # a lineage carried over from an older chapter keeps none, as every tag pill stays silent at its lowest tier
+        entry["size"] = size
+    if rank is not None:
+        entry["rank"] = rank
     if (species := family.get("species_id")) is not None:  # the founding species' pip, right of the name as on every other tag
         entry["species"] = species
     # WB paints the backing sprite with `getColorMainSecond` (families borrow the realms' palette). Flattened to one hex: the tag fills rather than stacks.
@@ -242,20 +258,8 @@ def _family_entry(family: dict, members: int) -> dict:
     return _defined(entry)
 
 
-# Standard competition rank (1,2,2,4) on a single counter, top 3 only — the podium a culture wears, ties sharing a medal and the next place skipped.
-def _follower_ranks(members: Counter) -> dict[int, int]:
-    ranks: dict[int, int] = {}
-    previous = None
-    for place, (entity_id, followers) in enumerate(sorted(members.items(), key=lambda kv: (-kv[1], kv[0])), 1):
-        rank = ranks[previous] if previous is not None and members[previous] == followers else place
-        if rank > 3:
-            break
-        ranks[entity_id], previous = rank, entity_id
-    return ranks
-
-
 # Kingdom entry, less the heraldry `_banner` folds in and the merge's `dead`. It alone holds a hue — cities and subjects read theirs off it.
-def _kingdom_entry(kingdom: dict, species: Counter, city_count: int, rank: int | None) -> dict:
+def _kingdom_entry(kingdom: dict, species: Counter, rank: int | None) -> dict:
     dominant, palette = species.most_common(1), _palette(kingdom.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue, and the magenta ramp root once lightened; a `null` would break the UI type
@@ -263,8 +267,8 @@ def _kingdom_entry(kingdom: dict, species: Counter, city_count: int, rank: int |
         "name": kingdom.get("name"),
         "species": dominant[0][0] if dominant else None,
     }
-    if city_count > 1:  # a lone city (or none, for a realm just fallen) needs no badge — every tag pill stays silent at its lowest tier
-        entry["cities"] = city_count
+    if (size := _size_tier(species.total())) > 1:  # the crown's own people, not its towns: the chronicler reads those from `kingdom/info.py`
+        entry["size"] = size
     if rank is not None:
         entry["rank"] = rank
     return entry
@@ -287,8 +291,8 @@ def _language_entry(language: dict, speakers: int, rank: int | None) -> dict:
     }
     if rank is not None:
         entry["rank"] = rank
-    if speakers:  # dropped once the last speaker dies, as the culture badge drops with its last follower
-        entry["speakers"] = speakers
+    if (size := _size_tier(speakers)) > 1:
+        entry["size"] = size
     entry |= {  # WB `LanguageBanner.setupBanner`: ten parchment fields and twenty-one scripts of its own, indexed straight by these two ids.
         "banner_bg": language.get("banner_background_id") or 0,
         "banner_bg_color": palette.get("color_main_2"),
@@ -309,7 +313,7 @@ def _merge(prev: dict, live: dict) -> dict:
         if entry_key in live:
             continue
         carried[entry_key] = fallen = {**entry, "dead": True}
-        for volatile in ("members", "rank", "speakers"):  # counts and medals of the living, which a last-known entry has no claim to
+        for volatile in ("rank", "size"):  # the tier and the medal of the living, which a last-known entry has no claim to
             fallen.pop(volatile, None)
     return carried | live
 
@@ -327,7 +331,7 @@ def _palette(color_id) -> dict:
 
 
 # Person registry entry — everything the UI composes an actor from, plus the last-known name. `dead` comes from the merge.
-def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspecies_by_id: dict) -> dict:
+def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspecies_by_id: dict, rank: int | None) -> dict:
     carried = [(items_by_id.get(iid) or {}).get("asset_id", "") for iid in actor.get("saved_items") or []]  # resolved once: head and weapon both read it
     entry = {"asset_id": actor.get("asset_id"), "sex": sex_label(actor)}
     for field in ("head", "phenotype_index", "phenotype_shade"):  # All three default to 0 in WB — omit then, the reader falls back to the same.
@@ -339,6 +343,8 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
         entry["kingdom"] = kingdom
     if (level := max(int(actor.get("level") or 0), 1)) > 1:  # most of a world sits at 1 — a medallion on every subject would say nothing, so it stays earned
         entry["level"] = level
+    if rank is not None:
+        entry["rank"] = rank
     if name := actor.get("name"):  # Plenty of actors are unnamed — omit rather than store a placeholder; the tag's inline name stays the fallback.
         entry["name"] = name
     if skin := (subspecies_by_id.get(actor.get("subspecies")) or {}).get("skin_id"):  # WB `Subspecies.cacheSkins` picks the body sheet; absent means index 0.
@@ -350,6 +356,18 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
     return entry
 
 
+# Standard competition rank (1,2,2,4) on a single counter, top 3 only — every tag's podium, ties sharing a medal and the next place skipped.
+def _podium(counts: Counter) -> dict[int, int]:
+    ranks: dict[int, int] = {}
+    previous = None
+    for place, (entity_id, count) in enumerate(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])), 1):
+        rank = ranks[previous] if previous is not None and counts[previous] == count else place
+        if rank > 3:
+            break
+        ranks[entity_id], previous = rank, entity_id
+    return ranks
+
+
 # Religion registry entry — its own hue (a creed is preached, not granted, so it wears no crown's colour), the founder's species and the living headcount.
 def _religion_entry(religion: dict, faithful: int, rank: int | None) -> dict:
     palette = _palette(religion.get("color_id", ""))
@@ -358,8 +376,8 @@ def _religion_entry(religion: dict, faithful: int, rank: int | None) -> dict:
         "name": religion.get("name"),
         "species": religion.get("creator_species_id"),  # the founder's stock, which those who hold to it need not share — the pip right of the name
     }
-    if faithful:  # dropped once the last believer dies, as the culture badge drops with its last follower
-        entry["members"] = faithful
+    if (size := _size_tier(faithful)) > 1:
+        entry["size"] = size
     if rank is not None:
         entry["rank"] = rank
     entry |= {  # WB `ReligionBanner.setupBanner`: five fields and twenty-five signs of its own, indexed straight by these two ids.
@@ -371,7 +389,7 @@ def _religion_entry(religion: dict, faithful: int, rank: int | None) -> dict:
     return _defined(entry)
 
 
-# Settlement tier (1-7) from population — mirrors the `chronicler.md` naming scale (foyer → métropole). Drives the Civ-style size badge on the city tag.
+# Population tier 1-9 — mirrors the `chronicler.md` naming scale (foyer → cité-monde). Drives the Civ-style badge every tag wears but the person's.
 def _size_tier(population: int) -> int:
     return next((tier for tier, cap in enumerate(_SIZE_TIERS, start=1) if population <= cap), len(_SIZE_TIERS) + 1)
 
@@ -386,7 +404,7 @@ def _special_head(actor: dict, profession: str | None, carried: list[str]) -> st
 
 
 # Subspecies registry entry — the stone slab it is written on, the two bookmark hues WB dyes over it, the species pip and the last-known name.
-def _subspecies_entry(subspecies: dict, members: int) -> dict:
+def _subspecies_entry(subspecies: dict, members: int, rank: int | None) -> dict:
     palette = _palette(subspecies.get("color_id", ""))
     entry = {
         "banner_bg": subspecies.get("banner_background_id") or 0,  # WB `SubspeciesBannerLibrary`: twelve slabs of its own, not the 272 a crown draws from.
@@ -396,8 +414,10 @@ def _subspecies_entry(subspecies: dict, members: int) -> dict:
         "name": subspecies.get("name"),
         "species": subspecies.get("species_id"),  # the stock WB mutated it out of — the pip right of the name
     }
-    if members:  # dropped once the last bearer dies, as the lineage badge drops with its last member
-        entry["members"] = members
+    if (size := _size_tier(members)) > 1:
+        entry["size"] = size
+    if rank is not None:
+        entry["rank"] = rank
     return _defined(entry)
 
 
