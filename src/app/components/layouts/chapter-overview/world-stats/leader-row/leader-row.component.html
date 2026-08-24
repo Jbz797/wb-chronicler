@@ -19,19 +19,25 @@
     @case ('dominant_subspecies') {
       <app-subspecies-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
+    @case ('largest_city') {
+      <app-city-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
+    @case ('largest_kingdom') {
+      <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
     @case ('most_dominant_village') {
       <app-city-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @case ('most_powerful_kingdom') {
       <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
-    @case ('most_renowned_clan') {
+    @case ('largest_clan') {
       <app-clan-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
-    @case ('most_renowned_family') {
+    @case ('largest_family') {
       <app-family-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
-    @case ('most_renowned_person') {
+    @case ('highest_level_person') {
       <app-person-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @default {

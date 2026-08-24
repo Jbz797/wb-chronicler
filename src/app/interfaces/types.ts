@@ -39,7 +39,8 @@ export type KingdomRegistry = Record<string, KingdomInfo>;
 export type LanguageRegistry = Record<string, LanguageInfo>;
 
 export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_religion' | 'dominant_species' | 'dominant_subspecies'
-  | 'most_dominant_village' | 'most_powerful_kingdom' | 'most_renowned_clan' | 'most_renowned_family' | 'most_renowned_person';
+  | 'highest_level_person' | 'largest_city' | 'largest_clan' | 'largest_family' | 'largest_kingdom'
+  | 'most_dominant_village' | 'most_powerful_kingdom';
 
 export type LifeStage = 'adult' | 'baby' | 'child' | 'elder' | 'teen';
 export type PeopleTierName = Exclude<ChapterTier, 'city' | 'favorite' | 'kingdom'>; // those `_resolvePeople` serves — the bodies that roster the living

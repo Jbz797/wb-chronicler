@@ -2,18 +2,17 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
-import { ANONYMOUS_NAME, CUMULATIVE_STATS, DEATH_CAUSES, LEADERS, SNAPSHOT_STATS } from '../../../../constants';
-import { LeaderRow } from '../../../../interfaces';
+import { ANONYMOUS_NAME, CUMULATIVE_STATS, DEATH_CAUSES, LEADERS_BY_LEVEL, LEADERS_BY_MEMBERS, LEADERS_BY_SCORE, SNAPSHOT_STATS } from '../../../../constants';
+import { LeaderKind, LeaderRow } from '../../../../interfaces';
 import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { DeltaComponent } from '../../../misc';
 
-import { LeaderRowComponent } from './leader-row/leader-row.component';
-import { WorldPlotsComponent } from './world-plots/world-plots.component';
+import { LeaderTableComponent, WorldPlotsComponent } from '.';
 
 @Component({
   selector: 'app-world-stats',
-  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderRowComponent, NzDescriptionsModule, WorldPlotsComponent],
+  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, WorldPlotsComponent],
   templateUrl: './world-stats.component.html',
 })
 export class WorldStatsComponent {
@@ -22,7 +21,6 @@ export class WorldStatsComponent {
 
   protected readonly cumulativeStats = CUMULATIVE_STATS;
   protected readonly deathCauses = DEATH_CAUSES;
-  protected readonly leaders = LEADERS;
   protected readonly snapshotStats = SNAPSHOT_STATS;
 
   protected currentChapter = this._chronicler.currentChapter;
@@ -44,20 +42,10 @@ export class WorldStatsComponent {
     const previous = this._chronicler.previousChapter()?.meta.world.cumulative.deaths;
     return Object.fromEntries(this.deathCauses.map(({ key }) => [key, (current[key] ?? 0) - (previous?.[key] ?? 0)]));
   });
-  // Flattened leader rows ready for the template — only present entries, each tagged with `isNew` when the top entity changed since the previous chapter.
-  protected readonly leaderRows = computed<{ data: LeaderRow; icon: string; label: string }[]>(() => {
-    const current = this.currentChapter()?.meta.world.leaders;
-    if (!current) return [];
-    const previous = this._chronicler.previousChapter()?.meta.world.leaders;
-    return this.leaders.flatMap(({ icon, key, label }) => {
-      const entry = current[key];
-      if (!entry) return [];
-      const p = previous?.[key];
-      const isNew = !!previous && !!p && (entry.id !== p.id);
-      // Only `most_renowned_person` can reach here unnamed; every other entity row and the dominant traits always carry one.
-      return [{ data: { ...entry, isNew, key, name: entry.name ?? ANONYMOUS_NAME }, icon: icon ?? key, label }];
-    });
-  });
+  // The two podiums, each flattened for the template: who leads on a headcount, and who leads on the composite score only a town and a crown are given.
+  protected readonly levelRows = computed(() => this._leaderRows(LEADERS_BY_LEVEL));
+  protected readonly memberRows = computed(() => this._leaderRows(LEADERS_BY_MEMBERS));
+  protected readonly scoreRows = computed(() => this._leaderRows(LEADERS_BY_SCORE));
   // Rows resolved here rather than in the template: every count sits under `snapshot`, except the hulls, which own a block so the chronicler can list them.
   protected readonly snapshotRows = computed<{ delta: number | undefined; key: string; label: string; value: number }[]>(() => {
     const world = this.currentChapter()?.meta.world;
@@ -85,5 +73,20 @@ export class WorldStatsComponent {
     const breakdown = this.deathsSincePrevious();
     return breakdown ? Object.values(breakdown).reduce((sum, v) => sum + v, 0) : null;
   });
+
+  // Only present entries, each tagged with `isNew` when the top entity changed since the previous chapter.
+  private _leaderRows(scale: { icon?: string; key: LeaderKind; label: string }[]): { data: LeaderRow; icon: string; label: string }[] {
+    const current = this.currentChapter()?.meta.world.leaders;
+    if (!current) return [];
+    const previous = this._chronicler.previousChapter()?.meta.world.leaders;
+    return scale.flatMap(({ icon, key, label }) => {
+      const entry = current[key];
+      if (!entry) return [];
+      const p = previous?.[key];
+      const isNew = !!previous && !!p && (entry.id !== p.id);
+      // Only `highest_level_person` can reach here unnamed; every other entity row and the dominant traits always carry one.
+      return [{ data: { ...entry, isNew, key, name: entry.name ?? ANONYMOUS_NAME }, icon: icon ?? key, label }];
+    });
+  }
 
 }

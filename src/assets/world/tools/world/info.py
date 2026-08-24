@@ -118,25 +118,32 @@ def _build_cumulative(map_stats: dict) -> dict:
     return out
 
 
-# Top entity per category (dominant village and realm by their composite scores, dominant culture/language/religion/subspecies, top renown) — WB's « Records ».
+# Top entity per category — WB's « Records ». Three readings the panel tables apart: a level, a headcount, and the composite score only a town and a crown take.
 def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
 
-    # Single pass over actors feeds every leader: category counts, top-renown civilian, and family renown sums (all gated the same way, no need to re-scan).
+    # Single pass over actors feeds every leader: the category counts, the highest-level civilian and the four rolls below — each gated apart, none re-scanned.
     counts: dict[str, Counter] = {k: Counter() for k in (*_DOMINANT, "species")}
-    family_renown: Counter[int] = Counter()
-    top_person, top_renown = None, -1
+    city_members: Counter[int] = Counter()
+    clan_members: Counter[int] = Counter()
+    family_members: Counter[int] = Counter()
+    kingdom_members: Counter[int] = Counter()
+    top_person, top_level = None, -1
 
     for a in actors:
         if is_boat(a):
             continue
         if a.get("civ_kingdom_id"):  # civilian: non-boat, kingdom-bound. `species` is the « thinking population », not wild creatures.
-            renown = int(a.get("renown") or 0)
             counts["species"][a.get("asset_id")] += 1
-            if renown > top_renown:
-                top_person, top_renown = a, renown
-            if fid := a.get("family"):
-                family_renown[fid] += renown
+            kingdom_members[a["civ_kingdom_id"]] += 1
+            if (level := int(a.get("level") or 0)) > top_level:
+                top_person, top_level = a, level
+        if (cid := a.get("cityID")) is not None:  # a townsman need answer to no crown — counted apart from the kingdom roll above
+            city_members[cid] += 1
+        if cid := a.get("clan"):  # the sworn and the born are counted over every actor, as their registries do — a band outlives the crown it served
+            clan_members[cid] += 1
+        if fid := a.get("family"):
+            family_members[fid] += 1
         for field in _DOMINANT:  # counted on every actor, wildlife included — a culture or a tongue outlives the crown that carried it
             if (v := a.get(field)) is not None:
                 counts[field][v] += 1
@@ -148,6 +155,14 @@ def _build_leaders(save: dict) -> dict:
             continue
         top_id, value = counts[field].most_common(1)[0]
         out[f"dominant_{field}"] = {"id": top_id, "name": _name_of(save.get(coll) or [], top_id), "value": value}
+
+    if city_members:  # the most populous, where `most_dominant_village` weighs eleven dimensions — two readings of the same world, each with its own table
+        top_cid, value = city_members.most_common(1)[0]
+        out["largest_city"] = {"id": top_cid, "name": _name_of(save.get("cities") or [], top_cid), "value": value}
+
+    if kingdom_members:
+        top_kid, value = kingdom_members.most_common(1)[0]
+        out["largest_kingdom"] = {"id": top_kid, "name": _name_of(save.get("kingdoms") or [], top_kid), "value": value}
 
     if scores := city_score_ranks(save):  # heaviest settlement by the composite score, not the most populous — size is only one dimension of it
         top_cid = min(scores, key=scores.__getitem__)
@@ -161,16 +176,16 @@ def _build_leaders(save: dict) -> dict:
         top_species, value = counts["species"].most_common(1)[0]
         out["dominant_species"] = {"asset_id": top_species, "value": value}
 
-    if top_person is not None:  # Top-renown civilian — emitted as `{id, name}` (+ renown); the UI's `<app-person-tag>` reads its visuals from the person registry.
-        out["most_renowned_person"] = {"id": top_person.get("id"), "name": top_person.get("name"), "value": top_renown}
+    if top_person is not None:  # Highest-level civilian, as the subject's own medal ranks them — `{id, name}` (+ level), visuals off the person registry.
+        out["highest_level_person"] = {"id": top_person.get("id"), "name": top_person.get("name"), "value": top_level}
 
-    if clans := save.get("clans"):  # the one tier WB scores itself, so its own field settles the ranking rather than a walk over its members
-        top_clan = max(clans, key=_clan_renown)
-        out["most_renowned_clan"] = {"id": top_clan.get("id"), "name": top_clan.get("name"), "value": _clan_renown(top_clan)}
+    if clan_members:  # the sworn, as the band's medal counts them — WB scores a clan's `renown` too, but no plate reads it
+        top_cid, value = clan_members.most_common(1)[0]
+        out["largest_clan"] = {"id": top_cid, "name": _name_of(save.get("clans") or [], top_cid), "value": value}
 
-    if family_renown:  # Families carry no native renown (unlike clans) — rank by their members' summed renown, tallied in the pass above.
-        top_fid, value = family_renown.most_common(1)[0]
-        out["most_renowned_family"] = {"id": top_fid, "name": _name_of(save.get("families") or [], top_fid), "value": value}
+    if family_members:  # the living who carry the name, as the lineage's medal counts them
+        top_fid, value = family_members.most_common(1)[0]
+        out["largest_family"] = {"id": top_fid, "name": _name_of(save.get("families") or [], top_fid), "value": value}
 
     return out
 
@@ -239,11 +254,6 @@ def _build_snapshot(save: dict) -> dict:
         "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
         "wild_creatures": len(actors) - boats - population,
     }
-
-
-# Serves both the `max` key and the winner's own value — spelled out inline, the ranking would compute the same field twice.
-def _clan_renown(clan: dict) -> int:
-    return int(clan.get("renown") or 0)
 
 
 # The one name a leader needs, found by a scan: seven of them each read a single row, where seven `index_by_id` would allocate seven dicts to serve seven keys.

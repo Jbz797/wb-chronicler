@@ -50,17 +50,7 @@
     </nz-descriptions-item>
   </nz-descriptions>
 
-  @if (leaderRows().length) {
-    <nz-descriptions nzBordered nzSize="small" nzTitle="Palmarès" [nzColumn]="1">
-      @for (row of leaderRows(); track row.data.key) {
-        <ng-template #titleRef>
-          <img [src]="`assets/img/world/${row.icon}.png`" />
-          <span>{{ row.label }}</span>
-        </ng-template>
-        <nz-descriptions-item [nzTitle]="titleRef">
-          <app-leader-row [row]="row.data" />
-        </nz-descriptions-item>
-      }
-    </nz-descriptions>
-  }
+  <app-leader-table title="Palmarès par niveau" [rows]="levelRows()" />
+  <app-leader-table title="Palmarès par nombre" [rows]="memberRows()" />
+  <app-leader-table title="Palmarès par score" [rows]="scoreRows()" />
 }

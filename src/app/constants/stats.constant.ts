@@ -49,18 +49,26 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
   { key: 'evolutions', label: 'Évolutions' },
 ];
 
-// Top entity per category (WB « Records ») — the six owning a collapse first, in that order, then the four without; `icon` overrides the `<key>.png` lookup.
-export const LEADERS: { icon?: string; key: LeaderKind; label: string }[] = [
-  { icon: 'person', key: 'most_renowned_person', label: 'P. illustre' },
-  { icon: 'families', key: 'most_renowned_family', label: 'F. illustre' },
-  { key: 'most_renowned_clan', label: 'C. illustre' },
-  { icon: 'subspecies', key: 'dominant_subspecies', label: 'S. espèce' },
-  { icon: 'village', key: 'most_dominant_village', label: 'V. dominant' },
-  { icon: 'kingdom', key: 'most_powerful_kingdom', label: 'R. dominant' },
-  { icon: 'species', key: 'dominant_species', label: 'Espèce' },
+// Who leads on a headcount — the measure each tag's medal ranks on, in the panels' own order, the parent species ahead of the biology it holds.
+export const LEADERS_BY_MEMBERS: { icon?: string; key: LeaderKind; label: string }[] = [
+  { icon: 'families', key: 'largest_family', label: 'Lignée' },
+  { icon: 'most_renowned_clan', key: 'largest_clan', label: 'Clan' },
   { icon: 'cultures', key: 'dominant_culture', label: 'Culture' },
   { icon: 'languages', key: 'dominant_language', label: 'Langue' },
   { icon: 'religions', key: 'dominant_religion', label: 'Religion' },
+  { icon: 'species', key: 'dominant_species', label: 'Espèce' },
+  { icon: 'subspecies', key: 'dominant_subspecies', label: 'Sous-espèce' },
+  { icon: 'village', key: 'largest_city', label: 'Cité' },
+  { icon: 'kingdom', key: 'largest_kingdom', label: 'Royaume' },
+];
+
+// A soul answers to no headcount — its own medal ranks it on the level it has earned.
+export const LEADERS_BY_LEVEL: { icon?: string; key: LeaderKind; label: string }[] = [{ icon: 'person', key: 'highest_level_person', label: 'Personne' }];
+
+// The two tiers WB weighs on a composite score — eleven dimensions apiece, where a headcount is only one of them.
+export const LEADERS_BY_SCORE: { icon?: string; key: LeaderKind; label: string }[] = [
+  { icon: 'village', key: 'most_dominant_village', label: 'Cité' },
+  { icon: 'kingdom', key: 'most_powerful_kingdom', label: 'Royaume' },
 ];
 
 // The one family a settlement/realm panel names in its « Palmarès », out of the five `leaders.families` rankings Python emits.
