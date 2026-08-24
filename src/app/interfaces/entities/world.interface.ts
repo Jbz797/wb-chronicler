@@ -14,8 +14,8 @@ export interface World {
   snapshot: WorldSnapshot;
 }
 
-// The world's own identity, chronicler-authored in `history/world.json` — its name and the sentence that frames it, both outside any chapter.
-export interface WorldInfo { description: string; name: string }
+// The world's own identity, chronicler-authored in `history/world.json` — the name alone reaches a panel, the sentence beside it framing the chronicle.
+export interface WorldInfo { name: string }
 
 // Every scheme afoot, its schemer named — WB hangs one on a single actor, and `actor/info.py <id> plot` tells the chronicler the rest.
 export interface WorldPlot { actor: EntityReference; type: { id: string; name: string } }

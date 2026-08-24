@@ -30,6 +30,51 @@ _ALERTS = {
     },
 }
 
+# What no panel reads, cut by the section holding it, never by name alone — a homonym elsewhere (`population.nobles`, a hull's `loot`) keeps the place a panel reads.
+_AUDIT = {
+    "army": frozenset({"captain_years", "total_captains"}),  # the corps' tenure and its roll of captains — the panel names the one in post, and only him
+    "identity": frozenset({"founding_city", "founding_clan", "founding_kingdom", "motto", "name_culture", "name_template_set", "worldview"}),
+    "metadata": frozenset(
+        {
+            "can_reproduce",
+            "clan_chief_years",
+            "deaths_by_cause",
+            "favorite_food",
+            "founding_city",
+            "founding_kingdom",
+            "gen",
+            "home",
+            "island_id",
+            "islands",
+            "mass",
+            "months_until_next_age",
+            "motto",
+            "peace_time",
+            "tax_local",
+            "tax_tribute",
+            "traits",
+        }
+    ),
+    "ranks": frozenset(
+        {
+            "army_captain_years",
+            "army_kills_per_death",
+            "births_per_death",
+            "gold",
+            "kills_per_capita",
+            "kills_per_death",
+            "king_money",
+            "nobles",
+            "nobles_money",
+            "renown_per_capita",
+            "traits",
+        }
+    ),
+    "ranks_in_species": frozenset({"birth_rate", "loot"}),
+    "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
+    "stats": frozenset({"birth_rate", "bonus_towers", "damage_range", "loot"}),
+}
+
 # No panel reads them: `report` is reworded per call, `taxonomy` derives from `identity.species`, `passengers` counts souls at sea, an age's pair is WB's English.
 _CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "taxonomy"})
 
@@ -42,17 +87,31 @@ _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB
 _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
 
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
-_MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — a kingdom of ≥ 4 inhabitants.
+_MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — the headcount every playable species must reach in a kingdom of its own.
 _RARITIES = ("epic", "legendary", "normal", "rare")
 _TIERS = ("city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies, unpacked in that order; each is optional
 _TOOLS = Path(__file__).parent.parent
+
+# The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
+_UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
+
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
 
 
-# A chapter carries the values, not the way back to them nor WB's flavour — `_CHRONICLER_ONLY` names what goes, and why, at every depth of the tree.
+# `_CHRONICLER_ONLY` cuts at every depth of the tree, `_AUDIT` from one named section alone — neither loses the chronicler a thing, `<tier>/info.py` replaying both.
 def _drop_chronicler_keys(node):
     if isinstance(node, dict):
-        return {key: _drop_chronicler_keys(value) for key, value in node.items() if key not in _CHRONICLER_ONLY}
+        kept = {}
+        for key, value in node.items():
+            if key in _CHRONICLER_ONLY:
+                continue
+            if cut := _AUDIT.get(key):  # a section is a dict, save `relations`, which is a list of them
+                if isinstance(value, dict):
+                    value = _without(value, cut)
+                elif isinstance(value, list):
+                    value = [_without(item, cut) if isinstance(item, dict) else item for item in value]
+            kept[key] = _drop_chronicler_keys(value)
+        return kept
     return [_drop_chronicler_keys(value) for value in node] if isinstance(node, list) else node
 
 
@@ -81,14 +140,20 @@ def _fold_boat_detail(boat: dict) -> None:
     for section in ("combat", "traits"):
         boat.pop(section, None)  # a hull's merits — `kingslayer`, `veteran` — narrate well and print nowhere
     metadata = boat.get("metadata") or {}
-    for key in ("home", "kills", "level", "loot", "mass_kg", "renown", "speed", "x", "y"):
+    for key in ("kills", "level", "loot", "mass_kg", "renown", "speed", "x", "y"):  # `home` goes with `_AUDIT`, which takes it from every `metadata` alike
         metadata.pop(key, None)
 
 
 # Drops the loyalty summary and both stock lists, keeping their `total` — the panels print that alone, the sections still itemising each modifier and piece.
 def _fold_city_detail(city: dict) -> None:
-    city.get("loyalty", {}).pop("top_drivers", None)
+    (city.get("loyalty") or {}).pop("top_drivers", None)
     _fold_total(city, "books", "equipment")
+
+
+# Cut to what « Activité récente » charts — WB tallies a good deal more, and `world/info.py <chapter> cumulative` still hands the chronicler every one of them.
+def _fold_cumulative(world: dict) -> None:
+    if isinstance(block := world.get("cumulative"), dict):
+        world["cumulative"] = {key: value for key, value in block.items() if key in _UI_CUMULATIVE}
 
 
 # Folds the favorite's three heavy blocks: `creature_traits` becomes the rarity summary, `equipment` and the scheme's detail go — `actor/info.py` keeps all three.
@@ -106,11 +171,11 @@ def _fold_favorite_detail(favorite: dict) -> None:
 def _fold_kingdom_detail(kingdom: dict) -> None:
     for relation in kingdom.get("relations") or []:
         if relation.get("status") == "neutral":
-            relation.get("opinion", {}).pop("top_drivers", None)
+            (relation.get("opinion") or {}).pop("top_drivers", None)
     _fold_total(kingdom, "equipment")
 
 
-# A tier's podium cut to the six rows its panel names — a rank is a full `{id, name}` ref, so the eleven it never prints cost a seventh of the chapter.
+# A tier's podium cut to the six rows its panel names — each rank being a full `{id, name}` ref, the ones it never prints outweigh the ones it does.
 def _fold_leaders(entity: dict) -> None:
     podium = entity.get("leaders") or {}
     for block, kept in _LEADER_ROWS.items():
@@ -202,6 +267,10 @@ def _run_together(*calls: tuple | None) -> list:
     return [job.result() if job else None for job in jobs]
 
 
+def _without(block: dict, cut: frozenset) -> dict:
+    return {key: value for key, value in block.items() if key not in cut}
+
+
 def main(argv: list[str]) -> int:
     live_wbox = take_chapter([])[0]  # no `C<n>` token → the live save path
     if not live_wbox.exists():
@@ -288,6 +357,7 @@ def main(argv: list[str]) -> int:
             _fold_boat_detail(boat)
             _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
 
+    _fold_cumulative(world)
     _fold_total(world, "boats")  # Counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand.
     for scheme in world.get("plots") or []:  # the schemer and the type's key: WB's English is the chronicler's, and the panel owns the French
         scheme["type"] = {"id": (scheme.get("type") or {}).get("id")}
