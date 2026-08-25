@@ -67,11 +67,5 @@ export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'buildings' | 'cit
 
 export type SubspeciesRegistry = Record<string, SubspeciesInfo>;
 
-// WB's trait-group libraries pooled — a creature's, a biology's, a custom's, a clan's and a tongue's, where one name often serves several of them.
-export type TraitGroup = 'acquired' | 'adaptations' | 'advanced_brain' | 'appearance' | 'architecture' | 'bioproducts' | 'body' | 'buildings' | 'chaos'
-  | 'cognitive' | 'craft' | 'creation' | 'destruction' | 'diet' | 'eggs' | 'fate' | 'fun' | 'gestation' | 'growth' | 'happiness' | 'harmony' | 'health'
-  | 'hibernation' | 'kingdom' | 'knowledge' | 'merits' | 'mind' | 'miscellaneous' | 'mutations' | 'necromancy' | 'phenotypes' | 'physique' | 'protection'
-  | 'rebirth' | 'reproduction_strategy' | 'reproductive_methods' | 'restoration' | 'skills' | 'sleep_cycles' | 'special' | 'spirit' | 'succession' | 'talents'
-  | 'the_void' | 'town_plan' | 'transformation' | 'warfare' | 'weapons' | 'worldview';
-
-export type TraitGroupCounts = Partial<Record<TraitGroup, number>>; // Partial where `RarityCounts` is total: an entity wears a handful, the rest earn no row.
+// The blocks carrying a chronicler-written trait summary — every tier whose traits WorldBox lets drift, plus the favorite's own.
+export type TraitSummarySource = 'clan' | 'culture' | 'favorite' | 'language' | 'religion' | 'subspecies';

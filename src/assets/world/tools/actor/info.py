@@ -36,7 +36,7 @@ from shared import (
     take_chapter,
 )
 
-_ALL_SECTIONS = ("companions", "creature_traits", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats")
+_ALL_SECTIONS = ("companions", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats", "traits")
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
@@ -128,12 +128,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "save_path": save_path,  # islands cache key — must be the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "subspecies_base_cache": {},
     }
-
-
-# What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
-def _build_creature_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
-    sworn, library = actor.get("saved_traits") or [], ctx["creature_traits"]
-    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "rarity")})
 
 
 # Each carried item with provenance (`by`/`from`), wear, kill count and its aggregated stats — sorted by item id for stable output.
@@ -231,6 +225,12 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
         # The scheme's kind, as a book carries its genre: WB's English for the chronicler, the id for the panel — the save's own `name` is that label localised.
         "type": {"description": kind.get("description"), "id": type_id, "name": kind.get("name")},
     }
+
+
+# What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
+def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
+    sworn, library = actor.get("saved_traits") or [], ctx["creature_traits"]
+    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "rarity")})
 
 
 # `Actor.getMassKG`: (target_scale / 0.1) × base mass × (1 + Σ trait multiplier_mass). Base mass = the asset's `mass_2` (kg) from `species.json`; `None` if massless.
@@ -375,8 +375,6 @@ def main(argv: list[str]) -> int:
     if "companions" in sections:  # both attachments as plain refs — `emit` drops whichever is unset or dead, and the section itself when the actor has neither
         by_id = ctx["actors_by_id"]
         out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": entity_ref(actor.get("lover"), by_id)}
-    if "creature_traits" in sections:
-        out["creature_traits"] = _build_creature_traits(actor, ctx, detailed=requested not in (None, "full"))
     if "equipment" in sections:
         out["equipment"] = _build_equipment_list(actor, ctx)
     if "inventory" in sections:
@@ -389,6 +387,8 @@ def main(argv: list[str]) -> int:
         out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx)
     if "stats" in sections:
         out["stats"] = _compute_stats(actor, ctx)
+    if "traits" in sections:
+        out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
 
     emit(out)
     return 0

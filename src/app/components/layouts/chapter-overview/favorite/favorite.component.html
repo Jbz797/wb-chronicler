@@ -99,7 +99,7 @@
   <ng-template #speedTitle><img src="assets/img/stats/speed.png" /><span>Vitesse</span></ng-template>
   <ng-template #staminaTitle><img src="assets/img/stats/stamina.png" /><span>Vigueur</span></ng-template>
 
-  <app-rarity-stats title="Nombre de traits" [counts]="fav.traits" [deltas]="deltas()?.traits ?? null" />
+  <app-trait-summary source="favorite" title="Traits" />
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Compétences" [nzColumn]="1">
     @for (s of skillStats; track s.key) {

@@ -1,9 +1,12 @@
-import { CumulativeStat, DeathCause, LeaderKind, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
+import { CumulativeStat, DeathCause, Favorite, LeaderKind, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
 
 // City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `cities`, plus the `attractivity` only a settlement can have.
 export const CITY_META_STATS = new Set<RankedStatKind>([
   'age', 'attractivity', 'book_reach', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
 ]);
+
+// The three gauges rank on their cap, never on the live value the panel prints beside it; every other kind names its own field of the favorite's `stats`.
+export const FAVORITE_GAUGE_FIELDS: Partial<Record<RankedStatKind, keyof Favorite['stats']>> = { health: 'health_max', mana: 'mana_max', stamina: 'stamina_max' };
 
 // Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
 export const KINGDOM_META_STATS = new Set<RankedStatKind>([

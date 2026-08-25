@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 
-import { CITY_META_STATS, KINGDOM_META_STATS, NON_COMPACT_STATS } from '../../../constants';
+import { CITY_META_STATS, FAVORITE_GAUGE_FIELDS, KINGDOM_META_STATS, NON_COMPACT_STATS } from '../../../constants';
 import {
   ChapterMeta, ChapterTier, CityMetaStat, KingdomAlliance, KingdomMetaStat, PeopleTier, PeopleTierName, PopulationStat, RankedStatKind, RankedStatSnapshot,
   RankedStatSource, SpeciesStanding, SpeciesTotals,
@@ -116,10 +116,10 @@ export class RankedStatComponent {
     if (key === 'loyalty') return this._snap(c.loyalty.total, c.ranks?.loyalty); // its own block, not `metadata`: the modifiers ride alongside the total
     if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
 
-    // Army stats rank under an `army_` prefix — the city already ranks `kills`/`deaths`/`renown` of its own. Only numeric fields are ever addressed this way.
+    // Army stats rank under an `army_` prefix, the city ranking `kills`/`deaths`/`renown` of its own. The corps also holds a name and a captain: hence the typeof.
     if (key.startsWith('army_')) {
-      const army = c.army as unknown as Record<string, number | undefined> | undefined;
-      return this._snap(army?.[key.slice(5)] ?? 0, (c.ranks as Record<string, number | undefined> | undefined)?.[key]);
+      const value = c.army?.[key.slice(5) as keyof NonNullable<typeof c.army>];
+      return this._snap(typeof value === 'number' ? value : 0, c.ranks?.[key as keyof NonNullable<typeof c.ranks>]);
     }
 
     // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
@@ -131,30 +131,13 @@ export class RankedStatComponent {
     return this._snap(c.population[pk] ?? 0, ranks?.[pk]);
   }
 
-  // Per-kind field accessor — pulls value/rank from the favorite's stats/ranks dict.
+  // Per-kind accessor over the favorite's stats/ranks. A stat WB never wrote is one nothing granted — no weapon to crit with — so absent reads as zero.
   private _resolveFavorite(f: NonNullable<ChapterMeta['favorite']>): RankedStatSnapshot {
     const k = this.stat();
     const ranks = f.ranks_in_species ?? {}; // Absent when the favorite tops nothing in its species — every lookup below then simply misses.
-    if (k === 'age') return this._snap(f.metadata.age, ranks.age);
-    if (k === 'armor') return this._snap(f.stats.armor, ranks.armor);
-    if (k === 'children') return this._snap(f.stats.children, ranks.children);
-    if (k === 'attack_speed') return this._snap(f.stats.attack_speed, ranks.attack_speed);
-    if (k === 'critical_chance') return this._snap(f.stats.critical_chance, ranks.critical_chance);
-    if (k === 'damage') return this._snap(f.stats.damage, ranks.damage);
-    if (k === 'diplomacy') return this._snap(f.stats.diplomacy, ranks.diplomacy);
-    if (k === 'equipment_power') return this._snap(f.stats.equipment_power, ranks.equipment_power);
-    if (k === 'health') return this._snap(f.stats.health_max, ranks.health_max);
-    if (k === 'intelligence') return this._snap(f.stats.intelligence, ranks.intelligence);
-    if (k === 'kills') return this._snap(f.stats.kills, ranks.kills);
-    if (k === 'level') return this._snap(f.stats.level, ranks.level);
-    if (k === 'lifespan') return this._snap(f.stats.lifespan, ranks.lifespan);
-    if (k === 'mana') return this._snap(f.stats.mana_max, ranks.mana_max);
-    if (k === 'money') return this._snap(f.stats.money, ranks.money);
-    if (k === 'renown') return this._snap(f.stats.renown, ranks.renown);
-    if (k === 'speed') return this._snap(f.stats.speed, ranks.speed);
-    if (k === 'stamina') return this._snap(f.stats.stamina_max, ranks.stamina_max);
-    if (k === 'stewardship') return this._snap(f.stats.stewardship, ranks.stewardship);
-    return this._snap(f.stats.warfare, ranks.warfare);
+    if (k === 'age') return this._snap(f.metadata.age, ranks.age); // the one kind read off `metadata`; every other names a field of `stats`
+    const field = FAVORITE_GAUGE_FIELDS[k] ?? k;
+    return this._snap(f.stats[field as keyof typeof f.stats] ?? 0, ranks[field as keyof typeof ranks]);
   }
 
   // A clan, a culture, a lineage, a tongue, a biology, built alike: the body in `metadata`, its living in `population` as on a city, the roster apart.
@@ -165,9 +148,10 @@ export class RankedStatComponent {
     if (key === 'members') return this._snap((entity.members ?? entity.speakers)?.total ?? 0, ranks?.members);
     const shelf = (entity as { books?: { total: number } }).books; // a custom and a tongue each carry one — its own block, as a town's library is
     if (shelf && key === 'books') return this._snap(shelf.total, ranks?.books);
-    const block = entity.population as unknown as Record<string, number | undefined>;
-    const source = Object.hasOwn(block, this.stat()) ? block : (entity.metadata as unknown as Record<string, number | undefined>);
-    return this._snap(source[this.stat()] ?? 0, ranks?.[this.stat()]); // WB omits a counter it never wrote, hence the `?? 0`
+    // Its living first, its body second. `metadata` also holds names and refs, so the count is what a number proves it to be — WB omits one it never wrote.
+    const { metadata, population } = entity;
+    const held = Object.hasOwn(population, key) ? population[key as keyof typeof population] : metadata[key as keyof typeof metadata];
+    return this._snap(typeof held === 'number' ? held : 0, ranks?.[key]);
   }
 
   // Omits `rank` when undefined — required by `exactOptionalPropertyTypes`.

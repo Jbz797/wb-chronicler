@@ -1,4 +1,4 @@
-import { GenderedLabel, LifeStage, TraitGroup } from '../interfaces';
+import { GenderedLabel, LifeStage } from '../interfaces';
 
 export const ANONYMOUS_NAME = 'Anonyme'; // Stands in for a person WB never named — 42 % of its actors — so the row holds instead of showing a mute plate.
 
@@ -235,59 +235,6 @@ export const SPECIES_NAMES: Readonly<Record<string, string>> = {
 
 // French labels for `metadata.tenure_years` — names the post the years are counted for. Only these professions hold one.
 export const TENURE_LABELS: Readonly<Record<string, string>> = { army_captain: 'Commandement', king: 'Règne', leader: 'Direction' };
-
-// WB's trait-group buckets — fifteen creature, twenty-one biology, seven clan. French ours where `traits_units` left English; both reproduction ids merge.
-export const TRAIT_GROUP_LABELS: Readonly<Record<TraitGroup, string>> = {
-  acquired: 'Acquis',
-  adaptations: 'Adaptations',
-  advanced_brain: 'Cerveau amélioré',
-  appearance: 'Apparence',
-  architecture: 'Architecture',
-  bioproducts: 'Bioproduits',
-  body: 'Corps',
-  buildings: 'Bâtiments',
-  chaos: 'Chaos',
-  cognitive: 'Cognition',
-  craft: 'Artisanat',
-  creation: 'Création',
-  destruction: 'Destruction',
-  diet: 'Régime',
-  eggs: "Types d'œufs",
-  fate: 'Destin',
-  fun: 'Fantaisie',
-  gestation: 'Gestation',
-  growth: 'Croissance',
-  happiness: 'Bonheur',
-  harmony: 'Harmonie',
-  health: 'Santé',
-  hibernation: 'Hibernation',
-  kingdom: 'Royaume',
-  knowledge: 'Savoir',
-  merits: 'Mérites',
-  mind: 'Mental',
-  miscellaneous: 'Divers',
-  mutations: 'Mutations',
-  necromancy: 'Nécromancie',
-  phenotypes: 'Phénotypes',
-  physique: 'Physique',
-  protection: 'Protection',
-  rebirth: 'Renaissance',
-  reproduction_strategy: 'Reproduction',
-  reproductive_methods: 'Reproduction',
-  restoration: 'Restauration',
-  skills: 'Compétences',
-  sleep_cycles: 'Cycles de sommeil',
-  special: 'Spécial',
-  spirit: 'Esprit',
-  succession: 'Succession',
-  talents: 'Talents',
-  the_void: 'Le Vide',
-  town_plan: 'Plan urbain',
-  transformation: 'Transformation',
-  warfare: 'Guerre',
-  weapons: 'Armes',
-  worldview: 'Vision du monde',
-};
 
 // French labels for `war.war_type` — sourced from WB's `meta_wars` locale (war_type_*).
 export const WAR_TYPE_LABELS = { conquest: 'Conquête', inspire: 'Inspirée', rebellion: 'Rébellion', spite: 'Dépit', whisper: 'Murmure' } as const;

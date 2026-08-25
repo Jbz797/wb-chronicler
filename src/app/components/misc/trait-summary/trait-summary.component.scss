@@ -1,0 +1,28 @@
+@use 'variables' as *;
+
+// The chronicler's own prose, set apart by a gilt rule and italics on a ground sunk to `$background` — theme.less already paints every panel `$dark-warm`.
+.trait-summary {
+  background: $background;
+  border-left: 3px solid $primary;
+  border-radius: 2px;
+  margin: 16px 0 0;
+  padding: 12px 16px;
+
+  figcaption {
+    color: $primary;
+    display: flex;
+    font-size: 12px;
+    font-weight: 600;
+    gap: 8px;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  p {
+    font-style: italic;
+    hyphens: auto;
+    margin: 0;
+    text-align: justify;
+  }
+}

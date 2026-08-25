@@ -6,10 +6,9 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { COMBAT_STATS, COMPANION_LABELS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, ROLE_LABELS, SKILL_STATS, TENURE_LABELS } from '../../../../constants';
 import { LabelHelpers } from '../../../../helpers';
-import { RarityCounts } from '../../../../interfaces';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService, RegistryService } from '../../../../services';
-import { InventoryComponent, NewBadgeComponent, RankedStatComponent, RarityStatsComponent } from '../../../misc';
+import { InventoryComponent, NewBadgeComponent, RankedStatComponent, TraitSummaryComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
 
 import { BoatCardComponent } from './boat-card/boat-card.component';
@@ -27,8 +26,8 @@ import { PlotCardComponent } from './plot-card/plot-card.component';
     PersonTagComponent,
     PlotCardComponent,
     RankedStatComponent,
-    RarityStatsComponent,
     TierPipe,
+    TraitSummaryComponent,
   ],
   templateUrl: './favorite.component.html',
 })
@@ -103,21 +102,6 @@ export class FavoriteComponent {
       if (!row.person) return [];
       return [{ ...row, label: LabelHelpers.gendered(row.label, persons[String(row.person.id)]?.sex), person: row.person }];
     });
-  });
-  // Per-bucket deltas vs the previous favorite. `null` when no comparable previous favorite — ranked stats handle their own deltas.
-  protected readonly deltas = computed(() => {
-    const current = this.currentChapter()?.meta.favorite;
-    const previous = this._chronicler.previousChapter()?.meta.favorite;
-    if (!current || !previous) return null;
-
-    const diffCounts = (a: RarityCounts, b: RarityCounts): RarityCounts => ({
-      epic: a.epic - b.epic,
-      legendary: a.legendary - b.legendary,
-      normal: a.normal - b.normal,
-      rare: a.rare - b.rare,
-    });
-
-    return { traits: diffCounts(current.traits, previous.traits) };
   });
   // Names the post `tenure_years` counts — only kings/leaders/captains hold one, so the fallback never surfaces.
   protected readonly tenureLabel = computed(() => TENURE_LABELS[this.currentChapter()?.meta.favorite?.metadata.job ?? ''] ?? 'Ancienneté');

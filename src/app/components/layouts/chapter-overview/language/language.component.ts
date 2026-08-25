@@ -4,7 +4,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
-import { BreakdownComponent, RankedStatComponent, TraitGroupsComponent } from '../../../misc';
+import { BreakdownComponent, RankedStatComponent, TraitSummaryComponent } from '../../../misc';
 import { PersonTagComponent } from '../../../tags';
 import { LeadersComponent } from '../leaders/leaders.component';
 
@@ -16,7 +16,7 @@ import { LeadersComponent } from '../leaders/leaders.component';
     NzDescriptionsModule,
     PersonTagComponent,
     RankedStatComponent,
-    TraitGroupsComponent,
+    TraitSummaryComponent,
   ],
   templateUrl: './language.component.html',
 })

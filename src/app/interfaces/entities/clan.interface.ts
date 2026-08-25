@@ -1,5 +1,4 @@
 import { Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
-import { TraitGroupCounts } from '../types';
 
 // The favourite's clan. Joined, not inherited — so unlike its `Family`, its members share colours rather than blood, and its `traits` are sworn to.
 export interface Clan {
@@ -9,7 +8,7 @@ export interface Clan {
   metadata: ClanMetadata;
   population: TierPopulation;
   ranks?: ClanRanks;
-  traits: TraitGroupCounts;
+  traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
 
 // Every counter drops at zero, so panels read them via `?? 0` — bar `past_chiefs`, which WB never leaves empty and the panel prints directly.

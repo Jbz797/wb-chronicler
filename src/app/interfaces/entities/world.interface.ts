@@ -10,7 +10,7 @@ export interface World {
   cumulative: WorldCumulative;
   leaders?: Partial<Record<LeaderKind, Leader>>;
   metadata: WorldMetadata;
-  plots: WorldPlot[];
+  plots?: WorldPlot[]; // absent where nobody schemes — Python omits the empty list
   snapshot: WorldSnapshot;
 }
 
@@ -41,7 +41,7 @@ interface DeathBreakdown {
 }
 
 // The winner of a « Records » category: `dominant_species` carries `asset_id` (its icon); every other kind is a `{id, name}` ref the UI resolves via its registry.
-interface Leader { asset_id?: string; id?: number; name?: string; value: number }
+interface Leader { asset_id?: string; id?: number; name?: string; value?: number }
 
 // Since-world-start counters the UI diffs per chapter; Python omits 0-counts, so an absent key means 0.
 interface WorldCumulative {
@@ -74,7 +74,6 @@ interface WorldSnapshot {
   kingdoms: number;
   languages: number;
   population: number;
-  relations: number;
   religions: number;
   sick?: number;
   subspecies: number;

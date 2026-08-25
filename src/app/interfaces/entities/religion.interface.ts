@@ -1,5 +1,4 @@
 import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
-import { TraitGroupCounts } from '../types';
 
 // The favourite's religion: preached, not inherited — so its `breakdown` answers to no border, a creed crossing blood and crown one conversion at a time.
 export interface Religion {
@@ -11,7 +10,7 @@ export interface Religion {
   metadata: ReligionMetadata;
   population: TierPopulation;
   ranks?: ReligionRanks;
-  traits: TraitGroupCounts;
+  traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
 
 // The founder's card, as WB's own window lays it out — Python ships it whole, of which the panel names the founder alone and the chronicler keeps the rest.

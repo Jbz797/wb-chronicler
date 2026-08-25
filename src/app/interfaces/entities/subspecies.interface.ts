@@ -1,5 +1,4 @@
 import { Leaders, MemberRoster, PopulationBreakdown, TierPopulation } from '../entity.interface';
-import { TraitGroupCounts } from '../types';
 
 // The stock's standing among the world's species — flat counts beside its own podium, as a realm's `alliance` carries its two.
 export interface SpeciesStanding extends SpeciesTotals { ranks?: Partial<SpeciesTotals> }
@@ -23,7 +22,7 @@ export interface Subspecies {
   population: TierPopulation;
   ranks?: SubspeciesRanks;
   species: SpeciesStanding;
-  traits: TraitGroupCounts; // its biology and what its newborns inherit, pooled per WB trait group — `subspecies/info.py <id> traits` keeps the two apart
+  traits: string; // the chronicler's summary of its biology and of what its newborns inherit — `subspecies/info.py <id> traits` keeps the two apart
 }
 
 // What it was mutated out of and what shaped it — Python names both off WB's French sheets, and the stock carries its standing among the world's species.

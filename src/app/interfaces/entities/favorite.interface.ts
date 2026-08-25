@@ -1,5 +1,4 @@
 import { EntityReference, PersonReference } from '../entity.interface';
-import { RarityCounts } from '../stats.interface';
 import { LifeStage } from '../types';
 
 // Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key. `descriptor` is authored by the chronicler.
@@ -11,7 +10,7 @@ export interface Favorite {
   plot?: Plot;
   ranks_in_species?: FavoriteRanks;
   stats: FavoriteStats;
-  traits: RarityCounts;
+  traits: string; // the chronicler's summary, carried forward while the favorite's own traits hold
 }
 
 // The favorite's two attachments. Python emits each with its full stat line for the chronicler; the UI only ever draws their `[p]` tag, hence `EntityReference`.
@@ -59,22 +58,22 @@ interface FavoriteRanks {
 
 // The favorite's raw combat / social / vital stats — WB runtime values, always present.
 interface FavoriteStats {
-  armor: number;
-  attack_speed: number;
+  armor?: number;
+  attack_speed?: number;
   children: number;
-  critical_chance: number;
+  critical_chance?: number;
   damage: number;
-  diplomacy: number;
+  diplomacy?: number;
   equipment_power: number;
   happiness?: number; // absent where the biology bears no `amygdala`: WB grants such a soul no emotions, and writes it no happiness either
   health: number;
   health_max: number;
-  intelligence: number;
+  intelligence?: number;
   kills: number;
   level: number;
   lifespan: number;
   mana: number;
-  mana_max: number;
+  mana_max?: number;
   max_children: number;
   money: number;
   nutrition: number;
@@ -82,7 +81,7 @@ interface FavoriteStats {
   speed: number;
   stamina: number;
   stamina_max: number;
-  stewardship: number;
+  stewardship?: number;
   warfare: number;
 }
 

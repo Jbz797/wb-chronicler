@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 # Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries (via `registries.py`) and a
-# `chapter.json` skeleton. The chronicler then analyses (§III), writes `chapter.md`, and fills `title` + the favorite's `descriptor`. Docs: `tools/tools.md`.
+# `chapter.json` skeleton. The chronicler then analyses (§III), writes `chapter.md`, and fills `title`, the favorite's `descriptor` and the trait summaries
+# this run says are owed. Docs: `tools/tools.md`.
 
 import json
 import shutil
@@ -88,14 +89,42 @@ _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"ki
 
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — the headcount every playable species must reach in a kingdom of its own.
-_RARITIES = ("epic", "legendary", "normal", "rare")
 _TIERS = ("city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies, unpacked in that order; each is optional
 _TOOLS = Path(__file__).parent.parent
+
+# Where each tier keeps its traits in the raw save — read straight from both `map.wbox` files, so no digest need ride along in the chapter to spot a change.
+_TRAIT_SOURCES = {
+    "clan": ("clans", ("saved_traits",)),
+    "culture": ("cultures", ("saved_traits",)),
+    "favorite": ("actors_data", ("saved_traits",)),
+    "language": ("languages", ("saved_traits",)),
+    "religion": ("religions", ("saved_traits",)),
+    "subspecies": ("subspecies", ("saved_actor_birth_traits", "saved_traits")),
+}
 
 # The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
 _UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
 
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
+
+
+# Carries last chapter's trait summaries over wherever neither the entity nor its traits moved, and names those still owed — as `descriptor` is already carried.
+def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> list[str]:
+    prior_dir = SAVES_DIR / f"C{n - 1}"
+    prior = json.loads(path.read_text()) if (path := prior_dir / "chapter.json").exists() else {}
+    # A chapter from before the summaries holds a tally there, which is no summary to carry. The save behind it is parsed only to date what is worth carrying.
+    written = {tier: text.strip() for tier in blocks if isinstance(text := (prior.get(tier) or {}).get("traits"), str) and text.strip()}
+    prior_save = load_save(wbox) if written and (wbox := prior_dir / "map.wbox").exists() else {}
+    owed = []
+    for tier, block in blocks.items():
+        if not block:
+            continue
+        moved = _trait_fingerprint(live, tier, _entity_id(block)) != _trait_fingerprint(prior_save, tier, _entity_id(prior.get(tier) or {}))
+        if tier in written and not moved:
+            block["traits"] = written[tier]  # same entity, same traits: what the chronicler wrote still holds
+        else:
+            owed.append(tier)
+    return owed
 
 
 # `_CHRONICLER_ONLY` cuts at every depth of the tree, `_AUDIT` from one named section alone — neither loses the chronicler a thing, `<tier>/info.py` replaying both.
@@ -113,6 +142,10 @@ def _drop_chronicler_keys(node):
             kept[key] = _drop_chronicler_keys(value)
         return kept
     return [_drop_chronicler_keys(value) for value in node] if isinstance(node, list) else node
+
+
+def _entity_id(block: dict) -> int | None:
+    return (block.get("metadata") or {}).get("id")
 
 
 # The save's `favorite`-flagged actor (WB's in-game marker), detail folded; the chronicler's `descriptor` carries forward while it stays the same favorite.
@@ -156,7 +189,7 @@ def _fold_cumulative(world: dict) -> None:
         world["cumulative"] = {key: value for key, value in block.items() if key in _UI_CUMULATIVE}
 
 
-# Folds the favorite's three heavy blocks: `creature_traits` becomes the rarity summary, `equipment` and the scheme's detail go — `actor/info.py` keeps all three.
+# Folds the favorite's heavy blocks: his traits, his gear and the scheme's detail all go — `actor/info.py <id>` still hands the chronicler each one whole.
 def _fold_favorite_detail(favorite: dict) -> None:
     favorite.pop("equipment", None)
     # The panel prints the type, the target and the gauge: WB's English is the chronicler's, and so is how long the scheme has run.
@@ -164,7 +197,7 @@ def _fold_favorite_detail(favorite: dict) -> None:
     plot.pop("months", None)
     if kind := plot.get("type"):
         plot["type"] = {"id": kind.get("id")}
-    favorite["traits"] = _rarity_counts((favorite.pop("creature_traits", None) or {}).get("ids"))
+    favorite.pop("traits", None)  # the chronicler's summary takes its place, carried over or owed
 
 
 # Keeps `opinion.top_drivers` on the ally/enemy ties only — a summary earns its place where it drives events. The `relations` section still gives the full ledger.
@@ -189,13 +222,10 @@ def _fold_population(entity: dict) -> None:
         entity["population"] = {k: v for k, v in block.items() if k not in _DEMOGRAPHY}
 
 
-# Both libraries tallied per WB trait group, the panel's axis; `stats` goes too — dropped here, not in `_CHRONICLER_ONLY`, which would take the favorite's own block.
+# `stats` goes here rather than through `_CHRONICLER_ONLY`, which would take the favorite's own block along with it.
 def _fold_subspecies_detail(subspecies: dict) -> None:
     subspecies.pop("stats", None)
     (subspecies.get("species") or {}).pop("description", None)  # WB's blurb on the parent stock — narrative, and the panel never prints it
-    sworn = subspecies.pop("traits", None) or {}
-    counts = Counter(g for lib in ("biology", "birth") if isinstance(block := sworn.get(lib), dict) for g in block.values())
-    subspecies["traits"] = dict(sorted(counts.items()))
 
 
 # The panels read nothing but the `total`, whichever form `full` handed over — nothing is lost, the chapter's own `map.wbox` replaying any section.
@@ -203,12 +233,6 @@ def _fold_total(entity: dict, *keys: str) -> None:
     for key in keys:
         if isinstance(block := entity.get(key), dict):
             entity[key] = {"total": block.get("total", 0)}
-
-
-# Tallies a clan's sworn traits or a culture's held ones per WB group, the panel's axis — `full` summarises them to `{id: group}`, the section keeping each whole.
-def _fold_trait_groups(entity: dict) -> None:
-    counts = Counter((entity.pop("traits", None) or {}).get("ids", {}).values())
-    entity["traits"] = dict(sorted(counts.items()))
 
 
 # Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
@@ -245,12 +269,6 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict]:
     return tags, favorite, world
 
 
-# Creature traits tallied by rarity off the summarised `{id: rarity}` map, all four buckets at 0 — a missing key would blank the panel cell, not zero it.
-def _rarity_counts(traits: dict | None) -> dict:
-    counts = Counter(rarity.lower() for rarity in (traits or {}).values())
-    return {rarity: counts.get(rarity, 0) for rarity in _RARITIES}
-
-
 # The manual's regime this chapter falls under. The script holds the state, so the chronicler need not read it off `chapter.json` to know which section governs.
 def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -> str:
     if n == 1:
@@ -278,6 +296,15 @@ def _run_together(*calls: tuple | None) -> list:
     with ThreadPoolExecutor(max_workers=max(len(calls), 1)) as pool:
         jobs = [pool.submit(*call) if call else None for call in calls]
     return [job.result() if job else None for job in jobs]
+
+
+# An entity's traits as the save spells them, id included so a change of clan reads like a change of traits — both mean the summary must be written afresh.
+def _trait_fingerprint(save: dict, tier: str, entity_id: int | None) -> tuple | None:
+    if entity_id is None:
+        return None
+    collection, fields = _TRAIT_SOURCES[tier]
+    record = next((r for r in save.get(collection) or [] if r.get("id") == entity_id), None)
+    return None if record is None else (entity_id, *(tuple(sorted(record.get(field) or [])) for field in fields))
 
 
 def _without(block: dict, cut: frozenset) -> dict:
@@ -339,14 +366,14 @@ def main(argv: list[str]) -> int:
         boat_id = (meta.pop("transport", None) or {}).get("id")
         calls.append((_run, "boat/info.py", boat_id, "full", chapter) if boat_id else None)
         city, clan, culture, family, kingdom, language, religion, subspecies, boat = _run_together(*calls)
-        folds = (  # every tier sheds its demography; `None` marks the lineage, which has nothing else of its own to fold
+        folds = (  # every tier sheds its demography and its raw traits; `None` marks those with nothing else of their own to fold
             (city, _fold_city_detail),
-            (clan, _fold_trait_groups),
-            (culture, _fold_trait_groups),
+            (clan, None),
+            (culture, None),
             (family, None),
             (kingdom, _fold_kingdom_detail),
-            (language, _fold_trait_groups),
-            (religion, _fold_trait_groups),
+            (language, None),
+            (religion, None),
             (subspecies, _fold_subspecies_detail),
         )
         for block, fold in folds:
@@ -354,6 +381,7 @@ def main(argv: list[str]) -> int:
                 continue
             _fold_leaders(block)
             _fold_population(block)
+            block.pop("traits", None)  # the raw list goes; `_carry_trait_summaries` writes the chronicler's prose in its place
             if fold:
                 fold(block)
         # Rosters cut to their headcount, and every library to its count as a town's is — the volumes stay in the tier's own `books` section.
@@ -371,6 +399,9 @@ def main(argv: list[str]) -> int:
         if boat:
             _fold_boat_detail(boat)
             _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
+
+    summaries = {"clan": clan, "culture": culture, "favorite": favorite, "language": language, "religion": religion, "subspecies": subspecies}
+    owed = _carry_trait_summaries(n, summaries, live)
 
     _fold_cumulative(world)
     _fold_total(world, "boats")  # Counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand.
@@ -441,6 +472,8 @@ def main(argv: list[str]) -> int:
     todo = "analyse §III · chapter.md"
     if favorite and not favorite.get("descriptor"):  # new favorite → its epithet is the one favorite field the chronicler still writes
         todo += " · descriptor du favori"
+    if owed:
+        todo += f" · résumés de traits ({', '.join(sorted(owed))})"
     if new_alerts:
         todo += " · relayer l'alerte"
     print(f"  → chroniqueur: {todo}")

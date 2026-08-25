@@ -1,5 +1,4 @@
 import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
-import { TraitGroupCounts } from '../types';
 
 // The favourite's culture: caught at the cradle, not sworn — so its `breakdown` drifts furthest from the founder whose card `identity` holds.
 export interface Culture {
@@ -11,7 +10,7 @@ export interface Culture {
   metadata: CultureMetadata;
   population: TierPopulation;
   ranks?: CultureRanks;
-  traits: TraitGroupCounts;
+  traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
 
 // The founder's card, as WB's own window lays it out — Python ships it whole, of which the panel names the founder alone and the chronicler keeps the rest.

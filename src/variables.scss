@@ -14,52 +14,6 @@ $boat-ink: #2a6b8f; // A hull's name in the prose: deep sea blue, dark enough to
 $kingdom-plate: #3d4036; // WB `backgroundKingdomElement` fill — the dark olive plate under a kingdom's name in-game
 $stone-ink: #1a140c; // A subspecies' ink: WB's stone near to black — 7.6:1 across the twelve slabs, where pure black would reach 8.7 on a ground carrying none.
 
-// Rarity palette (WorldBox tiers — colors mirror ng-zorro nz-badge defaults)
-$rarity-normal: $text-secondary;
-$rarity-rare: #1890ff;
-$rarity-epic: #fadb14;
-$rarity-legendary: #fa8c16;
-
-// Trait-group palette — WB's own hexes, the clan library winning where the three disagree (`chaos`, `harmony`, `spirit`) and white where it wants plain text.
-$group-acquired: #a3afff;
-$group-adaptations: #d8d8d8;
-$group-advanced-brain: #baf0f4;
-$group-appearance: #ff6deb;
-$group-bioproducts: #baffc2;
-$group-body: #ff6b86;
-$group-chaos: #ff6a00;
-$group-cognitive: #5effff;
-$group-creation: #a5ff7f;
-$group-destruction: #ff4949;
-$group-diet: #42ff61;
-$group-eggs: #fff;
-$group-fate: #ffd82f;
-$group-fun: #fffaa3;
-$group-gestation: #c44fff;
-$group-growth: #baffc2;
-$group-harmony: #dd96ff;
-$group-health: #89ff56;
-$group-hibernation: #fff;
-$group-necromancy: #acb6c1;
-$group-merits: #ffda23;
-$group-mind: #baf0f4;
-$group-miscellaneous: #d8d8d8;
-$group-mutations: #64ff4f;
-$group-phenotypes: #d8d8d8;
-$group-physique: #ff6145;
-$group-protection: #ff6b86;
-$group-rebirth: #ff6a00;
-$group-reproduction-strategy: #ffa5e7;
-$group-reproductive-methods: #ff83ff;
-$group-restoration: #ffe97c;
-$group-skills: #bcbcbc;
-$group-sleep-cycles: #fff;
-$group-the-void: #ff00d5;
-$group-transformation: #c2c1ff;
-$group-special: #ff8f44;
-$group-spirit: #baffc2;
-$group-talents: #baf0f4;
-
 // Reader: light parchment palette
 $gold-soft: #d4c290;
 $gold: #c9a04a;
