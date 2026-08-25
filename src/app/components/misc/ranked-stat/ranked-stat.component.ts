@@ -144,8 +144,8 @@ export class RankedStatComponent {
   private _resolvePeople(entity: PeopleTier): RankedStatSnapshot {
     const ranks = entity.ranks as Record<string, number | undefined> | undefined;
     const key = this.stat();
-    // Its own block, like a city's population — a tongue names that block `speakers`, WB's own word, but ranks under `members` like every other tier.
-    if (key === 'members') return this._snap((entity.members ?? entity.speakers)?.total ?? 0, ranks?.members);
+    // Its own block, like a city's population, and named alike on every tier — a tongue's speakers answer to `members` as a clan's kin do.
+    if (key === 'members') return this._snap(entity.members?.total ?? 0, ranks?.members);
     const shelf = (entity as { books?: { total: number } }).books; // a custom and a tongue each carry one — its own block, as a town's library is
     if (shelf && key === 'books') return this._snap(shelf.total, ranks?.books);
     // Its living first, its body second. `metadata` also holds names and refs, so the count is what a number proves it to be — WB omits one it never wrote.

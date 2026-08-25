@@ -317,6 +317,16 @@ def children_by_id(save: dict) -> Counter:
     return tally
 
 
+# WB's own anchor for a town (`updateCityCenter`), so what sites one and what distances aim at: the zone centre closest to their average, nudged 2 tiles north.
+def city_centre(city: dict) -> tuple[int, int] | None:
+    zones = [(z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2) for z in city.get("zones") or []]
+    if not zones:
+        return None
+    mean_x, mean_y = (sum(c) / len(zones) for c in zip(*zones))
+    closest = min(zones, key=lambda z: (z[0] - mean_x) ** 2 + (z[1] - mean_y) ** 2)
+    return closest[0], closest[1] + 2
+
+
 # `{name: {city id: value}}` — most transposed from the kingdom, the rest village-only. Exported: `city/info.py` surfaces the ones nothing else covers.
 def city_score_dimensions(save: dict) -> dict[str, dict]:
     cities = save.get("cities") or []
@@ -596,7 +606,7 @@ def main_subspecies(entity: dict, ctx: dict, tier: str) -> int | None:
 
 # WB `MetaTextReportHelper.getText`: what a body says of itself — every verdict of its own list that holds, joined in that order. `None` where none does, as in game.
 def meta_report(kind: str, state: dict) -> str | None:
-    import random  # deferred: 3.3 ms of import time for one `choice`, and every tool would pay it at startup where only a few tiers ever report
+    import random  # deferred: a millisecond or two of import for one `choice`, which every tool would pay at startup where only a few tiers ever report
 
     phrases = load_data("meta-reports.json")  # one of five phrasings per verdict, drawn as WB draws it — the wording never reaches a chapter, so it need not settle
     said = [random.choice(wordings) for report in _META_REPORTS[kind] if _META_CONDITIONS[report](state) and (wordings := phrases.get(report))]
@@ -655,7 +665,7 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
         numbered = all(isinstance(k, str) and k.lstrip("-").isdigit() for k in value)  # ids as keys sort on their value: `2` belongs before `10`, not after `1`
         items = sorted(value.items(), key=lambda kv: int(kv[0])) if numbered else sorted(value.items()) if record and key not in _VALUE_ORDERED else value.items()
         for k, v in items:
-            dumped = f'"{k}"' if record else json.dumps(k)  # `record` has proved every key an identifier, which needs no escaping; held for the width it costs
+            dumped = f'"{k}"' if record else json.dumps(k, ensure_ascii=False)  # `record` proved every key an identifier; the rest keep their accents
             parts.append(f"{dumped}: {render(v, indent + 1, len(dumped) + 3, k)}")
         one, ends = "{ " + ", ".join(parts) + " }", "{}"
     else:

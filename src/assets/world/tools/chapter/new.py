@@ -54,6 +54,8 @@ _AUDIT = {
             "tax_local",
             "tax_tribute",
             "traits",
+            "x",
+            "y",
         }
     ),
     "ranks": frozenset(
@@ -89,7 +91,20 @@ _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"ki
 
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — the headcount every playable species must reach in a kingdom of its own.
-_TIERS = ("city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies, unpacked in that order; each is optional
+_PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
+
+# Rosters, libraries and fleets kept as a count alone — the tier's own `info.py <id> <section>` still names every soul, volume and hull behind the figure.
+_TALLIES = {
+    "clan": ("members",),
+    "culture": ("books", "members"),
+    "family": ("members",),
+    "kingdom": ("boats",),
+    "language": ("books", "members"),
+    "religion": ("books", "members"),
+    "subspecies": ("members",),
+}
+
+_TIERS = ("city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies, in chapter order; each is optional
 _TOOLS = Path(__file__).parent.parent
 
 # Where each tier keeps its traits in the raw save — read straight from both `map.wbox` files, so no digest need ride along in the chapter to spot a change.
@@ -119,8 +134,8 @@ def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> list[str]:
     for tier, block in blocks.items():
         if not block:
             continue
-        moved = _trait_fingerprint(live, tier, _entity_id(block)) != _trait_fingerprint(prior_save, tier, _entity_id(prior.get(tier) or {}))
-        if tier in written and not moved:
+        # Both saves are walked only where a summary stands to be carried — an owed tier is owed whether or not its traits moved.
+        if tier in written and _trait_fingerprint(live, tier, _entity_id(block)) == _trait_fingerprint(prior_save, tier, _entity_id(prior.get(tier) or {})):
             block["traits"] = written[tier]  # same entity, same traits: what the chronicler wrote still holds
         else:
             owed.append(tier)
@@ -173,7 +188,7 @@ def _fold_boat_detail(boat: dict) -> None:
     for section in ("combat", "traits"):
         boat.pop(section, None)  # a hull's merits — `kingslayer`, `veteran` — narrate well and print nowhere
     metadata = boat.get("metadata") or {}
-    for key in ("kills", "level", "loot", "mass_kg", "renown", "speed", "x", "y"):  # `home` goes with `_AUDIT`, which takes it from every `metadata` alike
+    for key in ("kills", "level", "loot", "mass_kg", "renown", "speed"):  # `home`, `x` and `y` go with `_AUDIT`, which takes them from every `metadata`
         metadata.pop(key, None)
 
 
@@ -345,6 +360,10 @@ def main(argv: list[str]) -> int:
         shutil.copy2(s3db, _HISTORY_S3DB)
     if not _WORLD_JSON.exists():  # C1 → scaffold the empty world-identity template for the chronicler to fill
         _WORLD_JSON.write_text(json.dumps({"description": "", "name": ""}, ensure_ascii=False, indent=2) + "\n")
+    if not _PLACES_JSON.exists():  # same for his toponyms, the isles seeded by id: WB numbers them, so the chronicler has only their names left to forge
+        isles = ((_run("geography/info.py", "islands", chapter) or {}).get("islands")) or []
+        seeded = {"islands": {str(i["id"]): {"centroid": i["centroid"], "chapter": "", "name": "", "size": i["size"]} for i in isles}, "places": {}}
+        _PLACES_JSON.write_text(render(seeded) + "\n")
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
 
@@ -358,58 +377,38 @@ def main(argv: list[str]) -> int:
         print("✗ world/info.py failed — check the save", file=sys.stderr)
         return 1
 
-    boat = city = clan = culture = family = kingdom = language = religion = subspecies = None
+    blocks: dict = dict.fromkeys(_TIERS)  # `None` where the favorite belongs to no such body — the chapter carries the key either way
+    boat = None
     if favorite:
         meta = favorite.get("metadata") or {}
         calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
         # The hull rides the same wave, `transport` being a ref like the tiers. Popped, not read: the `boat` block replaces it, `actor/info.py <id>` keeping the ref.
         boat_id = (meta.pop("transport", None) or {}).get("id")
         calls.append((_run, "boat/info.py", boat_id, "full", chapter) if boat_id else None)
-        city, clan, culture, family, kingdom, language, religion, subspecies, boat = _run_together(*calls)
-        folds = (  # every tier sheds its demography and its raw traits; `None` marks those with nothing else of their own to fold
-            (city, _fold_city_detail),
-            (clan, None),
-            (culture, None),
-            (family, None),
-            (kingdom, _fold_kingdom_detail),
-            (language, None),
-            (religion, None),
-            (subspecies, _fold_subspecies_detail),
-        )
-        for block, fold in folds:
+        *bodies, boat = _run_together(*calls)
+        blocks = dict(zip(_TIERS, bodies))
+        folds = {"city": _fold_city_detail, "kingdom": _fold_kingdom_detail, "subspecies": _fold_subspecies_detail}  # on top of what every tier sheds alike
+        for tier, block in blocks.items():
             if not block:
                 continue
             _fold_leaders(block)
             _fold_population(block)
             block.pop("traits", None)  # the raw list goes; `_carry_trait_summaries` writes the chronicler's prose in its place
-            if fold:
+            if fold := folds.get(tier):
                 fold(block)
-        # Rosters cut to their headcount, and every library to its count as a town's is — the volumes stay in the tier's own `books` section.
-        rosters = (
-            (clan, "members"),
-            (culture, "members", "books"),
-            (family, "members"),
-            (language, "speakers", "books"),
-            (religion, "members", "books"),
-            (subspecies, "members"),
-        )
-        for tier, *keys in rosters:
-            if tier:
-                _fold_total(tier, *keys)
+            if keys := _TALLIES.get(tier):
+                _fold_total(block, *keys)
         if boat:
             _fold_boat_detail(boat)
             _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
 
-    summaries = {"clan": clan, "culture": culture, "favorite": favorite, "language": language, "religion": religion, "subspecies": subspecies}
+    summaries = {tier: favorite if tier == "favorite" else blocks[tier] for tier in _TRAIT_SOURCES}  # a tier is summarised the day it gains a trait source
     owed = _carry_trait_summaries(n, summaries, live)
 
     _fold_cumulative(world)
     _fold_total(world, "boats")  # Counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand.
     for scheme in world.get("plots") or []:  # the schemer and the type's key: WB's English is the chronicler's, and the panel owns the French
         scheme["type"] = {"id": (scheme.get("type") or {}).get("id")}
-
-    if kingdom:
-        _fold_total(kingdom, "boats")
 
     age_id = (live["mapStats"].get("world_age_id") or "").removeprefix("age_")  # short form, as `world/info.py` emits it — `prev_world` carries that one
     # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
@@ -433,15 +432,15 @@ def main(argv: list[str]) -> int:
     # No `age_label`: the panel translates `world.metadata.age_id`. `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
     chapter_json = {
         "boat": boat,
-        "city": city,
-        "clan": clan,
-        "culture": culture,
-        "family": family,
+        "city": blocks["city"],
+        "clan": blocks["clan"],
+        "culture": blocks["culture"],
+        "family": blocks["family"],
         "favorite": favorite,
-        "kingdom": kingdom,
-        "language": language,
-        "religion": religion,
-        "subspecies": subspecies,
+        "kingdom": blocks["kingdom"],
+        "language": blocks["language"],
+        "religion": blocks["religion"],
+        "subspecies": blocks["subspecies"],
         "tags": tags,
         "title": "",
         "world": world,

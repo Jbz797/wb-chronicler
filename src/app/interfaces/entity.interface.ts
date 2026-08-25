@@ -27,11 +27,10 @@ export interface MemberRoster { total: number }
 
 // A clan, a culture, a lineage, a tongue and a biology answer the same shape, served by one resolver — structural, since naming them would reach into `types.ts`.
 export interface PeopleTier {
-  members?: MemberRoster; // the roster of every tier but a language, which counts…
+  members?: MemberRoster; // every tier names its roster alike, a tongue's speakers included
   metadata: object; // each tier's own shape; the resolver reads it by key, so it casts rather than narrowing
   population: TierPopulation;
-  ranks?: { members?: number; speakers?: number }; // the two the resolver names; the rest it reaches by key, through the same cast
-  speakers?: MemberRoster; // …its speakers, WB's own word for those who answer in it
+  ranks?: { members?: number }; // the one the resolver names; the rest it reaches by key, through the same cast
 }
 
 // A soul, not a place: 42 % of WB's actors go unnamed; `PersonTagComponent` prints `ANONYMOUS_NAME`.

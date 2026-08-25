@@ -27,6 +27,7 @@ from shared import (
     besieging_kingdoms,
     books_held,
     children_by_id,
+    city_centre,
     city_score_dimensions,
     city_score_ranks,
     civic_building_ids,
@@ -375,6 +376,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         **({"besieged_by": sorted(besiegers, key=itemgetter("id"))} if besiegers else {}),
         "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
         "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
+        **(dict(zip(("x", "y"), centre)) if (centre := _city_centre(city, ctx)) else {}),  # WB's own anchor for the town, `updateCityCenter`
         "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
         **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # `_BOOK_POINTS` per book written here + how widely it's read
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
@@ -432,14 +434,11 @@ def _build_realm_context(save: dict, warriors_by_city: Counter) -> dict:
     }
 
 
-# The tile a city radiates from (WB `updateCityCenter`): the zone centre closest to their average, nudged 2 tiles north. Memoised — every town asks its capital's.
-def _city_centre(city: dict, ctx: dict) -> tuple[float, float] | None:
+# Memo over `city_centre` — every town asks its capital's, over and over.
+def _city_centre(city: dict, ctx: dict) -> tuple[int, int] | None:
     cid = city["id"]
     if cid not in ctx["centres"]:
-        zones = [(z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2) for z in city.get("zones") or []]
-        mean_x, mean_y = (sum(c) / len(zones) for c in zip(*zones)) if zones else (0, 0)
-        closest = min(zones, key=lambda z: (z[0] - mean_x) ** 2 + (z[1] - mean_y) ** 2, default=None)
-        ctx["centres"][cid] = None if closest is None else (closest[0], closest[1] + 2)
+        ctx["centres"][cid] = city_centre(city)
     return ctx["centres"][cid]
 
 

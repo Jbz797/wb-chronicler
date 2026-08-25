@@ -19,6 +19,7 @@
                   "**/.ruff_cache/**",
                   "**/__pycache__/**",
                   "world/history/map_stats.s3db",
+                  "world/history/places.json",
                   "world/saves/*/map.wbox",
                   "world/tools/*/**",
                   "world/tools/ruff.toml"

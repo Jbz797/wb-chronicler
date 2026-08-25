@@ -7,6 +7,7 @@ __pycache__/
 dist/
 map_stats.s3db
 node_modules/
+places.json
 saves/
 todo.md
 world.json

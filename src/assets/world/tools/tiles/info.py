@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import decode_tile_grid, tile_biome, tile_elevation, tile_kind, tile_layer
 from islands import compute_islands_cached
-from shared import ZONE_TILES, emit, entity_ref, index_by_id, load_data, load_save, parse_sections, take_chapter
+from shared import ZONE_TILES, city_centre, emit, entity_ref, index_by_id, load_data, load_save, parse_sections, take_chapter
 
 _ALL_SECTIONS = ("actors", "buildings", "context", "distances", "tile_info")
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
@@ -92,30 +92,30 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     out: dict = {"to_water": water}
     city = ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
     if city is None:
-        if centroids := ctx["city_centroids"]:
-            out["to_nearest_city"] = min(abs(x - ox) + abs(y - oy) for ox, oy in centroids)
+        if anchors := ctx["city_anchors"]:
+            out["to_nearest_city"] = min(abs(x - ox) + abs(y - oy) for ox, oy in anchors)
     elif (kid := city.get("kingdomID")) and (cap := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
         out["to_capital"] = abs(x - cap[0]) + abs(y - cap[1])
     return out
 
 
-# Zone-to-city for the queried tiles, every city's anchor, and each crown's seat — centroids memoised across the three, a capital being a city already walked.
+# Zone-to-city for the queried tiles, plus every town's tile — WB's own centre, as `city/info.py` sites one, so a crown's seat and its cities share an anchor.
 def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
-    centroids: dict[int, tuple[int, int]] = {}
+    anchors: dict[int, tuple[int, int]] = {}
     ctx["capital_pos_by_kingdom"] = {}
     ctx["city_by_pos"] = {}
 
     for city in ctx["cities_by_id"].values():
-        if not (zones := city.get("zones")):
+        if (anchor := city_centre(city)) is None:  # a city holding no zone stands nowhere: nothing to site it by, nothing to measure towards
             continue
-        centroids[city["id"]] = _zone_centroid(zones)
-        for zone in zones:
+        anchors[city["id"]] = anchor
+        for zone in city["zones"]:
             if (zx := zone.get("x")) is not None and (zy := zone.get("y")) is not None and (zx, zy) in wanted_zones:
                 ctx["city_by_pos"][(zx, zy)] = city
 
-    ctx["city_centroids"] = list(centroids.values())
+    ctx["city_anchors"] = list(anchors.values())
     for kingdom in ctx["kingdoms_by_id"].values():
-        if (seat := centroids.get(kingdom.get("capitalID"))) is not None:
+        if (seat := anchors.get(kingdom.get("capitalID"))) is not None:
             ctx["capital_pos_by_kingdom"][kingdom["id"]] = seat
 
 
@@ -156,12 +156,6 @@ def _xy(value: str) -> tuple[int, int]:
         return int(x_str), int(y_str)
     except ValueError as e:
         raise argparse.ArgumentTypeError(f"expected `x,y` (e.g. `415,117`), got {value!r}") from e
-
-
-# Cities are zone polygons, not points — collapse to one integer anchor for distances, in tile space like every coord here.
-def _zone_centroid(zones: list[dict]) -> tuple[int, int]:
-    n, half = len(zones), ZONE_TILES // 2
-    return sum(z.get("x", 0) * ZONE_TILES + half for z in zones) // n, sum(z.get("y", 0) * ZONE_TILES + half for z in zones) // n
 
 
 def main(argv: list[str]) -> int:

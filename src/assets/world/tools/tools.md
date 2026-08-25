@@ -18,7 +18,7 @@ Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, 
 | `family/info.py <id>`              | `full`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`                                                       |
 | `geography/info.py`                | `entity_types`, `islands`, `positions [-t <type>]`                                                                                             |
 | `kingdom/info.py <id>`             | `full`, `alliance`, `boats`, `breakdown`, `cities`, `equipment`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `wars` |
-| `language/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `speakers`, `traits`                                   |
+| `language/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                   |
 | `religion/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                    |
 | `subspecies/info.py <id>`          | `full`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`             |
 | `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                                             |

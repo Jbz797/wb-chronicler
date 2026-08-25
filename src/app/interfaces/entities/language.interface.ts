@@ -6,10 +6,10 @@ export interface Language {
   breakdown: PopulationBreakdown;
   identity: LanguageIdentity;
   leaders?: Leaders;
+  members: MemberRoster; // those who answer in it — WB points the actor at its tongue, never the reverse
   metadata: LanguageMetadata;
   population: TierPopulation;
   ranks?: LanguageRanks;
-  speakers: MemberRoster;
   traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
 
@@ -37,17 +37,19 @@ interface LanguageMetadata {
 interface LanguageRanks {
   age?: number;
   books?: number;
+  books_written?: number;
   cities?: number;
   converted?: number;
   deaths?: number;
+  fed_pct?: number;
+  housed_pct?: number;
   kills?: number;
   kingdoms?: number;
   lost?: number;
+  members?: number;
   money?: number;
   native?: number;
   renown?: number;
   renown_total?: number;
-  speakers?: number;
-  traits?: number;
-  written?: number;
+  warriors?: number;
 }

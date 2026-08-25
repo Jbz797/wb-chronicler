@@ -39,7 +39,7 @@ from shared import (
     wants_detail,
 )
 
-_ALL_SECTIONS = ("books", "breakdown", "identity", "leaders", "metadata", "population", "ranks", "speakers", "traits")
+_ALL_SECTIONS = ("books", "breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
 
 
 # Books grouped by the tongue they were written in, off their own `language_id` — the save lists every volume still standing, its script stamped on it.
@@ -72,10 +72,30 @@ def _build_identity(language: dict, ctx: dict) -> dict:
     }
 
 
+# Everyone alive who still speaks it, eldest first — WB points the actor at its tongue, never the reverse. `total` rides with the list it counts, not `metadata`.
+def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
+    if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
+        return light({"total": len(members)})
+    island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a wide tongue would still call through it hundreds of times
+    out = [
+        {
+            "age": actor_age(actor, ctx["world_time"]),
+            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs some 40 chars and blows the inline budget
+            "id": actor["id"],
+            "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
+            "job": resolve_profession(actor, save),
+            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — a rung above is earned, and unaggregated.
+            "name": actor.get("name"),
+            "sex": sex_label(actor),
+        }
+        for actor in members
+    ]
+    return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
+
 # The tongue's ledger: WB's lifetime counters beside the reach a walk over towns and crowns tells — the founder's card sits in `identity`. Counters drop at zero.
-def _build_metadata(language: dict, speakers: list[dict], ctx: dict, tallies: dict) -> dict:
+def _build_metadata(language: dict, members: list[dict], ctx: dict, tallies: dict) -> dict:
     language_id = language["id"]
-    report = meta_report("meta", {"units": len(speakers), **meta_ratios(speakers, ctx)})  # what WB has the speakers say of themselves
+    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has those who answer in it say of themselves
 
     return {
         "age": entity_age(language, ctx["world_time"]),
@@ -95,30 +115,11 @@ def _build_metadata(language: dict, speakers: list[dict], ctx: dict, tallies: di
     }
 
 
-# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `speakers` section owns.
-def _build_population(speakers: list[dict], ctx: dict) -> dict:
-    return {key: value for key, value in population_of(speakers, ctx).items() if key != "total"}
+# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `members` section owns.
+def _build_population(members: list[dict], ctx: dict) -> dict:
+    return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
 
 
-# Everyone alive who still speaks it, eldest first — WB points the actor at its tongue, never the reverse. `total` rides with the list it counts, not `metadata`.
-def _build_speakers(speakers: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
-    if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"total": len(speakers)})
-    island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a wide tongue would still call through it hundreds of times
-    out = [
-        {
-            "age": actor_age(actor, ctx["world_time"]),
-            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs some 40 chars and blows the inline budget
-            "id": actor["id"],
-            "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
-            "job": resolve_profession(actor, save),
-            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — a rung above is earned, and unaggregated.
-            "name": actor.get("name"),
-            "sex": sex_label(actor),
-        }
-        for actor in speakers
-    ]
-    return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
 # What the script carries, off WB's language library — summarised to each trait and its group at any size, the effect and flavour only when named.
@@ -137,17 +138,17 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
         "converted": lambda l: int(l.get("speakers_converted") or 0),
         "deaths": lambda l: int(l.get("total_deaths") or 0),
         "fed_pct": lambda l: tallies["fed"][l["id"]] / n if (n := tallies["eaters"][l["id"]]) else 0.0,
-        "housed_pct": lambda l: tallies["housed"][l["id"]] / n if (n := len(tallies["speakers"].get(l["id"], ()))) else 0.0,
+        "housed_pct": lambda l: tallies["housed"][l["id"]] / n if (n := len(tallies["members"].get(l["id"], ()))) else 0.0,
         "kills": lambda l: int(l.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
-        "kills_per_capita": lambda l: int(l.get("total_kills") or 0) / n if (n := len(tallies["speakers"].get(l["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "kills_per_capita": lambda l: int(l.get("total_kills") or 0) / n if (n := len(tallies["members"].get(l["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "kingdoms": lambda l: tallies["kingdoms"][l["id"]],
         "lost": lambda l: int(l.get("speakers_lost") or 0),
-        "members": lambda l: len(tallies["speakers"].get(l["id"], ())),  # ranked under the name every other tier uses; the section stays `speakers`
+        "members": lambda l: len(tallies["members"].get(l["id"], ())),
         "money": lambda l: tallies["money"][l["id"]],
         "native": lambda l: int(l.get("speakers_new") or 0),
         "renown": lambda l: int(l.get("renown") or 0),
-        "renown_per_capita": lambda l: int(l.get("renown") or 0) / n if (n := len(tallies["speakers"].get(l["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "renown_per_capita": lambda l: int(l.get("renown") or 0) / n if (n := len(tallies["members"].get(l["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": lambda l: tallies["renown_total"][l["id"]],
         "traits": lambda l: len(l.get("saved_traits") or []),
         "warriors": lambda l: tallies["warriors"][l["id"]],
@@ -185,16 +186,16 @@ def main(argv: list[str]) -> int:
         "fed": Counter(),
         "housed": Counter(),
         "kingdoms": Counter(k["id_language"] for k in save.get("kingdoms") or [] if k.get("id_language")),
+        "members": {},
         "money": Counter(),
         "renown_total": Counter(),
-        "speakers": {},
         "warriors": Counter(),
     }
 
     for actor in save.get("actors_data") or []:
         if not (lid := actor.get("language")):
             continue
-        tallies["speakers"].setdefault(lid, []).append(actor)
+        tallies["members"].setdefault(lid, []).append(actor)
         tallies["money"][lid] += int(actor.get("money") or 0)
         if actor.get("asset_id") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they weigh on neither side of the hunger share
             tallies["eaters"][lid] += 1
@@ -204,7 +205,7 @@ def main(argv: list[str]) -> int:
         if fame := actor.get("renown"):
             tallies["renown_total"][lid] += int(fame)
 
-    speakers = tallies["speakers"].get(language_id, [])
+    members = tallies["members"].get(language_id, [])
     ctx = {
         **build_actor_stats_context(save),  # brings the trait libraries and `languages_by_id`, `subspecies_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),
@@ -213,7 +214,7 @@ def main(argv: list[str]) -> int:
         "clans_by_id": index_by_id(save.get("clans") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `speakers` needs it
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
     }
@@ -226,19 +227,19 @@ def main(argv: list[str]) -> int:
     if (
         "breakdown" in sections
     ):  # The living against the founder's `identity`: a tongue crosses blood and border faster than any other body, conversion by conversion.
-        out["breakdown"] = {k: v for k, v in population_breakdown(speakers, ctx).items() if k != "languages"}
+        out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "languages"}
     if "identity" in sections:
         out["identity"] = _build_identity(language, ctx)
-    if "leaders" in sections:  # WB names no such podium — ours, and it drops below five speakers, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(speakers, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+    if "leaders" in sections:  # WB names no such podium — ours, and it drops below five souls, where a champion among three names nobody
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+    if "members" in sections:
+        out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
-        out["metadata"] = _build_metadata(language, speakers, ctx, tallies)
+        out["metadata"] = _build_metadata(language, members, ctx, tallies)
     if "population" in sections:
-        out["population"] = _build_population(speakers, ctx)
+        out["population"] = _build_population(members, ctx)
     if "ranks" in sections:
         out["ranks"] = competition_ranks(language, list(languages_by_id.values()), _rank_getters(tallies, ctx["world_time"], ctx["books_by_language"]()))
-    if "speakers" in sections:
-        out["speakers"] = _build_speakers(speakers, ctx, save, detailed=wants_detail(requested, len(speakers)))
     if "traits" in sections:
         out["traits"] = _build_traits(language, detailed=requested not in (None, "full"))
 
