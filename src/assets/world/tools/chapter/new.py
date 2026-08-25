@@ -251,6 +251,19 @@ def _rarity_counts(traits: dict | None) -> dict:
     return {rarity: counts.get(rarity, 0) for rarity in _RARITIES}
 
 
+# The manual's regime this chapter falls under. The script holds the state, so the chronicler need not read it off `chapter.json` to know which section governs.
+def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -> str:
+    if n == 1:
+        return "premier chapitre — cf. « Cas du premier chapitre du monde », dont le baptême à écrire dans `history/world.json`"
+    if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
+        if fav_id is None:  # `favorite.py` n'est pas encore passé : le successeur reste à choisir
+            return "le favori a quitté le monde — cf. « Mort du favori », puis « Choix du favori »"
+        return "le favori a quitté le monde, son successeur est en place — cf. « Mort du favori » : le chapitre s'ouvre sur sa fin"
+    if fav_id is None:
+        return "aucun favori — cf. « Structure du chapitre (avant désignation d'un favori) » et « Choix du favori »"
+    return "favori désigné — cf. « Structure du chapitre (favori désigné) »"
+
+
 # Runs a sibling `info.py` → its parsed JSON stdout, `None` (stderr surfaced) on failure or empty output. `sys.executable` so a venv never forks children elsewhere.
 def _run(rel_path: str, *args) -> dict | None:
     result = subprocess.run([sys.executable, str(_TOOLS / rel_path), *map(str, args)], capture_output=True, text=True, check=False)
@@ -287,9 +300,11 @@ def main(argv: list[str]) -> int:
     world_time = round(float(live["mapStats"].get("world_time", 0)), 2)
     fav_id = next((a["id"] for a in actors if a.get("favorite") is True), None)
     already, prev_favorite, prev_world = _prior_context(n)
-    just_designated = fav_id is not None and prev_favorite is None  # favorite null→real: earns a chapter even at an unchanged timestamp + the NEW_FAVORITE tag
+    prev_fav_id = ((prev_favorite or {}).get("metadata") or {}).get("id")
+    # A favorite the chapter before did not carry — the world's first, or a successor to one who died. Both earn a chapter at an unchanged timestamp, and the tag.
+    just_designated = fav_id is not None and fav_id != prev_fav_id
 
-    # Read off the chapter before rather than by re-parsing its save for one field — `world/info.py` rounds it exactly as the line above does, to the digit.
+    # Read off the chapter before rather than by re-parsing its save for one field — `world/info.py` rounds it exactly as `world_time` above does, to the digit.
     if (prev_time := prev_world.get("world_time")) is not None and world_time <= prev_time and not just_designated and "--force" not in argv:
         print(f"✗ save not advanced (world_time {world_time} ≤ C{n - 1} {prev_time}), no new favorite either — advance in WorldBox or --force", file=sys.stderr)
         return 1
@@ -405,7 +420,7 @@ def main(argv: list[str]) -> int:
     (chapter_dir / "chapter.json").write_text(render(_drop_chronicler_keys(chapter_json)) + "\n")
 
     year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
-    counts = " · ".join(  # The chronicler's own order: the map first, then who fills it. Each name pairs with its label here rather than twice below.
+    counts = " · ".join(  # The chronicler's own order: the map first, then who fills it.
         f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {label}"
         for name, label in (
             ("cities", "cités"),
@@ -419,7 +434,8 @@ def main(argv: list[str]) -> int:
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ {chapter} — an {year}, {age_label} (world_time {world_time})")
     print(f"  registres: {counts}")
-    print(f"  favori: {fav_name or 'aucun (aucun acteur marqué favori dans la save)'}")
+    print(f"  favori: {fav_name or 'aucun'}")
+    print(f"  régime: {_regime(n, actors, fav_id, prev_fav_id)}")
     for _code, message in new_alerts:
         print(f"  ⚠ {message}")
     todo = "analyse §III · chapter.md"
@@ -427,7 +443,6 @@ def main(argv: list[str]) -> int:
         todo += " · descriptor du favori"
     if new_alerts:
         todo += " · relayer l'alerte"
-
     print(f"  → chroniqueur: {todo}")
 
     return 0

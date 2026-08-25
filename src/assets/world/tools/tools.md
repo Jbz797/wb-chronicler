@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 25/08/26 14:33</p>
+<p class="metadata">Date de mise à jour : 25/08/26 16:18</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -31,3 +31,7 @@ Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, 
 ##### Nouveau chapitre :
 
 `chapter/new.py` — crée le chapitre suivant depuis le save live ; le cycle complet (garde-fous, ce que le chroniqueur remplit ensuite) est décrit dans `chronicler.md`.
+
+##### Favori :
+
+`chapter/favorite.py <id>` — marque l'acteur comme favori dans la save du jeu, puis régénère le chapitre courant autour de lui. À lancer **après accord du joueur** et **WorldBox fermé** ; cf. « Choix du favori » dans `chronicler.md`.
