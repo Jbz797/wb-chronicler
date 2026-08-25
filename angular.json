@@ -10,7 +10,24 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "assets": ["src/assets", { "glob": "**/*", "input": "./node_modules/@ant-design/icons-angular/src/inline-svg/", "output": "/assets/" }],
+            "assets": [
+              {
+                "glob": "**/*",
+                "ignore": [
+                  "**/.DS_Store",
+                  "**/.cache/**",
+                  "**/.ruff_cache/**",
+                  "**/__pycache__/**",
+                  "world/history/map_stats.s3db",
+                  "world/saves/*/map.wbox",
+                  "world/tools/*/**",
+                  "world/tools/ruff.toml"
+                ],
+                "input": "src/assets",
+                "output": "/assets"
+              },
+              { "glob": "**/*", "input": "./node_modules/@ant-design/icons-angular/src/inline-svg/", "output": "/assets/" }
+            ],
             "browser": "src/main.ts",
             "index": "src/index.html",
             "optimization": false,

@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 21/08/26 19:53</p>
+<p class="metadata">Date de mise à jour : 25/08/26 14:33</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -22,7 +22,7 @@ Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, 
 | `religion/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                    |
 | `subspecies/info.py <id>`          | `full`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`             |
 | `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                                             |
-| `world/info.py`                    | `full`, `boats`, `cumulative`, `leaders`, `metadata`, `snapshot`                                                                               |
+| `world/info.py`                    | `full`, `boats`, `cumulative`, `leaders`, `metadata`, `plots`, `snapshot`                                                                      |
 
 ##### Options :
 
