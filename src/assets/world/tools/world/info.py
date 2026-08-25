@@ -100,8 +100,6 @@ _SNAPSHOT_COLLECTIONS = {
     "subspecies": "subspecies",
 }
 
-_UNVEGETATED = {"geyser", "super_pumpkin", "volcano"}  # Neither civ nor vegetation (`poop` = WB vegetation; `mineral_*` by prefix).
-
 
 # The world's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
 def _build_boats(save: dict, requested: str | None) -> dict:
@@ -225,6 +223,7 @@ def _build_snapshot(save: dict) -> dict:
     actors = save.get("actors_data") or []
     civic = civic_building_ids()
     asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings") or [])  # Count `asset_id`s once, classify the distinct keys — four scans saved.
+    categories = load_data("building-categories.json")  # WB's own grouping of what it files under `buildings`: what grows, what lies there, and what was built
 
     # `infected` ⊂ `sick` — a plague never shows up in the first, hence both; each drops at 0, outbreaks leaving them idle most chapters.
     boats = infected = passengers = population = sick = 0
@@ -249,14 +248,14 @@ def _build_snapshot(save: dict) -> dict:
         **({"infected": infected} if infected else {}),
         "population": population,
         **({"sick": sick} if sick else {}),
-        "trees": sum(n for aid, n in asset_counts.items() if "tree" in aid),  # Catches every `Building_Tree` variant — ≤1% off WB's unstable counter.
-        "vegetation": sum(n for aid, n in asset_counts.items() if aid not in civic and aid not in _UNVEGETATED and not aid.startswith(("fishing_docks", "mineral"))),
+        "trees": sum(n for aid, n in asset_counts.items() if categories.get(aid) == "trees"),
+        "vegetation": sum(n for aid, n in asset_counts.items() if categories.get(aid) == "vegetation"),  # `trees` counts apart — WB files the two as it pleases
         "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
         "wild_creatures": len(actors) - boats - population,
     }
 
 
-# The one name a leader needs, found by a scan: seven of them each read a single row, where seven `index_by_id` would allocate seven dicts to serve seven keys.
+# The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
 def _name_of(records: list[dict], target_id) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
 

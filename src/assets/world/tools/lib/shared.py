@@ -373,10 +373,11 @@ def city_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, in
     return _score_ranks([c["id"] for c in save.get("cities") or []], dimensions if dimensions is not None else city_score_dimensions(save))
 
 
-# Asset ids of built structures (ResourceManager path `buildings/civ_*`) — excludes nature. Source: `datas/building-categories.json`.
+# Built structures (`buildings/civ_*` in `datas/building-categories.json`), nature excluded — plus the `fishing_docks_*` that manifest omits, derived from `docks_*`.
 @cache
 def civic_building_ids() -> frozenset[str]:
-    return frozenset(asset for asset, category in load_data("building-categories.json").items() if category.startswith("civ_"))
+    listed = {asset for asset, category in load_data("building-categories.json").items() if category.startswith("civ_")}
+    return frozenset(listed | {f"fishing_{asset}" for asset in listed if asset.startswith("docks_")})
 
 
 # Standard competition rank (1,2,2,4) among `peers` per getter — top 3 only, and a metric the entity has none of is skipped rather than given a podium at 0.
@@ -602,13 +603,13 @@ def meta_report(kind: str, state: dict) -> str | None:
     return " ".join(said) or None
 
 
-# Parses a comma-separated section list — `None` and `full` both expand to all known sections.
-def parse_sections(arg: str | None, all_sections: tuple[str, ...]) -> tuple[str, ...]:
-    if not arg or arg == "full":
+# Parses a comma-separated section list — `None` and `full` both expand to all known sections, unless the caller has no `full` to offer (`geography`).
+def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: bool = True) -> tuple[str, ...]:
+    if allow_full and (not arg or arg == "full"):
         return all_sections
-    requested = tuple(s.strip() for s in arg.split(",") if s.strip())
+    requested = tuple(s.strip() for s in (arg or "").split(",") if s.strip())
     if unknown := [s for s in requested if s not in all_sections]:
-        raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: {','.join(('full', *all_sections))}")
+        raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}")
     return requested
 
 

@@ -15,7 +15,7 @@ from islands import compute_islands_cached
 from shared import ZONE_TILES, emit, entity_ref, index_by_id, load_data, load_save, parse_sections, take_chapter
 
 _ALL_SECTIONS = ("actors", "buildings", "context", "distances", "tile_info")
-_MAX_RADIUS = 2
+_MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 
 
 # Identity and allegiance only — the chronicler follows up with `actor/info.py <id>` for the rest, so a tile sweep stays readable at 25 cells.
@@ -72,7 +72,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 
 
 def _buildings_at(x: int, y: int, ctx: dict) -> list[dict]:
-    return [{"asset_id": b.get("asset_id")} for b in ctx["buildings_by_pos"].get((x, y), ())]
+    return [{"asset_id": b.get("asset_id"), "id": b.get("id")} for b in ctx["buildings_by_pos"].get((x, y), ())]
 
 
 # Returns `{}` for unclaimed tiles (stripped by `emit`). Distances live in the `distances` section, not here.
