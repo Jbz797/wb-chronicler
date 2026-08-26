@@ -2,11 +2,11 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { BreakdownComponent, RankedStatComponent } from '..';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
-import { BreakdownComponent, RankedStatComponent } from '../../../misc';
-import { PersonTagComponent } from '../../../tags';
 import { LeadersComponent } from '../leaders/leaders.component';
+import { PersonTagComponent } from '../tags';
 
 @Component({
   selector: 'app-family',

@@ -1,7 +1,9 @@
 <div class="reader-page">
-  <article class="ant-typography">
-    @if (src(); as s) {
-      <markdown [disableSanitizer]="true" [src]="s" (ready)="onReady()" />
-    }
-  </article>
+  <ng-scrollbar class="reader-scroll">
+    <article class="ant-typography">
+      @if (src(); as s) {
+        <markdown [disableSanitizer]="true" [src]="s" (ready)="onReady()" />
+      }
+    </article>
+  </ng-scrollbar>
 </div>

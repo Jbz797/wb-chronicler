@@ -6,8 +6,10 @@ import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
+import { NgScrollbarModule } from 'ngx-scrollbar';
+
 import { AGE_LABELS, CITY_SIZE_TERMS, HISTORY_DIR, KINGDOM_SIZE_TERMS } from '../../../constants';
-import { ChapterOverviewPanel, WorldInfo } from '../../../interfaces';
+import { ChapterOverviewPanel, ChapterTier, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
 
 import { CityComponent } from './city/city.component';
@@ -22,6 +24,8 @@ import { ReligionComponent } from './religion/religion.component';
 import { SubspeciesComponent } from './subspecies/subspecies.component';
 import { WorldStatsComponent } from './world-stats/world-stats.component';
 
+import { NewBadgeComponent } from '.';
+
 @Component({
   selector: 'app-chapter-overview',
   imports: [
@@ -32,6 +36,8 @@ import { WorldStatsComponent } from './world-stats/world-stats.component';
     FavoriteComponent,
     KingdomComponent,
     LanguageComponent,
+    NewBadgeComponent,
+    NgScrollbarModule,
     NzCollapseModule,
     NzDividerModule,
     NzEmptyModule,
@@ -60,6 +66,11 @@ export class ChapterOverviewComponent {
     const size = id === undefined ? undefined : this._registry.cities()[String(id)]?.size;
     return (size ? CITY_SIZE_TERMS[size - 1] : undefined) ?? 'Village';
   });
+  // The world turned an age since the previous chapter — the menu badges the chapter itself, this names the age it turned to.
+  protected readonly isNewAge = computed(() => {
+    const previous = this._chronicler.previousChapter()?.meta.world.metadata.age_id;
+    return !!previous && previous !== this.currentChapter()?.meta.world.metadata.age_id;
+  });
   // Panel title on the same scale, off the crown's own city count — uneven rungs, so a lookup rather than a tier index.
   protected readonly kingdomTerm = computed(() => {
     const cities = this.currentChapter()?.meta.kingdom?.metadata.cities ?? 0;
@@ -70,6 +81,13 @@ export class ChapterOverviewComponent {
 
   // ng-zorro 22 dropped `nzDisabled` for `nzCollapsible`, whose union has no "default" member — `undefined` restores it (cast for `exactOptionalPropertyTypes`).
   protected collapsible = (enabled: unknown): 'disabled' | 'header' | 'icon' => (enabled ? undefined : 'disabled') as 'disabled';
+
+  // The body a panel is about has changed hands since the previous chapter — the favorite moved to another clan, another creed, or is himself a successor.
+  protected isNewPanel = (panel: ChapterTier): boolean => {
+    const previous = this._chronicler.previousChapter()?.meta[panel]?.metadata;
+    const current = this.currentChapter()?.meta[panel]?.metadata;
+    return !!previous && !!current && current.id !== previous.id;
+  };
 
   // Persist the active panel to sessionStorage so it survives reloads and page changes.
   protected onPanelToggle(panel: ChapterOverviewPanel, isActive: boolean): void {

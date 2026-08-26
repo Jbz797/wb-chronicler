@@ -1,18 +1,20 @@
 import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
+import { DeltaComponent } from '..';
 import { ANONYMOUS_NAME, CUMULATIVE_STATS, DEATH_CAUSES, LEADERS_BY_LEVEL, LEADERS_BY_MEMBERS, LEADERS_BY_SCORE, SNAPSHOT_STATS } from '../../../../constants';
 import { LeaderKind, LeaderRow } from '../../../../interfaces';
 import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
-import { DeltaComponent } from '../../../misc';
 
-import { LeaderTableComponent, WorldPlotsComponent } from '.';
+import { LeaderTableComponent } from './leader-table/leader-table.component';
+import { WorldPlotsComponent } from './world-plots/world-plots.component';
 
 @Component({
   selector: 'app-world-stats',
-  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, WorldPlotsComponent],
+  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, NzTooltipModule, WorldPlotsComponent],
   templateUrl: './world-stats.component.html',
 })
 export class WorldStatsComponent {

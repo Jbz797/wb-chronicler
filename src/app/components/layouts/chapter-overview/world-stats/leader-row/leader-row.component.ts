@@ -2,11 +2,10 @@ import { Component, input } from '@angular/core';
 
 import { LeaderRow } from '../../../../../interfaces';
 import { SpeciesNamePipe } from '../../../../../pipes';
-import { NewBadgeComponent } from '../../../../misc';
 import {
   CityTagComponent, ClanTagComponent, CultureTagComponent, FamilyTagComponent, KingdomTagComponent, LanguageTagComponent, PersonTagComponent,
   ReligionTagComponent, SubspeciesTagComponent,
-} from '../../../../tags';
+} from '../../tags';
 
 @Component({
   selector: 'app-leader-row',
@@ -17,7 +16,6 @@ import {
     FamilyTagComponent,
     KingdomTagComponent,
     LanguageTagComponent,
-    NewBadgeComponent,
     PersonTagComponent,
     ReligionTagComponent,
     SpeciesNamePipe,

@@ -1,10 +1,8 @@
 @if (rows().length) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="plotsTitle">
     <ng-template #plotsTitle>
-      @if (isNew()) {
-        <nz-tag nzColor="gold">NEW</nz-tag>
-      }
       Complots en cours
+      <app-new-badge [dot]="false" [show]="isNew()" />
     </ng-template>
     @for (row of rows(); track row.schemer.id) {
       <ng-template #plotTitle>

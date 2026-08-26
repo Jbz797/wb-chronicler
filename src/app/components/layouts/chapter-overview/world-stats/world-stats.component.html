@@ -7,7 +7,7 @@
         <span>{{ row.label }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
-        <span [title]="row.value | exact">{{ row.value | compact }}</span>
+        <span nz-tooltip [nzTooltipTitle]="row.value | exact">{{ row.value | compact }}</span>
         <app-delta [value]="row.delta" />
       </nz-descriptions-item>
     }
@@ -23,7 +23,7 @@
           <span>{{ row.label }}</span>
         </ng-template>
         <nz-descriptions-item [nzTitle]="titleRef">
-          <span [title]="row.value | exact">{{ row.value | compact }}</span>
+          <span nz-tooltip [nzTooltipTitle]="row.value | exact">{{ row.value | compact }}</span>
         </nz-descriptions-item>
       }
     </nz-descriptions>
@@ -37,7 +37,7 @@
         <span>{{ cause.label }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
-        <span [title]="deaths | exact">{{ deaths | compact }}</span>
+        <span nz-tooltip [nzTooltipTitle]="deaths | exact">{{ deaths | compact }}</span>
       </nz-descriptions-item>
     }
     @let totalDeaths = totalDeathsSincePrevious() ?? 0;
@@ -46,11 +46,11 @@
       <span>Total</span>
     </ng-template>
     <nz-descriptions-item [nzTitle]="totalTitle">
-      <span [title]="totalDeaths | exact">{{ totalDeaths | compact }}</span>
+      <span nz-tooltip [nzTooltipTitle]="totalDeaths | exact">{{ totalDeaths | compact }}</span>
     </nz-descriptions-item>
   </nz-descriptions>
 
-  <app-leader-table title="Palmarès par niveau" [rows]="levelRows()" />
-  <app-leader-table title="Palmarès par nombre" [rows]="memberRows()" />
-  <app-leader-table title="Palmarès par score" [rows]="scoreRows()" />
+  <app-leader-table heading="Palmarès par niveau" [rows]="levelRows()" />
+  <app-leader-table heading="Palmarès par nombre" [rows]="memberRows()" />
+  <app-leader-table heading="Palmarès par score" [rows]="scoreRows()" />
 }

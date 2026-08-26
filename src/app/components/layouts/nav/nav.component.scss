@@ -1,6 +1,10 @@
 @use 'variables' as *;
 
+// Takes what the sider has left, so the map and the actions below stay put; the chapter list alone gives way, however far the chronicle runs.
 :host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding-top: 1rem;
 
   .empty-state {
@@ -12,6 +16,12 @@
 
   ::ng-deep {
     .ant-menu-item {
+      padding-right: 0;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
       .ant-menu-title-content {
         align-items: center;
         display: flex;
@@ -19,11 +29,15 @@
 
         .tag-icon {
           height: 12px;
-          margin-left: 0.5rem;
+          margin-left: 4px;
           position: relative;
           top: -1px;
           transition: all $transition;
           width: 12px;
+
+          &:first-child {
+            margin-left: 8px;
+          }
         }
       }
 

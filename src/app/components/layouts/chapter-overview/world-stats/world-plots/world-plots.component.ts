@@ -1,16 +1,16 @@
 import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
-import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { NewBadgeComponent } from '../..';
 import { PLOT_TYPE_LABELS } from '../../../../../constants';
 import { WorldPlot } from '../../../../../interfaces';
 import { ChroniclerService } from '../../../../../services';
-import { PersonTagComponent } from '../../../../tags';
+import { PersonTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-world-plots',
-  imports: [NzDescriptionsModule, NzTagModule, PersonTagComponent],
+  imports: [NewBadgeComponent, NzDescriptionsModule, PersonTagComponent],
   templateUrl: './world-plots.component.html',
 })
 export class WorldPlotsComponent {

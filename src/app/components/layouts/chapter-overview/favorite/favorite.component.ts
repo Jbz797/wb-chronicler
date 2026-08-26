@@ -4,12 +4,12 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { InventoryComponent, NewBadgeComponent, RankedStatComponent, TraitSummaryComponent } from '..';
 import { COMBAT_STATS, COMPANION_LABELS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, ROLE_LABELS, SKILL_STATS, TENURE_LABELS } from '../../../../constants';
 import { LabelHelpers } from '../../../../helpers';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService, RegistryService } from '../../../../services';
-import { InventoryComponent, NewBadgeComponent, RankedStatComponent, TraitSummaryComponent } from '../../../misc';
-import { PersonTagComponent } from '../../../tags';
+import { PersonTagComponent } from '../tags';
 
 import { BoatCardComponent } from './boat-card/boat-card.component';
 import { PlotCardComponent } from './plot-card/plot-card.component';

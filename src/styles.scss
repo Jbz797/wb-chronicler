@@ -4,15 +4,14 @@ html,
 body {
   font-family: 'Jersey 15', georgia, sans-serif;
   overflow: hidden;
-  scrollbar-color: $gold $paper-shade;
-  scrollbar-width: thin;
 }
 
-// `scrollbar-width` is the one of the pair CSS does not inherit, so it has to be handed down by force; `scrollbar-color` reaches here on its own.
-*,
-*::before,
-*::after {
-  scrollbar-width: inherit;
+// Every scroller is an `ngx-scrollbar`, so no native bar is left to dress — only its gilt, set here; `compact` and `hover` are settled in `main.ts`.
+:root {
+  --scrollbar-thumb-color: #{$gold};
+  --scrollbar-thumb-hover-color: #{$gold-soft};
+  --scrollbar-track-color: #{rgba($paper-shade, 0.12)};
+  --scrollbar-track-thickness: 5px; // finer than the library's 7px, which reads heavy against the chronicle's type
 }
 
 // Every pixel WorldBox ships is art, whether it arrives as a file or gets composed at runtime — never let a browser smooth one.

@@ -2,15 +2,15 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
-import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { NewBadgeComponent } from '../..';
 import { SpeciesNamePipe, TierPipe } from '../../../../../pipes';
 import { ChroniclerService } from '../../../../../services';
-import { CityTagComponent, KingdomTagComponent } from '../../../../tags';
+import { CityTagComponent, KingdomTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-boat-card',
-  imports: [CityTagComponent, DecimalPipe, KingdomTagComponent, NzDescriptionsModule, NzTagModule, SpeciesNamePipe, TierPipe],
+  imports: [CityTagComponent, DecimalPipe, KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, SpeciesNamePipe, TierPipe],
   templateUrl: './boat-card.component.html',
 })
 export class BoatCardComponent {

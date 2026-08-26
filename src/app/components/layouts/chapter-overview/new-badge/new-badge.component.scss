@@ -1,0 +1,15 @@
+@use 'variables' as *;
+
+:host ::ng-deep {
+  // The chronicle's own gilt rather than ng-zorro's `gold` preset, which the badge resolves to a class and then binds `false` to its own background.
+  .ant-badge-dot {
+    background: $primary;
+  }
+
+  // Set off from the heading it follows and lifted onto its line — the plate is 20px against a 16px title, so it sits low left to itself.
+  .ant-tag {
+    margin-left: 4px;
+    position: relative;
+    top: -1px;
+  }
+}

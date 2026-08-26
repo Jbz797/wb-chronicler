@@ -5,7 +5,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { RELATION_STATUS_LABELS, RELATION_STATUS_NZ_COLORS } from '../../../../../constants';
 import { KingdomRelation } from '../../../../../interfaces';
-import { KingdomTagComponent } from '../../../../tags';
+import { KingdomTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-kingdom-relations',

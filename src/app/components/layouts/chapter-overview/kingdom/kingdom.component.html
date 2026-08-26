@@ -4,10 +4,10 @@
       <ng-template #kingTitle>
         <img src="assets/img/professions/king.png" />
         <span>{{ kingSex() === 'female' ? 'Reine' : 'Roi' }}</span>
+        <app-new-badge [show]="isNewKing()" />
       </ng-template>
       <nz-descriptions-item [nzTitle]="kingTitle">
         <app-person-tag [id]="king.id" [name]="king.name" />
-        <app-new-badge [show]="isNewKing()" />
       </nz-descriptions-item>
     }
 
@@ -126,6 +126,7 @@
   <ng-template #goodsTitle><img src="assets/img/world/goods.png" /><span>Biens</span></ng-template>
   <ng-template #heirTitle>
     <img src="assets/img/world/heir.png" /><span>{{ heirSex() === 'female' ? 'Héritière' : 'Héritier' }}</span>
+    <app-new-badge [show]="isNewHeir()" />
   </ng-template>
   <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
   <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>

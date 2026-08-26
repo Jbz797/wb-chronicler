@@ -4,7 +4,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { LEADER_FAMILY_ROWS, LEADER_PERSON_ROWS } from '../../../../constants';
 import { Leaders } from '../../../../interfaces';
-import { FamilyTagComponent, PersonTagComponent } from '../../../tags';
+import { FamilyTagComponent, PersonTagComponent } from '../tags';
 
 @Component({
   selector: 'app-leaders',

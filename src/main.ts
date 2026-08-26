@@ -8,6 +8,7 @@ import { provideRouter } from '@angular/router';
 import { fr_FR, provideNzI18n } from 'ng-zorro-antd/i18n';
 
 import { provideMarkdown } from 'ngx-markdown';
+import { provideScrollbarOptions, provideScrollbarPolyfill } from 'ngx-scrollbar';
 import 'prismjs';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-json';
@@ -28,6 +29,8 @@ bootstrapApplication(App, {
     provideMarkdown(),
     provideNzI18n(fr_FR),
     provideRouter(ROUTES),
+    provideScrollbarOptions({ appearance: 'compact', visibility: 'hover' }), // Every scroller alike: painted over the content, not beside it, shown only on hover.
+    provideScrollbarPolyfill('assets/scroll-timeline-polyfill.js'), // Served from the app, never a CDN: `scroll-timeline` drives the thumb, and Firefox lacks it.
     provideZoneChangeDetection(),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
   ],

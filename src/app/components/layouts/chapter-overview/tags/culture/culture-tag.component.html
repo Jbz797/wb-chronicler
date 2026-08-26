@@ -1,0 +1,15 @@
+@if (culture(); as c) {
+  <nz-tag class="entity-tag culture-tag" [class.dead]="c.dead" [style.--tag-color]="c.color">
+    <canvas #emblem class="banner" height="0" width="0"></canvas>
+    <span #truncated="appTruncated" appTruncated class="entity-name" nz-tooltip [nzTooltipTitle]="truncated.isTruncated() ? name() : ''">{{ name() }}</span>
+    @if (medal() && c.rank; as r) {
+      <img [src]="`assets/img/podium/${r}.png`" />
+    }
+    @if (c.size; as size) {
+      <span class="tag-badge">{{ size }}</span>
+    }
+    @if (c.species; as sp) {
+      <img [src]="`assets/img/species/${sp}.png`" />
+    }
+  </nz-tag>
+}

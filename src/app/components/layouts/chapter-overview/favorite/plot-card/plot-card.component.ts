@@ -2,15 +2,15 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
-import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { NewBadgeComponent } from '../..';
 import { PLOT_TYPE_LABELS } from '../../../../../constants';
 import { ChroniclerService } from '../../../../../services';
-import { CityTagComponent, KingdomTagComponent } from '../../../../tags';
+import { CityTagComponent, KingdomTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-plot-card',
-  imports: [CityTagComponent, KingdomTagComponent, NzDescriptionsModule, NzProgressModule, NzTagModule],
+  imports: [CityTagComponent, KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, NzProgressModule],
   templateUrl: './plot-card.component.html',
 })
 export class PlotCardComponent {

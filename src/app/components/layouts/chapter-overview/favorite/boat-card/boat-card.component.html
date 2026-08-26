@@ -25,10 +25,8 @@
 
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Mise à l'eau</span></ng-template>
   <ng-template #boatTitle>
-    @if (isNew()) {
-      <nz-tag nzColor="gold">NEW</nz-tag>
-    }
     À bord de {{ title() }}
+    <app-new-badge [dot]="false" [show]="isNew()" />
   </ng-template>
   <ng-template #cityTitle><img src="assets/img/world/cities.png" /><span>Port d'attache</span></ng-template>
   <ng-template #crewTitle><img src="assets/img/world/population.png" /><span>Âmes à bord</span></ng-template>

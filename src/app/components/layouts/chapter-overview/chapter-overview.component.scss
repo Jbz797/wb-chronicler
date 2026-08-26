@@ -17,11 +17,6 @@
     justify-content: center;
   }
 
-  ::ng-deep nz-tag.ant-tag-gold {
-    line-height: 16px;
-    margin-right: 0.25rem;
-  }
-
   em {
     color: $text-secondary;
   }
@@ -45,6 +40,21 @@
   }
 
   ::ng-deep {
+    nz-tag.ant-tag-gold {
+      line-height: 16px;
+      margin-right: 0.25rem;
+    }
+
+    // Preventive: the widest plate ever laid down measures 179px. Past 200 the name gives way rather than the table, which would widen past the panel.
+    .entity-tag {
+      max-width: 200px;
+
+      .entity-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
     .ant-collapse {
       display: flex;
       flex-direction: column;
@@ -60,9 +70,13 @@
           display: flex;
           min-height: 0;
 
+          // The body hands the scrolling over to the `ng-scrollbar` inside it, whose bar is painted over the panel rather than carving a gutter out of it.
           > .ant-collapse-body {
             flex: 1;
-            overflow-y: auto;
+
+            .panel-scroll {
+              flex: 1;
+            }
           }
         }
 
@@ -119,10 +133,6 @@
         letter-spacing: $letter-spacing-wide;
         margin: 1rem 0 0;
         text-transform: uppercase;
-
-        nz-tag {
-          padding-right: 4px;
-        }
 
         // WB's alliance nameplate (`nameplate_alliance`) — two chain links, all ornament and no field, so it carries the heading rather than sitting beside it.
         .alliance-plate {
@@ -186,19 +196,6 @@
         .entity-tag {
           margin: 0;
         }
-
-        &:has(.entity-tag):has(app-new-badge) {
-          white-space: nowrap;
-
-          .entity-tag {
-            max-width: 138px;
-
-            .entity-name {
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-          }
-        }
       }
 
       .ant-descriptions-item-label,
@@ -238,11 +235,6 @@
             }
           }
         }
-      }
-
-      // A NEW badge opens the label it sits in, so its air belongs on the right. Only the label: in a content cell it trails its tag, as `leader-row`'s does.
-      .ant-descriptions-item-label app-new-badge nz-tag {
-        margin: 0 4px 0 0;
       }
     }
 

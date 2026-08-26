@@ -2,11 +2,11 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { BreakdownComponent, InventoryComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '..';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
-import { BreakdownComponent, InventoryComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '../../../misc';
-import { PersonTagComponent } from '../../../tags';
 import { LeadersComponent } from '../leaders/leaders.component';
+import { PersonTagComponent } from '../tags';
 
 @Component({
   selector: 'app-city',
@@ -30,6 +30,12 @@ export class CityComponent {
   protected readonly city = computed(() => this._chronicler.currentChapter()?.meta.city ?? null);
   protected readonly heirSex = computed(() => this._registry.persons()[String(this.city()?.metadata.heir?.id)]?.sex ?? '');
   // NEW badge on the leader when the same featured city installed a different head since the previous chapter.
+  protected readonly isNewHeir = computed(() => {
+    const current = this.city()?.metadata;
+    const previous = this._chronicler.previousChapter()?.meta.city?.metadata;
+    if (!current?.heir || !previous?.heir || current.id !== previous.id) return false;
+    return current.heir.id !== previous.heir.id;
+  });
   protected readonly isNewLeader = computed(() => {
     const current = this.city()?.metadata;
     const previous = this._chronicler.previousChapter()?.meta.city?.metadata;

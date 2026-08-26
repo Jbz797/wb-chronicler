@@ -3,12 +3,12 @@ import { Component, computed, inject, input } from '@angular/core';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { DeltaComponent, NewBadgeComponent } from '../..';
 import { WAR_TYPE_LABELS } from '../../../../../constants';
 import { SectionRowDirective } from '../../../../../directives';
 import { KingdomWar } from '../../../../../interfaces';
 import { ChroniclerService } from '../../../../../services';
-import { DeltaComponent, NewBadgeComponent } from '../../../../misc';
-import { KingdomTagComponent } from '../../../../tags';
+import { KingdomTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-war-card',

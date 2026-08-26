@@ -39,8 +39,8 @@
     </nz-descriptions-item>
     @for (row of companionRows(); track row.label) {
       <ng-template #companionTitle>
-        <app-new-badge [show]="row.isNew" />
         <img [src]="`assets/img/stats/${row.icon}.png`" /><span>{{ row.label }}</span>
+        <app-new-badge [show]="row.isNew" />
       </ng-template>
       <nz-descriptions-item [nzTitle]="companionTitle">
         <app-person-tag [id]="row.person.id" [name]="row.person.name" />
@@ -51,8 +51,8 @@
   <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
   <ng-template #childrenTitle><img src="assets/img/stats/children.png" /><span>Enfants</span></ng-template>
   <ng-template #descriptorTitle>
-    <app-new-badge [show]="changedFields().descriptor" />
     Titre
+    <app-new-badge [show]="changedFields().descriptor" />
   </ng-template>
   <ng-template #equipmentPowerTitle><img src="assets/img/stats/equipment_power.png" /><span>Panoplie</span></ng-template>
   <ng-template #inventoryTitle><img src="assets/img/stats/inventory.png" /><span>Inventaire</span></ng-template>
@@ -62,8 +62,8 @@
   <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #rolesTitle>
-    <app-new-badge [show]="changedFields().role" />
     Rôles
+    <app-new-badge [show]="changedFields().role" />
   </ng-template>
   <ng-template #tenureTitle>
     <img src="assets/img/stats/tenure.png" /><span>{{ tenureLabel() }}</span>
@@ -99,7 +99,7 @@
   <ng-template #speedTitle><img src="assets/img/stats/speed.png" /><span>Vitesse</span></ng-template>
   <ng-template #staminaTitle><img src="assets/img/stats/stamina.png" /><span>Vigueur</span></ng-template>
 
-  <app-trait-summary source="favorite" title="Traits" />
+  <app-trait-summary heading="Traits" source="favorite" />
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Compétences" [nzColumn]="1">
     @for (s of skillStats; track s.key) {

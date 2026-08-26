@@ -1,0 +1,14 @@
+@if (city(); as c) {
+  <nz-tag class="entity-tag city-tag" [class.capital]="c.plate === 'capital'" [class.dead]="c.dead" [style.--tag-color]="color()" [style.--tag-plate]="plate()">
+    <span #truncated="appTruncated" appTruncated class="entity-name" nz-tooltip [nzTooltipTitle]="truncated.isTruncated() ? name() : ''">{{ name() }}</span>
+    @if (medal() && c.rank; as r) {
+      <img [src]="`assets/img/podium/${r}.png`" />
+    }
+    @if (c.size; as s) {
+      <span class="tag-badge">{{ s }}</span>
+    }
+    @if (c.species; as sp) {
+      <img [src]="`assets/img/species/${sp}.png`" />
+    }
+  </nz-tag>
+}

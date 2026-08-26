@@ -72,10 +72,10 @@
 </nz-descriptions>
 
 <ng-template #warTitle>
-  @if (isNew()) {
-    <app-new-badge />
-  }
   <span>{{ w.name }}</span>
+  @if (isNew()) {
+    <app-new-badge [dot]="false" />
+  }
 </ng-template>
 <ng-template #alliesTitle><img src="assets/img/world/alliances.png" /><span>Alliés</span></ng-template>
 <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>

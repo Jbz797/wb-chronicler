@@ -1,3 +1,8 @@
+## Arborescence
+
+- Un composant vit là où il est **appelé**, en transitif : il n'est transverse que si l'un de ses usagers l'est, sinon il descend avec lui
+- Un `index.ts` regroupe ce que plusieurs dossiers consomment ; un sous-composant privé à son parent s'importe par chemin direct
+
 ## Commentaires
 
 - Pas de commentaires au-dessus des `constructor`, hooks `ng*` et méthodes `init`

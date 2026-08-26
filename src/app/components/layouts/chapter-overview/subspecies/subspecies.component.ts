@@ -2,11 +2,11 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { BreakdownComponent, RankedStatComponent, TraitSummaryComponent } from '..';
 import { BIOME_NAMES } from '../../../../constants';
 import { RankedStatKind } from '../../../../interfaces';
 import { SpeciesNamePipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
-import { BreakdownComponent, RankedStatComponent, TraitSummaryComponent } from '../../../misc';
 import { LeadersComponent } from '../leaders/leaders.component';
 
 @Component({

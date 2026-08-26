@@ -1,0 +1,5 @@
+@if (value(); as v) {
+  <nz-tag nz-tooltip [nzColor]="v > 0 === !inverted() ? 'success' : 'error'" [nzTooltipTitle]="v | exact">
+    {{ v > 0 ? '+' : '' }}{{ v | compact }}{{ suffix() }}
+  </nz-tag>
+}

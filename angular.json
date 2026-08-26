@@ -27,7 +27,8 @@
                 "input": "src/assets",
                 "output": "/assets"
               },
-              { "glob": "**/*", "input": "./node_modules/@ant-design/icons-angular/src/inline-svg/", "output": "/assets/" }
+              { "glob": "**/*", "input": "./node_modules/@ant-design/icons-angular/src/inline-svg/", "output": "/assets/" },
+              { "glob": "scroll-timeline-polyfill.js", "input": "./node_modules/ngx-scrollbar/assets/", "output": "/assets/" }
             ],
             "browser": "src/main.ts",
             "index": "src/index.html",

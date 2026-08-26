@@ -3,7 +3,6 @@
     @if (c.metadata.leader; as leader) {
       <nz-descriptions-item [nzTitle]="leaderTitle">
         <app-person-tag [id]="leader.id" [name]="leader.name" />
-        <app-new-badge [show]="isNewLeader()" />
       </nz-descriptions-item>
     }
 
@@ -154,9 +153,13 @@
   <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
   <ng-template #heirTitle>
     <img src="assets/img/world/heir.png" /><span>{{ heirSex() === 'female' ? 'Héritière' : 'Héritier' }}</span>
+    <app-new-badge [show]="isNewHeir()" />
   </ng-template>
   <ng-template #inventoryTitle><img src="assets/img/stats/inventory.png" /><span>Inventaire</span></ng-template>
-  <ng-template #leaderTitle><img src="assets/img/professions/leader.png" /><span>Dirigeant</span></ng-template>
+  <ng-template #leaderTitle>
+    <img src="assets/img/professions/leader.png" /><span>Dirigeant</span>
+    <app-new-badge [show]="isNewLeader()" />
+  </ng-template>
   <ng-template #loyaltyTitle><img src="assets/img/world/loyalty.png" /><span>Loyauté</span></ng-template>
   <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>

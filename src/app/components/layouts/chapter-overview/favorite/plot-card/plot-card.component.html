@@ -16,9 +16,7 @@
   </nz-descriptions>
 
   <ng-template #plotTitle>
-    @if (isNew()) {
-      <nz-tag nzColor="gold">NEW</nz-tag>
-    }
     Complot en cours
+    <app-new-badge [dot]="false" [show]="isNew()" />
   </ng-template>
 }

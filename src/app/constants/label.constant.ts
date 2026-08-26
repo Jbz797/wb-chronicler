@@ -59,6 +59,17 @@ export const PERSONALITY_LABELS: Readonly<Record<string, GenderedLabel>> = {
   wildcard: 'Imprévisible',
 };
 
+// French labels for `chapter.json.tags`, whose meaning `history/tags.md` spells out for the chronicler. Unknown codes fall back to the raw code.
+export const TAG_LABELS: Readonly<Record<string, string>> = {
+  DISABLE_DROP_OF_THOUGHTS: 'Loi de monde Drop of Thoughts désactivable',
+  DISABLE_HANDSOME_MIGRANTS: 'Loi de monde Handsome Migrants désactivable',
+  FAVORITE_ABOARD: 'Le favori est à bord',
+  FAVORITE_PLOTTING: 'Le favori mène un complot',
+  NAVIGATION: 'La navigation est découverte',
+  NEW_AGE: 'Le monde bascule dans un nouvel âge',
+  NEW_FAVORITE: 'Un nouveau favori est désigné',
+};
+
 // French labels for `world.metadata.age_id`, stripped of its `age_` prefix as the icon lookup is — WB's own English stays in `datas/world-ages.json`.
 export const AGE_LABELS: Readonly<Record<string, string>> = {
   ash: 'Ère des Cendres',
@@ -98,7 +109,7 @@ export const PLOT_TYPE_LABELS: Readonly<Record<string, string>> = {
   summon_angles: "Invocation d'anges",
   summon_demons: 'Invocation de démons',
   summon_earthquake: "Invocation d'un séisme",
-  summon_hellstorm: "Invocation d'une tempête infernale",
+  summon_hellstorm: 'Tempête infernale',
   summon_living_plants: 'Invocation de plantes vivantes',
   summon_meteor_rain: 'Invocation de météores',
   summon_skeletons: 'Invocation de squelettes',

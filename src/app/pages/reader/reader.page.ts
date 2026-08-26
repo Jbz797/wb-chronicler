@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
 import { MarkdownComponent } from 'ngx-markdown';
+import { NgScrollbarModule } from 'ngx-scrollbar';
 import { map } from 'rxjs';
 
 import { PAGES } from '../../constants';
@@ -14,7 +15,7 @@ import { ChroniclerService, RegistryService } from '../../services';
 
 @Component({
   selector: 'app-reader',
-  imports: [MarkdownComponent],
+  imports: [MarkdownComponent, NgScrollbarModule],
   templateUrl: './reader.page.html',
   styleUrl: './reader.page.scss',
   host: { '(click)': 'onClick($event)' },

@@ -1,0 +1,17 @@
+.share {
+  margin-left: 2px;
+  position: relative;
+  top: 0.5px;
+
+  // A body entirely of one stock prints no share. Out of the flow rather than merely blank: a realm's plate fills the cell, so an empty span still cost a line.
+  &:empty {
+    display: none;
+  }
+}
+
+// Nudged down only after a tag: the plate stands taller than the line, so the bullet drops to meet its midline. Plain text needs none.
+app-culture-tag + .share,
+app-kingdom-tag + .share,
+app-subspecies-tag + .share {
+  top: 2px;
+}

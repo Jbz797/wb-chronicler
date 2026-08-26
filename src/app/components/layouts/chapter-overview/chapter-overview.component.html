@@ -6,6 +6,7 @@
   <p class="world-age">
     <img class="age-icon" [src]="`assets/img/ages/${ageId}.png`" />
     {{ ageLabels[ageId] ?? ageId }}
+    <app-new-badge [dot]="false" [show]="isNewAge()" />
   </p>
   <nz-divider />
 
@@ -16,38 +17,47 @@
   <ng-template #favoritesHeader>
     <img class="panel-icon" src="assets/img/world/favorites.png" />
     <span>Favoris</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('favorite')" />
   </ng-template>
   <ng-template #familyHeader>
     <img class="panel-icon" src="assets/img/world/families.png" />
     <span>Lignée</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('family')" />
   </ng-template>
   <ng-template #clanHeader>
     <img class="panel-icon" src="assets/img/world/most_renowned_clan.png" />
     <span>Clan</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('clan')" />
   </ng-template>
   <ng-template #cultureHeader>
     <img class="panel-icon" src="assets/img/world/cultures.png" />
     <span>Culture</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('culture')" />
   </ng-template>
   <ng-template #languageHeader>
     <img class="panel-icon" src="assets/img/world/languages.png" />
     <span>Langue</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('language')" />
   </ng-template>
   <ng-template #religionHeader>
     <img class="panel-icon" src="assets/img/world/religions.png" />
     <span>Religion</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('religion')" />
   </ng-template>
   <ng-template #subspeciesHeader>
     <img class="panel-icon" src="assets/img/world/subspecies.png" />
     <span>S. espèce</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('subspecies')" />
   </ng-template>
   <ng-template #cityHeader>
     <img class="panel-icon" src="assets/img/world/village.png" />
     <span>{{ cityTerm() }}</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('city')" />
   </ng-template>
   <ng-template #kingdomHeader>
     <img class="panel-icon" src="assets/img/world/kingdom.png" />
     <span>{{ kingdomTerm() }}</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('kingdom')" />
   </ng-template>
 
   <ng-template #cityChip><app-panel-extra panel="city" /></ng-template>
@@ -62,7 +72,9 @@
 
   <nz-collapse nzAccordion>
     <nz-collapse-panel [nzActive]="activePanel() === 'world-stats'" [nzHeader]="worldStatsHeader" (nzActiveChange)="onPanelToggle('world-stats', $event)">
-      <app-world-stats />
+      <ng-scrollbar class="panel-scroll">
+        <app-world-stats />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'favorite'"
@@ -71,7 +83,9 @@
       [nzHeader]="favoritesHeader"
       (nzActiveChange)="onPanelToggle('favorite', $event)"
     >
-      <app-favorite />
+      <ng-scrollbar class="panel-scroll">
+        <app-favorite />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'family'"
@@ -80,7 +94,9 @@
       [nzHeader]="familyHeader"
       (nzActiveChange)="onPanelToggle('family', $event)"
     >
-      <app-family />
+      <ng-scrollbar class="panel-scroll">
+        <app-family />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'clan'"
@@ -89,7 +105,9 @@
       [nzHeader]="clanHeader"
       (nzActiveChange)="onPanelToggle('clan', $event)"
     >
-      <app-clan />
+      <ng-scrollbar class="panel-scroll">
+        <app-clan />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'culture'"
@@ -98,7 +116,9 @@
       [nzHeader]="cultureHeader"
       (nzActiveChange)="onPanelToggle('culture', $event)"
     >
-      <app-culture />
+      <ng-scrollbar class="panel-scroll">
+        <app-culture />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'language'"
@@ -107,7 +127,9 @@
       [nzHeader]="languageHeader"
       (nzActiveChange)="onPanelToggle('language', $event)"
     >
-      <app-language />
+      <ng-scrollbar class="panel-scroll">
+        <app-language />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'religion'"
@@ -116,7 +138,9 @@
       [nzHeader]="religionHeader"
       (nzActiveChange)="onPanelToggle('religion', $event)"
     >
-      <app-religion />
+      <ng-scrollbar class="panel-scroll">
+        <app-religion />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'subspecies'"
@@ -125,7 +149,9 @@
       [nzHeader]="subspeciesHeader"
       (nzActiveChange)="onPanelToggle('subspecies', $event)"
     >
-      <app-subspecies />
+      <ng-scrollbar class="panel-scroll">
+        <app-subspecies />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'city'"
@@ -134,7 +160,9 @@
       [nzHeader]="cityHeader"
       (nzActiveChange)="onPanelToggle('city', $event)"
     >
-      <app-city />
+      <ng-scrollbar class="panel-scroll">
+        <app-city />
+      </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
       [nzActive]="activePanel() === 'kingdom'"
@@ -143,7 +171,9 @@
       [nzHeader]="kingdomHeader"
       (nzActiveChange)="onPanelToggle('kingdom', $event)"
     >
-      <app-kingdom />
+      <ng-scrollbar class="panel-scroll">
+        <app-kingdom />
+      </ng-scrollbar>
     </nz-collapse-panel>
   </nz-collapse>
 } @else {

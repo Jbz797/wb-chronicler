@@ -1,0 +1,31 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  padding: 0 1rem 1rem;
+
+  .action {
+    aspect-ratio: 1; // squared off its own width rather than a fixed height, so the pair keeps its shape whatever the sider is given
+    border: 1px solid rgba($primary, 0.3);
+    height: auto; // ng-zorro fixes `.ant-btn` at 32px, and a set height makes the browser drop `aspect-ratio` outright
+    padding: 0;
+    width: 40%;
+
+    &:not([disabled]):hover {
+      border-color: $primary;
+      box-shadow: $glow;
+    }
+
+    // Dimmed rather than greyed: the sprite is art, and `filter` on it reads as a broken icon where a lower opacity reads as an unlit button.
+    &[disabled] {
+      opacity: 0.35;
+    }
+
+    img {
+      height: 25px;
+      width: 25px;
+    }
+  }
+}

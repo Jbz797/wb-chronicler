@@ -2,11 +2,11 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { BreakdownComponent, RankedStatComponent, TraitSummaryComponent } from '..';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
-import { BreakdownComponent, RankedStatComponent, TraitSummaryComponent } from '../../../misc';
-import { PersonTagComponent } from '../../../tags';
 import { LeadersComponent } from '../leaders/leaders.component';
+import { PersonTagComponent } from '../tags';
 
 @Component({
   selector: 'app-culture',
