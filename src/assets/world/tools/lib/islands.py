@@ -11,7 +11,7 @@ from array import array
 from collections import Counter, deque
 from pathlib import Path
 
-from grid import decode_tile_grid, tile_biome, tile_kind, tile_layer
+from grid import decode_tile_grid, tile_kind, tile_layer
 from shared import CACHE_DIR
 
 _BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})  # WB `TileTypeBase.block` tiles — block diagonals, which splits regions.
@@ -53,8 +53,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     layer_by_id = [tile_layer(name) for name in tile_map]
     block_by_id = [name.split(":", 1)[0] in _BLOCK_TILES for name in tile_map]
 
-    # Precompute per-tile-id biome/kind once — Phase 1 + Phase 4 BFSs touch ~10⁵ tiles, each function call would otherwise be repeated for the same id.
-    biome_by_id = [tile_biome(name) for name in tile_map]
+    # Precompute per-tile-id kind once — Phase 1 + Phase 4 BFSs touch ~10⁵ tiles, each function call would otherwise be repeated for the same id.
     kind_by_id = [tile_kind(name) for name in tile_map]
     grid = decode_tile_grid(save)
     if not grid:
@@ -75,7 +74,6 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                     layer = layer_by_id[grid[sy][sx]]
                     region_id = len(regions)
                     tiles: list[tuple[int, int]] = []
-                    biomes: Counter[str] = Counter()
                     tile_kinds: Counter[str] = Counter()
                     queue = [(sx, sy)]  # a list popped from the tail, not a deque: the fill is order-agnostic
                     region_grid[sy][sx] = region_id
@@ -84,8 +82,6 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                         tiles.append((x, y))
                         tid = grid[y][x]
                         tile_kinds[kind_by_id[tid]] += 1
-                        if layer == "Ground" and (biome := biome_by_id[tid]):
-                            biomes[biome] += 1
                         for dx, dy in _DELTAS_8:
                             nx, ny = x + dx, y + dy
                             if not (cx0 <= nx < cx1 and cy0 <= ny < cy1):
@@ -97,7 +93,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                                 continue
                             region_grid[ny][nx] = region_id
                             queue.append((nx, ny))
-                    regions.append({"biomes": biomes, "layer": layer, "tile_kinds": tile_kinds, "tiles": tiles})
+                    regions.append({"layer": layer, "tile_kinds": tile_kinds, "tiles": tiles})
 
     # Phase 2: merge regions into TileIslands. Regions only meet across chunk borders — inside one, same-layer 4-neighbours already share a region.
     neighbours: list[set[int]] = [set() for _ in regions]
@@ -136,34 +132,33 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                     island_of_region[other] = cid
                     queue.append(other)
     # Phase 3: keep only Ground islands with ≥ `_GROUND_REGIONS_THRESHOLD` regions (mirrors `countLandIslands`).
-    kept: list[tuple[int, Counter[str], Counter[str], list[tuple[int, int]]]] = []
+    kept: list[tuple[int, Counter[str], list[tuple[int, int]]]] = []
 
     for r_indices in component_regions:
         if regions[r_indices[0]]["layer"] != "Ground" or len(r_indices) < _GROUND_REGIONS_THRESHOLD:
             continue
-        biomes = Counter()
         tile_kinds = Counter()
         tiles = []
         for r_idx in r_indices:
-            biomes.update(regions[r_idx]["biomes"])
             tile_kinds.update(regions[r_idx]["tile_kinds"])
             tiles.extend(regions[r_idx]["tiles"])
-        kept.append((len(tiles), biomes, tile_kinds, tiles))
+        kept.append((len(tiles), tile_kinds, tiles))
     kept.sort(key=lambda c: -c[0])
     islands = []
     island_tile_kinds: dict[int, Counter[str]] = {}
     tile_to_id: dict[tuple[int, int], int] = {}
     seeds: deque[tuple[int, int]] = deque()
 
-    for idx, (size, biomes, tile_kinds, tiles) in enumerate(kept, start=1):
-        cx = sum(t[0] for t in tiles) // size
-        cy = sum(t[1] for t in tiles) // size
-        top_biomes = " | ".join(f"{pct}% {name}" for name, n in biomes.most_common(3) if (pct := round(n / size * 100)) > 0)
-        island_tile_kinds[idx] = Counter(tile_kinds)
-        islands.append({"biomes": top_biomes, "centroid": {"x": cx, "y": cy}, "id": idx, "size": size})
+    # Centroid summed in the same walk that stamps the ids: three passes over the island's tiles would otherwise do the work of one.
+    for idx, (size, tile_kinds, tiles) in enumerate(kept, start=1):
+        sum_x = sum_y = 0
         for gx, gy in tiles:
+            sum_x += gx
+            sum_y += gy
             tile_to_id[(gx, gy)] = idx
             seeds.append((gx, gy))
+        island_tile_kinds[idx] = tile_kinds  # `kept` is spent from here on, so Phase 4 may swell this counter in place
+        islands.append({"centroid": {"x": sum_x // size, "y": sum_y // size}, "id": idx, "size": size})
 
     # Phase 4: bleed the id into adjacent Block/Lava so actors on mountains/lava resolve to their host island. Ocean/Goo stay out — not landmass.
     while seeds:
@@ -179,7 +174,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
             island_tile_kinds[iid][kind_by_id[grid[ny][nx]]] += 1
             seeds.append((nx, ny))
 
-    # Phase 5: finalize per-island `tiles` field — same `% kind` format as `biomes`, now including the Block/Lava tiles propagated in Phase 4.
+    # Phase 5: finalize per-island `tiles` field — the ground it is made of, Block/Lava tiles from Phase 4 included. What grows on it is `geography biomes`.
     for island in islands:
         counter = island_tile_kinds[island["id"]]
         total = sum(counter.values())
@@ -192,7 +187,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _Ti
     key = _cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = CACHE_DIR / f"islands_v9_{key}.pkl"
+    cache_file = CACHE_DIR / f"islands_v10_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:

@@ -4,16 +4,44 @@
 
 import argparse
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
+from grid import decode_tile_grid, tile_biome
 from islands import compute_islands_cached
 from shared import civic_building_ids, emit, load_data, load_save, parse_sections, take_chapter
 
-_ALL_SECTIONS = ("entity_types", "islands", "positions")
+_ALL_SECTIONS = ("biomes", "entity_types", "islands", "positions")
 _COORDS = {"actors_data": ("x", "y"), "buildings": ("mainX", "mainY")}  # Collection → its coordinate fields. No `asset_id` sits in both, so a kind names its own.
+
+
+# Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
+def _build_biomes(save: dict, save_path: Path) -> dict:
+    _, island_of = compute_islands_cached(save, save_path)
+    grid = decode_tile_grid(save)
+    biome_by_id = [tile_biome(name) for name in save.get("tileMap") or []]  # already merged: `soil_high:paradox_high` and its low twin both read `paradox`
+    descriptions = load_data("biomes.json")
+    tallies: defaultdict[int, Counter] = defaultdict(Counter)  # `setdefault` would mint a Counter per tile, three hundred thousand of them for one map
+    sizes: Counter = Counter()
+    island_at = island_of.get  # bound once: the lookup runs on every tile of the map
+
+    for y, row in enumerate(grid):
+        for x, tile_id in enumerate(row):
+            if not (island_id := island_at((x, y))):
+                continue
+            sizes[island_id] += 1
+            if biome := biome_by_id[tile_id]:
+                tallies[island_id][biome] += 1
+
+    per_island = {
+        str(island_id): [{"biome": biome, "pct": pct, "tiles": n} for biome, n in counts.most_common() if (pct := round(n / sizes[island_id] * 100, 1)) > 0]
+        for island_id, counts in sorted(tallies.items())
+    }
+    # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
+    named = {row["biome"] for rows in per_island.values() for row in rows}
+    return {"descriptions": {b: text for b in sorted(named) if (text := (descriptions.get(b) or {}).get("description"))}, "islands": per_island}
 
 
 # Every kind the save holds, grouped as WB groups them — its `buildings` collection also holds the flowers and the ore, so only the `civ_*` keep that name here.
@@ -69,6 +97,8 @@ def main(argv: list[str]) -> int:
 
     save = load_save(save_path)
     out: dict = {}
+    if "biomes" in sections:
+        out["biomes"] = _build_biomes(save, save_path)
     if "entity_types" in sections:
         out["entity_types"] = _build_entity_types(save)
     if "islands" in sections:
