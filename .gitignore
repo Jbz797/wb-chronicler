@@ -9,5 +9,6 @@ map_stats.s3db
 node_modules/
 places.json
 saves/
+settings.json
 todo.md
 world.json

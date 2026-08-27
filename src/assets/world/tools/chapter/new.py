@@ -23,11 +23,11 @@ _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{nam
 _ALERTS = {
     "DISABLE_DROP_OF_THOUGHTS": {
         "condition": lambda kingdoms, present: all(kingdoms.get(species) for species in present),
-        "message": "Tu peux désactiver la loi de monde Drop of Thoughts.",
+        "message": "The Drop of Thoughts world law can now be turned off.",
     },
     "DISABLE_HANDSOME_MIGRANTS": {
         "condition": lambda kingdoms, present: all(any(pop >= _MIN_KINGDOM_POP for pop in kingdoms.get(species, ())) for species in present),
-        "message": "Tu peux désactiver la loi de monde Handsome Migrants.",
+        "message": "The Handsome Migrants world law can now be turned off.",
     },
 }
 
@@ -287,14 +287,14 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict]:
 # The manual's regime this chapter falls under. The script holds the state, so the chronicler need not read it off `chapter.json` to know which section governs.
 def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -> str:
     if n == 1:
-        return "premier chapitre — cf. « Cas du premier chapitre du monde », dont le baptême à écrire dans `history/world.json`"
+        return "first chapter — see « Cas du premier chapitre du monde », whose naming of the world goes into `history/world.json`"
     if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
-        if fav_id is None:  # `favorite.py` n'est pas encore passé : le successeur reste à choisir
-            return "le favori a quitté le monde — cf. « Mort du favori », puis « Choix du favori »"
-        return "le favori a quitté le monde, son successeur est en place — cf. « Mort du favori » : le chapitre s'ouvre sur sa fin"
+        if fav_id is None:  # `favorite.py` has not run yet: the successor is still to be picked
+            return "the favorite has left the world — see « Mort du favori », then « Choix du favori »"
+        return "the favorite has left the world, his successor is in place — see « Mort du favori »: the chapter opens on that end"
     if fav_id is None:
-        return "aucun favori — cf. « Structure du chapitre (avant désignation d'un favori) » et « Choix du favori »"
-    return "favori désigné — cf. « Structure du chapitre (favori désigné) »"
+        return "no favorite — see « Structure du chapitre (avant désignation d'un favori) » and « Choix du favori »"
+    return "favorite designated — see « Structure du chapitre (favori désigné) »"
 
 
 # Runs a sibling `info.py` → its parsed JSON stdout, `None` (stderr surfaced) on failure or empty output. `sys.executable` so a venv never forks children elsewhere.
@@ -451,31 +451,24 @@ def main(argv: list[str]) -> int:
 
     year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
     counts = " · ".join(  # The chronicler's own order: the map first, then who fills it.
-        f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {label}"
-        for name, label in (
-            ("cities", "cités"),
-            ("kingdoms", "royaumes"),
-            ("clans", "clans"),
-            ("families", "lignées"),
-            ("subspecies", "sous-espèces"),
-            ("persons", "personnes"),
-        )
+        f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {name}"
+        for name in ("cities", "kingdoms", "clans", "families", "subspecies", "persons")
     )
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
-    print(f"✓ {chapter} — an {year}, {age_label} (world_time {world_time})")
-    print(f"  registres: {counts}")
-    print(f"  favori: {fav_name or 'aucun'}")
-    print(f"  régime: {_regime(n, actors, fav_id, prev_fav_id)}")
+    print(f"✓ {chapter} — year {year}, {age_label} (world_time {world_time})")
+    print(f"  registries: {counts}")
+    print(f"  favorite: {fav_name or 'none'}")
+    print(f"  regime: {_regime(n, actors, fav_id, prev_fav_id)}")
     for _code, message in new_alerts:
         print(f"  ⚠ {message}")
-    todo = "analyse §III · chapter.md"
+    todo = "analysis §III · chapter.md"
     if favorite and not favorite.get("descriptor"):  # new favorite → its epithet is the one favorite field the chronicler still writes
-        todo += " · descriptor du favori"
+        todo += " · the favorite's descriptor"
     if owed:
-        todo += f" · résumés de traits ({', '.join(sorted(owed))})"
+        todo += f" · trait summaries ({', '.join(sorted(owed))})"
     if new_alerts:
-        todo += " · relayer l'alerte"
-    print(f"  → chroniqueur: {todo}")
+        todo += " · pass the alert on"
+    print(f"  → chronicler: {todo}")
 
     return 0
 

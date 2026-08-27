@@ -24,16 +24,16 @@ The player runs **WorldBox** in pure observation mode (zero intervention, sandbo
 
 1. **The Chronicler** — Claude Code, launched from `src/assets/world/`, reads the rules in `chronicler.md`, decodes the WorldBox save (`map.wbox` zlib-compressed JSON, plus the `map_stats.s3db` SQLite), and writes the next narrative chapter in a Tolkien-inspired voice (French, no pastiche, every claim traced back to data).
 
-2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters and the rules document on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world's leaderboards, the favorite character, and every body it belongs to: village, kingdom, clan, lineage, culture, language, religion and subspecies.
+2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters and the rules document on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world's leaderboards, the favorite character, and every body it belongs to: village, kingdom, clan, lineage, culture, language, religion and subspecies. A button under the map wipes the world and starts a new game.
 
 Each chapter is a self-contained folder under `saves/C<n>/` carrying its own narrative, metadata, the original save snapshot, and the map preview at that moment in time.
 
 > **Notes**
 >
-> - **One save = one chapter.** The system is built around **manual saves only** — disable WorldBox auto-saves before you start. Each time the player triggers a save, the chronicler picks it up and writes the next chapter.
+> - **One save = one chapter.** The system is built around **manual saves only** — disable WorldBox auto-saves before you start. The player decides when a chapter begins and asks for it; the chronicler then works from the latest save on disk, and an auto-save would slip in an intermediate state nobody chose. Overwriting the same WorldBox slot is safe: every chapter archives the save it was built from.
 > - **Claude Max** (or higher) is recommended — the chronicler reads, cross-checks, and writes a multi-section chapter on every save.
 > - Narrative output is **French only** for now.
-> - **macOS only.** The `tools/` scripts default to the macOS save path (`$HOME/Library/Application Support/mkarpenko/WorldBox/saves/save1/`). On other OSes, point the `WB_SAVE` environment variable at the local `map.wbox` — no file to edit.
+> - **macOS, Windows and Linux.** On first run the reader opens its settings panel, finds the WorldBox saves this machine holds — including a Proton prefix on Linux — and records the one to follow. `WB_SAVE` still overrides it for a one-off run.
 
 ## State lives on disk, not in context
 

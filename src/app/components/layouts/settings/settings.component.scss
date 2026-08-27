@@ -1,0 +1,52 @@
+@use 'variables' as *;
+
+// One gap governs the stack: blocks come and go with what the reader picks — the free-text field, the autosave warning — and none has to know its neighbours.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  // The list is the panel's one moving part; the rules fence it off. Their own margin would double the gap that already governs the stack.
+  ::ng-deep .ant-divider {
+    margin: 16px 0;
+  }
+
+  // A machine can hold as many slots as the player cares to keep, and the panel's own button must stay in sight whatever their number.
+  .choices-scroll {
+    max-height: 40vh;
+
+    .choices {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+
+      // A candidate stacks its world over its slot, where ng-zorro lays a label's content out on one line — the only part of its own styling worth overriding.
+      ::ng-deep .ant-radio-wrapper {
+        .ant-radio {
+          top: 4px;
+        }
+
+        & > span:last-child {
+          display: flex;
+          flex-direction: column;
+        }
+      }
+
+      .detail {
+        color: $text-secondary;
+        font-size: 0.85rem;
+        width: fit-content; // the tooltip hangs off this line, which a long world name above would stretch — the pointer would then find it past its text
+      }
+    }
+  }
+
+  .intro,
+  .unreachable {
+    color: $text-secondary;
+    text-align: center;
+  }
+
+  .unreachable {
+    margin: 0;
+  }
+}

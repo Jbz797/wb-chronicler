@@ -33,11 +33,11 @@ def _latest_chapter() -> tuple[int, Path] | None:
 def _picked(save: dict, actor_id: int) -> dict | None:
     actor = next((a for a in save.get("actors_data") or [] if a.get("id") == actor_id), None)
     if actor is None:
-        print(f"✗ aucun acteur {actor_id} dans la save — il est mort, ou l'id est faux", file=sys.stderr)
+        print(f"✗ no actor {actor_id} in the save — either he is dead, or the id is wrong", file=sys.stderr)
         return None
     playable = {species for species, data in load_data("species.json").items() if data.get("playable")}
     if (species := actor.get("asset_id")) not in playable:
-        print(f"✗ {actor.get('name')} est un {species}, espèce non jouable — cf. « Choix du favori »", file=sys.stderr)
+        print(f"✗ {actor.get('name')} is a {species}, not a playable species — see « Choix du favori »", file=sys.stderr)
         return None
     return actor
 
@@ -65,7 +65,7 @@ def _write_flag(wbox: Path, save: dict, favorite: dict) -> None:
     if hits:
         meta.write_text(patched)
     else:  # WB would keep showing its old tally in the save list, the save itself staying right
-        print("  ⚠ `favorites` introuvable dans map.meta — le décompte du jeu reste inchangé", file=sys.stderr)
+        print("  ⚠ `favorites` not found in map.meta — the game's own tally stays as it was", file=sys.stderr)
 
 
 def main(argv: list[str]) -> int:
@@ -75,22 +75,22 @@ def main(argv: list[str]) -> int:
     actor_id = int(argv[0])
 
     if _running():
-        print("✗ WorldBox tourne — quitte le jeu avant de marquer le favori, sinon il réécrira la save par-dessus", file=sys.stderr)
+        print("✗ WorldBox is running — quit the game before marking the favorite, or it will write its own save back over this one", file=sys.stderr)
         return 1
 
     live_wbox = take_chapter([])[0]  # no `C<n>` token → the live save path
     if (latest := _latest_chapter()) is None:
-        print("✗ aucun chapitre — lance `chapter/new.py` d'abord", file=sys.stderr)
+        print("✗ no chapter yet — run `chapter/new.py` first", file=sys.stderr)
         return 1
     n, chapter_dir = latest
     if (chapter_dir / "chapter.md").exists():
-        print(f"✗ C{n} est déjà rédigé — un chapitre livré ne change plus, relance `chapter/new.py` sur une save avancée", file=sys.stderr)
+        print(f"✗ C{n} is already written — a delivered chapter never changes, run `chapter/new.py` on an advanced save", file=sys.stderr)
         return 1
 
     # The chapter's own `map.wbox` is the safety net: the bootstrap copied it from the live save moments ago, so it restores this exact state if anything fails.
     archived = chapter_dir / "map.wbox"
     if not archived.exists() or _digest(archived) != _digest(live_wbox):
-        print(f"✗ la save a bougé depuis C{n} — relance `chapter/new.py`, puis marque le favori dans la foulée", file=sys.stderr)
+        print(f"✗ the save has moved since C{n} — run `chapter/new.py` again, then mark the favorite right after", file=sys.stderr)
         return 1
 
     save = load_save(live_wbox)
@@ -102,12 +102,12 @@ def main(argv: list[str]) -> int:
     marked = [a.get("id") for a in written.get("actors_data") or [] if a.get("favorite")]
     if marked != [actor_id]:
         shutil.copy2(archived, live_wbox)
-        print(f"✗ écriture incohérente (favoris={marked}) — la save du chapitre a été restaurée", file=sys.stderr)
+        print(f"✗ inconsistent write (favorites={marked}) — the chapter's save has been restored", file=sys.stderr)
         return 1
 
-    print(f"✓ {actor.get('name')} ({actor.get('asset_id')}, id {actor_id}) est le favori du monde")
+    print(f"✓ {actor.get('name')} ({actor.get('asset_id')}, id {actor_id}) is the world's favorite")
     shutil.rmtree(chapter_dir)  # the chapter is unwritten and its save superseded: the bootstrap rebuilds it whole, favorite included
-    print(f"  C{n} effacé puis régénéré autour de lui — `new.py` repose le tag NEW_FAVORITE seul\n")
+    print(f"  C{n} erased then rebuilt around him — `new.py` lays the NEW_FAVORITE tag on its own\n")
     return subprocess.run([sys.executable, str(Path(__file__).with_name("new.py"))], check=False).returncode
 
 

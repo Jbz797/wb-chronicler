@@ -59,7 +59,7 @@ export const PERSONALITY_LABELS: Readonly<Record<string, GenderedLabel>> = {
   wildcard: 'Imprévisible',
 };
 
-// French labels for `chapter.json.tags`, whose meaning `history/tags.md` spells out for the chronicler. Unknown codes fall back to the raw code.
+// French labels for `chapter.json.tags`, whose meaning `tags.md` spells out for the chronicler. Unknown codes fall back to the raw code.
 export const TAG_LABELS: Readonly<Record<string, string>> = {
   DISABLE_DROP_OF_THOUGHTS: 'Loi de monde Drop of Thoughts désactivable',
   DISABLE_HANDSOME_MIGRANTS: 'Loi de monde Handsome Migrants désactivable',

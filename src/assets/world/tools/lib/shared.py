@@ -44,9 +44,6 @@ _CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
 _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "stone_none", "gold_none", "metal_none")
 
-# The live save by default, `WB_SAVE` replacing that default; a `C<n>` token anywhere in argv beats both — `take_chapter` scans every position, not just the last.
-_CURRENT_SAVE = Path(os.environ.get("WB_SAVE") or Path.home() / "Library/Application Support/mkarpenko/WorldBox/saves/save1/map.wbox")
-
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _EMOTION_TRAIT = "amygdala"  # WB `SubspeciesTraitLibrary`: the one trait tagged `has_emotions` — the sole reader, and the reason this stays private.
@@ -88,6 +85,7 @@ _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homele
 _MIN_LEADERS_UNITS = 5  # below this a podium names a champion among two or three — the body is too small for any of its members to stand out
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
+_SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy"})  # shapes whose key order carries meaning: stores heaviest-first, ranks broadest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
@@ -105,6 +103,16 @@ def _book_reach(save: dict, author_field: str, living: set, holder_of) -> Counte
         if owner is not None:
             reach[owner] += _BOOK_POINTS + (book.get("times_read") or 0)
     return reach
+
+
+# The live save: `WB_SAVE` first, else what the reader's settings panel recorded — never guessed from the platform. A `C<n>` in argv beats both, wherever it sits.
+def _current_save() -> Path | None:
+    if override := os.environ.get("WB_SAVE"):
+        return Path(override)
+    try:
+        return Path(json.loads(_SETTINGS_JSON.read_text())["savePath"])
+    except (KeyError, OSError, ValueError):
+        return None
 
 
 # Item base stats + its modifiers' bonuses, floats trimmed to 4 decimals (ints when whole), zeros dropped.
@@ -219,11 +227,12 @@ def _write_save_cache(cache_file: Path, save: dict) -> None:
     CACHE_DIR.mkdir(exist_ok=True)
     with cache_file.open("wb") as f:
         pickle.dump(save, f, protocol=5)
-    claimed = {_save_cache_name(p) for p in (_CURRENT_SAVE, *SAVES_DIR.glob("C*/map.wbox"))}
-    live = [f for f in CACHE_DIR.glob("save_v1_*.pkl") if f.name in claimed]
-    orphans = [f for f in CACHE_DIR.glob("save_v1_*.pkl") if f.name not in claimed]
-    for old_entry in orphans + sorted(live, key=lambda f: f.stat().st_mtime, reverse=True)[_CACHE_KEEP:]:
-        old_entry.unlink(missing_ok=True)
+    live = _current_save()
+    claimed = {_save_cache_name(p) for p in ([live] if live else []) + list(SAVES_DIR.glob("C*/map.wbox"))}
+    cached = list(CACHE_DIR.glob("save_v1_*.pkl"))
+    kept = sorted((f for f in cached if f.name in claimed), key=lambda f: f.stat().st_mtime, reverse=True)
+    for doomed in [f for f in cached if f.name not in claimed] + kept[_CACHE_KEEP:]:
+        doomed.unlink(missing_ok=True)
 
 
 # Years lived, as the WB tooltip reads it: elapsed world time plus `age_overgrowth`, the years a soul carries past its species' cap.
@@ -671,10 +680,10 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
     else:
         parts = [render(v, indent + 1, 1) for v in value]
         one, ends = "[" + ", ".join(parts) + "]", "[]"
-    pad = "  " * indent
     # A child that had to expand leaves a newline in `one` — that rules the parent out of the single-line form. Most nodes fit, hence the late split.
-    if "\n" not in one and len(pad) + used + len(one) <= _INLINE_WIDTH:
+    if "\n" not in one and indent * 2 + used + len(one) <= _INLINE_WIDTH:
         return one
+    pad = "  " * indent
     # A list of numbers too long to inline packs across filled lines — an id roster reads as a block, where one value per row spends more padding than data.
     if isinstance(value, list) and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value):
         rows = [""]
@@ -786,7 +795,9 @@ def take_chapter(argv: list[str]) -> tuple[Path, list[str], str | None]:
     for i, arg in enumerate(argv):
         if len(arg) > 1 and arg[0] == "C" and arg[1:].isdigit():
             return SAVES_DIR / arg / "map.wbox", argv[:i] + argv[i + 1 :], arg
-    return _CURRENT_SAVE, argv, None
+    if (live := _current_save()) is None:
+        raise SystemExit("✗ no WorldBox save on record — ask the player for its path, or pass `WB_SAVE=<path to map.wbox>`")
+    return live, argv, None
 
 
 # Spelled out because the section was named, or too small for a summary to earn the call it forces — only where that summary is a pure signpost, never traits.
