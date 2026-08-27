@@ -3,17 +3,20 @@
 # Geographic stats reserved for the chronicler (not consumed by the UI). User-facing docs: `tools/tools.md`.
 
 import argparse
+import pickle
 import sys
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import decode_tile_grid, tile_biome
+from grid import decode_tile_grid, tile_biome, tile_layer
 from islands import compute_islands_cached
-from shared import civic_building_ids, emit, load_data, load_save, parse_sections, take_chapter
+from shared import CACHE_DIR, biome_lore, civic_building_ids, emit, load_data, load_save, parse_sections, save_cache_key, take_chapter
 
-_ALL_SECTIONS = ("biomes", "entity_types", "islands", "positions")
+_ALL_SECTIONS = ("biomes", "entity_types", "islands", "positions", "waters")
+_DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
+_OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart from the lakes indexed from 0
 _COORDS = {"actors_data": ("x", "y"), "buildings": ("mainX", "mainY")}  # Collection → its coordinate fields. No `asset_id` sits in both, so a kind names its own.
 
 
@@ -22,7 +25,6 @@ def _build_biomes(save: dict, save_path: Path) -> dict:
     _, island_of = compute_islands_cached(save, save_path)
     grid = decode_tile_grid(save)
     biome_by_id = [tile_biome(name) for name in save.get("tileMap") or []]  # already merged: `soil_high:paradox_high` and its low twin both read `paradox`
-    descriptions = load_data("biomes.json")
     tallies: defaultdict[int, Counter] = defaultdict(Counter)  # `setdefault` would mint a Counter per tile, three hundred thousand of them for one map
     sizes: Counter = Counter()
     island_at = island_of.get  # bound once: the lookup runs on every tile of the map
@@ -41,7 +43,7 @@ def _build_biomes(save: dict, save_path: Path) -> dict:
     }
     # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
     named = {row["biome"] for rows in per_island.values() for row in rows}
-    return {"descriptions": {b: text for b in sorted(named) if (text := (descriptions.get(b) or {}).get("description"))}, "islands": per_island}
+    return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
 
 
 # Every kind the save holds, grouped as WB groups them — its `buildings` collection also holds the flowers and the ore, so only the `civ_*` keep that name here.
@@ -72,6 +74,122 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
         for position in out:
             position["island_id"] = island_of.get((position["x"], position["y"]))
     return sorted(out, key=lambda r: (r["y"], r["x"]))
+
+
+# Every stretch of sea the map encloses, and every land it holds apart. Both fall out of one sweep of the water, and the map never moves — hence the cache.
+def _build_waters(save: dict, save_path: Path) -> dict:
+    key = save_cache_key(save_path)
+    cache_file = CACHE_DIR / f"waters_v1_{key}.pkl" if key else None
+    if cache_file and cache_file.exists():
+        try:
+            with cache_file.open("rb") as f:
+                return pickle.load(f)
+        except Exception:  # noqa: BLE001 — corrupt cache, fall through and recompute.
+            cache_file.unlink(missing_ok=True)
+
+    _, island_of = compute_islands_cached(save, save_path)
+    grid = decode_tile_grid(save)
+    sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
+    lake_of, pools = _pool_map(grid, sea)
+    waters = {"lakes": _lakes(pools, lake_of, island_of, grid, sea), "straits": _straits(grid, sea, island_of)}
+
+    if cache_file:
+        CACHE_DIR.mkdir(exist_ok=True)
+        for old in CACHE_DIR.glob("waters_*.pkl"):
+            if old.name != cache_file.name:
+                old.unlink(missing_ok=True)
+        with cache_file.open("wb") as f:
+            pickle.dump(waters, f)
+    return waters
+
+
+# An enclosed water is named by the shores that ring it, and holds as an islet any land no other water touches — the isles a chronicle reaches last, or never.
+def _lakes(pools: list[list[tuple[int, int]]], lake_of: dict, island_of, grid: list[list[int]], sea: list[bool]) -> list[dict]:
+    pools_of_island: defaultdict[int, set[int]] = defaultdict(set)
+    shores: defaultdict[int, set[int]] = defaultdict(set)
+    height, width = len(grid), len(grid[0])
+
+    for x, y, island_id in island_of.land():
+        for dx, dy in _DELTAS_4:
+            nx, ny = x + dx, y + dy
+            if not (0 <= nx < width and 0 <= ny < height) or not sea[grid[ny][nx]]:
+                continue
+            pool = lake_of.get((nx, ny), _OPEN_SEA)  # a shore on the open sea is nobody's islet, however many lakes it also touches
+            pools_of_island[island_id].add(pool)
+            if pool != _OPEN_SEA:
+                shores[pool].add(island_id)
+
+    out = []
+    # Numbered widest first, as WB numbers its islands: the id is what `places.json` keys a name on, so it must not shift from one chapter to the next.
+    for lake_id, index in enumerate(sorted(range(len(pools)), key=lambda i: -len(pools[i])), start=1):
+        tiles = pools[index]
+        islets = sorted(i for i, seen in pools_of_island.items() if seen == {index})
+        out.append(
+            {
+                "centroid": {"x": sum(t[0] for t in tiles) // len(tiles), "y": sum(t[1] for t in tiles) // len(tiles)},
+                "id": lake_id,
+                "islets": islets,
+                "shores": sorted(shores[index] - set(islets)),
+                "size": len(tiles),
+            }
+        )
+    return out
+
+
+# Water bodies that never reach the map edge. The open sea does, so it drops out — what is left is a lake, however wide.
+def _pool_map(grid: list[list[int]], sea: list[bool]) -> tuple[dict[tuple[int, int], int], list[list[tuple[int, int]]]]:
+    height, width = len(grid), len(grid[0])
+    seen = [[False] * width for _ in range(height)]
+    lake_of: dict[tuple[int, int], int] = {}
+    pools: list[list[tuple[int, int]]] = []
+
+    for sy in range(height):
+        for sx in range(width):
+            if seen[sy][sx] or not sea[grid[sy][sx]]:
+                continue
+            body, open_sea, queue = [], False, [(sx, sy)]
+            seen[sy][sx] = True
+            while queue:
+                x, y = queue.pop()
+                body.append((x, y))
+                open_sea = open_sea or x in (0, width - 1) or y in (0, height - 1)
+                for dx, dy in _DELTAS_4:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < width and 0 <= ny < height and not seen[ny][nx] and sea[grid[ny][nx]]:
+                        seen[ny][nx] = True
+                        queue.append((nx, ny))
+            if not open_sea:
+                lake_of.update(dict.fromkeys(body, len(pools)))
+                pools.append(body)
+    return lake_of, pools
+
+
+# The narrowest water between each pair of lands: every coast floods the sea at once, and where two tides meet their depths add up to the crossing.
+def _straits(grid: list[list[int]], sea: list[bool], island_of) -> list[dict]:
+    height, width = len(grid), len(grid[0])
+    nearest = [[0] * width for _ in range(height)]
+    depth = [[-1] * width for _ in range(height)]
+    queue: deque[tuple[int, int]] = deque()
+
+    for x, y, island_id in island_of.land():
+        nearest[y][x], depth[y][x] = island_id, 0
+        queue.append((x, y))
+
+    gaps: dict[tuple[int, int], int] = {}
+    while queue:
+        x, y = queue.popleft()
+        own, here = nearest[y][x], depth[y][x]
+        for dx, dy in _DELTAS_4:
+            nx, ny = x + dx, y + dy
+            if not (0 <= nx < width and 0 <= ny < height) or not sea[grid[ny][nx]]:
+                continue
+            if depth[ny][nx] == -1:
+                nearest[ny][nx], depth[ny][nx] = own, here + 1
+                queue.append((nx, ny))
+            elif nearest[ny][nx] != own:
+                pair = (min(own, nearest[ny][nx]), max(own, nearest[ny][nx]))
+                gaps[pair] = min(gaps.get(pair, here + depth[ny][nx]), here + depth[ny][nx])
+    return [{"between": list(pair), "gap": gap} for pair, gap in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))]
 
 
 def main(argv: list[str]) -> int:
@@ -106,6 +224,8 @@ def main(argv: list[str]) -> int:
         out["islands"] = islands
     if "positions" in sections and wanted is not None:
         out["positions"] = _build_positions(save, save_path, wanted)
+    if "waters" in sections:
+        out["waters"] = _build_waters(save, save_path)
 
     emit(out)
 

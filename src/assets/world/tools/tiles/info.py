@@ -75,9 +75,14 @@ def _buildings_at(x: int, y: int, ctx: dict) -> list[dict]:
     return [{"asset_id": b.get("asset_id"), "id": b.get("id")} for b in ctx["buildings_by_pos"].get((x, y), ())]
 
 
+# WB claims land by the zone, never by the tile — so a tile's town is its zone's, and both sections that ask read it the one way.
+def _city_at(x: int, y: int, ctx: dict) -> dict | None:
+    return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
+
+
 # Returns `{}` for unclaimed tiles (stripped by `emit`). Distances live in the `distances` section, not here.
 def _context_at(x: int, y: int, ctx: dict) -> dict:
-    city = ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
+    city = _city_at(x, y, ctx)
     if city is None:
         return {}
     return {"city": {"id": city["id"], "name": city.get("name")}, "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"])}
@@ -90,7 +95,7 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     water = floor if gap == 0 or floor < 0 else _water_distance(x, y, ctx["grid"], ctx["layer_by_id"], max(0, floor - gap))
 
     out: dict = {"to_water": water}
-    city = ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
+    city = _city_at(x, y, ctx)
     if city is None:
         if anchors := ctx["city_anchors"]:
             out["to_nearest_city"] = min(abs(x - ox) + abs(y - oy) for ox, oy in anchors)

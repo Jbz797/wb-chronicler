@@ -19,6 +19,7 @@ from shared import (
     PROFESSION_WARRIOR,
     SATED_MIN_NUTRITION,
     actor_age,
+    biome_lore,
     build_trait_ids,
     build_trait_list,
     children_by_id,
@@ -42,18 +43,17 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "species", "stats", "taxonomy", "traits")
-_BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # WB names both shorter than the sheet does; without these they print raw ids.
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field, the same narrow set a clan carries — old age answers to `natural`.
 _EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "population": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the subspecies record and its libraries
 _TAXONOMY_RANKS = ("kingdom", "phylum", "class", "order", "family", "genus")  # WB's own order, broadest first — `render` keeps it, not alphabetical.
 
 
 # The stock WB mutated this one out of and the biome that shaped it — bare keys, and WB's `default_color` being no biome at all, the panel drops the row.
 def _build_identity(subspecies: dict) -> dict:
-    raw_biome = (subspecies.get("biome_variant") or "").removeprefix("biome_")
-    biome_id = _BIOME_ALIASES.get(raw_biome, raw_biome)
+    biome_id = (subspecies.get("biome_variant") or "").removeprefix("biome_")
     return {
-        "biome": biome_id if load_data("biomes.json").get(biome_id) else None,
+        "biome": biome_id if biome_lore(biome_id) else None,
         "species": subspecies.get("species_id"),
     }
 
@@ -174,7 +174,8 @@ def _species_totals(save: dict) -> dict[str, dict]:
     for actor in save.get("actors_data") or []:
         if is_boat(actor) or not (asset_id := actor.get("asset_id")):
             continue
-        entry = totals.setdefault(asset_id, _EMPTY_SPECIES.copy())
+        if (entry := totals.get(asset_id)) is None:
+            entry = totals[asset_id] = _EMPTY_SPECIES.copy()  # `setdefault` would mint one per actor, thousands of them, to keep the first
         entry["population"] += 1
         entry["renown"] += int(actor.get("renown") or 0)
         if city := actor.get("cityID"):
@@ -214,7 +215,7 @@ def main(argv: list[str]) -> int:
         print(f"unknown subspecies: {subspecies_id}", file=sys.stderr)
         return 1
 
-    # One pass feeds every tally: WB points the actor at its biology, never the reverse.
+    # One pass feeds every tally: WB points the actor at its biology, never the reverse. Skipped whole where no section asked — `taxonomy` reads a data file.
     tallies: dict = {
         "eaters": Counter(),
         "fed": Counter(),
@@ -225,7 +226,9 @@ def main(argv: list[str]) -> int:
         "warriors": Counter(),
     }
 
-    for actor in save.get("actors_data") or []:
+    walked = save.get("actors_data") or [] if _NEEDS_ACTORS.intersection(sections) else ()
+
+    for actor in walked:
         if not (sid := actor.get("subspecies")):
             continue
         tallies["members"].setdefault(sid, []).append(actor)

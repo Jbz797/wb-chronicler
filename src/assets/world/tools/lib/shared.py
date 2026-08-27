@@ -37,6 +37,7 @@ UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
+_BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # One lore under two WB spellings: its tiles say one, its biome sheet the other.
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
 _CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` — `PROFESSION_KING`/`_LEADER`/`_WARRIOR`, spelt out: they sort after this.
@@ -187,10 +188,8 @@ def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of
     return dict(sorted(out.items()))
 
 
-# A save's cache slot, keyed on `mtime+size` — a chapter's `map.wbox` never moves, so its slot is stable for the life of the world.
 def _save_cache_name(path: Path) -> str:
-    stat = path.stat()
-    return f"save_v1_{int(stat.st_mtime)}_{stat.st_size}.pkl"
+    return f"save_v1_{save_cache_key(path)}.pkl"
 
 
 # Borda shared by both composites → `{id: place}`, 1 = strongest: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens.
@@ -273,6 +272,13 @@ def besieging_kingdoms(save: dict) -> dict[int, set[int]]:
         if cid is not None and kid in enemies.get(owner[cid], ()):
             besieging.setdefault(cid, set()).add(kid)
     return besieging
+
+
+# What `datas/biomes.json` says of a biome, whichever of WB's two spellings it is asked under — `{}` for a tile that carries none.
+def biome_lore(biome_id: str | None) -> dict:
+    if not biome_id:  # a tile carrying no biome, and the one lookup that would otherwise take `None` for a key
+        return {}
+    return load_data("biomes.json").get(_BIOME_ALIASES.get(biome_id, biome_id)) or {}
 
 
 # Books sit in a settlement's hall (`buildings[].books.list_books`), so their holder is that city and its crown. Memoised: a `full` run asks twice, 15 k rows each.
@@ -704,6 +710,15 @@ def resolve_profession(actor: dict, save: dict) -> str | None:
         return "army_captain"
     profession = actor.get("profession") or 0  # `0`/absent is WB's `nothing` — no profession, not an unknown one; anything else off the map surfaces as `#<int>`.
     return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)
+
+
+# A save's cache slot, keyed on `mtime+size`: a chapter's `map.wbox` never moves, so its slot holds for the world's life. `None` where the file is gone.
+def save_cache_key(path: Path) -> str | None:
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return f"{int(stat.st_mtime)}_{stat.st_size}"
 
 
 # Who stands out among a body's own — its leading lineages and its most singular souls, `{id, name}` apiece. Shared by every tier that rosters people.

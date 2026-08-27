@@ -12,7 +12,7 @@ from collections import Counter, deque
 from pathlib import Path
 
 from grid import decode_tile_grid, tile_kind, tile_layer
-from shared import CACHE_DIR
+from shared import CACHE_DIR, save_cache_key
 
 _BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})  # WB `TileTypeBase.block` tiles — block diagonals, which splits regions.
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
@@ -37,14 +37,14 @@ class _TileIslands:
             return island_id
         return default
 
-
-# Cache key from save-file `mtime + size` — cheap stat, sufficient to detect WB overwrites. `None` when the file is missing (caller falls back to live compute).
-def _cache_key(save_path: Path) -> str | None:
-    try:
-        stat = save_path.stat()
-    except OSError:
-        return None
-    return f"{int(stat.st_mtime)}_{stat.st_size}"
+    # Every land tile and the island it belongs to, read straight off the flat grid: a sweep of the map would otherwise pay a `get` per tile, water included.
+    def land(self):
+        width = self._width
+        for y in range(self._height):
+            row = y * width
+            for x in range(width):
+                if island_id := self._grid[row + x]:
+                    yield x, y, island_id
 
 
 # Build the islands list and a tile-to-island lookup keyed by WB-actor coordinates (no y inversion — `row` IS the actor y, see `chronicler.md`).
@@ -74,17 +74,18 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                     layer = layer_by_id[grid[sy][sx]]
                     region_id = len(regions)
                     tiles: list[tuple[int, int]] = []
-                    tile_kinds: Counter[str] = Counter()
+                    kinds: list[str] = []  # tallied in one C-level pass below, where `counter[k] += 1` per tile would cost a bytecode round-trip each
                     queue = [(sx, sy)]  # a list popped from the tail, not a deque: the fill is order-agnostic
                     region_grid[sy][sx] = region_id
                     while queue:
                         x, y = queue.pop()
                         tiles.append((x, y))
                         tid = grid[y][x]
-                        tile_kinds[kind_by_id[tid]] += 1
+                        kinds.append(kind_by_id[tid])
+                        inner = cx0 < x < cx1 - 1 and cy0 < y < cy1 - 1  # Off the chunk rim, four tiles in five, every neighbour is in: one test, not eight.
                         for dx, dy in _DELTAS_8:
                             nx, ny = x + dx, y + dy
-                            if not (cx0 <= nx < cx1 and cy0 <= ny < cy1):
+                            if not inner and not (cx0 <= nx < cx1 and cy0 <= ny < cy1):
                                 continue
                             if region_grid[ny][nx] != -1 or layer_by_id[grid[ny][nx]] != layer:
                                 continue
@@ -93,7 +94,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                                 continue
                             region_grid[ny][nx] = region_id
                             queue.append((nx, ny))
-                    regions.append({"layer": layer, "tile_kinds": tile_kinds, "tiles": tiles})
+                    regions.append({"layer": layer, "tile_kinds": Counter(kinds), "tiles": tiles})
 
     # Phase 2: merge regions into TileIslands. Regions only meet across chunk borders — inside one, same-layer 4-neighbours already share a region.
     neighbours: list[set[int]] = [set() for _ in regions]
@@ -184,7 +185,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
 
 # Disk-cached `_compute_islands` — key = save `mtime+size`, pickle format, stale entries dropped on write (single-file cache).
 def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _TileIslands]:
-    key = _cache_key(save_path)
+    key = save_cache_key(save_path)
     if key is None:
         return _compute_islands(save)
     cache_file = CACHE_DIR / f"islands_v10_{key}.pkl"
