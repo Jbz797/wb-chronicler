@@ -352,8 +352,8 @@ def main(argv: list[str]) -> int:
     try:
         actor_id = int(argv[0])
     except ValueError:
-        print(f"invalid id: {argv[0]}", file=sys.stderr)
-        return 1
+        print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
+        return 2
 
     requested = argv[1] if len(argv) > 1 else None
     try:
@@ -365,10 +365,10 @@ def main(argv: list[str]) -> int:
     ctx = _build_context(save, save_path)
     actor = ctx["actors_by_id"].get(actor_id)
     if actor is None:
-        print(f"unknown actor: {actor_id}", file=sys.stderr)
+        print(f"✗ unknown actor: {actor_id}", file=sys.stderr)
         return 1
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
-        print(f"no subspecies for actor {actor_id}", file=sys.stderr)
+        print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
         return 1
 
     out: dict = {}

@@ -7,7 +7,7 @@ export interface LeaderRow extends Omit<Leader, 'name' | 'value'> { isNew: boole
 // The world panel's four blocks: live snapshot, cumulative counters, « Records » leaders, and metadata.
 export interface World {
   boats: HullCount;
-  cumulative: WorldCumulative;
+  cumulative?: WorldCumulative; // absent on a bare world — Python omits the block when every counter is 0
   leaders?: Partial<Record<LeaderKind, Leader>>;
   metadata: WorldMetadata;
   plots?: WorldPlot[]; // absent where nobody schemes — Python omits the empty list

@@ -65,8 +65,8 @@ def main(argv: list[str]) -> int:
     try:
         book_id = int(argv[0])
     except ValueError:
-        print(f"invalid id: {argv[0]}", file=sys.stderr)
-        return 1
+        print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
+        return 2
 
     requested = argv[1] if len(argv) > 1 else None
     try:
@@ -77,7 +77,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     book = next((b for b in save.get("books") or [] if b.get("id") == book_id), None)  # one lookup, and a world holds a few dozen volumes at most
     if book is None:
-        print(f"unknown book: {book_id}", file=sys.stderr)
+        print(f"✗ unknown book: {book_id}", file=sys.stderr)
         return 1
 
     ctx = {

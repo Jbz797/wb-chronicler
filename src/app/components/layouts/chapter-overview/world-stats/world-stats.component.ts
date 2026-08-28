@@ -33,15 +33,15 @@ export class WorldStatsComponent {
     if (!current) return [];
     const previous = this._chronicler.previousChapter()?.meta.world.cumulative;
     const rows: { icon: string; label: string; value: number }[] = this.cumulativeStats
-      .map(({ key, label }) => ({ icon: key, label, value: (current.cumulative[key] ?? 0) - (previous?.[key] ?? 0) }))
+      .map(({ key, label }) => ({ icon: key, label, value: (current.cumulative?.[key] ?? 0) - (previous?.[key] ?? 0) }))
       .filter(r => r.value > 0);
     return rows;
   });
   // Per-cause death delta vs previous chapter — Python omits 0-counts, so missing keys default to 0.
   protected readonly deathsSincePrevious = computed(() => {
-    const current = this.currentChapter()?.meta.world.cumulative.deaths;
+    const current = this.currentChapter()?.meta.world.cumulative?.deaths;
     if (!current) return null;
-    const previous = this._chronicler.previousChapter()?.meta.world.cumulative.deaths;
+    const previous = this._chronicler.previousChapter()?.meta.world.cumulative?.deaths;
     return Object.fromEntries(this.deathCauses.map(({ key }) => [key, (current[key] ?? 0) - (previous?.[key] ?? 0)]));
   });
   // The two podiums, each flattened for the template: who leads on a headcount, and who leads on the composite score only a town and a crown are given.

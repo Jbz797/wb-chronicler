@@ -112,8 +112,8 @@ def main(argv: list[str]) -> int:
     try:
         house_id = int(argv[0])
     except ValueError:
-        print(f"invalid id: {argv[0]}", file=sys.stderr)
-        return 1
+        print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
+        return 2
 
     requested = argv[1] if len(argv) > 1 else None
     try:
@@ -124,7 +124,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     house = next((b for b in save.get("buildings") or [] if b.get("id") == house_id), None)  # one lookup, so a scan beats indexing every building to read one
     if house is None:
-        print(f"unknown building: {house_id}", file=sys.stderr)
+        print(f"✗ unknown building: {house_id}", file=sys.stderr)
         return 1
 
     # WB moors a hull to its dock through the same `homeBuildingID` a soul sleeps under — a shipyard would otherwise roster its boats among its residents.

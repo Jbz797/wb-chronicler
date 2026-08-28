@@ -154,8 +154,8 @@ def main(argv: list[str]) -> int:
     try:
         religion_id = int(argv[0])
     except ValueError:
-        print(f"invalid id: {argv[0]}", file=sys.stderr)
-        return 1
+        print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
+        return 2
 
     requested = argv[1] if len(argv) > 1 else None
     try:
@@ -167,7 +167,7 @@ def main(argv: list[str]) -> int:
     religions_by_id = index_by_id(save.get("religions") or [])
     religion = religions_by_id.get(religion_id)
     if religion is None:
-        print(f"unknown religion: {religion_id}", file=sys.stderr)
+        print(f"✗ unknown religion: {religion_id}", file=sys.stderr)
         return 1
 
     # One pass feeds every tally: WB points the actor at the faith it holds, never the reverse.

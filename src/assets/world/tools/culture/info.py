@@ -154,8 +154,8 @@ def main(argv: list[str]) -> int:
     try:
         culture_id = int(argv[0])
     except ValueError:
-        print(f"invalid id: {argv[0]}", file=sys.stderr)
-        return 1
+        print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
+        return 2
 
     requested = argv[1] if len(argv) > 1 else None
     try:
@@ -167,7 +167,7 @@ def main(argv: list[str]) -> int:
     cultures_by_id = index_by_id(save.get("cultures") or [])
     culture = cultures_by_id.get(culture_id)
     if culture is None:
-        print(f"unknown culture: {culture_id}", file=sys.stderr)
+        print(f"✗ unknown culture: {culture_id}", file=sys.stderr)
         return 1
 
     # One pass feeds every tally: WB points the actor at the customs it was raised in, never the reverse.

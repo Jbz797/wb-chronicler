@@ -15,6 +15,7 @@ import { NgScrollbarModule } from 'ngx-scrollbar';
 
 import { SAVES_ENDPOINT, SETTINGS_ENDPOINT, SETTINGS_FILE } from '../../../constants';
 import { SaveCandidate, Settings } from '../../../interfaces';
+import { ChroniclerService } from '../../../services';
 
 const customValue = 'custom'; // the radio's own value, standing for « somewhere else » — never a path
 
@@ -26,6 +27,7 @@ const customValue = 'custom'; // the radio's own value, standing for « somewher
 })
 export class SettingsComponent {
 
+  private readonly _chronicler = inject(ChroniclerService);
   private readonly _message = inject(NzMessageService);
   private readonly _modal = inject(NzModalRef);
 
@@ -69,6 +71,9 @@ export class SettingsComponent {
   protected isAutosave = (): boolean => /[/\\]autosaves[/\\]/.test(this.chosen());
 
   protected isCustom = (): boolean => this.picked() === customValue;
+
+  // Nothing written yet: the panel is the player's first screen, and the chronicler still has to be opened for it to become a chronicle.
+  protected isNewGame = (): boolean => this._chronicler.chapters().length === 0;
 
   // Every slot shares the same WorldBox folder and the same file name: its own two segments are all that tells them apart, the full path riding in a tooltip.
   protected shortPath = (savePath: string): string => savePath.split(/[/\\]/).slice(-3, -1).join('/');

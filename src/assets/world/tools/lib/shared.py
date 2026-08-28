@@ -5,6 +5,7 @@ import json
 import os
 import pickle
 import re
+import subprocess
 import sys
 import zlib
 from bisect import bisect_right
@@ -45,6 +46,7 @@ _CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
 _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "stone_none", "gold_none", "metal_none")
 
+_COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _EMOTION_TRAIT = "amygdala"  # WB `SubspeciesTraitLibrary`: the one trait tagged `has_emotions` — the sole reader, and the reason this stays private.
@@ -565,6 +567,11 @@ def kingdom_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int,
     return _score_ranks([k["id"] for k in save.get("kingdoms") or []], dimensions if dimensions is not None else kingdom_score_dimensions(save))
 
 
+# The last chapter standing, 0 where none does yet. Three callers glob these dirs, and a chapter is `C<n>` on disk and nowhere else.
+def latest_chapter() -> int:
+    return max((int(p.name[1:]) for p in SAVES_DIR.glob("C*") if p.is_dir() and p.name[1:].isdigit()), default=0)
+
+
 # Narrative age tier for kingdom demographics: baby/child/teen from `age_adult` (÷8, ÷2, ·1); `elder` = WB `isPrettyOld` (age/lifespan > 0.7).
 def life_stage(age: int, age_adult: float, lifespan: float) -> str:
     if age < age_adult / 8:
@@ -585,6 +592,13 @@ def light(payload: dict) -> dict:
     return {**payload, "info": "call this section for the full detail"}
 
 
+# The file itself, for the two scripts that must have it: one archives it into the chapter, the other writes the favorite's flag into it.
+def live_save() -> Path:
+    if (live := _current_save()) is None:
+        raise SystemExit("✗ no WorldBox save on record — ask the player to point the reader at it, from the settings cog under the map")
+    return live
+
+
 # A `datas/` table, parsed once per run. A missing file reads as empty rather than raising — a tier whose library WB never shipped still answers, trait-less.
 @cache
 def load_data(name: str) -> dict:
@@ -595,7 +609,7 @@ def load_data(name: str) -> dict:
 # Path required on purpose — a default would silently read the live save. Disk-cached on `mtime+size`: unpickling runs some 3× faster than parsing the JSON.
 def load_save(path: Path) -> dict:
     if not path.exists():
-        print(f"no save found at {path}", file=sys.stderr)
+        print(f"✗ no save found at {path}", file=sys.stderr)
         sys.exit(2)
     cache_file = CACHE_DIR / _save_cache_name(path)
     if cache_file.exists():
@@ -634,7 +648,7 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: b
         return all_sections
     requested = tuple(s.strip() for s in (arg or "").split(",") if s.strip())
     if unknown := [s for s in requested if s not in all_sections]:
-        raise ValueError(f"unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}")
+        raise ValueError(f"✗ unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}")
     return requested
 
 
@@ -805,16 +819,30 @@ def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: fl
     return max(candidates, key=lambda a: (preferred_sex(a), score(a)))
 
 
-# Pop a `C<n>` chapter token from argv → (that chapter's `map.wbox`, argv without it, chapter label). No token → the live save and `None`.
+# Pop a `C<n>` token from argv → (that chapter's `map.wbox`, argv without it, its label). No token → the chapter standing, whose copy cannot move under a player.
 def take_chapter(argv: list[str]) -> tuple[Path, list[str], str | None]:
     for i, arg in enumerate(argv):
         if len(arg) > 1 and arg[0] == "C" and arg[1:].isdigit():
             return SAVES_DIR / arg / "map.wbox", argv[:i] + argv[i + 1 :], arg
-    if (live := _current_save()) is None:
-        raise SystemExit("✗ no WorldBox save on record — ask the player for its path, or pass `WB_SAVE=<path to map.wbox>`")
+    if n := latest_chapter():
+        return SAVES_DIR / f"C{n}" / "map.wbox", argv, f"C{n}"
+    # No chapter yet — the baptism's world tour, no archive yet to be stale against. Said out loud, but in hand: no save on record must answer that alone.
+    live = live_save()
+    print("⚠ no chapter yet — reading the live save itself, which moves under a player still at play", file=sys.stderr)
     return live, argv, None
 
 
 # Spelled out because the section was named, or too small for a summary to earn the call it forces — only where that summary is a pure signpost, never traits.
 def wants_detail(requested: str | None, count: int) -> bool:
     return requested not in (None, "full") or count < _MIN_SUMMARY_ENTRIES
+
+
+def worldbox_running() -> bool:
+    return subprocess.run(["pgrep", "-i", "worldbox"], capture_output=True, check=False).returncode == 0
+
+
+# Written aside then swapped in: a crash mid-write leaves the old save whole rather than half a new one. Both scripts that touch the live file go through here.
+def write_save(wbox: Path, save: dict) -> None:
+    staged = wbox.with_suffix(".wbox.tmp")
+    staged.write_bytes(zlib.compress(json.dumps(save, separators=(",", ":"), ensure_ascii=False).encode(), _COMPRESSION))
+    staged.replace(wbox)

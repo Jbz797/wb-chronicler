@@ -34,4 +34,12 @@
   @if (isAutosave()) {
     <nz-alert nzMessage="Ce chemin mène au dossier des sauvegardes automatiques — le prochain chapitre partirait d'un état que tu n'as pas retenu." nzType="error" />
   }
+
+  @if (isNewGame()) {
+    <nz-alert nzMessage="Le chroniqueur reste à lancer" nzType="info" [nzDescription]="bootstrap" />
+    <ng-template #bootstrap>
+      C'est un <code>claude</code> de terminal, ouvert depuis <code>src/assets/world/</code>. Un seul mot d'ordre pour commencer :
+      <strong>« Lis le chronicler.md »</strong>.
+    </ng-template>
+  }
 }

@@ -201,7 +201,7 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     if args.sections == "full":  # No `full` here, unlike the other tools: these sections answer unrelated questions, and no reading wants all three.
-        print(f"geography has no `full` — name a section: {', '.join(_ALL_SECTIONS)}", file=sys.stderr)
+        print(f"✗ geography has no `full` — name a section: {', '.join(_ALL_SECTIONS)}", file=sys.stderr)
         return 2
     try:
         sections = parse_sections(args.sections, _ALL_SECTIONS, allow_full=False)
@@ -210,7 +210,7 @@ def main(argv: list[str]) -> int:
         return 2
     wanted: str | None = args.type
     if wanted is None and "positions" in sections:
-        print("positions needs --type <asset_id> — run `entity_types` for the roll", file=sys.stderr)
+        print("✗ positions needs --type <asset_id> — run `entity_types` for the roll", file=sys.stderr)
         return 2
 
     save = load_save(save_path)

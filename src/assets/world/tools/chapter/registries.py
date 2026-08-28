@@ -464,7 +464,11 @@ def main(argv: list[str]) -> int:
     if "--force" in argv:  # clear first so `ensure` rebuilds from scratch (e.g. after a py change to an entry's shape)
         for name in _REGISTRIES:
             (SAVES_DIR / chapter / f"{name}.json").unlink(missing_ok=True)
+    # Asked before the call, since `ensure` is idempotent and silent: without this, a build and a no-op would look exactly alike from the terminal.
+    fresh = not all((SAVES_DIR / chapter / f"{name}.json").exists() for name in _REGISTRIES)
     ensure(chapter)
+    counts = " · ".join(f"{len(json.loads((SAVES_DIR / chapter / f'{name}.json').read_text()))} {name}" for name in _REGISTRIES)
+    print(f"✓ {chapter} registries {'built' if fresh else 'already in place'} — {counts}")
     return 0
 
 

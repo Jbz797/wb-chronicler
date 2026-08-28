@@ -186,11 +186,11 @@ def main(argv: list[str]) -> int:
     width = sum((save.get("tileAmounts") or [[]])[0])
 
     if not (height and width):
-        print("empty grid", file=sys.stderr)
+        print("✗ empty grid", file=sys.stderr)
         return 2
 
     if not (0 <= cx < width and 0 <= cy < height):
-        print(f"coords ({cx}, {cy}) out of bounds — map is {width}×{height}", file=sys.stderr)
+        print(f"✗ coords ({cx}, {cy}) out of bounds — map is {width}×{height}", file=sys.stderr)
         return 2
 
     coords = _radius_tiles(cx, cy, args.radius, width, height)

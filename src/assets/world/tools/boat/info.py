@@ -137,8 +137,8 @@ def main(argv: list[str]) -> int:
     try:
         boat_id = int(argv[0])
     except ValueError:
-        print(f"invalid id: {argv[0]}", file=sys.stderr)
-        return 1
+        print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
+        return 2
 
     requested = argv[1] if len(argv) > 1 else None
     try:
@@ -149,7 +149,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     boat = next((a for a in save.get("actors_data") or [] if a.get("id") == boat_id and is_boat(a)), None)
     if boat is None:
-        print(f"unknown boat: {boat_id}", file=sys.stderr)
+        print(f"✗ unknown boat: {boat_id}", file=sys.stderr)
         return 1
 
     ctx = {

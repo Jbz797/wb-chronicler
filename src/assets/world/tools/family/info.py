@@ -125,8 +125,8 @@ def main(argv: list[str]) -> int:
     try:
         family_id = int(argv[0])
     except ValueError:
-        print(f"invalid id: {argv[0]}", file=sys.stderr)
-        return 1
+        print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
+        return 2
 
     requested = argv[1] if len(argv) > 1 else None
     try:
@@ -138,7 +138,7 @@ def main(argv: list[str]) -> int:
     families_by_id = index_by_id(save.get("families") or [])  # built once: `ctx` hands the same index to every `entity_ref` below
     family = families_by_id.get(family_id)
     if family is None:
-        print(f"unknown family: {family_id}", file=sys.stderr)
+        print(f"✗ unknown family: {family_id}", file=sys.stderr)
         return 1
 
     # One pass over the actors feeds every tally: WB points each actor at its lineage and never the reverse, so nothing here can be read off the family record.

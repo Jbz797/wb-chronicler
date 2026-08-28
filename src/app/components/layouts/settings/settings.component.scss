@@ -40,6 +40,28 @@
     }
   }
 
+  // ng-zorro dresses `code` as a chip inside the chronicle alone, where the reader then tints it for parchment — the same chip, on the ground this side holds.
+  code {
+    background: rgb(0 0 0 / 25%);
+    border: 1px solid rgba($primary, 0.25);
+    border-radius: 3px;
+    color: $gold-soft;
+    font-size: 0.9em;
+    margin: 0 0.2em;
+    padding: 0.1em 0.35em;
+  }
+
+  // The theme mutes `info` and `warning` into the same brown, and this one is what the panel is for: it takes the gold its own button carries.
+  ::ng-deep .ant-alert-info {
+    background: rgba($primary, 0.12);
+    border-color: rgba($primary, 0.4);
+    margin-top: 0.5rem; // set off from the list it follows, where the gap governing the stack alone would let it read as one more of its rows
+
+    .ant-alert-message {
+      color: $primary;
+    }
+  }
+
   .intro,
   .unreachable {
     color: $text-secondary;

@@ -5,29 +5,34 @@
 # this run says are owed. Docs: `tools/tools.md`.
 
 import json
+import random
+import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
-from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, load_data, load_save, render, take_chapter
+from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, latest_chapter, live_save, load_data, load_save, render, worldbox_running, write_save
 
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
+_AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
 
-# World-law alerts, each fired once ever (`chapter.json.tags` is the log). Adding one = an entry here + a row in `tags.md`; both args come from `_playable_kingdoms`.
+# World-law alerts, fired once ever (`chapter.json.tags` logs them). Adding one = an entry here + a row in `tags.md`; both args come from `_playable_kingdoms`.
 _ALERTS = {
     "DISABLE_DROP_OF_THOUGHTS": {
         "condition": lambda kingdoms, present: all(kingdoms.get(species) for species in present),
-        "message": "The Drop of Thoughts world law can now be turned off.",
+        "message": "at the chapter's end, ask the player to turn the Drop of Thoughts world law off",
     },
     "DISABLE_HANDSOME_MIGRANTS": {
         "condition": lambda kingdoms, present: all(any(pop >= _MIN_KINGDOM_POP for pop in kingdoms.get(species, ())) for species in present),
-        "message": "The Handsome Migrants world law can now be turned off.",
+        "message": "at the chapter's end, ask the player to turn the Handsome Migrants world law off",
     },
 }
 
@@ -84,14 +89,55 @@ _CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers
 # `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset({"adults", "babies", "children", "couples", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"})
 
+# Everything a reset sweeps away. `tiles` holds the ticking ones (fires, melting ice), not the ground — that lives in `tileMap`/`tileArray`/`tileAmounts`.
+_EMPTIED = (
+    "actors_data",
+    "alliances",
+    "armies",
+    "books",
+    "cities",
+    "clans",
+    "conwayCreator",
+    "conwayEater",
+    "cultures",
+    "families",
+    "fire",
+    "frozen_tiles",
+    "items",
+    "kingdoms",
+    "languages",
+    "plots",
+    "relations",
+    "religions",
+    "subspecies",
+    "tiles",
+    "wars",
+)
+
+_GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
+_KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
 
 # The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
 _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
 
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
+_LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — the headcount every playable species must reach in a kingdom of its own.
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
+
+# Put to the player at the first chapter, before a line is written. The three commands answer it, and the naming brief rides with the third.
+_RESET_PROMPT = """? first chapter — nothing is written until the player has answered. Put this to him, in one go:
+  « Do you want to start over from a bare map — relief, biomes, volcanoes and geysers kept, everything else erased (creatures, buildings, kingdoms…),
+    back to year 1 of the Age of Hope with a new genetic seed? And if so, shall I name it too? »
+  → no: `tools/chapter/new.py --reset-asked`
+  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries
+  → reset and naming: `tools/chapter/new.py --reset --name "…" --description "…"`
+  the name is forged after a survey of the bare map, its geography being all that survives it: Tolkien-flavoured without pastiche, on the ground,
+  the mood or whatever outlasts the ages, never the age itself. Yours alone to choose — his yes was the agreement."""
+
+_SHORT_AGES = frozenset({"age_despair", "age_ice"})
+_SHORT_AGE_YEARS = (30, 40)
 
 # Rosters, libraries and fleets kept as a count alone — the tier's own `info.py <id> <section>` still names every soul, volume and hull behind the figure.
 _TALLIES = {
@@ -120,7 +166,32 @@ _TRAIT_SOURCES = {
 # The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
 _UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
 
-_WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description} — scaffolded empty at C1, chronicler-owned thereafter
+_WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description}, mirrored off the save each chapter — what the reader displays
+
+
+# The bare world's own age, drawn as WB draws it — the span is random, so two resets of the same map never run to the same calendar.
+def _age_duration(age_id: str) -> float:
+    low, high = _SHORT_AGE_YEARS if age_id in _SHORT_AGES else _LONG_AGE_YEARS
+    return float(random.randint(low, high) * UNITS_PER_YEAR)
+
+
+# The whole rewind, in the order WB's fields depend on one another: survivors first, `id_building` counting from them. Of `buildings`, only landmarks stand.
+def _bare_world(save: dict, name: str, description: str) -> None:
+    save["buildings"] = [b for b in save.get("buildings") or [] if _GEO_ASSETS.search(b.get("asset_id") or "")]
+    for key in _EMPTIED:
+        save[key] = []
+
+    stats = save["mapStats"]
+    _reset_counters(stats)
+    stats["current_world_ages_duration"] = _age_duration(_AGE_SLOTS[0])
+    stats["description"] = description or stats.get("description") or ""
+    stats["id_building"] = max((b["id"] for b in save["buildings"]), default=0) + 1  # the landmarks keep their high ids, and 1 would collide with them
+    stats["life_dna"] = _life_dna()
+    stats["name"] = name or stats.get("name") or ""
+    stats["player_mood"] = stats.get("player_mood") or "serene"  # WB's own default, which it writes back over an empty one anyway
+    stats["world_age_id"] = _AGE_SLOTS[0]
+    stats["world_age_slot_index"] = 0
+    stats["world_ages_slots"] = list(_AGE_SLOTS)
 
 
 # Carries last chapter's trait summaries over wherever neither the entity nor its traits moved, and names those still owed — as `descriptor` is already carried.
@@ -250,6 +321,11 @@ def _fold_total(entity: dict, *keys: str) -> None:
             entity[key] = {"total": block.get("total", 0)}
 
 
+# WB's `life_dna` seeds a world's genetics, redrawn on the hour so a reused map never repopulates with the lineages before it. WB's format: `YYYYMMDDHH`, UTC.
+def _life_dna() -> int:
+    return int(datetime.now(timezone.utc).strftime("%Y%m%d%H"))
+
+
 # Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
 def _playable_kingdoms(save: dict) -> tuple[dict, set]:
     playable = {species for species, data in load_data("species.json").items() if data.get("playable")}
@@ -284,24 +360,77 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict]:
     return tags, favorite, world
 
 
-# The manual's regime this chapter falls under. The script holds the state, so the chronicler need not read it off `chapter.json` to know which section governs.
+# Empties a world's own chronicle, table by table, leaving the schema WB expects. `VACUUM` hands the megabytes back rather than leaving a hollow file.
+def _purge_history(s3db: Path) -> int:
+    if not s3db.exists():
+        return 0
+    s3db.chmod(0o644)  # WB leaves it read-only often enough that a bare `connect` would fail
+    with sqlite3.connect(s3db) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        purged = 0
+        for (table,) in cursor.fetchall():
+            cursor.execute(f'DELETE FROM "{table}"')  # interpolated, but the name comes from the file's own schema a line above
+            purged += cursor.rowcount
+        conn.commit()
+        cursor.execute("VACUUM")
+    return purged
+
+
+# The regime this chapter falls under, so the chronicler need not deduce it — a favorite gone from `actors_data` is a dead one, and nothing else says so.
 def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -> str:
     if n == 1:
-        return "first chapter — see « Cas du premier chapitre du monde », whose naming of the world goes into `history/world.json`"
+        return "first chapter"
     if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
         if fav_id is None:  # `favorite.py` has not run yet: the successor is still to be picked
-            return "the favorite has left the world — see « Mort du favori », then « Choix du favori »"
-        return "the favorite has left the world, his successor is in place — see « Mort du favori »: the chapter opens on that end"
+            return "the favorite has left the world — pick a successor, get the player's word, then `tools/chapter/favorite.py <id>`"
+        return "the favorite has left the world, his successor is in place — open on that death before the tiers, then follow the successor's eyes from here on"
     if fav_id is None:
-        return "no favorite — see « Structure du chapitre (avant désignation d'un favori) » and « Choix du favori »"
-    return "favorite designated — see « Structure du chapitre (favori désigné) »"
+        return "no favorite yet"
+    return "favorite designated"
+
+
+# Zeroed by type rather than by name: WB adds counters between versions, and a hardcoded list would leave the new ones running. `id_*` restarts at 1, the rest at 0.
+def _reset_counters(stats: dict) -> None:
+    for key, value in stats.items():
+        if key in _KEPT_STATS or isinstance(value, bool):  # `bool` subclasses `int`, so it has to be spared before the number test, not after
+            continue
+        if isinstance(value, int):
+            stats[key] = 1 if key.startswith("id_") else 0
+        elif isinstance(value, float):
+            stats[key] = 0.0
+
+
+# Unmakes the world the player asked to be rid of, its map alone left standing. No chapter is written here: the bare world it hands back is what C1 opens on.
+def _reset_world(live_wbox: Path, name: str, description: str) -> int:
+    if worldbox_running():
+        print("✗ WorldBox is running — quit the game before resetting, or it will write its own save back over this one", file=sys.stderr)
+        return 1
+
+    save = load_save(live_wbox)
+    _bare_world(save, name, description)
+    stats = save["mapStats"]
+    write_save(live_wbox, save)
+    _write_world(stats)  # off the save, not off the arguments: a world that kept its name keeps it here too
+    purged = _purge_history(live_wbox.parent / "map_stats.s3db")
+    (live_wbox.parent / "map.meta").unlink(missing_ok=True)  # WB rebuilds it from the save on opening; writing it ourselves would guess at a format we only read
+
+    landmarks = ", ".join(f"{count} {asset}" for asset, count in sorted(Counter(b["asset_id"] for b in save["buildings"]).items())) or "none"
+    print(f"✓ world reset — year 1 of the Age of Hope, {stats['current_world_ages_duration'] / UNITS_PER_YEAR:.0f} years long, life_dna {stats['life_dna']}")
+    print(f"  map kept: {landmarks} · {purged} history rows purged · map.meta dropped, WorldBox rebuilds it")
+    print(f"  named: {stats['name'] or '—'}")
+    # WB pauses them itself on loading a world set back to year 1, whatever the save says — writing the flag here would not survive the next open.
+    print("  ⚠ the world ages come back paused: the play button on the age wheel, or the Era never turns")
+    print("  → player: reopen this save in WorldBox and save it again — only the game redraws preview.png, and every chapter archives it")
+    print("  then `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
+    return 0
 
 
 # Runs a sibling `info.py` → its parsed JSON stdout, `None` (stderr surfaced) on failure or empty output. `sys.executable` so a venv never forks children elsewhere.
 def _run(rel_path: str, *args) -> dict | None:
     result = subprocess.run([sys.executable, str(_TOOLS / rel_path), *map(str, args)], capture_output=True, text=True, check=False)
     if result.returncode:
-        print(f"  ⚠ {rel_path} {' '.join(map(str, args))}: {result.stderr.strip()[:200]}", file=sys.stderr)
+        print(f"  ⚠ tools/{rel_path} {' '.join(map(str, args))}: {result.stderr.strip()[:200]}", file=sys.stderr)
         return None
     return json.loads(result.stdout) if result.stdout.strip() else None
 
@@ -322,20 +451,42 @@ def _trait_fingerprint(save: dict, tier: str, entity_id: int | None) -> tuple | 
     return None if record is None else (entity_id, *(tuple(sorted(record.get(field) or [])) for field in fields))
 
 
+# A surveyed feature stripped to what a toponym needs: where it lies, how big it is, and the two fields the chronicler fills when his tale reaches it.
+def _unnamed(features: list[dict]) -> dict:
+    return {str(f["id"]): {"centroid": f["centroid"], "chapter": "", "name": "", "size": f["size"]} for f in features}
+
+
+def _value(argv: list[str], flag: str) -> str:
+    return argv[argv.index(flag) + 1] if flag in argv and argv.index(flag) + 1 < len(argv) else ""
+
+
 def _without(block: dict, cut: frozenset) -> dict:
     return {key: value for key, value in block.items() if key not in cut}
 
 
+# The world's name and blurb as WB spells them, rewritten every chapter rather than seeded once: a rename, in game or by `--reset`, reaches the reader on its own.
+def _write_world(stats: dict) -> None:
+    _WORLD_JSON.write_text(json.dumps({"description": stats.get("description") or "", "name": stats.get("name") or ""}, ensure_ascii=False, indent=2) + "\n")
+
+
 def main(argv: list[str]) -> int:
-    live_wbox = take_chapter([])[0]  # no `C<n>` token → the live save path
+    live_wbox = live_save()
     if not live_wbox.exists():
-        print(f"no live save at {live_wbox}", file=sys.stderr)
+        print(f"✗ no live save at {live_wbox} — ask the player to update the path, from the settings cog under the map", file=sys.stderr)
         return 2
-    n = max((int(p.name[1:]) for p in SAVES_DIR.glob("C*") if p.is_dir() and p.name[1:].isdigit()), default=0) + 1
+    n = latest_chapter() + 1
     chapter, chapter_dir = f"C{n}", SAVES_DIR / f"C{n}"
-    if chapter_dir.exists():
-        print(f"{chapter} already exists — remove {chapter_dir} to regenerate", file=sys.stderr)
+    if chapter_dir.exists():  # a directory would have raised `latest_chapter` and carried `n` past it: only a file, or a broken link, can stand in its place
+        print(f"✗ {chapter_dir} exists but is not a chapter directory — remove it, then run again", file=sys.stderr)
         return 1
+    if "--reset" in argv:  # the player said yes, and only he can: nothing but this flag ever reaches the branch below
+        if n > 1:  # `n` already counted the chapters a moment ago, and a chronicle past its first cannot afford the world it tells of being unmade
+            print("✗ the chronicle has begun — a reset erases the world its chapters tell of, and only one not yet started can afford that", file=sys.stderr)
+            return 1
+        return _reset_world(live_wbox, _value(argv, "--name"), _value(argv, "--description"))
+    if n == 1 and "--reset-asked" not in argv:  # a reset would throw away whatever is written here, so nothing is, until the player has had his say
+        print(_RESET_PROMPT)
+        return 0
 
     live = load_save(live_wbox)
     actors = live.get("actors_data") or []
@@ -348,7 +499,10 @@ def main(argv: list[str]) -> int:
 
     # Read off the chapter before rather than by re-parsing its save for one field — `world/info.py` rounds it exactly as `world_time` above does, to the digit.
     if (prev_time := prev_world.get("world_time")) is not None and world_time <= prev_time and not just_designated and "--force" not in argv:
-        print(f"✗ save not advanced (world_time {world_time} ≤ C{n - 1} {prev_time}), no new favorite either — advance in WorldBox or --force", file=sys.stderr)
+        print(
+            f"✗ save not advanced (world_time {world_time} ≤ C{n - 1} {prev_time}), and no new favorite either — ask the player to play on, then save again",
+            file=sys.stderr,
+        )
         return 1
 
     chapter_dir.mkdir(parents=True)
@@ -358,11 +512,14 @@ def main(argv: list[str]) -> int:
             shutil.copy2(src, chapter_dir / name)
     if (s3db := live_dir / "map_stats.s3db").exists():
         shutil.copy2(s3db, _HISTORY_S3DB)
-    if not _WORLD_JSON.exists():  # C1 → scaffold the empty world-identity template for the chronicler to fill
-        _WORLD_JSON.write_text(json.dumps({"description": "", "name": ""}, ensure_ascii=False, indent=2) + "\n")
-    if not _PLACES_JSON.exists():  # same for his toponyms, the isles seeded by id: WB numbers them, so the chronicler has only their names left to forge
-        isles = ((_run("geography/info.py", "islands", chapter) or {}).get("islands")) or []
-        seeded = {"islands": {str(i["id"]): {"centroid": i["centroid"], "chapter": "", "name": "", "size": i["size"]} for i in isles}, "places": {}}
+    _write_world(live["mapStats"])
+    if not _PLACES_JSON.exists():  # his toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge
+        surveyed = _run("geography/info.py", "islands,waters", chapter) or {}
+        seeded = {
+            "islands": _unnamed(surveyed.get("islands") or []),
+            "lakes": _unnamed((surveyed.get("waters") or {}).get("lakes") or []),
+            "places": {},
+        }
         _PLACES_JSON.write_text(render(seeded) + "\n")
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
@@ -431,16 +588,9 @@ def main(argv: list[str]) -> int:
 
     # No `age_label`: the panel translates `world.metadata.age_id`. `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
     chapter_json = {
+        **blocks,  # `render` sorts a record's keys, so the eight tiers need no place of their own here
         "boat": boat,
-        "city": blocks["city"],
-        "clan": blocks["clan"],
-        "culture": blocks["culture"],
-        "family": blocks["family"],
         "favorite": favorite,
-        "kingdom": blocks["kingdom"],
-        "language": blocks["language"],
-        "religion": blocks["religion"],
-        "subspecies": blocks["subspecies"],
         "tags": tags,
         "title": "",
         "world": world,
@@ -451,8 +601,7 @@ def main(argv: list[str]) -> int:
 
     year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
     counts = " · ".join(  # The chronicler's own order: the map first, then who fills it.
-        f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {name}"
-        for name in ("cities", "kingdoms", "clans", "families", "subspecies", "persons")
+        f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {name}" for name in ("cities", "kingdoms", "clans", "families", "subspecies", "persons")
     )
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ {chapter} — year {year}, {age_label} (world_time {world_time})")
@@ -466,8 +615,6 @@ def main(argv: list[str]) -> int:
         todo += " · the favorite's descriptor"
     if owed:
         todo += f" · trait summaries ({', '.join(sorted(owed))})"
-    if new_alerts:
-        todo += " · pass the alert on"
     print(f"  → chronicler: {todo}")
 
     return 0
