@@ -28,8 +28,25 @@ _FOUNDER_FIELDS = (
 )
 
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
-_REGISTRIES = ("books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "religions", "subspecies")
+_REGISTRIES = ("alliances", "books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "religions", "subspecies")
 _SIZE_TIERS = (5, 15, 30, 60, 120, 250, 500, 1000)  # Population upper bounds → settlement tier 1-9 (foyer→cité-monde), mirrors the `chronicler.md` naming scale.
+
+
+# Alliance entry: name, hue, crown count and the founding crown's heraldry, WB giving a pact no king — no podium, no size tier, and oath binds no one stock.
+def _alliance_entry(alliance: dict) -> dict:
+    palette = _palette(alliance.get("color_id", ""))
+    # WB `AllianceBanner.setupBanner`: its own two sprite lists, indexed by the save's ids, under `alliance_frame` — `_unity` unless `alliance_type` is normal.
+    return {
+        "banner_bg": alliance.get("banner_background_id") or 0,
+        "banner_bg_color": palette.get("color_main_2"),
+        "banner_icon": alliance.get("banner_icon_id") or 0,
+        "banner_icon_color": palette.get("color_banner"),
+        **({"banner_unity": True} if alliance.get("alliance_type") else {}),
+        "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
+        "color_main": palette.get("color_main"),
+        "kingdoms": len(alliance.get("kingdoms") or []),  # the badge in the right link: crowns bound, the one count that tells two pacts apart at a glance
+        "name": alliance.get("name"),
+    }
 
 
 # WB `KingdomBanner.setupBanner` inputs for the UI's canvas: the slots the realm's two banner ids pick in its king's species set, each with its hue. Realms only.
@@ -122,6 +139,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
     city_registry = {
         str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID")), rank_by_city.get(c["id"])) for c in cities
     }
+
     kingdom_registry = {
         str(k["id"]): _defined(
             _kingdom_entry(k, species_by_kingdom.get(k["id"], Counter()), rank_by_kingdom.get(k["id"]))
@@ -130,25 +148,35 @@ def _build_registries(save: dict, prev: dict) -> dict:
         for k in kingdoms
     }
 
+    alliances = save.get("alliances") or []
+    alliance_registry = {str(a["id"]): _defined(_alliance_entry(a)) for a in alliances}
+
     book_genres = load_data("books.json")
     rank_by_book = _podium(Counter({b["id"]: int(b.get("times_read") or 0) for b in save.get("books") or []}))  # readings alone rank a volume
     book_registry = {str(b["id"]): _book_entry(b, book_genres, rank_by_book.get(b["id"])) for b in save.get("books") or []}
+
     rank_by_clan = _podium(members_by_clan)  # the sworn alone rank a band, as followers rank a custom
     clan_registry = {str(c["id"]): _clan_entry(c, members_by_clan.get(c["id"], 0), rank_by_clan.get(c["id"])) for c in save.get("clans") or []}
+
     rank_by_culture = _podium(members_by_culture)  # followers alone rank a culture, where a settlement and a realm each take a composite score
     culture_registry = {str(c["id"]): _culture_entry(c, members_by_culture.get(c["id"], 0), rank_by_culture.get(c["id"])) for c in save.get("cultures") or []}
+
     rank_by_family = _podium(members_by_family)  # the living who carry the name, as the sworn rank a band
     family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0), rank_by_family.get(f["id"])) for f in save.get("families") or []}
+
     rank_by_language = _podium(members_by_language)  # speakers alone rank a tongue, as followers rank a custom
     language_registry = {str(l["id"]): _language_entry(l, members_by_language.get(l["id"], 0), rank_by_language.get(l["id"])) for l in save.get("languages") or []}
+
     rank_by_religion = _podium(members_by_religion)  # the faithful alone rank a creed, as followers rank a custom
     religion_registry = {str(r["id"]): _religion_entry(r, members_by_religion.get(r["id"], 0), rank_by_religion.get(r["id"])) for r in save.get("religions") or []}
+
     rank_by_subspecies = _podium(members_by_subspecies)  # the living bearers, as the sworn rank a band
     subspecies_registry = {
         str(s["id"]): _subspecies_entry(s, members_by_subspecies.get(s["id"], 0), rank_by_subspecies.get(s["id"])) for s in save.get("subspecies") or []
     }
 
     out = {
+        "alliances": _merge(prev.get("alliances") or {}, alliance_registry),
         "books": _merge(prev.get("books") or {}, book_registry),
         "cities": _merge(prev.get("cities") or {}, city_registry),
         "clans": _merge(prev.get("clans") or {}, clan_registry),
@@ -313,7 +341,7 @@ def _merge(prev: dict, live: dict) -> dict:
         if entry_key in live:
             continue
         carried[entry_key] = fallen = {**entry, "dead": True}
-        for volatile in ("rank", "size"):  # the tier and the medal of the living, which a last-known entry has no claim to
+        for volatile in ("kingdoms", "rank", "size"):  # the tier, the medal and the crowns of the living, none of which a last-known entry has a claim to
             fallen.pop(volatile, None)
     return carried | live
 

@@ -12,7 +12,7 @@
       </nz-descriptions-item>
     }
 
-    @if (c.metadata.founder; as founder) {
+    @if (c.identity.founder; as founder) {
       <nz-descriptions-item [nzTitle]="founderTitle">
         <app-person-tag [id]="founder.id" [name]="founder.name" />
       </nz-descriptions-item>

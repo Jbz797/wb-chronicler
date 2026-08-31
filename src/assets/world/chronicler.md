@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 28/08/26 10:07</p>
+<p class="metadata">Date de mise à jour : 31/08/26 22:54</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -78,7 +78,7 @@ Trois blocs. `islands` et `lakes` sont **semés au C1** avec les terres et les e
 
 ### `map_stats.s3db`
 
-La base SQLite **cumulative** de WorldBox, dans `history/`, rafraîchie à chaque nouveau chapitre : contient tout l'historique du monde depuis sa création (une seule version, la plus récente). Events passés (`WorldLogMessage`, timestamps en mois) et stats agrégées par année (`*Yearly1/5/10/...`). Les entités vivantes à un instant donné ne sont pas ici — voir le `map.wbox` du chapitre correspondant.
+La base SQLite **cumulative** de WorldBox, dans `history/`, rafraîchie à chaque nouveau chapitre : contient tout l'historique du monde depuis sa création (une seule version, la plus récente). Events passés (`WorldLogMessage`) et stats agrégées par année (`*Yearly1/5/10/...`). **Deux unités de temps y coexistent** : `WorldLogMessage.timestamp` et les `created_time`/`died_time` comptent en `world_time`, quand les `*Yearly*.timestamp` comptent en années révolues. Les entités vivantes à un instant donné ne sont pas ici — voir le `map.wbox` du chapitre correspondant.
 
 ### `chapter.json`
 
@@ -90,6 +90,7 @@ Méta-données du chapitre — le chroniqueur y consulte l'historique (chapitres
   "favorite": { ... },    // Sortie de `python3 tools/actor/info.py <id> C<n> full` (`null` tant qu'aucun favori n'a été désigné)
   "tags": [],             // Liste de codes événementiels (cf. `tags.md`)
   "title": "",            // Titre du chapitre, repris du H1 de `chapter.md` — l'index qui évite d'ouvrir les `.md` pour retrouver un chapitre
+  "wars": [ ... ],        // Une entrée par guerre du royaume du favori — sortie `full` de `python3 tools/war/info.py <id> C<n>`
   "world": { ... }        // Sortie de `python3 tools/world/info.py C<n>`
 }
 ```
@@ -150,7 +151,7 @@ Quand le joueur signale qu'une nouvelle save est prête (ex. _« génère le pro
 - **Génération impossible** : si `new.py` échoue (save manquante ou illisible), le chroniqueur **ne produit rien** et signale l'erreur.
 - **Cohérence `chapter.json` / `chapter.md`** : en cas de désaccord entre le `.json` et le `.md` d'un chapitre, le `.md` fait foi — le `.json` doit être corrigé.
 - **Accès libre aux données passées** : le chroniqueur peut et doit consulter les chapitres passés (`chapter.md`), saves passées (`map.wbox`) et images d'époque (`preview.png`) à la demande. Toute l'histoire du monde est consultable — pas de mémoire technique cloisonnée.
-- **Ce document ne s'édite pas depuis la chronique** : incohérence relevée, règle vieillie, besoin d'évolution (nouveau tag, nouvelle alerte, ajustement de format) — le chroniqueur **le signale au joueur en fin de chapitre** et n'y touche pas. C'est le joueur qui tranche et qui écrit ; une règle discutée reste en vigueur tant qu'elle n'a pas changé. Seul `tags.md` est le sien : il l'enrichit au fil des chapitres et met alors à jour sa ligne `<p class="metadata">Date de mise à jour : DD/MM/YY HH:MM</p>` (heure obtenue via `date "+%d/%m/%y %H:%M"`).
+- **Ce document ne s'édite pas depuis la chronique** : quoi que le chroniqueur y relève — incohérence, règle vieillie, évolution souhaitable — il **le signale au joueur en fin de chapitre** et n'y touche pas ; le joueur tranche, et une règle discutée reste en vigueur tant qu'elle n'a pas changé. Seul `tags.md` est le sien : il l'enrichit au fil des chapitres et met à jour sa ligne `<p class="metadata">Date de mise à jour : DD/MM/YY HH:MM</p>` (heure via `date "+%d/%m/%y %H:%M"`).
 
 ---
 
@@ -309,6 +310,7 @@ Une fois le chapitre livré, le chroniqueur **peut** (jamais obligatoire) ajoute
 - **Lecture coûteuse** : une étape a dévoré du contexte, quelle qu'elle soit. Dire **ce qui a été lu** et **ce qu'on y cherchait**.
 - **Nouveau tag** : un type d'événement important a émergé sans qu'aucun code existant ne le couvre → le chroniqueur le **signale dans sa note**.
 - **Outil manquant** : analyse récurrente qui mériterait son propre script (cf. [§ II Innovation](#-ii-innovation)).
+- **Poids mort** : donnée d'un script, section d'une sortie ou passage de doc qui coûte du contexte à chaque lecture sans jamais servir à écrire — dire ce qui gagnerait à tomber ou à se resserrer.
 - **Autre observation** dans son périmètre : convention de format d'un `.md`, terminologie incohérente entre docs, sortie de script à harmoniser, etc.
 
 Format libre, une à trois puces suffisent. **Pas de remarque = pas de bloc.** L'objectif est de capter les frictions au moment où elles sont fraîches, pas de produire un rapport à chaque chapitre.
@@ -345,9 +347,7 @@ Utilise cette API directement à chaque fois que tu as besoin d'une info sur le 
 
 ## ⏳ Conversion temps
 
-- Année en cours = `floor(world_time / 60) + 1`
-- Mois dans l'année = `floor((world_time % 60) / 5) + 1`
-- Âge d'un acteur = `floor((world_time - created_time) / 60)` — **sans `+ 1`** : WB `ActorData.getAge` passe par `Date.getYear0`, quand l'année en cours passe par `Date.getYear`, qui l'ajoute
+- Depuis n'importe quel `world_time` (récap, `timestamp` du s3db) : année = `floor(t / 60) + 1`, mois = `floor((t % 60) / 5) + 1` — l'âge de chaque entité, lui, est déjà dans son `metadata`.
 
 Noms des mois (locale FR de WB, à utiliser dans la prose si besoin) :
 
@@ -454,6 +454,7 @@ Chaque type de nom propre a son balisage markdown dédié — le chroniqueur l'a
 | Bateau              | `[o id Nom]`                                                                                       |
 | Village / Capitale  | `[c id Nom]`                                                                                       |
 | Royaume             | `[k id Nom]`                                                                                       |
+| Alliance            | `[i id Nom]`                                                                                       |
 | Clan                | `[l id Nom]`                                                                                       |
 | Culture             | `[t id Nom]`                                                                                       |
 | Langue              | `[a id Nom]`                                                                                       |
@@ -462,6 +463,7 @@ Chaque type de nom propre a son balisage markdown dédié — le chroniqueur l'a
 | Personnage          | `[p id Nom]` (uniquement espèces intelligentes — cf. [tableau ci-dessous](#espèces-intelligentes)) |
 | Espèce              | `[s asset_id Nom]`                                                                                 |
 | Sous-espèce         | `[u id Nom]`                                                                                       |
+| Guerre              | `[w id Nom]`                                                                                       |
 | Ressource / minerai | `[r resource_id Nom]`                                                                              |
 | Ère du monde        | `*italique*`                                                                                       |
 | Devise              | `*italique*`                                                                                       |
@@ -530,7 +532,7 @@ La colonne _Jouable_ indique les espèces parmi lesquelles le chroniqueur doit c
 - **Entité sans nom** : quand le jeu n'en a donné aucun, décrire en texte nu plutôt que baliser. C'est le cas de la plupart des coques (une sur dix seulement est nommée) et de beaucoup d'acteurs, les jeunes surtout.
 - **Bateau** → `[o id Nom]` avec l'**id d'acteur** (celui passé à `boat/info.py`) : WB modélise les coques comme des acteurs.
 - **Forme courte** : `[s <asset_id>]` / `[r <resource_id>]` / `[o <id>]` (sans texte) restent valides pour l'icône seule.
-- **Cohérence** : vérifier que les IDs correspondent bien aux entités. Attention en particulier à ne pas confondre une **ville/capitale** (`[c id Nom]`) et un **royaume** (`[k id Nom]`) — l'id de cité et l'id de royaume sont distincts.
+- **Une numérotation par catégorie** : ne pas confondre une **ville/capitale** (`[c id Nom]`), un **royaume** (`[k id Nom]`) et l'**alliance** qui le lie (`[i id Nom]`) — un même nombre vaut les trois.
 
 ## Granularité du récit — ne pas tout citer
 

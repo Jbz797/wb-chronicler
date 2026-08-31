@@ -14,9 +14,7 @@ from actor_stats import build_actor_stats_context, compute_actor_stats, meta_rat
 from islands import compute_islands_cached
 from shared import (
     MIN_PER_CAPITA_UNITS,
-    NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
-    SATED_MIN_NUTRITION,
     actor_age,
     build_trait_ids,
     build_trait_list,
@@ -130,7 +128,6 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
         "books": lambda r: len(books.get(r["id"], ())),
         "cities": lambda r: tallies["cities"][r["id"]],
         "deaths": lambda r: int(r.get("total_deaths") or 0),
-        "fed_pct": lambda r: tallies["fed"][r["id"]] / n if (n := tallies["eaters"][r["id"]]) else 0.0,
         "housed_pct": lambda r: tallies["housed"][r["id"]] / n if (n := len(tallies["members"].get(r["id"], ()))) else 0.0,
         "kills": lambda r: int(r.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
@@ -173,8 +170,6 @@ def main(argv: list[str]) -> int:
     # One pass feeds every tally: WB points the actor at the faith it holds, never the reverse.
     tallies: dict = {
         "cities": Counter(c["id_religion"] for c in save.get("cities") or [] if c.get("id_religion")),
-        "eaters": Counter(),
-        "fed": Counter(),
         "housed": Counter(),
         "kingdoms": Counter(k["id_religion"] for k in save.get("kingdoms") or [] if k.get("id_religion")),
         "members": {},
@@ -186,15 +181,11 @@ def main(argv: list[str]) -> int:
     for actor in save.get("actors_data") or []:
         if not (rid := actor.get("religion")):
             continue
+        tallies["housed"][rid] += bool(actor.get("homeBuildingID"))
         tallies["members"].setdefault(rid, []).append(actor)
         tallies["money"][rid] += int(actor.get("money") or 0)
-        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they weigh on neither side of the hunger share
-            tallies["eaters"][rid] += 1
-            tallies["fed"][rid] += int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION
-        tallies["housed"][rid] += bool(actor.get("homeBuildingID"))
+        tallies["renown_total"][rid] += int(actor.get("renown") or 0)
         tallies["warriors"][rid] += actor.get("profession") == PROFESSION_WARRIOR
-        if fame := actor.get("renown"):
-            tallies["renown_total"][rid] += int(fame)
 
     members = tallies["members"].get(religion_id, [])
     ctx = {

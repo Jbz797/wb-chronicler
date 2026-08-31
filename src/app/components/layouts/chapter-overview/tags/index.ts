@@ -1,3 +1,4 @@
+export * from './alliance/alliance-tag.component';
 export * from './city/city-tag.component';
 export * from './clan/clan-tag.component';
 export * from './culture/culture-tag.component';

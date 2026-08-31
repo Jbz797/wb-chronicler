@@ -124,6 +124,10 @@
     th {
       background: $paper-shade;
       text-transform: uppercase;
+
+      .entity-tag {
+        text-transform: none; // A plate spells its own name: WB's casing and the tag's small-caps are its own, and the heading's uppercase would flatten both.
+      }
     }
 
     tr:nth-child(even) td {

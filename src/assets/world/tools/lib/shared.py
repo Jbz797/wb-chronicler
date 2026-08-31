@@ -748,7 +748,7 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         counter = ctx[f"{name}_by_{tier}"]
         return lambda r: counter.get(r.get("id"), 0)
 
-    eaters, fed, food, gold = tally("eaters"), tally("fed"), tally("food"), tally("gold")
+    food, gold = tally("food"), tally("gold")
     homeless, money, populations = tally("homeless"), tally("money"), tally("populations")
     nobles_money = tally("nobles_money")
 
@@ -759,7 +759,7 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "age": lambda r: entity_age(r, ctx["world_time"]),
         "buildings": tally("buildings"),
         "deaths": lambda r: r.get("total_deaths", 0),
-        "fed_pct": lambda r: fed(r) / n if (n := eaters(r)) else 0.0,
+        # No `fed_pct` on any tier: hunger is where a people stood when the save was written, and it ties most of the field in peace — `population` says the share.
         "food": food,
         "food_per_capita": lambda r: food(r) / n if (n := populations(r)) else 0.0,
         "gold": gold,

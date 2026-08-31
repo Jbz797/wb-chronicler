@@ -39,6 +39,13 @@
     <span>Langue</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('language')" />
   </ng-template>
+  <ng-template #warsHeader>
+    <img class="panel-icon" src="assets/img/world/wars.png" />
+    <span>Guerres</span>
+  </ng-template>
+  <ng-template #warsChip
+    ><nz-tag>{{ c.meta.wars.length }}</nz-tag></ng-template
+  >
   <ng-template #religionHeader>
     <img class="panel-icon" src="assets/img/world/religions.png" />
     <span>Religion</span>
@@ -54,6 +61,12 @@
     <span>{{ cityTerm() }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('city')" />
   </ng-template>
+  <ng-template #allianceHeader>
+    <img class="panel-icon" src="assets/img/world/alliances.png" />
+    <span>Alliance</span>
+    <app-new-badge [dot]="false" [show]="isNewPanel('alliance')" />
+  </ng-template>
+  <ng-template #allianceChip><app-panel-extra panel="alliance" /></ng-template>
   <ng-template #kingdomHeader>
     <img class="panel-icon" src="assets/img/world/kingdom.png" />
     <span>{{ kingdomTerm() }}</span>
@@ -70,7 +83,7 @@
   <ng-template #religionChip><app-panel-extra panel="religion" /></ng-template>
   <ng-template #subspeciesChip><app-panel-extra panel="subspecies" /></ng-template>
 
-  <nz-collapse nzAccordion>
+  <nz-collapse nzAccordion nzSize="small">
     <nz-collapse-panel [nzActive]="activePanel() === 'world-stats'" [nzHeader]="worldStatsHeader" (nzActiveChange)="onPanelToggle('world-stats', $event)">
       <ng-scrollbar class="panel-scroll">
         <app-world-stats />
@@ -173,6 +186,28 @@
     >
       <ng-scrollbar class="panel-scroll">
         <app-kingdom />
+      </ng-scrollbar>
+    </nz-collapse-panel>
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'alliance'"
+      [nzCollapsible]="collapsible(c.meta.alliance)"
+      [nzExtra]="allianceChip"
+      [nzHeader]="allianceHeader"
+      (nzActiveChange)="onPanelToggle('alliance', $event)"
+    >
+      <ng-scrollbar class="panel-scroll">
+        <app-alliance />
+      </ng-scrollbar>
+    </nz-collapse-panel>
+    <nz-collapse-panel
+      [nzActive]="activePanel() === 'wars'"
+      [nzCollapsible]="collapsible(c.meta.wars?.length)"
+      [nzExtra]="warsChip"
+      [nzHeader]="warsHeader"
+      (nzActiveChange)="onPanelToggle('wars', $event)"
+    >
+      <ng-scrollbar class="panel-scroll">
+        <app-wars />
       </ng-scrollbar>
     </nz-collapse-panel>
   </nz-collapse>

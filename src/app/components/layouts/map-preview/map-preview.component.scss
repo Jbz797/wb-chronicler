@@ -5,8 +5,8 @@
   padding: 1rem;
 
   .map {
-    border-radius: $radius;
     border: 1px solid rgba($primary, 0.3);
+    border-radius: $radius;
     image-rendering: auto;
     width: 100%;
   }

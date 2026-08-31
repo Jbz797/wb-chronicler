@@ -12,9 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
 from shared import (
     MIN_PER_CAPITA_UNITS,
-    NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
-    SATED_MIN_NUTRITION,
     actor_age,
     children_by_id,
     competition_ranks,
@@ -39,7 +37,12 @@ _ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "pop
 
 # Chronicler-only: what the lineage was stamped as at its founding, not what its living carry — most still share both, the `breakdown` section telling how many.
 def _build_identity(family: dict, ctx: dict) -> dict:
+    # WB stores the founding pair as loose name/id fields rather than refs; the second is absent wherever a lone settler started the line.
+    founders = [{"id": fid, "name": family.get(f"founder_actor_name_{n}")} for n in (1, 2) if (fid := family.get(f"main_founder_id_{n}")) is not None]
     return {
+        "founders": founders,
+        "founding_city": entity_ref(family.get("founder_city_id"), ctx["cities_by_id"]),
+        "founding_kingdom": entity_ref(family.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
         "culture": entity_ref(family.get("name_culture_id"), ctx["cultures_by_id"]),  # the culture that minted the name, not the members' own
         "species": family.get("species_id"),
         "subspecies": entity_ref(family.get("subspecies_id"), ctx["subspecies_by_id"]),
@@ -71,20 +74,17 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
     report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the line say of itself
     tallies, family_id = ctx["tallies"], family["id"]  # the roofs came off the one actor pass; recounting them here would walk the roster a second time
 
-    # WB stores the founding pair as loose name/id fields rather than refs; the second is absent wherever a lone settler started the line.
-    founders = [{"id": fid, "name": family.get(f"founder_actor_name_{n}")} for n in (1, 2) if (fid := family.get(f"main_founder_id_{n}")) is not None]
-
     return {
         "age": entity_age(family, ctx["world_time"]),
         **({"alpha": entity_ref(family.get("alpha_id"), ctx["actors_by_id"])} if family.get("alpha_id") else {}),  # its head, on the few clans WB gave one
         **({"births": births} if (births := int(family.get("total_births") or 0)) else {}),
+        # Towns and crowns its living answer from. A lineage almost always holds to one of each — which is what makes the line that says otherwise worth reading.
+        **({"cities": len(cities)} if (cities := {cid for a in members if (cid := a.get("cityID"))}) else {}),
         **({"deaths": deaths} if (deaths := int(family.get("total_deaths") or 0)) else {}),
-        "founders": founders,
-        "founding_city": entity_ref(family.get("founder_city_id"), ctx["cities_by_id"]),
-        "founding_kingdom": entity_ref(family.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
         **({"houses": len(houses)} if (houses := tallies["houses"].get(family_id)) else {}),  # roofs they sleep under: two or three for most
         "id": family["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         **({"kills": kills} if (kills := int(family.get("total_kills") or 0)) else {}),
+        **({"kingdoms": len(kingdoms)} if (kingdoms := {kid for a in members if (kid := a.get("civ_kingdom_id"))}) else {}),
         "name": family.get("name"),
         # A family is born of a couple, so WB writes up to two parent lines — but a ref drops when that line has since died out and been purged from the save.
         **({"parents": parents} if (parents := [ref for n in (1, 2) if (ref := entity_ref(family.get(f"original_family_{n}"), ctx["families_by_id"]))]) else {}),
@@ -103,9 +103,10 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "age": lambda f: entity_age(f, world_time),
         "births": lambda f: int(f.get("total_births") or 0),
         "births_per_death": lambda f: int(f.get("total_births") or 0) / d if (d := int(f.get("total_deaths") or 0)) else 0.0,
+        "cities": lambda f: len({cid for a in tallies["members"].get(f["id"], ()) if (cid := a.get("cityID"))}),
         "deaths": lambda f: int(f.get("total_deaths") or 0),
-        "fed_pct": lambda f: tallies["fed"][f["id"]] / n if (n := tallies["eaters"][f["id"]]) else 0.0,
-        "housed_pct": lambda f: tallies["housed"][f["id"]] / n if (n := len(tallies["members"].get(f["id"], ()))) else 0.0,
+        "kingdoms": lambda f: len({kid for a in tallies["members"].get(f["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
+        # No `housed_pct` here nor on a clan: a lineage runs a handful of souls, and a share capped at one ties most of the field — `population` says the share.
         "houses": lambda f: len(tallies["houses"].get(f["id"], ())),
         "kills": lambda f: int(f.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
@@ -143,9 +144,6 @@ def main(argv: list[str]) -> int:
 
     # One pass over the actors feeds every tally: WB points each actor at its lineage and never the reverse, so nothing here can be read off the family record.
     tallies: dict = {
-        "eaters": Counter(),
-        "fed": Counter(),
-        "housed": Counter(),
         "houses": {},
         "members": {},
         "money": Counter(),
@@ -156,17 +154,12 @@ def main(argv: list[str]) -> int:
     for actor in save.get("actors_data") or []:
         if not (fid := actor.get("family")):
             continue
+        if home := actor.get("homeBuildingID"):  # a roof only where there is one, the set being keyed on the building itself
+            tallies["houses"].setdefault(fid, set()).add(home)
         tallies["members"].setdefault(fid, []).append(actor)
         tallies["money"][fid] += int(actor.get("money") or 0)
-        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they weigh on neither side of the hunger share
-            tallies["eaters"][fid] += 1
-            tallies["fed"][fid] += int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION
-        tallies["housed"][fid] += bool(actor.get("homeBuildingID"))
+        tallies["renown_total"][fid] += int(actor.get("renown") or 0)
         tallies["warriors"][fid] += actor.get("profession") == PROFESSION_WARRIOR
-        if fame := actor.get("renown"):
-            tallies["renown_total"][fid] += int(fame)
-        if home := actor.get("homeBuildingID"):
-            tallies["houses"].setdefault(fid, set()).add(home)
 
     members = tallies["members"].get(family_id, [])
     ctx = {

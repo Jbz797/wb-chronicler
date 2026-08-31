@@ -30,19 +30,22 @@
     "description": "Refined script that enhances romantic attraction",
     "flavor": "Every stroke breeds desire",
     "group": "spirit",
-    "name": "Elegant Words"
+    "name": "Elegant Words",
+    "stats": { "offspring": 4 }
   },
   "enlightening_script": {
     "description": "Knowing this language increases intelligence",
     "flavor": "Knowledge breaks mortal limits",
     "group": "knowledge",
-    "name": "Enlightening Script"
+    "name": "Enlightening Script",
+    "stats": { "intelligence": 10 }
   },
   "eternal_text": {
     "description": "Extends the lifespan of those who know this language",
     "flavor": "Time bows to written truth",
     "group": "miscellaneous",
-    "name": "Eternal Text"
+    "name": "Eternal Text",
+    "stats": { "lifespan": 500 }
   },
   "font_of_gods": {
     "description": "Divine text that bestows magical enhancement",
@@ -54,7 +57,8 @@
     "description": "Diminishes intelligence of readers and speakers",
     "flavor": "A language where even the letters seem confused",
     "group": "knowledge",
-    "name": "Foolish Glyphs"
+    "name": "Foolish Glyphs",
+    "stats": { "intelligence": -5 }
   },
   "grin_mark": {
     "description": "Marked for death by the Grin Reaper. Their end is near",
@@ -96,7 +100,8 @@
     "description": "Precise structure enhances military strategy",
     "flavor": "Grammar enforces order",
     "group": "knowledge",
-    "name": "Strict Spelling"
+    "name": "Strict Spelling",
+    "stats": { "warfare": 10 }
   },
   "stylish_writing": {
     "description": "Beautiful writing increases cultural conversion",

@@ -14,9 +14,7 @@ from actor_stats import build_actor_stats_context, compute_actor_stats, meta_rat
 from islands import compute_islands_cached
 from shared import (
     MIN_PER_CAPITA_UNITS,
-    NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
-    SATED_MIN_NUTRITION,
     actor_age,
     build_trait_ids,
     build_trait_list,
@@ -92,6 +90,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     ]
     return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
+
 # The tongue's ledger: WB's lifetime counters beside the reach a walk over towns and crowns tells — the founder's card sits in `identity`. Counters drop at zero.
 def _build_metadata(language: dict, members: list[dict], ctx: dict, tallies: dict) -> dict:
     language_id = language["id"]
@@ -99,6 +98,7 @@ def _build_metadata(language: dict, members: list[dict], ctx: dict, tallies: dic
 
     return {
         "age": entity_age(language, ctx["world_time"]),
+        **({"books_written": tally} if (tally := int(language.get("books_written") or 0)) else {}),  # WB's lifetime count, burnt volumes included
         **({"cities": cities} if (cities := tallies["cities"][language_id]) else {}),  # towns WB records as speaking it, not merely housing a speaker
         **({"converted": converted} if (converted := int(language.get("speakers_converted") or 0)) else {}),  # won from another tongue, a WB lifetime tally
         **({"deaths": deaths} if (deaths := int(language.get("total_deaths") or 0)) else {}),
@@ -111,15 +111,12 @@ def _build_metadata(language: dict, members: list[dict], ctx: dict, tallies: dic
         **({"renown": renown} if (renown := int(language.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `population`
         **({"report": report} if report else {}),
         **({"traits": traits} if (traits := len(language.get("saved_traits") or [])) else {}),
-        **({"books_written": tally} if (tally := int(language.get("books_written") or 0)) else {}),  # WB's lifetime count, burnt volumes included
     }
 
 
 # What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `members` section owns.
 def _build_population(members: list[dict], ctx: dict) -> dict:
     return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
-
-
 
 
 # What the script carries, off WB's language library — summarised to each trait and its group at any size, the effect and flavour only when named.
@@ -137,7 +134,6 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
         "cities": lambda l: tallies["cities"][l["id"]],
         "converted": lambda l: int(l.get("speakers_converted") or 0),
         "deaths": lambda l: int(l.get("total_deaths") or 0),
-        "fed_pct": lambda l: tallies["fed"][l["id"]] / n if (n := tallies["eaters"][l["id"]]) else 0.0,
         "housed_pct": lambda l: tallies["housed"][l["id"]] / n if (n := len(tallies["members"].get(l["id"], ()))) else 0.0,
         "kills": lambda l: int(l.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
@@ -182,8 +178,6 @@ def main(argv: list[str]) -> int:
     # One pass feeds every tally: WB points the actor at the tongue it answers in, never the reverse.
     tallies: dict = {
         "cities": Counter(c["id_language"] for c in save.get("cities") or [] if c.get("id_language")),
-        "eaters": Counter(),
-        "fed": Counter(),
         "housed": Counter(),
         "kingdoms": Counter(k["id_language"] for k in save.get("kingdoms") or [] if k.get("id_language")),
         "members": {},
@@ -195,15 +189,11 @@ def main(argv: list[str]) -> int:
     for actor in save.get("actors_data") or []:
         if not (lid := actor.get("language")):
             continue
+        tallies["housed"][lid] += bool(actor.get("homeBuildingID"))
         tallies["members"].setdefault(lid, []).append(actor)
         tallies["money"][lid] += int(actor.get("money") or 0)
-        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they weigh on neither side of the hunger share
-            tallies["eaters"][lid] += 1
-            tallies["fed"][lid] += int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION
-        tallies["housed"][lid] += bool(actor.get("homeBuildingID"))
+        tallies["renown_total"][lid] += int(actor.get("renown") or 0)
         tallies["warriors"][lid] += actor.get("profession") == PROFESSION_WARRIOR
-        if fame := actor.get("renown"):
-            tallies["renown_total"][lid] += int(fame)
 
     members = tallies["members"].get(language_id, [])
     ctx = {

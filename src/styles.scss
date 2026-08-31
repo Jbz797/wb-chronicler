@@ -114,6 +114,39 @@ canvas {
       }
     }
 
+    // WB's alliance nameplate (`nameplate_alliance`), 50×21 — two chain links and no field between: the 24px slice keeps both whole, stretching the 2px seam alone.
+    &.alliance-tag {
+      background-color: transparent;
+      border: 0 solid transparent;
+      border-image: url('/assets/img/nameplates/alliance.png') 0 24 fill / 0 24px / 0 stretch;
+      border-width: 0 24px;
+      box-shadow: none;
+      padding: 0;
+
+      // Set into the right link, mirroring the shield: `right` starts at the padding box too, so it takes the same 24px rail back to reach the hollow.
+      .tag-badge {
+        height: 12px;
+        position: absolute;
+        right: -11.5px; // the hollow of the right link, 12.5px in from that edge, less the 24px rail `right` starts after
+        top: 50%;
+        transform: translate(50%, -50%);
+      }
+
+      // Set into the left link rather than beside it: out of the flow, so the name centres on the chain itself and the right link carries the crown count.
+      .banner {
+        left: -11.5px; // the hollow of the left link, x=12.5 in the sprite, less the 24px rail `left` starts after
+        max-height: 21px; // the pact's shield is 26×40, taller than it is wide, so it overhangs the plate to read at the width the other tags get
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%); // Each link's hollow sits inwards — hence offsets past the eye, and halves to centre a piece sized by `max-height`.
+      }
+
+      .entity-name {
+        position: relative;
+        top: -0.5px;
+      }
+    }
+
     // WB's settlement nameplates (`nameplate_city` / `_capital`), 43 wide — gold studs mark a seat, bare stone a village. Sliced 3 ways, both ends whole.
     &.city-tag {
       background-color: transparent;
@@ -200,12 +233,12 @@ canvas {
       }
     }
 
-    // WB's religion nameplate (`nameplate_religion`), 33×20 — a votive field closed by a golden hand, 3-sliced so the hand keeps its shape and the field runs.
+    // WB's religion nameplate (`nameplate_religion`), 33×20 — its golden hand cut out of the asset, 3-sliced so both bevels hold and the field runs.
     &.religion-tag {
       background-color: transparent;
       border: 0 solid transparent;
-      border-image: url('/assets/img/nameplates/religion.png') 0 10 0 5 fill / 0 10px 0 5px / 0 stretch;
-      border-width: 0 14px 0 5px;
+      border-image: url('/assets/img/nameplates/religion.png') 0 7 0 5 fill / 0 7px 0 5px / 0 stretch; // right slice cut to the bevel: the hand it cleared is gone
+      border-width: 0 7px 0 5px;
       box-shadow: none;
       padding: 0;
 

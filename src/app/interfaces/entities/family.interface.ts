@@ -15,6 +15,7 @@ interface FamilyMetadata {
   age: number;
   alpha?: PersonReference;
   births?: number;
+  cities?: number;
   deaths?: number;
   founders: PersonReference[];
   houses?: number;
@@ -27,8 +28,8 @@ interface FamilyMetadata {
 interface FamilyRanks {
   age?: number;
   births?: number;
+  cities?: number;
   deaths?: number;
-  housed_pct?: number;
   houses?: number;
   kills?: number;
   members?: number;

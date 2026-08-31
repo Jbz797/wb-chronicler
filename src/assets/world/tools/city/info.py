@@ -15,11 +15,9 @@ from actor_stats import actor_stat_totals, build_actor_stats_context, meta_ratio
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
-    NON_FOOD_SPECIES,
     PROFESSION_KING,
     PROFESSION_LEADER,
     PROFESSION_WARRIOR,
-    SATED_MIN_NUTRITION,
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
@@ -116,12 +114,10 @@ def _build_books(city: dict, ctx: dict, requested: str | None) -> dict:
 def _build_context(save: dict, save_path: Path) -> dict:
     captain_ids = {cap for army in save.get("armies") or [] if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
 
-    actors_by_city: dict[int, list[dict]] = {}
     actors_by_army: dict[int, list[dict]] = {}
+    actors_by_city: dict[int, list[dict]] = {}
     actors_by_id: dict[int, dict] = {}
-    eaters_by_city: Counter[int] = Counter()
     families_by_city: dict[int, set[int]] = {}
-    fed_by_city: Counter[int] = Counter()
     homeless_by_city: Counter[int] = Counter()
     immortals_by_city: Counter[int] = Counter()
     infected_by_city: Counter[int] = Counter()
@@ -153,10 +149,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
             money_by_city[cid] += int(coins)
         if renown := actor.get("renown"):
             renown_by_city[cid] += int(renown)
-        if asset_id not in NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
-            eaters_by_city[cid] += 1
-            if int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION:
-                fed_by_city[cid] += 1
 
         profession = actor.get("profession")
         # WB enlists only in the resident's own city, so `cityID` keys the army. `Army.countMelee`: ranged needs a `$range` weapon — carrying none counts as melee.
@@ -241,12 +233,10 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "children_by_id": cache(lambda: children_by_id(save)),  # living offspring per parent, world-wide: a resident's child may live elsewhere
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
-        "eaters_by_city": eaters_by_city,
         # Racked gear per city, the six `item_storage_*` lists summed — a stat of its own, and what `_build_equipment` details on request.
         "equipment_by_city": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in save.get("cities") or []},
         "families_by_city": families_by_city,
         "families_by_id": index_by_id(save.get("families") or []),
-        "fed_by_city": fed_by_city,
         "food_by_city": food_by_city,
         "gold_by_city": gold_by_city,
         "goods_by_city": goods_by_city,
@@ -297,7 +287,14 @@ def _build_equipment(city: dict, ctx: dict, requested: str | None) -> dict:
 
 # Chronicler-only: what the city officially is, not what its people are (`breakdown`). A mayor can turn it over (`leader_change_city_culture`), conquest cannot.
 def _build_identity(city: dict, ctx: dict) -> dict:
+    # Founder = the city's first settler (`founder_id`), emitted as `{id, name}` (dead or alive — the registry carries its visuals + tombstone).
+    founder = None
+    if fid := city.get("founder_id"):
+        founder_actor = ctx["actors_by_id"].get(fid)
+        name = founder_actor.get("name") if founder_actor else city.get("founder_name")
+        founder = {"id": fid, "name": name}
     return {
+        "founder": founder,
         "clan": entity_ref(_city_clan(city, ctx), ctx["clans_by_id"]),
         "culture": entity_ref(city.get("id_culture"), ctx["cultures_by_id"]),
         "language": entity_ref(city.get("id_language"), ctx["languages_by_id"]),
@@ -346,22 +343,18 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
     report = meta_report("city", {**meta_ratios(residents, ctx), **stores, "people": len(residents), "units": len(residents)})
     kingdom = ctx["kingdoms_by_id"].get(city.get("kingdomID"))
 
-    # Founder = the city's first settler (`founder_id`), emitted as `{id, name}` (dead or alive — the registry carries its visuals + tombstone).
-    founder = None
-    if fid := city.get("founder_id"):
-        founder_actor = ctx["actors_by_id"].get(fid)
-        name = founder_actor.get("name") if founder_actor else city.get("founder_name")
-        founder = {"id": fid, "name": name}
+    pact = next((a for a in save.get("alliances") or [] if city.get("kingdomID") in (a.get("kingdoms") or [])), None)  # through its crown; a realm sits in one
 
     return {
         **_city_taxes(kingdom),
         "age": entity_age(city, ctx["world_time"]),
+        **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
         "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
         "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
+        **({"births": born} if (born := int(city.get("total_births") or 0)) else {}),  # Inhabitants born over its lifetime, the counterpart WB keeps to `deaths`.
         "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_city"].get(cid, ())),  # Distinct family lineages among its residents; the `familyless` count is in `population`.
         "food": ctx["food_by_city"][cid],  # Eatable resources stocked in the city's buildings.
-        "founder": founder,
         "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.
         "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).
         "houses": ctx["houses_by_city"][cid],  # Dwellings (subset of `buildings`).

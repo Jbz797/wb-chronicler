@@ -124,6 +124,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
+        "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
         "religions_by_id": index_by_id(save.get("religions") or []),
         "save_path": save_path,  # islands cache key — must be the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "subspecies_base_cache": {},
@@ -170,6 +171,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
 
     return {
         "age": age,
+        # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
+        "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "asset_id": actor.get("asset_id"),
         "can_reproduce": can_reproduce,
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
@@ -180,11 +183,11 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "favorite_food": actor.get("favorite_food"),
         "gen": int(actor.get("generation") or 1),  # WB counts a first child 2, so a parentless founder is its 1 — a default the save omits
         **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # Chronicler-only: WB names no roof — `building/info.py <id>` takes the bare id
-        # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
-        **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"].get(tile)) else {}),
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
         # Chronicler-only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks a fighter left out.
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
+        # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
+        **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"].get(tile)) else {}),
         "island_id": island_lookup.get(tile) if tile else None,  # Chronicler-only: land mass (geography/info.py).
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),

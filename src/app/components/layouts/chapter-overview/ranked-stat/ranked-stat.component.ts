@@ -5,7 +5,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { CITY_META_STATS, FAVORITE_GAUGE_FIELDS, KINGDOM_META_STATS, NON_COMPACT_STATS } from '../../../../constants';
 import {
-  ChapterMeta, ChapterTier, CityMetaStat, KingdomAlliance, KingdomMetaStat, PeopleTier, PeopleTierName, PopulationStat, RankedStatKind, RankedStatSnapshot,
+  ChapterMeta, ChapterTier, CityMetaStat, KingdomMetaStat, PeopleTier, PeopleTierName, PopulationStat, RankedStatKind, RankedStatSnapshot,
   RankedStatSource, SpeciesStanding, SpeciesTotals,
 } from '../../../../interfaces';
 import { CompactPipe, ExactPipe, TierPipe } from '../../../../pipes';
@@ -35,7 +35,9 @@ export class RankedStatComponent {
     const current = this._sourceOf(this._chronicler.currentChapter()?.meta);
     if (!current) return null;
 
-    const previous = this._sourceOf(this._chronicler.previousChapter()?.meta);
+    // A body the chapter before did not name, or named as another, leaves nothing to compare: its figures are a stranger's.
+    const tier = this.source() === 'species' ? 'subspecies' : (this.source() as ChapterTier);
+    const previous = this._chronicler.carriesOver(tier) ? this._sourceOf(this._chronicler.previousChapter()?.meta) : null;
     const c = this._resolve(current);
     const p = previous ? this._resolve(previous) : null;
 
@@ -55,7 +57,9 @@ export class RankedStatComponent {
   protected readonly useCompact = computed(() => this.source() !== 'favorite' && !NON_COMPACT_STATS.has(this.stat()));
 
   // A `Record` rather than a bare list: a tier added to `PeopleTierName` breaks the build here instead of quietly falling through to the favourite's resolver.
-  private readonly _peopleSources: Record<PeopleTierName, true> = { clan: true, culture: true, family: true, language: true, religion: true, subspecies: true };
+  private readonly _peopleSources: Record<PeopleTierName, true> = {
+    alliance: true, clan: true, culture: true, family: true, language: true, religion: true, subspecies: true,
+  };
 
   // Status dot color shown next to the podium icon:
   private _rankStatus(current: number | undefined, previous: number | undefined, hasPrevious: boolean): 'error' | 'success' | null {
@@ -69,16 +73,10 @@ export class RankedStatComponent {
     return null;
   }
 
-  // Branches on `source()` to pull value + rank from the favorite, the kingdom/city snapshot, or the alliance.
+  // Branches on `source()` to pull value + rank from the favorite, the kingdom/city snapshot, or any body that rosters the living — the pact included.
   private _resolve(
-    entity: KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding,
+    entity: NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding,
   ): RankedStatSnapshot {
-    if (this.source() === 'alliance') {
-      const a = entity as KingdomAlliance;
-      const key = this.stat() as 'population' | 'renown';
-      return this._snap(a[key], a.ranks?.[key]);
-    }
-
     if (this.source() === 'city') return this._resolveCity(entity as NonNullable<ChapterMeta['city']>);
 
     // The stock a biology sprang from, ranked among the world's species rather than among its biologies — same two dicts as a people tier, minus `members`.
@@ -103,7 +101,9 @@ export class RankedStatComponent {
       if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat] ?? 0, k.ranks?.[key as KingdomMetaStat]);
 
       const pk = key as PopulationStat;
-      return this._snap(k.population[pk] ?? 0, k.ranks?.[pk]); // Only `immortals`/`infected`/`sick` can be absent — Python omits them at 0, so reading 0 is right.
+      // Only `immortals`/`infected`/`sick` go missing on the value side, omitted at 0 — the rank side is widened instead, `fed_pct` holding a share ranked nowhere.
+      const ranks = k.ranks as unknown as Record<string, number | undefined> | undefined;
+      return this._snap(k.population[pk] ?? 0, ranks?.[pk]);
     }
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
   }
@@ -148,6 +148,8 @@ export class RankedStatComponent {
     const key = this.stat();
     // Its own block, like a city's population, and named alike on every tier — a tongue's speakers answer to `members` as a clan's kin do.
     if (key === 'members') return this._snap(entity.members?.total ?? 0, ranks?.members);
+    // The pact gathers rather than enrols, so its head-count sits in `population.total` as a town's and a crown's do, not under `members`.
+    if (key === 'population') return this._snap(entity.population.total ?? 0, ranks?.population);
     const shelf = (entity as { books?: { total: number } }).books; // a custom and a tongue each carry one — its own block, as a town's library is
     if (shelf && key === 'books') return this._snap(shelf.total, ranks?.books);
     // Its living first, its body second. `metadata` also holds names and refs, so the count is what a number proves it to be — WB omits one it never wrote.
@@ -163,12 +165,11 @@ export class RankedStatComponent {
     return out;
   }
 
-  // Picks the favorite, kingdom, city, or (nested) alliance block from a chapter's meta based on the configured source.
+  // Picks the favorite, the kingdom, the city, or any tier block from a chapter's meta based on the configured source.
   private _sourceOf(
     meta: ChapterMeta | undefined,
-  ): KingdomAlliance | NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding | null {
+  ): NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding | null {
     if (!meta) return null;
-    if (this.source() === 'alliance') return meta.kingdom?.alliance ?? null;
     if (this.source() === 'species') return meta.subspecies?.species ?? null; // a section of the subspecies, where every other source is a chapter block
     return meta[this.source() as ChapterTier];
   }

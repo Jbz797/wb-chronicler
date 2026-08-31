@@ -10,6 +10,9 @@ export class PaletteHelpers {
   private static readonly _ringTarget = 3.5; // WCAG 1.4.11 asks 3.0 of a non-text border; the ring reads as a half-pixel band, so it carries some margin
   private static readonly _textTarget = 6; // above the 4.5 AA floor for 12.5px text, short of the 7 of AAA — enough to lift the three dimmest realms, no more
 
+  // Any hue lifted to readable on the tag's black plate — a pact carries its own, where a realm's is looked up by id.
+  public static liftedText = (hue: string | undefined): string => this._lift(hue ?? REALM_FALLBACK_HUE, this._textTarget);
+
   // Ink for a tag carrying its own fill (the lineages): `_contrast` measures against black, so above √21 ≈ 4.58 the fill is nearer white — dark ink then wins.
   public static readableOn = (fill: string | undefined): string => fill && this._contrast(SpriteHelpers.hexRgb(fill)) > 4.58 ? '#141414' : '#F5F2EA';
 

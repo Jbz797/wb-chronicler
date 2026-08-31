@@ -34,9 +34,6 @@
     <nz-descriptions-item [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="religion" stat="kingdoms" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="warriorsTitle">
-      <app-ranked-stat source="religion" stat="warriors" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="religion" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
@@ -64,5 +61,4 @@
   <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
-  <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
 }

@@ -38,7 +38,7 @@ export const COMBAT_STATS: StatConfig[] = [
   { key: 'damage', label: 'Dommages' },
   { key: 'armor', label: 'Armure', suffix: '%' },
   { deltaSuffix: '%', key: 'critical_chance', label: 'Critiques', suffix: '%' },
-  { key: 'attack_speed', label: 'Cadence' },
+  { key: 'attack_speed', label: 'Cadence', numberFormat: '1.0-1' }, // floors at 0.5, where the default '1.0-0' would print a bare 0
 ];
 
 // Cumulative world stats — UI surfaces the delta vs previous chapter (per-chapter activity).

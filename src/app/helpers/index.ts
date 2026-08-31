@@ -3,6 +3,7 @@ export * from './marked.helpers';
 export * from './number.helpers';
 export * from './palette.helpers';
 export * from './sprites/actor-sprite.helpers';
+export * from './sprites/alliance-sprite.helpers';
 export * from './sprites/book-sprite.helpers';
 export * from './sprites/clan-sprite.helpers';
 export * from './sprites/culture-sprite.helpers';

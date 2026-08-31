@@ -6,6 +6,7 @@ export interface City {
   books: BookShelf;
   breakdown: PopulationBreakdown;
   equipment: EquipmentStock;
+  identity: CityIdentity;
   inventory: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
   leaders?: Leaders;
   loyalty: CityLoyalty;
@@ -27,6 +28,16 @@ interface CityArmy {
   renown: number;
 }
 
+// What the town officially answers to, and the settler who raised it — the bodies it is affiliated with, never what it counts.
+interface CityIdentity {
+  clan?: EntityReference;
+  culture?: EntityReference;
+  founder?: PersonReference;
+  language?: EntityReference;
+  religion?: EntityReference;
+  subspecies?: EntityReference;
+}
+
 // How firmly the city holds to its crown: `new.py` keeps only the `total` for the reader, `city/info.py <id> loyalty` itemises the modifiers for the chronicler.
 interface CityLoyalty { total: number }
 
@@ -34,12 +45,12 @@ interface CityLoyalty { total: number }
 interface CityMetadata {
   age: number;
   attractivity: number; // `migrated - left`, emitted whatever its sign — 0 and negatives are readings too
+  births?: number;
   book_reach?: number;
   buildings: number;
   capital?: boolean;
   deaths: number;
   food: number;
-  founder?: PersonReference;
   gold: number;
   goods: number;
   heir?: PersonReference;
@@ -85,7 +96,6 @@ interface CityRanks {
   buildings?: number;
   deaths?: number;
   equipment?: number;
-  fed_pct?: number;
   food?: number;
   food_per_capita?: number;
   goods?: number;

@@ -3,28 +3,24 @@ import { Component, computed, inject } from '@angular/core';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { BreakdownComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '..';
-import { KingdomWar, RankedStatKind } from '../../../../interfaces';
+import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { LeadersComponent } from '../leaders/leaders.component';
 import { CityTagComponent, PersonTagComponent } from '../tags';
 
-import { KingdomAllianceComponent } from './kingdom-alliance/kingdom-alliance.component';
 import { KingdomRelationsComponent } from './kingdom-relations/kingdom-relations.component';
-import { WarCardComponent } from './war-card/war-card.component';
 
 @Component({
   selector: 'app-kingdom',
   imports: [
     BreakdownComponent,
     CityTagComponent,
-    KingdomAllianceComponent,
     KingdomRelationsComponent,
     LeadersComponent,
     NewBadgeComponent,
     NzDescriptionsModule,
     PersonTagComponent,
     RankedStatComponent,
-    WarCardComponent,
     WealthComponent,
   ],
   templateUrl: './kingdom.component.html',
@@ -75,13 +71,6 @@ export class KingdomComponent {
       { icon: 'assets/img/stats/equipment_power.png', label: 'Équipements', shown: !!k.equipment.total, stat: 'equipment' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));
-  });
-  // Set of war ids that surfaced this chapter (not present in the previous chapter's wars list).
-  protected readonly startedWarIds = computed(() => {
-    const wars: KingdomWar[] = this.kingdom()?.wars ?? [];
-    const previousWars: KingdomWar[] = this._chronicler.previousChapter()?.meta.kingdom?.wars ?? [];
-    const previousIds = new Set<number>(previousWars.map(w => w.id));
-    return new Set<number>(wars.filter(w => !previousIds.has(w.id)).map(w => w.id));
   });
 
 }

@@ -1,16 +1,17 @@
-import { INLINE_MARKER } from '../constants/inline-marker.constant';
+import { INLINE_MARKER } from '../constants/marker.constant';
 
 import {
-  BookInfo, CityInfo, ClanInfo, CultureInfo, FamilyInfo, KingdomInfo, LanguageInfo, PersonInfo, ReligionInfo, SubspeciesInfo,
+  AllianceInfo, BookInfo, CityInfo, ClanInfo, CultureInfo, FamilyInfo, KingdomInfo, LanguageInfo, PersonInfo, ReligionInfo, SubspeciesInfo,
 } from './registry.interface';
 
 export type ActorRect = [number, number, number, number, number]; // x, y, width, height, pivot drop from the top — a part sits where its pivot meets the anchor's.
+export type AllianceRegistry = Record<string, AllianceInfo>;
 export type BookRegistry = Record<string, BookInfo>;
 export type BreakdownSource = Exclude<ChapterTier, 'favorite'>; // a « Composition » needs a population, and the favourite is one soul
-export type ChapterOverviewPanel = 'world-stats' | ChapterTier; // the collapse's panels: every tier, plus the world, which is no tier of the favourite's
+export type ChapterOverviewPanel = 'wars' | 'world-stats' | ChapterTier; // the collapse's panels: every tier, plus the world and the wars, which are no tier
 
 // Every body a chapter names, and the four types below are cut from it. `ChapterMeta extends Record<ChapterTier, unknown>` closes the loop from downstream.
-export type ChapterTier = 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'language' | 'religion' | 'subspecies';
+export type ChapterTier = 'alliance' | 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'language' | 'religion' | 'subspecies';
 
 export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
   | 'territory' | 'wealth';
@@ -24,10 +25,11 @@ export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' 
   | 'infection' | 'old_age' | 'other' | 'plague' | 'poison' | 'tumor' | 'water' | 'weapon';
 
 export type FamilyRegistry = Record<string, FamilyInfo>;
+
 export type GenderedLabel = string | { f: string; m: string }; // agrees with its subject: plain when invariable, a pair otherwise — see `LabelHelpers.gendered`
 
-export type IconKind = 'boats' | 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons' | 'religions' | 'resources'
-  | 'species' | 'subspecies';
+export type IconKind = 'alliances' | 'boats' | 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons'
+  | 'religions' | 'resources' | 'species' | 'subspecies' | 'wars';
 
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 
@@ -55,7 +57,7 @@ export type RankedStatKind = 'age' | 'armor'
   | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'lost' | 'loyalty'
   | 'mana' | 'members' | 'money'
   | 'native' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory'
-  | 'traits' | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita' | 'written';
+  | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type RankedStatSource = 'alliance' | 'species' | ChapterTier; // a tier, or a block nested in one: a realm's alliance, a biology's parent stock
 export type ReligionRegistry = Record<string, ReligionInfo>;
@@ -69,3 +71,5 @@ export type SubspeciesRegistry = Record<string, SubspeciesInfo>;
 
 // The blocks carrying a chronicler-written trait summary — every tier whose traits WorldBox lets drift, plus the favorite's own.
 export type TraitSummarySource = 'clan' | 'culture' | 'favorite' | 'language' | 'religion' | 'subspecies';
+
+export type WarSideKey = 'attackers' | 'defenders'; // the two camps WB fields, named as it names them — neither is « ours » from the war's own vantage

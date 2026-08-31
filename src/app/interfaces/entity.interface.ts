@@ -30,7 +30,7 @@ export interface PeopleTier {
   members?: MemberRoster; // every tier names its roster alike, a tongue's speakers included
   metadata: object; // each tier's own shape; the resolver reads it by key, so it casts rather than narrowing
   population: TierPopulation;
-  ranks?: { members?: number }; // the one the resolver names; the rest it reaches by key, through the same cast
+  ranks?: object; // read by key, as `metadata` is — naming one optional field would weak-type out any tier that happens not to rank on it
 }
 
 // A soul, not a place: 42 % of WB's actors go unnamed; `PersonTagComponent` prints `ANONYMOUS_NAME`.
@@ -55,5 +55,6 @@ export interface TierPopulation {
   money: number;
   renown_total: number;
   sick?: number;
+  total?: number; // the pooled living, on the tiers that gather rather than enrol — a clan counts its own under `members`
   warriors: number;
 }

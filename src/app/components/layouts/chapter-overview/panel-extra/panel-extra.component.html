@@ -1,5 +1,8 @@
 @if (ref(); as r) {
   @switch (panel()) {
+    @case ('alliance') {
+      <app-alliance-tag [id]="r.id" [name]="r.name" />
+    }
     @case ('city') {
       <app-city-tag [id]="r.id" [name]="r.name" />
     }

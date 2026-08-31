@@ -28,9 +28,6 @@
     <nz-descriptions-item [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="subspecies" stat="kingdoms" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="warriorsTitle">
-      <app-ranked-stat source="subspecies" stat="warriors" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="subspecies" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
@@ -50,7 +47,7 @@
 
   <nz-descriptions nzBordered nzSize="small" nzTitle="Espèce" [nzColumn]="1">
     <nz-descriptions-item [nzTitle]="stockTitle">
-      <span><img class="species-icon" [src]="`assets/img/species/${s.identity.species}.png`" /> {{ s.identity.species | speciesName }}</span>
+      <span><img class="species-icon" [src]="`assets/img/species/${s.species.id}.png`" /> {{ s.species.id | speciesName }}</span>
     </nz-descriptions-item>
     @if (biomeName(); as b) {
       <nz-descriptions-item [nzTitle]="biomeTitle">{{ b }}</nz-descriptions-item>
@@ -88,5 +85,4 @@
   <ng-template #stockSubspeciesTitle><img src="assets/img/world/subspecies.png" /><span>Sous-espèces</span></ng-template>
   <ng-template #stockTitle><img src="assets/img/world/species.png" /><span>Souche</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
-  <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
 }

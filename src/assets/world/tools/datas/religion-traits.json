@@ -70,7 +70,8 @@
     "description": "Empowers followers to maintain structure, control, and organization in all aspects of life",
     "flavor": "Perfect order breeds perfect madness",
     "group": "harmony",
-    "name": "Hand of Order"
+    "name": "Hand of Order",
+    "stats": { "stewardship": 10 }
   },
   "infernal_rot": {
     "description": "The use of magic spreads the infernal biome",
@@ -82,13 +83,15 @@
     "description": "The teachings of the faith unlock greater wisdom",
     "flavor": "Ignorance was such comfortable bliss",
     "group": "harmony",
-    "name": "Minds Awakening"
+    "name": "Minds Awakening",
+    "stats": { "intelligence": 10 }
   },
   "path_of_unity": {
     "description": "Unity is the key to surviving the storm ahead",
     "flavor": "Together we rise, alone we are prey",
     "group": "harmony",
-    "name": "Path of Unity"
+    "name": "Path of Unity",
+    "stats": { "diplomacy": 10 }
   },
   "rite_of_change": {
     "description": "Allows the transformation of clan members into new subspecies through a sacred ritual",
@@ -221,6 +224,7 @@
     "description": "Ignites a burning desire for conquest and endless war",
     "flavor": "Every battle is not just a fight, but a sacred mission",
     "group": "harmony",
-    "name": "Zeal of Conquest"
+    "name": "Zeal of Conquest",
+    "stats": { "warfare": 10 }
   }
 }

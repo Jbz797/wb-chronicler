@@ -2,27 +2,17 @@ import { EntityReference, EquipmentStock, HullCount, Leaders, PersonReference, P
 
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium, no neighbour or no ongoing war means no key at all.
 export interface Kingdom {
-  alliance?: KingdomAlliance;
   boats: HullCount;
   breakdown: PopulationBreakdown;
   cities?: KingdomCity[];
   equipment: EquipmentStock;
+  identity: KingdomIdentity;
   leaders?: Leaders;
   metadata: KingdomMetadata;
   population: KingdomPopulation;
   ranks?: KingdomRanks;
   relations?: KingdomRelation[];
   wars?: KingdomWar[];
-}
-
-// `allies` is absent, not empty, if the kingdom is the alliance's last member. `population`/`renown` sum its members. `motto` is chronicler-only (omitted from TS).
-export interface KingdomAlliance {
-  allies?: EntityReference[];
-  breakdown: PopulationBreakdown;
-  name: string;
-  population: number;
-  ranks?: { population?: number; renown?: number };
-  renown: number;
 }
 
 // This kingdom's diplomatic tie to one other — ally/enemy/neutral, with the net opinion score driving the tag colour.
@@ -50,9 +40,20 @@ export interface KingdomWar {
 // The kingdom's settlements, most populous first — chronicler-oriented list, also handy to resolve city names.
 interface KingdomCity { id: number; name: string; population: number }
 
+// What the crown officially is, and the ruler who opened it — its affiliations, never the counters `metadata` keeps.
+interface KingdomIdentity {
+  clan?: EntityReference;
+  culture?: EntityReference;
+  founder?: PersonReference;
+  language?: EntityReference;
+  religion?: EntityReference;
+  subspecies?: EntityReference;
+}
+
 // The kingdom's own attributes (age, capital, king/heir/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
 interface KingdomMetadata {
   age: number;
+  births?: number;
   book_reach?: number;
   books?: number; // volumes shelved across its towns, whoever wrote them
   buildings: number;
@@ -61,7 +62,6 @@ interface KingdomMetadata {
   culture_traits?: number;
   deaths: number;
   food: number;
-  founder?: PersonReference;
   foundings?: number;
   gold: number;
   goods: number;
@@ -106,7 +106,6 @@ interface KingdomRanks {
   culture_traits?: number;
   deaths?: number;
   equipment?: number;
-  fed_pct?: number;
   food?: number;
   food_per_capita?: number;
   foundings?: number;

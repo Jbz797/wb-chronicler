@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
@@ -12,6 +13,7 @@ import { AGE_LABELS, CITY_SIZE_TERMS, HISTORY_DIR, KINGDOM_SIZE_TERMS } from '..
 import { ChapterOverviewPanel, ChapterTier, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
 
+import { AllianceComponent } from './alliance/alliance.component';
 import { CityComponent } from './city/city.component';
 import { ClanComponent } from './clan/clan.component';
 import { CultureComponent } from './culture/culture.component';
@@ -22,6 +24,7 @@ import { LanguageComponent } from './language/language.component';
 import { PanelExtraComponent } from './panel-extra/panel-extra.component';
 import { ReligionComponent } from './religion/religion.component';
 import { SubspeciesComponent } from './subspecies/subspecies.component';
+import { WarsComponent } from './wars/wars.component';
 import { WorldStatsComponent } from './world-stats/world-stats.component';
 
 import { NewBadgeComponent } from '.';
@@ -29,6 +32,7 @@ import { NewBadgeComponent } from '.';
 @Component({
   selector: 'app-chapter-overview',
   imports: [
+    AllianceComponent,
     CityComponent,
     ClanComponent,
     CultureComponent,
@@ -41,9 +45,11 @@ import { NewBadgeComponent } from '.';
     NzCollapseModule,
     NzDividerModule,
     NzEmptyModule,
+    NzTagModule,
     PanelExtraComponent,
     ReligionComponent,
     SubspeciesComponent,
+    WarsComponent,
     WorldStatsComponent,
   ],
   templateUrl: './chapter-overview.component.html',
@@ -85,8 +91,7 @@ export class ChapterOverviewComponent {
   // The body a panel is about has changed hands since the previous chapter — the favorite moved to another clan, another creed, or is himself a successor.
   protected isNewPanel = (panel: ChapterTier): boolean => {
     const previous = this._chronicler.previousChapter()?.meta[panel]?.metadata;
-    const current = this.currentChapter()?.meta[panel]?.metadata;
-    return !!previous && !!current && current.id !== previous.id;
+    return !!previous && !!this.currentChapter()?.meta[panel]?.metadata && !this._chronicler.carriesOver(panel);
   };
 
   // Persist the active panel to sessionStorage so it survives reloads and page changes.
@@ -99,6 +104,7 @@ export class ChapterOverviewComponent {
   // Type guard on the persisted panel name — a `Record`, not a list, so a panel added to the union but forgotten here breaks the build instead of failing silently.
   private _isPanel(v: string | null): v is ChapterOverviewPanel {
     const panels: Record<ChapterOverviewPanel, true> = {
+      alliance: true,
       city: true,
       clan: true,
       culture: true,
@@ -108,6 +114,7 @@ export class ChapterOverviewComponent {
       language: true,
       religion: true,
       subspecies: true,
+      wars: true,
       'world-stats': true,
     };
     return Object.keys(panels).includes(v ?? '');

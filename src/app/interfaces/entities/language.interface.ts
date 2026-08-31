@@ -2,7 +2,7 @@ import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown,
 
 // The favourite's language: caught by ear, not by blood — so WB counts its speakers three ways, born to it, won from another tongue, and lost to one.
 export interface Language {
-  books: BookShelf; // volumes still written in it, whoever holds them now — `metadata.written` is WB's lifetime tally, burnt ones counted
+  books: BookShelf; // volumes still written in it, whoever holds them now — `metadata.books_written` is WB's lifetime tally, burnt ones counted
   breakdown: PopulationBreakdown;
   identity: LanguageIdentity;
   leaders?: Leaders;
@@ -19,6 +19,7 @@ interface LanguageIdentity { founder?: PersonReference }
 // Every counter drops at zero, so panels read them via `?? 0`. `cities`/`kingdoms` are WB's own reach: those WB records as speaking it, not merely housing one.
 interface LanguageMetadata {
   age: number;
+  books_written?: number;
   cities?: number;
   converted?: number;
   deaths?: number;
@@ -30,7 +31,6 @@ interface LanguageMetadata {
   native?: number;
   renown?: number;
   traits?: number;
-  written?: number;
 }
 
 // Podium-only, like every other tier: absent where the language places outside the top 3 among the world's tongues.
@@ -41,7 +41,6 @@ interface LanguageRanks {
   cities?: number;
   converted?: number;
   deaths?: number;
-  fed_pct?: number;
   housed_pct?: number;
   kills?: number;
   kingdoms?: number;

@@ -51,7 +51,7 @@ export class FavoriteComponent {
     const meta = this.currentChapter()?.meta.favorite?.metadata;
     if (!meta) return [];
 
-    const previousMeta = this._chronicler.previousChapter()?.meta.favorite?.metadata;
+    const previousMeta = this._chronicler.carriesOver('favorite') ? this._chronicler.previousChapter()?.meta.favorite?.metadata : undefined;
     const previousRoles = new Set(previousMeta?.roles);
     const roles = meta.roles ?? []; // Absent when the favorite holds none — `emit` strips the empty list.
     const tags: { color: string; isNew: boolean; label: string }[] = [];
@@ -73,9 +73,10 @@ export class FavoriteComponent {
   });
   // Changed-since-previous flags — centralizes all NEW badge conditions for this component.
   protected readonly changedFields = computed(() => {
-    const previous = this._chronicler.previousChapter()?.meta.favorite;
+    const previous = this._chronicler.carriesOver('favorite') ? this._chronicler.previousChapter()?.meta.favorite : undefined;
     const current = this.currentChapter()?.meta.favorite;
-    const isBoarded = !!this.currentChapter()?.meta.boat && !this._chronicler.previousChapter()?.meta.boat; // he sails now and did not before
+    // A successor aboard is not a man who has taken to the sea — the hull is only news against the same soul's last landfall.
+    const isBoarded = !!previous && !!this.currentChapter()?.meta.boat && !this._chronicler.previousChapter()?.meta.boat;
     if (!previous || !current) return { bestFriend: false, boat: isBoarded, descriptor: false, lover: false, plot: false, role: false };
 
     let hasPlotChanged = false;

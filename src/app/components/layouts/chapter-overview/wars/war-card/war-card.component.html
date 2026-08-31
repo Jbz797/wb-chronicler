@@ -1,0 +1,86 @@
+@let w = war();
+@let d = deltas();
+
+<nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="warTitle">
+  @if (w.metadata.war_type) {
+    <nz-descriptions-item [nzTitle]="typeTitle">{{ typeLabel(w) }}</nz-descriptions-item>
+  }
+  <nz-descriptions-item [nzTitle]="declaredByTitle">
+    <app-kingdom-tag [id]="w.metadata.started_by_kingdom.id" [name]="w.metadata.started_by_kingdom.name" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="renownTitle">{{ w.metadata.renown_at_stake }}</nz-descriptions-item>
+  @if (w.metadata.age > 0) {
+    <nz-descriptions-item [nzTitle]="durationTitle">{{ w.metadata.age }} ans</nz-descriptions-item>
+  }
+
+  <nz-descriptions-item [nzTitle]="attackersTitle"><span appSectionRow></span></nz-descriptions-item>
+  @if (w.attackers.alliance; as a) {
+    <nz-descriptions-item [nzTitle]="coalitionTitle">{{ a.name }}</nz-descriptions-item>
+  }
+  <nz-descriptions-item [nzTitle]="kingdomsTitle">
+    @for (k of w.attackers.kingdoms; track k.id) {
+      <app-kingdom-tag [id]="k.id" [name]="k.name" />
+    }
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="populationTitle">
+    <span [class]="sideClass(w.attackers.population, w.defenders.population, 'attackers')">{{ w.attackers.population }}</span>
+    <app-delta [value]="d?.attackers?.population" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="warriorsTitle">
+    <span [class]="sideClass(w.attackers.warriors, w.defenders.warriors, 'attackers')">{{ w.attackers.warriors }}</span>
+    <app-delta [value]="d?.attackers?.warriors" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="citiesTitle">
+    <span [class]="sideClass(w.attackers.cities, w.defenders.cities, 'attackers')">{{ w.attackers.cities }}</span>
+    <app-delta [value]="d?.attackers?.cities" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="deathsTitle">
+    <span [class]="sideClass(w.attackers.deaths, w.defenders.deaths, 'attackers', true)">{{ w.attackers.deaths }}</span>
+    <app-delta [inverted]="true" [value]="d?.attackers?.deaths" />
+  </nz-descriptions-item>
+
+  <nz-descriptions-item [nzTitle]="defendersTitle"><span appSectionRow></span></nz-descriptions-item>
+  @if (w.defenders.alliance; as a) {
+    <nz-descriptions-item [nzTitle]="coalitionTitle">{{ a.name }}</nz-descriptions-item>
+  }
+  <nz-descriptions-item [nzTitle]="kingdomsTitle">
+    @for (k of w.defenders.kingdoms; track k.id) {
+      <app-kingdom-tag [id]="k.id" [name]="k.name" />
+    }
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="populationTitle">
+    <span [class]="sideClass(w.attackers.population, w.defenders.population, 'defenders')">{{ w.defenders.population }}</span>
+    <app-delta [value]="d?.defenders?.population" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="warriorsTitle">
+    <span [class]="sideClass(w.attackers.warriors, w.defenders.warriors, 'defenders')">{{ w.defenders.warriors }}</span>
+    <app-delta [value]="d?.defenders?.warriors" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="citiesTitle">
+    <span [class]="sideClass(w.attackers.cities, w.defenders.cities, 'defenders')">{{ w.defenders.cities }}</span>
+    <app-delta [value]="d?.defenders?.cities" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="deathsTitle">
+    <span [class]="sideClass(w.attackers.deaths, w.defenders.deaths, 'defenders', true)">{{ w.defenders.deaths }}</span>
+    <app-delta [inverted]="true" [value]="d?.defenders?.deaths" />
+  </nz-descriptions-item>
+</nz-descriptions>
+
+<ng-template #warTitle>
+  <span>{{ w.metadata.name }}</span>
+  @if (isNew()) {
+    <app-new-badge [dot]="false" />
+  }
+</ng-template>
+<ng-template #attackersTitle><img src="assets/img/world/wars.png" /><span>Assaillants</span></ng-template>
+<ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
+<ng-template #coalitionTitle><img src="assets/img/world/alliances.png" /><span>Coalition</span></ng-template>
+<ng-template #deathsTitle><img src="assets/img/world/deaths.png" /><span>Morts</span></ng-template>
+<ng-template #declaredByTitle><img src="assets/img/professions/king.png" /><span>Déclarée par</span></ng-template>
+<ng-template #defendersTitle><img src="assets/img/stats/armor.png" /><span>Défenseurs</span></ng-template>
+<ng-template #durationTitle><img src="assets/img/world/duration.png" /><span>Durée</span></ng-template>
+<ng-template #kingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Couronnes</span></ng-template>
+<ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
+<ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée en jeu</span></ng-template>
+<ng-template #typeTitle><img src="assets/img/world/wars.png" /><span>Type de guerre</span></ng-template>
+<ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>

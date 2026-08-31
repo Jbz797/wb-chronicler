@@ -21,6 +21,7 @@ export class TraitSummaryComponent {
   protected readonly summary = computed(() => this._chronicler.currentChapter()?.meta[this.source()]?.traits);
   // Badged only against a summary that existed and read otherwise — a first one, on an entity the chronicle had never met, is not a change.
   protected readonly isNew = computed(() => {
+    if (!this._chronicler.carriesOver(this.source())) return false; // another body's summary is no rewriting of this one's
     const previous = this._chronicler.previousChapter()?.meta[this.source()]?.traits;
     return !!previous && previous !== this.summary();
   });

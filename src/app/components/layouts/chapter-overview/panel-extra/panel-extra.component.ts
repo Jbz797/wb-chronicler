@@ -3,7 +3,7 @@ import { Component, computed, inject, input } from '@angular/core';
 import { ChapterOverviewPanel } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
 import {
-  CityTagComponent, ClanTagComponent, CultureTagComponent, FamilyTagComponent, KingdomTagComponent, LanguageTagComponent, PersonTagComponent,
+  AllianceTagComponent, CityTagComponent, ClanTagComponent, CultureTagComponent, FamilyTagComponent, KingdomTagComponent, LanguageTagComponent, PersonTagComponent,
   ReligionTagComponent, SubspeciesTagComponent,
 } from '../tags';
 
@@ -11,6 +11,7 @@ import {
 @Component({
   selector: 'app-panel-extra',
   imports: [
+    AllianceTagComponent,
     CityTagComponent,
     ClanTagComponent,
     CultureTagComponent,
@@ -33,7 +34,8 @@ export class PanelExtraComponent {
   protected readonly ref = computed(() => {
     const panel = this.panel();
     const meta = this._chronicler.currentChapter()?.meta;
-    if (!meta || panel === 'world-stats') return null;
+    // The two panels that are no tier: the world names no body, and the wars are several — that one hangs a count of its own rather than a plate.
+    if (!meta || panel === 'world-stats' || panel === 'wars') return null;
     return meta[panel]?.metadata ?? null;
   });
 

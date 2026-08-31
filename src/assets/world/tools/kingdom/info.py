@@ -14,16 +14,13 @@ from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
     MIN_PER_CAPITA_UNITS,
-    NON_FOOD_SPECIES,
     PROFESSION_KING,
     PROFESSION_LEADER,
     PROFESSION_WARRIOR,
-    SATED_MIN_NUTRITION,
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
     asset_set,
-    besieging_kingdoms,
     books_held,
     children_by_id,
     civic_building_ids,
@@ -48,7 +45,7 @@ from shared import (
 )
 
 _ADULT_AGE = 16  # WB's `age_adult` (uniform across civilized species): an actor is an adult at ≥ 16 in-game years.
-_ALL_SECTIONS = ("alliance", "boats", "breakdown", "cities", "equipment", "identity", "leaders", "metadata", "population", "ranks", "relations", "wars")
+_ALL_SECTIONS = ("boats", "breakdown", "cities", "equipment", "identity", "leaders", "metadata", "population", "ranks", "relations", "wars")
 _BABY_AGE_THRESHOLD_UNITS = _ADULT_AGE * UNITS_PER_YEAR  # WB considers actors non-adult below `age_adult` (expressed in world_time units).
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
 _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
@@ -57,37 +54,6 @@ _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _TRAIT_MODS = _OPINION_CONSTANTS["actor_trait_opinion_mods"]  # Read once per king trait in `_compute_opinion`, so it earns its own name (as in `city/info.py`).
 _WORLDVIEWS = ("ethnocentric_guard", "xenophiles", "xenophobic")  # WB's `worldview` culture traits: mutually exclusive, often absent — hence our own fourth value.
 _WORLDVIEW_NEUTRAL = "neutral"
-
-
-# The kingdom's alliance and its other members (`None` if unaligned). `population`/`renown` sum the members (WB tracks neither), ranked top-3; `motto` often absent.
-def _build_alliance(kingdom: dict, ctx: dict, save: dict) -> dict | None:
-    kid = kingdom["id"]
-    alliance = next((a for a in save.get("alliances", []) if kid in (a.get("kingdoms") or [])), None)
-
-    if alliance is None:
-        return None
-
-    kingdoms_by_id = ctx["kingdoms_by_id"]
-    populations = ctx["populations_by_kingdom"]
-
-    def totals(members: list[int]) -> tuple[int, int]:
-        return (sum(populations.get(m, 0) for m in members), sum(int((kingdoms_by_id.get(m) or {}).get("renown") or 0) for m in members))
-
-    members = [a for m in alliance.get("kingdoms") or [] for a in ctx["actors_by_kingdom"].get(m, [])]
-    own = totals(alliance.get("kingdoms") or [])
-    others = [totals(a.get("kingdoms") or []) for a in save.get("alliances", [])]
-    ranks = competition_ranks(own, others, {"population": lambda t: t[0], "renown": lambda t: t[1]})
-
-    return {
-        "allies": sorted(({"id": i, "name": kingdoms_by_id.get(i, {}).get("name")} for i in alliance.get("kingdoms") or [] if i != kid), key=lambda o: o["id"]),
-        "breakdown": population_breakdown(members, ctx),
-        "motto": alliance.get("motto"),
-        "name": alliance.get("name"),
-        "population": own[0],
-        "ranks": ranks,
-        "renown": own[1],
-        **({"report": report} if (report := meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})) else {}),  # WB gives a pact the same four
-    }
 
 
 # The realm's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
@@ -113,9 +79,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_kingdom: dict[int, list[dict]] = {}
     boats_by_kingdom: dict[int, list[dict]] = {}  # Boats are actors, skipped by every other tally — gathered here for the `boats` section.
     captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
-    eaters_by_kingdom: Counter[int] = Counter()
     families_by_kingdom: dict[int, set[int]] = {}
-    fed_by_kingdom: Counter[int] = Counter()
     homeless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
     infected_by_kingdom: Counter[int] = Counter()
@@ -157,11 +121,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
         if renown := actor.get("renown"):
             renown_by_kingdom[kid] += int(renown)
-
-        if asset_id not in NON_FOOD_SPECIES:  # `needsFood`: undead (no diet) never count toward hunger
-            eaters_by_kingdom[kid] += 1
-            if int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION:
-                fed_by_kingdom[kid] += 1
 
         if profession in (PROFESSION_KING, PROFESSION_LEADER) or actor_id in captain_ids:
             nobles_by_kingdom[kid] += 1
@@ -209,8 +168,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     buildings_by_kingdom: Counter[int] = Counter()
     civic = civic_building_ids()  # Tallied per kingdom below (tile inside a city zone); `houses` = the dwelling subset.
-    food_ids = asset_set("food")
     food_by_kingdom: Counter[int] = Counter()
+    food_ids = asset_set("food")
     gold_by_kingdom: Counter[int] = Counter()
     goods_by_kingdom: Counter[int] = Counter()
     houses_by_kingdom: Counter[int] = Counter()
@@ -249,7 +208,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "actors_by_clan": actors_by_clan,
         "actors_by_id": actors_by_id,
         "actors_by_kingdom": actors_by_kingdom,
-        "besieging_by_city": cache(lambda: besieging_kingdoms(save)),  # `wars` alone asks, and it walks every actor — resolved on demand, once
         "boats_by_kingdom": boats_by_kingdom,
         "books_by_kingdom": cache(lambda: books_held(save)[1]),  # custody, not authorship; called not stored, a walk of every building few sections need
         "buildings_by_kingdom": buildings_by_kingdom,
@@ -258,10 +216,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cities_by_id": cities_by_id,
         "cities_by_kingdom": cities_by_kingdom,
         "cultures_by_id": index_by_id(save.get("cultures", [])),
-        "eaters_by_kingdom": eaters_by_kingdom,
         "families_by_id": index_by_id(save.get("families") or []),
         "families_by_kingdom": families_by_kingdom,
-        "fed_by_kingdom": fed_by_kingdom,
         "food_by_kingdom": food_by_kingdom,
         "gold_by_kingdom": gold_by_kingdom,
         "goods_by_kingdom": goods_by_kingdom,
@@ -301,11 +257,24 @@ def _build_equipment(kingdom: dict, ctx: dict) -> dict:
 
 # Chronicler-only: what the crown officially is, not what its subjects are (`breakdown`). It all rides on the king: a succession can turn it over, conquest cannot.
 def _build_identity(kingdom: dict, ctx: dict) -> dict:
+    # Founder = first ruler (`past_rulers[0]`) — dead ones left `actors_by_id`, so fall back to the name kept in the record.
+    founder = None
+    past_rulers = kingdom.get("past_rulers") or []
+
+    if past_rulers:
+        fid = past_rulers[0].get("id")
+        founder_actor = ctx["actors_by_id"].get(fid)
+        name = founder_actor.get("name") if founder_actor else past_rulers[0].get("name")
+        founder = {"id": fid, "name": name}
+
     culture = ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}
+
     return {
+        "founder": founder,
         "clan": entity_ref(kingdom.get("royal_clan_id"), ctx["clans_by_id"]),  # WB's `royal_clan_id` — the reigning house
         "culture": entity_ref(kingdom.get("id_culture"), ctx["cultures_by_id"]),
         "language": entity_ref(kingdom.get("id_language"), ctx["languages_by_id"]),
+        "motto": kingdom.get("motto"),  # what the crown swore by — its own words, worth quoting verbatim, as a pact's are
         "religion": entity_ref(kingdom.get("id_religion"), ctx["religions_by_id"]),
         "subspecies": entity_ref(main_subspecies(kingdom, ctx, "kingdom"), ctx["subspecies_by_id"]),
         # Its culture's stance on foreigners, driving opinion modifiers 22-24. Always set, `neutral` included: absence would read as unknown.
@@ -341,30 +310,22 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         # `money` = his own purse: inside `population.money`, netted out of `subjects_money` so both show apart.
         king = {"id": king_actor.get("id"), "money": int(king_actor.get("money") or 0), "name": king_actor.get("name")}
 
-    # Founder = first ruler (`past_rulers[0]`) — dead ones left `actors_by_id`, so fall back to the name kept in the record.
-    founder = None
-    past_rulers = kingdom.get("past_rulers") or []
-
-    if past_rulers:
-        fid = past_rulers[0].get("id")
-        founder_actor = ctx["actors_by_id"].get(fid)
-        name = founder_actor.get("name") if founder_actor else past_rulers[0].get("name")
-        founder = {"id": fid, "name": name}
-
     heir = _resolve_heir(kingdom, ctx)
+    pact = next((a for a in save.get("alliances") or [] if kid in (a.get("kingdoms") or [])), None)  # a realm sits in one pact at most
 
     # Chronicler-only: WB's « Hommage », what a mayor owes the crown. `normal` = no tax trait, which is what almost every crown carries.
     tribute = next((tier for t in kingdom.get("saved_traits") or [] if (tier := _KINGDOM_TRIBUTE_TRAITS.get(t))), "normal")
 
     return {
         "age": int(age_units / UNITS_PER_YEAR),
+        **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name")} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
+        **({"births": born} if (born := int(kingdom.get("total_births") or 0)) else {}),  # Members born over its lifetime, the counterpart WB keeps to `deaths`.
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
-        "founder": founder,
         "gold": ctx["gold_by_kingdom"][kid],  # Gold ore in the kingdom's buildings: mined from `mineral_gold` + half of each taxpayer's loot. Not coins.
         "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
         "heir": heir,
@@ -373,7 +334,6 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "islands": islands,
         "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
         "king": king,
-        "motto": kingdom.get("motto"),
         "name": kingdom.get("name"),
         "renown": kingdom.get("renown", 0),
         "report": report,  # what WB has the realm say of itself
@@ -440,84 +400,16 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool) -> li
     return sorted(out, key=lambda x: x["kingdom"]["id"])
 
 
-# Ongoing wars involving this kingdom (as attacker or defender). Concluded wars are skipped (`winner` is set when a war ends).
-def _build_wars(kingdom: dict, ctx: dict, save: dict) -> list[dict]:
+# Ongoing wars it is drawn into, named and nothing more — `war/info.py <id>` fields both camps. A concluded war is skipped: WB sets `winner` when one ends.
+def _build_wars(kingdom: dict, save: dict) -> list[dict]:
     kid = kingdom["id"]
-    kingdoms_by_id = ctx["kingdoms_by_id"]
-    alliances = save.get("alliances", [])
-
-    # Alliance backing a side when ≥2 of its kingdoms (the main + at least one ally) sit in the same alliance.
-    def alliance_for(main_id: int | None, side_list: list[int]) -> dict | None:
-        if main_id is None:
-            return None
-        for a in alliances:
-            members = a.get("kingdoms") or []
-            if main_id in members and len((set(side_list) & set(members)) - {main_id}) >= 1:
-                return {"id": a["id"], "name": a["name"]}
-        return None
-
-    cities = ctx["cities_by_kingdom"]
-    populations = ctx["populations_by_kingdom"]
-    warriors = ctx["warriors_by_kingdom"]
     out = []
-
-    for w in save.get("wars", []):
+    for w in save.get("wars") or []:
         if w.get("winner"):
             continue
         attackers, defenders = _war_sides(w)
-        if kid not in attackers and kid not in defenders:
-            continue
-        side = "attacker" if kid in attackers else "defender"
-        opponent_kingdoms = [kingdoms_by_id[oid] for oid in (defenders if side == "attacker" else attackers) if oid in kingdoms_by_id]
-        ally_kingdoms = [kingdoms_by_id[aid] for aid in (attackers if side == "attacker" else defenders) - {kid} if aid in kingdoms_by_id]
-
-        duration_units = ctx["world_time"] - float(w.get("created_time") or 0)
-        besieged = {ctx["cities_by_id"][cid].get("kingdomID") for cid in ctx["besieging_by_city"]()}
-        years = int(duration_units / UNITS_PER_YEAR)  # WB `getAge`, the very unit its two age-driven war verdicts read
-        war_state = {
-            "age": years,
-            "attackers_besieged": bool(attackers & besieged),
-            "deaths": int(w.get("total_deaths") or 0),
-            "defenders_besieged": bool(defenders & besieged),
-        }
-
-        # Instigator: WB stores the kingdom name but not the actor's — resolved from the save when alive, bare `{id}` otherwise (searchable in past chapters).
-        sb_id = w.get("started_by_actor_id")
-        sb_actor = ctx["actors_by_id"].get(sb_id)
-
-        out.append(
-            {
-                "allies": sorted(
-                    ({"id": a["id"], "name": a.get("name")} for a in ally_kingdoms),
-                    key=lambda o: o["id"],
-                ),
-                "attacker_alliance": alliance_for(w.get("main_attacker"), w.get("list_attackers") or []),
-                "cities": {"attackers": sum(cities.get(aid, 0) for aid in attackers), "defenders": sum(cities.get(did, 0) for did in defenders)},
-                "deaths": {"attackers": w.get("dead_attackers", 0), "defenders": w.get("dead_defenders", 0)},
-                "defender_alliance": alliance_for(w.get("main_defender"), w.get("list_defenders") or []),
-                "duration_years": years,
-                "id": w.get("id"),
-                **({"is_main": True} if kid == w.get(f"main_{side}") else {}),  # Omitted when False (absence = secondary ally, not this side's leader).
-                "name": w.get("name"),
-                "opponents": sorted(
-                    ({"id": opp["id"], "name": opp.get("name")} for opp in opponent_kingdoms),
-                    key=lambda o: o["id"],
-                ),
-                "populations": {"attackers": sum(populations.get(aid, 0) for aid in attackers), "defenders": sum(populations.get(did, 0) for did in defenders)},
-                "renown_at_stake": w.get("renown", 0),
-                **({"report": report} if (report := meta_report("war", war_state)) else {}),
-                "side": side,
-                "started_by": {
-                    "actor": {"id": sb_id, **({"name": sb_actor["name"]} if sb_actor and sb_actor.get("name") else {})},
-                    "kingdom": {"id": w.get("started_by_kingdom_id"), "name": w.get("started_by_kingdom_name")},
-                },
-                "war_type": w.get("war_type"),
-                "warriors": {
-                    "attackers": sum(warriors.get(aid, 0) for aid in attackers),
-                    "defenders": sum(warriors.get(did, 0) for did in defenders),
-                },
-            }
-        )
+        if kid in attackers or kid in defenders:
+            out.append({"id": w["id"], "name": w.get("name")})
     return sorted(out, key=lambda x: x["id"])
 
 
@@ -683,6 +575,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     getters.update(
         {
             # Chronicler-only ratios, none of them derivable from a single sheet — a rank needs every other crown to mean anything.
+            "births": lambda k: int(k.get("total_births") or 0),
             "births_per_death": lambda k: int(k.get("total_births") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
             "boats": lambda k: len(ctx["boats_by_kingdom"].get(k.get("id")) or ()),
             "book_reach": lambda k: dims["book_reach"].get(k.get("id"), 0),
@@ -789,8 +682,6 @@ def main(argv: list[str]) -> int:
     ctx = _build_context(save, save_path)
 
     out: dict = {}
-    if "alliance" in sections:
-        out["alliance"] = _build_alliance(kingdom, ctx, save)
     if "breakdown" in sections:
         out["breakdown"] = {k: v for k, v in population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx).items() if k != "kingdoms"}
     if "boats" in sections:
@@ -813,7 +704,7 @@ def main(argv: list[str]) -> int:
         # Naming a section is asking for it in depth, so its opinions come with the full ledger; `full` sweeps everything and keeps the two-line summary.
         out["relations"] = _build_relations(kingdom, ctx, save, detailed=requested not in (None, "full"))
     if "wars" in sections:
-        out["wars"] = _build_wars(kingdom, ctx, save)
+        out["wars"] = _build_wars(kingdom, save)
 
     emit(out)
     return 0

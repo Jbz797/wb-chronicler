@@ -6,11 +6,11 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { catchError, forkJoin, Observable, of, tap } from 'rxjs';
 
 import {
-  BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, KINGDOM_REGISTRY, LANGUAGE_REGISTRY, PERSON_REGISTRY, RELIGION_REGISTRY,
-  SAVES_DIR, SUBSPECIES_REGISTRY,
+  ALLIANCE_REGISTRY, BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, KINGDOM_REGISTRY, LANGUAGE_REGISTRY, PERSON_REGISTRY,
+  RELIGION_REGISTRY, SAVES_DIR, SUBSPECIES_REGISTRY,
 } from '../constants';
 import {
-  BookRegistry, CityRegistry, ClanRegistry, CultureRegistry, FamilyRegistry, KingdomRegistry, LanguageRegistry, PersonRegistry, ReligionRegistry,
+  AllianceRegistry, BookRegistry, CityRegistry, ClanRegistry, CultureRegistry, FamilyRegistry, KingdomRegistry, LanguageRegistry, PersonRegistry, ReligionRegistry,
   SubspeciesRegistry,
 } from '../interfaces';
 
@@ -20,6 +20,7 @@ export class RegistryService {
   private readonly _http = inject(HttpClient);
   private readonly _message = inject(NzMessageService);
 
+  public readonly alliances = signal<AllianceRegistry>({});
   public readonly books = signal<BookRegistry>({});
   public readonly cities = signal<CityRegistry>({});
   public readonly clans = signal<ClanRegistry>({});
@@ -34,6 +35,7 @@ export class RegistryService {
   // Loads a chapter's registries (per-chapter, period-accurate) into the signals + the marked bridges. Called by the route resolver before the reader renders.
   public load(slug: string): Observable<unknown> {
     return forkJoin([
+      this._load<AllianceRegistry>(slug, 'alliances.json', ALLIANCE_REGISTRY, this.alliances),
       this._load<BookRegistry>(slug, 'books.json', BOOK_REGISTRY, this.books),
       this._load<CityRegistry>(slug, 'cities.json', CITY_REGISTRY, this.cities),
       this._load<ClanRegistry>(slug, 'clans.json', CLAN_REGISTRY, this.clans),

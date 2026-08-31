@@ -36,6 +36,6 @@ export class BreakdownComponent {
   });
 
   // A dimension the whole body shares says nothing the row does not already say — the share prints only where there is something to share.
-  protected share = (pct: number): string => pct < 100 ? `• ${pct}%` : '';
+  protected share = (pct: number): string => pct < 100 ? `${pct}%` : '';
 
 }

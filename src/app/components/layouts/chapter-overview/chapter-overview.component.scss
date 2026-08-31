@@ -12,8 +12,8 @@
 
   nz-empty {
     display: flex;
-    flex-direction: column;
     flex: 1;
+    flex-direction: column;
     justify-content: center;
   }
 
@@ -108,7 +108,7 @@
         position: relative;
         top: -2px;
         transition: opacity $transition;
-        width: 18px;
+        width: 16px;
       }
 
       .species-icon {
@@ -122,6 +122,11 @@
         margin-bottom: 2px;
       }
 
+      // The wars alone open their panel on a title: everywhere else a table without one comes first, and the margin earns its place between two blocks.
+      app-war-card:first-child .ant-descriptions-title {
+        margin-top: 0;
+      }
+
       .ant-descriptions-title,
       .relations-title {
         align-items: center;
@@ -133,15 +138,6 @@
         letter-spacing: $letter-spacing-wide;
         margin: 1rem 0 0;
         text-transform: uppercase;
-
-        // WB's alliance nameplate (`nameplate_alliance`) — two chain links, all ornament and no field, so it carries the heading rather than sitting beside it.
-        .alliance-plate {
-          background: url('/assets/img/nameplates/alliance.png') center / 100% 100% no-repeat;
-          color: #fff; // 11.9:1 against the plate's mean `#303842` — the ceiling, contrast rising with luminance and nothing outshining white
-          image-rendering: pixelated; // the global rule reaches `img` and `canvas` only, and a scaled background smooths without it
-          padding: 0 1rem;
-          text-shadow: 0 1px 2px rgb(0 0 0 / 80%);
-        }
 
         // Its army counterpart (`nameplate_army`) — a blade, so 3-sliced: pommel and bloodied tip at 1:1, only the plain columns of blade drawn out.
         .army-plate {
@@ -181,23 +177,6 @@
         }
       }
 
-      .ant-descriptions-item-content {
-        app-city-tag,
-        app-kingdom-tag {
-          display: block;
-        }
-
-        img.podium {
-          margin-left: 0.25rem;
-          position: relative;
-          top: -1px;
-        }
-
-        .entity-tag {
-          margin: 0;
-        }
-      }
-
       .ant-descriptions-item-label,
       .ant-descriptions-item-content {
         padding: 6px 12px !important;
@@ -208,6 +187,16 @@
           margin-left: 4px;
           margin-right: 0;
           vertical-align: center;
+
+          // The gap parts a badge from what it follows; opening the cell, it would only indent it.
+          &:first-child {
+            margin-left: 0;
+          }
+        }
+
+        // A delta wraps its own tag, so it is always a first child — yet it trails a number, never opens a cell: the `:not` outweighs the rule above.
+        app-delta nz-tag:not(.entity-tag, .family-tag):first-child {
+          margin-left: 4px;
         }
 
         & > nz-tag {
@@ -234,6 +223,21 @@
               top: 0;
             }
           }
+        }
+
+        app-city-tag,
+        app-kingdom-tag {
+          display: block;
+        }
+
+        img.podium {
+          margin-left: 0.25rem;
+          position: relative;
+          top: -1px;
+        }
+
+        .entity-tag {
+          margin: 0;
         }
       }
     }

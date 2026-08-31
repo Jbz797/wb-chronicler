@@ -1,8 +1,9 @@
 import {
-  BookRegistry, CityRegistry, ClanRegistry, CultureRegistry, FamilyRegistry, KingdomRegistry, LanguageRegistry, PersonRegistry, ReligionRegistry,
+  AllianceRegistry, BookRegistry, CityRegistry, ClanRegistry, CultureRegistry, FamilyRegistry, KingdomRegistry, LanguageRegistry, PersonRegistry, ReligionRegistry,
   SubspeciesRegistry,
 } from '../interfaces';
 
+export const ALLIANCE_REGISTRY: AllianceRegistry = {};
 export const BOOK_REGISTRY: BookRegistry = {};
 export const CITY_REGISTRY: CityRegistry = {};
 export const CITY_SIZE_TERMS = ['Foyer', 'Hameau', 'Village', 'Bourg', 'Ville', 'Cité', 'Grande cité', 'Métropole', 'Cité-Monde'];

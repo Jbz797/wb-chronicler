@@ -36,12 +36,15 @@ _ALERTS = {
     },
 }
 
-# What no panel reads, cut by the section holding it, never by name alone — a homonym elsewhere (`population.nobles`, a hull's `loot`) keeps the place a panel reads.
+# What no panel reads, cut by its section and never by name alone — `nobles` and `loot` have homonyms; a `<tier>.<section>` key overrides the bare one.
 _AUDIT = {
+    "alliance.identity": frozenset({"founding_kingdom", "motto"}),  # the pact is read by its own name and its members, not by the crown that opened it
     "army": frozenset({"captain_years", "total_captains"}),  # the corps' tenure and its roll of captains — the panel names the one in post, and only him
     "identity": frozenset({"founding_city", "founding_clan", "founding_kingdom", "motto", "name_culture", "name_template_set", "worldview"}),
     "metadata": frozenset(
         {
+            "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
+            "besieged_by",
             "can_reproduce",
             "clan_chief_years",
             "deaths_by_cause",
@@ -50,6 +53,7 @@ _AUDIT = {
             "founding_kingdom",
             "gen",
             "home",
+            "in_building",
             "island_id",
             "islands",
             "mass",
@@ -80,8 +84,18 @@ _AUDIT = {
     ),
     "ranks_in_species": frozenset({"birth_rate", "loot"}),
     "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
-    "stats": frozenset({"birth_rate", "bonus_towers", "damage_range", "loot"}),
+    "stats": frozenset({"birth_rate", "bonus_towers", "damage_range", "loot", "max_cities"}),
 }
+
+# What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
+_AUDIT_TIERS = {
+    "alliance.metadata": {"cities", "kingdoms"},  # the pact names its realms and towns as tags, so counting either says nothing the list has not
+    "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
+    "clan.ranks": {"kingdoms"},  # its crowns tie on one realm apiece — `clan/info.py <id> ranks` still places the band that spans eight
+    "family.metadata": {"kingdoms"},  # a lineage spans two crowns too rarely for a panel row, so the count rides the script's output alone
+    "family.ranks": {"cities"},  # towns follow the heads that hold them, so the podium repeats the one `members` already draws
+}
+
 
 # No panel reads them: `report` is reworded per call, `taxonomy` derives from `identity.species`, `passengers` counts souls at sea, an age's pair is WB's English.
 _CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "taxonomy"})
@@ -150,7 +164,7 @@ _TALLIES = {
     "subspecies": ("members",),
 }
 
-_TIERS = ("city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies, in chapter order; each is optional
+_TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
 _TOOLS = Path(__file__).parent.parent
 
 # Where each tier keeps its traits in the raw save — read straight from both `map.wbox` files, so no digest need ride along in the chapter to spot a change.
@@ -214,20 +228,20 @@ def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> list[str]:
 
 
 # `_CHRONICLER_ONLY` cuts at every depth of the tree, `_AUDIT` from one named section alone — neither loses the chronicler a thing, `<tier>/info.py` replaying both.
-def _drop_chronicler_keys(node):
+def _drop_chronicler_keys(node, parent: str = ""):
     if isinstance(node, dict):
         kept = {}
         for key, value in node.items():
             if key in _CHRONICLER_ONLY:
                 continue
-            if cut := _AUDIT.get(key):  # a section is a dict, save `relations`, which is a list of them
+            if cut := _AUDIT.get(key, frozenset()) | _AUDIT_TIERS.get(f"{parent}.{key}", frozenset()):  # a section is a dict, save `relations`, a list of them
                 if isinstance(value, dict):
                     value = _without(value, cut)
                 elif isinstance(value, list):
                     value = [_without(item, cut) if isinstance(item, dict) else item for item in value]
-            kept[key] = _drop_chronicler_keys(value)
+            kept[key] = _drop_chronicler_keys(value, key)
         return kept
-    return [_drop_chronicler_keys(value) for value in node] if isinstance(node, list) else node
+    return [_drop_chronicler_keys(value, parent) for value in node] if isinstance(node, list) else node
 
 
 def _entity_id(block: dict) -> int | None:
@@ -286,11 +300,10 @@ def _fold_favorite_detail(favorite: dict) -> None:
     favorite.pop("traits", None)  # the chronicler's summary takes its place, carried over or owed
 
 
-# Keeps `opinion.top_drivers` on the ally/enemy ties only — a summary earns its place where it drives events. The `relations` section still gives the full ledger.
+# Drops every `opinion.top_drivers`: the table prints the standing alone, and `kingdom/info.py <id> relations` still gives the chronicler the whole ledger.
 def _fold_kingdom_detail(kingdom: dict) -> None:
     for relation in kingdom.get("relations") or []:
-        if relation.get("status") == "neutral":
-            (relation.get("opinion") or {}).pop("top_drivers", None)
+        (relation.get("opinion") or {}).pop("top_drivers", None)
     _fold_total(kingdom, "equipment")
 
 
@@ -559,6 +572,12 @@ def main(argv: list[str]) -> int:
             _fold_boat_detail(boat)
             _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
 
+    # A third wave, and the only one a tier opens: the crown names its wars, each of which answers for itself — neither camp being `ours` from up here.
+    wars = [w for w in ((blocks.get("kingdom") or {}).get("wars") or []) if w.get("id") is not None]
+    if wars:
+        fought = _run_together(*((_run, "war/info.py", w["id"], "full", chapter) for w in wars))
+        wars = [war for war in fought if war]
+
     summaries = {tier: favorite if tier == "favorite" else blocks[tier] for tier in _TRAIT_SOURCES}  # a tier is summarised the day it gains a trait source
     owed = _carry_trait_summaries(n, summaries, live)
 
@@ -592,6 +611,7 @@ def main(argv: list[str]) -> int:
         "boat": boat,
         "favorite": favorite,
         "tags": tags,
+        "wars": wars,
         "title": "",
         "world": world,
     }

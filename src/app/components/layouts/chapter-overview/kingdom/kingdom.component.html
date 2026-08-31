@@ -17,7 +17,7 @@
       </nz-descriptions-item>
     }
 
-    @if (k.metadata.founder; as founder) {
+    @if (k.identity.founder; as founder) {
       <nz-descriptions-item [nzTitle]="founderTitle">
         <app-person-tag [id]="founder.id" [name]="founder.name" />
       </nz-descriptions-item>
@@ -104,12 +104,6 @@
   <app-breakdown source="kingdom" />
 
   <app-wealth source="kingdom" />
-
-  <app-kingdom-alliance />
-
-  @for (war of k.wars ?? []; track war.id) {
-    <app-war-card [isNew]="startedWarIds().has(war.id)" [war]="war" />
-  }
 
   <app-kingdom-relations [relations]="k.relations ?? []" />
 

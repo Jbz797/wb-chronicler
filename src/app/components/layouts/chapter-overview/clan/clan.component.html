@@ -1,6 +1,6 @@
 @if (clan(); as c) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    @if (c.metadata.founder; as founder) {
+    @if (c.identity.founder; as founder) {
       <nz-descriptions-item [nzTitle]="founderTitle">
         <app-person-tag [id]="founder.id" [name]="founder.name" />
       </nz-descriptions-item>
@@ -18,6 +18,7 @@
       </nz-descriptions-item>
     }
 
+    <nz-descriptions-item [nzTitle]="chiefsTitle">{{ c.metadata.past_chiefs }}</nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat source="clan" stat="age" suffix=" ans" />
     </nz-descriptions-item>
@@ -44,11 +45,8 @@
       <app-ranked-stat source="clan" stat="cities" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="kingdomsTitle">
-      <app-ranked-stat source="clan" stat="kingdoms" />
-    </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="chiefsTitle">{{ c.metadata.past_chiefs }}</nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="warriorsTitle">
-      <app-ranked-stat source="clan" stat="warriors" />
+      <!-- No podium: a band answers to one crown or to eight, nothing between, so the whole field ties on the second value and every clan takes a medal. -->
+      <app-ranked-stat source="clan" stat="kingdoms" [showRank]="false" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="clan" stat="housed_pct" suffix="%" />
@@ -82,5 +80,4 @@
   <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
   <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
   <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
-  <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
 }

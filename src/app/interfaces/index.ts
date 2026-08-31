@@ -1,5 +1,6 @@
 export type * from './actor.interface';
 export type * from './chapter.interface';
+export type * from './entities/alliance.interface';
 export type * from './entities/boat.interface';
 export type * from './entities/city.interface';
 export type * from './entities/clan.interface';
@@ -10,6 +11,7 @@ export type * from './entities/kingdom.interface';
 export type * from './entities/language.interface';
 export type * from './entities/religion.interface';
 export type * from './entities/subspecies.interface';
+export type * from './entities/war.interface';
 export type * from './entities/world.interface';
 export type * from './entity.interface';
 export type * from './marked.interface';

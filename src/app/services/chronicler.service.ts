@@ -6,7 +6,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { catchError, EMPTY, expand, filter, map, scan } from 'rxjs';
 
 import { SAVES_DIR } from '../constants';
-import { Chapter, ChapterMeta } from '../interfaces';
+import { Chapter, ChapterMeta, ChapterTier } from '../interfaces';
 
 @Service()
 export class ChroniclerService {
@@ -55,5 +55,12 @@ export class ChroniclerService {
     const all = this.chapters();
     return all[all.findIndex(c => c.slug === this.currentChapter()?.slug) - 1];
   });
+
+  // The body this tier names in the chapter before — same id, same entity, or every delta would compare two strangers: a dead favourite, a crown lost.
+  public readonly carriesOver = (tier: ChapterTier): boolean => {
+    const previous = this.previousChapter()?.meta[tier]?.metadata;
+    const current = this.currentChapter()?.meta[tier]?.metadata;
+    return !!previous && !!current && previous.id === current.id;
+  };
 
 }

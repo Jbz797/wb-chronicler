@@ -15,9 +15,7 @@ from actor_stats import build_actor_stats_context, compute_actor_stats, meta_rat
 from islands import compute_islands_cached
 from shared import (
     MIN_PER_CAPITA_UNITS,
-    NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
-    SATED_MIN_NUTRITION,
     actor_age,
     biome_lore,
     build_trait_ids,
@@ -42,20 +40,11 @@ from shared import (
     wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "species", "stats", "taxonomy", "traits")
+_ALL_SECTIONS = ("breakdown", "leaders", "members", "metadata", "population", "ranks", "species", "stats", "taxonomy", "traits")
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field, the same narrow set a clan carries — old age answers to `natural`.
 _EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "population": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
 _NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the subspecies record and its libraries
 _TAXONOMY_RANKS = ("kingdom", "phylum", "class", "order", "family", "genus")  # WB's own order, broadest first — `render` keeps it, not alphabetical.
-
-
-# The stock WB mutated this one out of and the biome that shaped it — bare keys, and WB's `default_color` being no biome at all, the panel drops the row.
-def _build_identity(subspecies: dict) -> dict:
-    biome_id = (subspecies.get("biome_variant") or "").removeprefix("biome_")
-    return {
-        "biome": biome_id if biome_lore(biome_id) else None,
-        "species": subspecies.get("species_id"),
-    }
 
 
 # Everyone alive who carries the biology, eldest first — WB points the actor at its subspecies, never the reverse. `total` rides with the list it counts.
@@ -81,6 +70,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 
 # The subspecies' identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
+    biome_id = (subspecies.get("biome_variant") or "").removeprefix("biome_")
     causes = {k.removeprefix(_DEATH_PREFIX): v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
     cities = {c for a in members if (c := a.get("cityID"))}
     families = {f for a in members if (f := a.get("family"))}
@@ -90,6 +80,7 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
 
     return {
         "age": entity_age(subspecies, ctx["world_time"]),
+        **({"biome": biome_id} if biome_lore(biome_id) else {}),  # the biome that shaped the mutation, never the stock — `default_color` being none, the key drops
         **({"births": births} if (births := int(subspecies.get("total_births") or 0)) else {}),
         **({"cities": len(cities)} if cities else {}),  # settlements its bearers answer from — a biology spreads wherever its carriers walk
         **({"deaths": deaths} if (deaths := int(subspecies.get("total_deaths") or 0)) else {}),
@@ -110,7 +101,7 @@ def _build_population(members: list[dict], ctx: dict) -> dict:
     return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
 
 
-# The stock's standing over every soul of that species, ranked against the others — its own section, like a realm's `alliance`: counts flat beside its `ranks`.
+# The stock's standing over every soul of that species: counts flat beside its `ranks`, and `id` to say whose — the block reaches `chapter.json` alone.
 def _build_species(subspecies: dict, save: dict) -> dict:
     asset_id = subspecies.get("species_id") or ""
     totals = _species_totals(save)
@@ -119,7 +110,7 @@ def _build_species(subspecies: dict, save: dict) -> dict:
     description = (load_data("species.json").get(asset_id) or {}).get("description")  # chronicler-only: WB's English line, which the panel never prints
 
     # Counts drop at zero like the tier's own — a beast holds no town, and the podium is computed off the whole dict, so nothing is lost by not printing it.
-    return {**{key: value for key, value in own.items() if value}, "description": description, **({"ranks": ranks} if ranks else {})}
+    return {**{key: value for key, value in own.items() if value}, "description": description, "id": asset_id, **({"ranks": ranks} if ranks else {})}
 
 
 # WB `ActorAsset.name_taxonomic_*`, lower-case in the DLL. Its `species` rank is dropped: `metadata.name` already carries it, mutated (`Banditus Nikonisum`).
@@ -151,7 +142,6 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         # The reach `metadata` already prints, ranked as a custom and a creed rank theirs — both read off the one actor pass, no second walk.
         "cities": lambda s: len({cid for a in tallies["members"].get(s["id"], ()) if (cid := a.get("cityID"))}),
         "deaths": lambda s: int(s.get("total_deaths") or 0),
-        "fed_pct": lambda s: tallies["fed"][s["id"]] / n if (n := tallies["eaters"][s["id"]]) else 0.0,
         "housed_pct": lambda s: tallies["housed"][s["id"]] / n if (n := len(tallies["members"].get(s["id"], ()))) else 0.0,
         "kills": lambda s: int(s.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
@@ -217,8 +207,6 @@ def main(argv: list[str]) -> int:
 
     # One pass feeds every tally: WB points the actor at its biology, never the reverse. Skipped whole where no section asked — `taxonomy` reads a data file.
     tallies: dict = {
-        "eaters": Counter(),
-        "fed": Counter(),
         "housed": Counter(),
         "members": {},
         "money": Counter(),
@@ -231,15 +219,11 @@ def main(argv: list[str]) -> int:
     for actor in walked:
         if not (sid := actor.get("subspecies")):
             continue
+        tallies["housed"][sid] += bool(actor.get("homeBuildingID"))
         tallies["members"].setdefault(sid, []).append(actor)
         tallies["money"][sid] += int(actor.get("money") or 0)
-        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they weigh on neither side of the hunger share
-            tallies["eaters"][sid] += 1
-            tallies["fed"][sid] += int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION
-        tallies["housed"][sid] += bool(actor.get("homeBuildingID"))
+        tallies["renown_total"][sid] += int(actor.get("renown") or 0)
         tallies["warriors"][sid] += actor.get("profession") == PROFESSION_WARRIOR
-        if fame := actor.get("renown"):
-            tallies["renown_total"][sid] += int(fame)
 
     members = tallies["members"].get(subspecies_id, [])
     ctx = {
@@ -258,8 +242,6 @@ def main(argv: list[str]) -> int:
     if "breakdown" in sections:
         # The living against the biology they were born into. Species and subspecies both go: WB fixes them at birth, so each would read 100 % and say nothing.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k not in ("species", "subspecies")}
-    if "identity" in sections:
-        out["identity"] = _build_identity(subspecies)
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below five members, where a champion among three names nobody
         out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
     if "members" in sections:

@@ -39,9 +39,8 @@ from shared import (
     sex_label,
 )
 
-# Genes that round UP on BAD (instead of down).
-_CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}
-
+_BROKEN_ITEM_RATIO = 0.5  # WB `Actor.updateStats`: a worn-out piece stays worn and still counts, at half of all it grants.
+_CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}  # the stats a `bad` gene rounds UP rather than down
 _COLOR_MAP = {"A": "green", "C": "blue", "G": "yellow", "T": "red"}  # in the order of the `"ACGT"` literal that indexes it
 _DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
@@ -146,7 +145,7 @@ _GENE_VALUES = {
 
 _GRID_COLS = 6
 _HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20, and only where `has_emotions` — which every caller gates on.
-_KEEP_DECIMAL = {"damage_range"}  # One decimal kept, not truncated: `damage_range` is `damage × ratio` with ratio < 1, which an int would flatten.
+_KEEP_DECIMAL = {"attack_speed", "damage_range"}  # One decimal kept: both live under 1 — `attack_speed` floors at 0.5 — where an int would flatten them away.
 _LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}  # Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / _MANA_PER_INTELLIGENCE constants.
 _LEVEL_VETERAN_SKILL_BONUS = 0.1
 _LEVEL_VETERAN_THRESHOLD = 5
@@ -225,11 +224,11 @@ def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, i
         item = items_by_id.get(iid)
         if item is None:
             continue
-        for k, v in ((item_stats.get(item["asset_id"]) or {}).get("stats") or {}).items():
-            totals[k] = totals.get(k, 0) + v
-        for mod in item.get("modifiers") or []:
-            for k, v in (mod_stats.get(mod) or {}).items():
-                totals[k] = totals.get(k, 0) + v
+        # `ItemTools.mergeStatsWithItem` passes one ratio down to the asset and every modifier alike — an absent `durability` is WB's dropped zero, hence broken.
+        ratio = _BROKEN_ITEM_RATIO if (item.get("durability") or 0) <= 0 else 1
+        for block in ((item_stats.get(item["asset_id"]) or {}).get("stats") or {}, *(mod_stats.get(mod) or {} for mod in item.get("modifiers") or [])):
+            for k, v in block.items():
+                totals[k] = totals.get(k, 0) + v * ratio
 
 
 # WB `Chromosome.combineBonusesForSides`: the four cardinal neighbours of a sex-bonus locus pay into that sex block at their neutral value, halved next to a `bad`.
@@ -519,9 +518,10 @@ def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict, *, li
         low, high = _NORMALIZE["lifespan"]
         span = min(max(totals["lifespan"], low), high)
         return {"lifespan": span * (1 + totals["multiplier_lifespan"]) if "multiplier_lifespan" in totals else span}
-    _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
     _add_custom_data_float(totals, actor.get("custom_data_float"))
     _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
+    # After the scaling, never before: `updateStats` merges the racks last, so a blade's health/mana/stamina rides flat — a veteran's gear is worth a recruit's.
+    _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
     _normalize(totals)  # `updateStats` normalizes here, ahead of the derived stats: mana reads the clamped intelligence, damage the clamped warfare.
     _apply_derived_stats(totals)
     _apply_multipliers(totals)

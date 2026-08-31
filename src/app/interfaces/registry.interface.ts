@@ -1,3 +1,16 @@
+// Alliance registry entry — a pact wears its own hue and the heraldry of the crown that opened it, WB giving it no king of its own to draw a set from.
+export interface AllianceInfo {
+  banner_bg?: number;
+  banner_bg_color?: string;
+  banner_icon?: number;
+  banner_icon_color?: string;
+  banner_unity?: boolean; // `alliance_type` is not 0 — WB frames such a pact in gold rather than in plain metal
+  color: string;
+  color_main?: string;
+  dead?: boolean;
+  kingdoms?: number; // crowns bound by the pact — the badge set into the right link
+}
+
 // A volume's tag: the two sheets its sprite stacks — a cover from the common set, its genre's white glyph over it — and the hue WB prints its title in.
 export interface BookInfo {
   color?: string;

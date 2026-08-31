@@ -14,9 +14,7 @@ from actor_stats import build_actor_stats_context, compute_actor_stats, meta_rat
 from islands import compute_islands_cached
 from shared import (
     MIN_PER_CAPITA_UNITS,
-    NON_FOOD_SPECIES,
     PROFESSION_WARRIOR,
-    SATED_MIN_NUTRITION,
     actor_age,
     build_trait_ids,
     build_trait_list,
@@ -47,6 +45,9 @@ _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field; the clan's s
 # Chronicler-only: what the clan was founded as — the creator's own stock — plus the culture it currently answers to, which its later members need not share.
 def _build_identity(clan: dict, ctx: dict) -> dict:
     return {
+        "founder": {"id": fid, "name": clan.get("founder_actor_name")} if (fid := clan.get("founder_actor_id")) is not None else None,
+        "founding_city": entity_ref(clan.get("founder_city_id"), ctx["cities_by_id"]),
+        "founding_kingdom": entity_ref(clan.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
         "culture": entity_ref(_clan_culture(clan, ctx), ctx["cultures_by_id"]),
         "motto": clan.get("motto"),  # WB writes one on roughly half of them — the clan's own words, worth quoting verbatim
         "species": clan.get("creator_species_id"),
@@ -93,9 +94,6 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
         **({"deaths": deaths} if (deaths := int(clan.get("total_deaths") or 0)) else {}),
         **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the clan has been dying, which its totals alone never say
         **({"families": len(families)} if families else {}),  # bloodlines it draws on: a band is sworn, not born into, so a lone line marks a family affair
-        "founder": {"id": fid, "name": clan.get("founder_actor_name")} if (fid := clan.get("founder_actor_id")) is not None else None,
-        "founding_city": entity_ref(clan.get("founder_city_id"), ctx["cities_by_id"]),
-        "founding_kingdom": entity_ref(clan.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
         "heir": _resolve_heir(clan, members, ctx),
         "id": clan["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         **({"kills": kills} if (kills := int(clan.get("total_kills") or 0)) else {}),
@@ -135,8 +133,6 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         # The reach `metadata` already prints, ranked as a custom and a creed rank theirs — both read off the one actor pass, no second walk.
         "cities": lambda c: len({cid for a in tallies["members"].get(c["id"], ()) if (cid := a.get("cityID"))}),
         "deaths": lambda c: int(c.get("total_deaths") or 0),
-        "fed_pct": lambda c: tallies["fed"][c["id"]] / n if (n := tallies["eaters"][c["id"]]) else 0.0,
-        "housed_pct": lambda c: tallies["housed"][c["id"]] / n if (n := len(tallies["members"].get(c["id"], ()))) else 0.0,
         "kills": lambda c: int(c.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
         "kills_per_capita": lambda c: int(c.get("total_kills") or 0) / n if (n := len(tallies["members"].get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
@@ -185,9 +181,6 @@ def main(argv: list[str]) -> int:
 
     # One pass feeds every tally: WB points the actor at its band, never the reverse.
     tallies: dict = {
-        "eaters": Counter(),
-        "fed": Counter(),
-        "housed": Counter(),
         "members": {},
         "money": Counter(),
         "renown_total": Counter(),
@@ -199,13 +192,8 @@ def main(argv: list[str]) -> int:
             continue
         tallies["members"].setdefault(cid, []).append(actor)
         tallies["money"][cid] += int(actor.get("money") or 0)
-        if actor.get("asset_id") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they weigh on neither side of the hunger share
-            tallies["eaters"][cid] += 1
-            tallies["fed"][cid] += int(actor.get("nutrition") or 0) >= SATED_MIN_NUTRITION
-        tallies["housed"][cid] += bool(actor.get("homeBuildingID"))
+        tallies["renown_total"][cid] += int(actor.get("renown") or 0)
         tallies["warriors"][cid] += actor.get("profession") == PROFESSION_WARRIOR
-        if fame := actor.get("renown"):
-            tallies["renown_total"][cid] += int(fame)
 
     members = tallies["members"].get(clan_id, [])
     ctx = {

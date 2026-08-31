@@ -8,8 +8,8 @@ import { map } from 'rxjs';
 
 import { PAGES } from '../../constants';
 import {
-  ActorSpriteHelpers, BookSpriteHelpers, ClanSpriteHelpers, CultureSpriteHelpers, KingdomSpriteHelpers, LanguageSpriteHelpers, ReligionSpriteHelpers,
-  SubspeciesSpriteHelpers,
+  ActorSpriteHelpers, AllianceSpriteHelpers, BookSpriteHelpers, ClanSpriteHelpers, CultureSpriteHelpers, KingdomSpriteHelpers, LanguageSpriteHelpers,
+  ReligionSpriteHelpers, SubspeciesSpriteHelpers,
 } from '../../helpers';
 import { ChroniclerService, RegistryService } from '../../services';
 
@@ -54,6 +54,7 @@ export class ReaderPage {
     ActorSpriteHelpers.paintAll(root, this._registry.persons());
     BookSpriteHelpers.paintAll(root, this._registry.books());
     KingdomSpriteHelpers.paintAll(root, this._registry.kingdoms());
+    AllianceSpriteHelpers.paintAll(root, this._registry.alliances());
     ClanSpriteHelpers.paintAll(root, this._registry.clans());
     CultureSpriteHelpers.paintAll(root, this._registry.cultures());
     LanguageSpriteHelpers.paintAll(root, this._registry.languages());

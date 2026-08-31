@@ -1,35 +1,51 @@
 @if (breakdown()) {
   <nz-descriptions nzBordered nzSize="small" nzTitle="Composition" [nzColumn]="1">
-    @if (tops().species; as s) {
-      <nz-descriptions-item [nzTitle]="speciesTitle">
-        <span>
-          <img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" /> {{ s.asset_id | speciesName }} <span class="share">{{ share(s.pct) }}</span>
-        </span>
-      </nz-descriptions-item>
-    }
-    @if (tops().subspecies; as ss) {
-      <nz-descriptions-item [nzTitle]="subspeciesTitle">
-        <app-subspecies-tag [id]="ss.id" [name]="ss.name" /> <span class="share">{{ share(ss.pct) }}</span>
-      </nz-descriptions-item>
-    }
     @if (tops().culture; as c) {
       <nz-descriptions-item [nzTitle]="cultureTitle">
-        <app-culture-tag [id]="c.id" [name]="c.name" /> <span class="share">{{ share(c.pct) }}</span>
+        <div class="composition-row">
+          <app-culture-tag [id]="c.id" [name]="c.name" />
+          <span class="share">{{ share(c.pct) }}</span>
+        </div>
       </nz-descriptions-item>
     }
     @if (tops().language; as l) {
       <nz-descriptions-item [nzTitle]="languageTitle">
-        <app-language-tag [id]="l.id" [name]="l.name" /> <span class="share">{{ share(l.pct) }}</span>
+        <div class="composition-row">
+          <app-language-tag [id]="l.id" [name]="l.name" />
+          <span class="share">{{ share(l.pct) }}</span>
+        </div>
       </nz-descriptions-item>
     }
     @if (tops().religion; as r) {
       <nz-descriptions-item [nzTitle]="religionTitle">
-        <app-religion-tag [id]="r.id" [name]="r.name" /> <span class="share">{{ share(r.pct) }}</span>
+        <div class="composition-row">
+          <app-religion-tag [id]="r.id" [name]="r.name" />
+          <span class="share">{{ share(r.pct) }}</span>
+        </div>
+      </nz-descriptions-item>
+    }
+    @if (tops().species; as s) {
+      <nz-descriptions-item [nzTitle]="speciesTitle">
+        <div class="composition-row">
+          <span><img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" /> {{ s.asset_id | speciesName }}</span>
+          <span class="share">{{ share(s.pct) }}</span>
+        </div>
+      </nz-descriptions-item>
+    }
+    @if (tops().subspecies; as ss) {
+      <nz-descriptions-item [nzTitle]="subspeciesTitle">
+        <div class="composition-row">
+          <app-subspecies-tag [id]="ss.id" [name]="ss.name" />
+          <span class="share">{{ share(ss.pct) }}</span>
+        </div>
       </nz-descriptions-item>
     }
     @if (tops().kingdom; as k) {
       <nz-descriptions-item [nzTitle]="kingdomTitle">
-        <app-kingdom-tag [id]="k.id" [name]="k.name" /> <span class="share">{{ share(k.pct) }}</span>
+        <div class="composition-row">
+          <app-kingdom-tag [id]="k.id" [name]="k.name" />
+          <span class="share">{{ share(k.pct) }}</span>
+        </div>
       </nz-descriptions-item>
     }
   </nz-descriptions>

@@ -2,7 +2,8 @@ import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 
 import {
-  BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, LANGUAGE_REGISTRY, PERSON_REGISTRY,
+  ALLIANCE_REGISTRY, BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, LANGUAGE_REGISTRY,
+  PERSON_REGISTRY,
   RELIGION_REGISTRY, SPECIES_COLORS, SUBSPECIES_REGISTRY,
 } from '../constants';
 import { IconKind, IconToken, InlineMarker, ParserThis } from '../interfaces';
@@ -14,6 +15,7 @@ export class MarkedHelpers {
 
   // The markers a registry resolves, hence an id that is a number — `[r]`/`[s]` name their asset instead.
   private static readonly _numericIdMarkers = new Set<InlineMarker>([
+    INLINE_MARKER.Alliance,
     INLINE_MARKER.Boat,
     INLINE_MARKER.Book,
     INLINE_MARKER.City,
@@ -25,6 +27,7 @@ export class MarkedHelpers {
     INLINE_MARKER.Person,
     INLINE_MARKER.Religion,
     INLINE_MARKER.Subspecies,
+    INLINE_MARKER.War,
   ]);
 
   // Inline icon codes — each one a `[<letter> <id> <name>]` marker handled by its own renderer.
@@ -32,6 +35,7 @@ export class MarkedHelpers {
     marked.use(gfmHeadingId());
     marked.use({
       extensions: [
+        this._extension(INLINE_MARKER.Alliance, 'alliances', false, this._renderAlliance), // `[i <id> <name>]` = alliance (banner + name, in its own hue).
         this._extension(INLINE_MARKER.Boat, 'boats', true, this._renderBoat), // `[o <id> <name>?]` = boat (name in sea-ink + hull icon).
         this._extension(INLINE_MARKER.Book, 'books', false, this._renderBook), // `[b <id> <title>]` = book (its board + title in its genre's hue + readings).
         this._extension(INLINE_MARKER.City, 'cities', false, this._renderCity), // `[c <id> <name>]` = city (glyph + name, in its kingdom's palette).
@@ -45,6 +49,7 @@ export class MarkedHelpers {
         this._extension(INLINE_MARKER.Resource, 'resources', true, this._renderResource), // `[r <id> <text>?]` = resource (icon + optional text, never colored).
         this._extension(INLINE_MARKER.Species, 'species', true, this._renderSpecies), // `[s <id> <text>?]` = species (icon + optional colored text).
         this._extension(INLINE_MARKER.Subspecies, 'subspecies', false, this._renderSubspecies), // `[u <id> <name>]` = subspecies (name in its own hue + bearers).
+        this._extension(INLINE_MARKER.War, 'wars', false, this._renderWar), // `[w <id> <name>]` = war (the generic icon + the name it was given).
       ],
     });
   }
@@ -83,6 +88,22 @@ export class MarkedHelpers {
     const name = isNameOptional ? String.raw`(?: ([^\n\]]+))?` : String.raw` ([^\n\]]+)`;
     return new RegExp(String.raw`^\[${letter} (${id})${name}]`);
   };
+
+  // A pact's plate: the heraldry of the crown that opened it, its own hue, and the souls its realms hold between them.
+  private static _renderAlliance(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const info = ALLIANCE_REGISTRY[id];
+    const name = children?.length ? this.parser.parseInline(children) : id;
+
+    const banner = `<canvas class="banner" data-alliance="${id}" height="0" width="0"></canvas>`; // `paintAllAlliances` composes it once rendered
+
+    const dead = info?.dead ? ' dead' : ''; // a pact its last realm has left → drained + struck-through style
+    const label = `<span class="entity-name">${name}</span>`;
+    const crowns = info?.kingdoms ? `<span class="tag-badge">${info.kingdoms}</span>` : '';
+    const style = `--tag-color: ${PaletteHelpers.liftedText(info?.color)}`; // its own hue, no crown's: a pact answers to none of its members
+
+    return `<span class="ant-tag entity-tag alliance-tag${dead}" style="${style}">${banner}${label}${crowns}</span>`;
+  }
 
   // A hull answers to no registry — the chapter carries one boat at most, so the marker paints the name in sea-ink and hangs WB's own sail to its right.
   private static _renderBoat(this: ParserThis, token: Tokens.Generic): string {
@@ -288,6 +309,13 @@ export class MarkedHelpers {
 
     const style = `--tag-color: ${info?.color}; --tag-slab: ${SubspeciesSpriteHelpers.slab(info?.banner_bg)}`;
     return `<span class="ant-tag entity-tag subspecies-tag${dead}" style="${style}">${bookmark}${label}${medal}${size}${species}</span>`;
+  }
+
+  // A war has no plate and no registry: WB gives it a name and nothing else to wear, so the marker prints the one icon every war shares, then that name.
+  private static _renderWar(this: ParserThis, token: Tokens.Generic): string {
+    const { tokens: children } = token as IconToken;
+    const img = '<img class="icon" src="assets/img/world/wars.png" />';
+    return `<span class="icon-wrap war-name">${this.parser.parseInline(children ?? [])}${img}</span>`;
   }
 
 }
