@@ -14,7 +14,7 @@ export interface World {
   snapshot: WorldSnapshot;
 }
 
-// The world's own identity, chronicler-authored in `history/world.json` — the name alone reaches a panel, the sentence beside it framing the chronicle.
+// `history/world.json` mirrors the identity the save carries, name and description alike — WorldBox shows the sentence in its own world list, no panel here does.
 export interface WorldInfo { name: string }
 
 // Every scheme afoot, its schemer named — WB hangs one on a single actor, and `actor/info.py <id> plot` tells the chronicler the rest.
