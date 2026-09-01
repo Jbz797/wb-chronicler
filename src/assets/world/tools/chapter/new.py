@@ -24,14 +24,16 @@ from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, latest_chapter, live_save
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
 
-# World-law alerts, fired once ever (`chapter.json.tags` logs them). Adding one = an entry here + a row in `tags.md`; both args come from `_playable_kingdoms`.
+# World-law alerts, each naming the law it asks to be turned off, firing while that law is on — a state, not an errand once run. Adding one: a `tags.md` row too.
 _ALERTS = {
     "DISABLE_DROP_OF_THOUGHTS": {
         "condition": lambda kingdoms, present: all(kingdoms.get(species) for species in present),
+        "law": "world_law_drop_of_thoughts",
         "message": "at the chapter's end, ask the player to turn the Drop of Thoughts world law off",
     },
     "DISABLE_HANDSOME_MIGRANTS": {
         "condition": lambda kingdoms, present: all(any(pop >= _MIN_KINGDOM_POP for pop in kingdoms.get(species, ())) for species in present),
+        "law": "world_law_civ_migrants",
         "message": "at the chapter's end, ask the player to turn the Handsome Migrants world law off",
     },
 }
@@ -259,12 +261,13 @@ def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) ->
     return favorite
 
 
-# `(code, message)` of alerts whose condition holds now and that haven't fired in an earlier chapter (`already` = the tags those chapters carry).
-def _fired_alerts(save: dict, already: set) -> list[tuple[str, str]]:
+# `(code, message)` of alerts whose law is on and whose condition holds — WB writes an untouched law as a bare `{"name": …}`, so an absent `boolVal` reads as on.
+def _fired_alerts(save: dict) -> list[tuple[str, str]]:
     kingdoms, present = _playable_kingdoms(save)
     if not present:  # no playable species yet → every `all(...)` would hold vacuously
         return []
-    return [(code, spec["message"]) for code, spec in _ALERTS.items() if code not in already and spec["condition"](kingdoms, present)]
+    laws = {law["name"]: law.get("boolVal", True) for law in (save.get("worldLaws") or {}).get("list") or []}
+    return [(code, spec["message"]) for code, spec in _ALERTS.items() if laws.get(spec["law"], True) and spec["condition"](kingdoms, present)]
 
 
 # The panel prints the hull's name, stock, crown, port, age and health; `boat/info.py <id>` has the rest. `kind` goes: WB boards souls onto `$boat_transport$` alone.
@@ -600,7 +603,7 @@ def main(argv: list[str]) -> int:
     # A scheme afoot under the favorite's own hand. Read after the fold, which leaves the type's key behind: a plot ripens in months, so it may be gone next chapter.
     if (favorite or {}).get("plot"):
         tags.append("FAVORITE_PLOTTING")
-    new_alerts = _fired_alerts(live, already)
+    new_alerts = _fired_alerts(live)
     tags += [code for code, _message in new_alerts]
 
     age_label = (_AGE_LABELS.get(f"age_{age_id}") or {}).get("name") or age_id  # recap line only, the chapter carrying the id alone
