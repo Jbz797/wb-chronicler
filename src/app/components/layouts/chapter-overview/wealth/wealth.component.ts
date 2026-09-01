@@ -28,19 +28,19 @@ export class WealthComponent {
       if (!c) return [];
       return [
         { icon: 'professions/leader', label: 'ui_ruler', value: c.metadata.leader?.money },
-        { icon: 'world/nobles', label: 'Nobles', value: c.population.nobles_money },
-        { icon: 'world/population', label: 'Habitants', value: c.population.subjects_money },
-        { icon: 'world/gold', label: 'Lingots', value: c.metadata.gold },
+        { icon: 'world/nobles', label: 'ui_nobles', value: c.population.nobles_money },
+        { icon: 'world/population', label: 'ui_inhabitants', value: c.population.subjects_money },
+        { icon: 'world/gold', label: 'ui_ingots', value: c.metadata.gold },
       ];
     }
     const k = meta?.kingdom;
     if (!k) return [];
     // `undefined` renders as `—`: on chapters predating the split the share is unknown, not zero (those coins fall back into the subjects' cell).
     return [
-      { icon: 'professions/king', label: 'Seigneur', value: k.metadata.king?.money },
-      { icon: 'world/nobles', label: 'Nobles', value: k.population.nobles_money },
-      { icon: 'world/population', label: 'Habitants', value: k.population.subjects_money },
-      { icon: 'world/gold', label: 'Lingots', value: k.metadata.gold },
+      { icon: 'professions/king', label: 'ui_lord', value: k.metadata.king?.money },
+      { icon: 'world/nobles', label: 'ui_nobles', value: k.population.nobles_money },
+      { icon: 'world/population', label: 'ui_inhabitants', value: k.population.subjects_money },
+      { icon: 'world/gold', label: 'ui_ingots', value: k.metadata.gold },
     ];
   });
 

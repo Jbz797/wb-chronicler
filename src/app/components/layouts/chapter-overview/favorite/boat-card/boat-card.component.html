@@ -31,7 +31,7 @@
     <span>{{ 'ui_launched' | translate }}</span>
   </ng-template>
   <ng-template #boatTitle>
-    À bord de {{ title() }}
+    {{ 'ui_aboard' | translate }} {{ title() }}
     <app-new-badge [dot]="false" [show]="isNew()" />
   </ng-template>
   <ng-template #cityTitle>

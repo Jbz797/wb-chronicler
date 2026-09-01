@@ -3,7 +3,7 @@
     @for (founder of founders(); track founder.id) {
       <ng-template #founderTitle>
         <img src="assets/img/world/founder.png" />
-        <span>{{ founder.label | translate }}</span>
+        <span>{{ founder.label }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="founderTitle">
         <app-person-tag [id]="founder.id" [name]="founder.name" />

@@ -2,9 +2,10 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { BreakdownComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '..';
+import { LabelHelpers } from '../../../../helpers';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { LeadersComponent } from '../leaders/leaders.component';
@@ -32,6 +33,7 @@ export class KingdomComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _registry = inject(RegistryService);
+  private readonly _translate = inject(TranslateService);
 
   protected readonly kingdom = computed(() => this._chronicler.currentChapter()?.meta.kingdom ?? null);
   protected readonly heirSex = computed(() => this._registry.persons()[String(this.kingdom()?.metadata.heir?.id)]?.sex ?? '');
@@ -48,8 +50,11 @@ export class KingdomComponent {
     if (!current?.king || !previous?.king || current.id !== previous.id) return false;
     return current.king.id !== previous.king.id;
   });
-  // Drives the « Reine/Roi » descriptions title — the registry holds it, `king` being emitted as `{id, name}`.
-  protected readonly kingSex = computed(() => this._registry.persons()[String(this.kingdom()?.metadata.king?.id)]?.sex ?? '');
+  // The « Reine/Roi » descriptions title — the registry holds the sex, `king` being emitted as `{id, name}`.
+  protected readonly kingLabel = computed(() => {
+    const sex = this._registry.persons()[String(this.kingdom()?.metadata.king?.id)]?.sex;
+    return LabelHelpers.gendered(this._translate, 'ui_monarch', sex);
+  });
   // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
   protected readonly optionalStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
     const p = this.kingdom()?.population;
@@ -57,7 +62,7 @@ export class KingdomComponent {
     const rows = [
       { icon: 'assets/img/world/sick.png', label: 'ui_sick', stat: 'sick' as const },
       { icon: 'assets/img/world/infected.png', label: 'ui_infected', stat: 'infected' as const },
-      { icon: 'assets/img/world/immortals.png', label: 'Immortels', stat: 'immortals' as const },
+      { icon: 'assets/img/world/immortals.png', label: 'ui_immortals', stat: 'immortals' as const },
     ];
     return rows.filter(r => (p[r.stat] ?? 0) > 0);
   });
@@ -66,9 +71,9 @@ export class KingdomComponent {
     const k = this.kingdom();
     if (!k) return [];
     const rows = [
-      { icon: 'assets/img/world/cultures.png', label: 'Traits culturels', shown: (k.metadata.culture_traits ?? 0) > 0, stat: 'culture_traits' as const },
-      { icon: 'assets/img/world/foundings.png', label: 'Fondations', shown: (k.metadata.foundings ?? 0) > 0, stat: 'foundings' as const },
-      { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', shown: (k.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
+      { icon: 'assets/img/world/cultures.png', label: 'ui_culture_traits', shown: (k.metadata.culture_traits ?? 0) > 0, stat: 'culture_traits' as const },
+      { icon: 'assets/img/world/foundings.png', label: 'ui_foundings', shown: (k.metadata.foundings ?? 0) > 0, stat: 'foundings' as const },
+      { icon: 'assets/img/world/books_read.png', label: 'ui_reach', shown: (k.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
       { icon: 'assets/img/world/books.png', label: 'ui_books', shown: (k.metadata.books ?? 0) > 0, stat: 'books' as const },
       { icon: 'assets/img/world/wars.png', label: 'ui_wars_won', shown: (k.metadata.wars_won ?? 0) > 0, stat: 'wars_won' as const },
       { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!k.equipment.total, stat: 'equipment' as const },

@@ -3,7 +3,7 @@
     @if (k.metadata.king; as king) {
       <ng-template #kingTitle>
         <img src="assets/img/professions/king.png" />
-        <span>{{ kingSex() === 'female' ? 'Reine' : 'Roi' }}</span>
+        <span>{{ kingLabel() }}</span>
         <app-new-badge [show]="isNewKing()" />
       </ng-template>
       <nz-descriptions-item [nzTitle]="kingTitle">

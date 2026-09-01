@@ -94,6 +94,7 @@ _AUDIT_TIERS = {
     "alliance.metadata": {"cities", "kingdoms"},  # the pact names its realms and towns as tags, so counting either says nothing the list has not
     "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
     "clan.ranks": {"kingdoms"},  # its crowns tie on one realm apiece — `clan/info.py <id> ranks` still places the band that spans eight
+    "family.identity": {"culture", "species", "subspecies"},  # the lineage is read by the souls it seated, its blood and its tongue answering from their own tiers
     "family.metadata": {"kingdoms"},  # a lineage spans two crowns too rarely for a panel row, so the count rides the script's output alone
     "family.ranks": {"cities"},  # towns follow the heads that hold them, so the podium repeats the one `members` already draws
 }
@@ -473,7 +474,7 @@ def _unnamed(features: list[dict]) -> dict:
 
 
 def _value(argv: list[str], flag: str) -> str:
-    return argv[argv.index(flag) + 1] if flag in argv and argv.index(flag) + 1 < len(argv) else ""
+    return argv[i] if flag in argv and (i := argv.index(flag) + 1) < len(argv) else ""
 
 
 def _without(block: dict, cut: frozenset) -> dict:
@@ -575,8 +576,8 @@ def main(argv: list[str]) -> int:
             _fold_boat_detail(boat)
             _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
 
-    # A third wave, and the only one a tier opens: the crown names its wars, each of which answers for itself — neither camp being `ours` from up here.
-    wars = [w for w in ((blocks.get("kingdom") or {}).get("wars") or []) if w.get("id") is not None]
+    # A third wave, the only one a tier opens — popped as `transport` is, the blocks it returns holding the same names the crown's list would otherwise say twice.
+    wars = [w for w in ((blocks.get("kingdom") or {}).pop("wars", None) or []) if w.get("id") is not None]
     if wars:
         fought = _run_together(*((_run, "war/info.py", w["id"], "full", chapter) for w in wars))
         wars = [war for war in fought if war]
@@ -614,8 +615,8 @@ def main(argv: list[str]) -> int:
         "boat": boat,
         "favorite": favorite,
         "tags": tags,
-        "wars": wars,
         "title": "",
+        "wars": wars,
         "world": world,
     }
 

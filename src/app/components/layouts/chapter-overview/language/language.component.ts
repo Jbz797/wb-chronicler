@@ -46,9 +46,9 @@ export class LanguageComponent {
     const m = this.language()?.metadata;
     if (!m) return [];
     const rows = [
-      { icon: 'assets/img/world/births.png', inverted: false, label: 'Natifs', shown: !!m.native, stat: 'native' as const },
-      { icon: 'assets/img/world/metamorphosis.png', inverted: false, label: 'Convertis', shown: !!m.converted, stat: 'converted' as const },
-      { icon: 'assets/img/world/cities_rebelled.png', inverted: true, label: 'Perdus', shown: !!m.lost, stat: 'lost' as const },
+      { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_natives', shown: !!m.native, stat: 'native' as const },
+      { icon: 'assets/img/world/metamorphosis.png', inverted: false, label: 'ui_converts', shown: !!m.converted, stat: 'converted' as const },
+      { icon: 'assets/img/world/cities_rebelled.png', inverted: true, label: 'ui_lost', shown: !!m.lost, stat: 'lost' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, inverted, label, stat }) => ({ icon, inverted, label, stat }));
   });

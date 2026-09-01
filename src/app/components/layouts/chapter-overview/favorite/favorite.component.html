@@ -58,7 +58,7 @@
     <span>{{ 'ui_children' | translate }}</span>
   </ng-template>
   <ng-template #descriptorTitle>
-    Titre
+    {{ 'ui_title' | translate }}
     <app-new-badge [show]="changedFields().descriptor" />
   </ng-template>
   <ng-template #equipmentPowerTitle>
@@ -90,7 +90,7 @@
     <span>{{ 'ui_renown' | translate }}</span>
   </ng-template>
   <ng-template #rolesTitle>
-    Rôles
+    {{ 'ui_roles' | translate }}
     <app-new-badge [show]="changedFields().role" />
   </ng-template>
   <ng-template #tenureTitle>

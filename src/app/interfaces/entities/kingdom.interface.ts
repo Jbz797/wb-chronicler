@@ -12,30 +12,10 @@ export interface Kingdom {
   population: KingdomPopulation;
   ranks?: KingdomRanks;
   relations?: KingdomRelation[];
-  wars?: KingdomWar[];
 }
 
 // This kingdom's diplomatic tie to one other — ally/enemy/neutral, with the net opinion score driving the tag colour.
 export interface KingdomRelation { kingdom: EntityReference; opinion: { total: number }; status: 'ally' | 'enemy' | 'neutral' }
-
-// `allies` is absent when a kingdom fights alone, both `*_alliance` when no alliance backs that side, `war_type` when WB never set one — `emit` strips them all.
-export interface KingdomWar {
-  allies?: EntityReference[];
-  attacker_alliance?: EntityReference;
-  cities: SideStats;
-  deaths: SideStats;
-  defender_alliance?: EntityReference;
-  duration_years: number;
-  id: number;
-  name: string;
-  opponents: EntityReference[];
-  populations: SideStats;
-  renown_at_stake: number;
-  side: 'attacker' | 'defender';
-  started_by: { actor?: PersonReference; kingdom: EntityReference };
-  war_type?: 'conquest' | 'inspire' | 'rebellion' | 'spite' | 'whisper';
-  warriors: SideStats;
-}
 
 // The kingdom's settlements, most populous first — chronicler-oriented list, also handy to resolve city names.
 interface KingdomCity { id: number; name: string; population: number }
@@ -127,4 +107,3 @@ interface KingdomRanks {
 }
 
 // A per-side tally (attackers vs defenders) — reused for a war's population, warriors, cities and deaths.
-interface SideStats { attackers: number; defenders: number }

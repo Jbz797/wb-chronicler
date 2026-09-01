@@ -2,9 +2,10 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { BreakdownComponent, RankedStatComponent } from '..';
+import { LabelHelpers } from '../../../../helpers';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { LeadersComponent } from '../leaders/leaders.component';
@@ -19,20 +20,21 @@ export class FamilyComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _registry = inject(RegistryService);
+  private readonly _translate = inject(TranslateService);
 
   protected readonly family = computed(() => this._chronicler.currentChapter()?.meta.family ?? null);
   // A founder is titled after her own sex — half of WB's are women, and the registry is the only place that survives, the family record keeping just a name.
   protected readonly founders = computed(() => {
     const persons = this._registry.persons();
-    const title = (id: number): string => persons[String(id)]?.sex === 'female' ? 'Fondatrice' : 'Fondateur';
-    return (this.family()?.metadata.founders ?? []).map(founder => ({ ...founder, label: title(founder.id) }));
+    const title = (id: number): string => LabelHelpers.gendered(this._translate, 'ui_founder', persons[String(id)]?.sex);
+    return (this.family()?.identity.founders ?? []).map(founder => ({ ...founder, label: title(founder.id) }));
   });
   // WB writes these only once the lineage has scored on them, so a row appears the year it first matters. Ordered births → deaths → kills, as the other tiers are.
   protected readonly lifetimeStats = computed<{ icon: string; inverted: boolean; label: string; stat: RankedStatKind }[]>(() => {
     const m = this.family()?.metadata;
     if (!m) return [];
     const rows = [
-      { icon: 'assets/img/world/births.png', inverted: false, label: 'Naissances', shown: !!m.births, stat: 'births' as const },
+      { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_births', shown: !!m.births, stat: 'births' as const },
       { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: !!m.deaths, stat: 'deaths' as const },
       { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: true, stat: 'warriors' as const },
       { icon: 'assets/img/stats/kills.png', inverted: false, label: 'ui_kills', shown: !!m.kills, stat: 'kills' as const },

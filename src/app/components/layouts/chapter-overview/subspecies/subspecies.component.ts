@@ -32,7 +32,7 @@ export class SubspeciesComponent {
     const m = this.subspecies()?.metadata;
     if (!m) return [];
     const rows = [
-      { icon: 'assets/img/world/births.png', inverted: false, label: 'Naissances', shown: !!m.births, stat: 'births' as const },
+      { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_births', shown: !!m.births, stat: 'births' as const },
       { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: !!m.deaths, stat: 'deaths' as const },
       { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: true, stat: 'warriors' as const },
       { icon: 'assets/img/stats/kills.png', inverted: false, label: 'ui_kills', shown: !!m.kills, stat: 'kills' as const },

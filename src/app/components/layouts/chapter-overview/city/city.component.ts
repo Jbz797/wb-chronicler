@@ -52,7 +52,7 @@ export class CityComponent {
     const rows = [
       { icon: 'assets/img/world/sick.png', label: 'ui_sick', stat: 'sick' as const },
       { icon: 'assets/img/world/infected.png', label: 'ui_infected', stat: 'infected' as const },
-      { icon: 'assets/img/world/immortals.png', label: 'Immortels', stat: 'immortals' as const },
+      { icon: 'assets/img/world/immortals.png', label: 'ui_immortals', stat: 'immortals' as const },
     ];
     return rows.filter(r => (p[r.stat] ?? 0) > 0);
   });
@@ -62,7 +62,7 @@ export class CityComponent {
     if (!c) return [];
     const rows = [
       { icon: 'assets/img/world/population.png', label: 'ui_attractiveness', shown: true, stat: 'attractivity' as const },
-      { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', shown: (c.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
+      { icon: 'assets/img/world/books_read.png', label: 'ui_reach', shown: (c.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
       { icon: 'assets/img/world/books.png', label: 'ui_books', shown: !!c.books.total, stat: 'books' as const },
       { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!c.equipment.total, stat: 'equipment' as const },
     ];
