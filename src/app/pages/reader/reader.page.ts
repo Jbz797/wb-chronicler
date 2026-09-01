@@ -1,10 +1,10 @@
-import { Component, computed, effect, ElementRef, inject } from '@angular/core';
+import { afterNextRender, Component, computed, effect, ElementRef, inject, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { TranslatePipe } from '@ngx-translate/core';
 import { MarkdownComponent } from 'ngx-markdown';
-import { NgScrollbarModule } from 'ngx-scrollbar';
+import { NgScrollbar, NgScrollbarModule } from 'ngx-scrollbar';
 import { map } from 'rxjs';
 
 import { BOOT_SETTINGS, PAGES } from '../../constants';
@@ -39,12 +39,20 @@ export class ReaderPage {
     return page?.mdUrl;
   });
 
+  private readonly _scroller = viewChild.required(NgScrollbar);
+
   constructor() {
     // The default redirect, and any Précepte slug, resolve to nothing outside dev mode: the latest chapter takes their place as soon as the probe finds one.
     effect(() => {
       if (this._dev || PAGES.every(page => page.slug !== this._slug())) return;
       const latest = this._chronicler.chapters().at(-1);
       if (latest) this._router.navigate(['/', latest.slug], { replaceUrl: true }).catch(() => {});
+    });
+
+    // Kept per page: the dev server reloads on each `.md`, and `ng-scrollbar` emits nothing on scroll — the viewport carrying it is listened to directly, once.
+    afterNextRender(() => {
+      const viewport = this._scroller().adapter.viewportElement;
+      viewport.addEventListener('scroll', () => sessionStorage.setItem(`reader.scroll.${this._slug()}`, String(viewport.scrollTop)));
     });
   }
 
@@ -73,6 +81,15 @@ export class ReaderPage {
     LanguageSpriteHelpers.paintAll(root, this._registry.languages());
     ReligionSpriteHelpers.paintAll(root, this._registry.religions());
     SubspeciesSpriteHelpers.paintAll(root, this._registry.subspecies());
+    this._restoreScroll();
+  }
+
+  // One frame after the prose lands, which is when the viewport has its full height — the canvas sprites are sized in CSS and never move it afterwards.
+  private _restoreScroll(): void {
+    const target = Number(sessionStorage.getItem(`reader.scroll.${this._slug()}`) ?? 0);
+    if (target <= 0) return;
+    const viewport = this._scroller().adapter.viewportElement;
+    requestAnimationFrame(() => (viewport.scrollTop = target));
   }
 
 }
