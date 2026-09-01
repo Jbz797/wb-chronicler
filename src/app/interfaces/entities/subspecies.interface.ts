@@ -46,6 +46,5 @@ interface SubspeciesRanks {
   kills?: number;
   members?: number;
   money?: number;
-  renown?: number;
   renown_total?: number;
 }

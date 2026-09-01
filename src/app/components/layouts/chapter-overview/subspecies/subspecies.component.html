@@ -3,9 +3,6 @@
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat source="subspecies" stat="age" suffix=" ans" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTitle">
-      <app-ranked-stat source="subspecies" stat="renown" />
-    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="subspecies" stat="renown_total" />
     </nz-descriptions-item>
@@ -104,10 +101,6 @@
   <ng-template #moneyTitle>
     <img src="assets/img/stats/money.png" />
     <span>{{ 'ui_coins' | translate }}</span>
-  </ng-template>
-  <ng-template #renownTitle>
-    <img src="assets/img/stats/renown.png" />
-    <span>{{ 'ui_renown' | translate }}</span>
   </ng-template>
   <ng-template #stockCitiesTitle>
     <img src="assets/img/world/cities.png" />

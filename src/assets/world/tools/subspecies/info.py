@@ -91,7 +91,6 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
         "name": subspecies.get("name"),
-        **({"renown": renown} if (renown := int(subspecies.get("renown") or 0)) else {}),  # WB's own tally, where the living's worth now sits in `population`
         **({"report": report} if report else {}),
     }
 
@@ -149,9 +148,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "kingdoms": lambda s: len({kid for a in tallies["members"].get(s["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
         "members": lambda s: len(tallies["members"].get(s["id"], ())),
         "money": lambda s: tallies["money"][s["id"]],
-        "renown": lambda s: int(s.get("renown") or 0),
-        "renown_per_capita": lambda s: int(s.get("renown") or 0) / n if (n := len(tallies["members"].get(s["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
-        "renown_total": lambda s: tallies["renown_total"][s["id"]],
+        "renown_total": lambda s: tallies["renown_total"][s["id"]],  # WB's own `renown` only counts births; this one is the renown its bearers carry
         "warriors": lambda s: tallies["warriors"][s["id"]],
     }
 
