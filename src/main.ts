@@ -18,29 +18,35 @@ import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-python';
 
 import { App } from './app/app';
-import { SETTINGS_FILE } from './app/constants';
+import { BOOT_SETTINGS, SETTINGS_FILE } from './app/constants';
 import { MarkedHelpers } from './app/helpers';
 import { Settings } from './app/interfaces';
 import { ROUTES } from './app/routes';
 import { TranslateLoaderService } from './app/services';
 
-// The one tongue the chronicle is kept in, off `settings.json` which the chronicler reads too. Until one is set: the browser's where we serve it, English otherwise.
-const chosenLanguage = async (): Promise<string> => {
-  const available = new Set(['en', 'fr']);
-  const browser = globalThis.navigator.language.slice(0, 2);
-  const fallback = available.has(browser) ? browser : 'en';
+// `settings.json` as it stands, which the chronicler reads too — the one read the startup makes of it, handed to the app whole through `BOOT_SETTINGS`.
+const bootSettings = async (): Promise<Settings> => {
   try {
     const answer = await fetch(SETTINGS_FILE, { cache: 'no-store' });
-    const { lang } = answer.ok ? ((await answer.json()) as Settings) : {};
-    return lang && available.has(lang) ? lang : fallback;
+    return answer.ok ? ((await answer.json()) as Settings) : {};
   } catch {
-    return fallback;
+    return {};
   }
+};
+
+// The tongue the chronicle is kept in. Until one is set: the browser's where we serve it, English otherwise.
+const chosenLanguage = (recorded: string | undefined): string => {
+  const available = new Set(['en', 'fr']);
+  const browser = globalThis.navigator.language.slice(0, 2);
+  return recorded && available.has(recorded) ? recorded : (available.has(browser) ? browser : 'en');
 };
 
 // Resolved before the app is built: `LOCALE_ID` and ng-zorro's tables are read as the injector is assembled, and both shape a number — `2 556` here, `2,556` there.
 const start = async (): Promise<unknown> => {
-  const lang = await chosenLanguage();
+  const settings = await bootSettings();
+
+  const lang = chosenLanguage(settings.lang);
+
   const isFrench = lang !== 'en';
 
   registerLocaleData(isFrench ? localeFr : localeEn);
@@ -60,6 +66,7 @@ const start = async (): Promise<unknown> => {
       provideScrollbarPolyfill('assets/scroll-timeline-polyfill.js'), // Served from the app, never a CDN: `scroll-timeline` drives the thumb, and Firefox lacks it.
       provideTranslateService({ loader: provideTranslateLoader(TranslateLoaderService) }),
       provideZoneChangeDetection(),
+      { provide: BOOT_SETTINGS, useValue: settings },
       { provide: LOCALE_ID, useValue: isFrench ? 'fr-FR' : 'en-GB' },
     ],
   });

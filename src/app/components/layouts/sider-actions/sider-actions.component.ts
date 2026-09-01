@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -6,10 +5,8 @@ import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { catchError, of } from 'rxjs';
 
-import { RESET_ENDPOINT, SETTINGS_FILE } from '../../../constants';
-import { Settings } from '../../../interfaces';
+import { BOOT_SETTINGS, RESET_ENDPOINT } from '../../../constants';
 import { ChroniclerService } from '../../../services';
 import { SettingsComponent } from '../settings/settings.component';
 
@@ -22,7 +19,6 @@ import { SettingsComponent } from '../settings/settings.component';
 export class SiderActionsComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
-  private readonly _http = inject(HttpClient);
   private readonly _modal = inject(NzModalService);
   private readonly _translate = inject(TranslateService);
 
@@ -62,11 +58,9 @@ export class SiderActionsComponent {
     modal.componentInstance?.load().catch(() => {}); // the panel shows its own unreachable notice
   };
 
-  // A first run, or a world just wiped: the panel opens by itself. Read off the asset, the service being needed for none of it — a deleted file reads as empty.
+  // A first run, or a world just wiped: the panel opens by itself. Off what the startup already read — a deleted file reads as empty, which is the case to catch.
   private _openSettingsIfUnset(): void {
-    this._http.get<Settings>(SETTINGS_FILE).pipe(catchError(() => of<Settings>({}))).subscribe((recorded) => {
-      if (!recorded.savePath) this.openSettings();
-    });
+    if (!inject(BOOT_SETTINGS).savePath) this.openSettings();
   }
 
   // The browser cannot reach the filesystem: `scripts/watch-saves.mjs` does the erasing, and it only runs under `yarn start`.

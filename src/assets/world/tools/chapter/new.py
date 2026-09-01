@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
-from shared import SAVES_DIR, UNITS_PER_YEAR, is_boat, latest_chapter, live_save, load_data, load_save, render, worldbox_running, write_save
+from shared import SAVES_DIR, UNITS_PER_YEAR, dev_mode, is_boat, latest_chapter, live_save, load_data, load_save, render, worldbox_running, write_save
 
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
@@ -97,6 +97,7 @@ _AUDIT_TIERS = {
     "family.identity": {"culture", "species", "subspecies"},  # the lineage is read by the souls it seated, its blood and its tongue answering from their own tiers
     "family.metadata": {"kingdoms"},  # a lineage spans two crowns too rarely for a panel row, so the count rides the script's output alone
     "family.ranks": {"cities"},  # towns follow the heads that hold them, so the podium repeats the one `members` already draws
+    "wars.metadata": {"started_by"},  # the soul who declared it — the card names the crown alone, and `war/info.py <id>` still hands the chronicler the man
 }
 
 
@@ -133,6 +134,7 @@ _EMPTIED = (
 
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
+_INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
 
 # The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
@@ -481,6 +483,21 @@ def _without(block: dict, cut: frozenset) -> dict:
     return {key: value for key, value in block.items() if key not in cut}
 
 
+# Every chapter in one file: what the nav prints beside a slug, and nothing else. Rewritten whole each time, so a chapter deleted by hand drops out on the next run.
+def _write_index() -> None:
+    entries = []
+    for chapter_json in sorted(SAVES_DIR.glob("C*/chapter.json"), key=lambda f: int(f.parent.name[1:])):
+        data = json.loads(chapter_json.read_text())
+        entries.append(
+            {
+                "n": int(chapter_json.parent.name[1:]),
+                "tags": data.get("tags") or [],
+                "world_time": ((data.get("world") or {}).get("metadata") or {}).get("world_time", 0),
+            }
+        )
+    _INDEX_JSON.write_text(render(entries) + "\n")
+
+
 # The world's name and blurb as WB spells them, rewritten every chapter rather than seeded once: a rename, in game or by `--reset`, reaches the reader on its own.
 def _write_world(stats: dict) -> None:
     _WORLD_JSON.write_text(json.dumps({"description": stats.get("description") or "", "name": stats.get("name") or ""}, ensure_ascii=False, indent=2) + "\n")
@@ -622,6 +639,7 @@ def main(argv: list[str]) -> int:
 
     # `render`, not `json.dumps(indent=2)`: same tree, a good quarter fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong.
     (chapter_dir / "chapter.json").write_text(render(_drop_chronicler_keys(chapter_json)) + "\n")
+    _write_index()
 
     year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
     counts = " · ".join(  # The chronicler's own order: the map first, then who fills it.
@@ -640,6 +658,9 @@ def main(argv: list[str]) -> int:
     if owed:
         todo += f" · trait summaries ({', '.join(sorted(owed))})"
     print(f"  → chronicler: {todo}")
+    # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and nothing beside it.
+    if not dev_mode():
+        print("  → mode: player, not developer — deliver the chapter and stop there, skipping `chronicler.md` § « Après livraison — remarques optionnelles »")
 
     return 0
 

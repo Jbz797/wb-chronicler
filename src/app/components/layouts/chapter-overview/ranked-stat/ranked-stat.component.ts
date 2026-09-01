@@ -3,7 +3,10 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
+import { TranslateService } from '@ngx-translate/core';
+
 import { CITY_META_STATS, FAVORITE_GAUGE_FIELDS, KINGDOM_META_STATS, NON_COMPACT_STATS } from '../../../../constants';
+import { NumberHelpers } from '../../../../helpers';
 import {
   ChapterMeta, ChapterTier, CityMetaStat, KingdomMetaStat, PeopleTier, PeopleTierName, PopulationStat, RankedStatKind, RankedStatSnapshot,
   RankedStatSource, SpeciesStanding, SpeciesTotals,
@@ -21,15 +24,17 @@ import { DeltaComponent } from '../delta/delta.component';
 export class RankedStatComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _translate = inject(TranslateService);
 
   public readonly deltaSuffix = input<string>('');
   public readonly hideDelta = input<boolean>(false);
   public readonly inverted = input<boolean>(false); // Flips the delta colour — for stats where a rise is bad (deaths).
   public readonly numberFormat = input<string>('1.0-0');
+  public readonly ordinal = input<boolean>(false); // A placement rather than a count: the mark it wears is the number's own, and the tongue's.
   public readonly showRank = input<boolean>(true);
   public readonly source = input<RankedStatSource>('favorite');
   public readonly stat = input.required<RankedStatKind>();
-  public readonly suffix = input<string>('');
+  public readonly suffix = input<string>(''); // An i18n key, resolved below — the unit rides with the figure, so it turns with the rest.
 
   protected readonly data = computed(() => {
     const current = this._sourceOf(this._chronicler.currentChapter()?.meta);
@@ -52,6 +57,12 @@ export class RankedStatComponent {
     if (k === 'mana') return s?.mana;
     if (k === 'stamina') return s?.stamina;
     return null;
+  });
+  // The unit printed after the figure: an ordinal takes the placement's own mark, anything else its translated word. Nothing asked for, nothing printed.
+  protected readonly unit = computed(() => {
+    if (this.ordinal()) return NumberHelpers.ordinal(this.data()?.value ?? 0, this._translate.currentLang() !== 'en');
+    const key = this.suffix();
+    return key ? (this._translate.instant(key) as string) : '';
   });
   // Kingdom/city/alliance quantities render compact (`X.X K` above 100), like the world panel — except age/`%`/per-capita stats.
   protected readonly useCompact = computed(() => this.source() !== 'favorite' && !NON_COMPACT_STATS.has(this.stat()));

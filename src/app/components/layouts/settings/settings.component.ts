@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -14,21 +15,33 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
-import { SAVES_ENDPOINT, SETTINGS_ENDPOINT, SETTINGS_FILE } from '../../../constants';
+import { BOOT_SETTINGS, SAVES_ENDPOINT, SETTINGS_ENDPOINT, SETTINGS_FILE } from '../../../constants';
 import { SaveCandidate, Settings } from '../../../interfaces';
-import { ChroniclerService } from '../../../services';
 
 const customValue = 'custom'; // the radio's own value, standing for « somewhere else » — never a path
 
 @Component({
   selector: 'app-settings',
-  imports: [DatePipe, DecimalPipe, FormsModule, NgScrollbarModule, NzAlertModule, NzButtonModule, NzDividerModule, NzInputModule, NzRadioModule, NzTooltipModule, TranslatePipe], // eslint-disable-line @stylistic/max-len
+  imports: [
+    DatePipe,
+    DecimalPipe,
+    FormsModule,
+    NgScrollbarModule,
+    NzAlertModule,
+    NzButtonModule,
+    NzCheckboxModule,
+    NzDividerModule,
+    NzInputModule,
+    NzRadioModule,
+    NzTooltipModule,
+    TranslatePipe,
+  ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent {
 
-  private readonly _chronicler = inject(ChroniclerService);
+  private readonly _dev = !!inject(BOOT_SETTINGS).dev; // the mode this session was built on, as `currentLang` is the tongue it was built on
   private readonly _message = inject(NzMessageService);
   private readonly _modal = inject(NzModalRef);
   private readonly _translate = inject(TranslateService);
@@ -38,6 +51,7 @@ export class SettingsComponent {
   protected readonly candidates = signal<SaveCandidate[]>([]);
   protected readonly custom = signal('');
   protected readonly customValue = customValue;
+  protected readonly dev = signal(false); // off until the settings say otherwise: a reader who never opens the workshop is the ordinary case
   protected readonly lang = signal<string | undefined>(undefined); // undefined until `load` reads one, or the reader picks one — the footer waits on it
   protected readonly picked = signal('');
 
@@ -51,6 +65,7 @@ export class SettingsComponent {
     try {
       const [slots, recorded] = await Promise.all([fetch(SAVES_ENDPOINT), fetch(SETTINGS_FILE)]);
       const settings = recorded.ok ? ((await recorded.json()) as Settings) : {}; // 404 on a first run, and after a new game wipes it
+      this.dev.set(!!settings.dev);
       this.lang.set(settings.lang);
       this._apply((await slots.json()) as SaveCandidate[], settings.savePath ?? '');
     } catch {
@@ -65,12 +80,12 @@ export class SettingsComponent {
     if (!lang || !savePath) return;
 
     try {
-      const body = JSON.stringify({ lang, savePath });
+      const body = JSON.stringify({ dev: this.dev(), lang, savePath });
       const answer = await fetch(SETTINGS_ENDPOINT, { body, headers: { 'content-type': 'application/json' }, method: 'POST' });
       if (!answer.ok) throw new Error(String(answer.status));
       this._message.success(this._translate.instant('ui_save_recorded') as string);
-      // The panels only turn on the next paint, and a label a component resolved through `instant` never turns at all — the reload spares us tracking them.
-      if (lang === this._translate.currentLang()) this._modal.close(savePath);
+      // Both are read as the injector is assembled — the tongue by `LOCALE_ID`, the mode by `DEV_MODE` — so neither turns on a repaint. The reload settles it.
+      if (lang === this._translate.currentLang() && this.dev() === this._dev) this._modal.close(savePath);
       else globalThis.location.reload();
     } catch {
       this._message.error(`Chemin introuvable : ${savePath}`);
@@ -81,9 +96,6 @@ export class SettingsComponent {
   protected isAutosave = (): boolean => /[/\\]autosaves[/\\]/.test(this.chosen());
 
   protected isCustom = (): boolean => this.picked() === customValue;
-
-  // Nothing written yet: the panel is the player's first screen, and the chronicler still has to be opened for it to become a chronicle.
-  protected isNewGame = (): boolean => this._chronicler.chapters().length === 0;
 
   // Every slot shares the same WorldBox folder and the same file name: its own two segments are all that tells them apart, the full path riding in a tooltip.
   protected shortPath = (savePath: string): string => savePath.split(/[/\\]/).slice(-3, -1).join('/');

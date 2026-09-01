@@ -22,10 +22,10 @@
       <app-ranked-stat source="city" stat="loyalty" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="scoreRankTitle">
-      <app-ranked-stat source="city" stat="score_rank" suffix="ᵉ" [inverted]="true" [showRank]="false" />
+      <app-ranked-stat source="city" stat="score_rank" [inverted]="true" [ordinal]="true" [showRank]="false" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">
-      <app-ranked-stat source="city" stat="age" suffix=" ans" [hideDelta]="true" />
+      <app-ranked-stat source="city" stat="age" suffix="ui_years" [hideDelta]="true" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="renownTitle">
       <app-ranked-stat source="city" stat="renown" />
@@ -79,7 +79,7 @@
       <app-ranked-stat source="city" stat="food" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="foodPerCapitaTitle">
-      <app-ranked-stat numberFormat="1.1-1" source="city" stat="food_per_capita" suffix="/hab" />
+      <app-ranked-stat numberFormat="1.1-1" source="city" stat="food_per_capita" suffix="ui_per_inhabitant" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="city" stat="fed_pct" suffix="%" />
@@ -105,7 +105,7 @@
         }
       </nz-descriptions-item>
       <nz-descriptions-item [nzTitle]="armyAgeTitle">
-        <app-ranked-stat source="city" stat="army_age" suffix=" ans" [hideDelta]="true" />
+        <app-ranked-stat source="city" stat="army_age" suffix="ui_years" [hideDelta]="true" />
       </nz-descriptions-item>
       <nz-descriptions-item [nzTitle]="armyMoneyTitle">
         <app-ranked-stat source="city" stat="army_money" />

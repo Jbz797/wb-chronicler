@@ -2,14 +2,7 @@
   "name": "wb-chronicler",
   "version": "0.0.0",
   "description": "Tolkien-style chronicle for WorldBox playthroughs — Claude Code turns saves into narrative chapters, rendered in a parchment-themed Angular reader.",
-  "keywords": [
-    "angular",
-    "claude-code",
-    "narrative",
-    "ngx-markdown",
-    "tolkien",
-    "worldbox"
-  ],
+  "keywords": ["ai-agent", "angular", "anthropic", "claude", "claude-code", "narrative", "ngx-markdown", "python", "tolkien", "typescript", "worldbox", "worldbuilding"],
   "author": {
     "name": "Jean-benoit Gautier"
   },
@@ -54,7 +47,7 @@
     "@angular/language-service": "22.1.4",
     "chokidar": "5.0.0",
     "concurrently": "10.0.5",
-    "eslint-config-angular-strict": "22.2.2",
+    "eslint-config-angular-strict": "22.2.3",
     "less": "4.9.0",
     "prettier": "3.9.6",
     "stylelint": "17.14.1",

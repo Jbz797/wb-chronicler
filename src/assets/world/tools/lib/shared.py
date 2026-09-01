@@ -420,6 +420,14 @@ def competition_ranks(entity, peers: list, getters: dict) -> dict:
     return ranks
 
 
+# The player's own workshop switch, off the reader's settings. Absent or false on a player who only ever plays — and a missing file reads the same way.
+def dev_mode() -> bool:
+    try:
+        return bool(json.loads(_SETTINGS_JSON.read_text()).get("dev"))
+    except (OSError, ValueError):
+        return False
+
+
 def emit(out: dict) -> None:
     print(render(_strip_none(out)))
 

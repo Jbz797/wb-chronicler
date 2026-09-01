@@ -3,11 +3,11 @@
     <span>
       @if (gaugeValue(); as c) {
         <span [class]="c | tier: d.value">{{ c | number: numberFormat() }}</span>
-        / {{ d.value | number: numberFormat() }}{{ suffix() }}
+        / {{ d.value | number: numberFormat() }}{{ unit() }}
       } @else if (useCompact()) {
-        <span nz-tooltip [nzTooltipTitle]="d.value | exact">{{ d.value | compact }}{{ suffix() }}</span>
+        <span nz-tooltip [nzTooltipTitle]="d.value | exact">{{ d.value | compact }}{{ unit() }}</span>
       } @else {
-        <span>{{ d.value | number: numberFormat() }}{{ suffix() }}</span>
+        <span>{{ d.value | number: numberFormat() }}{{ unit() }}</span>
       }
       <app-delta [inverted]="inverted()" [suffix]="deltaSuffix()" [value]="d.valueDelta" />
     </span>

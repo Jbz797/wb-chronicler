@@ -1,18 +1,20 @@
-<h2 class="section-title">{{ 'ui_precepts' | translate }}</h2>
-<ul nz-menu nzMode="inline">
-  @for (page of pages; track page.slug) {
-    <li nz-menu-item nzMatchRouter [routerLink]="['/', page.slug]">{{ page.label | translate }}</li>
-  }
-</ul>
+@if (pages.length) {
+  <h2 class="section-title">{{ 'ui_precepts' | translate }}</h2>
+  <ul nz-menu nzMode="inline">
+    @for (page of pages; track page.slug) {
+      <li nz-menu-item nzMatchRouter [routerLink]="['/', page.slug]">{{ page.label | translate }}</li>
+    }
+  </ul>
+}
 
 <h2 class="section-title">{{ 'ui_chronicles' | translate }}</h2>
 @if (chapters().length) {
-  <ng-scrollbar class="chapters-scroll" (afterUpdate)="revealCurrent()">
-    <ul #chapterList class="chapters" nz-menu nzMode="inline">
+  <ng-scrollbar (afterUpdate)="revealCurrent()">
+    <ul #chapterList nz-menu nzMode="inline">
       @for (chapter of chapters(); track chapter.slug) {
         <li nz-menu-item nzMatchRouter [attr.data-slug]="chapter.slug" [routerLink]="['/', chapter.slug]">
           {{ chapter.label | translate }}
-          @for (tag of chapter.meta.tags | slice: 0 : 3; track tag) {
+          @for (tag of chapter.tags | slice: 0 : 3; track tag) {
             <img class="tag-icon" nz-tooltip [nzTooltipTitle]="`tag_${tag}` | translate" [src]="tagIconUrl(tag)" />
           }
         </li>

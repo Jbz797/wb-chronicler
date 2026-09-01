@@ -40,7 +40,6 @@ interface AllianceRanks {
   cities?: number;
   deaths?: number;
   kills?: number;
-  kills_per_capita?: number;
   kingdoms?: number;
   money?: number;
   population?: number;

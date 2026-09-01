@@ -12,7 +12,6 @@ interface WarMetadata {
   id: number;
   name: string;
   renown_at_stake: number;
-  started_by: { id: number; name?: string }; // the soul who spoke for it — WB keeps his id but not his name, so the name drops once he dies
   started_by_kingdom: EntityReference;
   war_type?: 'conquest' | 'inspire' | 'rebellion' | 'spite' | 'whisper'; // WB leaves it unset on most declarations — absence is not `none`
 }

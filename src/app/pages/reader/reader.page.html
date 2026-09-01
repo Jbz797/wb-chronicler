@@ -3,6 +3,12 @@
     <article class="ant-typography">
       @if (src(); as s) {
         <markdown [disableSanitizer]="true" [src]="s" (ready)="onReady()" />
+      } @else if (awaitsChronicler()) {
+        <div class="bootstrap">
+          <h1>{{ 'ui_chronicler_pending' | translate }}</h1>
+          <p>{{ 'ui_bootstrap_how' | translate: { folder: 'src/assets/world/', terminal: 'claude' } }}</p>
+          <p class="order">{{ 'ui_bootstrap_order' | translate }}</p>
+        </div>
       }
     </article>
   </ng-scrollbar>

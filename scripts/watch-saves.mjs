@@ -50,8 +50,8 @@ class LocalService {
       'GET /saves': () => scout.list(),
       'POST /reset': async () => ({ chapters: await store.wipe() }),
       'POST /settings': async (body) => {
-        await store.record(body.lang, body.savePath);
-        return { lang: body.lang, savePath: body.savePath };
+        await store.record(body.dev, body.lang, body.savePath);
+        return { dev: body.dev, lang: body.lang, savePath: body.savePath };
       },
     };
   }
@@ -167,20 +167,19 @@ class WorldStore {
   #history = 'src/assets/world/history';
   #settings = `${this.#history}/settings.json`;
 
-  // Refuses a path that leads nowhere: the whole toolchain reads through this one setting, and a wrong one only fails much later, inside `shared.py`.
-  // `lang` rides along: it is the tongue the chronicler writes its chapters in, which the reader's own panels merely follow.
-  async record(lang, savePath) {
+  // Only the path is checked: the whole toolchain reads through it, and a wrong one fails much later, inside `shared.py`. `lang` and `dev` ride along as given.
+  async record(development, lang, savePath) {
     await stat(savePath);
-    await writeFile(this.#settings, `${JSON.stringify({ lang, savePath }, undefined, 2)}\n`);
+    await writeFile(this.#settings, `${JSON.stringify({ dev: development, lang, savePath }, undefined, 2)}\n`);
   }
 
   // Empties `saves/` rather than removing it — angular.json declares it, `new.py` writes into it — then all of `history/`; what outlives a world sits elsewhere.
   async wipe() {
-    const chapters = await entriesIn(SAVES);
+    const entries = await entriesIn(SAVES);
     const history = [`${this.#history}/map_stats.s3db`, `${this.#history}/places.json`, `${this.#history}/world.json`, this.#settings];
-    const doomed = [...chapters.map((entry) => `${SAVES}/${entry}`), ...history];
+    const doomed = [...entries.map((entry) => `${SAVES}/${entry}`), ...history];
     await Promise.all(doomed.map((entry) => rm(entry, { force: true, recursive: true })));
-    return chapters.length;
+    return entries.filter((entry) => /^C\d+$/.test(entry)).length; // `saves/` also holds the chapter index, which is swept along but was never a chapter
   }
 }
 

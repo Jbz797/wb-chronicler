@@ -28,6 +28,37 @@
     text-align: justify;
   }
 
+  // The empty chronicle. Centred on the parchment rather than set as prose: there is no text to read here, only the one order that starts the chronicler.
+  .bootstrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    height: calc(100vh - 8rem); // the parchment's own height less the article's padding, so the block sits on the true centre rather than above it
+    justify-content: center;
+
+    p {
+      color: $sienna-soft;
+      margin: 0;
+      text-align: center;
+    }
+
+    // The drop cap below would pull this block off centre. Its `:not(.metadata)` is carried over on purpose: without it the two tie, and the last declared wins.
+    h1 + p:not(.metadata)::first-letter {
+      color: inherit;
+      float: none;
+      font-family: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+      margin: 0;
+    }
+
+    .order {
+      color: $sienna;
+      font-family: $font-display;
+      font-size: 1.35em;
+    }
+  }
+
   h1,
   h2,
   h3,

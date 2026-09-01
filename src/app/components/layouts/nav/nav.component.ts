@@ -8,7 +8,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
-import { PAGES } from '../../../constants';
+import { BOOT_SETTINGS, PAGES } from '../../../constants';
 import { ChroniclerService } from '../../../services';
 
 @Component({
@@ -20,9 +20,10 @@ import { ChroniclerService } from '../../../services';
 export class NavComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _dev = inject(BOOT_SETTINGS).dev;
 
   protected chapters = this._chronicler.chapters;
-  protected pages = PAGES;
+  protected pages = this._dev ? PAGES : [];
 
   private readonly _list = viewChild<ElementRef<HTMLElement>>('chapterList');
 

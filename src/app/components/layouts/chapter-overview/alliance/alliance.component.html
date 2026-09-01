@@ -5,7 +5,7 @@
         <app-person-tag [id]="f.id" [name]="f.name ?? ''" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item [nzTitle]="ageTitle"><app-ranked-stat source="alliance" stat="age" suffix=" ans" /></nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="ageTitle"><app-ranked-stat source="alliance" stat="age" suffix="ui_years" /></nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="kingdomsTitle">
       @for (k of a.kingdoms; track k.id) {
         <app-kingdom-tag [id]="k.id" [name]="k.name" />

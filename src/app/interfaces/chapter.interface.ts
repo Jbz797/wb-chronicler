@@ -13,8 +13,11 @@ import { War } from './entities/war.interface';
 import { World } from './entities/world.interface';
 import { ChapterTier } from './types';
 
-// One chronicle chapter: a nav Page plus its parsed chapter.json `meta` and preview image.
-export interface Chapter extends Page { meta: ChapterMeta; previewUrl: string }
+// One chronicle chapter as the nav knows it, off `saves/index.json`: what a row prints, without opening the chapter itself.
+export interface Chapter extends Page { previewUrl: string; tags: string[] }
+
+// One row of `saves/index.json`, written by `new.py`: enough to name and date a chapter, never enough to draw a panel.
+export interface ChapterIndexEntry { n: number; tags: string[]; world_time: number }
 
 // A parsed chapter.json: a block per overview panel — the world, the favorite and each body it belongs to — plus the age label and prose tags.
 export interface ChapterMeta extends Record<ChapterTier, unknown> {
@@ -33,6 +36,9 @@ export interface ChapterMeta extends Record<ChapterTier, unknown> {
   wars: War[]; // the crown's own, each answering for itself — its `kingdom.wars` names them, this block fields them
   world: World;
 }
+
+// A chapter whose `chapter.json` has been read — the one being read and the one before it, which the panels compare it to.
+export interface LoadedChapter extends Chapter { meta: ChapterMeta }
 
 // A reader destination: the static Précepte pages and, through `Chapter`, every chronicle.
 export interface Page { label: string; mdUrl: string; slug: string }

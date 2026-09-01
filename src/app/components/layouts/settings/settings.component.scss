@@ -62,6 +62,11 @@
     }
   }
 
+  // On the panel's axis like the flags above it — the switch belongs to the same choice, and a lone box hard left would read as an afterthought.
+  .dev-mode {
+    align-self: center;
+  }
+
   .intro,
   .unreachable {
     color: $text-secondary;

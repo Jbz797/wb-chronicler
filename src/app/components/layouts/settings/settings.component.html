@@ -12,6 +12,8 @@
     </label>
   </nz-radio-group>
 
+  <label class="dev-mode" nz-checkbox [ngModel]="dev()" (ngModelChange)="dev.set($event)">{{ 'ui_dev_mode' | translate }}</label>
+
   <nz-divider />
 
   <nz-alert nzType="warning" [nzDescription]="manualSaves" [nzMessage]="'ui_autosave_off' | translate" />
@@ -46,13 +48,5 @@
 
   @if (isAutosave()) {
     <nz-alert nzType="error" [nzMessage]="'ui_autosave_path' | translate" />
-  }
-
-  @if (isNewGame()) {
-    <nz-alert nzType="info" [nzDescription]="bootstrap" [nzMessage]="'ui_chronicler_pending' | translate" />
-    <ng-template #bootstrap>
-      {{ 'ui_bootstrap_how' | translate: { folder: 'src/assets/world/', terminal: 'claude' } }}
-      <strong>{{ 'ui_bootstrap_order' | translate }}</strong>
-    </ng-template>
   }
 }
