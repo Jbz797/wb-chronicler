@@ -68,6 +68,23 @@
     text-align: center;
   }
 
+  // The stack lays every block out full width; the two flags are the one thing narrow enough to read as adrift unless they sit on the panel's axis.
+  .languages {
+    align-self: center;
+
+    // A flag is drawn by the system's emoji face, whose baseline is not Jersey's — centring the two boxes settles what no baseline could.
+    ::ng-deep .ant-radio-button-wrapper > span:last-child {
+      align-items: center;
+      display: inline-flex;
+      gap: 0.4rem;
+
+      .flag {
+        position: relative;
+        top: 1.5px;
+      }
+    }
+  }
+
   .unreachable {
     margin: 0;
   }

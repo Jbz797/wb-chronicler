@@ -50,8 +50,8 @@ class LocalService {
       'GET /saves': () => scout.list(),
       'POST /reset': async () => ({ chapters: await store.wipe() }),
       'POST /settings': async (body) => {
-        await store.record(body.savePath);
-        return { savePath: body.savePath };
+        await store.record(body.lang, body.savePath);
+        return { lang: body.lang, savePath: body.savePath };
       },
     };
   }
@@ -168,9 +168,10 @@ class WorldStore {
   #settings = `${this.#history}/settings.json`;
 
   // Refuses a path that leads nowhere: the whole toolchain reads through this one setting, and a wrong one only fails much later, inside `shared.py`.
-  async record(savePath) {
+  // `lang` rides along: it is the tongue the chronicler writes its chapters in, which the reader's own panels merely follow.
+  async record(lang, savePath) {
     await stat(savePath);
-    await writeFile(this.#settings, `${JSON.stringify({ savePath }, undefined, 2)}\n`);
+    await writeFile(this.#settings, `${JSON.stringify({ lang, savePath }, undefined, 2)}\n`);
   }
 
   // Empties `saves/` rather than removing it — angular.json declares it, `new.py` writes into it — then all of `history/`; what outlives a world sits elsewhere.

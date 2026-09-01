@@ -13,6 +13,12 @@
 - `max-lines` est configuré avec `skipBlankLines: true` et `skipComments: true`
 - Vérifier les erreurs avec `yarn lint:fix && yarn build`
 
+## i18n
+
+- Beaucoup de clés sont consommées via template literal (ex: `species_${assetId}`, `role_${role}`). Toujours grep le préfixe avant de supprimer une clé.
+- Les libellés que WorldBox connaît viennent de ses propres locales (`locales/<lang>/` dans `resources.assets`) ; le reste est du vocabulaire chroniqueur, traduit à la main.
+- `fr.json` et `en.json` portent les mêmes clés, triées ; un genre s'écrit `<base>_f` / `<base>_m`, la clé nue servant de repli aux langues qui ne fléchissent pas.
+
 ## Méthodes
 
 - Convertir les méthodes courtes (une seule instruction) en arrow function properties quand c'est possible (< 165 chars)

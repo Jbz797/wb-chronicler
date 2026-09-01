@@ -72,15 +72,51 @@
     <app-new-badge [dot]="false" />
   }
 </ng-template>
-<ng-template #attackersTitle><img src="assets/img/world/wars.png" /><span>Assaillants</span></ng-template>
-<ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
-<ng-template #coalitionTitle><img src="assets/img/world/alliances.png" /><span>Coalition</span></ng-template>
-<ng-template #deathsTitle><img src="assets/img/world/deaths.png" /><span>Morts</span></ng-template>
-<ng-template #declaredByTitle><img src="assets/img/professions/king.png" /><span>Déclarée par</span></ng-template>
-<ng-template #defendersTitle><img src="assets/img/stats/armor.png" /><span>Défenseurs</span></ng-template>
-<ng-template #durationTitle><img src="assets/img/world/duration.png" /><span>Durée</span></ng-template>
-<ng-template #kingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Couronnes</span></ng-template>
-<ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
-<ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée en jeu</span></ng-template>
-<ng-template #typeTitle><img src="assets/img/world/wars.png" /><span>Type de guerre</span></ng-template>
-<ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
+<ng-template #attackersTitle>
+  <img src="assets/img/world/wars.png" />
+  <span>{{ 'ui_attackers' | translate }}</span>
+</ng-template>
+<ng-template #citiesTitle>
+  <img src="assets/img/world/cities.png" />
+  <span>{{ 'ui_cities' | translate }}</span>
+</ng-template>
+<ng-template #coalitionTitle>
+  <img src="assets/img/world/alliances.png" />
+  <span>{{ 'ui_coalition' | translate }}</span>
+</ng-template>
+<ng-template #deathsTitle>
+  <img src="assets/img/world/deaths.png" />
+  <span>{{ 'ui_deaths' | translate }}</span>
+</ng-template>
+<ng-template #declaredByTitle>
+  <img src="assets/img/professions/king.png" />
+  <span>{{ 'ui_declared_by' | translate }}</span>
+</ng-template>
+<ng-template #defendersTitle>
+  <img src="assets/img/stats/armor.png" />
+  <span>{{ 'ui_defenders' | translate }}</span>
+</ng-template>
+<ng-template #durationTitle>
+  <img src="assets/img/world/duration.png" />
+  <span>{{ 'ui_duration' | translate }}</span>
+</ng-template>
+<ng-template #kingdomsTitle>
+  <img src="assets/img/world/kingdoms.png" />
+  <span>{{ 'ui_crowns' | translate }}</span>
+</ng-template>
+<ng-template #populationTitle>
+  <img src="assets/img/world/population.png" />
+  <span>{{ 'ui_population' | translate }}</span>
+</ng-template>
+<ng-template #renownTitle>
+  <img src="assets/img/stats/renown.png" />
+  <span>{{ 'ui_in_game_renown' | translate }}</span>
+</ng-template>
+<ng-template #typeTitle>
+  <img src="assets/img/world/wars.png" />
+  <span>{{ 'ui_war_type' | translate }}</span>
+</ng-template>
+<ng-template #warriorsTitle>
+  <img src="assets/img/professions/warrior.png" />
+  <span>{{ 'ui_warriors' | translate }}</span>
+</ng-template>

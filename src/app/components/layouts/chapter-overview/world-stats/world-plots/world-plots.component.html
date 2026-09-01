@@ -7,7 +7,7 @@
     @for (row of rows(); track row.schemer.id) {
       <ng-template #plotTitle>
         <img [src]="`assets/img/plots/${row.icon}.png`" />
-        <span>{{ row.label }}</span>
+        <span>{{ row.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="plotTitle">
         <app-person-tag [id]="row.schemer.id" [name]="row.schemer.name" />

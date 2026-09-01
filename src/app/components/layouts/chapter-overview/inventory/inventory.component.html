@@ -1,7 +1,10 @@
 <div class="inventory">
   @for (item of entries(); track item.key) {
-    <span><img [src]="`assets/img/resources/${item.key}.png`" />x{{ item.amount }}</span>
+    <span>
+      <img [src]="`assets/img/resources/${item.key}.png`" />
+      x{{ item.amount }}
+    </span>
   } @empty {
-    <em>vide</em>
+    <em>{{ 'ui_empty' | translate }}</em>
   }
 </div>

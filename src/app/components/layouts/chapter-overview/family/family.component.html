@@ -2,7 +2,8 @@
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
     @for (founder of founders(); track founder.id) {
       <ng-template #founderTitle>
-        <img src="assets/img/world/founder.png" /><span>{{ founder.label }}</span>
+        <img src="assets/img/world/founder.png" />
+        <span>{{ founder.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="founderTitle">
         <app-person-tag [id]="founder.id" [name]="founder.name" />
@@ -27,7 +28,8 @@
 
     @for (s of lifetimeStats(); track s.stat) {
       <ng-template #lifetimeTitle>
-        <img [src]="s.icon" /><span>{{ s.label }}</span>
+        <img [src]="s.icon" />
+        <span>{{ s.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="lifetimeTitle">
         <app-ranked-stat source="family" [inverted]="s.inverted" [stat]="s.stat" />
@@ -56,13 +58,40 @@
 
   <app-breakdown source="family" />
 
-  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge de la lignée</span></ng-template>
-  <ng-template #alphaTitle><img src="assets/img/world/most_renowned_person.png" /><span>Chef de famille</span></ng-template>
-  <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>
-  <ng-template #housedTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
-  <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Toits</span></ng-template>
-  <ng-template #membersTitle><img src="assets/img/world/population.png" /><span>Membres</span></ng-template>
-  <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
-  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
-  <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Villes</span></ng-template>
+  <ng-template #ageTitle>
+    <img src="assets/img/stats/age.png" />
+    <span>{{ 'ui_lineage_age' | translate }}</span>
+  </ng-template>
+  <ng-template #alphaTitle>
+    <img src="assets/img/world/most_renowned_person.png" />
+    <span>{{ 'ui_family_head' | translate }}</span>
+  </ng-template>
+  <ng-template #fedPctTitle>
+    <img src="assets/img/world/fed.png" />
+    <span>{{ 'ui_fed' | translate }}</span>
+  </ng-template>
+  <ng-template #housedTitle>
+    <img src="assets/img/world/housed.png" />
+    <span>{{ 'ui_housed' | translate }}</span>
+  </ng-template>
+  <ng-template #housesTitle>
+    <img src="assets/img/world/houses.png" />
+    <span>{{ 'ui_roofs' | translate }}</span>
+  </ng-template>
+  <ng-template #membersTitle>
+    <img src="assets/img/world/population.png" />
+    <span>{{ 'ui_members' | translate }}</span>
+  </ng-template>
+  <ng-template #moneyTitle>
+    <img src="assets/img/stats/money.png" />
+    <span>{{ 'ui_coins' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_total_renown' | translate }}</span>
+  </ng-template>
+  <ng-template #citiesTitle>
+    <img src="assets/img/world/cities.png" />
+    <span>{{ 'ui_cities' | translate }}</span>
+  </ng-template>
 }

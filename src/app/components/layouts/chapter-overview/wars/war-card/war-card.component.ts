@@ -3,7 +3,8 @@ import { Component, computed, inject, input } from '@angular/core';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
-import { WAR_TYPE_LABELS } from '../../../../../constants';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+
 import { SectionRowDirective } from '../../../../../directives';
 import { War, WarSideKey } from '../../../../../interfaces';
 import { ChroniclerService } from '../../../../../services';
@@ -13,12 +14,13 @@ import { KingdomTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-war-card',
-  imports: [DeltaComponent, KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, NzTagModule, SectionRowDirective],
+  imports: [DeltaComponent, KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, NzTagModule, SectionRowDirective, TranslatePipe],
   templateUrl: './war-card.component.html',
 })
 export class WarCardComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _translate = inject(TranslateService);
 
   public readonly war = input.required<War>();
 
@@ -50,6 +52,6 @@ export class WarCardComponent {
   };
 
   // Caller gates this behind `@if (w.metadata.war_type)` — WB leaves the kind unset on most declarations.
-  protected typeLabel = (war: War): string => WAR_TYPE_LABELS[war.metadata.war_type!];
+  protected typeLabel = (war: War): string => this._translate.instant(`war_type_${war.metadata.war_type}`) as string;
 
 }

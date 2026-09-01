@@ -1,7 +1,10 @@
 import { Component, computed, input } from '@angular/core';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 @Component({
   selector: 'app-inventory',
+  imports: [TranslatePipe],
   templateUrl: './inventory.component.html',
 })
 export class InventoryComponent {

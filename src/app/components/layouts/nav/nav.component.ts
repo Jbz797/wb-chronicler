@@ -5,14 +5,15 @@ import { RouterLink } from '@angular/router';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
+import { TranslatePipe } from '@ngx-translate/core';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
-import { PAGES, TAG_LABELS } from '../../../constants';
+import { PAGES } from '../../../constants';
 import { ChroniclerService } from '../../../services';
 
 @Component({
   selector: 'app-nav',
-  imports: [NgScrollbarModule, NzMenuModule, NzTooltipModule, RouterLink, SlicePipe],
+  imports: [NgScrollbarModule, NzMenuModule, NzTooltipModule, RouterLink, SlicePipe, TranslatePipe],
   templateUrl: './nav.component.html',
   styleUrl: './nav.component.scss',
 })
@@ -22,7 +23,6 @@ export class NavComponent {
 
   protected chapters = this._chronicler.chapters;
   protected pages = PAGES;
-  protected tagLabels = TAG_LABELS;
 
   private readonly _list = viewChild<ElementRef<HTMLElement>>('chapterList');
 

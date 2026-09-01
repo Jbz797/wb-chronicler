@@ -1,7 +1,8 @@
 import { Component, input } from '@angular/core';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { LeaderRow } from '../../../../../interfaces';
-import { SpeciesNamePipe } from '../../../../../pipes';
 import {
   CityTagComponent, ClanTagComponent, CultureTagComponent, FamilyTagComponent, KingdomTagComponent, LanguageTagComponent, PersonTagComponent,
   ReligionTagComponent, SubspeciesTagComponent,
@@ -18,8 +19,8 @@ import {
     LanguageTagComponent,
     PersonTagComponent,
     ReligionTagComponent,
-    SpeciesNamePipe,
     SubspeciesTagComponent,
+    TranslatePipe,
   ],
   templateUrl: './leader-row.component.html',
   styleUrl: './leader-row.component.scss',

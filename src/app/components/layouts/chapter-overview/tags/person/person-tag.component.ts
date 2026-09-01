@@ -3,7 +3,8 @@ import { Component, computed, effect, ElementRef, inject, input, viewChild } fro
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
-import { ANONYMOUS_NAME } from '../../../../../constants';
+import { TranslateService } from '@ngx-translate/core';
+
 import { TruncatedDirective } from '../../../../../directives';
 import { ActorSpriteHelpers, PaletteHelpers } from '../../../../../helpers';
 import { RegistryService } from '../../../../../services';
@@ -16,6 +17,7 @@ import { RegistryService } from '../../../../../services';
 export class PersonTagComponent {
 
   private readonly _registry = inject(RegistryService);
+  private readonly _translate = inject(TranslateService);
 
   public readonly id = input.required<number>();
   public readonly medal = input(true); // Podium medal shown by default; hidden where the entity is the winner by construction.
@@ -26,7 +28,7 @@ export class PersonTagComponent {
   // Their realm's own name hue — a subject reads as belonging to that crown, exactly as its `[k]` tag does.
   protected readonly color = computed(() => PaletteHelpers.realmText(this.person()?.kingdom));
   // What the plate prints: their name, or the stand-in where WB never gave them one — the row still belongs, only the soul in it went unrecorded.
-  protected readonly label = computed(() => this.name() ?? ANONYMOUS_NAME);
+  protected readonly label = computed(() => this.name() ?? (this._translate.instant('anonymous') as string));
   // And its emblem tint around the plate — the second half of that belonging, shared with the crown's own tag and its villages'.
   protected readonly ring = computed(() => PaletteHelpers.realmRing(this.person()?.kingdom));
 

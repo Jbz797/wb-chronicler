@@ -3,8 +3,10 @@ import { Component, computed, inject } from '@angular/core';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+
 import { DeltaComponent } from '..';
-import { ANONYMOUS_NAME, CUMULATIVE_STATS, DEATH_CAUSES, LEADERS_BY_LEVEL, LEADERS_BY_MEMBERS, LEADERS_BY_SCORE, SNAPSHOT_STATS } from '../../../../constants';
+import { CUMULATIVE_STATS, DEATH_CAUSES, LEADERS_BY_LEVEL, LEADERS_BY_MEMBERS, LEADERS_BY_SCORE, SNAPSHOT_STATS } from '../../../../constants';
 import { LeaderKind, LeaderRow } from '../../../../interfaces';
 import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
@@ -14,12 +16,13 @@ import { WorldPlotsComponent } from './world-plots/world-plots.component';
 
 @Component({
   selector: 'app-world-stats',
-  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, NzTooltipModule, WorldPlotsComponent],
+  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, NzTooltipModule, TranslatePipe, WorldPlotsComponent],
   templateUrl: './world-stats.component.html',
 })
 export class WorldStatsComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _translate = inject(TranslateService);
 
   protected readonly cumulativeStats = CUMULATIVE_STATS;
   protected readonly deathCauses = DEATH_CAUSES;
@@ -61,7 +64,7 @@ export class WorldStatsComponent {
       },
     );
     const boats = world.boats.total;
-    rows.push({ delta: before ? boats - before.boats.total : undefined, hideIfZero: true, key: 'boats', label: 'Bateaux', value: boats });
+    rows.push({ delta: before ? boats - before.boats.total : undefined, hideIfZero: true, key: 'boats', label: 'ui_boats', value: boats });
     return rows.filter(r => !r.hideIfZero || r.value > 0).map(({ delta, key, label, value }) => ({ delta, key, label, value }));
   });
   // Causes with > 0 deaths this chapter, sorted by count desc — 0-rows are hidden (16 categories incl. peste/poison/etc. that stay idle most chapters).
@@ -87,7 +90,7 @@ export class WorldStatsComponent {
       const p = previous?.[key];
       const isNew = !!previous && !!p && (entry.id !== p.id);
       // Only `highest_level_person` can reach here unnamed; every other entity row and the dominant traits always carry one.
-      return [{ data: { ...entry, isNew, key, name: entry.name ?? ANONYMOUS_NAME }, icon: icon ?? key, label }];
+      return [{ data: { ...entry, isNew, key, name: entry.name ?? (this._translate.instant('anonymous') as string) }, icon: icon ?? key, label }];
     });
   }
 

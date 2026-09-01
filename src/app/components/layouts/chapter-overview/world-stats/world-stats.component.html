@@ -4,7 +4,7 @@
     @for (row of snapshotRows(); track row.key) {
       <ng-template #titleRef>
         <img [src]="`assets/img/world/${row.key}.png`" />
-        <span>{{ row.label }}</span>
+        <span>{{ row.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
         <span nz-tooltip [nzTooltipTitle]="row.value | exact">{{ row.value | compact }}</span>
@@ -16,11 +16,11 @@
   <app-world-plots />
 
   @if (activityRows().length) {
-    <nz-descriptions nzBordered nzSize="small" nzTitle="Activité récente" [nzColumn]="1">
+    <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_recent_activity' | translate">
       @for (row of activityRows(); track row.icon) {
         <ng-template #titleRef>
           <img [src]="`assets/img/world/${row.icon}.png`" />
-          <span>{{ row.label }}</span>
+          <span>{{ row.label | translate }}</span>
         </ng-template>
         <nz-descriptions-item [nzTitle]="titleRef">
           <span nz-tooltip [nzTooltipTitle]="row.value | exact">{{ row.value | compact }}</span>
@@ -29,12 +29,12 @@
     </nz-descriptions>
   }
 
-  <nz-descriptions nzBordered nzSize="small" nzTitle="Causes de mortalité" [nzColumn]="2">
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="'ui_causes_of_death' | translate">
     @for (cause of sortedDeathCauses(); track cause.key) {
       @let deaths = deathsSincePrevious()?.[cause.key] ?? 0;
       <ng-template #titleRef>
         <img [src]="`assets/img/world/deaths/${cause.key}.png`" />
-        <span>{{ cause.label }}</span>
+        <span>{{ cause.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
         <span nz-tooltip [nzTooltipTitle]="deaths | exact">{{ deaths | compact }}</span>
@@ -43,14 +43,14 @@
     @let totalDeaths = totalDeathsSincePrevious() ?? 0;
     <ng-template #totalTitle>
       <img src="assets/img/world/deaths.png" />
-      <span>Total</span>
+      <span>{{ 'ui_total' | translate }}</span>
     </ng-template>
     <nz-descriptions-item [nzTitle]="totalTitle">
       <span nz-tooltip [nzTooltipTitle]="totalDeaths | exact">{{ totalDeaths | compact }}</span>
     </nz-descriptions-item>
   </nz-descriptions>
 
-  <app-leader-table heading="Palmarès par niveau" [rows]="levelRows()" />
-  <app-leader-table heading="Palmarès par nombre" [rows]="memberRows()" />
-  <app-leader-table heading="Palmarès par score" [rows]="scoreRows()" />
+  <app-leader-table [heading]="'ui_standing_by_level' | translate" [rows]="levelRows()" />
+  <app-leader-table [heading]="'ui_standing_by_number' | translate" [rows]="memberRows()" />
+  <app-leader-table [heading]="'ui_standing_by_score' | translate" [rows]="scoreRows()" />
 }

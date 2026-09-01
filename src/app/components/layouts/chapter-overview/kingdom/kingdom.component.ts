@@ -2,6 +2,8 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { BreakdownComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '..';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
@@ -21,6 +23,7 @@ import { KingdomRelationsComponent } from './kingdom-relations/kingdom-relations
     NzDescriptionsModule,
     PersonTagComponent,
     RankedStatComponent,
+    TranslatePipe,
     WealthComponent,
   ],
   templateUrl: './kingdom.component.html',
@@ -52,8 +55,8 @@ export class KingdomComponent {
     const p = this.kingdom()?.population;
     if (!p) return [];
     const rows = [
-      { icon: 'assets/img/world/sick.png', label: 'Malades', stat: 'sick' as const },
-      { icon: 'assets/img/world/infected.png', label: 'Infectés', stat: 'infected' as const },
+      { icon: 'assets/img/world/sick.png', label: 'ui_sick', stat: 'sick' as const },
+      { icon: 'assets/img/world/infected.png', label: 'ui_infected', stat: 'infected' as const },
       { icon: 'assets/img/world/immortals.png', label: 'Immortels', stat: 'immortals' as const },
     ];
     return rows.filter(r => (p[r.stat] ?? 0) > 0);
@@ -66,9 +69,9 @@ export class KingdomComponent {
       { icon: 'assets/img/world/cultures.png', label: 'Traits culturels', shown: (k.metadata.culture_traits ?? 0) > 0, stat: 'culture_traits' as const },
       { icon: 'assets/img/world/foundings.png', label: 'Fondations', shown: (k.metadata.foundings ?? 0) > 0, stat: 'foundings' as const },
       { icon: 'assets/img/world/books_read.png', label: 'Rayonnement', shown: (k.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
-      { icon: 'assets/img/world/books.png', label: 'Livres', shown: (k.metadata.books ?? 0) > 0, stat: 'books' as const },
-      { icon: 'assets/img/world/wars.png', label: 'Guerres gagnées', shown: (k.metadata.wars_won ?? 0) > 0, stat: 'wars_won' as const },
-      { icon: 'assets/img/stats/equipment_power.png', label: 'Équipements', shown: !!k.equipment.total, stat: 'equipment' as const },
+      { icon: 'assets/img/world/books.png', label: 'ui_books', shown: (k.metadata.books ?? 0) > 0, stat: 'books' as const },
+      { icon: 'assets/img/world/wars.png', label: 'ui_wars_won', shown: (k.metadata.wars_won ?? 0) > 0, stat: 'wars_won' as const },
+      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!k.equipment.total, stat: 'equipment' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));
   });

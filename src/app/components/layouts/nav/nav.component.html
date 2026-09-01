@@ -1,24 +1,24 @@
-<h2 class="section-title">Préceptes</h2>
+<h2 class="section-title">{{ 'ui_precepts' | translate }}</h2>
 <ul nz-menu nzMode="inline">
   @for (page of pages; track page.slug) {
-    <li nz-menu-item nzMatchRouter [routerLink]="['/', page.slug]">{{ page.label }}</li>
+    <li nz-menu-item nzMatchRouter [routerLink]="['/', page.slug]">{{ page.label | translate }}</li>
   }
 </ul>
 
-<h2 class="section-title">Chroniques</h2>
+<h2 class="section-title">{{ 'ui_chronicles' | translate }}</h2>
 @if (chapters().length) {
   <ng-scrollbar class="chapters-scroll" (afterUpdate)="revealCurrent()">
     <ul #chapterList class="chapters" nz-menu nzMode="inline">
       @for (chapter of chapters(); track chapter.slug) {
         <li nz-menu-item nzMatchRouter [attr.data-slug]="chapter.slug" [routerLink]="['/', chapter.slug]">
-          {{ chapter.label }}
+          {{ chapter.label | translate }}
           @for (tag of chapter.meta.tags | slice: 0 : 3; track tag) {
-            <img class="tag-icon" nz-tooltip [nzTooltipTitle]="tagLabels[tag] ?? tag" [src]="tagIconUrl(tag)" />
+            <img class="tag-icon" nz-tooltip [nzTooltipTitle]="`tag_${tag}` | translate" [src]="tagIconUrl(tag)" />
           }
         </li>
       }
     </ul>
   </ng-scrollbar>
 } @else {
-  <p class="empty-state">Aucun chapitre pour l'instant.</p>
+  <p class="empty-state">{{ 'ui_no_chapter_yet' | translate }}</p>
 }

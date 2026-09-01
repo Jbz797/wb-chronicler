@@ -5,55 +5,55 @@
   <h2 class="section-title">{{ w.name }}</h2>
   <p class="world-age">
     <img class="age-icon" [src]="`assets/img/ages/${ageId}.png`" />
-    {{ ageLabels[ageId] ?? ageId }}
+    {{ `age_${ageId}` | translate }}
     <app-new-badge [dot]="false" [show]="isNewAge()" />
   </p>
   <nz-divider />
 
   <ng-template #worldStatsHeader>
     <img class="panel-icon" src="assets/img/world/world_stats.png" />
-    <span>Monde</span>
+    <span>{{ 'ui_world' | translate }}</span>
   </ng-template>
   <ng-template #favoritesHeader>
     <img class="panel-icon" src="assets/img/world/favorites.png" />
-    <span>Favoris</span>
+    <span>{{ 'ui_favorites' | translate }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('favorite')" />
   </ng-template>
   <ng-template #familyHeader>
     <img class="panel-icon" src="assets/img/world/families.png" />
-    <span>Lignée</span>
+    <span>{{ 'ui_lineage' | translate }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('family')" />
   </ng-template>
   <ng-template #clanHeader>
     <img class="panel-icon" src="assets/img/world/most_renowned_clan.png" />
-    <span>Clan</span>
+    <span>{{ 'ui_clan' | translate }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('clan')" />
   </ng-template>
   <ng-template #cultureHeader>
     <img class="panel-icon" src="assets/img/world/cultures.png" />
-    <span>Culture</span>
+    <span>{{ 'ui_culture' | translate }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('culture')" />
   </ng-template>
   <ng-template #languageHeader>
     <img class="panel-icon" src="assets/img/world/languages.png" />
-    <span>Langue</span>
+    <span>{{ 'ui_language' | translate }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('language')" />
   </ng-template>
   <ng-template #warsHeader>
     <img class="panel-icon" src="assets/img/world/wars.png" />
-    <span>Guerres</span>
+    <span>{{ 'ui_wars' | translate }}</span>
   </ng-template>
-  <ng-template #warsChip
-    ><nz-tag>{{ c.meta.wars.length }}</nz-tag></ng-template
-  >
+  <ng-template #warsChip>
+    <nz-tag>{{ c.meta.wars.length }}</nz-tag>
+  </ng-template>
   <ng-template #religionHeader>
     <img class="panel-icon" src="assets/img/world/religions.png" />
-    <span>Religion</span>
+    <span>{{ 'ui_religion' | translate }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('religion')" />
   </ng-template>
   <ng-template #subspeciesHeader>
     <img class="panel-icon" src="assets/img/world/subspecies.png" />
-    <span>S. espèce</span>
+    <span>{{ 'ui_subsp' | translate }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('subspecies')" />
   </ng-template>
   <ng-template #cityHeader>
@@ -63,7 +63,7 @@
   </ng-template>
   <ng-template #allianceHeader>
     <img class="panel-icon" src="assets/img/world/alliances.png" />
-    <span>Alliance</span>
+    <span>{{ 'ui_alliance' | translate }}</span>
     <app-new-badge [dot]="false" [show]="isNewPanel('alliance')" />
   </ng-template>
   <ng-template #allianceChip><app-panel-extra panel="alliance" /></ng-template>
@@ -212,5 +212,5 @@
     </nz-collapse-panel>
   </nz-collapse>
 } @else {
-  <nz-empty nzNotFoundContent="Aucune donnée à afficher" nzNotFoundImage="assets/img/empty/no-data.png" />
+  <nz-empty nzNotFoundImage="assets/img/empty/no-data.png" [nzNotFoundContent]="'ui_nothing_to_show' | translate" />
 }

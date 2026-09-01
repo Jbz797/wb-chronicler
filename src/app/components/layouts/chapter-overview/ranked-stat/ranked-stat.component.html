@@ -2,7 +2,8 @@
   <div class="stat-row">
     <span>
       @if (gaugeValue(); as c) {
-        <span [class]="c | tier: d.value">{{ c | number: numberFormat() }}</span> / {{ d.value | number: numberFormat() }}{{ suffix() }}
+        <span [class]="c | tier: d.value">{{ c | number: numberFormat() }}</span>
+        / {{ d.value | number: numberFormat() }}{{ suffix() }}
       } @else if (useCompact()) {
         <span nz-tooltip [nzTooltipTitle]="d.value | exact">{{ d.value | compact }}{{ suffix() }}</span>
       } @else {

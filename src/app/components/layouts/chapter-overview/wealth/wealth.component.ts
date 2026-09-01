@@ -3,13 +3,15 @@ import { Component, computed, inject, input } from '@angular/core';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { RankedStatComponent } from '../ranked-stat/ranked-stat.component';
 
 @Component({
   selector: 'app-wealth',
-  imports: [CompactPipe, ExactPipe, NzDescriptionsModule, NzTooltipModule, RankedStatComponent],
+  imports: [CompactPipe, ExactPipe, NzDescriptionsModule, NzTooltipModule, RankedStatComponent, TranslatePipe],
   templateUrl: './wealth.component.html',
 })
 export class WealthComponent {
@@ -25,7 +27,7 @@ export class WealthComponent {
       const c = meta?.city;
       if (!c) return [];
       return [
-        { icon: 'professions/leader', label: 'Dirigeant', value: c.metadata.leader?.money },
+        { icon: 'professions/leader', label: 'ui_ruler', value: c.metadata.leader?.money },
         { icon: 'world/nobles', label: 'Nobles', value: c.population.nobles_money },
         { icon: 'world/population', label: 'Habitants', value: c.population.subjects_money },
         { icon: 'world/gold', label: 'Lingots', value: c.metadata.gold },

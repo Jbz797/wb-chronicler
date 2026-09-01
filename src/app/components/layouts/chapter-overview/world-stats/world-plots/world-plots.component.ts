@@ -2,20 +2,22 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+
 import { NewBadgeComponent } from '../..';
-import { PLOT_TYPE_LABELS } from '../../../../../constants';
 import { WorldPlot } from '../../../../../interfaces';
 import { ChroniclerService } from '../../../../../services';
 import { PersonTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-world-plots',
-  imports: [NewBadgeComponent, NzDescriptionsModule, PersonTagComponent],
+  imports: [NewBadgeComponent, NzDescriptionsModule, PersonTagComponent, TranslatePipe],
   templateUrl: './world-plots.component.html',
 })
 export class WorldPlotsComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _translate = inject(TranslateService);
 
   private readonly _signature = (plots: WorldPlot[]): string => plots.map(p => `${p.actor.id}:${p.type.id}`).toSorted((a, b) => a.localeCompare(b)).join('|');
 
@@ -28,7 +30,13 @@ export class WorldPlotsComponent {
   // Every scheme afoot, its label resolved here: WB hangs a plot on one schemer, and `actor/info.py <id> plot` tells the chronicler the rest.
   protected readonly rows = computed(() => {
     const plots = this._chronicler.currentChapter()?.meta.world.plots ?? [];
-    return plots.map(({ actor, type }) => ({ icon: type.id, label: PLOT_TYPE_LABELS[type.id] ?? type.id, schemer: actor }));
+    return plots.map(({ actor, type }) => ({ icon: type.id, label: this._label(type.id), schemer: actor }));
   });
+
+  // WB's own wording for the scheme, its raw id standing in for one the locales never named.
+  private _label(id: string): string {
+    const label = this._translate.instant(`plot_${id}`) as string;
+    return label === `plot_${id}` ? id : label;
+  }
 
 }

@@ -1,6 +1,9 @@
 @if (summary(); as text) {
   <figure class="trait-summary">
-    <figcaption>{{ heading() }}<app-new-badge [dot]="false" [show]="isNew()" /></figcaption>
+    <figcaption>
+      {{ heading() }}
+      <app-new-badge [dot]="false" [show]="isNew()" />
+    </figcaption>
     <p>{{ text }}</p>
   </figure>
 }

@@ -2,6 +2,8 @@ import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { BreakdownComponent, RankedStatComponent, TraitSummaryComponent } from '..';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
@@ -10,7 +12,7 @@ import { PersonTagComponent } from '../tags';
 
 @Component({
   selector: 'app-clan',
-  imports: [BreakdownComponent, LeadersComponent, NzDescriptionsModule, PersonTagComponent, RankedStatComponent, TraitSummaryComponent],
+  imports: [BreakdownComponent, LeadersComponent, NzDescriptionsModule, PersonTagComponent, RankedStatComponent, TraitSummaryComponent, TranslatePipe],
   templateUrl: './clan.component.html',
 })
 export class ClanComponent {
@@ -25,10 +27,10 @@ export class ClanComponent {
     const m = this.clan()?.metadata;
     if (!m) return [];
     const rows = [
-      { icon: 'assets/img/world/deaths.png', inverted: true, label: 'Morts', shown: !!m.deaths, stat: 'deaths' as const },
-      { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'Guerriers', shown: true, stat: 'warriors' as const },
-      { icon: 'assets/img/stats/kills.png', inverted: false, label: 'Tués', shown: !!m.kills, stat: 'kills' as const },
-      { icon: 'assets/img/world/books.png', inverted: false, label: 'Livres écrits', shown: !!m.books_written, stat: 'books_written' as const },
+      { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: !!m.deaths, stat: 'deaths' as const },
+      { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: true, stat: 'warriors' as const },
+      { icon: 'assets/img/stats/kills.png', inverted: false, label: 'ui_kills', shown: !!m.kills, stat: 'kills' as const },
+      { icon: 'assets/img/world/books.png', inverted: false, label: 'ui_books_written', shown: !!m.books_written, stat: 'books_written' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, inverted, label, stat }) => ({ icon, inverted, label, stat }));
   });

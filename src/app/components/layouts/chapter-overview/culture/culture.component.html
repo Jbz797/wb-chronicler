@@ -21,7 +21,8 @@
 
     @for (s of lifetimeStats(); track s.stat) {
       <ng-template #lifetimeTitle>
-        <img [src]="s.icon" /><span>{{ s.label }}</span>
+        <img [src]="s.icon" />
+        <span>{{ s.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="lifetimeTitle">
         <app-ranked-stat source="culture" [inverted]="s.inverted" [stat]="s.stat" />
@@ -45,20 +46,50 @@
     </nz-descriptions-item>
   </nz-descriptions>
 
-  <app-trait-summary heading="Coutumes" source="culture" />
+  <app-trait-summary source="culture" [heading]="'ui_customs' | translate" />
 
   <app-leaders [leaders]="c.leaders" />
 
   <app-breakdown source="culture" />
 
-  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge de la culture</span></ng-template>
-  <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Villes</span></ng-template>
-  <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>
-  <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
-  <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
-  <ng-template #kingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Royaumes</span></ng-template>
-  <ng-template #membersTitle><img src="assets/img/world/population.png" /><span>Adeptes</span></ng-template>
-  <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
-  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
-  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
+  <ng-template #ageTitle>
+    <img src="assets/img/stats/age.png" />
+    <span>{{ 'ui_culture_age' | translate }}</span>
+  </ng-template>
+  <ng-template #citiesTitle>
+    <img src="assets/img/world/cities.png" />
+    <span>{{ 'ui_cities' | translate }}</span>
+  </ng-template>
+  <ng-template #fedPctTitle>
+    <img src="assets/img/world/fed.png" />
+    <span>{{ 'ui_fed' | translate }}</span>
+  </ng-template>
+  <ng-template #founderTitle>
+    <img src="assets/img/world/founder.png" />
+    <span>{{ 'ui_founder' | translate }}</span>
+  </ng-template>
+  <ng-template #housedPctTitle>
+    <img src="assets/img/world/housed.png" />
+    <span>{{ 'ui_housed' | translate }}</span>
+  </ng-template>
+  <ng-template #kingdomsTitle>
+    <img src="assets/img/world/kingdoms.png" />
+    <span>{{ 'ui_kingdoms' | translate }}</span>
+  </ng-template>
+  <ng-template #membersTitle>
+    <img src="assets/img/world/population.png" />
+    <span>{{ 'ui_followers' | translate }}</span>
+  </ng-template>
+  <ng-template #moneyTitle>
+    <img src="assets/img/stats/money.png" />
+    <span>{{ 'ui_coins' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_renown' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTotalTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_total_renown' | translate }}</span>
+  </ng-template>
 }

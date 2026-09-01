@@ -1,11 +1,11 @@
 @if (relations().length) {
-  <h3 class="relations-title">Relations</h3>
+  <h3 class="relations-title">{{ 'ui_relations' | translate }}</h3>
   <nz-table nzBordered nzSize="small" [nzData]="sorted()" [nzShowPagination]="false">
     <thead>
       <tr>
-        <th>Royaume</th>
-        <th>Statut</th>
-        <th>Opinion</th>
+        <th>{{ 'ui_kingdom' | translate }}</th>
+        <th>{{ 'ui_status' | translate }}</th>
+        <th>{{ 'ui_opinion' | translate }}</th>
       </tr>
     </thead>
     <tbody>
@@ -13,7 +13,7 @@
         <tr>
           <td><app-kingdom-tag [id]="r.kingdom.id" [name]="r.kingdom.name" /></td>
           <td>
-            <nz-tag [nzColor]="statusColor[r.status]">{{ statusLabel[r.status] }}</nz-tag>
+            <nz-tag [nzColor]="statusColor[r.status]">{{ `relation_${r.status}` | translate }}</nz-tag>
           </td>
           <td [class]="opinionClass(r.opinion.total)">{{ r.opinion.total > 0 ? '+' : '' }}{{ r.opinion.total }}</td>
         </tr>

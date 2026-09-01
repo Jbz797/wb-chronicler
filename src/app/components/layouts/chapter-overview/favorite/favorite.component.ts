@@ -4,8 +4,10 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+
 import { InventoryComponent, NewBadgeComponent, RankedStatComponent, TraitSummaryComponent } from '..';
-import { COMBAT_STATS, COMPANION_LABELS, LIFE_STAGE_LABELS, PERSONALITY_LABELS, ROLE_LABELS, SKILL_STATS, TENURE_LABELS } from '../../../../constants';
+import { ACTIVE_ROLES, COMBAT_STATS, SKILL_STATS } from '../../../../constants';
 import { LabelHelpers } from '../../../../helpers';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService, RegistryService } from '../../../../services';
@@ -28,6 +30,7 @@ import { PlotCardComponent } from './plot-card/plot-card.component';
     RankedStatComponent,
     TierPipe,
     TraitSummaryComponent,
+    TranslatePipe,
   ],
   templateUrl: './favorite.component.html',
 })
@@ -35,6 +38,7 @@ export class FavoriteComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _registry = inject(RegistryService);
+  private readonly _translate = inject(TranslateService);
 
   protected readonly combatStats = COMBAT_STATS;
   protected readonly skillStats = SKILL_STATS;
@@ -44,7 +48,7 @@ export class FavoriteComponent {
   // Age suffix « ans (<stage>) » — appends the life-stage label to the ranked age value.
   protected readonly ageSuffix = computed(() => {
     const meta = this.currentChapter()?.meta.favorite?.metadata;
-    return meta?.life_stage ? ` ans (${LabelHelpers.gendered(LIFE_STAGE_LABELS[meta.life_stage], meta.sex)})` : ' ans';
+    return meta?.life_stage ? ` ans (${LabelHelpers.gendered(this._translate, `life_stage_${meta.life_stage}`, meta.sex)})` : ' ans';
   });
   // Tags: personality + active roles. Each one carries `isNew` (true if absent from the previous chapter).
   protected readonly roleTags = computed(() => {
@@ -58,15 +62,14 @@ export class FavoriteComponent {
 
     if (meta.personality) {
       const isNew = !!previousMeta && previousMeta.personality !== meta.personality;
-      tags.push({ color: 'yellow', isNew, label: LabelHelpers.gendered(PERSONALITY_LABELS[meta.personality], meta.sex) || meta.personality });
+      tags.push({ color: 'yellow', isNew, label: LabelHelpers.gendered(this._translate, `personality_${meta.personality}`, meta.sex) || meta.personality });
     }
 
-    for (const role of roles) {
-      const definition = ROLE_LABELS[role];
-      if (definition?.active) {
-        const isNew = !!previousMeta && !previousRoles.has(role);
-        tags.push({ color: 'lime', isNew, label: LabelHelpers.gendered(definition.label, meta.sex) });
-      }
+    // Only a post still held earns its tag; a founding is the chronicle's to tell, not the panel's.
+    const held = roles.filter(role => ACTIVE_ROLES.has(role));
+    for (const role of held) {
+      const isNew = !!previousMeta && !previousRoles.has(role);
+      tags.push({ color: 'lime', isNew, label: LabelHelpers.gendered(this._translate, `role_${role}`, meta.sex) });
     }
 
     return tags;
@@ -97,14 +100,18 @@ export class FavoriteComponent {
     const changed = this.changedFields();
     const persons = this._registry.persons();
     return [
-      { icon: 'lovers', isNew: changed.lover, label: COMPANION_LABELS.lover, person: companions?.lover },
-      { icon: 'friendship', isNew: changed.bestFriend, label: COMPANION_LABELS.best_friend, person: companions?.best_friend },
+      { icon: 'lovers', isNew: changed.lover, key: 'companion_lover', person: companions?.lover },
+      { icon: 'friendship', isNew: changed.bestFriend, key: 'companion_best_friend', person: companions?.best_friend },
     ].flatMap((row) => {
       if (!row.person) return [];
-      return [{ ...row, label: LabelHelpers.gendered(row.label, persons[String(row.person.id)]?.sex), person: row.person }];
+      return [{ ...row, label: LabelHelpers.gendered(this._translate, row.key, persons[String(row.person.id)]?.sex), person: row.person }];
     });
   });
   // Names the post `tenure_years` counts — only kings/leaders/captains hold one, so the fallback never surfaces.
-  protected readonly tenureLabel = computed(() => TENURE_LABELS[this.currentChapter()?.meta.favorite?.metadata.job ?? ''] ?? 'Ancienneté');
+  protected readonly tenureLabel = computed(() => {
+    const key = `tenure_${this.currentChapter()?.meta.favorite?.metadata.job ?? ''}`;
+    const label = this._translate.instant(key) as string;
+    return label === key ? (this._translate.instant('tenure_default') as string) : label;
+  });
 
 }

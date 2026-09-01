@@ -2,13 +2,15 @@ import { Component, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { NewBadgeComponent } from '../..';
 import { LeaderRow } from '../../../../../interfaces';
 import { LeaderRowComponent } from '../leader-row/leader-row.component';
 
 @Component({
   selector: 'app-leader-table',
-  imports: [LeaderRowComponent, NewBadgeComponent, NzDescriptionsModule],
+  imports: [LeaderRowComponent, NewBadgeComponent, NzDescriptionsModule, TranslatePipe],
   templateUrl: './leader-table.component.html',
 })
 export class LeaderTableComponent {

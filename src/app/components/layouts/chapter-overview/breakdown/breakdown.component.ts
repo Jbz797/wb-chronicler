@@ -2,16 +2,15 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { BreakdownSource } from '../../../../interfaces';
-import { SpeciesNamePipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { CultureTagComponent, KingdomTagComponent, LanguageTagComponent, ReligionTagComponent, SubspeciesTagComponent } from '../tags';
 
 @Component({
   selector: 'app-breakdown',
-  imports: [
-    CultureTagComponent, KingdomTagComponent, LanguageTagComponent, NzDescriptionsModule, ReligionTagComponent, SpeciesNamePipe, SubspeciesTagComponent,
-  ],
+  imports: [CultureTagComponent, KingdomTagComponent, LanguageTagComponent, NzDescriptionsModule, ReligionTagComponent, SubspeciesTagComponent, TranslatePipe],
   templateUrl: './breakdown.component.html',
   styleUrl: './breakdown.component.scss',
 })

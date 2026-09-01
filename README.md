@@ -22,7 +22,7 @@ Claude Code turns your **WorldBox** save files into narrative chapters, rendered
 
 The player runs **WorldBox** in pure observation mode (zero intervention, sandbox laws). When a save is ready:
 
-1. **The Chronicler** — the Claude Code CLI, run from a terminal with `src/assets/world/` as its working directory, reads the rules in `chronicler.md`, questions the world through the `tools/` commands it is given — a script per subject (`world`, `actor`, `city`, `geography`…) that decodes the `map.wbox` save (zlib-compressed JSON) and answers in JSON — browses the `map_stats.s3db` SQLite itself, and writes the next narrative chapter in a Tolkien-inspired voice (French, no pastiche, every claim traced back to data).
+1. **The Chronicler** — the Claude Code CLI, run from a terminal with `src/assets/world/` as its working directory, reads the rules in `chronicler.md`, questions the world through the `tools/` commands it is given — a script per subject (`world`, `actor`, `city`, `geography`…) that decodes the `map.wbox` save (zlib-compressed JSON) and answers in JSON — browses the `map_stats.s3db` SQLite itself, and writes the next narrative chapter in a Tolkien-inspired voice (no pastiche, every claim traced back to data) — in whichever tongue `history/settings.json` records.
 
 2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters and the rules document on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world's leaderboards, the favorite character, and every body it belongs to: village, kingdom, clan, lineage…
 
@@ -32,8 +32,8 @@ Each chapter is a self-contained folder under `saves/C<n>/` carrying its own nar
 >
 > - **One save = one chapter.** The system is built around **manual saves only** — disable WorldBox auto-saves before you start. The player decides when a chapter begins and asks for it; the chronicler then works from the latest save on disk, and an auto-save would slip in an intermediate state nobody chose. Overwriting the same WorldBox slot is safe: every chapter archives the save it was built from.
 > - **Claude Max** (or higher) is recommended — the chronicler reads, cross-checks, and writes a multi-section chapter on every save.
-> - Narrative output is **French only** for now.
-> - **macOS, Windows and Linux.** On first run the reader opens its settings panel, finds the WorldBox saves this machine holds — including a Proton prefix on Linux — and records the one to follow.
+> - **French or English.** One setting, `lang` in `history/settings.json`, governs both sides: the chronicler answers and writes its chapters in it, the reader's panels follow. Pick it from the settings panel, which will not save without one.
+> - **macOS, Windows and Linux.** On first run the reader opens its settings panel, finds the WorldBox saves this machine holds — including a Proton prefix on Linux — and records the one to follow, along with the tongue the chronicle is kept in.
 
 ## State lives on disk, not in context
 
@@ -75,5 +75,6 @@ yarn lint:fix       # auto-fix all three
 - **Angular** (standalone components, signals, zoneful)
 - **NG-ZORRO** (dark layout, custom gold/parchment palette)
 - **ngx-markdown** + Marked + Prism.js (gruvbox-dark)
-- **LESS** for ng-zorro theme overrides (mirrors `src/variables.scss`)
+- **ngx-translate** (French and English, off WorldBox's own locale files where the game names a thing)
+- **Python** (standard library only) for the `tools/` extractors — zlib and JSON off the save, SQLite for the history
 - **TypeScript**, ESLint, Stylelint, Prettier

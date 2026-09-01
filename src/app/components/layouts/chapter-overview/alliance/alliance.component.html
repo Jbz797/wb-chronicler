@@ -15,7 +15,8 @@
     <nz-descriptions-item [nzTitle]="renownTitle"><app-ranked-stat source="alliance" stat="renown" /></nz-descriptions-item>
     @for (row of lifetimeStats(); track row.stat) {
       <ng-template #lifetimeTitle>
-        <img [src]="row.icon" /><span>{{ row.label }}</span>
+        <img [src]="row.icon" />
+        <span>{{ row.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="lifetimeTitle">
         <app-ranked-stat source="alliance" [inverted]="row.inverted" [stat]="row.stat" />
@@ -28,11 +29,32 @@
   <app-breakdown source="alliance" />
   <app-leaders [leaders]="a.leaders" />
 
-  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
-  <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
-  <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
-  <ng-template #kingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Couronnes</span></ng-template>
-  <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
-  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
-  <ng-template #territoryTitle><img src="assets/img/world/territory.png" /><span>Territoire</span></ng-template>
+  <ng-template #ageTitle>
+    <img src="assets/img/stats/age.png" />
+    <span>{{ 'ui_age' | translate }}</span>
+  </ng-template>
+  <ng-template #buildingsTitle>
+    <img src="assets/img/world/buildings.png" />
+    <span>{{ 'ui_buildings' | translate }}</span>
+  </ng-template>
+  <ng-template #founderTitle>
+    <img src="assets/img/world/founder.png" />
+    <span>{{ 'ui_founder' | translate }}</span>
+  </ng-template>
+  <ng-template #kingdomsTitle>
+    <img src="assets/img/world/kingdoms.png" />
+    <span>{{ 'ui_crowns' | translate }}</span>
+  </ng-template>
+  <ng-template #populationTitle>
+    <img src="assets/img/world/population.png" />
+    <span>{{ 'ui_population' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_renown' | translate }}</span>
+  </ng-template>
+  <ng-template #territoryTitle>
+    <img src="assets/img/world/territory.png" />
+    <span>{{ 'ui_area' | translate }}</span>
+  </ng-template>
 }

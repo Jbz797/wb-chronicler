@@ -4,7 +4,7 @@
   @if (r.asset_id) {
     <img class="species-icon" [src]="`assets/img/species/${r.asset_id}.png`" />
   }
-  {{ r.asset_id ? (r.asset_id | speciesName) : r.name }}
+  {{ r.asset_id ? (`species_${r.asset_id}` | translate) : r.name }}
 } @else {
   @switch (r.key) {
     @case ('dominant_culture') {

@@ -5,6 +5,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { catchError, of } from 'rxjs';
 
 import { RESET_ENDPOINT, SETTINGS_FILE } from '../../../constants';
@@ -14,7 +15,7 @@ import { SettingsComponent } from '../settings/settings.component';
 
 @Component({
   selector: 'app-sider-actions',
-  imports: [NzButtonModule, NzModalModule, NzTooltipModule],
+  imports: [NzButtonModule, NzModalModule, NzTooltipModule, TranslatePipe],
   templateUrl: './sider-actions.component.html',
   styleUrl: './sider-actions.component.scss',
 })
@@ -23,6 +24,7 @@ export class SiderActionsComponent {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _http = inject(HttpClient);
   private readonly _modal = inject(NzModalService);
+  private readonly _translate = inject(TranslateService);
 
   protected chapters = this._chronicler.chapters;
 
@@ -34,14 +36,12 @@ export class SiderActionsComponent {
   protected confirmNewGame = (): void => {
     const count = this.chapters().length;
     this._modal.confirm({
-      nzCancelText: 'Annuler',
-      nzContent: `Les ${count} chapitres seront effacés, avec l'identité du monde, les lieux que le chroniqueur a nommés et l'historique cumulatif du jeu. `
-        + 'Cette suppression est définitive. '
-        + 'Il faudra ensuite ouvrir une nouvelle session du chroniqueur : celle en cours garde en mémoire un monde qui n’existera plus.',
+      nzCancelText: this._translate.instant('ui_cancel') as string,
+      nzContent: this._translate.instant('ui_wipe_warning', { count }) as string,
       nzOkDanger: true,
-      nzOkText: 'Tout effacer',
+      nzOkText: this._translate.instant('ui_wipe_all') as string,
       nzOnOk: () => this._wipe(),
-      nzTitle: 'Repartir de zéro ?',
+      nzTitle: this._translate.instant('ui_start_over') as string,
     });
   };
 
@@ -51,13 +51,13 @@ export class SiderActionsComponent {
       nzContent: SettingsComponent,
       // One button where ng-zorro would put two, driven by the panel itself: hidden outright where the service is down, nothing being savable then.
       nzFooter: [{
-        disabled: panel => !panel?.chosen(),
-        label: 'Enregistrer',
+        disabled: panel => !panel?.chosen() || !panel.hasLang(), // no tongue, no save: the chronicler would have none to write its chapters in
+        label: this._translate.instant('ui_save') as string,
         onClick: panel => panel?.submit(),
         show: panel => !panel?.unreachable(),
         type: 'primary',
       }],
-      nzTitle: 'Paramétrage',
+      nzTitle: this._translate.instant('ui_settings') as string,
     });
     modal.componentInstance?.load().catch(() => {}); // the panel shows its own unreachable notice
   };
@@ -77,8 +77,8 @@ export class SiderActionsComponent {
       globalThis.location.assign('/'); // back to the chronicler's own page, not the chapter that has just ceased to exist
     } catch {
       this._modal.error({
-        nzContent: `Le service local n'a pas répondu sur ${RESET_ENDPOINT}. Il tourne avec \`yarn start\` — un \`ng serve\` seul ne l'expose pas.`,
-        nzTitle: 'Suppression impossible',
+        nzContent: this._translate.instant('ui_service_silent', { endpoint: RESET_ENDPOINT }) as string,
+        nzTitle: this._translate.instant('ui_wipe_impossible') as string,
       });
     }
   }

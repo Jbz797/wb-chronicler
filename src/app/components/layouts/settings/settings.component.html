@@ -1,45 +1,58 @@
 @if (unreachable()) {
-  <p class="unreachable">Le service local ne répond pas.</p>
+  <p class="unreachable">{{ 'ui_service_down' | translate }}</p>
 } @else {
-  <nz-alert nzMessage="Désactive les sauvegardes automatiques" nzType="warning" [nzDescription]="manualSaves" />
+  <nz-radio-group class="languages" [ngModel]="lang()" (ngModelChange)="lang.set($event)">
+    <label nz-radio-button nzValue="fr">
+      <span class="flag">🇫🇷</span>
+      Français
+    </label>
+    <label nz-radio-button nzValue="en">
+      <span class="flag">🇬🇧</span>
+      English
+    </label>
+  </nz-radio-group>
+
+  <nz-divider />
+
+  <nz-alert nzType="warning" [nzDescription]="manualSaves" [nzMessage]="'ui_autosave_off' | translate" />
   <ng-template #manualSaves>
-    Un chapitre commence quand tu le demandes, depuis la dernière sauvegarde : une auto-save y glisserait un état que tu n'as pas retenu. Aucun risque d'écraser quoi
-    que ce soit pour autant — chaque chapitre archive la sauvegarde dont il part.
+    {{ 'ui_autosave_off_why' | translate }}
   </ng-template>
 
   <nz-divider />
 
-  <p class="intro">Le chroniqueur lit la sauvegarde WorldBox à même le disque. Indique-lui laquelle suivre.</p>
+  <p class="intro">{{ 'ui_pick_save' | translate }}</p>
 
   <ng-scrollbar class="choices-scroll">
     <nz-radio-group class="choices" [ngModel]="picked()" (ngModelChange)="picked.set($event)">
       @for (candidate of candidates(); track candidate.path) {
         <label nz-radio [nzValue]="candidate.path">
-          <span class="world">{{ candidate.world ?? 'Monde sans nom' }}</span>
+          <span class="world">{{ candidate.world ?? ('ui_unnamed_world' | translate) }}</span>
           <span class="detail" nz-tooltip [nzTooltipTitle]="candidate.path">
-            {{ shortPath(candidate.path) }} · {{ candidate.size / 1024 | number: '1.0-0' }} Ko · modifiée le {{ candidate.mtime | date: 'dd/MM/yy à HH:mm' }}
+            {{ shortPath(candidate.path) }} · {{ candidate.size / 1024 | number: '1.0-0' }} {{ 'ui_size_kb' | translate }} · {{ 'ui_modified_on' | translate }}
+            {{ candidate.mtime | date: ('ui_date_format' | translate) }}
           </span>
         </label>
       }
       <label nz-radio [nzValue]="customValue">
-        <span>Autre emplacement</span>
+        <span>{{ 'ui_other_location' | translate }}</span>
       </label>
     </nz-radio-group>
   </ng-scrollbar>
 
   @if (isCustom()) {
-    <input nz-input placeholder="/chemin/vers/map.wbox" [ngModel]="custom()" (ngModelChange)="custom.set($event)" />
+    <input nz-input [ngModel]="custom()" [placeholder]="'ui_path_example' | translate" (ngModelChange)="custom.set($event)" />
   }
 
   @if (isAutosave()) {
-    <nz-alert nzMessage="Ce chemin mène au dossier des sauvegardes automatiques — le prochain chapitre partirait d'un état que tu n'as pas retenu." nzType="error" />
+    <nz-alert nzType="error" [nzMessage]="'ui_autosave_path' | translate" />
   }
 
   @if (isNewGame()) {
-    <nz-alert nzMessage="Le chroniqueur reste à lancer" nzType="info" [nzDescription]="bootstrap" />
+    <nz-alert nzType="info" [nzDescription]="bootstrap" [nzMessage]="'ui_chronicler_pending' | translate" />
     <ng-template #bootstrap>
-      C'est un <code>claude</code> de terminal, ouvert depuis <code>src/assets/world/</code>. Un seul mot d'ordre pour commencer :
-      <strong>« Lis le chronicler.md »</strong>.
+      {{ 'ui_bootstrap_how' | translate: { folder: 'src/assets/world/', terminal: 'claude' } }}
+      <strong>{{ 'ui_bootstrap_order' | translate }}</strong>
     </ng-template>
   }
 }

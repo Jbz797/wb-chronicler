@@ -15,7 +15,8 @@
 
     @for (row of lifetimeStats(); track row.stat) {
       <ng-template #lifetimeTitle>
-        <img [src]="row.icon" /><span>{{ row.label }}</span>
+        <img [src]="row.icon" />
+        <span>{{ row.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="lifetimeTitle">
         <app-ranked-stat source="subspecies" [inverted]="row.inverted" [stat]="row.stat" />
@@ -39,15 +40,18 @@
     </nz-descriptions-item>
   </nz-descriptions>
 
-  <app-trait-summary heading="Traits" source="subspecies" />
+  <app-trait-summary source="subspecies" [heading]="'ui_traits' | translate" />
 
   <app-leaders [leaders]="s.leaders" />
 
   <app-breakdown source="subspecies" />
 
-  <nz-descriptions nzBordered nzSize="small" nzTitle="Espèce" [nzColumn]="1">
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_species' | translate">
     <nz-descriptions-item [nzTitle]="stockTitle">
-      <span><img class="species-icon" [src]="`assets/img/species/${s.species.id}.png`" /> {{ s.species.id | speciesName }}</span>
+      <span>
+        <img class="species-icon" [src]="`assets/img/species/${s.species.id}.png`" />
+        {{ `species_${s.species.id}` | translate }}
+      </span>
     </nz-descriptions-item>
     @if (biomeName(); as b) {
       <nz-descriptions-item [nzTitle]="biomeTitle">{{ b }}</nz-descriptions-item>
@@ -69,20 +73,68 @@
     </nz-descriptions-item>
   </nz-descriptions>
 
-  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge de la lignée</span></ng-template>
-  <ng-template #biomeTitle><img src="assets/img/world/biomes.png" /><span>Biome d'origine</span></ng-template>
-  <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Villes</span></ng-template>
-  <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>
-  <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
-  <ng-template #kingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Royaumes</span></ng-template>
-  <ng-template #membersTitle><img src="assets/img/world/population.png" /><span>Porteurs</span></ng-template>
-  <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
-  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
-  <ng-template #stockCitiesTitle><img src="assets/img/world/cities.png" /><span>Villes</span></ng-template>
-  <ng-template #stockKingdomsTitle><img src="assets/img/world/kingdoms.png" /><span>Royaumes</span></ng-template>
-  <ng-template #stockPopulationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
-  <ng-template #stockRenownTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
-  <ng-template #stockSubspeciesTitle><img src="assets/img/world/subspecies.png" /><span>Sous-espèces</span></ng-template>
-  <ng-template #stockTitle><img src="assets/img/world/species.png" /><span>Souche</span></ng-template>
-  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
+  <ng-template #ageTitle>
+    <img src="assets/img/stats/age.png" />
+    <span>{{ 'ui_lineage_age' | translate }}</span>
+  </ng-template>
+  <ng-template #biomeTitle>
+    <img src="assets/img/world/biomes.png" />
+    <span>{{ 'ui_home_biome' | translate }}</span>
+  </ng-template>
+  <ng-template #citiesTitle>
+    <img src="assets/img/world/cities.png" />
+    <span>{{ 'ui_cities' | translate }}</span>
+  </ng-template>
+  <ng-template #fedPctTitle>
+    <img src="assets/img/world/fed.png" />
+    <span>{{ 'ui_fed' | translate }}</span>
+  </ng-template>
+  <ng-template #housedPctTitle>
+    <img src="assets/img/world/housed.png" />
+    <span>{{ 'ui_housed' | translate }}</span>
+  </ng-template>
+  <ng-template #kingdomsTitle>
+    <img src="assets/img/world/kingdoms.png" />
+    <span>{{ 'ui_kingdoms' | translate }}</span>
+  </ng-template>
+  <ng-template #membersTitle>
+    <img src="assets/img/world/population.png" />
+    <span>{{ 'ui_bearers' | translate }}</span>
+  </ng-template>
+  <ng-template #moneyTitle>
+    <img src="assets/img/stats/money.png" />
+    <span>{{ 'ui_coins' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_renown' | translate }}</span>
+  </ng-template>
+  <ng-template #stockCitiesTitle>
+    <img src="assets/img/world/cities.png" />
+    <span>{{ 'ui_cities' | translate }}</span>
+  </ng-template>
+  <ng-template #stockKingdomsTitle>
+    <img src="assets/img/world/kingdoms.png" />
+    <span>{{ 'ui_kingdoms' | translate }}</span>
+  </ng-template>
+  <ng-template #stockPopulationTitle>
+    <img src="assets/img/world/population.png" />
+    <span>{{ 'ui_population' | translate }}</span>
+  </ng-template>
+  <ng-template #stockRenownTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_total_renown' | translate }}</span>
+  </ng-template>
+  <ng-template #stockSubspeciesTitle>
+    <img src="assets/img/world/subspecies.png" />
+    <span>{{ 'ui_subspecies_count' | translate }}</span>
+  </ng-template>
+  <ng-template #stockTitle>
+    <img src="assets/img/world/species.png" />
+    <span>{{ 'ui_stock' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTotalTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_total_renown' | translate }}</span>
+  </ng-template>
 }

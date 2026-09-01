@@ -2,13 +2,15 @@ import { Component, computed, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { LEADER_FAMILY_ROWS, LEADER_PERSON_ROWS } from '../../../../constants';
 import { Leaders } from '../../../../interfaces';
 import { FamilyTagComponent, PersonTagComponent } from '../tags';
 
 @Component({
   selector: 'app-leaders',
-  imports: [FamilyTagComponent, NzDescriptionsModule, PersonTagComponent],
+  imports: [FamilyTagComponent, NzDescriptionsModule, PersonTagComponent, TranslatePipe],
   templateUrl: './leaders.component.html',
 })
 export class LeadersComponent {

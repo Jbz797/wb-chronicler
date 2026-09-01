@@ -2,7 +2,10 @@
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="boatTitle">
     @if (b.identity.species; as species) {
       <nz-descriptions-item [nzTitle]="speciesTitle">
-        <span><img class="species-icon" [src]="`assets/img/species/${species}.png`" /> {{ species | speciesName }}</span>
+        <span>
+          <img class="species-icon" [src]="`assets/img/species/${species}.png`" />
+          {{ `species_${species}` | translate }}
+        </span>
       </nz-descriptions-item>
     }
     @if (b.identity.kingdom; as kingdom) {
@@ -23,14 +26,32 @@
     </nz-descriptions-item>
   </nz-descriptions>
 
-  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Mise à l'eau</span></ng-template>
+  <ng-template #ageTitle>
+    <img src="assets/img/stats/age.png" />
+    <span>{{ 'ui_launched' | translate }}</span>
+  </ng-template>
   <ng-template #boatTitle>
     À bord de {{ title() }}
     <app-new-badge [dot]="false" [show]="isNew()" />
   </ng-template>
-  <ng-template #cityTitle><img src="assets/img/world/cities.png" /><span>Port d'attache</span></ng-template>
-  <ng-template #crewTitle><img src="assets/img/world/population.png" /><span>Âmes à bord</span></ng-template>
-  <ng-template #healthTitle><img src="assets/img/stats/health.png" /><span>Coque</span></ng-template>
-  <ng-template #kingdomTitle><img src="assets/img/world/kingdoms.png" /><span>Pavillon</span></ng-template>
-  <ng-template #speciesTitle><img src="assets/img/resources/wood.png" /><span>Chantier naval</span></ng-template>
+  <ng-template #cityTitle>
+    <img src="assets/img/world/cities.png" />
+    <span>{{ 'ui_home_port' | translate }}</span>
+  </ng-template>
+  <ng-template #crewTitle>
+    <img src="assets/img/world/population.png" />
+    <span>{{ 'ui_souls_aboard' | translate }}</span>
+  </ng-template>
+  <ng-template #healthTitle>
+    <img src="assets/img/stats/health.png" />
+    <span>{{ 'ui_hull' | translate }}</span>
+  </ng-template>
+  <ng-template #kingdomTitle>
+    <img src="assets/img/world/kingdoms.png" />
+    <span>{{ 'ui_colours' | translate }}</span>
+  </ng-template>
+  <ng-template #speciesTitle>
+    <img src="assets/img/resources/wood.png" />
+    <span>{{ 'ui_shipyard' | translate }}</span>
+  </ng-template>
 }

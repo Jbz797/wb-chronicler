@@ -1,5 +1,5 @@
 @if (breakdown()) {
-  <nz-descriptions nzBordered nzSize="small" nzTitle="Composition" [nzColumn]="1">
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_make_up' | translate">
     @if (tops().culture; as c) {
       <nz-descriptions-item [nzTitle]="cultureTitle">
         <div class="composition-row">
@@ -27,7 +27,10 @@
     @if (tops().species; as s) {
       <nz-descriptions-item [nzTitle]="speciesTitle">
         <div class="composition-row">
-          <span><img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" /> {{ s.asset_id | speciesName }}</span>
+          <span>
+            <img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" />
+            {{ `species_${s.asset_id}` | translate }}
+          </span>
           <span class="share">{{ share(s.pct) }}</span>
         </div>
       </nz-descriptions-item>
@@ -50,10 +53,28 @@
     }
   </nz-descriptions>
 
-  <ng-template #cultureTitle><img src="assets/img/world/cultures.png" /><span>Culture</span></ng-template>
-  <ng-template #kingdomTitle><img src="assets/img/world/kingdom.png" /><span>Royaume</span></ng-template>
-  <ng-template #languageTitle><img src="assets/img/world/languages.png" /><span>Langage</span></ng-template>
-  <ng-template #religionTitle><img src="assets/img/world/religions.png" /><span>Religion</span></ng-template>
-  <ng-template #speciesTitle><img src="assets/img/world/species.png" /><span>Espèce</span></ng-template>
-  <ng-template #subspeciesTitle><img src="assets/img/world/subspecies.png" /><span>S. espèce</span></ng-template>
+  <ng-template #cultureTitle>
+    <img src="assets/img/world/cultures.png" />
+    <span>{{ 'ui_culture' | translate }}</span>
+  </ng-template>
+  <ng-template #kingdomTitle>
+    <img src="assets/img/world/kingdom.png" />
+    <span>{{ 'ui_kingdom' | translate }}</span>
+  </ng-template>
+  <ng-template #languageTitle>
+    <img src="assets/img/world/languages.png" />
+    <span>{{ 'ui_tongue' | translate }}</span>
+  </ng-template>
+  <ng-template #religionTitle>
+    <img src="assets/img/world/religions.png" />
+    <span>{{ 'ui_religion' | translate }}</span>
+  </ng-template>
+  <ng-template #speciesTitle>
+    <img src="assets/img/world/species.png" />
+    <span>{{ 'ui_species' | translate }}</span>
+  </ng-template>
+  <ng-template #subspeciesTitle>
+    <img src="assets/img/world/subspecies.png" />
+    <span>{{ 'ui_subsp' | translate }}</span>
+  </ng-template>
 }

@@ -26,8 +26,6 @@ export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' 
 
 export type FamilyRegistry = Record<string, FamilyInfo>;
 
-export type GenderedLabel = string | { f: string; m: string }; // agrees with its subject: plain when invariable, a pair otherwise — see `LabelHelpers.gendered`
-
 export type IconKind = 'alliances' | 'boats' | 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons'
   | 'religions' | 'resources' | 'species' | 'subspecies' | 'wars';
 

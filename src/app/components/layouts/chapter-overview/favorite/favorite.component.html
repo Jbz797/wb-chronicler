@@ -4,7 +4,7 @@
     <nz-descriptions-item [nzTitle]="descriptorTitle">{{ fav.descriptor }}</nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="rolesTitle">
       @for (tag of roleTags(); track tag.label) {
-        <nz-tag [nzColor]="tag.color">{{ tag.label }}</nz-tag>
+        <nz-tag [nzColor]="tag.color">{{ tag.label | translate }}</nz-tag>
       }
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">
@@ -39,7 +39,8 @@
     </nz-descriptions-item>
     @for (row of companionRows(); track row.label) {
       <ng-template #companionTitle>
-        <img [src]="`assets/img/stats/${row.icon}.png`" /><span>{{ row.label }}</span>
+        <img [src]="`assets/img/stats/${row.icon}.png`" />
+        <span>{{ row.label | translate }}</span>
         <app-new-badge [show]="row.isNew" />
       </ng-template>
       <nz-descriptions-item [nzTitle]="companionTitle">
@@ -48,28 +49,56 @@
     }
   </nz-descriptions>
 
-  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge</span></ng-template>
-  <ng-template #childrenTitle><img src="assets/img/stats/children.png" /><span>Enfants</span></ng-template>
+  <ng-template #ageTitle>
+    <img src="assets/img/stats/age.png" />
+    <span>{{ 'ui_age' | translate }}</span>
+  </ng-template>
+  <ng-template #childrenTitle>
+    <img src="assets/img/stats/children.png" />
+    <span>{{ 'ui_children' | translate }}</span>
+  </ng-template>
   <ng-template #descriptorTitle>
     Titre
     <app-new-badge [show]="changedFields().descriptor" />
   </ng-template>
-  <ng-template #equipmentPowerTitle><img src="assets/img/stats/equipment_power.png" /><span>Panoplie</span></ng-template>
-  <ng-template #inventoryTitle><img src="assets/img/stats/inventory.png" /><span>Inventaire</span></ng-template>
-  <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
-  <ng-template #lifespanTitle><img src="assets/img/stats/lifespan.png" /><span>Espérance</span></ng-template>
-  <ng-template #levelTitle><img src="assets/img/stats/level.png" /><span>Niveau</span></ng-template>
-  <ng-template #moneyTitle><img src="assets/img/stats/money.png" /><span>Pièces</span></ng-template>
-  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
+  <ng-template #equipmentPowerTitle>
+    <img src="assets/img/stats/equipment_power.png" />
+    <span>{{ 'ui_gear' | translate }}</span>
+  </ng-template>
+  <ng-template #inventoryTitle>
+    <img src="assets/img/stats/inventory.png" />
+    <span>{{ 'ui_inventory' | translate }}</span>
+  </ng-template>
+  <ng-template #killsTitle>
+    <img src="assets/img/stats/kills.png" />
+    <span>{{ 'ui_kills' | translate }}</span>
+  </ng-template>
+  <ng-template #lifespanTitle>
+    <img src="assets/img/stats/lifespan.png" />
+    <span>{{ 'ui_lifespan' | translate }}</span>
+  </ng-template>
+  <ng-template #levelTitle>
+    <img src="assets/img/stats/level.png" />
+    <span>{{ 'ui_level' | translate }}</span>
+  </ng-template>
+  <ng-template #moneyTitle>
+    <img src="assets/img/stats/money.png" />
+    <span>{{ 'ui_coins' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_renown' | translate }}</span>
+  </ng-template>
   <ng-template #rolesTitle>
     Rôles
     <app-new-badge [show]="changedFields().role" />
   </ng-template>
   <ng-template #tenureTitle>
-    <img src="assets/img/stats/tenure.png" /><span>{{ tenureLabel() }}</span>
+    <img src="assets/img/stats/tenure.png" />
+    <span>{{ tenureLabel() }}</span>
   </ng-template>
 
-  <nz-descriptions nzBordered nzSize="small" nzTitle="Stats" [nzColumn]="1">
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_stats' | translate">
     <nz-descriptions-item [nzTitle]="healthTitle">
       <app-ranked-stat stat="health" />
     </nz-descriptions-item>
@@ -92,20 +121,38 @@
     </nz-descriptions-item>
   </nz-descriptions>
 
-  <ng-template #healthTitle><img src="assets/img/stats/health.png" /><span>Santé</span></ng-template>
-  <ng-template #happinessTitle><img src="assets/img/stats/happiness.png" /><span>Bonheur</span></ng-template>
-  <ng-template #manaTitle><img src="assets/img/stats/mana.png" /><span>Mana</span></ng-template>
-  <ng-template #nutritionTitle><img src="assets/img/stats/nutrition.png" /><span>Satiété</span></ng-template>
-  <ng-template #speedTitle><img src="assets/img/stats/speed.png" /><span>Vitesse</span></ng-template>
-  <ng-template #staminaTitle><img src="assets/img/stats/stamina.png" /><span>Vigueur</span></ng-template>
+  <ng-template #healthTitle>
+    <img src="assets/img/stats/health.png" />
+    <span>{{ 'ui_health' | translate }}</span>
+  </ng-template>
+  <ng-template #happinessTitle>
+    <img src="assets/img/stats/happiness.png" />
+    <span>{{ 'ui_happiness' | translate }}</span>
+  </ng-template>
+  <ng-template #manaTitle>
+    <img src="assets/img/stats/mana.png" />
+    <span>{{ 'ui_mana' | translate }}</span>
+  </ng-template>
+  <ng-template #nutritionTitle>
+    <img src="assets/img/stats/nutrition.png" />
+    <span>{{ 'ui_nutrition' | translate }}</span>
+  </ng-template>
+  <ng-template #speedTitle>
+    <img src="assets/img/stats/speed.png" />
+    <span>{{ 'ui_speed' | translate }}</span>
+  </ng-template>
+  <ng-template #staminaTitle>
+    <img src="assets/img/stats/stamina.png" />
+    <span>{{ 'ui_stamina' | translate }}</span>
+  </ng-template>
 
-  <app-trait-summary heading="Traits" source="favorite" />
+  <app-trait-summary source="favorite" [heading]="'ui_traits' | translate" />
 
-  <nz-descriptions nzBordered nzSize="small" nzTitle="Compétences" [nzColumn]="1">
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_skills' | translate">
     @for (s of skillStats; track s.key) {
       <ng-template #titleRef>
         <img [src]="`assets/img/stats/${s.key}.png`" />
-        <span>{{ s.label }}</span>
+        <span>{{ s.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
         <app-ranked-stat
@@ -119,11 +166,11 @@
     }
   </nz-descriptions>
 
-  <nz-descriptions nzBordered nzSize="small" nzTitle="Combat" [nzColumn]="1">
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_combat' | translate">
     @for (s of combatStats; track s.key) {
       <ng-template #titleRef>
         <img [src]="`assets/img/stats/${s.key}.png`" />
-        <span>{{ s.label }}</span>
+        <span>{{ s.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
         <app-ranked-stat

@@ -1,6 +1,6 @@
-<button class="action" nz-button nz-tooltip nzTooltipTitle="Nouvelle partie" [disabled]="!chapters().length" (click)="confirmNewGame()">
+<button class="action" nz-button nz-tooltip [disabled]="!chapters().length" [nzTooltipTitle]="'ui_new_game' | translate" (click)="confirmNewGame()">
   <img src="assets/img/ui/new_game.png" />
 </button>
-<button class="action" nz-button nz-tooltip nzTooltipTitle="Paramétrage" (click)="openSettings()">
+<button class="action" nz-button nz-tooltip [nzTooltipTitle]="'ui_settings' | translate" (click)="openSettings()">
   <img src="assets/img/ui/settings.png" />
 </button>

@@ -3,14 +3,16 @@ import { Component, computed, inject, input } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { NewBadgeComponent } from '../..';
-import { SpeciesNamePipe, TierPipe } from '../../../../../pipes';
+import { TierPipe } from '../../../../../pipes';
 import { ChroniclerService } from '../../../../../services';
 import { CityTagComponent, KingdomTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-boat-card',
-  imports: [CityTagComponent, DecimalPipe, KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, SpeciesNamePipe, TierPipe],
+  imports: [CityTagComponent, DecimalPipe, KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, TierPipe, TranslatePipe],
   templateUrl: './boat-card.component.html',
 })
 export class BoatCardComponent {

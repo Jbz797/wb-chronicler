@@ -53,7 +53,8 @@
     </nz-descriptions-item>
     @for (s of scoreStats(); track s.stat) {
       <ng-template #scoreTitle>
-        <img [src]="s.icon" /><span>{{ s.label }}</span>
+        <img [src]="s.icon" />
+        <span>{{ s.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="scoreTitle">
         <app-ranked-stat source="kingdom" [stat]="s.stat" />
@@ -61,7 +62,8 @@
     }
     @for (o of optionalStats(); track o.stat) {
       <ng-template #optionalTitle>
-        <img [src]="o.icon" /><span>{{ o.label }}</span>
+        <img [src]="o.icon" />
+        <span>{{ o.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="optionalTitle">
         <app-ranked-stat source="kingdom" [stat]="o.stat" />
@@ -107,28 +109,89 @@
 
   <app-kingdom-relations [relations]="k.relations ?? []" />
 
-  <ng-template #ageTitle><img src="assets/img/stats/age.png" /><span>Âge du royaume</span></ng-template>
-  <ng-template #boatsTitle><img src="assets/img/world/boats.png" /><span>Bateaux</span></ng-template>
-  <ng-template #buildingsTitle><img src="assets/img/world/buildings.png" /><span>Bâtiments</span></ng-template>
-  <ng-template #capitalTitle><img src="assets/img/world/capital.png" /><span>Capitale</span></ng-template>
-  <ng-template #citiesTitle><img src="assets/img/world/cities.png" /><span>Cités</span></ng-template>
-  <ng-template #deathsTitle><img src="assets/img/world/deaths.png" /><span>Morts</span></ng-template>
-  <ng-template #fedPctTitle><img src="assets/img/world/fed.png" /><span>Rassasiés</span></ng-template>
-  <ng-template #foodTitle><img src="assets/img/world/food.png" /><span>Nourriture</span></ng-template>
-  <ng-template #foodPerCapitaTitle><img src="assets/img/world/food_per_capita.png" /><span>Réserves</span></ng-template>
-  <ng-template #founderTitle><img src="assets/img/world/founder.png" /><span>Fondateur</span></ng-template>
-  <ng-template #goodsTitle><img src="assets/img/world/goods.png" /><span>Biens</span></ng-template>
+  <ng-template #ageTitle>
+    <img src="assets/img/stats/age.png" />
+    <span>{{ 'ui_kingdom_age' | translate }}</span>
+  </ng-template>
+  <ng-template #boatsTitle>
+    <img src="assets/img/world/boats.png" />
+    <span>{{ 'ui_boats' | translate }}</span>
+  </ng-template>
+  <ng-template #buildingsTitle>
+    <img src="assets/img/world/buildings.png" />
+    <span>{{ 'ui_buildings' | translate }}</span>
+  </ng-template>
+  <ng-template #capitalTitle>
+    <img src="assets/img/world/capital.png" />
+    <span>{{ 'ui_capital' | translate }}</span>
+  </ng-template>
+  <ng-template #citiesTitle>
+    <img src="assets/img/world/cities.png" />
+    <span>{{ 'ui_cities' | translate }}</span>
+  </ng-template>
+  <ng-template #deathsTitle>
+    <img src="assets/img/world/deaths.png" />
+    <span>{{ 'ui_deaths' | translate }}</span>
+  </ng-template>
+  <ng-template #fedPctTitle>
+    <img src="assets/img/world/fed.png" />
+    <span>{{ 'ui_fed' | translate }}</span>
+  </ng-template>
+  <ng-template #foodTitle>
+    <img src="assets/img/world/food.png" />
+    <span>{{ 'ui_food' | translate }}</span>
+  </ng-template>
+  <ng-template #foodPerCapitaTitle>
+    <img src="assets/img/world/food_per_capita.png" />
+    <span>{{ 'ui_stores' | translate }}</span>
+  </ng-template>
+  <ng-template #founderTitle>
+    <img src="assets/img/world/founder.png" />
+    <span>{{ 'ui_founder' | translate }}</span>
+  </ng-template>
+  <ng-template #goodsTitle>
+    <img src="assets/img/world/goods.png" />
+    <span>{{ 'ui_goods' | translate }}</span>
+  </ng-template>
   <ng-template #heirTitle>
-    <img src="assets/img/world/heir.png" /><span>{{ heirSex() === 'female' ? 'Héritière' : 'Héritier' }}</span>
+    <img src="assets/img/world/heir.png" />
+    <span>{{ (heirSex() === 'female' ? 'ui_heir_f' : 'ui_heir_m') | translate }}</span>
     <app-new-badge [show]="isNewHeir()" />
   </ng-template>
-  <ng-template #housedPctTitle><img src="assets/img/world/housed.png" /><span>Logés</span></ng-template>
-  <ng-template #housesTitle><img src="assets/img/world/houses.png" /><span>Maisons</span></ng-template>
-  <ng-template #killsTitle><img src="assets/img/stats/kills.png" /><span>Tués</span></ng-template>
-  <ng-template #populationTitle><img src="assets/img/world/population.png" /><span>Population</span></ng-template>
-  <ng-template #renownTitle><img src="assets/img/stats/renown.png" /><span>Renommée</span></ng-template>
-  <ng-template #renownTotalTitle><img src="assets/img/stats/renown.png" /><span>Renom cumulé</span></ng-template>
-  <ng-template #scoreRankTitle><img src="assets/img/podium/1.png" /><span>Classement</span></ng-template>
-  <ng-template #territoryTitle><img src="assets/img/world/territory.png" /><span>Territoire</span></ng-template>
-  <ng-template #warriorsTitle><img src="assets/img/professions/warrior.png" /><span>Guerriers</span></ng-template>
+  <ng-template #housedPctTitle>
+    <img src="assets/img/world/housed.png" />
+    <span>{{ 'ui_housed' | translate }}</span>
+  </ng-template>
+  <ng-template #housesTitle>
+    <img src="assets/img/world/houses.png" />
+    <span>{{ 'ui_houses' | translate }}</span>
+  </ng-template>
+  <ng-template #killsTitle>
+    <img src="assets/img/stats/kills.png" />
+    <span>{{ 'ui_kills' | translate }}</span>
+  </ng-template>
+  <ng-template #populationTitle>
+    <img src="assets/img/world/population.png" />
+    <span>{{ 'ui_population' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_renown' | translate }}</span>
+  </ng-template>
+  <ng-template #renownTotalTitle>
+    <img src="assets/img/stats/renown.png" />
+    <span>{{ 'ui_total_renown' | translate }}</span>
+  </ng-template>
+  <ng-template #scoreRankTitle>
+    <img src="assets/img/podium/1.png" />
+    <span>{{ 'ui_ranking' | translate }}</span>
+  </ng-template>
+  <ng-template #territoryTitle>
+    <img src="assets/img/world/territory.png" />
+    <span>{{ 'ui_area' | translate }}</span>
+  </ng-template>
+  <ng-template #warriorsTitle>
+    <img src="assets/img/professions/warrior.png" />
+    <span>{{ 'ui_warriors' | translate }}</span>
+  </ng-template>
 }

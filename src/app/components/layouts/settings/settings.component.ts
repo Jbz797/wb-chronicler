@@ -11,6 +11,7 @@ import { NzModalRef } from 'ng-zorro-antd/modal';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
 import { SAVES_ENDPOINT, SETTINGS_ENDPOINT, SETTINGS_FILE } from '../../../constants';
@@ -21,7 +22,7 @@ const customValue = 'custom'; // the radio's own value, standing for « somewher
 
 @Component({
   selector: 'app-settings',
-  imports: [DatePipe, DecimalPipe, FormsModule, NgScrollbarModule, NzAlertModule, NzButtonModule, NzDividerModule, NzInputModule, NzRadioModule, NzTooltipModule],
+  imports: [DatePipe, DecimalPipe, FormsModule, NgScrollbarModule, NzAlertModule, NzButtonModule, NzDividerModule, NzInputModule, NzRadioModule, NzTooltipModule, TranslatePipe], // eslint-disable-line @stylistic/max-len
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -30,22 +31,27 @@ export class SettingsComponent {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _message = inject(NzMessageService);
   private readonly _modal = inject(NzModalRef);
+  private readonly _translate = inject(TranslateService);
 
   public readonly unreachable = signal(false);
 
   protected readonly candidates = signal<SaveCandidate[]>([]);
   protected readonly custom = signal('');
   protected readonly customValue = customValue;
+  protected readonly lang = signal<string | undefined>(undefined); // undefined until `load` reads one, or the reader picks one — the footer waits on it
   protected readonly picked = signal('');
 
   // `custom` is the radio's own value: an empty box means the reader has yet to say where, so nothing is offered to save.
   public chosen = (): string => this.picked() === customValue ? this.custom().trim() : this.picked();
+
+  public hasLang = (): boolean => !!this.lang();
 
   // Two sources, since only one of them needs the service: it alone can walk the disk for slots, where the recorded path is an asset like any other.
   public async load(): Promise<void> {
     try {
       const [slots, recorded] = await Promise.all([fetch(SAVES_ENDPOINT), fetch(SETTINGS_FILE)]);
       const settings = recorded.ok ? ((await recorded.json()) as Settings) : {}; // 404 on a first run, and after a new game wipes it
+      this.lang.set(settings.lang);
       this._apply((await slots.json()) as SaveCandidate[], settings.savePath ?? '');
     } catch {
       this.unreachable.set(true);
@@ -54,14 +60,18 @@ export class SettingsComponent {
 
   // The service checks the path exists first — a wrong one would surface much later, in the chronicler's tooling. Its promise drives the footer's `autoLoading`.
   public async submit(): Promise<void> {
+    const lang = this.lang();
     const savePath = this.chosen();
-    if (!savePath) return;
+    if (!lang || !savePath) return;
 
     try {
-      const answer = await fetch(SETTINGS_ENDPOINT, { body: JSON.stringify({ savePath }), headers: { 'content-type': 'application/json' }, method: 'POST' });
+      const body = JSON.stringify({ lang, savePath });
+      const answer = await fetch(SETTINGS_ENDPOINT, { body, headers: { 'content-type': 'application/json' }, method: 'POST' });
       if (!answer.ok) throw new Error(String(answer.status));
-      this._message.success('Sauvegarde WorldBox enregistrée');
-      this._modal.close(savePath);
+      this._message.success(this._translate.instant('ui_save_recorded') as string);
+      // The panels only turn on the next paint, and a label a component resolved through `instant` never turns at all — the reload spares us tracking them.
+      if (lang === this._translate.currentLang()) this._modal.close(savePath);
+      else globalThis.location.reload();
     } catch {
       this._message.error(`Chemin introuvable : ${savePath}`);
     }

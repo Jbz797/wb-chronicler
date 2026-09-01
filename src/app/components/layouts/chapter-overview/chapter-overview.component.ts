@@ -7,9 +7,10 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
-import { AGE_LABELS, CITY_SIZE_TERMS, HISTORY_DIR, KINGDOM_SIZE_TERMS } from '../../../constants';
+import { CITY_SIZE_TERMS, HISTORY_DIR, KINGDOM_SIZE_TERMS } from '../../../constants';
 import { ChapterOverviewPanel, ChapterTier, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
 
@@ -49,6 +50,7 @@ import { NewBadgeComponent } from '.';
     PanelExtraComponent,
     ReligionComponent,
     SubspeciesComponent,
+    TranslatePipe,
     WarsComponent,
     WorldStatsComponent,
   ],
@@ -60,8 +62,7 @@ export class ChapterOverviewComponent {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _http = inject(HttpClient);
   private readonly _registry = inject(RegistryService);
-
-  protected readonly ageLabels = AGE_LABELS;
+  private readonly _translate = inject(TranslateService);
 
   protected currentChapter = this._chronicler.currentChapter;
 
@@ -70,7 +71,7 @@ export class ChapterOverviewComponent {
   protected readonly cityTerm = computed(() => {
     const id = this.currentChapter()?.meta.city?.metadata.id;
     const size = id === undefined ? undefined : this._registry.cities()[String(id)]?.size;
-    return (size ? CITY_SIZE_TERMS[size - 1] : undefined) ?? 'Village';
+    return this._translate.instant((size ? CITY_SIZE_TERMS[size - 1] : undefined) ?? 'ui_village') as string;
   });
   // The world turned an age since the previous chapter — the menu badges the chapter itself, this names the age it turned to.
   protected readonly isNewAge = computed(() => {
@@ -81,7 +82,7 @@ export class ChapterOverviewComponent {
   protected readonly kingdomTerm = computed(() => {
     const cities = this.currentChapter()?.meta.kingdom?.metadata.cities ?? 0;
     const rung = [0, 1, 2, 5, 9].findLastIndex(cap => cities > cap) + 1;
-    return KINGDOM_SIZE_TERMS[rung] ?? 'Royaume';
+    return this._translate.instant(KINGDOM_SIZE_TERMS[rung] ?? 'ui_kingdom') as string;
   });
   protected readonly world = toSignal(this._http.get<WorldInfo>(`${HISTORY_DIR}/world.json`));
 
