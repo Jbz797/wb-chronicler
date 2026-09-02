@@ -658,6 +658,9 @@ def main(argv: list[str]) -> int:
     if owed:
         todo += f" · trait summaries ({', '.join(sorted(owed))})"
     print(f"  → chronicler: {todo}")
+    # Said here rather than in the manual: an alert reads as news unless its nature is said, and only a chapter that fires one needs to hear it.
+    if new_alerts:
+        print("  → each alert is a state, not an event: it fires again every chapter until the law is off")
     # Said where it is acted on rather than in the manual: what a summary owes is its shape, and the shape only matters at the moment one is written.
     if owed:
         print("  → each summary: what those traits make of the body, 400 characters at the very most — a ceiling, not a target; never a list, never a count")
