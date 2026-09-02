@@ -1,7 +1,7 @@
 # Shared actor stats pipeline — mirrors `Actor.updateStats` from WB's `Assembly-CSharp.dll`.
 #
 # ─── Maintenance / algorithm reference ───
-# Full algorithm spec: `chronicler.md § VI`. Numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad, synergy-always) come from it + WorldBox's in-game tooltips.
+# Full algorithm spec: `chronicler.md § IV « Stats de base — sources et agrégation »`. Numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad, synergy-always) come from it + WorldBox's in-game tooltips.
 #
 # Pipeline per chromosome:
 #   1. For each locus (skipping `void_loci`):
@@ -98,7 +98,7 @@ _GENE_INDEX = {
     "intelligence_3": 47,
 }
 
-# Per chronicler.md § VI — gene -> (stat name, value contribution).
+# Per chronicler.md § « Stats de base — sources et agrégation » — gene -> (stat name, value contribution).
 _GENE_VALUES = {
     "armor_1": ("armor", 1),
     "armor_2": ("armor", 6),

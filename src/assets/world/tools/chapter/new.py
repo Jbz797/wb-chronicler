@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries (via `registries.py`) and a
-# `chapter.json` skeleton. The chronicler then analyses (§III), writes `chapter.md`, and fills `title`, the favorite's `descriptor` and the trait summaries
+# `chapter.json` skeleton. The chronicler then analyses (§ « Phase d'analyse obligatoire »), writes `chapter.md`, and fills `title`, the favorite's `descriptor` and the trait summaries
 # this run says are owed. Docs: `tools/tools.md`.
 
 import json
@@ -652,7 +652,7 @@ def main(argv: list[str]) -> int:
     print(f"  regime: {_regime(n, actors, fav_id, prev_fav_id)}")
     for _code, message in new_alerts:
         print(f"  ⚠ {message}")
-    todo = "analysis §III · chapter.md"
+    todo = "§ « Phase d'analyse obligatoire » · chapter.md, its H1 copied into `title`"
     if favorite and not favorite.get("descriptor"):  # new favorite → its epithet is the one favorite field the chronicler still writes
         todo += " · the favorite's descriptor"
     if owed:
