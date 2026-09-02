@@ -666,7 +666,7 @@ def main(argv: list[str]) -> int:
         print("  → each summary: what those traits make of the body, 400 characters at the very most — a ceiling, not a target; never a list, never a count")
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and nothing beside it.
     if not dev_mode():
-        print("  → mode: player, not developer — deliver the chapter and stop there, skipping `chronicler.md` § « Après livraison — remarques optionnelles »")
+        print("  → mode: player, not developer — deliver the chapter and stop there, skipping `chronicler.md` § « Après livraison »")
 
     return 0
 
