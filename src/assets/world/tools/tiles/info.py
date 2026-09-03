@@ -12,9 +12,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import decode_tile_grid, tile_biome, tile_elevation, tile_kind, tile_layer
 from islands import compute_islands_cached
-from shared import ZONE_TILES, city_centre, emit, entity_ref, index_by_id, load_data, load_save, parse_sections, take_chapter
+from shared import ZONE_TILES, city_centre, civic_building_ids, emit, entity_ref, index_by_id, load_data, load_save, parse_sections, take_chapter
 
-_ALL_SECTIONS = ("actors", "buildings", "context", "distances", "tile_info")
+_ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 
 
@@ -35,7 +35,7 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
 def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], width: int) -> dict:
     wanted = set(coords)
-    ctx: dict = {"actors_by_pos": {}, "buildings_by_pos": {}, "center": center, "cities_by_id": {}, "grid": [], "kingdoms_by_id": {}, "tile_map": save["tileMap"]}
+    ctx: dict = {"actors_by_pos": {}, "ground_by_pos": {}, "center": center, "cities_by_id": {}, "grid": [], "kingdoms_by_id": {}, "tile_map": save["tileMap"]}
 
     if "actors" in sections:
         for a in save.get("actors_data") or []:
@@ -43,11 +43,12 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
             if ax is not None and ay is not None and (pos := (int(ax), int(ay))) in wanted:
                 ctx["actors_by_pos"].setdefault(pos, []).append(a)
 
-    if "buildings" in sections:
+    if "ground" in sections:
+        ctx["categories"], ctx["civic"] = load_data("building-categories.json"), civic_building_ids()
         for b in save.get("buildings") or []:
             bx, by = b.get("mainX"), b.get("mainY")
             if bx is not None and by is not None and (pos := (int(bx), int(by))) in wanted:
-                ctx["buildings_by_pos"].setdefault(pos, []).append(b)
+                ctx["ground_by_pos"][pos] = b
 
     if {"actors", "context", "distances"} & sections:  # the two id maps resolve refs for `actors` as well as `context`
         ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
@@ -71,10 +72,6 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     return ctx
 
 
-def _buildings_at(x: int, y: int, ctx: dict) -> list[dict]:
-    return [{"asset_id": b.get("asset_id"), "id": b.get("id")} for b in ctx["buildings_by_pos"].get((x, y), ())]
-
-
 # WB claims land by the zone, never by the tile — so a tile's town is its zone's, and both sections that ask read it the one way.
 def _city_at(x: int, y: int, ctx: dict) -> dict | None:
     return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
@@ -88,7 +85,7 @@ def _context_at(x: int, y: int, ctx: dict) -> dict:
     return {"city": {"id": city["id"], "name": city.get("name")}, "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"])}
 
 
-# `to_water` always, `to_capital` if owned else `to_nearest_city`, in tiles. No neighbour undercuts the centre's water by their gap, so its diamond starts there.
+# No neighbour undercuts the centre's water by their gap, so its diamond starts there.
 def _distances_at(x: int, y: int, ctx: dict) -> dict:
     cx, cy = ctx["center"]
     gap, floor = abs(x - cx) + abs(y - cy), ctx["water_at_center"]
@@ -104,7 +101,15 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     return out
 
 
-# Zone-to-city for the queried tiles, plus every town's tile — WB's own centre, as `city/info.py` sites one, so a crown's seat and its cities share an anchor.
+# One object per tile, never two. WB's `buildings` collection holds the flowers and the ore too, hence the family, named as `geography` names them.
+def _ground_at(x: int, y: int, ctx: dict) -> dict:
+    if (b := ctx["ground_by_pos"].get((x, y))) is None:
+        return {}
+    asset = b.get("asset_id")
+    return {"asset_id": asset, "id": b.get("id"), "type": "buildings" if asset in ctx["civic"] else ctx["categories"].get(asset) or "other"}
+
+
+# Every town sits on WB's own centre, as `city/info.py` sites one, so a crown's seat and its cities share an anchor.
 def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
     anchors: dict[int, tuple[int, int]] = {}
     ctx["capital_pos_by_kingdom"] = {}
@@ -201,12 +206,12 @@ def main(argv: list[str]) -> int:
         cell: dict = {}
         if "actors" in sections:
             cell["actors"] = _actors_at(x, y, ctx)
-        if "buildings" in sections:
-            cell["buildings"] = _buildings_at(x, y, ctx)
         if "context" in sections:
             cell["context"] = _context_at(x, y, ctx)
         if "distances" in sections:
             cell["distances"] = _distances_at(x, y, ctx)
+        if "ground" in sections:
+            cell["ground"] = _ground_at(x, y, ctx)
         if "tile_info" in sections:
             cell["tile_info"] = _tile_info_at(x, y, ctx, (x, y) == (cx, cy))
         out[f"{x},{y}"] = cell

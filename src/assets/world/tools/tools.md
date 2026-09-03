@@ -22,7 +22,7 @@ Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, 
 | `language/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                         |
 | `religion/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                         |
 | `subspecies/info.py <id>`          | `full`, `breakdown`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`              |
-| `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `buildings`, `context`, `distances`, `tile_info`                                                                  |
+| `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `context`, `distances`, `ground`, `tile_info`                                                                  |
 | `war/info.py <id>`                 | `full`, `attackers`, `defenders`, `metadata`                                                                                        |
 | `world/info.py`                    | `full`, `boats`, `cumulative`, `leaders`, `metadata`, `plots`, `snapshot`                                                           |
 
