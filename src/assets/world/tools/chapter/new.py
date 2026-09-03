@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
+from grid import tile_layer, tile_runs
 from shared import (
     SAVES_DIR,
     UNITS_PER_YEAR,
@@ -38,15 +39,15 @@ from shared import (
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
 
-# World-law alerts, each naming the law it asks to be turned off, firing while that law is on — a state, not an errand once run. Adding one: a `tags.md` row too.
+# World-law alerts, each firing while the law it asks to turn off is on — a state, not an errand. Both weigh the sapient crowns against what the dry ground can feed.
 _ALERTS = {
     "DISABLE_DROP_OF_THOUGHTS": {
-        "condition": lambda kingdoms, present: all(kingdoms.get(species) for species in present),
+        "condition": lambda pops, quota: len(pops) >= quota,
         "law": "world_law_drop_of_thoughts",
         "message": "at the chapter's end, ask the player to turn the Drop of Thoughts world law off",
     },
     "DISABLE_HANDSOME_MIGRANTS": {
-        "condition": lambda kingdoms, present: all(any(pop >= _MIN_KINGDOM_POP for pop in kingdoms.get(species, ())) for species in present),
+        "condition": lambda pops, quota: sum(1 for pop in pops if pop >= _MIN_KINGDOM_POP) >= quota,
         "law": "world_law_civ_migrants",
         "message": "at the chapter's end, ask the player to turn the Handsome Migrants world law off",
     },
@@ -114,7 +115,6 @@ _AUDIT_TIERS = {
     "wars.metadata": {"started_by"},  # the soul who declared it — the card names the crown alone, and `war/info.py <id>` still hands the chronicler the man
 }
 
-
 # No panel reads them: `report` is per-call, `taxonomy` comes from `identity.species`, `passengers` counts souls at sea, the age pair English, `sapient` gates a tag.
 _CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "sapient", "taxonomy"})
 
@@ -150,6 +150,8 @@ _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natur
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
+_KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
+_LAND_PER_KINGDOM = 52_044  # a quarter of what a map carries once grown — measured at ~12k land tiles per crown on two worlds
 
 # The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
 _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
@@ -157,7 +159,7 @@ _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"ki
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
-_MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — the headcount every sapient species must reach in a kingdom of its own.
+_MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS`: under that headcount a crown is a hamlet with a banner, not a people standing on its own
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 
 # Put to the player at the first chapter, before a line is written. The three commands answer it, and the naming brief rides with the third.
@@ -281,11 +283,12 @@ def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) ->
 
 # `(code, message)` of alerts whose law is on and whose condition holds — WB writes an untouched law as a bare `{"name": …}`, so an absent `boolVal` reads as on.
 def _fired_alerts(save: dict) -> list[tuple[str, str]]:
-    kingdoms, present = _sapient_kingdoms(save)
-    if not present:  # no sapient species yet → every `all(...)` would hold vacuously
-        return []
     laws = {law["name"]: law.get("boolVal", True) for law in (save.get("worldLaws") or {}).get("list") or []}
-    return [(code, spec["message"]) for code, spec in _ALERTS.items() if laws.get(spec["law"], True) and spec["condition"](kingdoms, present)]
+    standing = {code: spec for code, spec in _ALERTS.items() if laws.get(spec["law"], True)}  # the laws first: once both are off, neither world is walked at all
+    if not standing:
+        return []
+    pops, quota = _sapient_kingdoms(save), _kingdom_quota(save)
+    return [(code, spec["message"]) for code, spec in standing.items() if spec["condition"](pops, quota)]
 
 
 # The panel prints the hull's name, stock, crown, port, age and health; `boat/info.py <id>` has the rest. `kind` goes: WB boards souls onto `$boat_transport$` alone.
@@ -353,6 +356,13 @@ def _fold_total(entity: dict, *keys: str) -> None:
     for key in keys:
         if isinstance(block := entity.get(key), dict):
             entity[key] = {"total": block.get("total", 0)}
+
+
+# How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
+def _kingdom_quota(save: dict) -> int:
+    sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
+    land = sum(length for tile, length in tile_runs(save) if not sea[tile])  # counted off the runs: a map holds five times more tiles than it does runs
+    return max(_KINGDOM_FLOOR, int(land / _LAND_PER_KINGDOM + 0.5))  # nearest, not ceiling — `round` breaks ties to the even number
 
 
 # WB's `life_dna` seeds a world's genetics, redrawn on the hour so a reused map never repopulates with the lineages before it. WB's format: `YYYYMMDDHH`, UTC.
@@ -457,22 +467,14 @@ def _run_together(*calls: tuple | None) -> list:
     return [job.result() if job else None for job in jobs]
 
 
-# Sapient species alive in the world + {species: [kingdom populations]} keyed by each kingdom's dominant one. A beast answers to no crown, so it is skipped.
-def _sapient_kingdoms(save: dict) -> tuple[dict, set]:
+# The headcount of each crown a thinking people answers to — a beast bows to none, a hull is no subject, and a soul under no banner raises no crown of its own.
+def _sapient_kingdoms(save: dict) -> list[int]:
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
-    members_by_kingdom: dict[int, Counter] = {}
-    species_seen: set = set()
-    for actor in save.get("actors_data") or []:  # one pass gives both which species walk the world and each kingdom's species mix
-        if is_boat(actor) or not is_sapient(subspecies_by_id.get(actor.get("subspecies"))):
-            continue
-        asset = actor.get("asset_id")
-        species_seen.add(asset)
-        if kid := actor.get("civ_kingdom_id"):
-            members_by_kingdom.setdefault(kid, Counter())[asset] += 1
-    kingdoms: dict = {}
-    for members in members_by_kingdom.values():
-        kingdoms.setdefault(members.most_common(1)[0][0], []).append(members.total())
-    return kingdoms, species_seen
+    pops: Counter = Counter()
+    for actor in save.get("actors_data") or []:  # the crown first, being both the cheapest test and the one that turns most of a wild world away
+        if (kid := actor.get("civ_kingdom_id")) and not is_boat(actor) and is_sapient(subspecies_by_id.get(actor.get("subspecies"))):
+            pops[kid] += 1
+    return list(pops.values())
 
 
 # An entity's traits as the save spells them, id included so a change of clan reads like a change of traits — both mean the summary must be written afresh.

@@ -1,4 +1,7 @@
-# Tile-level primitives, consumed by `islands.py` and `tiles/info.py`. No save-wide state, no caching — just functions over a tile name or a decoded grid.
+# Tile-level primitives. No save-wide state, no caching — just functions over a tile name, or over the tile rows the save folds away as runs.
+
+from collections.abc import Iterator
+from itertools import chain, repeat
 
 # Soil gradients (`low`/`high`) and water depths (`shallow`/`coastal`/`deep`). Other kinds encode their verticality in the kind itself.
 _ELEVATION_BY_BASE = {
@@ -31,15 +34,14 @@ _LAYER_BY_TILE = {
 }
 
 
-# Expand the save's per-row RLE (`tileArray` + `tileAmounts`) into a 2D `grid[y][x]` of tile ids — `y` IS the WB-actor y (no inversion).
+# Each row's RLE, its tile ids paired with its run lengths — the module's one and only reading of the save's own shape.
+def _tile_rows(save: dict) -> Iterator[tuple[list[int], list[int]]]:
+    return zip(save.get("tileArray") or [], save.get("tileAmounts") or [])
+
+
+# The save's runs unfolded into a 2D `grid[y][x]` of tile ids — `y` IS the WB-actor y, north-growing, so no caller has to flip it.
 def decode_tile_grid(save: dict) -> list[list[int]]:
-    grid = []
-    for ids, runs in zip(save.get("tileArray") or [], save.get("tileAmounts") or []):
-        row = []
-        for tile_id, n in zip(ids, runs):
-            row.extend([tile_id] * n)
-        grid.append(row)
-    return grid
+    return [list(chain.from_iterable(map(repeat, ids, runs))) for ids, runs in _tile_rows(save)]
 
 
 # Vegetation biome (jungle/savanna/swamp/…). `None` for terrain-only tiles and overlays (`*:road`, `*:field`).
@@ -70,3 +72,8 @@ def tile_layer(tile_name: str) -> str:
     if base.startswith("lava"):
         return "Lava"
     return _LAYER_BY_TILE.get(base, "Ground")
+
+
+# The same rows `decode_tile_grid` unfolds, left folded as `(tile id, run length)` — a caller that only tallies never pays for the tiles themselves.
+def tile_runs(save: dict) -> Iterator[tuple[int, int]]:
+    return chain.from_iterable(zip(ids, runs) for ids, runs in _tile_rows(save))
