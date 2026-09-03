@@ -4,7 +4,7 @@ import { TranslateLoader } from '@ngx-translate/core';
 import { from, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-// Serves a language table out of `assets/i18n/`. A missing file leaves the app running on its keys rather than blank, as a chapter still reads without them.
+// The app's own strings out of `assets/i18n/`, plus the species names from the chronicler's own `world/i18n/` — the one thing his tools never spell out for him.
 @Service()
 export class TranslateLoaderService implements TranslateLoader {
 
@@ -18,10 +18,19 @@ export class TranslateLoaderService implements TranslateLoader {
     );
   }
 
-  private async _load(lang: string): Promise<Record<string, string>> {
-    const response = await fetch(`./assets/i18n/${lang}.json`);
-    if (!response.ok) throw new Error(`Failed to load translation file for language: ${lang}`);
+  private async _fetch(path: string): Promise<Record<string, string>> {
+    const response = await fetch(path);
+    if (!response.ok) throw new Error(`Failed to load translation file: ${path}`);
     return response.json() as Promise<Record<string, string>>;
+  }
+
+  // Species names live beside the chronicle, keyed by bare asset id so he reads them as he writes his tags; the `species_` prefix is the reader's business.
+  private async _load(lang: string): Promise<Record<string, string>> {
+    const [app, species] = await Promise.all([
+      this._fetch(`./assets/i18n/${lang}.json`),
+      this._fetch(`./assets/world/i18n/species.${lang}.json`),
+    ]);
+    return { ...app, ...Object.fromEntries(Object.entries(species).map(([id, name]) => [`species_${id}`, name])) };
   }
 
 }
