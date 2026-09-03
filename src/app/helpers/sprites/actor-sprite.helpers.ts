@@ -8,7 +8,7 @@ export class ActorSpriteHelpers {
 
   private static readonly _atlas = fetch('assets/img/actors/actors.json').then(r => r.json() as Promise<ActorAtlas>);
   private static readonly _bodySheets: Record<string, string> = { army_captain: 'warrior', king: 'king', leader: 'leader', warrior: 'warrior' };
-  private static readonly _bodyVariants = 10; // WB ships ten `warrior_*`/`male_*`/`female_*` sheets per civ species; `skin_id` indexes them
+  private static readonly _bodyVariants = 10; // the four classics ship ten `warrior_*`/`male_*`/`female_*` sheets each, `skin_id` indexing them; the rest ship one
   private static readonly _darkerFactors = [1, 0.9, 0.8, 0.7]; // WB `loadPhenotype`: the four greens are one skin colour at four `makeDarkerColor` steps
   private static readonly _lightPlaceholder: [string, string] = ['255,216,0', '0,0,0'];
   private static readonly _phenotypeGreens = ['184,255,150', '0,255,0', '0,175,0', '74,131,31']; // WB `color_phenotype_green_0..3` → the skin shades
@@ -42,10 +42,10 @@ export class ActorSpriteHelpers {
     const looped = (((actor.skin_id ?? 0) % this._bodyVariants) + this._bodyVariants) % this._bodyVariants;
     const variant = looped + 1;
 
-    // Rank sheet first, then the plain civilian of that sex, then the lone `main` a flat species (most animals) ships instead.
+    // Rank sheet first, then the plain civilian of that sex, then a flat species' lone `main`. `king` and `leader` ship unnumbered, so the bare name is tried too.
     const rank = this._bodySheets[actor.job ?? ''];
 
-    const body = [rank && `${rank}_${variant}`, rank && `${rank}_1`, `${sex}_${variant}`, `${sex}_1`, 'main'].find(name => name && species?.bodies[name]);
+    const body = [rank && `${rank}_${variant}`, rank && `${rank}_1`, rank, `${sex}_${variant}`, `${sex}_1`, 'main'].find(name => name && species?.bodies[name]);
     const pose: ActorPose | undefined = body ? species?.bodies[body] : undefined;
 
     if (!species || !pose) return null;

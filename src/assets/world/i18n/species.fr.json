@@ -28,6 +28,7 @@
   "civ_cow": "Mootaur",
   "civ_crab": "Crablin",
   "civ_crocodile": "Reptiloïde",
+  "civ_crystal_golem": "Golem de cristal",
   "civ_dog": "Barkfolk",
   "civ_fox": "Slypaw",
   "civ_frog": "Ribbit",
@@ -102,5 +103,6 @@
   "turtle": "Tortue",
   "unicorn": "Licorne",
   "white_mage": "Mage blanc",
+  "wolf": "Loup",
   "worm": "Ver"
 }

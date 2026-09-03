@@ -19,7 +19,21 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
-from shared import SAVES_DIR, UNITS_PER_YEAR, dev_mode, is_boat, latest_chapter, live_save, load_data, load_save, render, worldbox_running, write_save
+from shared import (
+    SAVES_DIR,
+    UNITS_PER_YEAR,
+    dev_mode,
+    index_by_id,
+    is_boat,
+    is_sapient,
+    latest_chapter,
+    live_save,
+    load_data,
+    load_save,
+    render,
+    worldbox_running,
+    write_save,
+)
 
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
@@ -101,8 +115,8 @@ _AUDIT_TIERS = {
 }
 
 
-# No panel reads them: `report` is reworded per call, `taxonomy` derives from `identity.species`, `passengers` counts souls at sea, an age's pair is WB's English.
-_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "taxonomy"})
+# No panel reads them: `report` is per-call, `taxonomy` comes from `identity.species`, `passengers` counts souls at sea, the age pair English, `sapient` gates a tag.
+_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "sapient", "taxonomy"})
 
 # `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset({"adults", "babies", "children", "couples", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"})
@@ -143,7 +157,7 @@ _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"ki
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
-_MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — the headcount every playable species must reach in a kingdom of its own.
+_MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — the headcount every sapient species must reach in a kingdom of its own.
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 
 # Put to the player at the first chapter, before a line is written. The three commands answer it, and the naming brief rides with the third.
@@ -267,8 +281,8 @@ def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) ->
 
 # `(code, message)` of alerts whose law is on and whose condition holds — WB writes an untouched law as a bare `{"name": …}`, so an absent `boolVal` reads as on.
 def _fired_alerts(save: dict) -> list[tuple[str, str]]:
-    kingdoms, present = _playable_kingdoms(save)
-    if not present:  # no playable species yet → every `all(...)` would hold vacuously
+    kingdoms, present = _sapient_kingdoms(save)
+    if not present:  # no sapient species yet → every `all(...)` would hold vacuously
         return []
     laws = {law["name"]: law.get("boolVal", True) for law in (save.get("worldLaws") or {}).get("list") or []}
     return [(code, spec["message"]) for code, spec in _ALERTS.items() if laws.get(spec["law"], True) and spec["condition"](kingdoms, present)]
@@ -344,25 +358,6 @@ def _fold_total(entity: dict, *keys: str) -> None:
 # WB's `life_dna` seeds a world's genetics, redrawn on the hour so a reused map never repopulates with the lineages before it. WB's format: `YYYYMMDDHH`, UTC.
 def _life_dna() -> int:
     return int(datetime.now(timezone.utc).strftime("%Y%m%d%H"))
-
-
-# Playable species alive in the world (species.json `playable` flag) + {species: [kingdom populations]} keyed by each kingdom's dominant playable species.
-def _playable_kingdoms(save: dict) -> tuple[dict, set]:
-    playable = {species for species, data in load_data("species.json").items() if data.get("playable")}
-    members_by_kingdom: dict[int, Counter] = {}
-    species_seen: set = set()
-    for actor in save.get("actors_data") or []:  # one pass gives both which species walk the world and each kingdom's species mix
-        if is_boat(actor):
-            continue
-        asset = actor.get("asset_id")
-        species_seen.add(asset)
-        if kid := actor.get("civ_kingdom_id"):
-            members_by_kingdom.setdefault(kid, Counter())[asset] += 1
-    kingdoms: dict = {}
-    for members in members_by_kingdom.values():
-        if (dominant := members.most_common(1)[0][0]) in playable:
-            kingdoms.setdefault(dominant, []).append(members.total())
-    return kingdoms, species_seen & playable
 
 
 # One scan of the prior chapters, for all they arbitrate: alert de-dup, descriptor carry-forward, a null→real favorite, a turned age, an unadvanced save.
@@ -460,6 +455,24 @@ def _run_together(*calls: tuple | None) -> list:
     with ThreadPoolExecutor(max_workers=max(len(calls), 1)) as pool:
         jobs = [pool.submit(*call) if call else None for call in calls]
     return [job.result() if job else None for job in jobs]
+
+
+# Sapient species alive in the world + {species: [kingdom populations]} keyed by each kingdom's dominant one. A beast answers to no crown, so it is skipped.
+def _sapient_kingdoms(save: dict) -> tuple[dict, set]:
+    subspecies_by_id = index_by_id(save.get("subspecies") or [])
+    members_by_kingdom: dict[int, Counter] = {}
+    species_seen: set = set()
+    for actor in save.get("actors_data") or []:  # one pass gives both which species walk the world and each kingdom's species mix
+        if is_boat(actor) or not is_sapient(subspecies_by_id.get(actor.get("subspecies"))):
+            continue
+        asset = actor.get("asset_id")
+        species_seen.add(asset)
+        if kid := actor.get("civ_kingdom_id"):
+            members_by_kingdom.setdefault(kid, Counter())[asset] += 1
+    kingdoms: dict = {}
+    for members in members_by_kingdom.values():
+        kingdoms.setdefault(members.most_common(1)[0][0], []).append(members.total())
+    return kingdoms, species_seen
 
 
 # An entity's traits as the save spells them, id included so a change of clan reads like a change of traits — both mean the summary must be written afresh.

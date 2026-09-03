@@ -26,6 +26,7 @@ from shared import (
     has_emotions,
     index_by_id,
     is_aboard,
+    is_sapient,
     life_stage,
     light,
     load_data,
@@ -198,6 +199,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "personality": _compute_personality(actor, snap),
         "religion": entity_ref(actor.get("religion"), ctx["religions_by_id"]),  # a ref, not a bare name: `religion/info.py <id>` reads the creed it holds
         "roles": _compute_roles(actor, save),
+        "sapient": is_sapient(ctx["subspecies_by_id"].get(actor.get("subspecies"))),  # tells a builder of cities from a beast, and gates his person tag
         "sex": sex_label(actor),
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),

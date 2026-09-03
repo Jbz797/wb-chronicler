@@ -27,6 +27,7 @@ from shared import (
     entity_ref,
     index_by_id,
     is_boat,
+    is_sapient,
     light,
     load_data,
     load_save,
@@ -92,6 +93,7 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
         "name": subspecies.get("name"),
         **({"report": report} if report else {}),
+        "sapient": is_sapient(subspecies),  # the faculty that lets its bearers found cities — a beast's biology never carries it
     }
 
 

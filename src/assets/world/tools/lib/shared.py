@@ -49,7 +49,6 @@ _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "st
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
-_EMOTION_TRAIT = "amygdala"  # WB `SubspeciesTraitLibrary`: the one trait tagged `has_emotions` — the sole reader, and the reason this stays private.
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
@@ -160,6 +159,11 @@ def _family_leaders(actors: Sequence[dict], families_by_id: dict) -> dict:
     return dict(sorted(out.items()))
 
 
+# WB `Subspecies.cacheTags` reads a biology's faculties off meta tags, not off trait names — so a mod's own trait answers too.
+def _has_meta_tag(subspecies: dict | None, tag: str) -> bool:
+    return bool(_tagged_traits(tag) & set((subspecies or {}).get("saved_traits") or []))
+
+
 # `{id, name}` off a record carrying its own name — a family or an actor the caller already holds. `emit` drops `name` where WB wrote none, leaving `{id}` alone.
 def _leader_ref(record: dict) -> dict:
     return {"id": record["id"], "name": record.get("name")}
@@ -215,6 +219,11 @@ def _strip_none(value):
     if isinstance(value, list):
         return [stripped for v in value if (stripped := _strip_none(v)) not in _EMPTY_VALUES]
     return value
+
+
+@cache
+def _tagged_traits(tag: str) -> frozenset[str]:
+    return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if tag in (spec.get("tags") or []))
 
 
 # Highest `key`, ties to the lowest id. `None` when nobody scores above zero — a settlement without a killer has no deadliest soul, and that is not a zero.
@@ -479,7 +488,7 @@ def equipment_rarity(modifiers: list[str]) -> str:
 
 # WB `Actor.hasEmotions`, which reads its biology's `has_emotions` meta tag — a single trait grants it, and without it a soul is never happy nor unhappy.
 def has_emotions(actor: dict, subspecies_by_id: dict) -> bool:
-    return _EMOTION_TRAIT in ((subspecies_by_id.get(actor.get("subspecies")) or {}).get("saved_traits") or [])
+    return _has_meta_tag(subspecies_by_id.get(actor.get("subspecies")), "has_emotions")
 
 
 # The office-holder's own purse — a mayor's or a king's. Netted out of `subjects_money` on both tiers, and reported on its own in `metadata`.
@@ -499,6 +508,11 @@ def is_aboard(actor: dict) -> bool:
 # WB models boats as actors: they sit in `actors_data` and even carry a `civ_kingdom_id`, so every actor tally must decide whether to skip them.
 def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
+
+
+# WB `Subspecies.isSapient`: the faculty rides on the biology, so a soul without one — as `Actor.isSapient` has it — never thinks.
+def is_sapient(subspecies: dict | None) -> bool:
+    return _has_meta_tag(subspecies, "has_sapience")
 
 
 # `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces the ones nothing else covers.

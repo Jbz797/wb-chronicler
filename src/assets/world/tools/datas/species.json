@@ -1325,7 +1325,6 @@
   "dwarf": {
     "baby_form": true,
     "description": "Master craftsmen who never forget a grudge",
-    "playable": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1345,7 +1344,6 @@
   "elf": {
     "baby_form": true,
     "description": "Mystical beings with a superiority complex and great hair",
-    "playable": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1697,7 +1695,6 @@
   "human": {
     "baby_form": true,
     "description": "Masters of adaptation and bad decisions",
-    "playable": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1933,7 +1930,6 @@
   "orc": {
     "baby_form": true,
     "description": "Warriors with a heart of gold and a head of stone",
-    "playable": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,

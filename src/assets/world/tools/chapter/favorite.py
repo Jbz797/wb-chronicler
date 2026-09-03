@@ -12,22 +12,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import SAVES_DIR, latest_chapter, live_save, load_data, load_save, worldbox_running, write_save
+from shared import SAVES_DIR, index_by_id, is_sapient, latest_chapter, live_save, load_save, worldbox_running, write_save
 
 
 def _digest(path: Path) -> str:
     return hashlib.md5(path.read_bytes()).hexdigest()  # md5 by choice: two local copies compared, nothing guarded
 
 
-# The actor the chronicler picked, refused unless he can actually carry a chronicle: alive in the save, and of a species the player may embody.
+# The actor the chronicler picked, refused unless he can actually carry a chronicle: alive in the save, and thinking — a beast holds no story of its own.
 def _picked(save: dict, actor_id: int) -> dict | None:
     actor = next((a for a in save.get("actors_data") or [] if a.get("id") == actor_id), None)
     if actor is None:
         print(f"✗ no actor {actor_id} in the save — either he is dead, or the id is wrong", file=sys.stderr)
         return None
-    playable = {species for species, data in load_data("species.json").items() if data.get("playable")}
-    if (species := actor.get("asset_id")) not in playable:
-        print(f"✗ {actor.get('name')} ({species}) is not a playable species — a favorite must be one the player can embody", file=sys.stderr)
+    if not is_sapient(index_by_id(save.get("subspecies") or []).get(actor.get("subspecies"))):
+        print(f"✗ {actor.get('name')} ({actor.get('asset_id')}) is not sapient — a favorite must be able to hold a chronicle", file=sys.stderr)
         return None
     return actor
 
