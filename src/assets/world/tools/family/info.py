@@ -58,7 +58,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
             "age": actor_age(actor, ctx["world_time"]),
             "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the named ref, the roster's one entity — a second would blow the inline budget
             "gen": int(actor.get("generation") or 1),  # a founder reads 1, the value WB assumes without ever writing it
-            **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # `building/info.py <id>` — who shares a roof with whom
+            **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # `ground/info.py <id>` — who shares a roof with whom
             "id": actor["id"],
             "job": resolve_profession(actor, save),
             "name": actor.get("name"),

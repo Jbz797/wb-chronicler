@@ -12,17 +12,17 @@ Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, 
 | `alliance/info.py <id>`            | `full`, `breakdown`, `identity`, `kingdoms`, `leaders`, `metadata`, `population`, `ranks`, `wars`                                   |
 | `boat/info.py <id>`                | `full`, `combat`, `crew`, `identity`, `inventory`, `metadata`, `traits`                                                             |
 | `book/info.py <id>`                | `full`, `gains`, `metadata`, `origin`, `teaches`                                                                                    |
-| `building/info.py <id>`            | `full`, `boats`, `inventory`, `metadata`, `occupants`                                                                               |
 | `city/info.py <id>`                | `full`, `army`, `books`, `breakdown`, `equipment`, `identity`, `inventory`, `leaders`, `loyalty`, `metadata`, `population`, `ranks` |
 | `clan/info.py <id>`                | `full`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                  |
 | `culture/info.py <id>`             | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                         |
 | `family/info.py <id>`              | `full`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`                                            |
 | `geography/info.py`                | `biomes`, `entity_types`, `islands`, `positions [-t <type>]`, `waters`                                                              |
+| `ground/info.py <id>`              | `full`, `boats`, `inventory`, `metadata`, `occupants`                                                                               |
 | `kingdom/info.py <id>`             | `full`, `boats`, `breakdown`, `cities`, `equipment`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `wars`  |
 | `language/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                         |
 | `religion/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                         |
 | `subspecies/info.py <id>`          | `full`, `breakdown`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`              |
-| `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `context`, `distances`, `ground`, `tile_info`                                                                  |
+| `tiles/info.py <x,y> [-r 0\|1\|2]` | `full`, `actors`, `context`, `distances`, `ground`, `tile_info`                                                                     |
 | `war/info.py <id>`                 | `full`, `attackers`, `defenders`, `metadata`                                                                                        |
 | `world/info.py`                    | `full`, `boats`, `cumulative`, `leaders`, `metadata`, `plots`, `snapshot`                                                           |
 
