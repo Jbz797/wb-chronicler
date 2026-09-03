@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 # Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries (via `registries.py`) and a
-# `chapter.json` skeleton. The chronicler then analyses (§ « Phase d'analyse obligatoire »), writes `chapter.md`, and fills `title`, the favorite's `descriptor` and the trait summaries
-# this run says are owed. Docs: `tools/tools.md`.
+# `chapter.json` skeleton. The chronicler then analyses (§ « Phase d'analyse obligatoire »), writes `chapter.md`, and fills `title`,
+# the favorite's `descriptor` and the trait summaries this run says are owed. Docs: `tools/tools.md`.
 
 import json
 import random
@@ -142,6 +142,7 @@ _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"ki
 
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
+_MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
 _MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS` threshold — the headcount every playable species must reach in a kingdom of its own.
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 
@@ -185,7 +186,7 @@ _TRAIT_SOURCES = {
 # The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
 _UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
 
-_WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity {name, description}, mirrored off the save each chapter — what the reader displays
+_WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity and span, off the save each chapter — the reader shows the name, the chronicler the rest
 
 
 # The bare world's own age, drawn as WB draws it — the span is random, so two resets of the same map never run to the same calendar.
@@ -430,7 +431,7 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     _bare_world(save, name, description)
     stats = save["mapStats"]
     write_save(live_wbox, save)
-    _write_world(stats)  # off the save, not off the arguments: a world that kept its name keeps it here too
+    _write_world(save)  # off the save, not off the arguments: a world that kept its name keeps it here too
     purged = _purge_history(live_wbox.parent / "map_stats.s3db")
     (live_wbox.parent / "map.meta").unlink(missing_ok=True)  # WB rebuilds it from the save on opening; writing it ourselves would guess at a format we only read
 
@@ -498,9 +499,16 @@ def _write_index() -> None:
     _INDEX_JSON.write_text(render(entries) + "\n")
 
 
-# The world's name and blurb as WB spells them, rewritten every chapter rather than seeded once: a rename, in game or by `--reset`, reaches the reader on its own.
-def _write_world(stats: dict) -> None:
-    _WORLD_JSON.write_text(json.dumps({"description": stats.get("description") or "", "name": stats.get("name") or ""}, ensure_ascii=False, indent=2) + "\n")
+# Name, blurb and span, rewritten each chapter rather than seeded once: a rename reaches the reader alone, and nothing else says how far the world stretches.
+def _write_world(save: dict) -> None:
+    stats = save.get("mapStats") or {}
+    world = {
+        "description": stats.get("description") or "",
+        "height": int(save.get("height") or 0) * _MAP_BLOCK,
+        "name": stats.get("name") or "",
+        "width": int(save.get("width") or 0) * _MAP_BLOCK,
+    }
+    _WORLD_JSON.write_text(json.dumps(world, ensure_ascii=False, indent=2) + "\n")
 
 
 def main(argv: list[str]) -> int:
@@ -546,7 +554,7 @@ def main(argv: list[str]) -> int:
             shutil.copy2(src, chapter_dir / name)
     if (s3db := live_dir / "map_stats.s3db").exists():
         shutil.copy2(s3db, _HISTORY_S3DB)
-    _write_world(live["mapStats"])
+    _write_world(live)
     if not _PLACES_JSON.exists():  # his toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge
         surveyed = _run("geography/info.py", "islands,waters", chapter) or {}
         seeded = {
