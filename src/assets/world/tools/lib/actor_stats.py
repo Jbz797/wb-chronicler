@@ -1,7 +1,7 @@
 # Shared actor stats pipeline — mirrors `Actor.updateStats` from WB's `Assembly-CSharp.dll`.
 #
 # ─── Maintenance / algorithm reference ───
-# Full algorithm spec: `chronicler.md § IV « Stats de base — sources et agrégation »`. Numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad, synergy-always) come from it + WorldBox's in-game tooltips.
+# The pipeline below is the spec; numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad, synergy-always) were read off WorldBox's in-game tooltips.
 #
 # Pipeline per chromosome:
 #   1. For each locus (skipping `void_loci`):
@@ -13,7 +13,7 @@
 #   3. `_cleanup_stats` truncates floats toward zero (1 decimal for `_KEEP_DECIMAL`), renames, drops zeros.
 #
 # Color synergy: .NET `System.Random` (seed `life_dna + gene._GENE_INDEX`) → 4-side color signature/gene; int32 overflow mirrored (`_to_int32()`/`_SystemRandom`).
-# Color positions (per chronicler.md): indices target *spaced* text (`"XXX XXX XXX XXX XXX"`, 19 chars) at 0/8/10/18 → unspaced 15-char text at 0/6/8/14.
+# Color positions: indices target *spaced* text (`"XXX XXX XXX XXX XXX"`, 19 chars) at 0/8/10/18 → unspaced 15-char text at 0/6/8/14.
 # ⚠️ If you ever rewrite the DNA generator to keep the spaces, shift the indices back.
 
 import math
@@ -98,7 +98,7 @@ _GENE_INDEX = {
     "intelligence_3": 47,
 }
 
-# Per chronicler.md § « Stats de base — sources et agrégation » — gene -> (stat name, value contribution).
+# Gene -> (stat name, value contribution), read off WorldBox's in-game tooltips.
 _GENE_VALUES = {
     "armor_1": ("armor", 1),
     "armor_2": ("armor", 6),
