@@ -146,6 +146,7 @@ _EMPTIED = (
     "wars",
 )
 
+_FLAGS = frozenset({"--description", "--force", "--name", "--reset", "--reset-asked"})  # all `main` reads — silence on the rest would make a typo an answer
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
@@ -444,9 +445,10 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     print(f"✓ world reset — year 1 of the Age of Hope, {stats['current_world_ages_duration'] / UNITS_PER_YEAR:.0f} years long, life_dna {stats['life_dna']}")
     print(f"  map kept: {landmarks} · {purged} history rows purged · map.meta dropped, WorldBox rebuilds it")
     print(f"  named: {stats['name'] or '—'}")
-    # WB pauses them itself on loading a world set back to year 1, whatever the save says — writing the flag here would not survive the next open.
-    print("  ⚠ the world ages come back paused: the play button on the age wheel, or the Era never turns")
-    print("  → player: reopen this save in WorldBox and save it again — only the game redraws preview.png, and every chapter archives it")
+
+    # WB re-pauses the ages on any year-1 load, so no flag set here holds; and it is saved, hence the wheel before the re-save — else a still world is archived.
+    print("  → player, in this order: 1. reopen the save in WorldBox and press play on the age wheel — the reset leaves the ages paused, or the Era never turns")
+    print("                           2. save again — only the game redraws preview.png, and the chapter then archives a world whose ages run")
     print("  then `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
     return 0
 
@@ -523,10 +525,13 @@ def _write_world(save: dict) -> None:
         "name": stats.get("name") or "",
         "width": int(save.get("width") or 0) * _MAP_BLOCK,
     }
-    _WORLD_JSON.write_text(json.dumps(world, ensure_ascii=False, indent=2) + "\n")
+    _WORLD_JSON.write_text(render(world) + "\n")  # `render` like every other file the bootstrap writes, so a short blurb would inline as they do
 
 
 def main(argv: list[str]) -> int:
+    if unknown := [a for a in argv if a.startswith("--") and a not in _FLAGS]:  # `--rest` would else read as « no reset asked » and put the question again
+        print(f"✗ unknown flag {', '.join(unknown)} — what each one does is in `tools/tools.md`", file=sys.stderr)
+        return 2
     live_wbox = live_save()
     if not live_wbox.exists():
         print(f"✗ no live save at {live_wbox} — ask the player to update the path, from the settings cog under the map", file=sys.stderr)
