@@ -4466,9 +4466,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:22.2.3":
-  version: 22.2.3
-  resolution: "eslint-config-angular-strict@npm:22.2.3"
+"eslint-config-angular-strict@npm:22.2.4":
+  version: 22.2.4
+  resolution: "eslint-config-angular-strict@npm:22.2.4"
   dependencies:
     "@angular-eslint/builder": "npm:22.2.0"
     "@angular-eslint/eslint-plugin": "npm:22.2.0"
@@ -4482,7 +4482,7 @@ __metadata:
     eslint-plugin-import-x: "npm:4.17.1"
     eslint-plugin-perfectionist: "npm:5.11.0"
     eslint-plugin-unicorn: "npm:74.0.0"
-  checksum: 10c0/0b98b547a05a94f382c0f199b96cff1b0b5a7ee6a1cfb891d5eb3c0f46afcf76b6455188335e4fa292d688a69fcbc49ba706b6ef1906f013a391ab7ec1466e37
+  checksum: 10c0/82c9325d2dc1b637af34b6b748d5fbba64245810cb72ffa723f8240c657927a32cc5885a52c2168db5cb0e9fe6d5cb97df92afbb044ddb1f9ae7ccb949930d3e
   languageName: node
   linkType: hard
 
@@ -9187,7 +9187,7 @@ __metadata:
     "@ngx-translate/core": "npm:18.0.0"
     chokidar: "npm:5.0.0"
     concurrently: "npm:10.0.5"
-    eslint-config-angular-strict: "npm:22.2.3"
+    eslint-config-angular-strict: "npm:22.2.4"
     less: "npm:4.9.1"
     marked: "npm:18.0.11"
     marked-gfm-heading-id: "npm:4.1.4"

@@ -81,7 +81,17 @@ export class ReaderPage {
     LanguageSpriteHelpers.paintAll(root, this._registry.languages());
     ReligionSpriteHelpers.paintAll(root, this._registry.religions());
     SubspeciesSpriteHelpers.paintAll(root, this._registry.subspecies());
+    this._plainOpening(root);
     this._restoreScroll();
+  }
+
+  // A chapter opening shorter than the two-line cap forgoes it — measured, not counted, since chars per line follow the window. A workshop page's is instruction.
+  private _plainOpening(root: HTMLElement): void {
+    const opening = root.querySelector<HTMLElement>(':scope h1 + p:not(.metadata)');
+    if (!opening) return;
+    opening.classList.remove('plain-opening'); // the cap shapes the wrap, so the height that decides its fate is measured with it on
+    const line = Number.parseFloat(getComputedStyle(opening).lineHeight);
+    opening.classList.toggle('plain-opening', opening.getBoundingClientRect().height < line * 2);
   }
 
   // One frame after the prose lands, which is when the viewport has its full height — the canvas sprites are sized in CSS and never move it afterwards.
