@@ -26,10 +26,9 @@ _DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1
 class _TileIslands:
     __slots__ = ("_grid", "_height", "_width")
 
-    def __init__(self, tile_to_id: dict[tuple[int, int], int], width: int, height: int):
-        self._grid, self._height, self._width = array("H", bytes(2 * width * height)), height, width
-        for (x, y), island_id in tile_to_id.items():
-            self._grid[y * width + x] = island_id
+    # Wraps the grid the phases filled — handed over, not copied: it is already the shape this class reads from.
+    def __init__(self, id_grid: array, width: int, height: int):
+        self._grid, self._height, self._width = id_grid, height, width
 
     # Same contract as the dict it replaces — `default` off-map or on water.
     def get(self, pos: tuple[int, int], default=None):
@@ -58,7 +57,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     kind_by_id = [tile_kind(name) for name in tile_map]
     grid = decode_tile_grid(save)
     if not grid:
-        return [], _TileIslands({}, 0, 0)
+        return [], _TileIslands(array("H"), 0, 0)
     height, width = len(grid), len(grid[0])
 
     # Phase 1: split each 16×16 chunk into MapRegions (same-layer 8-conn components within the chunk, respecting `isDiagonalBlockedByCorners`).
@@ -150,31 +149,45 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     kept.sort(key=lambda c: -c[0])
     islands = []
     island_tile_kinds: dict[int, Counter[str]] = {}
-    tile_to_id: dict[tuple[int, int], int] = {}
+
+    # Flat and row-major from the start: a `{(x, y): id}` dict would hash a tuple on each of the six hundred thousand writes, and again on every Phase 4 probe.
+    id_grid = array("H", bytes(2 * width * height))
     seeds: deque[tuple[int, int]] = deque()
 
-    # Centroid summed in the same walk that stamps the ids: three passes over the island's tiles would otherwise do the work of one.
+    # Centroid and bounds summed in the same walk that stamps the ids: five passes over the island's tiles would otherwise do the work of one.
     for idx, (size, tile_kinds, tiles) in enumerate(kept, start=1):
         sum_x = sum_y = 0
+        west, east, south, north = tiles[0][0], tiles[0][0], tiles[0][1], tiles[0][1]
         for gx, gy in tiles:
             sum_x += gx
             sum_y += gy
-            tile_to_id[(gx, gy)] = idx
+            if gx < west:  # bare comparisons, not `min`/`max`: two builtin calls per tile cost more than the whole of Phase 4
+                west = gx
+            elif gx > east:
+                east = gx
+            if gy < south:
+                south = gy
+            elif gy > north:
+                north = gy
+            id_grid[gy * width + gx] = idx
             seeds.append((gx, gy))
         island_tile_kinds[idx] = tile_kinds  # `kept` is spent from here on, so Phase 4 may swell this counter in place
-        islands.append({"centroid": {"x": sum_x // size, "y": sum_y // size}, "id": idx, "size": size})
+        # Of the ground alone, as the centroid is: the mountains Phase 4 lends the island can reach past these edges. `size` against the box says how ragged it is.
+        bounds = {"x": [west, east], "y": [south, north]}
+        islands.append({"bounds": bounds, "centroid": {"x": sum_x // size, "y": sum_y // size}, "id": idx, "size": size})
 
     # Phase 4: bleed the id into adjacent Block/Lava so actors on mountains/lava resolve to their host island. Ocean/Goo stay out — not landmass.
     while seeds:
         x, y = seeds.popleft()
-        iid = tile_to_id[(x, y)]
+        iid = id_grid[y * width + x]
         for dx, dy in _DELTAS_4:
             nx, ny = x + dx, y + dy
             if not (0 <= nx < width and 0 <= ny < height):
                 continue
-            if (nx, ny) in tile_to_id or layer_by_id[grid[ny][nx]] not in ("Block", "Lava"):
+            at = ny * width + nx
+            if id_grid[at] or layer_by_id[grid[ny][nx]] not in ("Block", "Lava"):
                 continue
-            tile_to_id[(nx, ny)] = iid
+            id_grid[at] = iid
             island_tile_kinds[iid][kind_by_id[grid[ny][nx]]] += 1
             seeds.append((nx, ny))
 
@@ -183,7 +196,8 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
         counter = island_tile_kinds[island["id"]]
         total = sum(counter.values())
         island["tiles"] = " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / total * 100)) > 0)
-    return islands, _TileIslands(tile_to_id, width, height)
+
+    return islands, _TileIslands(id_grid, width, height)
 
 
 # Disk-cached `_compute_islands` — key = save `mtime+size`, pickle format, stale entries dropped on write (single-file cache).
@@ -191,7 +205,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _Ti
     key = save_cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = CACHE_DIR / f"islands_v11_{key}.pkl"
+    cache_file = CACHE_DIR / f"islands_v12_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:
