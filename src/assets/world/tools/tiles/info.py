@@ -15,6 +15,8 @@ from islands import compute_islands_cached
 from shared import ZONE_TILES, city_centre, civic_building_ids, emit, entity_ref, index_by_id, load_data, load_save, parse_sections, take_chapter
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
+_DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))  # the wave spreads by the square, so a diagonal step costs one tile
+_LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `to_land` says nothing rather than a number
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 
 
@@ -60,7 +62,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     if {"context", "distances"} & sections:
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
 
-    if "tile_info" in sections:
+    if {"distances", "tile_info"} & sections:  # `distances` needs it too, to say how far a rock lies from a land a city could hold
         _, ctx["tile_to_island"] = compute_islands_cached(save, save_path)
         # `frozen_tiles` are packed as `y * width + x` ints — decode to positions, keeping only the queried ones.
         ctx["frozen_set"] = {pos for idx in save.get("frozen_tiles") or [] if (pos := (idx % width, idx // width)) in wanted}
@@ -92,6 +94,8 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     water = floor if gap == 0 or floor < 0 else _water_distance(x, y, ctx["grid"], ctx["layer_by_id"], max(0, floor - gap))
 
     out: dict = {"to_water": water}
+    if (land := _land_distance(x, y, ctx)) is not None:
+        out["to_land"] = land
     city = _city_at(x, y, ctx)
     if city is None:
         if anchors := ctx["city_anchors"]:
@@ -127,6 +131,41 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
     for kingdom in ctx["kingdoms_by_id"].values():
         if (seat := anchors.get(kingdom.get("capitalID"))) is not None:
             ctx["capital_pos_by_kingdom"][kingdom["id"]] = seat
+
+
+# How far the tile's rock lies from a land a city could hold, and which one — measured whole, a castaway being isolated by his island's strait, not his footing.
+def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
+    island_at, grid, layer = ctx["tile_to_island"].get, ctx["grid"], ctx["layer_by_id"]
+    height, width = len(grid), len(grid[0])
+    if island_at((x, y)) is not None:
+        return None
+
+    def dry(px: int, py: int) -> bool:  # the uncounted rock and nothing else — take the sea in and the fill would run to the map's end
+        return layer[grid[py][px]] != "Ocean" and island_at((px, py)) is None
+
+    seen, stack = {(x, y)}, [(x, y)] if dry(x, y) else []  # afloat, a tile answers for itself: there is no rock under it to measure from
+    while stack:
+        cx, cy = stack.pop()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = cx + dx, cy + dy
+            if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in seen and dry(nx, ny):
+                seen.add((nx, ny))
+                stack.append((nx, ny))
+    # One wave off the whole rock rather than a ring per tile: the shore is found on the first tide that touches it, whatever stone that tide left from.
+    front = list(seen)
+    for r in range(1, _LAND_REACH + 1):
+        wave = []
+        for cx, cy in front:
+            for dx, dy in _DELTAS_8:
+                nx, ny = cx + dx, cy + dy
+                if not (0 <= nx < width and 0 <= ny < height) or (nx, ny) in seen:
+                    continue
+                if (island := island_at((nx, ny))) is not None:
+                    return {"island_id": island, "tiles": r}
+                seen.add((nx, ny))
+                wave.append((nx, ny))
+        front = wave
+    return None
 
 
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
