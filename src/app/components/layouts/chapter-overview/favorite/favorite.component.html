@@ -2,11 +2,13 @@
 @if (c && c.meta.favorite; as fav) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
     <nz-descriptions-item [nzTitle]="descriptorTitle">{{ fav.descriptor }}</nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="rolesTitle">
-      @for (tag of roleTags(); track tag.label) {
-        <nz-tag [nzColor]="tag.color">{{ tag.label | translate }}</nz-tag>
-      }
-    </nz-descriptions-item>
+    @if (roleTags().length) {
+      <nz-descriptions-item [nzTitle]="rolesTitle">
+        @for (tag of roleTags(); track tag.label) {
+          <nz-tag [nzColor]="tag.color">{{ tag.label | translate }}</nz-tag>
+        }
+      </nz-descriptions-item>
+    }
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat stat="age" [hideDelta]="true" [suffix]="ageSuffix()" />
     </nz-descriptions-item>
