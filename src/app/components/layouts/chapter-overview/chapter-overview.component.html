@@ -90,7 +90,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'favorite'"
+      [nzActive]="isOpen('favorite', c.meta.favorite)"
       [nzCollapsible]="collapsible(c.meta.favorite)"
       [nzExtra]="favoriteChip"
       [nzHeader]="favoritesHeader"
@@ -101,7 +101,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'family'"
+      [nzActive]="isOpen('family', c.meta.family)"
       [nzCollapsible]="collapsible(c.meta.family)"
       [nzExtra]="familyChip"
       [nzHeader]="familyHeader"
@@ -112,7 +112,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'clan'"
+      [nzActive]="isOpen('clan', c.meta.clan)"
       [nzCollapsible]="collapsible(c.meta.clan)"
       [nzExtra]="clanChip"
       [nzHeader]="clanHeader"
@@ -123,7 +123,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'culture'"
+      [nzActive]="isOpen('culture', c.meta.culture)"
       [nzCollapsible]="collapsible(c.meta.culture)"
       [nzExtra]="cultureChip"
       [nzHeader]="cultureHeader"
@@ -134,7 +134,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'language'"
+      [nzActive]="isOpen('language', c.meta.language)"
       [nzCollapsible]="collapsible(c.meta.language)"
       [nzExtra]="languageChip"
       [nzHeader]="languageHeader"
@@ -145,7 +145,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'religion'"
+      [nzActive]="isOpen('religion', c.meta.religion)"
       [nzCollapsible]="collapsible(c.meta.religion)"
       [nzExtra]="religionChip"
       [nzHeader]="religionHeader"
@@ -156,7 +156,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'subspecies'"
+      [nzActive]="isOpen('subspecies', c.meta.subspecies)"
       [nzCollapsible]="collapsible(c.meta.subspecies)"
       [nzExtra]="subspeciesChip"
       [nzHeader]="subspeciesHeader"
@@ -167,7 +167,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'city'"
+      [nzActive]="isOpen('city', c.meta.city)"
       [nzCollapsible]="collapsible(c.meta.city)"
       [nzExtra]="cityChip"
       [nzHeader]="cityHeader"
@@ -178,7 +178,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'kingdom'"
+      [nzActive]="isOpen('kingdom', c.meta.kingdom)"
       [nzCollapsible]="collapsible(c.meta.kingdom)"
       [nzExtra]="kingdomChip"
       [nzHeader]="kingdomHeader"
@@ -189,7 +189,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'alliance'"
+      [nzActive]="isOpen('alliance', c.meta.alliance)"
       [nzCollapsible]="collapsible(c.meta.alliance)"
       [nzExtra]="allianceChip"
       [nzHeader]="allianceHeader"
@@ -200,7 +200,7 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="activePanel() === 'wars'"
+      [nzActive]="isOpen('wars', c.meta.wars?.length)"
       [nzCollapsible]="collapsible(c.meta.wars?.length)"
       [nzExtra]="warsChip"
       [nzHeader]="warsHeader"

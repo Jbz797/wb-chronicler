@@ -78,11 +78,11 @@ export class ChapterOverviewComponent {
     const previous = this._chronicler.previousChapter()?.meta.world.metadata.age_id;
     return !!previous && previous !== this.currentChapter()?.meta.world.metadata.age_id;
   });
-  // Panel title on the same scale, off the crown's own city count — uneven rungs, so a lookup rather than a tier index.
+  // Panel title off the crown's city count, rungs uneven so a lookup — and no crown takes the plain word, the lowest rung meaning a realm that lost its cities.
   protected readonly kingdomTerm = computed(() => {
-    const cities = this.currentChapter()?.meta.kingdom?.metadata.cities ?? 0;
-    const rung = [0, 1, 2, 5, 9].findLastIndex(cap => cities > cap) + 1;
-    return this._translate.instant(KINGDOM_SIZE_TERMS[rung] ?? 'ui_kingdom') as string;
+    const kingdom = this.currentChapter()?.meta.kingdom;
+    const rung = [0, 1, 2, 5, 9].findLastIndex(cap => (kingdom?.metadata.cities ?? 0) > cap) + 1;
+    return this._translate.instant((kingdom ? KINGDOM_SIZE_TERMS[rung] : undefined) ?? 'ui_kingdom') as string;
   });
   protected readonly world = toSignal(this._http.get<WorldInfo>(`${HISTORY_DIR}/world.json`));
 
@@ -94,6 +94,9 @@ export class ChapterOverviewComponent {
     const previous = this._chronicler.previousChapter()?.meta[panel]?.metadata;
     return !!previous && !!this.currentChapter()?.meta[panel]?.metadata && !this._chronicler.carriesOver(panel);
   };
+
+  // A body this chapter does not carry leaves its panel `disabled`, so a name restored from the session would open it on an empty strip nothing could shut.
+  protected isOpen = (panel: ChapterOverviewPanel, body: unknown): boolean => this.activePanel() === panel && !!body;
 
   // Persist the active panel to sessionStorage so it survives reloads and page changes.
   protected onPanelToggle(panel: ChapterOverviewPanel, isActive: boolean): void {
