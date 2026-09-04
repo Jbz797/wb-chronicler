@@ -212,6 +212,20 @@ def _age_duration(age_id: str) -> float:
     return float(random.randint(low, high) * UNITS_PER_YEAR)
 
 
+# The world's blurb, reworded on a world already under way. Its name is not amendable: a chronicle names its world once, and every chapter header stands on that.
+def _amend_world(live_wbox: Path, description: str) -> int:
+    if worldbox_running():
+        print("✗ WorldBox is running — quit the game before amending, or it will write its own save back over this one", file=sys.stderr)
+        return 1
+    save = load_save(live_wbox)
+    save["mapStats"]["description"] = description
+    write_save(live_wbox, save)
+    _write_world(save)  # the chapters already archived keep the words of their own day; only the reader's `world.json` follows the change
+    print(f"✓ world described — {description}")
+    print("  → player: reopen this save in WorldBox before playing on, or the game would write the old words back")
+    return 0
+
+
 # The whole rewind, in the order WB's fields depend on one another: survivors first, `id_building` counting from them. Of `buildings`, only landmarks stand.
 def _bare_world(save: dict, name: str, description: str) -> None:
     save["buildings"] = [b for b in save.get("buildings") or [] if _GEO_ASSETS.search(b.get("asset_id") or "")]
@@ -536,16 +550,27 @@ def main(argv: list[str]) -> int:
     if not live_wbox.exists():
         print(f"✗ no live save at {live_wbox} — ask the player to update the path, from the settings cog under the map", file=sys.stderr)
         return 2
+
+    # The two identity branches answer off `argv` alone, so they come before any chapter bookkeeping: a stray `saves/C<n>` is no reason to refuse a rewording.
+    resetting = "--reset" in argv
+    if "--name" in argv and not resetting:  # accepted nowhere else, and staying mute on it would leave a world unnamed while the run looked well
+        print("✗ --name belongs to `--reset` alone — a chronicle names its world once, and every chapter header since then stands on that", file=sys.stderr)
+        return 2
+    description = _value(argv, "--description")
+    if description and not resetting:  # alone it rewords the world under way; under `--reset` it describes the bare one that run hands back
+        return _amend_world(live_wbox, description)
     n = latest_chapter() + 1
+
     chapter, chapter_dir = f"C{n}", SAVES_DIR / f"C{n}"
     if chapter_dir.exists():  # a directory would have raised `latest_chapter` and carried `n` past it: only a file, or a broken link, can stand in its place
         print(f"✗ {chapter_dir} exists but is not a chapter directory — remove it, then run again", file=sys.stderr)
         return 1
-    if "--reset" in argv:  # the player said yes, and only he can: nothing but this flag ever reaches the branch below
+    if resetting:  # the player said yes, and only he can: nothing but this flag ever reaches the branch below
         if n > 1:  # `n` already counted the chapters a moment ago, and a chronicle past its first cannot afford the world it tells of being unmade
             print("✗ the chronicle has begun — a reset erases the world its chapters tell of, and only one not yet started can afford that", file=sys.stderr)
             return 1
-        return _reset_world(live_wbox, _value(argv, "--name"), _value(argv, "--description"))
+        return _reset_world(live_wbox, _value(argv, "--name"), description)
+
     if n == 1 and "--reset-asked" not in argv:  # a reset would throw away whatever is written here, so nothing is, until the player has had his say
         print(_RESET_PROMPT)
         return 0
