@@ -661,7 +661,8 @@ def main(argv: list[str]) -> int:
         scheme["type"] = {"id": (scheme.get("type") or {}).get("id")}
 
     age_id = (live["mapStats"].get("world_age_id") or "").removeprefix("age_")  # short form, as `world/info.py` emits it — `prev_world` carries that one
-    # Mechanical event codes — `chapter.json.tags` is their single source of truth, no separate log.
+
+    # Mechanical event codes, `chapter.json.tags` their only log. The order is a priority: the nav badges the first three, so the rarest come first, alerts last.
     tags = ["NEW_FAVORITE"] if just_designated else []
     if (prev_age_id := prev_world.get("age_id")) and age_id != prev_age_id:
         tags.append("NEW_AGE")
@@ -716,7 +717,8 @@ def main(argv: list[str]) -> int:
         print("  → each alert is a state, not an event: it fires again every chapter until the law is off")
     # Said where it is acted on rather than in the manual: what a summary owes is its shape, and the shape only matters at the moment one is written.
     if owed:
-        print("  → each summary: what those traits make of the body, 400 characters at the very most — a ceiling, not a target; never a list, never a count")
+        print("  → each summary: one string under the block's own `traits` key, replacing the raw list the script dropped")
+        print("    what those traits make of the body, 400 characters at the very most — a ceiling, not a target; never a list, never a count")
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and nothing beside it.
     if not dev_mode():
         print("  → mode: player, not developer — deliver the chapter and stop there, skipping `chronicler.md` § « Après livraison »")

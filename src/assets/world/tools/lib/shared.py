@@ -85,6 +85,7 @@ _META_REPORTS = {
 
 _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homeless` — the two that count heads rather than weigh hearts.
 _MIN_LEADERS_UNITS = 5  # below this a podium names a champion among two or three — the body is too small for any of its members to stand out
+_MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
@@ -416,10 +417,12 @@ def civic_building_ids() -> frozenset[str]:
     return frozenset(listed | {f"fishing_{asset}" for asset in listed if asset.startswith("docks_")})
 
 
-# Standard competition rank (1,2,2,4) among `peers` per getter — top 3 only, and a metric the entity has none of is skipped rather than given a podium at 0.
+# Standard competition rank (1,2,2,4) among `peers`, the entity among them: top 3 only, a metric at 0 skipped, and the key order left to `render`, which sorts.
 def competition_ranks(entity, peers: list, getters: dict) -> dict:
+    if len(peers) < _MIN_RANK_PEERS:  # one guard for all eleven ranked blocks: each of them reaches its podium through here
+        return {}
     ranks = {}
-    for stat, getter in sorted(getters.items()):
+    for stat, getter in getters.items():
         own = getter(entity)
         if own == 0:
             continue

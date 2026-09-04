@@ -276,7 +276,7 @@ def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
     ranks = competition_ranks(own, peers, getters)
     # Age is not in `_compute_stats` (derived from `created_time`) — ranked separately, against the raw actors.
     ranks.update(competition_ranks(actor, same_species, {"age": lambda a: actor_age(a, ctx["world_time"])}))
-    return dict(sorted(ranks.items()))
+    return ranks
 
 
 # Active/historical roles in `_ROLE_ORDER` — each is a linear probe of its collection (all tiny).
