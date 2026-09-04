@@ -712,6 +712,9 @@ def main(argv: list[str]) -> int:
     if owed:
         todo += f" · trait summaries ({', '.join(sorted(owed))})"
     print(f"  → chronicler: {todo}")
+    # Said where it is acted on, as the summaries' shape is: a descriptor is written once per favorite, and the ceiling only matters at that moment.
+    if favorite and not favorite.get("descriptor"):
+        print("  → the descriptor: 85 characters at the very most — a ceiling, not a target")
     # Said here rather than in the manual: an alert reads as news unless its nature is said, and only a chapter that fires one needs to hear it.
     if new_alerts:
         print("  → each alert is a state, not an event: it fires again every chapter until the law is off")
