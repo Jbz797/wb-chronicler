@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 04/09/26 14:23</p>
+<p class="metadata">Date de mise à jour : 04/09/26 15:08</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -30,6 +30,10 @@ Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie 
 - `t` : **un `asset_id` exact**, jamais une famille (ex. `pine_tree` répond, `tree` rend `{}` sans rien dire) ; `entity_types` donne la liste
 
 ---
+
+##### Carte :
+
+`map/show.py <x,y>` — cerne la tuile sur la carte du chapitre courant et rend le chemin de l'image ; **à toi de l'ouvrir pour le joueur**.
 
 ##### Description du monde :
 
