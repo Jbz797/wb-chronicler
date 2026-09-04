@@ -4,7 +4,8 @@
 # 1. Each tile has a `TileLayerType` (Null/Ground/Ocean/Lava/Block/Goo) — Block covers mountains/summit/walls, NOT Ground.
 # 2. `MapChunk.calculateRegions` splits each 16×16 chunk into `MapRegion`s — each region = an 8-conn component of same-`layer_type` tiles within the chunk.
 # 3. `IslandsCalculator.findIslands` + `startFill` flood-fill regions across chunk borders via `region.neighbours` (same-type adjacency) into `TileIsland`s.
-# 4. `countLandIslands`: `count = islands.count(i => i.type == Ground && i.regions.Count >= 4)` — at least 4 regions, not 4 tiles.
+# 4. A land mass is an island once it could hold a city: WB `Globals.CITY_MIN_ISLAND_TILES`. Its own `countLandIslands` counts regions instead, which
+#    lets a compact islet straddling four chunks pass while a wider one inside two fails — a tally the game shows nowhere and no chronicle can use.
 
 import pickle
 from array import array
@@ -16,9 +17,9 @@ from shared import CACHE_DIR, save_cache_key
 
 _BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})  # WB `TileTypeBase.block` tiles — block diagonals, which splits regions.
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
+_CITY_MIN_ISLAND_TILES = 300  # WB `Globals.CITY_MIN_ISLAND_TILES`: under it no city is ever founded, so the land bears no history worth a name.
 _DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
 _DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
-_GROUND_REGIONS_THRESHOLD = 4  # WB hard-codes `regions.Count >= 4` in `countLandIslands`.
 
 
 # Tile → island id over a flat row-major grid, `0` for water (ids start at 1). The dict it replaces cost 32 ms to unpickle and 1.95 MB; this costs neither.
@@ -132,11 +133,13 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                 if island_of_region[other] == -1:
                     island_of_region[other] = cid
                     queue.append(other)
-    # Phase 3: keep only Ground islands with ≥ `_GROUND_REGIONS_THRESHOLD` regions (mirrors `countLandIslands`).
+
+    # Phase 3: keep the Ground masses wide enough to ever carry a city. Block and Lava join in Phase 4, after the count, as WB's own Ground islands do.
     kept: list[tuple[int, Counter[str], list[tuple[int, int]]]] = []
 
     for r_indices in component_regions:
-        if regions[r_indices[0]]["layer"] != "Ground" or len(r_indices) < _GROUND_REGIONS_THRESHOLD:
+        # Measured before anything is built: nine land masses in ten fall under the floor, and gathering their tiles and kinds first cost a fifth of the run.
+        if regions[r_indices[0]]["layer"] != "Ground" or sum(len(regions[i]["tiles"]) for i in r_indices) < _CITY_MIN_ISLAND_TILES:
             continue
         tile_kinds = Counter()
         tiles = []
@@ -188,7 +191,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _Ti
     key = save_cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = CACHE_DIR / f"islands_v10_{key}.pkl"
+    cache_file = CACHE_DIR / f"islands_v11_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:

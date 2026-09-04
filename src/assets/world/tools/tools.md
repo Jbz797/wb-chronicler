@@ -1,10 +1,12 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 04/09/26 09:07</p>
+<p class="metadata">Date de mise à jour : 04/09/26 09:16</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
 Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, un champ `info` le signale, et la clé qui porte le bloc nomme la section à demander. Un préfixe `top_` ne tronque pas mais change de mesure : `top_drivers` ne garde que les deux extrêmes et ne somme à rien, quand la section rend le `drivers` complet, qui somme au `total`.
+
+`island_id` **absent** sur une tuile terrestre : l'îlot est trop petit pour que WorldBox le compte comme une île. Ce n'est pas une position en mer — `tiles/info.py <x,y>` le confirme.
 
 | Commande                           | Sections                                                                                                                            |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |

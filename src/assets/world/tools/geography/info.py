@@ -15,9 +15,10 @@ from islands import compute_islands_cached
 from shared import CACHE_DIR, biome_lore, civic_building_ids, emit, load_data, load_save, parse_sections, save_cache_key, take_chapter
 
 _ALL_SECTIONS = ("biomes", "entity_types", "islands", "positions", "waters")
-_DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
-_OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart from the lakes indexed from 0
 _COORDS = {"actors_data": ("x", "y"), "buildings": ("mainX", "mainY")}  # Collection → its coordinate fields. No `asset_id` sits in both, so a kind names its own.
+_DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
+_MIN_LAKE_TILES = 64  # WB knows no lake at all, so the floor is ours: WB `CITY_ZONE_TILES`, one city zone — under it no town could ever sit on the shore.
+_OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart from the lakes indexed from 0
 
 
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
@@ -27,15 +28,11 @@ def _build_biomes(save: dict, save_path: Path) -> dict:
     biome_by_id = [tile_biome(name) for name in save.get("tileMap") or []]  # already merged: `soil_high:paradox_high` and its low twin both read `paradox`
     tallies: defaultdict[int, Counter] = defaultdict(Counter)  # `setdefault` would mint a Counter per tile, three hundred thousand of them for one map
     sizes: Counter = Counter()
-    island_at = island_of.get  # bound once: the lookup runs on every tile of the map
 
-    for y, row in enumerate(grid):
-        for x, tile_id in enumerate(row):
-            if not (island_id := island_at((x, y))):
-                continue
-            sizes[island_id] += 1
-            if biome := biome_by_id[tile_id]:
-                tallies[island_id][biome] += 1
+    for x, y, island_id in island_of.land():  # the lands alone: sweeping the grid would ask the sea, tile by tile, which island it belongs to
+        sizes[island_id] += 1
+        if biome := biome_by_id[grid[y][x]]:
+            tallies[island_id][biome] += 1
 
     per_island = {
         str(island_id): [{"biome": biome, "pct": pct, "tiles": n} for biome, n in counts.most_common() if (pct := round(n / sizes[island_id] * 100, 1)) > 0]
@@ -79,7 +76,7 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
 # Every stretch of sea the map encloses, and every land it holds apart. Both fall out of one sweep of the water, and the map never moves — hence the cache.
 def _build_waters(save: dict, save_path: Path) -> dict:
     key = save_cache_key(save_path)
-    cache_file = CACHE_DIR / f"waters_v1_{key}.pkl" if key else None
+    cache_file = CACHE_DIR / f"waters_v2_{key}.pkl" if key else None
     if cache_file and cache_file.exists():
         try:
             with cache_file.open("rb") as f:
@@ -105,6 +102,9 @@ def _build_waters(save: dict, save_path: Path) -> dict:
 
 # An enclosed water is named by the shores that ring it, and holds as an islet any land no other water touches — the isles a chronicle reaches last, or never.
 def _lakes(pools: list[list[tuple[int, int]]], lake_of: dict, island_of, grid: list[list[int]], sea: list[bool]) -> list[dict]:
+    # Numbered widest first, as WB numbers its islands: the id is what `places.json` keys a name on, so it must not shift from one chapter to the next.
+    kept = [i for i in sorted(range(len(pools)), key=lambda i: -len(pools[i])) if len(pools[i]) >= _MIN_LAKE_TILES]
+    lakes = set(kept)
     pools_of_island: defaultdict[int, set[int]] = defaultdict(set)
     shores: defaultdict[int, set[int]] = defaultdict(set)
     height, width = len(grid), len(grid[0])
@@ -115,13 +115,14 @@ def _lakes(pools: list[list[tuple[int, int]]], lake_of: dict, island_of, grid: l
             if not (0 <= nx < width and 0 <= ny < height) or not sea[grid[ny][nx]]:
                 continue
             pool = lake_of.get((nx, ny), _OPEN_SEA)  # a shore on the open sea is nobody's islet, however many lakes it also touches
+            if pool != _OPEN_SEA and pool not in lakes:  # a puddle under the floor is no water at all here: it neither rings a land nor bars it from being an islet
+                continue
             pools_of_island[island_id].add(pool)
             if pool != _OPEN_SEA:
                 shores[pool].add(island_id)
 
     out = []
-    # Numbered widest first, as WB numbers its islands: the id is what `places.json` keys a name on, so it must not shift from one chapter to the next.
-    for lake_id, index in enumerate(sorted(range(len(pools)), key=lambda i: -len(pools[i])), start=1):
+    for lake_id, index in enumerate(kept, start=1):
         tiles = pools[index]
         islets = sorted(i for i, seen in pools_of_island.items() if seen == {index})
         out.append(
@@ -136,7 +137,7 @@ def _lakes(pools: list[list[tuple[int, int]]], lake_of: dict, island_of, grid: l
     return out
 
 
-# Water bodies that never reach the map edge. The open sea does, so it drops out — what is left is a lake, however wide.
+# Water bodies that never reach the map edge — the open sea does, so it drops out. `_lakes` then keeps the ones wide enough to be worth a name.
 def _pool_map(grid: list[list[int]], sea: list[bool]) -> tuple[dict[tuple[int, int], int], list[list[tuple[int, int]]]]:
     height, width = len(grid), len(grid[0])
     seen = [[False] * width for _ in range(height)]
