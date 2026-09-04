@@ -29,26 +29,28 @@
     </nz-descriptions>
   }
 
-  <nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="'ui_causes_of_death' | translate">
-    @for (cause of sortedDeathCauses(); track cause.key) {
-      @let deaths = deathsSincePrevious()?.[cause.key] ?? 0;
-      <ng-template #titleRef>
-        <img [src]="`assets/img/world/deaths/${cause.key}.png`" />
-        <span>{{ cause.label | translate }}</span>
+  @let totalDeaths = totalDeathsSincePrevious() ?? 0;
+  @if (totalDeaths) {
+    <nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="'ui_causes_of_death' | translate">
+      @for (cause of sortedDeathCauses(); track cause.key) {
+        @let deaths = deathsSincePrevious()?.[cause.key] ?? 0;
+        <ng-template #titleRef>
+          <img [src]="`assets/img/world/deaths/${cause.key}.png`" />
+          <span>{{ cause.label | translate }}</span>
+        </ng-template>
+        <nz-descriptions-item [nzTitle]="titleRef">
+          <span nz-tooltip [nzTooltipTitle]="deaths | exact">{{ deaths | compact }}</span>
+        </nz-descriptions-item>
+      }
+      <ng-template #totalTitle>
+        <img src="assets/img/world/deaths.png" />
+        <span>{{ 'ui_total' | translate }}</span>
       </ng-template>
-      <nz-descriptions-item [nzTitle]="titleRef">
-        <span nz-tooltip [nzTooltipTitle]="deaths | exact">{{ deaths | compact }}</span>
+      <nz-descriptions-item [nzTitle]="totalTitle">
+        <span nz-tooltip [nzTooltipTitle]="totalDeaths | exact">{{ totalDeaths | compact }}</span>
       </nz-descriptions-item>
-    }
-    @let totalDeaths = totalDeathsSincePrevious() ?? 0;
-    <ng-template #totalTitle>
-      <img src="assets/img/world/deaths.png" />
-      <span>{{ 'ui_total' | translate }}</span>
-    </ng-template>
-    <nz-descriptions-item [nzTitle]="totalTitle">
-      <span nz-tooltip [nzTooltipTitle]="totalDeaths | exact">{{ totalDeaths | compact }}</span>
-    </nz-descriptions-item>
-  </nz-descriptions>
+    </nz-descriptions>
+  }
 
   <app-leader-table [heading]="'ui_standing_by_level' | translate" [rows]="levelRows()" />
   <app-leader-table [heading]="'ui_standing_by_number' | translate" [rows]="memberRows()" />

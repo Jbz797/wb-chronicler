@@ -123,7 +123,7 @@ export const SNAPSHOT_STATS: { hideIfZero?: boolean; key: SnapshotStat; label: s
   { key: 'subspecies', label: 'ui_subspecies_count' },
   { key: 'trees', label: 'ui_trees' },
   { key: 'vegetation', label: 'ui_other_vegetation' },
-  { key: 'frozen_tiles', label: 'ui_frozen_tiles' },
+  { hideIfZero: true, key: 'frozen_tiles', label: 'ui_frozen_tiles' },
   { key: 'kingdoms', label: 'ui_kingdoms' },
   { key: 'cities', label: 'ui_cities' },
   { key: 'buildings', label: 'ui_buildings' },
