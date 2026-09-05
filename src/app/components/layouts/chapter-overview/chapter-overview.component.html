@@ -101,6 +101,17 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
+      [nzActive]="isOpen('subspecies', c.meta.subspecies)"
+      [nzCollapsible]="collapsible(c.meta.subspecies)"
+      [nzExtra]="subspeciesChip"
+      [nzHeader]="subspeciesHeader"
+      (nzActiveChange)="onPanelToggle('subspecies', $event)"
+    >
+      <ng-scrollbar class="panel-scroll">
+        <app-subspecies />
+      </ng-scrollbar>
+    </nz-collapse-panel>
+    <nz-collapse-panel
       [nzActive]="isOpen('family', c.meta.family)"
       [nzCollapsible]="collapsible(c.meta.family)"
       [nzExtra]="familyChip"
@@ -153,17 +164,6 @@
     >
       <ng-scrollbar class="panel-scroll">
         <app-religion />
-      </ng-scrollbar>
-    </nz-collapse-panel>
-    <nz-collapse-panel
-      [nzActive]="isOpen('subspecies', c.meta.subspecies)"
-      [nzCollapsible]="collapsible(c.meta.subspecies)"
-      [nzExtra]="subspeciesChip"
-      [nzHeader]="subspeciesHeader"
-      (nzActiveChange)="onPanelToggle('subspecies', $event)"
-    >
-      <ng-scrollbar class="panel-scroll">
-        <app-subspecies />
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel

@@ -52,13 +52,13 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
 
 // Who leads on a headcount — the measure each tag's medal ranks on, in the panels' own order, the parent species ahead of the biology it holds.
 export const LEADERS_BY_MEMBERS: { icon?: string; key: LeaderKind; label: string }[] = [
+  { icon: 'species', key: 'dominant_species', label: 'ui_species' },
+  { icon: 'subspecies', key: 'dominant_subspecies', label: 'ui_subspecies' },
   { icon: 'families', key: 'largest_family', label: 'ui_lineage' },
   { icon: 'most_renowned_clan', key: 'largest_clan', label: 'ui_clan' },
   { icon: 'cultures', key: 'dominant_culture', label: 'ui_culture' },
   { icon: 'languages', key: 'dominant_language', label: 'ui_language' },
   { icon: 'religions', key: 'dominant_religion', label: 'ui_religion' },
-  { icon: 'species', key: 'dominant_species', label: 'ui_species' },
-  { icon: 'subspecies', key: 'dominant_subspecies', label: 'ui_subspecies' },
   { icon: 'village', key: 'largest_city', label: 'ui_city' },
   { icon: 'kingdom', key: 'largest_kingdom', label: 'ui_kingdom' },
 ];
