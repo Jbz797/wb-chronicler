@@ -1,6 +1,10 @@
 {
-  "UFO": { "stats": { "armor": 5, "damage": 80, "health": 1000, "lifespan": 0, "mass": 5, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 20 } },
+  "UFO": {
+    "attack": "base_attack",
+    "stats": { "armor": 5, "damage": 80, "health": 1000, "lifespan": 0, "mass": 5, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 20 }
+  },
   "acid_blob": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "A roiling mass of acidic slime",
     "stats": {
@@ -20,6 +24,7 @@
     "taxonomy": { "class": "myxogastria", "family": "reticulariaceae", "genus": "blobicus", "kingdom": "protista", "order": "liceales", "phylum": "amoebozoa" }
   },
   "alien": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Out of this World",
     "stats": {
@@ -40,6 +45,7 @@
     "taxonomy": { "class": "eutardigrada", "family": "milnesiidae", "genus": "abugus", "kingdom": "animalia", "order": "apochela", "phylum": "tardigrada" }
   },
   "alpaca": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Alpacas are social animals, always sticking close to their herd",
     "stats": {
@@ -59,6 +65,7 @@
     "taxonomy": { "class": "mammalia", "family": "camelidae", "genus": "lama", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "angle": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Their razor-thin bodies cutting through flesh and sanity alike",
     "stats": {
@@ -78,6 +85,7 @@
     "taxonomy": { "class": "geometrica", "family": "holidae", "genus": "anglo", "kingdom": "mythoria", "order": "polygones", "phylum": "mathematica" }
   },
   "ant_black": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -95,6 +103,7 @@
     }
   },
   "ant_blue": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -112,6 +121,7 @@
     }
   },
   "ant_green": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -129,6 +139,7 @@
     }
   },
   "ant_red": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -146,6 +157,7 @@
     }
   },
   "armadillo": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Living tanks that curl into impenetrable spheres",
     "stats": {
@@ -165,6 +177,7 @@
     "taxonomy": { "class": "mammalia", "family": "dasypodidae", "genus": "dasypus", "kingdom": "animalia", "order": "cingulata", "phylum": "chordata" }
   },
   "assimilator": {
+    "attack": "base_attack",
     "description": "A self-replicating machine that assimilates mass to build an army",
     "stats": {
       "accuracy": 1,
@@ -184,6 +197,7 @@
     "taxonomy": { "class": "slowupdata", "family": "assimiladae", "genus": "assimilatus", "kingdom": "machina", "order": "noupdates", "phylum": "cybernetica" }
   },
   "bandit": {
+    "attack": "base_attack",
     "baby_form": true,
     "stats": {
       "accuracy": 1,
@@ -202,6 +216,7 @@
     "taxonomy": { "class": "mammalia", "family": "procyonidae", "genus": "banditus", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "bear": {
+    "attack": "claws",
     "baby_form": true,
     "description": "Large and hairy animal",
     "stats": {
@@ -221,6 +236,7 @@
     "taxonomy": { "class": "mammalia", "family": "ursidae", "genus": "ursus", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "bee": {
+    "attack": "base_attack",
     "description": "Small but busy pollinators",
     "stats": {
       "accuracy": 1,
@@ -242,6 +258,7 @@
     "taxonomy": { "class": "insecta", "family": "apidae", "genus": "apis", "kingdom": "animalia", "order": "hymenoptera", "phylum": "arthropoda" }
   },
   "beetle": {
+    "attack": "base_attack",
     "description": "Tiny insect",
     "stats": {
       "accuracy": 1,
@@ -263,6 +280,7 @@
     "taxonomy": { "class": "insecta", "family": "scarabaeidae", "genus": "sisyphus", "kingdom": "animalia", "order": "coleoptera", "phylum": "arthropoda" }
   },
   "bioblob": {
+    "attack": "base_attack",
     "description": "A blob of shifting biological matter with eyes that stare into your soul",
     "stats": {
       "accuracy": 1,
@@ -280,114 +298,430 @@
     },
     "taxonomy": { "class": "myxogastria", "family": "blobidae", "genus": "blobus", "kingdom": "protista", "order": "physarales", "phylum": "amoebozoa" }
   },
-  "boat_fishing": { "stats": { "health": 100, "mass": 1000, "mass_2": 100, "scale": 0.25, "size": 1, "speed": 10 } },
-  "boat_trading_acid_gentleman": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_alien": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_alpaca": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_angle": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_armadillo": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_bandit": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_bear": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_bee": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_beetle": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_buffalo": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_candy_man": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_capybara": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_cat": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_chicken": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_cold_one": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_cow": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_crab": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_crocodile": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_crystal_golem": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_demon": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_dog": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_druid": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_dwarf": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_elf": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_evil_mage": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_fairy": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_fox": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_frog": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_garlic_man": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_ghost": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_goat": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_greg": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_human": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_hyena": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_lemon_man": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_liliar": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_monkey": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_necromancer": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_orc": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_penguin": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_piranha": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_rabbit": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_rat": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_rhino": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_scorpion": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_seal": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_sheep": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_snake": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_snowman": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_turtle": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_unicorn": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_white_mage": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_trading_wolf": { "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
-  "boat_transport_acid_gentleman": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_alien": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_alpaca": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_angle": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_armadillo": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_bandit": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_bear": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_bee": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_beetle": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_buffalo": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_candy_man": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_capybara": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_cat": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_chicken": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_cold_one": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_cow": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_crab": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_crocodile": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_crystal_golem": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_demon": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_dog": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_druid": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_dwarf": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_elf": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_evil_mage": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_fairy": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_fox": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_frog": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_garlic_man": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_ghost": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_goat": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_greg": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_human": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_hyena": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_lemon_man": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_liliar": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_monkey": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_necromancer": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_orc": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_penguin": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_piranha": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_rabbit": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_rat": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_rhino": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_scorpion": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_seal": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_sheep": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_snake": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_snowman": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_turtle": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_unicorn": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_white_mage": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
-  "boat_transport_wolf": { "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 } },
+  "boat_fishing": { "attack": "base_attack", "stats": { "health": 100, "mass": 1000, "mass_2": 100, "scale": 0.25, "size": 1, "speed": 10 } },
+  "boat_trading_acid_gentleman": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_alien": {
+    "attack": "boat_plasma_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_alpaca": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_angle": {
+    "attack": "boat_freeze_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_armadillo": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_bandit": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_bear": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_bee": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_beetle": { "attack": "rocks", "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_buffalo": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_candy_man": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_capybara": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_cat": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_chicken": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_cold_one": {
+    "attack": "boat_freeze_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_cow": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_crab": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_crocodile": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_crystal_golem": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_demon": {
+    "attack": "boat_fireball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_dog": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_druid": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_dwarf": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_elf": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_evil_mage": {
+    "attack": "boat_fireball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_fairy": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_fox": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_frog": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_garlic_man": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_ghost": {
+    "attack": "boat_freeze_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_goat": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_greg": {
+    "attack": "boat_plasma_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_human": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_hyena": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_lemon_man": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_liliar": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_monkey": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_necromancer": {
+    "attack": "boat_necro_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_orc": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_penguin": {
+    "attack": "boat_snowball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_piranha": {
+    "attack": "boat_necro_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_rabbit": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_rat": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_rhino": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_scorpion": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_seal": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_sheep": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_snake": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_snowman": {
+    "attack": "boat_snowball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_turtle": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_unicorn": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_white_mage": {
+    "attack": "boat_freeze_ball",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_trading_wolf": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
+  "boat_transport_acid_gentleman": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_alien": {
+    "attack": "boat_plasma_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_alpaca": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_angle": {
+    "attack": "boat_freeze_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_armadillo": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_bandit": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_bear": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_bee": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_beetle": {
+    "attack": "rocks",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_buffalo": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_candy_man": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_capybara": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_cat": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_chicken": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_cold_one": {
+    "attack": "boat_freeze_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_cow": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_crab": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_crocodile": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_crystal_golem": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_demon": {
+    "attack": "boat_fireball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_dog": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_druid": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_dwarf": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_elf": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_evil_mage": {
+    "attack": "boat_fireball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_fairy": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_fox": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_frog": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_garlic_man": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_ghost": {
+    "attack": "boat_freeze_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_goat": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_greg": {
+    "attack": "boat_plasma_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_human": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_hyena": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_lemon_man": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_liliar": {
+    "attack": "boat_acid_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_monkey": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_necromancer": {
+    "attack": "boat_necro_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_orc": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_penguin": {
+    "attack": "boat_snowball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_piranha": {
+    "attack": "boat_necro_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_rabbit": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_rat": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_rhino": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_scorpion": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_seal": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_sheep": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_snake": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_snowman": {
+    "attack": "boat_snowball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_turtle": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_unicorn": {
+    "attack": "boat_cannonball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_white_mage": {
+    "attack": "boat_freeze_ball",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
+  "boat_transport_wolf": {
+    "attack": "boat_arrow",
+    "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
+  },
   "buffalo": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Shaggy behemoth of the Great Plains",
     "stats": {
@@ -407,6 +741,7 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "syncerus", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "butterfly": {
+    "attack": "base_attack",
     "description": "Beautiful flying insect that likes flowers",
     "stats": {
       "accuracy": 1,
@@ -428,6 +763,7 @@
     "taxonomy": { "class": "insecta", "family": "nymphalidae", "genus": "danaus", "kingdom": "animalia", "order": "lepidoptera", "phylum": "arthropoda" }
   },
   "capybara": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "This water-loving rodent is as relaxed as it is large",
     "stats": {
@@ -447,6 +783,7 @@
     "taxonomy": { "class": "mammalia", "family": "caviidae", "genus": "hydrochoerus", "kingdom": "animalia", "order": "rodentia", "phylum": "chordata" }
   },
   "cat": {
+    "attack": "claws",
     "baby_form": true,
     "description": "Cute little carnivore",
     "stats": {
@@ -466,6 +803,7 @@
     "taxonomy": { "class": "mammalia", "family": "felidae", "genus": "felis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "chicken": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Have you heard about this bird?",
     "stats": {
@@ -485,6 +823,7 @@
     "taxonomy": { "class": "aves", "family": "phasianidae", "genus": "gallus", "kingdom": "animalia", "order": "galliformes", "phylum": "chordata" }
   },
   "civ_acid_gentleman": {
+    "attack": "hands",
     "baby_form": true,
     "description": "You'll be drawn in by their manners, only to be eaten away by their nature",
     "stats": {
@@ -504,6 +843,7 @@
     "taxonomy": { "class": "myxogastria", "family": "reticulariaceae", "genus": "gentlemanus", "kingdom": "protista", "order": "liceales", "phylum": "amoebozoa" }
   },
   "civ_alpaca": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Soft, fluffy, and always ready to charm their way out of trouble",
     "stats": {
@@ -523,6 +863,7 @@
     "taxonomy": { "class": "mammalia", "family": "camelidae", "genus": "lama", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_armadillo": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Born to rock, built to roll",
     "stats": {
@@ -542,6 +883,7 @@
     "taxonomy": { "class": "mammalia", "family": "dasypodidae", "genus": "dasypus", "kingdom": "animalia", "order": "cingulata", "phylum": "chordata" }
   },
   "civ_bear": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Fierce on the battlefield, but soft enough to help their cubs bake cookies",
     "stats": {
@@ -561,6 +903,7 @@
     "taxonomy": { "class": "mammalia", "family": "ursidae", "genus": "ursus", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_beetle": {
+    "attack": "rocks",
     "baby_form": true,
     "description": "Rolling to their future one ball at a time, always aiming for the top",
     "stats": {
@@ -580,6 +923,7 @@
     "taxonomy": { "class": "insecta", "family": "scarabaeidae", "genus": "hollonus", "kingdom": "animalia", "order": "coleoptera", "phylum": "arthropoda" }
   },
   "civ_buffalo": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Horns may be for fighting, but those hooves? They're all about dancing the night away",
     "stats": {
@@ -599,6 +943,7 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "jecodespecus", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_candy_man": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Behind those sugary smiles lies a hunger for blood and flesh",
     "stats": {
@@ -618,6 +963,7 @@
     "taxonomy": { "class": "magnoliopsida", "family": "poaceae", "genus": "zucker", "kingdom": "plantae", "order": "poales", "phylum": "tracheophyta" }
   },
   "civ_capybara": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They make your mom laugh",
     "stats": {
@@ -637,6 +983,7 @@
     "taxonomy": { "class": "mammalia", "family": "caviidae", "genus": "mastefus", "kingdom": "animalia", "order": "rodentia", "phylum": "chordata" }
   },
   "civ_cat": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They may look adorable, but those claws say otherwise",
     "stats": {
@@ -656,6 +1003,7 @@
     "taxonomy": { "class": "mammalia", "family": "felidae", "genus": "felis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_chicken": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Top of the pecking order",
     "stats": {
@@ -675,6 +1023,7 @@
     "taxonomy": { "class": "aves", "family": "phasianidae", "genus": "gallus", "kingdom": "animalia", "order": "galliformes", "phylum": "chordata" }
   },
   "civ_cow": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They're calm, until someone looks at them wrong - then it's time to mooooove",
     "stats": {
@@ -694,6 +1043,7 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "bos", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_crab": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They might walk funny, but when it comes to battle, they're deadly serious",
     "stats": {
@@ -713,6 +1063,7 @@
     "taxonomy": { "class": "malacostraca", "family": "portunidae", "genus": "carcinus", "kingdom": "animalia", "order": "decapoda", "phylum": "arthropoda" }
   },
   "civ_crocodile": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They spend most of their time plotting domination, and the rest pretending they're not",
     "stats": {
@@ -732,6 +1083,7 @@
     "taxonomy": { "class": "reptilia", "family": "crocodylidae", "genus": "crocodylus", "kingdom": "animalia", "order": "crocodilia", "phylum": "chordata" }
   },
   "civ_crystal_golem": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They've got that cool, calm, ocean vibe - right until you upset them",
     "stats": {
@@ -751,6 +1103,7 @@
     "taxonomy": { "class": "anthozoa", "family": "crystallidae", "genus": "bigus", "kingdom": "animalia", "order": "crystalliformes", "phylum": "cnidaria" }
   },
   "civ_dog": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Their loyalty is legendary, their bite is worse",
     "stats": {
@@ -770,6 +1123,7 @@
     "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_fox": {
+    "attack": "hands",
     "baby_form": true,
     "description": "In the game of life, they never play fair - and that's why they always win",
     "stats": {
@@ -789,6 +1143,7 @@
     "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "vulpes", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_frog": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Quick as the wind, deadly as a lily pad to the face",
     "stats": {
@@ -808,6 +1163,7 @@
     "taxonomy": { "class": "amphibia", "family": "ranidae", "genus": "rana", "kingdom": "animalia", "order": "anura", "phylum": "chordata" }
   },
   "civ_garlic_man": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Smell that? That's the scent of victory",
     "stats": {
@@ -827,6 +1183,7 @@
     "taxonomy": { "class": "liliopsida", "family": "amaryllidaceae", "genus": "allium", "kingdom": "plantae", "order": "asparagales", "phylum": "tracheophyta" }
   },
   "civ_goat": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Stubborn as a rock, but just as reliable",
     "stats": {
@@ -846,6 +1203,7 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "capra", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_hyena": {
+    "attack": "hands",
     "baby_form": true,
     "description": "The bigger the chaos, the louder they laugh",
     "stats": {
@@ -865,6 +1223,7 @@
     "taxonomy": { "class": "mammalia", "family": "hyaenidae", "genus": "crocuta", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_lemon_man": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Tough on the outside, sour on the inside",
     "stats": {
@@ -884,6 +1243,7 @@
     "taxonomy": { "class": "magnoliopsida", "family": "rutaceae", "genus": "soursapiens", "kingdom": "plantae", "order": "sapindales", "phylum": "tracheophyta" }
   },
   "civ_liliar": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Rain isn't enough for these flowers - they prefer to drink the tears of their defeated foes",
     "stats": {
@@ -903,6 +1263,7 @@
     "taxonomy": { "class": "liliopsida", "family": "liliaceae", "genus": "luulia", "kingdom": "plantae", "order": "liliales", "phylum": "tracheophyta" }
   },
   "civ_monkey": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Silent as shadows, deadly as a well-placed banana peel",
     "stats": {
@@ -922,6 +1283,7 @@
     "taxonomy": { "class": "mammalia", "family": "cercopithecidae", "genus": "macaca", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "civ_penguin": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They dream in warm hues, where they paint with the blood of their fallen foes",
     "stats": {
@@ -941,6 +1303,7 @@
     "taxonomy": { "class": "aves", "family": "spheniscidae", "genus": "hugovazus", "kingdom": "animalia", "order": "sphenisciformes", "phylum": "chordata" }
   },
   "civ_piranha": {
+    "attack": "hands",
     "baby_form": true,
     "description": "On land or sea, their hunger knows no bounds",
     "stats": {
@@ -967,6 +1330,7 @@
     }
   },
   "civ_rabbit": {
+    "attack": "hands",
     "baby_form": true,
     "description": "When in doubt, hop it out",
     "stats": {
@@ -986,6 +1350,7 @@
     "taxonomy": { "class": "mammalia", "family": "leporidae", "genus": "oryctolagus", "kingdom": "animalia", "order": "lagomorpha", "phylum": "chordata" }
   },
   "civ_rat": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They steal hearts... and a few other things",
     "stats": {
@@ -1005,6 +1370,7 @@
     "taxonomy": { "class": "mammalia", "family": "muridae", "genus": "rattus", "kingdom": "animalia", "order": "rodentia", "phylum": "chordata" }
   },
   "civ_rhino": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They do not always hit, but when they do, they hit hard",
     "stats": {
@@ -1024,6 +1390,7 @@
     "taxonomy": { "class": "mammalia", "family": "rhinocerotidae", "genus": "rhinoceros", "kingdom": "animalia", "order": "perissodactyla", "phylum": "chordata" }
   },
   "civ_scorpion": {
+    "attack": "hands",
     "baby_form": true,
     "description": "The guardians of the desert's deepest secrets",
     "stats": {
@@ -1043,6 +1410,7 @@
     "taxonomy": { "class": "arachnida", "family": "scorpionidae", "genus": "pandinus", "kingdom": "animalia", "order": "scorpiones", "phylum": "arthropoda" }
   },
   "civ_seal": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "Most elite warriors of the sea, trained to fight in any conditions",
     "stats": {
@@ -1061,6 +1429,7 @@
     "taxonomy": { "class": "mammalia", "family": "phocidae", "genus": "phocanavus", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "civ_sheep": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Where others see grass, they see potential profit",
     "stats": {
@@ -1080,6 +1449,7 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "ovis", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "civ_snake": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Their sarcasm's so sharp, it's basically venom - and it stings more than their bite ever could",
     "stats": {
@@ -1099,6 +1469,7 @@
     "taxonomy": { "class": "reptilia", "family": "elapidae", "genus": "naja", "kingdom": "animalia", "order": "squamata", "phylum": "chordata" }
   },
   "civ_turtle": {
+    "attack": "hands",
     "baby_form": true,
     "description": "They live long enough to see their enemies become dust",
     "stats": {
@@ -1118,6 +1489,7 @@
     "taxonomy": { "class": "reptilia", "family": "emydidae", "genus": "trachemys", "kingdom": "animalia", "order": "testudines", "phylum": "chordata" }
   },
   "civ_unicorn": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Even demons find them too loud",
     "stats": {
@@ -1137,6 +1509,7 @@
     "taxonomy": { "class": "mammalia", "family": "equidae", "genus": "pankus", "kingdom": "animalia", "order": "perissodactyla", "phylum": "chordata" }
   },
   "civ_wolf": {
+    "attack": "hands",
     "baby_form": true,
     "description": "The howl isn't just a warning - it's a promise that blood will be spilled tonight",
     "stats": {
@@ -1156,6 +1529,7 @@
     "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "cold_one": {
+    "attack": "base_attack",
     "baby_form": true,
     "stats": {
       "accuracy": 1,
@@ -1174,6 +1548,7 @@
     "taxonomy": { "class": "anthozoa", "family": "gelididae", "genus": "colda", "kingdom": "animalia", "order": "cryonata", "phylum": "cnidaria" }
   },
   "cow": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "It goes moo, doesn't say meow",
     "stats": {
@@ -1193,6 +1568,7 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "bos", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "crab": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "A tiny animal that loves to rave",
     "stats": {
@@ -1212,10 +1588,12 @@
     "taxonomy": { "class": "malacostraca", "family": "portunidae", "genus": "carcinus", "kingdom": "animalia", "order": "decapoda", "phylum": "arthropoda" }
   },
   "crabzilla": {
+    "attack": "base_attack",
     "description": "Become an enormous Crab, the destroyer of worlds",
     "stats": { "damage": 10, "health": 10000, "mass_2": 99999, "scale": 0.25, "size": 8, "speed": 50 }
   },
   "crocodile": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "The boring dinosaur",
     "stats": {
@@ -1235,6 +1613,7 @@
     "taxonomy": { "class": "reptilia", "family": "crocodylidae", "genus": "crocodylus", "kingdom": "animalia", "order": "crocodilia", "phylum": "chordata" }
   },
   "crystal_sword": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "Sharp as the sea and twice as salty",
     "stats": {
@@ -1254,6 +1633,7 @@
     "taxonomy": { "class": "anthozoa", "family": "crystallidae", "genus": "gladii", "kingdom": "animalia", "order": "crystalliformes", "phylum": "cnidaria" }
   },
   "demon": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Hellish creature. Red and hot",
     "stats": {
@@ -1273,6 +1653,7 @@
     "taxonomy": { "class": "daemonica", "family": "maleficidae", "genus": "daemorior", "kingdom": "mythoria", "order": "diabolus", "phylum": "infernalia" }
   },
   "dog": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "Woof woof",
     "stats": {
@@ -1293,10 +1674,12 @@
     "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "dragon": {
+    "attack": "base_attack",
     "description": "Scary flying lizard that brings destruction to your world. Fun!",
     "stats": { "damage": 100, "health": 1000, "lifespan": 10000, "mass": 4, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 40, "targets": 20 }
   },
   "druid": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "She likes to watch the grass grow",
     "stats": {
@@ -1323,6 +1706,7 @@
     }
   },
   "dwarf": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Master craftsmen who never forget a grudge",
     "stats": {
@@ -1342,6 +1726,7 @@
     "taxonomy": { "class": "mammalia", "family": "hominidae", "genus": "dworfus", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "elf": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Mystical beings with a superiority complex and great hair",
     "stats": {
@@ -1361,6 +1746,7 @@
     "taxonomy": { "class": "mammalia", "family": "hominidae", "genus": "elvus", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "evil_mage": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Fighter of the white mage",
     "stats": {
@@ -1387,6 +1773,7 @@
     }
   },
   "fairy": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Peaceful creature, that heals everyone around it",
     "stats": {
@@ -1407,6 +1794,7 @@
     "taxonomy": { "class": "insecta", "family": "fabulidae", "genus": "faerina", "kingdom": "mythoria", "order": "diptera", "phylum": "arthropoda" }
   },
   "fire_elemental": {
+    "attack": "fire_hands",
     "description": "A demonic being born from flames, turning everything to ash in its path",
     "stats": {
       "accuracy": 1,
@@ -1425,6 +1813,7 @@
     "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_elemental_blob": {
+    "attack": "fire_hands",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1443,6 +1832,7 @@
     "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_elemental_horse": {
+    "attack": "fire_hands",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1461,6 +1851,7 @@
     "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_elemental_slug": {
+    "attack": "fire_hands",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1479,6 +1870,7 @@
     "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_elemental_snake": {
+    "attack": "fire_hands",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1497,6 +1889,7 @@
     "taxonomy": { "class": "daemonica", "family": "ignisidae", "genus": "ignis", "kingdom": "mythoria", "order": "elementales", "phylum": "infernalia" }
   },
   "fire_skull": {
+    "attack": "base_attack",
     "description": "A demonic spirit, imprisoned within a fiery skull",
     "stats": {
       "accuracy": 1,
@@ -1515,6 +1908,7 @@
     "taxonomy": { "class": "daemonica", "family": "pyropidae", "genus": "gorit", "kingdom": "mythoria", "order": "skullus", "phylum": "infernalia" }
   },
   "flower_bud": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "It may look pretty, but it has the personality of a cactus",
     "stats": {
@@ -1535,6 +1929,7 @@
     "taxonomy": { "class": "liliopsida", "family": "liliaceae", "genus": "ambulilium", "kingdom": "plantae", "order": "liliales", "phylum": "tracheophyta" }
   },
   "fly": {
+    "attack": "base_attack",
     "description": "Tiny flying insect",
     "stats": {
       "accuracy": 1,
@@ -1556,6 +1951,7 @@
     "taxonomy": { "class": "insecta", "family": "muscidae", "genus": "musca", "kingdom": "animalia", "order": "diptera", "phylum": "arthropoda" }
   },
   "fox": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "What does the fox say?",
     "stats": {
@@ -1575,6 +1971,7 @@
     "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "vulpes", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "frog": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Fun fact. Frog eat bug",
     "stats": {
@@ -1595,6 +1992,7 @@
     "taxonomy": { "class": "amphibia", "family": "ranidae", "genus": "rana", "kingdom": "animalia", "order": "anura", "phylum": "chordata" }
   },
   "garl": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Has a bite as strong as its smell",
     "stats": {
@@ -1614,6 +2012,7 @@
     "taxonomy": { "class": "liliopsida", "family": "amaryllidaceae", "genus": "allium", "kingdom": "plantae", "order": "asparagales", "phylum": "tracheophyta" }
   },
   "ghost": {
+    "attack": "base_attack",
     "description": "A whisper on the wind, a shadow in the corner of your eye",
     "stats": {
       "accuracy": 1,
@@ -1632,6 +2031,7 @@
     "taxonomy": { "class": "ectoplasmica", "family": "transparencia", "genus": "spectrum", "kingdom": "mythoria", "order": "soulus", "phylum": "otherworldlia" }
   },
   "goat": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Known for its playful headbutts and endless curiosity",
     "stats": {
@@ -1651,10 +2051,12 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "capra", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "god_finger": {
+    "attack": "base_attack",
     "description": "Multiplayer Simulator",
     "stats": { "armor": 5, "damage": 80, "health": 100, "lifespan": 10000, "mass": 5, "mass_2": 99999, "scale": 0.3, "size": 2, "speed": 50 }
   },
   "grasshopper": {
+    "attack": "base_attack",
     "description": "Tiny insect that likes to jump around happily",
     "stats": {
       "accuracy": 1,
@@ -1676,6 +2078,7 @@
     "taxonomy": { "class": "insecta", "family": "acrididae", "genus": "omocestus", "kingdom": "animalia", "order": "orthoptera", "phylum": "arthropoda" }
   },
   "greg": {
+    "attack": "base_attack",
     "description": "This is Greg",
     "stats": {
       "accuracy": 1,
@@ -1693,6 +2096,7 @@
     "taxonomy": { "class": "gregia", "family": "gregae", "genus": "greg", "kingdom": "gregalia", "order": "greges", "phylum": "gregata" }
   },
   "human": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Masters of adaptation and bad decisions",
     "stats": {
@@ -1712,6 +2116,7 @@
     "taxonomy": { "class": "mammalia", "family": "hominidae", "genus": "homo", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "hyena": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "Known for laughing at their prey",
     "stats": {
@@ -1731,6 +2136,7 @@
     "taxonomy": { "class": "mammalia", "family": "hyaenidae", "genus": "crocuta", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "jumpy_skull": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1748,6 +2154,7 @@
     "taxonomy": { "class": "daemonica", "family": "hoppidae", "genus": "chere", "kingdom": "mythoria", "order": "skullus", "phylum": "infernalia" }
   },
   "lemon_snail": {
+    "attack": "base_attack",
     "baby_form": true,
     "stats": {
       "accuracy": 1,
@@ -1766,6 +2173,7 @@
     "taxonomy": { "class": "magnoliopsida", "family": "rutaceae", "genus": "citruslimax", "kingdom": "plantae", "order": "sapindales", "phylum": "tracheophyta" }
   },
   "lil_pumpkin": {
+    "attack": "base_attack",
     "description": "Always up to somethin",
     "stats": {
       "accuracy": 1,
@@ -1791,6 +2199,7 @@
     }
   },
   "living_house": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1811,6 +2220,7 @@
     }
   },
   "living_plants": {
+    "attack": "base_attack",
     "description": "Make plants and trees come to life",
     "stats": {
       "accuracy": 1,
@@ -1832,6 +2242,7 @@
     }
   },
   "monkey": {
+    "attack": "rocks",
     "baby_form": true,
     "description": "It can throw rocks. What next?",
     "stats": {
@@ -1851,6 +2262,7 @@
     "taxonomy": { "class": "mammalia", "family": "cercopithecidae", "genus": "macaca", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "mush_animal": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1877,6 +2289,7 @@
     }
   },
   "mush_unit": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1902,6 +2315,7 @@
     }
   },
   "necromancer": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Champion of the skeletons",
     "stats": {
@@ -1928,6 +2342,7 @@
     }
   },
   "orc": {
+    "attack": "hands",
     "baby_form": true,
     "description": "Warriors with a heart of gold and a head of stone",
     "stats": {
@@ -1947,6 +2362,7 @@
     "taxonomy": { "class": "mammalia", "family": "hominidae", "genus": "orcus", "kingdom": "animalia", "order": "primates", "phylum": "chordata" }
   },
   "ostrich": {
+    "attack": "bite",
     "baby_form": true,
     "description": "Who needs flying when you can sprint like the wind?",
     "stats": {
@@ -1966,6 +2382,7 @@
     "taxonomy": { "class": "aves", "family": "struthionidae", "genus": "struthio", "kingdom": "animalia", "order": "struthioniformes", "phylum": "chordata" }
   },
   "penguin": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "A bird that was built for swimming",
     "stats": {
@@ -1985,6 +2402,7 @@
     "taxonomy": { "class": "aves", "family": "spheniscidae", "genus": "aptenodytes", "kingdom": "animalia", "order": "sphenisciformes", "phylum": "chordata" }
   },
   "piranha": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "Predatory fish. Swimming & killing",
     "stats": {
@@ -2011,6 +2429,7 @@
     }
   },
   "plague_doctor": {
+    "attack": "base_attack",
     "description": "Trust her, she is a doctor in a cool mask",
     "stats": {
       "accuracy": 1,
@@ -2029,6 +2448,7 @@
     "taxonomy": { "class": "eurotiomycetes", "family": "aspergillaceae", "genus": "antiplagus", "kingdom": "fungi", "order": "eurotiales", "phylum": "ascomycota" }
   },
   "printer": {
+    "attack": "base_attack",
     "description": "Use this printer-ant that will create a brand new landscape for you with zero effort",
     "stats": {
       "accuracy": 1,
@@ -2048,6 +2468,7 @@
     }
   },
   "rabbit": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Small animal with huge ears",
     "stats": {
@@ -2067,6 +2488,7 @@
     "taxonomy": { "class": "mammalia", "family": "leporidae", "genus": "oryctolagus", "kingdom": "animalia", "order": "lagomorpha", "phylum": "chordata" }
   },
   "raccoon": {
+    "attack": "claws",
     "baby_form": true,
     "description": "A furry bandit, sneaking through the lands in search of treasures (or snacks)",
     "stats": {
@@ -2086,6 +2508,7 @@
     "taxonomy": { "class": "mammalia", "family": "procyonidae", "genus": "procyon", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "rat": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "Small rat",
     "stats": {
@@ -2105,6 +2528,7 @@
     "taxonomy": { "class": "mammalia", "family": "muridae", "genus": "rattus", "kingdom": "animalia", "order": "rodentia", "phylum": "chordata" }
   },
   "rhino": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "It can't see very well",
     "stats": {
@@ -2124,6 +2548,7 @@
     "taxonomy": { "class": "mammalia", "family": "rhinocerotidae", "genus": "rhinoceros", "kingdom": "animalia", "order": "perissodactyla", "phylum": "chordata" }
   },
   "sand_spider": {
+    "attack": "base_attack",
     "description": "Creates sand and then dies",
     "stats": {
       "accuracy": 1,
@@ -2142,6 +2567,7 @@
     }
   },
   "scorpion": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "Silent and swift, the scorpion uses its venomous sting to defend and attack",
     "stats": {
@@ -2161,6 +2587,7 @@
     "taxonomy": { "class": "arachnida", "family": "scorpionidae", "genus": "pandinus", "kingdom": "animalia", "order": "scorpiones", "phylum": "arthropoda" }
   },
   "seal": {
+    "attack": "bite",
     "baby_form": true,
     "description": "Children of storm and sea",
     "stats": {
@@ -2180,6 +2607,7 @@
     "taxonomy": { "class": "mammalia", "family": "phocidae", "genus": "phoca", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "sheep": {
+    "attack": "base_attack",
     "baby_form": true,
     "stats": {
       "accuracy": 1,
@@ -2198,6 +2626,7 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "ovis", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "skeleton": {
+    "attack": "base_attack",
     "description": "Spooky scary skeleton that can fight",
     "stats": {
       "accuracy": 1,
@@ -2216,6 +2645,7 @@
     "taxonomy": { "class": "calciata", "family": "osteus", "genus": "bonelords", "kingdom": "mythoria", "order": "rattlers", "phylum": "ossiphora" }
   },
   "smore": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "A terrifying creature that spreads death and destruction purely for fun",
     "stats": {
@@ -2235,6 +2665,7 @@
     "taxonomy": { "class": "magnoliopsida", "family": "poaceae", "genus": "saccharum", "kingdom": "plantae", "order": "poales", "phylum": "tracheophyta" }
   },
   "snake": {
+    "attack": "bite",
     "baby_form": true,
     "description": "Cute little venomous snek",
     "stats": {
@@ -2254,6 +2685,7 @@
     "taxonomy": { "class": "reptilia", "family": "elapidae", "genus": "naja", "kingdom": "animalia", "order": "squamata", "phylum": "chordata" }
   },
   "snowman": {
+    "attack": "snowball",
     "baby_form": true,
     "description": "He knows nothing",
     "stats": {
@@ -2273,6 +2705,7 @@
     "taxonomy": { "class": "anthozoa", "family": "niveidae", "genus": "snowda", "kingdom": "animalia", "order": "cryonata", "phylum": "cnidaria" }
   },
   "tumor_monster_animal": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2290,6 +2723,7 @@
     "taxonomy": { "class": "malignomorpha", "family": "tumoridae", "genus": "neoplasmus", "kingdom": "animalia", "order": "oncovorales", "phylum": "neoplasia" }
   },
   "tumor_monster_unit": {
+    "attack": "base_attack",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2307,6 +2741,7 @@
     "taxonomy": { "class": "malignomorpha", "family": "tumoridae", "genus": "neoplasmus", "kingdom": "animalia", "order": "oncovorales", "phylum": "neoplasia" }
   },
   "turtle": {
+    "attack": "jaws",
     "baby_form": true,
     "description": "Living shield on tiny legs",
     "stats": {
@@ -2326,6 +2761,7 @@
     "taxonomy": { "class": "reptilia", "family": "emydidae", "genus": "trachemys", "kingdom": "animalia", "order": "testudines", "phylum": "chordata" }
   },
   "unicorn": {
+    "attack": "bite",
     "baby_form": true,
     "description": "Magic included, sparkles optional",
     "stats": {
@@ -2345,6 +2781,7 @@
     "taxonomy": { "class": "mammalia", "family": "equidae", "genus": "unicornis", "kingdom": "animalia", "order": "perissodactyla", "phylum": "chordata" }
   },
   "white_mage": {
+    "attack": "base_attack",
     "baby_form": true,
     "description": "Fighter of the evil mage",
     "stats": {
@@ -2371,6 +2808,7 @@
     }
   },
   "wolf": {
+    "attack": "jaws",
     "baby_form": true,
     "stats": {
       "accuracy": 1,
@@ -2389,6 +2827,7 @@
     "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "worm": {
+    "attack": "base_attack",
     "description": "Crawls underground and messes up the landscape",
     "stats": {
       "accuracy": 1,
@@ -2406,5 +2845,8 @@
       "targets": 1
     }
   },
-  "zombie_dragon": { "stats": { "damage": 100, "health": 1000, "lifespan": 10000, "mass": 4, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 40, "targets": 20 } }
+  "zombie_dragon": {
+    "attack": "base_attack",
+    "stats": { "damage": 100, "health": 1000, "lifespan": 10000, "mass": 4, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 40, "targets": 20 }
+  }
 }

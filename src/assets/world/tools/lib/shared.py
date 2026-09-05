@@ -183,7 +183,7 @@ def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of
     }
     scored = [(actor, stat_of(actor)) for actor in actors]
 
-    for name in ("damage", "health", "intelligence", "speed"):
+    for name in ("damage_max", "health_max", "intelligence", "speed"):  # the names `compute_actor_stats` hands out, a child's two already halved
         actor, stats = max(scored, key=lambda pair: (pair[1].get(name, 0), -pair[0]["id"]))
         picks[name] = actor if stats.get(name, 0) > 0 else None
 
@@ -848,6 +848,12 @@ def take_chapter(argv: list[str]) -> tuple[Path, list[str], str | None]:
 # Spelled out because the section was named, or too small for a summary to earn the call it forces — only where that summary is a pure signpost, never traits.
 def wants_detail(requested: str | None, count: int) -> bool:
     return requested not in (None, "full") or count < _MIN_SUMMARY_ENTRIES
+
+
+# Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.
+@cache
+def weapon_assets() -> frozenset[str]:
+    return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
 
 
 def worldbox_running() -> bool:

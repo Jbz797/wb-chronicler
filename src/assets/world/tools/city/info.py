@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, build_actor_stats_context, meta_ratios, settlement_population
+from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, meta_ratios, settlement_population
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -324,7 +324,7 @@ def _build_inventory(city_id: int, ctx: dict) -> dict:
 # Its leading families and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
 def _build_leaders(city: dict, ctx: dict) -> dict:
     actors = ctx["actors_by_city"].get(city["id"], [])
-    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: _actor_stats(a, ctx))
+    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx))
 
 
 # The city's hold on its crown — the panel prints `total`. Chronicler-only beside it: `drivers` is every modifier and sums to `total`, `top_drivers` does not.

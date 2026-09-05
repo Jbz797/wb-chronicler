@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, is_baby, meta_ratios, settlement_population
+from actor_stats import build_actor_stats_context, compute_actor_stats, is_baby, meta_ratios, settlement_population
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -268,9 +268,9 @@ def _build_identity(kingdom: dict, ctx: dict) -> dict:
     culture = ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}
 
     return {
-        "founder": founder,
         "clan": entity_ref(kingdom.get("royal_clan_id"), ctx["clans_by_id"]),  # WB's `royal_clan_id` — the reigning house
         "culture": entity_ref(kingdom.get("id_culture"), ctx["cultures_by_id"]),
+        "founder": founder,
         "language": entity_ref(kingdom.get("id_language"), ctx["languages_by_id"]),
         "motto": kingdom.get("motto"),  # what the crown swore by — its own words, worth quoting verbatim, as a pact's are
         "religion": entity_ref(kingdom.get("id_religion"), ctx["religions_by_id"]),
@@ -283,8 +283,8 @@ def _build_identity(kingdom: dict, ctx: dict) -> dict:
 # Its leading families and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
 def _build_leaders(kingdom: dict, ctx: dict) -> dict:
     actors = ctx["actors_by_kingdom"].get(kingdom["id"], [])
-    # `actor_stat_totals`, not `compute_actor_stats`: the latter renames `health` to `health_max`, and the city tier reads the raw names. One source, one answer.
-    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: actor_stat_totals(a, ctx))
+    # `compute_actor_stats`, as every other tier: the podium reads the names it hands out, and a child's blow is halved there — raw totals would flatter one.
+    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx))
 
 
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
@@ -317,13 +317,17 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     return {
         "age": int(age_units / UNITS_PER_YEAR),
         **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
+        **({"births": born} if (born := int(kingdom.get("total_births") or 0)) else {}),  # Members born over its lifetime, the counterpart WB keeps to `deaths`.
+        **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # `_BOOK_POINTS` per authored book + how widely it's read
+        **({"books": held} if (held := ctx["books_by_kingdom"]()[kid]) else {}),  # volumes shelved in its towns, whoever wrote them
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name")} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
-        **({"births": born} if (born := int(kingdom.get("total_births") or 0)) else {}),  # Members born over its lifetime, the counterpart WB keeps to `deaths`.
+        **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
+        **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
         "gold": ctx["gold_by_kingdom"][kid],  # Gold ore in the kingdom's buildings: mined from `mineral_gold` + half of each taxpayer's loot. Not coins.
         "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
         "heir": heir,
@@ -333,18 +337,14 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
         "king": king,
         "name": kingdom.get("name"),
+        **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
         "renown": kingdom.get("renown", 0),
         "report": report,  # what WB has the realm say of itself
         "score_rank": kingdom_score_ranks(save, dims).get(kid),  # placement on the composite score (1 = strongest); the total stays internal
         "tax_tribute": tribute,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
-        "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
-        **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # `_BOOK_POINTS` per authored book + how widely it's read
-        **({"books": held} if (held := ctx["books_by_kingdom"]()[kid]) else {}),  # volumes shelved in its towns, whoever wrote them
-        **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
-        **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
-        **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
         **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
+        "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
     }
 
 

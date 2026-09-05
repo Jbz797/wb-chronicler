@@ -89,11 +89,15 @@ _AUDIT = {
         {
             "army_captain_years",
             "army_kills_per_death",
+            "birth_rate",
+            "births",
             "births_per_death",
+            "damage_min",
             "gold",
             "kills_per_capita",
             "kills_per_death",
             "king_money",
+            "loot",
             "nobles",
             "nobles_money",
             "renown_per_capita",
@@ -102,7 +106,7 @@ _AUDIT = {
     ),
     "ranks_in_species": frozenset({"birth_rate", "loot"}),
     "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
-    "stats": frozenset({"birth_rate", "bonus_towers", "damage_range", "loot", "max_cities"}),
+    "stats": frozenset({"birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities"}),
 }
 
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.

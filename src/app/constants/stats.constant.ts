@@ -33,7 +33,7 @@ export const NON_COMPACT_STATS = new Set<RankedStatKind>(['age', 'fed_pct', 'foo
 
 // Favorite combat stats — damage / defense / attack rhythm.
 export const COMBAT_STATS: StatConfig[] = [
-  { key: 'damage', label: 'ui_damage' },
+  { key: 'damage_max', label: 'ui_damage' },
   { key: 'armor', label: 'ui_armor', suffix: '%' },
   { deltaSuffix: '%', key: 'critical_chance', label: 'ui_critical', suffix: '%' },
   { key: 'attack_speed', label: 'ui_attack_speed', numberFormat: '1.0-1' }, // floors at 0.5, where the default '1.0-0' would print a bare 0

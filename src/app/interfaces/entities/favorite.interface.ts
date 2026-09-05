@@ -39,7 +39,7 @@ interface FavoriteRanks {
   attack_speed?: number;
   children?: number;
   critical_chance?: number;
-  damage?: number;
+  damage_max?: number;
   diplomacy?: number;
   equipment_power?: number;
   health_max?: number;
@@ -62,7 +62,7 @@ interface FavoriteStats {
   attack_speed?: number;
   children: number;
   critical_chance?: number;
-  damage: number;
+  damage_max: number;
   diplomacy?: number;
   equipment_power: number;
   happiness?: number; // absent where the biology bears no `amygdala`: WB grants such a soul no emotions, and writes it no happiness either

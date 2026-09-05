@@ -37,17 +37,18 @@ from shared import (
     life_stage,
     load_data,
     sex_label,
+    weapon_assets,
 )
 
 _BROKEN_ITEM_RATIO = 0.5  # WB `Actor.updateStats`: a worn-out piece stays worn and still counts, at half of all it grants.
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}  # the stats a `bad` gene rounds UP rather than down
-_CHILD_HALVED = ("damage", "health_max")  # WB `Actor.updateStats` halves these two on a child, and only these two — the rest it leaves at their grown size
+_CHILD_HALVED = ("damage_max", "health_max")  # WB `Actor.updateStats` halves these two on a child, and only these two — the rest it leaves at their grown size
 _CHILD_PERCENT = 0.5  # WB `Globals.KIDS_PERCENT`, truncated as C# truncates a cast to int
 _COLOR_MAP = {"A": "green", "C": "blue", "G": "yellow", "T": "red"}  # in the order of the `"ACGT"` literal that indexes it
 _DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 # Stats dropped from output, unread by the panels (`chapter.interface.ts`) — and `multiplier_supply_timer`, which WB declares no stat for at all. Add new ones here.
-_DROP = {"accuracy", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "multiplier_supply_timer", "range", "targets"}
+_DROP = {"accuracy", "critical_damage_multiplier", "damage_range", "knockback", "loyalty_traits", "mass", "mass_2", "multiplier_supply_timer", "range", "targets"}
 
 _EGG_TRAIT = "reproduction_strategy_oviparity"  # WB `Subspecies.checkReproductionStrategy` raises `has_egg_form` off this one trait, and nothing else
 
@@ -156,7 +157,7 @@ _GRID_COLS = 6
 _GROUP_TRAITS = (("clan", "clans_by_id", "clan_traits"), ("language", "languages_by_id", "language_traits"))
 
 _HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20, and only where `has_emotions` — which every caller gates on.
-_KEEP_DECIMAL = {"attack_speed", "damage_range"}  # One decimal kept: both live under 1 — `attack_speed` floors at 0.5 — where an int would flatten them away.
+_KEEP_DECIMAL = {"attack_speed"}  # One decimal kept: it lives under 1, flooring at 0.5, where an int would flatten it away
 
 # The rows WB's own unit panel always prints, where a nought is a fact and not an absence — a sterile body reads `max_children: 0`, a meek one `diplomacy: 0`.
 _KEEP_ZERO = {"armor", "diplomacy", "intelligence", "max_children", "stewardship", "warfare"}
@@ -215,7 +216,7 @@ _NORMALIZE_BOTH = tuple((stat, low, high) for stat, (low, high) in _NORMALIZE.it
 _NORMALIZE_FLOOR = tuple((stat, low) for stat, (low, high) in _NORMALIZE.items() if high == inf)
 
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
-_RENAMES = {"cities": "max_cities", "health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
+_RENAMES = {"cities": "max_cities", "damage": "damage_max", "health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
 _SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 _SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_bonus_male`/`is_bonus_female` — the block each one feeds.
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
@@ -280,6 +281,19 @@ def _add_group_stats(totals: dict, actor: dict, ctx: dict) -> None:
             totals[stat] = totals.get(stat, 0) + value
 
 
+# WB `Actor.updateStats` lends its own attack to a body that wields none — bare hands, claws or jaws. Melee ones carry the spread alone; a thrower adds its reach.
+def _add_natural_attack(totals: dict, actor: dict, ctx: dict) -> None:
+    items, assets = ctx["items_by_id"], weapon_assets()
+    if any((items.get(iid) or {}).get("asset_id") in assets for iid in actor.get("saved_items") or []):
+        return
+    memo, species = ctx["attack_memo"], actor.get("asset_id")
+    if species not in memo:  # the lending is the species', not the body's — one resolution for every soul that wears the same shape
+        attack = (ctx["species_data"].get(species) or {}).get("attack")
+        memo[species] = tuple(((ctx["equipment"]["items"].get(attack) or {}).get("stats") or {}).items())
+    for stat, value in memo[species]:
+        totals[stat] = totals.get(stat, 0) + value
+
+
 # WB `Chromosome.combineBonusesForSides`: the four cardinal neighbours of a sex-bonus locus pay into that sex block at their neutral value, halved next to a `bad`.
 def _add_sex_bonus(block: dict, loci: list[str], idx: int, void_set: set[int], super_set: set[int], life_dna: int) -> None:
     gathered: dict = {}
@@ -318,12 +332,10 @@ def _age_thresholds(lifespan: float, sapient: bool) -> tuple[float, float]:
     return min(adult, 16.0), min(breeding, 18.0) if sapient else breeding
 
 
-# Per `Actor.updateStats` + tooltip: damage += warfare/5; damage_range → raw-hp amplitude (int(damage*damage_range)); critical_chance → percent (0.28 → 28).
+# Per `Actor.updateStats` + tooltip: damage += warfare/5, `critical_chance` turns percent (0.28 → 28), `damage_range` stays a factor `compute_actor_stats` closes.
 def _apply_damage_finalize(totals: dict) -> None:
     if "damage" in totals:
         totals["damage"] = totals["damage"] + totals.get("warfare", 0) / 5
-    if "damage_range" in totals:
-        totals["damage_range"] = totals.get("damage", 0) * totals["damage_range"]
     if "critical_chance" in totals:
         totals["critical_chance"] = totals["critical_chance"] * 100
 
@@ -595,6 +607,7 @@ def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) ->
     _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
     # After the scaling, never before: `updateStats` merges the racks last, so a blade's health/mana/stamina rides flat — a veteran's gear is worth a recruit's.
     _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
+    _add_natural_attack(totals, actor, ctx)  # after the racks, WB asking for a weapon before it lends one
     _normalize(totals)  # `updateStats` normalizes here, ahead of the derived stats: mana reads the clamped intelligence, damage the clamped warfare.
     _apply_derived_stats(totals)
     _apply_multipliers(totals)
@@ -622,6 +635,7 @@ def breeding_age(actor: dict, ctx: dict) -> float:
 def build_actor_stats_context(save: dict) -> dict:
     return {
         "age_memo": {},  # Filled on demand: both ages hang on the subspecies, so a world of thousands answers them a few dozen times
+        "attack_memo": {},  # `_add_natural_attack`: what a species lends its bare hands, resolved once for the shape and not per soul
         "clan_traits": load_data("clan-traits.json"),
         "clans_by_id": index_by_id(save.get("clans", [])),
         "creature_traits": load_data("creature-traits.json"),
@@ -643,7 +657,8 @@ def build_actor_stats_context(save: dict) -> dict:
 
 # Aggregate one actor's stats, no counters — the context's `subspecies_base_cache` carries the heavy base from one body to the next, so a ranking costs ~7× less.
 def compute_actor_stats(actor: dict, ctx: dict) -> dict:
-    cleaned = _cleanup_stats(actor_stat_totals(actor, ctx))
+    totals = actor_stat_totals(actor, ctx)
+    cleaned = _cleanup_stats(totals)
     # Two stats WB reads off a single office-holder: `max_cities` from a king (`Kingdom.getMaxCities`), `bonus_towers` from a city leader (its watch-tower cap).
     for stat, holder in (("bonus_towers", PROFESSION_LEADER), ("max_cities", PROFESSION_KING)):
         if actor.get("profession") != holder:
@@ -652,6 +667,9 @@ def compute_actor_stats(actor: dict, ctx: dict) -> dict:
         for stat in _CHILD_HALVED:
             if stat in cleaned:
                 cleaned[stat] = int(cleaned[stat] * _CHILD_PERCENT)
+    # Closed last, on the halved ceiling: WB multiplies the two at the moment it draws them, so a child's floor follows the blow it can actually land.
+    if (ceiling := cleaned.get("damage_max")) is not None:
+        cleaned["damage_min"] = int(ceiling * totals.get("damage_range", 0))
     return cleaned
 
 

@@ -13,7 +13,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import MIN_RANK_PEERS, SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
+from shared import (
+    MIN_RANK_PEERS,
+    SAVES_DIR,
+    city_score_ranks,
+    index_by_id,
+    is_boat,
+    kingdom_score_ranks,
+    load_data,
+    load_save,
+    resolve_profession,
+    sex_label,
+    weapon_assets,
+)
 
 _ENCODE = json.JSONEncoder(ensure_ascii=False, sort_keys=True).encode  # mounted once: given keyword arguments, `json.dumps` builds a fresh encoder per call
 
@@ -455,15 +467,9 @@ def _subspecies_entry(subspecies: dict, members: int, rank: int | None) -> dict:
     return _defined(entry)
 
 
-# Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.
-@cache
-def _weapon_assets() -> frozenset[str]:
-    return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
-
-
 # The weapon an actor holds — WB gives out at most one, so the first match is it.
 def _wielded_weapon(carried: list[str]) -> str | None:
-    assets = _weapon_assets()
+    assets = weapon_assets()
     return next((asset for asset in carried if asset in assets), None)
 
 

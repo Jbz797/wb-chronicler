@@ -50,7 +50,7 @@ export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'imm
 export type RankedStatKind = 'age' | 'armor'
   | 'army_age' | 'army_deaths' | 'army_kills' | 'army_melee' | 'army_money' | 'army_ranged' | 'army_renown'
   | 'attack_speed' | 'attractivity' | 'births' | 'boats' | 'book_reach' | 'books' | 'books_written' | 'buildings' | 'children' | 'cities' | 'converted'
-  | 'critical_chance' | 'culture_traits' | 'damage' | 'deaths'
+  | 'critical_chance' | 'culture_traits' | 'damage_max' | 'deaths'
   | 'diplomacy' | 'equipment' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
   | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'lost' | 'loyalty'
   | 'mana' | 'members' | 'money'
