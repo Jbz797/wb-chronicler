@@ -46,10 +46,13 @@ _CHILD_PERCENT = 0.5  # WB `Globals.KIDS_PERCENT`, truncated as C# truncates a c
 _COLOR_MAP = {"A": "green", "C": "blue", "G": "yellow", "T": "red"}  # in the order of the `"ACGT"` literal that indexes it
 _DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
-# Stats dropped from output — not consumed by chronicler UI or fixtures. Add new stats here when entering the pipeline but not surfaced (see chapter.interface.ts).
-_DROP = {"accuracy", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "range", "targets"}
+# Stats dropped from output, unread by the panels (`chapter.interface.ts`) — and `multiplier_supply_timer`, which WB declares no stat for at all. Add new ones here.
+_DROP = {"accuracy", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "multiplier_supply_timer", "range", "targets"}
 
 _EGG_TRAIT = "reproduction_strategy_oviparity"  # WB `Subspecies.checkReproductionStrategy` raises `has_egg_form` off this one trait, and nothing else
+
+# WB `ActorTraitLibrary.addTraitsSpirit` gates these two on an era flag, and `Actor.updateStats` then skips the trait whole where the age lacks it.
+_ERA_TRAITS = {"moonchild": "flag_moon", "nightchild": "overlay_darkness"}
 
 # Gene index_id used to seed SystemRandom — order in `GeneLibrary` (`addSpecial` → `addBaseStats` → `addFightStats` → `addBonusStats` → `addAttributes`).
 _GENE_INDEX = {
@@ -154,12 +157,31 @@ _GROUP_TRAITS = (("clan", "clans_by_id", "clan_traits"), ("language", "languages
 
 _HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20, and only where `has_emotions` — which every caller gates on.
 _KEEP_DECIMAL = {"attack_speed", "damage_range"}  # One decimal kept: both live under 1 — `attack_speed` floors at 0.5 — where an int would flatten them away.
+
+# The rows WB's own unit panel always prints, where a nought is a fact and not an absence — a sterile body reads `max_children: 0`, a meek one `diplomacy: 0`.
+_KEEP_ZERO = {"armor", "diplomacy", "intelligence", "max_children", "stewardship", "warfare"}
+
 _LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}  # Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / _MANA_PER_INTELLIGENCE constants.
 _LEVEL_VETERAN_SKILL_BONUS = 0.1
 _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
 _MATURATION = "maturation"  # the months an egg takes to hatch, `base_stats_meta` summing it over the biology's traits as WB does
 _META_RATIOS = ("children", "happy", "homeless", "unhappy")  # WB `IMetaObject`'s four, named as its getters are — every one of them a share of the living.
+
+# WB `BaseStatsLibrary.init` declares each target on its own asset (`main_stat_to_multiply`), two off the name: `crit` raises `critical_chance`, `mass` the `mass_2`.
+_MULTIPLIER_TARGETS = {
+    "multiplier_attack_speed": "attack_speed",
+    "multiplier_crit": "critical_chance",
+    "multiplier_damage": "damage",
+    "multiplier_diplomacy": "diplomacy",
+    "multiplier_health": "health",
+    "multiplier_lifespan": "lifespan",
+    "multiplier_mana": "mana",
+    "multiplier_mass": "mass_2",
+    "multiplier_offspring": "offspring",
+    "multiplier_speed": "speed",
+    "multiplier_stamina": "stamina",
+}
 
 # WB `BaseStatAsset.normalize_min`/`normalize_max` for the 23 bounded stats — an unset max (2^31) is `inf`. Floors bite: traits push under, WB lifts back.
 _NORMALIZE = {
@@ -187,6 +209,10 @@ _NORMALIZE = {
     "throwing_range": (1, 100),
     "warfare": (0, 999),
 }
+
+# The same table in the shape the hot loop wants: WB leaves eight of the twenty-three unbounded above, and those skip the ceiling rather than clamp to infinity.
+_NORMALIZE_BOTH = tuple((stat, low, high) for stat, (low, high) in _NORMALIZE.items() if high != inf)
+_NORMALIZE_FLOOR = tuple((stat, low) for stat, (low, high) in _NORMALIZE.items() if high == inf)
 
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
 _RENAMES = {"cities": "max_cities", "health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
@@ -323,11 +349,10 @@ def _apply_level_scaling(totals: dict, level: int) -> None:
 
 # Resolve every `multiplier_X` key as a coefficient on stats[X]: `final = base × (1 + multiplier)`.
 def _apply_multipliers(totals: dict) -> None:
-    for k in [k for k in totals if k.startswith("multiplier_")]:
-        target = k.removeprefix("multiplier_")
-        if target in totals:
-            totals[target] *= 1 + totals[k]
-        del totals[k]
+    for key in _MULTIPLIER_TARGETS.keys() & totals.keys():  # the declared set is closed, so an unknown `multiplier_*` rides on out rather than vanishing unapplied
+        if (target := _MULTIPLIER_TARGETS[key]) in totals:
+            totals[target] *= 1 + totals[key]
+        del totals[key]
 
 
 # Per `Actor.calculateOffspringBasedOnAge`: scale `offspring` by an age-bracket multiplier to match the in-game tooltip (e.g. raw 3 → 2 for a mature actor).
@@ -362,8 +387,9 @@ def _cleanup_stats(totals: dict) -> dict:
             continue
         if isinstance(v, float):
             v = round(v, 1) if k in _KEEP_DECIMAL else int(v)
-        if v:
-            result[_RENAMES.get(k, k)] = v
+        name = _RENAMES.get(k, k)  # hoisted: `_KEEP_ZERO` is named after the rename, `max_children` being the `offspring` WB actually writes
+        if v or name in _KEEP_ZERO:
+            result[name] = v
     return result
 
 
@@ -374,6 +400,12 @@ def _count_mutagenic(subspecies: dict) -> int:
         void = set(chrom.get("void_loci") or [])
         total += sum(gene == "mutagenic" and idx not in void for idx, gene in enumerate(chrom.get("loci") or []))
     return total
+
+
+# The age of the world puts to sleep a trait it does not carry the flag of — an era-gated one alone, so a world in the light lists both of them.
+def _dormant_traits(save: dict) -> frozenset[str]:
+    age = load_data("world-ages.json").get(save["mapStats"].get("world_age_id") or "") or {}
+    return frozenset(trait for trait, flag in _ERA_TRAITS.items() if not age.get(flag))
 
 
 # Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's colors only depend on (gene, life_dna), and life_dna is constant per run.
@@ -440,7 +472,10 @@ def _neighbor(loci: list[str], void_set: set[int], idx: int, dx: int, dy: int) -
 
 # WB `BaseStats.normalize` — bounded stats clamped, absent left absent. Driven by `_NORMALIZE`, not `totals`: measured faster, half an actor's stats are bounded.
 def _normalize(totals: dict) -> None:
-    for stat, (low, high) in _NORMALIZE.items():
+    for stat, low in _NORMALIZE_FLOOR:
+        if stat in totals:
+            totals[stat] = max(totals[stat], low)
+    for stat, low, high in _NORMALIZE_BOTH:
         if stat in totals:
             totals[stat] = min(max(totals[stat], low), high)
 
@@ -524,6 +559,12 @@ def _to_int32(x: int) -> int:
     return x - 0x100000000 if x >= 0x80000000 else x
 
 
+# WB `Actor.updateStats` skips an era-gated trait whole where the age carries neither its moon nor its darkness — the body still bears it, it simply sleeps.
+def _waking_traits(traits: list[str], ctx: dict) -> list[str]:
+    dormant = ctx["era_dormant_traits"]
+    return [t for t in traits if t not in dormant] if not dormant.isdisjoint(traits) else traits
+
+
 # WB's `Actor.stats`, floats intact, before `_cleanup_stats`. Combine stats from here: WB adds first, truncates once, so 14.5 stays 14.5.
 def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) -> dict:
     sub_id = actor.get("subspecies")
@@ -542,7 +583,7 @@ def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) ->
     totals = dict(base)
     for stat, value in sex_bonus[sex_label(actor)].items():  # `updateStats` merges `base_stats_male`/`base_stats_female` on top of the neutral block
         totals[stat] = totals.get(stat, 0) + value
-    _add_trait_stats(totals, actor.get("saved_traits") or [], ctx["creature_traits"])
+    _add_trait_stats(totals, _waking_traits(actor.get("saved_traits") or [], ctx), ctx["creature_traits"])
     _add_group_stats(totals, actor, ctx)
     if lifespan_only:  # Nothing below writes `lifespan`: `_normalize` and `_apply_multipliers`, narrowed to it, answer the same and cost half.
         if "lifespan" not in totals:  # `_normalize` skips an absent stat, and a caller reading `.get("lifespan", 0)` must see the same nothing
@@ -585,6 +626,7 @@ def build_actor_stats_context(save: dict) -> dict:
         "clans_by_id": index_by_id(save.get("clans", [])),
         "creature_traits": load_data("creature-traits.json"),
         "equipment": load_data("equipment.json"),
+        "era_dormant_traits": _dormant_traits(save),  # the age is the world's, so its verdict is read once here and never per body
         "group_trait_cache": {},  # `_add_group_stats`: a clan's traits and a tongue's, summed once for the group rather than once per member
         "incubation_memo": {},  # `is_egg`: the months a biology takes to hatch, summed once for it rather than once per body it laid
         "items_by_id": index_by_id(save["items"]),

@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, is_egg
+from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, is_baby, is_egg
 from islands import compute_islands_cached
 from shared import (
     PROFESSION_KING,
@@ -41,6 +41,7 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("companions", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats", "traits")
+_BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 
@@ -85,19 +86,13 @@ _ROLE_ORDER = (
     "family_founder",
 )
 
+_SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
+
 # Profession → (current-holder field, save collection, history list). Every post keeps a `past_*` history whose last entry is the sitting holder's start.
 _TENURE_ROLES = {
     "army_captain": ("id_captain", "armies", "past_captains"),
     "king": ("kingID", "kingdoms", "past_rulers"),
     "leader": ("leaderID", "cities", "past_rulers"),
-}
-
-# Mass deltas from traits — only `fat`, `giant`, `tiny`, `agile` in the DLL.
-_TRAIT_MASS_MODS = {
-    "agile": {"scale": -0.01},
-    "fat": {"multiplier_mass": 0.30, "scale": 0.02},
-    "giant": {"scale": 0.05},
-    "tiny": {"scale": -0.02},
 }
 
 
@@ -244,17 +239,13 @@ def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
     return {(b.get("mainX"), b.get("mainY")): b for b in save.get("buildings") or [] if b.get("asset_id") in civic}
 
 
-# `Actor.getMassKG`: (target_scale / 0.1) × base mass × (1 + Σ trait multiplier_mass). Base mass = the asset's `mass_2` (kg) from `species.json`; `None` if massless.
+# `Actor.getMassKG`: (`scale` / 0.1) × `mass_2`, cut to two fifths on a child. Both stats ride off the pipeline, where the traits and multipliers have had their say.
 def _compute_mass(actor: dict, ctx: dict) -> int | None:
-    base = ((ctx["species_data"].get(actor.get("asset_id")) or {}).get("stats") or {}).get("mass_2")
-    if base is None:
+    totals = actor_stat_totals(actor, ctx)
+    if (base := totals.get("mass_2")) is None:
         return None
-    scale, mult_mass = 0.10, 0.0
-    for trait in actor.get("saved_traits") or []:
-        mods = _TRAIT_MASS_MODS.get(trait, {})
-        scale += mods.get("scale", 0)
-        mult_mass += mods.get("multiplier_mass", 0)
-    return int((scale / 0.1) * base * (1 + mult_mass))
+    mass = int(base * (totals.get("scale") or 0) / _SCALE_UNIT)
+    return int(mass * _BABY_MASS_MULTIPLIER) if is_baby(actor, ctx) else mass
 
 
 # `Actor.updateStats` personality: city leaders/kings only → diplomat/administrator/militarist/balanced (diplomacy/stewardship/warfare); `wildcard` never used.

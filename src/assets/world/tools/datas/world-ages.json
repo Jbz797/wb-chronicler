@@ -9,11 +9,13 @@
   },
   "age_dark": {
     "description": "It will be a time of great darkness, when the world will be shrouded in a veil of shadows that will seem to swallow all light and hope. Foul creatures will lurk in the darkness, preying on the unwary, while the shadows themselves will hold nightmares and illusions that could drive a person to madness.",
-    "name": "Age of Dark"
+    "name": "Age of Dark",
+    "overlay_darkness": true
   },
   "age_despair": {
     "description": "This age will be a long and grueling era of endless winter and darkness, where the world will be shrouded in an unrelenting cold that threatens to snuff out all life. The darkness will be all-consuming, and even the bravest of hearts will be tested in such an unforgiving environment. Yet even in the midst of such starkness, there will still be those who hold on to hope, who believe that the thaw will come and life will bloom once again. They will keep alive the flame of life, and it is their faith and resilience that will ultimately see the world through the Age of Despair, into a new era of growth and renewal.",
-    "name": "Age of Despair"
+    "name": "Age of Despair",
+    "overlay_darkness": true
   },
   "age_hope": {
     "description": "This is a time of great promise, where the future is bright and full of possibilities. The world is full of life and hope, and people feel optimistic about what was to come.",
@@ -25,7 +27,9 @@
   },
   "age_moon": {
     "description": "During this age, the world will be bathed in a radiant glow, as the bright and luminous moon casts its spell over all who live in it. The night will come alive with the music of the spheres, and the magic of the moon will be everywhere, filling the air with a sense of enchantment and wonder. In this age, people will gaze up at the sky with a sense of awe and reverence, knowing that they are part of something much greater than themselves. And even in the darkest of nights, the moon will shine like a beacon of hope, guiding them through the mysteries of the cosmos.",
-    "name": "Age of Moon"
+    "flag_moon": true,
+    "name": "Age of Moon",
+    "overlay_darkness": true
   },
   "age_sun": {
     "description": "This is a time of intense heat and brightness, where the sun blazed down on the world. Living in this age is tough as people battle to find ways to survive the harsh conditions",
