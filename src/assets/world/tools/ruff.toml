@@ -1,5 +1,11 @@
-# Ruff for the chronicler py tools: `line-length` mirrors VS Code's; `known-first-party` pins isort for the `sys.path` siblings (else editor ≠ CLI).
+# Ruff for the chronicler py tools. `line-length` mirrors VS Code's; `known-first-party` pins isort for the `sys.path` siblings (else editor ≠ CLI).
+# Blank lines are `ruff format`'s business — the E30x lint twins catch none of them, tested, so there is no rule here for what it already settles.
 
 line-length = 165
+
+[lint]
+# All of these pass on the 26 files as they stand, and they fence what used to be hand-checked: `F401` the dead imports, `I001` the sorted ones.
+select = ["ARG", "C4", "E4", "E7", "E9", "F", "I", "PTH", "SIM", "UP", "W"]
+
 [lint.isort]
 known-first-party = ["actor_stats", "grid", "islands", "registries", "shared"]

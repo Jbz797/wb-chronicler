@@ -4,7 +4,7 @@
 # WB holds a realm in at most one pact, and a pact outlives the crown that founded it — so its counters are its own, never the sum of its members'.
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -31,6 +31,10 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("breakdown", "identity", "kingdoms", "leaders", "metadata", "population", "ranks", "wars")
+_NEEDS_ACTORS = frozenset({"breakdown", "kingdoms", "leaders", "metadata", "population", "ranks"})  # `identity` reads the record, `wars` the war list
+
+# The two that weigh the pact's ground. Its buildings outnumber its subjects several times over in a grown world, so the walk is worth skipping on its own.
+_NEEDS_GROUND = frozenset({"metadata", "ranks"})
 
 
 # Chronicler-only: what the pact was sworn as — the crown that opened it and the soul who signed, both of whom it may long outlive.
@@ -69,8 +73,8 @@ def _build_metadata(alliance: dict, subjects: list[dict], members: set[int], ctx
         "kingdoms": len(members),
         "name": alliance.get("name"),
         **({"renown": renown} if (renown := int(alliance.get("renown") or 0)) else {}),  # WB's own field, apart from the sum its realms carry
-        **({"territory": land} if (land := ctx["pooled"]["territory"][alliance["id"]]) else {}),  # zones its realms hold between them, as a crown counts its own
         **({"report": report} if report else {}),
+        **({"territory": land} if (land := ctx["pooled"]["territory"][alliance["id"]]) else {}),  # zones its realms hold between them, as a crown counts its own
     }
 
 
@@ -140,29 +144,27 @@ def main(argv: list[str]) -> int:
         "money": Counter(),
         "population": Counter(),
         "renown_total": Counter(),
-        "subjects": {},
+        "subjects": defaultdict(list),
         "territory": Counter(),
         "warriors": Counter(),
     }
 
-    for actor in save.get("actors_data") or []:
-        kid = actor.get("civ_kingdom_id")
-        if is_boat(actor):
-            continue
-        if not kid:
+    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
+        if not (kid := actor.get("civ_kingdom_id")) or is_boat(actor):  # the crown first: a soul owing none never pays for the hull test
             continue
         populations_by_kingdom[kid] += 1
         if (pact := pact_of.get(kid)) is None:
             continue
-        pooled["subjects"].setdefault(pact, []).append(actor)
+        pooled["subjects"][pact].append(actor)
         pooled["money"][pact] += int(actor.get("money") or 0)
         pooled["population"][pact] += 1
         pooled["warriors"][pact] += actor.get("profession") == PROFESSION_WARRIOR
         if fame := actor.get("renown"):
             pooled["renown_total"][pact] += int(fame)
 
+    ground = save.get("cities") or [] if _NEEDS_GROUND.intersection(sections) else ()  # the zones only serve the building walk right below
     zone_to_pact: dict[tuple[int, int], int] = {}
-    for city in save.get("cities") or []:
+    for city in ground:
         if (pact := pact_of.get(city.get("kingdomID"))) is None:
             continue
         pooled["cities"][pact] += 1
@@ -173,7 +175,7 @@ def main(argv: list[str]) -> int:
 
     # Civic buildings standing on the pact's ground, as a crown counts its own — `civic` gates first, one building in twenty passing it.
     civic = civic_building_ids()
-    for b in save.get("buildings") or []:
+    for b in save.get("buildings") or [] if ground else ():
         if b.get("asset_id") not in civic:
             continue
         bx, by = b.get("mainX"), b.get("mainY")
@@ -192,7 +194,6 @@ def main(argv: list[str]) -> int:
         "pooled": pooled,
         "populations_by_kingdom": populations_by_kingdom,
         "religions_by_id": index_by_id(save.get("religions") or []),
-        "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors
     }
 
     out: dict = {}
@@ -203,8 +204,7 @@ def main(argv: list[str]) -> int:
     if "kingdoms" in sections:
         out["kingdoms"] = _build_kingdoms(members, ctx)
     if "leaders" in sections:
-        base_cache: dict = ctx["subspecies_base_cache"]
-        podium = settlement_leaders(subjects, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+        podium = settlement_leaders(subjects, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
         out["leaders"] = {key: value for key, value in podium.items() if key != "families"}  # a lineage answers to a crown, never to the pact above it
     if "metadata" in sections:
         out["metadata"] = _build_metadata(alliance, subjects, members, ctx)
@@ -216,7 +216,6 @@ def main(argv: list[str]) -> int:
         out["wars"] = _build_wars(members, save)
 
     emit(out)
-
     return 0
 
 

@@ -26,14 +26,14 @@ from shared import (
     PROFESSION_KING,
     PROFESSION_LEADER,
     PROFESSION_WARRIOR,
-    SATED_MIN_NUTRITION,
     SICK_TRAITS,
+    UNITS_PER_MONTH,
     UNITS_PER_YEAR,
     actor_age,
-    age_thresholds,
     has_emotions,
     head_money,
     index_by_id,
+    is_sapient,
     life_stage,
     load_data,
     sex_label,
@@ -41,11 +41,15 @@ from shared import (
 
 _BROKEN_ITEM_RATIO = 0.5  # WB `Actor.updateStats`: a worn-out piece stays worn and still counts, at half of all it grants.
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}  # the stats a `bad` gene rounds UP rather than down
+_CHILD_HALVED = ("damage", "health_max")  # WB `Actor.updateStats` halves these two on a child, and only these two — the rest it leaves at their grown size
+_CHILD_PERCENT = 0.5  # WB `Globals.KIDS_PERCENT`, truncated as C# truncates a cast to int
 _COLOR_MAP = {"A": "green", "C": "blue", "G": "yellow", "T": "red"}  # in the order of the `"ACGT"` literal that indexes it
 _DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 # Stats dropped from output — not consumed by chronicler UI or fixtures. Add new stats here when entering the pipeline but not surfaced (see chapter.interface.ts).
 _DROP = {"accuracy", "critical_damage_multiplier", "knockback", "loyalty_traits", "mass", "mass_2", "range", "targets"}
+
+_EGG_TRAIT = "reproduction_strategy_oviparity"  # WB `Subspecies.checkReproductionStrategy` raises `has_egg_form` off this one trait, and nothing else
 
 # Gene index_id used to seed SystemRandom — order in `GeneLibrary` (`addSpecial` → `addBaseStats` → `addFightStats` → `addBonusStats` → `addAttributes`).
 _GENE_INDEX = {
@@ -144,14 +148,18 @@ _GENE_VALUES = {
 }
 
 _GRID_COLS = 6
+
+# The bodies a soul is taken into rather than born with, each lending it its traits' numbers: WB merges both in `updateStats`, after the creature's own.
+_GROUP_TRAITS = (("clan", "clans_by_id", "clan_traits"), ("language", "languages_by_id", "language_traits"))
+
 _HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20, and only where `has_emotions` — which every caller gates on.
 _KEEP_DECIMAL = {"attack_speed", "damage_range"}  # One decimal kept: both live under 1 — `attack_speed` floors at 0.5 — where an int would flatten them away.
 _LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}  # Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / _MANA_PER_INTELLIGENCE constants.
 _LEVEL_VETERAN_SKILL_BONUS = 0.1
 _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
+_MATURATION = "maturation"  # the months an egg takes to hatch, `base_stats_meta` summing it over the biology's traits as WB does
 _META_RATIOS = ("children", "happy", "homeless", "unhappy")  # WB `IMetaObject`'s four, named as its getters are — every one of them a share of the living.
-
 
 # WB `BaseStatAsset.normalize_min`/`normalize_max` for the 23 bounded stats — an unset max (2^31) is `inf`. Floors bite: traits push under, WB lifts back.
 _NORMALIZE = {
@@ -182,6 +190,7 @@ _NORMALIZE = {
 
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
 _RENAMES = {"cities": "max_cities", "health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
+_SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 _SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_bonus_male`/`is_bonus_female` — the block each one feeds.
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 _SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
@@ -231,6 +240,20 @@ def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, i
                 totals[k] = totals.get(k, 0) + v * ratio
 
 
+# What a body owes to the groups it was taken into, not born with — its clan, its tongue. Summed once per group: every member of one inherits the same block.
+def _add_group_stats(totals: dict, actor: dict, ctx: dict) -> None:
+    cache = ctx["group_trait_cache"]
+    for field, index, library in _GROUP_TRAITS:
+        if not (group_id := actor.get(field)):  # a soul sworn to no clan owes it nothing, and a world with neither spares the lookup for every body it holds
+            continue
+        key = (field, group_id)
+        if (block := cache.get(key)) is None:
+            block = cache[key] = {}
+            _add_trait_stats(block, (ctx[index].get(group_id) or {}).get("saved_traits") or [], ctx[library])
+        for stat, value in block.items():
+            totals[stat] = totals.get(stat, 0) + value
+
+
 # WB `Chromosome.combineBonusesForSides`: the four cardinal neighbours of a sex-bonus locus pay into that sex block at their neutral value, halved next to a `bad`.
 def _add_sex_bonus(block: dict, loci: list[str], idx: int, void_set: set[int], super_set: set[int], life_dna: int) -> None:
     gathered: dict = {}
@@ -261,14 +284,12 @@ def _add_trait_stats(totals: dict, trait_ids: list[str], traits_data: dict) -> N
                 totals[k] = totals.get(k, 0) + v
 
 
-# WB `Subspecies.calculateAgeRelatedStats` reads the biology's own lifespan, not its bearer's — so the threshold is cached per biology, as WB caches it.
-def _age_adult(actor: dict, ctx: dict, base_cache: dict, memo: dict) -> float:
-    sub_id = actor.get("subspecies")
-    if sub_id not in memo:
-        actor_stat_totals(actor, ctx, base_cache, lifespan_only=True)  # fills `base_cache`; the base is species + chromosomes + the biology's own traits
-        base = (base_cache.get(sub_id) or ({}, {}))[0]
-        memo[sub_id] = age_thresholds(int(base.get("lifespan") or 0))[0]
-    return memo[sub_id]
+# WB `Subspecies.calculateAgeRelatedStats`, on the biology's own lifespan: the flat (16, 18) and the breeding cap are the sapient's alone, a beast walking the curve.
+def _age_thresholds(lifespan: float, sapient: bool) -> tuple[float, float]:
+    if lifespan > 30 and sapient:
+        return 16.0, 18.0
+    adult = breeding = (lifespan**0.55) * 1.1
+    return min(adult, 16.0), min(breeding, 18.0) if sapient else breeding
 
 
 # Per `Actor.updateStats` + tooltip: damage += warfare/5; damage_range → raw-hp amplitude (int(damage*damage_range)); critical_chance → percent (0.28 → 28).
@@ -333,7 +354,7 @@ def _apply_tier(gene: str, value: float, bad: bool, golden: bool) -> float:
     return value * 2 if golden else value
 
 
-# Truncate toward zero like C#'s `(int)`, not floor — negatives occur. `health`/`mana` => `health_max`/`mana_max`: post-pipeline maximums.
+# Truncate toward zero like C#'s `(int)`, not floor — negatives occur. `health`/`mana` => `health_max`/`mana_max`, post-pipeline maximums; `render` does the sorting.
 def _cleanup_stats(totals: dict) -> dict:
     result = {}
     for k, v in totals.items():
@@ -343,7 +364,7 @@ def _cleanup_stats(totals: dict) -> dict:
             v = round(v, 1) if k in _KEEP_DECIMAL else int(v)
         if v:
             result[_RENAMES.get(k, k)] = v
-    return dict(sorted(result.items()))
+    return result
 
 
 # WB `GeneLibrary.addSpecial` puts one point on `base_stats_meta` per locus — the loose count `Subspecies.getMaxRandomMutations` returns, void loci excluded.
@@ -432,6 +453,17 @@ def _scoring_traits(traits_data: dict) -> dict:
     return _scoring_memo[key]
 
 
+# WB `calculateAgeRelatedStats` reads the biology's own lifespan and its sapience, never its bearer's — hence one memo per subspecies, carried by the context.
+def _subspecies_ages(actor: dict, ctx: dict) -> tuple[float, float]:
+    memo = ctx["age_memo"]
+    sub_id = actor.get("subspecies")
+    if sub_id not in memo:
+        actor_stat_totals(actor, ctx, lifespan_only=True)  # fills the context's cache; the base is species + chromosomes + the biology's own traits
+        base = (ctx["subspecies_base_cache"].get(sub_id) or ({}, {}))[0]
+        memo[sub_id] = _age_thresholds(int(base.get("lifespan") or 0), is_sapient(ctx["subspecies_by_id"].get(sub_id)))
+    return memo[sub_id]
+
+
 # Whether two neighbours agree, in WB's order: amplifiers (with anything but each other), the always-pair, then what `life_dna` unlocks — hence early returns.
 def _synergizes(gene: str, ngene: str, dx: int, dy: int, super_set: set[int], my_idx: int, n_idx: int, life_dna: int) -> bool:
     my_super = my_idx in super_set
@@ -493,11 +525,12 @@ def _to_int32(x: int) -> int:
 
 
 # WB's `Actor.stats`, floats intact, before `_cleanup_stats`. Combine stats from here: WB adds first, truncates once, so 14.5 stays 14.5.
-def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict, *, lifespan_only: bool = False) -> dict:
+def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) -> dict:
     sub_id = actor.get("subspecies")
     sub = ctx["subspecies_by_id"].get(sub_id) if sub_id is not None else None
     if sub is None:
         return {}
+    subspecies_base_cache = ctx["subspecies_base_cache"]
     cached = subspecies_base_cache.get(sub_id)
     if cached is None:
         base = {}
@@ -510,8 +543,7 @@ def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict, *, li
     for stat, value in sex_bonus[sex_label(actor)].items():  # `updateStats` merges `base_stats_male`/`base_stats_female` on top of the neutral block
         totals[stat] = totals.get(stat, 0) + value
     _add_trait_stats(totals, actor.get("saved_traits") or [], ctx["creature_traits"])
-    _add_trait_stats(totals, (ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits") or [], ctx["clan_traits"])
-    _add_trait_stats(totals, (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits") or [], ctx["language_traits"])
+    _add_group_stats(totals, actor, ctx)
     if lifespan_only:  # Nothing below writes `lifespan`: `_normalize` and `_apply_multipliers`, narrowed to it, answer the same and cost half.
         if "lifespan" not in totals:  # `_normalize` skips an absent stat, and a caller reading `.get("lifespan", 0)` must see the same nothing
             return {}
@@ -533,56 +565,92 @@ def actor_stat_totals(actor: dict, ctx: dict, subspecies_base_cache: dict, *, li
     return totals
 
 
+# The age WB has a body come of age at — 0 for the 144 species of 230 drawn no baby form, `calcIsBaby` leaving those grown from birth however few their years.
+def adult_age(actor: dict, ctx: dict) -> float:
+    if not (ctx["species_data"].get(actor.get("asset_id")) or {}).get("baby_form"):
+        return 0.0
+    return _subspecies_ages(actor, ctx)[0]
+
+
+# The age WB lets a body breed at, `Actor.canBreed`'s own gate — no baby form to check, WB hanging this one on the biology whatever shape it was drawn in.
+def breeding_age(actor: dict, ctx: dict) -> float:
+    return _subspecies_ages(actor, ctx)[1]
+
+
 # Shared context built from one save load — feeds every actor stats computation. Callers (actor/info.py, kingdom/info.py) typically extend it with their keys.
 def build_actor_stats_context(save: dict) -> dict:
     return {
+        "age_memo": {},  # Filled on demand: both ages hang on the subspecies, so a world of thousands answers them a few dozen times
         "clan_traits": load_data("clan-traits.json"),
         "clans_by_id": index_by_id(save.get("clans", [])),
         "creature_traits": load_data("creature-traits.json"),
         "equipment": load_data("equipment.json"),
+        "group_trait_cache": {},  # `_add_group_stats`: a clan's traits and a tongue's, summed once for the group rather than once per member
+        "incubation_memo": {},  # `is_egg`: the months a biology takes to hatch, summed once for it rather than once per body it laid
         "items_by_id": index_by_id(save["items"]),
         "language_traits": load_data("language-traits.json"),
         "languages_by_id": index_by_id(save.get("languages", [])),
         "life_dna": int(save["mapStats"].get("life_dna") or 0),
         "species_data": load_data("species.json"),
+        "subspecies_base_cache": {},  # Filled by the first `actor_stat_totals`: the species + chromosomes + traits base, one per subspecies, not per body.
         "subspecies_by_id": index_by_id(save.get("subspecies", [])),
         "subspecies_traits": load_data("subspecies-traits.json"),
         "world_time": float(save["mapStats"].get("world_time") or 0),
     }
 
 
-# Aggregate one actor's stats (no counters). `subspecies_base_cache` reuses the species+chromosomes+traits base per subspecies — ~7× speedup when ranking peers.
-def compute_actor_stats(actor: dict, ctx: dict, subspecies_base_cache: dict) -> dict:
-    cleaned = _cleanup_stats(actor_stat_totals(actor, ctx, subspecies_base_cache))
+# Aggregate one actor's stats, no counters — the context's `subspecies_base_cache` carries the heavy base from one body to the next, so a ranking costs ~7× less.
+def compute_actor_stats(actor: dict, ctx: dict) -> dict:
+    cleaned = _cleanup_stats(actor_stat_totals(actor, ctx))
     # Two stats WB reads off a single office-holder: `max_cities` from a king (`Kingdom.getMaxCities`), `bonus_towers` from a city leader (its watch-tower cap).
     for stat, holder in (("bonus_towers", PROFESSION_LEADER), ("max_cities", PROFESSION_KING)):
         if actor.get("profession") != holder:
             cleaned.pop(stat, None)
+    if is_baby(actor, ctx):  # WB `Actor.updateStats` halves a child's two stats, under the very test `is_baby` spells out
+        for stat in _CHILD_HALVED:
+            if stat in cleaned:
+                cleaned[stat] = int(cleaned[stat] * _CHILD_PERCENT)
     return cleaned
+
+
+# WB `Actor.calcAgeStates` flags `_state_baby` down two roads, an egg and a body under its majority — and every rule reads that one flag, so an egg is a child.
+def is_baby(actor: dict, ctx: dict) -> bool:
+    return is_egg(actor, ctx) or actor_age(actor, ctx["world_time"]) < adult_age(actor, ctx)
+
+
+# WB `Actor.checkShouldBeEgg`: a biology that lays, a body under its majority, an incubation still running — that majority ungated, an egg needs no baby form.
+def is_egg(actor: dict, ctx: dict) -> bool:
+    memo, sub_id = ctx["incubation_memo"], actor.get("subspecies")
+    if sub_id not in memo:
+        traits = (ctx["subspecies_by_id"].get(sub_id) or {}).get("saved_traits") or []
+        library = ctx["subspecies_traits"]
+        # Nought for a biology that lays nothing, and the trait is asked for on its own: an `egg_*` shell carries months too, and shells outlive the laying.
+        months = sum((library.get(t) or {}).get("meta_stats", {}).get(_MATURATION, 0) for t in traits) if _EGG_TRAIT in traits else 0
+        memo[sub_id] = months
+    if not (months := memo[sub_id]):
+        return False
+    if actor_age(actor, ctx["world_time"]) >= _subspecies_ages(actor, ctx)[0]:
+        return False
+    return ctx["world_time"] - float(actor.get("created_time") or 0) < months * UNITS_PER_MONTH
 
 
 # WB `IMetaObject`'s four ratios, the input its self-report reads. Happiness only answers for a biology bearing an `amygdala`, WB's own `has_emotions` tag.
 def meta_ratios(actors: list[dict], ctx: dict) -> dict:
     if not (total := len(actors)):
         return dict.fromkeys(_META_RATIOS, 0.0)
-    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})
     counts: Counter[str] = Counter()
-    memo: dict = {}
     for actor in actors:
         if has_emotions(actor, ctx["subspecies_by_id"]):  # an unfeeling soul still counts in the whole, as WB divides by every unit it holds
             happiness = int(actor.get("happiness") or 0)
             counts["happy"] += happiness >= _HAPPY_MIN_HAPPINESS
             counts["unhappy"] += happiness < _UNHAPPY_MAX_HAPPINESS
-        # WB `calcIsBaby`: a child is a soul below its biology's `age_adult`, and only where its species was given a baby form — most creatures never have one.
-        if (ctx["species_data"].get(actor.get("asset_id")) or {}).get("baby_form"):
-            counts["children"] += actor_age(actor, ctx["world_time"]) < _age_adult(actor, ctx, base_cache, memo)
+        counts["children"] += is_baby(actor, ctx)
         counts["homeless"] += not actor.get("homeBuildingID")
     return {key: counts[key] / total for key in _META_RATIOS}
 
 
 # What a body's members tell about it — age tiers, sexes, mutual couples, the tallies each soul answers for alone. `settlement_population` adds stores and head.
 def population_of(actors: list[dict], ctx: dict) -> dict:
-    base_cache: dict = ctx.setdefault("subspecies_base_cache", {})  # created here too: a caller may ask for this block alone, before anything else fills it
     by_id, ids = ctx["actors_by_id"], {a["id"] for a in actors}
     counts: Counter[str] = Counter()
     generations: list[int] = []
@@ -593,8 +661,9 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
     for a in actors:
         age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
         # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
-        lifespan = int(actor_stat_totals(a, ctx, base_cache, lifespan_only=True).get("lifespan", 0))
-        stages[life_stage(age, age_thresholds(lifespan)[0], lifespan)] += 1
+        lifespan = int(actor_stat_totals(a, ctx, lifespan_only=True).get("lifespan", 0))
+        # `adult_age` and not this body's own span: WB hangs the coming of age on the biology, and answers 0 where the species was drawn no baby form.
+        stages[life_stage(age, adult_age(a, ctx), lifespan, is_egg(a, ctx))] += 1
         generations.append(a.get("generation") or 1)  # WB counts a first child 2, so a parentless founder is its 1 — a default the save omits rather than writes.
         counts["men"] += a.get("sex") != 1
         counts["money"] += int(a.get("money") or 0)
@@ -605,7 +674,7 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
         counts["happy"] += int(a.get("happiness") or 0) >= _HAPPY_MIN_HAPPINESS and has_emotions(a, ctx["subspecies_by_id"])
         if (a.get("asset_id") or "") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they never weigh on the hunger share
             counts["eaters"] += 1
-            counts["fed"] += int(a.get("nutrition") or 0) >= SATED_MIN_NUTRITION
+            counts["fed"] += int(a.get("nutrition") or 0) >= _SATED_MIN_NUTRITION
         traits = a.get("saved_traits") or []
         counts["immortals"] += "immortal" in traits
         if not SICK_TRAITS.isdisjoint(traits):  # `infected` ⊂ `SICK_TRAITS`: the narrow test rides inside, one walk of the traits
@@ -622,11 +691,12 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
         "babies": stages["baby"],
         "children": stages["child"],
         "couples": counts["couples"],
+        **({"eggs": n} if (n := stages["egg"]) else {}),  # a laying biology alone ever carries the line, as `immortals` and `sick` carry theirs
         "elders": stages["elder"],
         "familyless": counts["familyless"],
         "fed_pct": round(100 * counts["fed"] / eaters) if (eaters := counts["eaters"]) else 0,  # share of the food-needing sated (nutrition ≥ 60)
-        "gen_deepest": max(generations),  # the longest unbroken descent standing, WB's own count
-        "gen_median": round(_median(generations)),  # against the deepest, it says whether a body is mostly founders or mostly their issue
+        # Dropped whole where the body holds nobody, as `eggs` and `immortals` drop at nought: a depth of 0 is no depth, WB counting a parentless founder its 1.
+        **({"gen_deepest": max(generations), "gen_median": round(_median(generations))} if total else {}),
         "happy": counts["happy"],
         "housed_pct": round((total - counts["homeless"]) / total * 100) if total else 0,
         **({"immortals": n} if (n := counts["immortals"]) else {}),

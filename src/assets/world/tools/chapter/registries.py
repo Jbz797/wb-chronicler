@@ -165,7 +165,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
     family_registry = {str(f["id"]): _family_entry(f, members_by_family.get(f["id"], 0), rank_by_family.get(f["id"])) for f in save.get("families") or []}
 
     rank_by_language = _podium(members_by_language)  # speakers alone rank a tongue, as followers rank a custom
-    language_registry = {str(l["id"]): _language_entry(l, members_by_language.get(l["id"], 0), rank_by_language.get(l["id"])) for l in save.get("languages") or []}
+    language_registry = {str(t["id"]): _language_entry(t, members_by_language.get(t["id"], 0), rank_by_language.get(t["id"])) for t in save.get("languages") or []}
 
     rank_by_religion = _podium(members_by_religion)  # the faithful alone rank a creed, as followers rank a custom
     religion_registry = {str(r["id"]): _religion_entry(r, members_by_religion.get(r["id"], 0), rank_by_religion.get(r["id"])) for r in save.get("religions") or []}

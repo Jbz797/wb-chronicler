@@ -23,35 +23,19 @@ _OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart f
 
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
 def _build_biomes(save: dict, save_path: Path) -> dict:
-    _, island_of = compute_islands_cached(save, save_path)
-    grid = decode_tile_grid(save)
-    biome_by_id = [tile_biome(name) for name in save.get("tileMap") or []]  # already merged: `soil_high:paradox_high` and its low twin both read `paradox`
-    tallies: defaultdict[int, Counter] = defaultdict(Counter)  # `setdefault` would mint a Counter per tile, three hundred thousand of them for one map
-    sizes: Counter = Counter()
-
-    for x, y, island_id in island_of.land():  # the lands alone: sweeping the grid would ask the sea, tile by tile, which island it belongs to
-        sizes[island_id] += 1
-        if biome := biome_by_id[grid[y][x]]:
-            tallies[island_id][biome] += 1
-
-    per_island = {
-        str(island_id): [{"biome": biome, "pct": pct, "tiles": n} for biome, n in counts.most_common() if (pct := round(n / sizes[island_id] * 100, 1)) > 0]
-        for island_id, counts in sorted(tallies.items())
-    }
-    # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
-    named = {row["biome"] for rows in per_island.values() for row in rows}
-    return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
+    return _cached("biomes_v1", save_path, lambda: _compute_biomes(save, save_path))
 
 
 # Every kind the save holds, grouped as WB groups them — its `buildings` collection also holds the flowers and the ore, so only the `civ_*` keep that name here.
 def _build_entity_types(save: dict) -> dict:
     categories, civic = load_data("building-categories.json"), civic_building_ids()
-    groups: dict[str, Counter] = {"actors": Counter(a["asset_id"] for a in save.get("actors_data") or [] if a.get("asset_id"))}
+    seed = {"actors": Counter(a["asset_id"] for a in save.get("actors_data") or [] if a.get("asset_id"))}
+    groups: defaultdict[str, Counter] = defaultdict(Counter, seed)  # a factory, `setdefault` minting a `Counter` per building to keep the first
     for building in save.get("buildings") or []:
         if not (asset := building.get("asset_id")):
             continue
         group = "buildings" if asset in civic else categories.get(asset) or "other"  # `civic` knows the built kinds the manifest itself never declared
-        groups.setdefault(group, Counter())[asset] += 1
+        groups[group][asset] += 1
     return {group: dict(counts) for group, counts in groups.items() if counts}
 
 
@@ -75,29 +59,60 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
 
 # Every stretch of sea the map encloses, and every land it holds apart. Both fall out of one sweep of the water, and the map never moves — hence the cache.
 def _build_waters(save: dict, save_path: Path) -> dict:
+    return _cached("waters_v2", save_path, lambda: _compute_waters(save, save_path))
+
+
+# A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.
+def _cached(name: str, save_path: Path, compute) -> dict:
     key = save_cache_key(save_path)
-    cache_file = CACHE_DIR / f"waters_v2_{key}.pkl" if key else None
+    cache_file = CACHE_DIR / f"{name}_{key}.pkl" if key else None
     if cache_file and cache_file.exists():
         try:
             with cache_file.open("rb") as f:
                 return pickle.load(f)
         except Exception:  # noqa: BLE001 — corrupt cache, fall through and recompute.
             cache_file.unlink(missing_ok=True)
+    out = compute()
+    if cache_file:
+        CACHE_DIR.mkdir(exist_ok=True)
+        for old in CACHE_DIR.glob(f"{name.rsplit('_', 1)[0]}_*.pkl"):
+            if old.name != cache_file.name:
+                old.unlink(missing_ok=True)
+        with cache_file.open("wb") as f:
+            pickle.dump(out, f)
+    return out
 
+
+# The sweep itself, run once per save: six hundred thousand land tiles asked their biome, which is what the cache above is for.
+def _compute_biomes(save: dict, save_path: Path) -> dict:
+    _, island_of = compute_islands_cached(save, save_path)
+    grid = decode_tile_grid(save)
+    biome_by_id = [tile_biome(name) for name in save.get("tileMap") or []]  # already merged: `soil_high:paradox_high` and its low twin both read `paradox`
+    tallies: defaultdict[int, Counter] = defaultdict(Counter)  # `setdefault` would mint a Counter per tile, three hundred thousand of them for one map
+    sizes: Counter = Counter()
+
+    for x, y, island_id in island_of.land():  # the lands alone: sweeping the grid would ask the sea, tile by tile, which island it belongs to
+        sizes[island_id] += 1
+        if biome := biome_by_id[grid[y][x]]:
+            tallies[island_id][biome] += 1
+
+    per_island = {
+        str(island_id): [{"biome": biome, "pct": pct, "tiles": n} for biome, n in counts.most_common() if (pct := round(n / sizes[island_id] * 100, 1)) > 0]
+        for island_id, counts in sorted(tallies.items())
+    }
+
+    # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
+    named = {row["biome"] for rows in per_island.values() for row in rows}
+    return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
+
+
+# One sweep of the water answers both: a pool the land encloses is a lake, and the land two pools hold apart makes a strait.
+def _compute_waters(save: dict, save_path: Path) -> dict:
     _, island_of = compute_islands_cached(save, save_path)
     grid = decode_tile_grid(save)
     sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
     lake_of, pools = _pool_map(grid, sea)
-    waters = {"lakes": _lakes(pools, lake_of, island_of, grid, sea), "straits": _straits(grid, sea, island_of)}
-
-    if cache_file:
-        CACHE_DIR.mkdir(exist_ok=True)
-        for old in CACHE_DIR.glob("waters_*.pkl"):
-            if old.name != cache_file.name:
-                old.unlink(missing_ok=True)
-        with cache_file.open("wb") as f:
-            pickle.dump(waters, f)
-    return waters
+    return {"lakes": _lakes(pools, lake_of, island_of, grid, sea), "straits": _straits(grid, sea, island_of)}
 
 
 # An enclosed water is named by the shores that ring it, and holds as an islet any land no other water touches — the isles a chronicle reaches last, or never.
@@ -229,7 +244,6 @@ def main(argv: list[str]) -> int:
         out["waters"] = _build_waters(save, save_path)
 
     emit(out)
-
     return 0
 
 

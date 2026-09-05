@@ -6,6 +6,7 @@
 
 import argparse
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -37,13 +38,23 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
 def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], width: int) -> dict:
     wanted = set(coords)
-    ctx: dict = {"actors_by_pos": {}, "ground_by_pos": {}, "center": center, "cities_by_id": {}, "grid": [], "kingdoms_by_id": {}, "tile_map": save["tileMap"]}
+
+    # `actors_by_pos` alone takes a factory: it is the one filled per actor, where the others are assigned whole once their section asks for them.
+    ctx: dict = {
+        "actors_by_pos": defaultdict(list),
+        "center": center,
+        "cities_by_id": {},
+        "grid": [],
+        "ground_by_pos": {},
+        "kingdoms_by_id": {},
+        "tile_map": save["tileMap"],
+    }
 
     if "actors" in sections:
         for a in save.get("actors_data") or []:
             ax, ay = a.get("x"), a.get("y")
             if ax is not None and ay is not None and (pos := (int(ax), int(ay))) in wanted:
-                ctx["actors_by_pos"].setdefault(pos, []).append(a)
+                ctx["actors_by_pos"][pos].append(a)
 
     if "ground" in sections:
         ctx["categories"], ctx["civic"] = load_data("building-categories.json"), civic_building_ids()
@@ -140,10 +151,24 @@ def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
     if island_at((x, y)) is not None:
         return None
 
+    # Afloat the source is the tile alone, and an 8-way wave off one point is the square ring at that Chebyshev radius — walked straight, no front to carry.
+    if layer[grid[y][x]] == "Ocean":
+        for r in range(1, _LAND_REACH + 1):
+            x0, x1, y0, y1 = x - r, x + r, y - r, y + r
+            for nx in range(max(0, x0), min(width - 1, x1) + 1):  # the two horizontal sides, corners included
+                for ny in (y0, y1):
+                    if 0 <= ny < height and (island := island_at((nx, ny))) is not None:
+                        return {"island_id": island, "tiles": r}
+            for ny in range(max(0, y0 + 1), min(height - 1, y1 - 1) + 1):  # and the two vertical ones, corners already walked
+                for nx in (x0, x1):
+                    if 0 <= nx < width and (island := island_at((nx, ny))) is not None:
+                        return {"island_id": island, "tiles": r}
+        return None
+
     def dry(px: int, py: int) -> bool:  # the uncounted rock and nothing else — take the sea in and the fill would run to the map's end
         return layer[grid[py][px]] != "Ocean" and island_at((px, py)) is None
 
-    seen, stack = {(x, y)}, [(x, y)] if dry(x, y) else []  # afloat, a tile answers for itself: there is no rock under it to measure from
+    seen, stack = {(x, y)}, [(x, y)]  # a rock carries the wave whole: its far shore may reach a land its near one never would
     while stack:
         cx, cy = stack.pop()
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
@@ -254,6 +279,7 @@ def main(argv: list[str]) -> int:
         if "tile_info" in sections:
             cell["tile_info"] = _tile_info_at(x, y, ctx, (x, y) == (cx, cy))
         out[f"{x},{y}"] = cell
+
     emit(out)
     return 0
 

@@ -4,7 +4,7 @@
 # A WorldBox family is a bloodline, not a household — see `metadata.houses`, which counts the roofs its members sleep under.
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -33,6 +33,7 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks")
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # `identity` alone reads the founding record and nothing else
 
 
 # Chronicler-only: what the lineage was stamped as at its founding, not what its living carry — most still share both, the `breakdown` section telling how many.
@@ -40,10 +41,10 @@ def _build_identity(family: dict, ctx: dict) -> dict:
     # WB stores the founding pair as loose name/id fields rather than refs; the second is absent wherever a lone settler started the line.
     founders = [{"id": fid, "name": family.get(f"founder_actor_name_{n}")} for n in (1, 2) if (fid := family.get(f"main_founder_id_{n}")) is not None]
     return {
+        "culture": entity_ref(family.get("name_culture_id"), ctx["cultures_by_id"]),  # the culture that minted the name, not the members' own
         "founders": founders,
         "founding_city": entity_ref(family.get("founder_city_id"), ctx["cities_by_id"]),
         "founding_kingdom": entity_ref(family.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
-        "culture": entity_ref(family.get("name_culture_id"), ctx["cultures_by_id"]),  # the culture that minted the name, not the members' own
         "species": family.get("species_id"),
         "subspecies": entity_ref(family.get("subspecies_id"), ctx["subspecies_by_id"]),
     }
@@ -105,12 +106,12 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "births_per_death": lambda f: int(f.get("total_births") or 0) / d if (d := int(f.get("total_deaths") or 0)) else 0.0,
         "cities": lambda f: len({cid for a in tallies["members"].get(f["id"], ()) if (cid := a.get("cityID"))}),
         "deaths": lambda f: int(f.get("total_deaths") or 0),
-        "kingdoms": lambda f: len({kid for a in tallies["members"].get(f["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
         # No `housed_pct` here nor on a clan: a lineage runs a handful of souls, and a share capped at one ties most of the field — `population` says the share.
         "houses": lambda f: len(tallies["houses"].get(f["id"], ())),
         "kills": lambda f: int(f.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
         "kills_per_capita": lambda f: int(f.get("total_kills") or 0) / n if (n := len(tallies["members"].get(f["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "kingdoms": lambda f: len({kid for a in tallies["members"].get(f["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
         "members": lambda f: len(tallies["members"].get(f["id"], ())),
         "money": lambda f: tallies["money"][f["id"]],
         "renown_total": lambda f: tallies["renown_total"][f["id"]],  # a lineage has no renown of its own, unlike a clan — only what its members carry
@@ -142,21 +143,21 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown family: {family_id}", file=sys.stderr)
         return 1
 
-    # One pass over the actors feeds every tally: WB points each actor at its lineage and never the reverse, so nothing here can be read off the family record.
+    # One pass feeds every tally: WB points each actor at its lineage and never the reverse. Skipped whole where no section asked — `identity` reads the record.
     tallies: dict = {
-        "houses": {},
-        "members": {},
+        "houses": defaultdict(set),
+        "members": defaultdict(list),
         "money": Counter(),
         "renown_total": Counter(),
         "warriors": Counter(),
     }
 
-    for actor in save.get("actors_data") or []:
+    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
         if not (fid := actor.get("family")):
             continue
         if home := actor.get("homeBuildingID"):  # a roof only where there is one, the set being keyed on the building itself
-            tallies["houses"].setdefault(fid, set()).add(home)
-        tallies["members"].setdefault(fid, []).append(actor)
+            tallies["houses"][fid].add(home)
+        tallies["members"][fid].append(actor)
         tallies["money"][fid] += int(actor.get("money") or 0)
         tallies["renown_total"][fid] += int(actor.get("renown") or 0)
         tallies["warriors"][fid] += actor.get("profession") == PROFESSION_WARRIOR
@@ -174,14 +175,13 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
-    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
     if "breakdown" in sections:
         # The living against the `identity` stamped at founding. Species goes: WB has a child inherit it whole, so it reads 100 % everywhere; a subspecies drifts.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(family, ctx)
     if "leaders" in sections:  # its own lineage would win every family row, so only the souls stand — and the podium drops below five, naming nobody among three
-        podium = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+        podium = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
         out["leaders"] = {key: value for key, value in podium.items() if key != "families"}
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
@@ -194,7 +194,6 @@ def main(argv: list[str]) -> int:
         out["ranks"] = competition_ranks(family, list(families_by_id.values()), getters)
 
     emit(out)
-
     return 0
 
 

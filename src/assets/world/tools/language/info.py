@@ -4,7 +4,7 @@
 # A language is caught, not inherited — WB converts a neighbour who hears it spoken, where a culture is handed down at birth and a clan is sworn to a chief.
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache
 from pathlib import Path
 
@@ -38,14 +38,15 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("books", "breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the tongue's record, its shelf and its library
 
 
 # Books grouped by the tongue they were written in, off their own `language_id` — the save lists every volume still standing, its script stamped on it.
 def _books_by_language(save: dict) -> dict[int, list[dict]]:
-    by_language: dict[int, list[dict]] = {}
+    by_language: defaultdict[int, list[dict]] = defaultdict(list)  # a factory, `setdefault` costing a fresh list per volume to drop it on all but the first
     for book in sorted(save.get("books") or [], key=lambda b: b["id"]):
         if (lid := book.get("language_id")) is not None:
-            by_language.setdefault(lid, []).append(book)
+            by_language[lid].append(book)
     return by_language
 
 
@@ -128,26 +129,26 @@ def _build_traits(language: dict, detailed: bool) -> dict | list[dict]:
 # The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every tongue, on every dimension below.
 def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]) -> dict:
     return {
-        "age": lambda l: entity_age(l, world_time),
-        "books": lambda l: len(books.get(l["id"], ())),
-        "books_written": lambda l: int(l.get("books_written") or 0),
-        "cities": lambda l: tallies["cities"][l["id"]],
-        "converted": lambda l: int(l.get("speakers_converted") or 0),
-        "deaths": lambda l: int(l.get("total_deaths") or 0),
-        "housed_pct": lambda l: tallies["housed"][l["id"]] / n if (n := len(tallies["members"].get(l["id"], ()))) else 0.0,
-        "kills": lambda l: int(l.get("total_kills") or 0),
+        "age": lambda t: entity_age(t, world_time),
+        "books": lambda t: len(books.get(t["id"], ())),
+        "books_written": lambda t: int(t.get("books_written") or 0),
+        "cities": lambda t: tallies["cities"][t["id"]],
+        "converted": lambda t: int(t.get("speakers_converted") or 0),
+        "deaths": lambda t: int(t.get("total_deaths") or 0),
+        "housed_pct": lambda t: tallies["housed"][t["id"]] / n if (n := len(tallies["members"].get(t["id"], ()))) else 0.0,
+        "kills": lambda t: int(t.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
-        "kills_per_capita": lambda l: int(l.get("total_kills") or 0) / n if (n := len(tallies["members"].get(l["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
-        "kingdoms": lambda l: tallies["kingdoms"][l["id"]],
-        "lost": lambda l: int(l.get("speakers_lost") or 0),
-        "members": lambda l: len(tallies["members"].get(l["id"], ())),
-        "money": lambda l: tallies["money"][l["id"]],
-        "native": lambda l: int(l.get("speakers_new") or 0),
-        "renown": lambda l: int(l.get("renown") or 0),
-        "renown_per_capita": lambda l: int(l.get("renown") or 0) / n if (n := len(tallies["members"].get(l["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
-        "renown_total": lambda l: tallies["renown_total"][l["id"]],
-        "traits": lambda l: len(l.get("saved_traits") or []),
-        "warriors": lambda l: tallies["warriors"][l["id"]],
+        "kills_per_capita": lambda t: int(t.get("total_kills") or 0) / n if (n := len(tallies["members"].get(t["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "kingdoms": lambda t: tallies["kingdoms"][t["id"]],
+        "lost": lambda t: int(t.get("speakers_lost") or 0),
+        "members": lambda t: len(tallies["members"].get(t["id"], ())),
+        "money": lambda t: tallies["money"][t["id"]],
+        "native": lambda t: int(t.get("speakers_new") or 0),
+        "renown": lambda t: int(t.get("renown") or 0),
+        "renown_per_capita": lambda t: int(t.get("renown") or 0) / n if (n := len(tallies["members"].get(t["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "renown_total": lambda t: tallies["renown_total"][t["id"]],
+        "traits": lambda t: len(t.get("saved_traits") or []),
+        "warriors": lambda t: tallies["warriors"][t["id"]],
     }
 
 
@@ -175,22 +176,22 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown language: {language_id}", file=sys.stderr)
         return 1
 
-    # One pass feeds every tally: WB points the actor at the tongue it answers in, never the reverse.
+    # One pass feeds every tally: WB points the actor at the tongue it answers in, never the reverse. Skipped whole where no section asked — `traits` reads a file.
     tallies: dict = {
         "cities": Counter(c["id_language"] for c in save.get("cities") or [] if c.get("id_language")),
         "housed": Counter(),
         "kingdoms": Counter(k["id_language"] for k in save.get("kingdoms") or [] if k.get("id_language")),
-        "members": {},
+        "members": defaultdict(list),
         "money": Counter(),
         "renown_total": Counter(),
         "warriors": Counter(),
     }
 
-    for actor in save.get("actors_data") or []:
+    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
         if not (lid := actor.get("language")):
             continue
         tallies["housed"][lid] += bool(actor.get("homeBuildingID"))
-        tallies["members"].setdefault(lid, []).append(actor)
+        tallies["members"][lid].append(actor)
         tallies["money"][lid] += int(actor.get("money") or 0)
         tallies["renown_total"][lid] += int(actor.get("renown") or 0)
         tallies["warriors"][lid] += actor.get("profession") == PROFESSION_WARRIOR
@@ -210,18 +211,15 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
-    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
-
     if "books" in sections:
         out["books"] = _build_books(language, ctx, requested)
-    if (
-        "breakdown" in sections
-    ):  # The living against the founder's `identity`: a tongue crosses blood and border faster than any other body, conversion by conversion.
+    # The living against the founder's `identity`: a tongue crosses blood and border faster than any other body, conversion by conversion.
+    if "breakdown" in sections:
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "languages"}
     if "identity" in sections:
         out["identity"] = _build_identity(language, ctx)
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below five souls, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
@@ -234,7 +232,6 @@ def main(argv: list[str]) -> int:
         out["traits"] = _build_traits(language, detailed=requested not in (None, "full"))
 
     emit(out)
-
     return 0
 
 

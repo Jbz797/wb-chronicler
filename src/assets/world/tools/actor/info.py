@@ -3,18 +3,20 @@
 # User-facing docs (usage, available sections) live in `tools/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
 import sys
+from collections import defaultdict
+from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats
+from actor_stats import adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, is_egg
 from islands import compute_islands_cached
 from shared import (
     PROFESSION_KING,
     PROFESSION_LEADER,
+    UNITS_PER_MONTH,
     UNITS_PER_YEAR,
     actor_age,
-    age_thresholds,
     build_trait_ids,
     build_trait_list,
     civic_building_ids,
@@ -31,6 +33,7 @@ from shared import (
     light,
     load_data,
     load_save,
+    needs_food,
     parse_sections,
     resolve_profession,
     sex_label,
@@ -39,6 +42,7 @@ from shared import (
 
 _ALL_SECTIONS = ("companions", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats", "traits")
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
+_NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
 _RANKED_STATS = {
@@ -96,30 +100,26 @@ _TRAIT_MASS_MODS = {
     "tiny": {"scale": -0.02},
 }
 
-_UNDEAD_SPECIES = frozenset({"skeleton"})  # Fail `isAlive`/`needsFood`: never breed, never hunger (no diet).
-_UNITS_PER_MONTH = UNITS_PER_YEAR / 12  # WB counts 5 `world_time` units to the month, twelve to the year
-
 
 # One home for every index the sections read, so no caller rolls its own. Actor loop = one pass: id, asset_id, children-per-parent (`get_current_children_count`).
 def _build_context(save: dict, save_path: Path) -> dict:
-    actors_by_asset: dict[str, list[dict]] = {}
+    actors_by_asset: defaultdict[str, list[dict]] = defaultdict(list)
     actors_by_id: dict[int, dict] = {}
     children_by_parent: dict[int, int] = {}
     for actor in save.get("actors_data") or []:
         actors_by_id[actor["id"]] = actor
-        actors_by_asset.setdefault(actor.get("asset_id"), []).append(actor)
+        actors_by_asset[actor.get("asset_id")].append(actor)
         # Unrolled: the pair literal rebuilt a tuple per actor. A `Counter` here would read cleaner but measures some 60 % slower than `dict.get` on this pattern.
         if parent := actor.get("parent_id_1"):
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
         if parent := actor.get("parent_id_2"):
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
-    return {  # `subspecies_base_cache`: the per-subspecies base of `compute_actor_stats`, computed once, reused run-wide — it cuts a ranking four- to eightfold.
+    return {
         **build_actor_stats_context(save),
         "actors_by_asset": actors_by_asset,
         "actors_by_id": actors_by_id,
         "alliances_by_id": index_by_id(save.get("alliances") or []),
-        # Built structures only: WB files trees, wheat and vegetation under `buildings` too, and nobody steps « inside » a field.
-        "buildings_by_tile": {(b.get("mainX"), b.get("mainY")): b for b in save.get("buildings") or [] if b.get("asset_id") in civic_building_ids()},
+        "buildings_by_tile": cache(lambda: _buildings_by_tile(save)),  # called not stored: `metadata` alone asks, and the walk covers every building of the world
         "children_by_parent": children_by_parent,
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
@@ -128,7 +128,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
         "religions_by_id": index_by_id(save.get("religions") or []),
         "save_path": save_path,  # islands cache key — must be the loaded save's real path (live or a chapter's map.wbox), not the module default.
-        "subspecies_base_cache": {},
     }
 
 
@@ -149,23 +148,24 @@ def _build_inventory(actor: dict) -> dict:
 
 # The actor's identity card: civic ties (city/kingdom/culture/family…), body (age tier, mass), posts held and their tenure.
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
-    snap = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
+    snap = compute_actor_stats(actor, ctx)
 
     lifespan = snap.get("lifespan", 0)
 
     age = actor_age(actor, ctx["world_time"])
-    age_adult, age_breeding = age_thresholds(lifespan)
+
+    # Both off the biology, as WB writes them onto the subspecies — never off this body's own span. `age_adult` is nil where no baby form was ever drawn.
+    age_adult, age_breeding = adult_age(actor, ctx), breeding_age(actor, ctx)
     ax, ay = actor.get("x"), actor.get("y")
     tile = (int(ax), int(ay)) if ax is not None and ay is not None else None  # WB writes both coordinates or neither, so one guard serves every lookup below
     profession = resolve_profession(actor, save)
 
-    # `canBreed`/`canMakeBabies` gates: alive, breeding age, not infertile, below offspring cap, fed. Transients (pregnancy, afterglow) aren't in the save.
+    # WB `Actor.canBreed` and `BabyHelper.canMakeBabies` merged: the age covers both, `isBreedingAge` sitting above `isAdult`; a gut-less body is fed by definition.
     can_reproduce = (
-        actor.get("asset_id") not in _UNDEAD_SPECIES
-        and age >= age_breeding
+        age >= age_breeding
         and "infertile" not in (actor.get("saved_traits") or [])
         and ctx["children_by_parent"].get(actor.get("id"), 0) < int(snap.get("max_children") or 0)
-        and int(actor.get("nutrition") or 0) > 0
+        and (not needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) or int(actor.get("nutrition") or 0) >= _NEW_BABY_NUTRITION)
     )
 
     _, island_lookup = compute_islands_cached(save, ctx["save_path"])
@@ -188,12 +188,12 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # Chronicler-only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks a fighter left out.
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
-        **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"].get(tile)) else {}),
+        **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"]().get(tile)) else {}),
         "island_id": island_lookup.get(tile) if tile else None,  # Chronicler-only: land mass (geography/info.py).
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in
-        "life_stage": life_stage(age, age_adult, lifespan),
+        "life_stage": life_stage(age, age_adult, lifespan, is_egg(actor, ctx)),
         "mass": _compute_mass(actor, ctx),
         "name": actor.get("name"),  # absent, not a placeholder, where WB never named them — `emit` strips it and the panels drop the row
         "personality": _compute_personality(actor, snap),
@@ -222,7 +222,7 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
     kind = load_data("plots.json").get(type_id) or {}
     return {
         # Months, not years: a scheme ripens well inside one. WB never caps the gauge either, so a ripe plot reads past 100.
-        "months": int((ctx["world_time"] - float(plot.get("created_time") or 0)) / _UNITS_PER_MONTH),
+        "months": int((ctx["world_time"] - float(plot.get("created_time") or 0)) / UNITS_PER_MONTH),
         "progress": round(float(plot.get("progress_current") or 0), 1),
         "target_alliance": entity_ref(plot.get("id_target_alliance"), ctx["alliances_by_id"]),
         "target_city": entity_ref(plot.get("id_target_city"), ctx["cities_by_id"]),  # the rites strike a settlement where a war strikes a crown
@@ -236,6 +236,12 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
 def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
     sworn, library = actor.get("saved_traits") or [], ctx["creature_traits"]
     return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "rarity")})
+
+
+# Built structures by their tile, so `metadata` can name the roof a soul stands under. Nature files under `buildings` too, and nobody steps « inside » a field.
+def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
+    civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
+    return {(b.get("mainX"), b.get("mainY")): b for b in save.get("buildings") or [] if b.get("asset_id") in civic}
 
 
 # `Actor.getMassKG`: (target_scale / 0.1) × base mass × (1 + Σ trait multiplier_mass). Base mass = the asset's `mass_2` (kg) from `species.json`; `None` if massless.
@@ -298,20 +304,19 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
 
 # `compute_actor_stats` returns the cleaned pipeline output — we append always-surface counters here (chronicler expects them even at 0).
 def _compute_stats(actor: dict, ctx: dict) -> dict:
-    cleaned = compute_actor_stats(actor, ctx, ctx["subspecies_base_cache"])
+    cleaned = compute_actor_stats(actor, ctx)
     if not cleaned:
         return {}
     cleaned.update(
         {
-            # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
-            **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
             "births": int(actor.get("births") or 0),
             "children": ctx["children_by_parent"].get(actor.get("id"), 0),
             "equipment_power": _equipment_power(actor, ctx),
+            # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
+            **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
             "health": int(actor.get("health") or 0),
             "kills": int(actor.get("kills") or 0),
-            # WB displays level 1 as the floor, even when the raw save field is absent / 0.
-            "level": max(int(actor.get("level") or 0), 1),
+            "level": max(int(actor.get("level") or 0), 1),  # WB displays level 1 as the floor, even when the raw save field is absent / 0.
             "loot": int(actor.get("loot") or 0),
             "mana": int(actor.get("mana") or 0),
             "money": int(actor.get("money") or 0),

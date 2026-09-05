@@ -5,6 +5,7 @@
 
 import sys
 from collections import Counter
+from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -59,7 +60,8 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         island_id = ctx["island_lookup"]().get((int(hx), int(hy)))
 
     return {
-        "age": entity_age(house, ctx["world_time"]),
+        # Dropped where it reads under zero: a reset before landmarks were stamped left them older than the world, and no age beats one counting backwards.
+        **({"age": age} if (age := entity_age(house, ctx["world_time"])) >= 0 else {}),
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         # Answers for the souls under the roof, so it goes where there are none: a dock, a mine, a bonfire house nobody, whoever stands in them.
@@ -147,7 +149,7 @@ def main(argv: list[str]) -> int:
         "cities_by_id": index_by_id(save.get("cities") or []),
         "civic": civic,
         "families_by_id": index_by_id(save.get("families") or []),
-        "island_lookup": lambda: compute_islands_cached(save, save_path)[1],  # called not stored: half a second cold, and only `metadata` needs it
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # called not stored: half a second cold, and only `metadata` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "world_time": save["mapStats"]["world_time"],
     }
@@ -163,7 +165,6 @@ def main(argv: list[str]) -> int:
         out["occupants"] = _build_occupants(residents, house, ctx, save, detailed=wants_detail(requested, len(residents)))
 
     emit(out)
-
     return 0
 
 

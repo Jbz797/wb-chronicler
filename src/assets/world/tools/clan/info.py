@@ -4,7 +4,7 @@
 # A clan is joined, not inherited — unlike a family, which is a bloodline. WB lets one actor hold both, so the two rosters overlap without matching.
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache
 from pathlib import Path
 
@@ -40,15 +40,16 @@ from shared import (
 
 _ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
 _DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field; the clan's set is narrower than the world's and names old age `natural`.
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # `identity` reads the founding record, `traits` a data file
 
 
 # Chronicler-only: what the clan was founded as — the creator's own stock — plus the culture it currently answers to, which its later members need not share.
 def _build_identity(clan: dict, ctx: dict) -> dict:
     return {
+        "culture": entity_ref(_clan_culture(clan, ctx), ctx["cultures_by_id"]),
         "founder": {"id": fid, "name": clan.get("founder_actor_name")} if (fid := clan.get("founder_actor_id")) is not None else None,
         "founding_city": entity_ref(clan.get("founder_city_id"), ctx["cities_by_id"]),
         "founding_kingdom": entity_ref(clan.get("founder_kingdom_id"), ctx["kingdoms_by_id"]),
-        "culture": entity_ref(_clan_culture(clan, ctx), ctx["cultures_by_id"]),
         "motto": clan.get("motto"),  # WB writes one on roughly half of them — the clan's own words, worth quoting verbatim
         "species": clan.get("creator_species_id"),
         "subspecies": entity_ref(clan.get("creator_subspecies_id"), ctx["subspecies_by_id"]),
@@ -151,7 +152,7 @@ def _resolve_heir(clan: dict, members: list[dict], ctx: dict) -> dict | None:
     chief_id = clan.get("chief_id")
     traits = set((ctx["cultures_by_id"].get(_clan_culture(clan, ctx)) or {}).get("saved_traits") or [])
     candidates = [a for a in members if a["id"] != chief_id]
-    heir = succession_heir(candidates, traits, ctx["world_time"], lambda a: compute_actor_stats(a, ctx, ctx["subspecies_base_cache"]))
+    heir = succession_heir(candidates, traits, ctx["world_time"], lambda a: compute_actor_stats(a, ctx))
     return entity_ref(heir["id"], ctx["actors_by_id"]) if heir else None
 
 
@@ -179,18 +180,18 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown clan: {clan_id}", file=sys.stderr)
         return 1
 
-    # One pass feeds every tally: WB points the actor at its band, never the reverse.
+    # One pass feeds every tally: WB points the actor at its band, never the reverse. Skipped whole where no section asked — `traits` reads a data file.
     tallies: dict = {
-        "members": {},
+        "members": defaultdict(list),
         "money": Counter(),
         "renown_total": Counter(),
         "warriors": Counter(),
     }
 
-    for actor in save.get("actors_data") or []:
+    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
         if not (cid := actor.get("clan")):
             continue
-        tallies["members"].setdefault(cid, []).append(actor)
+        tallies["members"][cid].append(actor)
         tallies["money"][cid] += int(actor.get("money") or 0)
         tallies["renown_total"][cid] += int(actor.get("renown") or 0)
         tallies["warriors"][cid] += actor.get("profession") == PROFESSION_WARRIOR
@@ -205,19 +206,16 @@ def main(argv: list[str]) -> int:
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
-        "subspecies_base_cache": {},  # `compute_actor_stats` cache: heavy base computed once per subspecies, reused across actors
     }
 
     out: dict = {}
-    base_cache: dict = ctx["subspecies_base_cache"]  # the ctx already holds it — `_build_identity` reaches it there to weigh the heir
-
     if "breakdown" in sections:
         # The living against the founder's `identity`, drifting harder than a lineage's — species goes, `ClanManager.newClan` seeding the roster from his bloodline.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(clan, ctx)
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below five members, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
@@ -230,7 +228,6 @@ def main(argv: list[str]) -> int:
         out["traits"] = _build_traits(clan, detailed=requested not in (None, "full"))
 
     emit(out)
-
     return 0
 
 

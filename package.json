@@ -59,10 +59,10 @@
     "@angular/language-service": "22.1.5",
     "chokidar": "5.0.0",
     "concurrently": "10.0.5",
-    "eslint-config-angular-strict": "22.2.4",
+    "eslint-config-angular-strict": "22.2.6",
     "less": "4.9.1",
     "prettier": "3.9.6",
-    "stylelint": "17.14.1",
+    "stylelint": "17.15.0",
     "stylelint-config-standard-scss": "17.0.0",
     "stylelint-prettier": "5.0.3",
     "typescript": "6.0.3"

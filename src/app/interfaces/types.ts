@@ -42,7 +42,7 @@ export type LeaderKind = 'dominant_culture' | 'dominant_language' | 'dominant_re
   | 'highest_level_person' | 'largest_city' | 'largest_clan' | 'largest_family' | 'largest_kingdom'
   | 'most_dominant_village' | 'most_powerful_kingdom';
 
-export type LifeStage = 'adult' | 'baby' | 'child' | 'elder' | 'teen';
+export type LifeStage = 'adult' | 'baby' | 'child' | 'egg' | 'elder' | 'teen';
 export type PeopleTierName = Exclude<ChapterTier, 'city' | 'favorite' | 'kingdom'>; // those `_resolvePeople` serves — the bodies that roster the living
 export type PersonRegistry = Record<string, PersonInfo>;
 export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'renown_total' | 'sick' | 'warriors' | 'wealth_per_capita';

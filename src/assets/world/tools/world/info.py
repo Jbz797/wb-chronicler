@@ -283,6 +283,7 @@ def main(argv: list[str]) -> int:
         out["plots"] = _build_plots(save)
     if "snapshot" in sections:
         out["snapshot"] = _build_snapshot(save)
+
     emit(out)
     return 0
 

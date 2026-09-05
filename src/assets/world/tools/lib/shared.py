@@ -31,9 +31,9 @@ NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have 
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
 PROFESSION_WARRIOR = 5
-SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `chapter/` reaches back to `C<n-1>` through it.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
+UNITS_PER_MONTH = 5  # 5 `world_time` units = 1 month, the grain WB counts an incubation and a plot in.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
@@ -41,7 +41,6 @@ _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # One lore under two WB spellings: its tiles say one, its biome sheet the other.
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
-_CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` — `PROFESSION_KING`/`_LEADER`/`_WARRIOR`, spelt out: they sort after this.
 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
 _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "stone_none", "gold_none", "metal_none")
@@ -49,6 +48,7 @@ _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "st
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
+_ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
@@ -87,6 +87,7 @@ _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homele
 _MIN_LEADERS_UNITS = 5  # below this a podium names a champion among two or three — the body is too small for any of its members to stand out
 _MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
+_NEEDS_ESCAPE = re.compile(r'["\\\x00-\x1f]')  # what `json.encoder.ESCAPE` covers, its named `\b\f\n\r\t` all sitting inside the control range
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy"})  # shapes whose key order carries meaning: stores heaviest-first, ranks broadest-first
@@ -160,9 +161,9 @@ def _family_leaders(actors: Sequence[dict], families_by_id: dict) -> dict:
     return dict(sorted(out.items()))
 
 
-# WB `Subspecies.cacheTags` reads a biology's faculties off meta tags, not off trait names — so a mod's own trait answers too.
+# WB `Subspecies.cacheTags` reads a biology's faculties off meta tags, not trait names — a mod's own answers too. `isdisjoint` spares a set built per body.
 def _has_meta_tag(subspecies: dict | None, tag: str) -> bool:
-    return bool(_tagged_traits(tag) & set((subspecies or {}).get("saved_traits") or []))
+    return not _tagged_traits(tag).isdisjoint((subspecies or {}).get("saved_traits") or [])
 
 
 # `{id, name}` off a record carrying its own name — a family or an actor the caller already holds. `emit` drops `name` where WB wrote none, leaving `{id}` alone.
@@ -251,39 +252,10 @@ def actor_age(actor: dict, world_time: float) -> int:
     return entity_age(actor, world_time) + (actor.get("age_overgrowth") or 0)
 
 
-# WB `Subspecies.calculateAgeRelatedStats`: lifespan > 30 → (16, 18); else `Pow(lifespan, 0.55)×1.1` capped 16/18 (civ species always > 30).
-def age_thresholds(lifespan: float) -> tuple[float, float]:
-    if lifespan > 30:
-        return 16.0, 18.0
-    adult = min((lifespan**0.55) * 1.1, 16.0)
-    return adult, min(adult, 18.0)
-
-
 # A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
 @cache
 def asset_set(name: str) -> frozenset[str]:
     return frozenset(load_data("asset-sets.json").get(name) or ())
-
-
-# WB `City.isGettingCaptured`: the enemy crowns whose warriors, kings or leaders stand in a town's zones — WB excuses one indoors, which a save never records.
-def besieging_kingdoms(save: dict) -> dict[int, set[int]]:
-    enemies: dict[int, set[int]] = {}
-    for war in save.get("wars") or []:
-        if not war.get("winner"):
-            sides = [({war.get(f"main_{camp}")} | set(war.get(f"list_{camp}s") or [])) - {None} for camp in ("attacker", "defender")]
-            for side, foes in (sides, sides[::-1]):
-                for kid in side:
-                    enemies.setdefault(kid, set()).update(foes)
-    zone_city = {(z["x"], z["y"]): c["id"] for c in save.get("cities") or [] for z in c.get("zones") or []}
-    owner = {c["id"]: c.get("kingdomID") for c in save.get("cities") or []}
-    besieging: dict[int, set[int]] = {}
-    for actor in save.get("actors_data") or []:
-        if actor.get("profession") not in _CAPTURE_PROFESSIONS or is_aboard(actor) or not (kid := actor.get("civ_kingdom_id")):
-            continue
-        cid = zone_city.get((int(actor["x"]) // ZONE_TILES, int(actor["y"]) // ZONE_TILES))
-        if cid is not None and kid in enemies.get(owner[cid], ()):
-            besieging.setdefault(cid, set()).add(kid)
-    return besieging
 
 
 # What `datas/biomes.json` says of a biome, whichever of WB's two spellings it is asked under — `{}` for a tile that carries none.
@@ -597,15 +569,18 @@ def latest_chapter() -> int:
     return max((int(p.name[1:]) for p in SAVES_DIR.glob("C*") if p.is_dir() and p.name[1:].isdigit()), default=0)
 
 
-# Narrative age tier for kingdom demographics: baby/child/teen from `age_adult` (÷8, ÷2, ·1); `elder` = WB `isPrettyOld` (age/lifespan > 0.7).
-def life_stage(age: int, age_adult: float, lifespan: float) -> str:
+# Narrative tiers: egg/baby/child/teen split `age_adult` (÷8, ÷2, ·1) and sum to WB's `isBaby`, `elder` is `isPrettyOld`, `adult` the rest — its line never moves.
+def life_stage(age: int, age_adult: float, lifespan: float, egg: bool) -> str:
+    if egg:
+        return "egg"
     if age < age_adult / 8:
         return "baby"
     if age < age_adult / 2:
         return "child"
     if age < age_adult:
         return "teen"
-    if lifespan and age > lifespan * _ELDER_AGE_RATIO:
+    # The `lifespan` test is ours and departs from WB on purpose: it divides, so a body the game gives no span reads an infinite ratio and turns old at once.
+    if age > _ELDER_MIN_AGE and lifespan and age > lifespan * _ELDER_AGE_RATIO:
         return "elder"
     return "adult"
 
@@ -667,6 +642,11 @@ def meta_report(kind: str, state: dict) -> str | None:
     return " ".join(said) or None
 
 
+# WB `Subspecies.needs_food`, cached off the `needs_food` meta-tag in `cacheTags` — carried by the one `stomach` trait, so a body without a gut never hungers.
+def needs_food(subspecies: dict | None) -> bool:
+    return _has_meta_tag(subspecies, "needs_food")
+
+
 # Parses a comma-separated section list — `None` and `full` both expand to all known sections, unless the caller has no `full` to offer (`geography`).
 def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: bool = True) -> tuple[str, ...]:
     if allow_full and (not arg or arg == "full"):
@@ -711,6 +691,9 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
     if not isinstance(value, (dict, list)) or not value:
         if type(value) is int:  # a third of a roster's leaves, and `json.dumps` walks its whole encoder to print one — `bool` has a type of its own, so it misses
             return str(value)
+        # Same reasoning for a plain string, and they outnumber the ints: only a quote, a backslash or a control character needs the encoder's attention.
+        if type(value) is str and not _NEEDS_ESCAPE.search(value):
+            return f'"{value}"'
         # A ratio that lands whole prints whole: `5.0` is noise the chronicler would have to read past, and no consumer distinguishes it from `5`.
         return json.dumps(int(value) if isinstance(value, float) and value.is_integer() else value, ensure_ascii=False)
     if isinstance(value, dict):

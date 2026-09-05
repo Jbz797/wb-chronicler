@@ -4,7 +4,7 @@
 # A religion is preached, not inherited — WB converts a soul who hears it, where a culture is handed down at birth and a clan answers to a chief.
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache
 from pathlib import Path
 
@@ -38,14 +38,15 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("books", "breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the creed's record, its shelf and its library
 
 
 # Books grouped by the creed they were written under, off their own `religion_id` — the save lists every volume standing, its faith stamped on it.
 def _books_by_religion(save: dict) -> dict[int, list[dict]]:
-    by_religion: dict[int, list[dict]] = {}
+    by_religion: defaultdict[int, list[dict]] = defaultdict(list)  # a factory, `setdefault` costing a fresh list per volume to drop it on all but the first
     for book in sorted(save.get("books") or [], key=lambda b: b["id"]):
         if (rid := book.get("religion_id")) is not None:
-            by_religion.setdefault(rid, []).append(book)
+            by_religion[rid].append(book)
     return by_religion
 
 
@@ -167,22 +168,22 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown religion: {religion_id}", file=sys.stderr)
         return 1
 
-    # One pass feeds every tally: WB points the actor at the faith it holds, never the reverse.
+    # One pass feeds every tally: WB points the actor at the faith it holds, never the reverse. Skipped whole where no section asked — `traits` reads a data file.
     tallies: dict = {
         "cities": Counter(c["id_religion"] for c in save.get("cities") or [] if c.get("id_religion")),
         "housed": Counter(),
         "kingdoms": Counter(k["id_religion"] for k in save.get("kingdoms") or [] if k.get("id_religion")),
-        "members": {},
+        "members": defaultdict(list),
         "money": Counter(),
         "renown_total": Counter(),
         "warriors": Counter(),
     }
 
-    for actor in save.get("actors_data") or []:
+    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
         if not (rid := actor.get("religion")):
             continue
         tallies["housed"][rid] += bool(actor.get("homeBuildingID"))
-        tallies["members"].setdefault(rid, []).append(actor)
+        tallies["members"][rid].append(actor)
         tallies["money"][rid] += int(actor.get("money") or 0)
         tallies["renown_total"][rid] += int(actor.get("renown") or 0)
         tallies["warriors"][rid] += actor.get("profession") == PROFESSION_WARRIOR
@@ -202,7 +203,6 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
-    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
     if "books" in sections:
         out["books"] = _build_books(religion, ctx, requested)
     if "breakdown" in sections:  # The living against the founder's `identity`: a creed crosses blood and border by preaching, one conversion at a time.
@@ -210,7 +210,7 @@ def main(argv: list[str]) -> int:
     if "identity" in sections:
         out["identity"] = _build_identity(religion, ctx)
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below five faithful, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
@@ -221,6 +221,7 @@ def main(argv: list[str]) -> int:
         out["ranks"] = competition_ranks(religion, list(religions_by_id.values()), _rank_getters(tallies, ctx["world_time"], ctx["books_by_religion"]()))
     if "traits" in sections:
         out["traits"] = _build_traits(religion, detailed=requested not in (None, "full"))
+
     emit(out)
     return 0
 

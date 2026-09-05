@@ -4,7 +4,7 @@
 # WB mutates one out of another as a world ages, so a species holds many — and a subspecies outlives every crown and clan its bearers ever joined.
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache, partial
 from operator import itemgetter
 from pathlib import Path
@@ -157,20 +157,20 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
 
 # Every species alive, each with the standing the panel ranks it on: one pass over the actors, so a subspecies costs the same whichever stock it sprang from.
 def _species_totals(save: dict) -> dict[str, dict]:
-    cities: dict[str, set] = {}
-    kingdoms: dict[str, set] = {}
-    totals: dict[str, dict] = {}
+    # Factories rather than `setdefault`, which would mint a row and two sets per actor merely to keep the first — thousands of them over a mature world.
+    cities: defaultdict[str, set] = defaultdict(set)
+    kingdoms: defaultdict[str, set] = defaultdict(set)
+    totals: defaultdict[str, dict] = defaultdict(_EMPTY_SPECIES.copy)
     for actor in save.get("actors_data") or []:
         if is_boat(actor) or not (asset_id := actor.get("asset_id")):
             continue
-        if (entry := totals.get(asset_id)) is None:
-            entry = totals[asset_id] = _EMPTY_SPECIES.copy()  # `setdefault` would mint one per actor, thousands of them, to keep the first
+        entry = totals[asset_id]
         entry["population"] += 1
         entry["renown"] += int(actor.get("renown") or 0)
         if city := actor.get("cityID"):
-            cities.setdefault(asset_id, set()).add(city)
+            cities[asset_id].add(city)
         if kingdom := actor.get("civ_kingdom_id"):
-            kingdoms.setdefault(asset_id, set()).add(kingdom)
+            kingdoms[asset_id].add(kingdom)
     for entry_id, entry in totals.items():
         entry["cities"] = len(cities.get(entry_id, ()))
         entry["kingdoms"] = len(kingdoms.get(entry_id, ()))
@@ -207,19 +207,17 @@ def main(argv: list[str]) -> int:
     # One pass feeds every tally: WB points the actor at its biology, never the reverse. Skipped whole where no section asked — `taxonomy` reads a data file.
     tallies: dict = {
         "housed": Counter(),
-        "members": {},
+        "members": defaultdict(list),  # a factory, `setdefault` costing a fresh list per actor to throw it away on all but the first
         "money": Counter(),
         "renown_total": Counter(),
         "warriors": Counter(),
     }
 
-    walked = save.get("actors_data") or [] if _NEEDS_ACTORS.intersection(sections) else ()
-
-    for actor in walked:
+    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
         if not (sid := actor.get("subspecies")):
             continue
         tallies["housed"][sid] += bool(actor.get("homeBuildingID"))
-        tallies["members"].setdefault(sid, []).append(actor)
+        tallies["members"][sid].append(actor)
         tallies["money"][sid] += int(actor.get("money") or 0)
         tallies["renown_total"][sid] += int(actor.get("renown") or 0)
         tallies["warriors"][sid] += actor.get("profession") == PROFESSION_WARRIOR
@@ -237,12 +235,11 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
-    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
     if "breakdown" in sections:
         # The living against the biology they were born into. Species and subspecies both go: WB fixes them at birth, so each would read 100 % and say nothing.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k not in ("species", "subspecies")}
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below five members, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
@@ -259,6 +256,7 @@ def main(argv: list[str]) -> int:
         out["taxonomy"] = _build_taxonomy(subspecies)
     if "traits" in sections:
         out["traits"] = _build_traits(subspecies, detailed=requested not in (None, "full"))
+
     emit(out)
     return 0
 

@@ -119,7 +119,9 @@ _AUDIT_TIERS = {
 _CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "sapient", "taxonomy"})
 
 # `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
-_DEMOGRAPHY = frozenset({"adults", "babies", "children", "couples", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"})
+_DEMOGRAPHY = frozenset(
+    {"adults", "babies", "children", "couples", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
+)
 
 # Everything a reset sweeps away. `tiles` holds the ticking ones (fires, melting ice), not the ground — that lives in `tileMap`/`tileArray`/`tileAmounts`.
 _EMPTIED = (
@@ -229,6 +231,8 @@ def _amend_world(live_wbox: Path, description: str) -> int:
 # The whole rewind, in the order WB's fields depend on one another: survivors first, `id_building` counting from them. Of `buildings`, only landmarks stand.
 def _bare_world(save: dict, name: str, description: str) -> None:
     save["buildings"] = [b for b in save.get("buildings") or [] if _GEO_ASSETS.search(b.get("asset_id") or "")]
+    for landmark in save["buildings"]:  # stamped afresh: the clock restarts below, and a peak left on the old one would read older than the world it stands in
+        landmark["created_time"] = 0.0
     for key in _EMPTIED:
         save[key] = []
 

@@ -133,7 +133,6 @@ def main(argv: list[str]) -> int:
         out["metadata"] = _build_metadata(war, attackers, defenders, ctx)
 
     emit(out)
-
     return 0
 
 

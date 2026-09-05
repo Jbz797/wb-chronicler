@@ -4,7 +4,7 @@
 # A culture is inherited, not joined — WB hands it down at birth and a conquest converts a town whole, where a clan wins one soul at a time and answers to a chief.
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache
 from pathlib import Path
 
@@ -38,14 +38,15 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("books", "breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the custom's record, its shelf and its library
 
 
 # Books grouped by the custom they were written under, off their own `culture_id` — the save lists every volume ever written, its author's culture stamped on it.
 def _books_by_culture(save: dict) -> dict[int, list[dict]]:
-    by_culture: dict[int, list[dict]] = {}
+    by_culture: defaultdict[int, list[dict]] = defaultdict(list)  # a factory, `setdefault` costing a fresh list per volume to drop it on all but the first
     for book in sorted(save.get("books") or [], key=lambda b: b["id"]):
         if (cid := book.get("culture_id")) is not None:
-            by_culture.setdefault(cid, []).append(book)
+            by_culture[cid].append(book)
     return by_culture
 
 
@@ -167,22 +168,22 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown culture: {culture_id}", file=sys.stderr)
         return 1
 
-    # One pass feeds every tally: WB points the actor at the customs it was raised in, never the reverse.
+    # One pass feeds every tally: WB points the actor at the customs it was raised in, never the reverse. Skipped where no section asked — `traits` reads a file.
     tallies: dict = {
         "cities": Counter(c["id_culture"] for c in save.get("cities") or [] if c.get("id_culture")),
         "housed": Counter(),
         "kingdoms": Counter(k["id_culture"] for k in save.get("kingdoms") or [] if k.get("id_culture")),
-        "members": {},
+        "members": defaultdict(list),
         "money": Counter(),
         "renown_total": Counter(),
         "warriors": Counter(),
     }
 
-    for actor in save.get("actors_data") or []:
+    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
         if not (cid := actor.get("culture")):
             continue
         tallies["housed"][cid] += bool(actor.get("homeBuildingID"))
-        tallies["members"].setdefault(cid, []).append(actor)
+        tallies["members"][cid].append(actor)
         tallies["money"][cid] += int(actor.get("money") or 0)
         tallies["renown_total"][cid] += int(actor.get("renown") or 0)
         tallies["warriors"][cid] += actor.get("profession") == PROFESSION_WARRIOR
@@ -202,8 +203,6 @@ def main(argv: list[str]) -> int:
     }
 
     out: dict = {}
-    base_cache: dict = {}  # `compute_actor_stats` computes one heavy base per biology and reuses it; the podium and every section after share this one
-
     if "books" in sections:
         out["books"] = _build_books(culture, ctx, requested)
     if "breakdown" in sections:  # The living against the founder's `identity`, the widest drift of any tier: a child takes its city's customs, not its blood.
@@ -211,7 +210,7 @@ def main(argv: list[str]) -> int:
     if "identity" in sections:
         out["identity"] = _build_identity(culture, ctx)
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below five followers, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx, base_cache))
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
@@ -224,7 +223,6 @@ def main(argv: list[str]) -> int:
         out["traits"] = _build_traits(culture, detailed=requested not in (None, "full"))
 
     emit(out)
-
     return 0
 
 

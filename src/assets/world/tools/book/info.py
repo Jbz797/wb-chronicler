@@ -4,6 +4,7 @@
 # The handle is a book id — a town's `books` and a culture's both print it beside the title, each listing refs alone and leaving the volume itself here.
 
 import sys
+from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -82,7 +83,7 @@ def main(argv: list[str]) -> int:
 
     ctx = {
         "cities_by_id": index_by_id(save.get("cities") or []),
-        "city_of_book": lambda: books_held(save)[2],  # custody, not authorship; called not stored, a walk of every building only `metadata` needs
+        "city_of_book": cache(lambda: books_held(save)[2]),  # custody, not authorship; called not stored, a walk of every building only `metadata` needs
         "world_time": save["mapStats"]["world_time"],
     }
 
@@ -95,6 +96,7 @@ def main(argv: list[str]) -> int:
         out["origin"] = _build_origin(book)
     if "teaches" in sections:  # the traits a volume passes on, each absent where WB set none — a reader may catch the custom, the tongue or the rite
         out["teaches"] = {field.removeprefix("trait_id_"): trait for field in _BOOK_TRAITS if (trait := book.get(field))}
+
     emit(out)
     return 0
 

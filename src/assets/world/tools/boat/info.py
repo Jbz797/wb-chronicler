@@ -4,6 +4,7 @@
 # The handle is an actor id — WB models boats as actors, so a world's `boats` section and a realm's both print it beside the kind, leaving the hull itself here.
 
 import sys
+from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -33,7 +34,7 @@ _MASS_SCALE_UNIT = 0.1  # WB `Actor.getMassKG` weighs a hull as `mass_2 × (scal
 
 # Moored on a quay's own tile — rare, a hull riding two tiles offshore at best, and never necessarily its own: WB lets one tie up at a rival's dock.
 def _berth(boat: dict, ctx: dict) -> dict | None:
-    quay = ctx["buildings_by_tile"].get((boat.get("x"), boat.get("y")))
+    quay = ctx["buildings_by_tile"]().get((boat.get("x"), boat.get("y")))
     return {"asset_id": quay.get("asset_id"), "id": quay["id"]} if quay else None
 
 
@@ -104,6 +105,12 @@ def _build_traits(boat: dict, detailed: bool) -> dict | list[dict]:
     return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "group")})
 
 
+# Built structures by their tile, so `metadata` can name the quay a hull is moored at. Nature files under `buildings` too, and nobody ties up to a field.
+def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
+    civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
+    return {(b.get("mainX"), b.get("mainY")): b for b in save.get("buildings") or [] if b.get("asset_id") in civic}
+
+
 # WB `BaseSimObject.getMaxHealth` reads the finished `health` stat: the template's, lifted a twentieth per level, then multiplied by whatever the traits grant.
 def _health_max(boat: dict, ctx: dict, level: int) -> int:
     base = load_data("boat-assets.json").get("kinds", {}).get(_kind_of(boat), {}).get("health", 0)
@@ -154,8 +161,7 @@ def main(argv: list[str]) -> int:
 
     ctx = {
         "buildings_by_id": index_by_id(save.get("buildings") or []),
-        # Built structures only: WB files trees, wheat and vegetation under `buildings` too, and nobody steps « inside » a field.
-        "buildings_by_tile": {(b.get("mainX"), b.get("mainY")): b for b in save.get("buildings") or [] if b.get("asset_id") in civic_building_ids()},
+        "buildings_by_tile": cache(lambda: _buildings_by_tile(save)),  # called not stored: only `metadata` asks what quay a hull is tied to
         "cities_by_id": index_by_id(save.get("cities") or []),
         "creature_traits": load_data("creature-traits.json"),
         "equipment": load_data("equipment.json"),
@@ -178,7 +184,6 @@ def main(argv: list[str]) -> int:
         out["traits"] = _build_traits(boat, detailed=requested not in (None, "full"))
 
     emit(out)
-
     return 0
 
 
