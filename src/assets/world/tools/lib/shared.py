@@ -27,6 +27,7 @@ EQUIPMENT_RACKS = {
 }
 
 MIN_PER_CAPITA_UNITS = 3  # Below three souls a per-head ratio measures the divisor, not the body — a lone survivor would top every podium.
+MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
@@ -85,7 +86,6 @@ _META_REPORTS = {
 
 _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homeless` — the two that count heads rather than weigh hearts.
 _MIN_LEADERS_UNITS = 5  # below this a podium names a champion among two or three — the body is too small for any of its members to stand out
-_MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 _NEEDS_ESCAPE = re.compile(r'["\\\x00-\x1f]')  # what `json.encoder.ESCAPE` covers, its named `\b\f\n\r\t` all sitting inside the control range
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
@@ -391,7 +391,7 @@ def civic_building_ids() -> frozenset[str]:
 
 # Standard competition rank (1,2,2,4) among `peers`, the entity among them: top 3 only, a metric at 0 skipped, and the key order left to `render`, which sorts.
 def competition_ranks(entity, peers: list, getters: dict) -> dict:
-    if len(peers) < _MIN_RANK_PEERS:  # one guard for all eleven ranked blocks: each of them reaches its podium through here
+    if len(peers) < MIN_RANK_PEERS:  # one guard for all eleven ranked blocks: each of them reaches its podium through here
         return {}
     ranks = {}
     for stat, getter in getters.items():
@@ -696,10 +696,12 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
             return f'"{value}"'
         # A ratio that lands whole prints whole: `5.0` is noise the chronicler would have to read past, and no consumer distinguishes it from `5`.
         return json.dumps(int(value) if isinstance(value, float) and value.is_integer() else value, ensure_ascii=False)
+
     if isinstance(value, dict):
         parts = []
         record = all(isinstance(k, str) and k.isidentifier() for k in value)  # Records sort; late keys move nothing. Data-keyed maps and `_VALUE_ORDERED` apart.
-        numbered = all(isinstance(k, str) and k.lstrip("-").isdigit() for k in value)  # ids as keys sort on their value: `2` belongs before `10`, not after `1`
+        # ids as keys sort on their value: `2` before `10`. Second, and skipped on a record: a key all digits is no identifier, so the two never both hold.
+        numbered = not record and all(isinstance(k, str) and k.lstrip("-").isdigit() for k in value)
         items = sorted(value.items(), key=lambda kv: int(kv[0])) if numbered else sorted(value.items()) if record and key not in _VALUE_ORDERED else value.items()
         for k, v in items:
             dumped = f'"{k}"' if record else json.dumps(k, ensure_ascii=False)  # `record` proved every key an identifier; the rest keep their accents
@@ -708,10 +710,12 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
     else:
         parts = [render(v, indent + 1, 1) for v in value]
         one, ends = "[" + ", ".join(parts) + "]", "[]"
+
     # A child that had to expand leaves a newline in `one` — that rules the parent out of the single-line form. Most nodes fit, hence the late split.
     if "\n" not in one and indent * 2 + used + len(one) <= _INLINE_WIDTH:
         return one
     pad = "  " * indent
+
     # A list of numbers too long to inline packs across filled lines — an id roster reads as a block, where one value per row spends more padding than data.
     if isinstance(value, list) and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value):
         rows = [""]
@@ -721,6 +725,7 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
             else:
                 rows[-1] = f"{rows[-1]} {piece}".lstrip()
         return "[\n" + "\n".join(f"{pad}  {r}" for r in rows) + f"\n{pad}]"
+
     return f"{ends[0]}\n" + ",\n".join(f"{pad}  {p}" for p in parts) + f"\n{pad}{ends[1]}"
 
 

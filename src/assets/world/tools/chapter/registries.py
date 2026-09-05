@@ -8,11 +8,12 @@ import json
 import sys
 from collections import Counter, defaultdict
 from functools import cache
+from itertools import groupby
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
+from shared import MIN_RANK_PEERS, SAVES_DIR, city_score_ranks, index_by_id, is_boat, kingdom_score_ranks, load_data, load_save, resolve_profession, sex_label
 
 _ENCODE = json.JSONEncoder(ensure_ascii=False, sort_keys=True).encode  # mounted once: given keyword arguments, `json.dumps` builds a fresh encoder per call
 
@@ -27,6 +28,7 @@ _FOUNDER_FIELDS = (
     ("religions", ("creator_id",), "creator_species_id"),
 )
 
+_PODIUM_PLACES = 3  # gold, silver, bronze — and the widest tie a place can hold, past which the medal marks the field, not the one who takes it
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
 _REGISTRIES = ("alliances", "books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "religions", "subspecies")
 _SIZE_TIERS = (5, 15, 30, 60, 120, 250, 500, 1000)  # Population upper bounds → settlement tier 1-9 (foyer→cité-monde), mirrors the `chronicler.md` naming scale.
@@ -384,15 +386,19 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
     return entry
 
 
-# Standard competition rank (1,2,2,4) on a single counter, top 3 only — every tag's podium, ties sharing a medal and the next place skipped.
+# Competition ranks (1, 2, 2, 4) over three places, `{}` where the medal says nothing — too thin a field, or a tie so wide that gold marks the world, not the winner.
 def _podium(counts: Counter) -> dict[int, int]:
+    if len(counts) < MIN_RANK_PEERS:
+        return {}
     ranks: dict[int, int] = {}
-    previous = None
-    for place, (entity_id, count) in enumerate(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])), 1):
-        rank = ranks[previous] if previous is not None and counts[previous] == count else place
-        if rank > 3:
+    place = 1
+    for _, group in groupby(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])), key=lambda kv: kv[1]):
+        if place > _PODIUM_PLACES:
             break
-        ranks[entity_id], previous = rank, entity_id
+        tied = [entity_id for entity_id, _ in group]
+        if len(tied) <= _PODIUM_PLACES:  # skipped, not stopped: the places they fill still push the next value down the board
+            ranks.update(dict.fromkeys(tied, place))
+        place += len(tied)
     return ranks
 
 
