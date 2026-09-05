@@ -69,6 +69,7 @@ _AUDIT = {
             "founding_city",
             "founding_kingdom",
             "gen",
+            "hatch_months",
             "home",
             "in_building",
             "island_id",

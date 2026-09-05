@@ -655,13 +655,8 @@ def compute_actor_stats(actor: dict, ctx: dict) -> dict:
     return cleaned
 
 
-# WB `Actor.calcAgeStates` flags `_state_baby` down two roads, an egg and a body under its majority — and every rule reads that one flag, so an egg is a child.
-def is_baby(actor: dict, ctx: dict) -> bool:
-    return is_egg(actor, ctx) or actor_age(actor, ctx["world_time"]) < adult_age(actor, ctx)
-
-
-# WB `Actor.checkShouldBeEgg`: a biology that lays, a body under its majority, an incubation still running — that majority ungated, an egg needs no baby form.
-def is_egg(actor: dict, ctx: dict) -> bool:
+# What an egg has left before it cracks, in the months WB counts an incubation in. `None` where the body is no egg, so one call answers the delay and the state.
+def hatch_months(actor: dict, ctx: dict) -> float | None:
     memo, sub_id = ctx["incubation_memo"], actor.get("subspecies")
     if sub_id not in memo:
         traits = (ctx["subspecies_by_id"].get(sub_id) or {}).get("saved_traits") or []
@@ -670,10 +665,21 @@ def is_egg(actor: dict, ctx: dict) -> bool:
         months = sum((library.get(t) or {}).get("meta_stats", {}).get(_MATURATION, 0) for t in traits) if _EGG_TRAIT in traits else 0
         memo[sub_id] = months
     if not (months := memo[sub_id]):
-        return False
+        return None
     if actor_age(actor, ctx["world_time"]) >= _subspecies_ages(actor, ctx)[0]:
-        return False
-    return ctx["world_time"] - float(actor.get("created_time") or 0) < months * UNITS_PER_MONTH
+        return None
+    left = months - (ctx["world_time"] - float(actor.get("created_time") or 0)) / UNITS_PER_MONTH
+    return left if left > 0 else None
+
+
+# WB `Actor.calcAgeStates` flags `_state_baby` down two roads, an egg and a body under its majority — and every rule reads that one flag, so an egg is a child.
+def is_baby(actor: dict, ctx: dict) -> bool:
+    return is_egg(actor, ctx) or actor_age(actor, ctx["world_time"]) < adult_age(actor, ctx)
+
+
+# WB `Actor.checkShouldBeEgg`: a biology that lays, a body under its majority, an incubation still running — that majority ungated, an egg needs no baby form.
+def is_egg(actor: dict, ctx: dict) -> bool:
+    return hatch_months(actor, ctx) is not None
 
 
 # WB `IMetaObject`'s four ratios, the input its self-report reads. Happiness only answers for a biology bearing an `amygdala`, WB's own `has_emotions` tag.
