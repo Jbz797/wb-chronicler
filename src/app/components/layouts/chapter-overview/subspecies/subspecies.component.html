@@ -3,7 +3,7 @@
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat source="subspecies" stat="age" suffix="ui_years" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appPresent="s.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="subspecies" stat="renown_total" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="membersTitle">
@@ -20,19 +20,19 @@
       </nz-descriptions-item>
     }
 
-    <nz-descriptions-item [nzTitle]="citiesTitle">
+    <nz-descriptions-item *appPresent="s.metadata.cities" [nzTitle]="citiesTitle">
       <app-ranked-stat source="subspecies" stat="cities" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="kingdomsTitle">
+    <nz-descriptions-item *appPresent="s.metadata.kingdoms" [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="subspecies" stat="kingdoms" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appPresent="s.population.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="subspecies" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appPresent="s.population.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="subspecies" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="moneyTitle">
+    <nz-descriptions-item *appPresent="s.population.money" [nzTitle]="moneyTitle">
       <app-ranked-stat source="subspecies" stat="money" />
     </nz-descriptions-item>
   </nz-descriptions>
@@ -53,19 +53,19 @@
     @if (biomeName(); as b) {
       <nz-descriptions-item [nzTitle]="biomeTitle">{{ b }}</nz-descriptions-item>
     }
-    <nz-descriptions-item [nzTitle]="stockPopulationTitle">
+    <nz-descriptions-item *appPresent="s.species.population" [nzTitle]="stockPopulationTitle">
       <app-ranked-stat source="species" stat="population" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="stockRenownTitle">
+    <nz-descriptions-item *appPresent="s.species.renown" [nzTitle]="stockRenownTitle">
       <app-ranked-stat source="species" stat="renown" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="stockSubspeciesTitle">
+    <nz-descriptions-item *appPresent="s.species.subspecies" [nzTitle]="stockSubspeciesTitle">
       <app-ranked-stat source="species" stat="subspecies" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="stockCitiesTitle">
+    <nz-descriptions-item *appPresent="s.species.cities" [nzTitle]="stockCitiesTitle">
       <app-ranked-stat source="species" stat="cities" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="stockKingdomsTitle">
+    <nz-descriptions-item *appPresent="s.species.kingdoms" [nzTitle]="stockKingdomsTitle">
       <app-ranked-stat source="species" stat="kingdoms" />
     </nz-descriptions-item>
   </nz-descriptions>

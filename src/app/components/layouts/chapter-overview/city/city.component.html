@@ -33,7 +33,7 @@
     <nz-descriptions-item [nzTitle]="populationTitle">
       <app-ranked-stat source="city" stat="population" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="warriorsTitle">
+    <nz-descriptions-item *appPresent="c.population.warriors" [nzTitle]="warriorsTitle">
       <app-ranked-stat source="city" stat="warriors" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="deathsTitle">
@@ -42,7 +42,7 @@
     <nz-descriptions-item [nzTitle]="killsTitle">
       <app-ranked-stat source="city" stat="kills" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appPresent="c.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="city" stat="renown_total" />
     </nz-descriptions-item>
     @for (s of scoreStats(); track s.stat) {
@@ -69,7 +69,7 @@
     <nz-descriptions-item [nzTitle]="housesTitle">
       <app-ranked-stat source="city" stat="houses" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appPresent="c.population.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="city" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="territoryTitle">
@@ -78,10 +78,10 @@
     <nz-descriptions-item [nzTitle]="foodTitle">
       <app-ranked-stat source="city" stat="food" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="foodPerCapitaTitle">
+    <nz-descriptions-item *appPresent="c.population.food_per_capita" [nzTitle]="foodPerCapitaTitle">
       <app-ranked-stat numberFormat="1.1-1" source="city" stat="food_per_capita" suffix="ui_per_inhabitant" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appPresent="c.population.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="city" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="goodsTitle">

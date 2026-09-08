@@ -48,13 +48,13 @@ export interface PopulationBreakdown {
 
 // What the living of a body say of it, of which the panels print these — the age and sex slices stay in `<tier>/info.py <id> population`, for the chronicler.
 export interface TierPopulation {
-  fed_pct: number;
-  housed_pct: number;
+  fed_pct?: number;
+  housed_pct?: number;
   immortals?: number;
   infected?: number;
-  money: number;
-  renown_total: number;
+  money?: number;
+  renown_total?: number;
   sick?: number;
   total?: number; // the pooled living, on the tiers that gather rather than enrol — a clan counts its own under `members`
-  warriors: number;
+  warriors?: number;
 }

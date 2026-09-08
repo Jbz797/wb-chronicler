@@ -30,12 +30,14 @@ export class AllianceComponent {
   protected readonly alliance = computed(() => this._chronicler.currentChapter()?.meta.alliance ?? null);
   // Display order, not a lone rule: WB drops the scored rows at zero, while the warriors standing is always there to print.
   protected readonly lifetimeStats = computed<{ icon: string; inverted: boolean; label: string; stat: RankedStatKind }[]>(() => {
-    const meta = this.alliance()?.metadata;
-    if (!meta) return [];
+    const tier = this.alliance();
+    if (!tier) return [];
+    const meta = tier.metadata;
+    const pop = tier.population;
     const rows = [
       { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_births', shown: meta.births !== undefined, stat: 'births' as const },
       { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: meta.deaths !== undefined, stat: 'deaths' as const },
-      { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: true, stat: 'warriors' as const },
+      { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: pop.warriors !== undefined, stat: 'warriors' as const },
       { icon: 'assets/img/stats/kills.png', inverted: false, label: 'ui_kills', shown: meta.kills !== undefined, stat: 'kills' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, inverted, label, stat }) => ({ icon, inverted, label, stat }));

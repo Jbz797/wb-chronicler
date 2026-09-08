@@ -58,21 +58,20 @@ interface KingdomMetadata {
   wealth: number;
 }
 
-// Aggregates over the kingdom's inhabitants (wealth split, food/housing ratios) — distinct from the kingdom's own `metadata`. Its age/sex tallies and its
-// `money` total are chronicler-only: the Richesse card sums the shares itself, so it never reads the total back.
+// Aggregates over the kingdom's inhabitants, not its own `metadata` — age/sex tallies and the `money` total chronicler-only, the Richesse card summing the shares.
 interface KingdomPopulation {
-  fed_pct: number;
-  food_per_capita: number;
-  housed_pct: number;
+  fed_pct?: number;
+  food_per_capita?: number;
+  housed_pct?: number;
   immortals?: number;
   infected?: number;
-  nobles_money: number;
-  renown_total: number;
+  nobles_money?: number;
+  renown_total?: number;
   sick?: number;
-  subjects_money: number;
+  subjects_money?: number;
   total: number;
-  warriors: number;
-  wealth_per_capita: number;
+  warriors?: number;
+  wealth_per_capita?: number;
 }
 
 // The kingdom's rank (1-3) per stat among all kingdoms, podium-only; its six money-share podiums stay chronicler-only — Richesse prints those shares bare.

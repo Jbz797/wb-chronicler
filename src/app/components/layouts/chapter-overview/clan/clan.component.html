@@ -25,7 +25,7 @@
     <nz-descriptions-item [nzTitle]="renownTitle">
       <app-ranked-stat source="clan" stat="renown" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appPresent="c.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="clan" stat="renown_total" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="membersTitle">
@@ -49,13 +49,13 @@
       <!-- No podium: a band answers to one crown or to eight, nothing between, so the whole field ties on the second value and every clan takes a medal. -->
       <app-ranked-stat source="clan" stat="kingdoms" [showRank]="false" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appPresent="c.population.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="clan" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appPresent="c.population.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="clan" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="moneyTitle">
+    <nz-descriptions-item *appPresent="c.population.money" [nzTitle]="moneyTitle">
       <app-ranked-stat source="clan" stat="money" />
     </nz-descriptions-item>
   </nz-descriptions>

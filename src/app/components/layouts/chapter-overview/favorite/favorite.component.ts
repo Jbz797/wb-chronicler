@@ -8,6 +8,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { InventoryComponent, NewBadgeComponent, RankedStatComponent, TraitSummaryComponent } from '..';
 import { ACTIVE_ROLES, COMBAT_STATS, SKILL_STATS } from '../../../../constants';
+import { PresentDirective } from '../../../../directives';
 import { LabelHelpers } from '../../../../helpers';
 import { TierPipe } from '../../../../pipes';
 import { ChroniclerService, RegistryService } from '../../../../services';
@@ -27,6 +28,7 @@ import { PlotCardComponent } from './plot-card/plot-card.component';
     NzTagModule,
     PersonTagComponent,
     PlotCardComponent,
+    PresentDirective,
     RankedStatComponent,
     TierPipe,
     TraitSummaryComponent,

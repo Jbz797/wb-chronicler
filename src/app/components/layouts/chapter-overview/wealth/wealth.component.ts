@@ -5,13 +5,14 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { PresentDirective } from '../../../../directives';
 import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { RankedStatComponent } from '../ranked-stat/ranked-stat.component';
 
 @Component({
   selector: 'app-wealth',
-  imports: [CompactPipe, ExactPipe, NzDescriptionsModule, NzTooltipModule, RankedStatComponent, TranslatePipe],
+  imports: [CompactPipe, ExactPipe, NzDescriptionsModule, NzTooltipModule, PresentDirective, RankedStatComponent, TranslatePipe],
   templateUrl: './wealth.component.html',
 })
 export class WealthComponent {
@@ -20,6 +21,11 @@ export class WealthComponent {
 
   public readonly source = input.required<'city' | 'kingdom'>();
 
+  // Python trims the ratio under `MIN_PER_CAPITA_UNITS`, where the divisor speaks louder than the body — `undefined` drops the row rather than printing a 0.
+  protected readonly perCapita = computed(() => {
+    const meta = this._chronicler.currentChapter()?.meta;
+    return this.source() === 'city' ? meta?.city?.population.wealth_per_capita : meta?.kingdom?.population.wealth_per_capita;
+  });
   // Disjoint shares of `metadata.wealth`, so the cells sum to the total. Same four-way split either side: the crown or the mayor, then nobility, commoners, vaults.
   protected readonly shares = computed(() => {
     const meta = this._chronicler.currentChapter()?.meta;

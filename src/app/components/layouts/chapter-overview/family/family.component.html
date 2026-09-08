@@ -19,7 +19,7 @@
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat source="family" stat="age" suffix="ui_years" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTitle">
+    <nz-descriptions-item *appPresent="f.population.renown_total" [nzTitle]="renownTitle">
       <app-ranked-stat source="family" stat="renown_total" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="membersTitle">
@@ -43,13 +43,13 @@
     <nz-descriptions-item [nzTitle]="housesTitle">
       <app-ranked-stat source="family" stat="houses" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="housedTitle">
+    <nz-descriptions-item *appPresent="f.population.housed_pct" [nzTitle]="housedTitle">
       <app-ranked-stat deltaSuffix="%" source="family" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appPresent="f.population.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="family" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="moneyTitle">
+    <nz-descriptions-item *appPresent="f.population.money" [nzTitle]="moneyTitle">
       <app-ranked-stat source="family" stat="money" />
     </nz-descriptions-item>
   </nz-descriptions>

@@ -22,7 +22,7 @@ interface CityArmy {
   deaths: number;
   kills: number;
   melee: number;
-  money: number;
+  money?: number;
   name: string;
   ranged: number;
   renown: number;
@@ -68,19 +68,19 @@ interface CityMetadata {
 
 // The city's inhabitants aggregated, not its `metadata`: `immortals`/`infected`/`sick` omitted at 0, age/sex tallies ship but stay chronicler-only.
 interface CityPopulation {
-  fed_pct: number;
-  food_per_capita: number;
-  housed_pct: number;
+  fed_pct?: number;
+  food_per_capita?: number;
+  housed_pct?: number;
   immortals?: number;
   infected?: number;
-  money: number;
-  nobles_money: number;
-  renown_total: number;
+  money?: number;
+  nobles_money?: number;
+  renown_total?: number;
   sick?: number;
-  subjects_money: number;
+  subjects_money?: number;
   total: number;
-  warriors: number;
-  wealth_per_capita: number;
+  warriors?: number;
+  wealth_per_capita?: number;
 }
 
 // The city's rank (1-3) per stat among all cities, podium-only; the money ranks (`gold`, `money`, `nobles`) stay chronicler-only — Richesse prints them bare.

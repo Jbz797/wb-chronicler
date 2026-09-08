@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     MIN_RANK_PEERS,
+    PODIUM_PLACES,
     SAVES_DIR,
     city_score_ranks,
     index_by_id,
@@ -40,7 +41,6 @@ _FOUNDER_FIELDS = (
     ("religions", ("creator_id",), "creator_species_id"),
 )
 
-_PODIUM_PLACES = 3  # gold, silver, bronze — and the widest tie a place can hold, past which the medal marks the field, not the one who takes it
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
 _REGISTRIES = ("alliances", "books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "religions", "subspecies")
 _SIZE_TIERS = (5, 15, 30, 60, 120, 250, 500, 1000)  # Population upper bounds → settlement tier 1-9 (foyer→cité-monde), mirrors the `chronicler.md` naming scale.
@@ -134,7 +134,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
             members_by_religion[rid] += 1
         if sid := a.get("subspecies"):
             members_by_subspecies[sid] += 1
-        actor_id, species = a["id"], a.get("asset_id")  # both read three times below
+        actor_id, species = a["id"], a.get("asset_id")  # hoisted: the id is read three times below, the species twice
         if actor_id in king_ids:
             kings_by_id[actor_id] = a
         if (cid := a.get("cityID")) is not None:
@@ -147,8 +147,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
     rank_by_person = _podium(Counter({aid: int(a.get("level") or 0) for aid, (a, _) in crowd.items()}))  # a level, where every other podium counts heads
     persons = {str(aid): _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid)) for aid, (a, job) in crowd.items()}
 
-    rank_by_city = {cid: rank for cid, rank in city_score_ranks(save).items() if rank <= 3}  # top-3 of the composite settlement weight → same medal as a realm's
-    rank_by_kingdom = {kid: rank for kid, rank in kingdom_score_ranks(save).items() if rank <= 3}  # top-3 of the composite power score → gold/silver/bronze medal
+    rank_by_city = {cid: r for cid, r in city_score_ranks(save).items() if r <= PODIUM_PLACES}  # the composite settlement weight → same medal as a realm's
+    rank_by_kingdom = {kid: r for kid, r in kingdom_score_ranks(save).items() if r <= PODIUM_PLACES}  # the composite power score → gold/silver/bronze medal
 
     city_registry = {
         str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID")), rank_by_city.get(c["id"])) for c in cities
@@ -405,10 +405,10 @@ def _podium(counts: Counter) -> dict[int, int]:
     ranks: dict[int, int] = {}
     place = 1
     for _, group in groupby(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])), key=lambda kv: kv[1]):
-        if place > _PODIUM_PLACES:
+        if place > PODIUM_PLACES:
             break
         tied = [entity_id for entity_id, _ in group]
-        if len(tied) <= _PODIUM_PLACES:  # skipped, not stopped: the places they fill still push the next value down the board
+        if len(tied) <= PODIUM_PLACES:  # skipped, not stopped: the places they fill still push the next value down the board
             ranks.update(dict.fromkeys(tied, place))
         place += len(tied)
     return ranks

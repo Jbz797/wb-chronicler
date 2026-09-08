@@ -39,7 +39,7 @@
     <nz-descriptions-item [nzTitle]="populationTitle">
       <app-ranked-stat source="kingdom" stat="population" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="warriorsTitle">
+    <nz-descriptions-item *appPresent="k.population.warriors" [nzTitle]="warriorsTitle">
       <app-ranked-stat source="kingdom" stat="warriors" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="deathsTitle">
@@ -48,7 +48,7 @@
     <nz-descriptions-item [nzTitle]="killsTitle">
       <app-ranked-stat source="kingdom" stat="kills" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appPresent="k.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="kingdom" stat="renown_total" />
     </nz-descriptions-item>
     @for (s of scoreStats(); track s.stat) {
@@ -78,7 +78,7 @@
     <nz-descriptions-item [nzTitle]="housesTitle">
       <app-ranked-stat source="kingdom" stat="houses" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appPresent="k.population.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="kingdom" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="territoryTitle">
@@ -90,10 +90,10 @@
     <nz-descriptions-item [nzTitle]="foodTitle">
       <app-ranked-stat source="kingdom" stat="food" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="foodPerCapitaTitle">
+    <nz-descriptions-item *appPresent="k.population.food_per_capita" [nzTitle]="foodPerCapitaTitle">
       <app-ranked-stat numberFormat="1.1-1" source="kingdom" stat="food_per_capita" suffix="ui_per_inhabitant" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appPresent="k.population.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="kingdom" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="goodsTitle">

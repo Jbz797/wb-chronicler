@@ -29,6 +29,7 @@ EQUIPMENT_RACKS = {
 MIN_PER_CAPITA_UNITS = 3  # Below three souls a per-head ratio measures the divisor, not the body — a lone survivor would top every podium.
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
+PODIUM_PLACES = 3  # gold, silver, bronze — and the widest tie a place can hold, past which the medal marks the field, not the one who takes it.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
 PROFESSION_WARRIOR = 5
@@ -309,10 +310,11 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
 # Living children per parent, counted off `parent_id_1`/`parent_id_2`. World-wide on purpose — a parent's brood is theirs wherever it settled.
 def children_by_id(save: dict) -> Counter:
     tally: Counter = Counter()
-    for actor in save.get("actors_data") or []:
-        for parent in (actor.get("parent_id_1"), actor.get("parent_id_2")):
-            if parent:
-                tally[parent] += 1
+    for actor in save.get("actors_data") or []:  # both fields spelled out: a pair built per actor to be walked twice costs more than the second test
+        if parent := actor.get("parent_id_1"):
+            tally[parent] += 1
+        if parent := actor.get("parent_id_2"):
+            tally[parent] += 1
     return tally
 
 
@@ -398,9 +400,15 @@ def competition_ranks(entity, peers: list, getters: dict) -> dict:
         own = getter(entity)
         if own == 0:
             continue
-        rank = sum(1 for p in peers if getter(p) > own) + 1
-        if rank <= 3:
-            ranks[stat] = rank
+        # Stopped at the body that puts the entity off the podium: past there the place is never printed, so weighing the rest of the field buys nothing.
+        ahead = 0
+        for peer in peers:
+            if getter(peer) > own:
+                ahead += 1
+                if ahead == PODIUM_PLACES:
+                    break
+        if ahead < PODIUM_PLACES:
+            ranks[stat] = ahead + 1
     return ranks
 
 
@@ -774,10 +782,10 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "deaths": lambda r: r.get("total_deaths", 0),
         # No `fed_pct` on any tier: hunger is where a people stood when the save was written, and it ties most of the field in peace — `population` says the share.
         "food": food,
-        "food_per_capita": lambda r: food(r) / n if (n := populations(r)) else 0.0,
+        "food_per_capita": lambda r: food(r) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
         "gold": gold,
         "goods": tally("goods"),
-        "housed_pct": lambda r: (n - homeless(r)) / n if (n := populations(r)) else 0.0,
+        "housed_pct": lambda r: (n - homeless(r)) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
         "houses": tally("houses"),
         "immortals": tally("immortals"),
         "infected": tally("infected"),
@@ -796,7 +804,7 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "territory": lambda r: len(r.get("zones") or []),
         "warriors": tally("warriors"),
         "wealth": wealth,
-        "wealth_per_capita": lambda r: wealth(r) / n if (n := populations(r)) else 0.0,
+        "wealth_per_capita": lambda r: wealth(r) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
     }
 
 

@@ -41,10 +41,10 @@ _ALL_SECTIONS = ("books", "breakdown", "identity", "leaders", "members", "metada
 _NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the custom's record, its shelf and its library
 
 
-# Books grouped by the custom they were written under, off their own `culture_id` — the save lists every volume ever written, its author's culture stamped on it.
+# Books grouped by the custom their author kept, off their own `culture_id` — unsorted, since `ranks` only counts a shelf and the section printing it sorts its own.
 def _books_by_culture(save: dict) -> dict[int, list[dict]]:
     by_culture: defaultdict[int, list[dict]] = defaultdict(list)  # a factory, `setdefault` costing a fresh list per volume to drop it on all but the first
-    for book in sorted(save.get("books") or [], key=lambda b: b["id"]):
+    for book in save.get("books") or []:
         if (cid := book.get("culture_id")) is not None:
             by_culture[cid].append(book)
     return by_culture
@@ -55,7 +55,7 @@ def _build_books(culture: dict, ctx: dict, requested: str | None) -> dict:
     written = ctx["books_by_culture"]().get(culture["id"], ())
     if not wants_detail(requested, len(written)):
         return light({"total": len(written)})
-    return {"total": len(written), "written": [{"id": b["id"], "name": b.get("name")} for b in written]}
+    return {"total": len(written), "written": [{"id": b["id"], "name": b.get("name")} for b in sorted(written, key=lambda b: b["id"])]}
 
 
 # The founder's card, as WB's window lays it out. `name_template_set` sheds `_set` then `_default`, leaving the species unless the set departs: `dwarf_nordic`.
@@ -122,22 +122,23 @@ def _build_traits(culture: dict, detailed: bool) -> dict | list[dict]:
     return build_trait_list(held, library) if detailed else light({"ids": build_trait_ids(held, library, "group")})
 
 
-# The rank getters, shared with `competition_ranks`. Living counts read off the one actor pass: the podium weighs every custom, on every dimension below.
+# The rank getters, shared with `competition_ranks`. Living counts come off the rosters that one actor pass built — the podium weighs every custom.
 def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]) -> dict:
+    members = tallies["members"]  # the one container several getters read; the others answer a single lambda apiece and are reached where they are named
     return {
         "age": lambda c: entity_age(c, world_time),
         "books": lambda c: len(books.get(c["id"], ())),
         "cities": lambda c: tallies["cities"][c["id"]],
         "deaths": lambda c: int(c.get("total_deaths") or 0),
-        "housed_pct": lambda c: tallies["housed"][c["id"]] / n if (n := len(tallies["members"].get(c["id"], ()))) else 0.0,
+        "housed_pct": lambda c: tallies["housed"][c["id"]] / n if (n := len(members.get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "kills": lambda c: int(c.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
-        "kills_per_capita": lambda c: int(c.get("total_kills") or 0) / n if (n := len(tallies["members"].get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "kills_per_capita": lambda c: int(c.get("total_kills") or 0) / n if (n := len(members.get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "kingdoms": lambda c: tallies["kingdoms"][c["id"]],
-        "members": lambda c: len(tallies["members"].get(c["id"], ())),
+        "members": lambda c: len(members.get(c["id"], ())),
         "money": lambda c: tallies["money"][c["id"]],
         "renown": lambda c: int(c.get("renown") or 0),
-        "renown_per_capita": lambda c: int(c.get("renown") or 0) / n if (n := len(tallies["members"].get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "renown_per_capita": lambda c: int(c.get("renown") or 0) / n if (n := len(members.get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": lambda c: tallies["renown_total"][c["id"]],
         "traits": lambda c: len(c.get("saved_traits") or []),
         "warriors": lambda c: tallies["warriors"][c["id"]],
@@ -168,7 +169,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown culture: {culture_id}", file=sys.stderr)
         return 1
 
-    # One pass feeds every tally: WB points the actor at the customs it was raised in, never the reverse. Skipped where no section asked — `traits` reads a file.
+    # Towns and crowns answer off their own records; the living are grouped below. Skipped whole where no section asked — `traits` reads a data file.
     tallies: dict = {
         "cities": Counter(c["id_culture"] for c in save.get("cities") or [] if c.get("id_culture")),
         "housed": Counter(),
@@ -179,16 +180,25 @@ def main(argv: list[str]) -> int:
         "warriors": Counter(),
     }
 
-    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
-        if not (cid := actor.get("culture")):
-            continue
-        tallies["housed"][cid] += bool(actor.get("homeBuildingID"))
-        tallies["members"][cid].append(actor)
-        tallies["money"][cid] += int(actor.get("money") or 0)
-        tallies["renown_total"][cid] += int(actor.get("renown") or 0)
-        tallies["warriors"][cid] += actor.get("profession") == PROFESSION_WARRIOR
+    # WB points the actor at the customs it was raised in, never the reverse, so the following is gathered in one walk.
+    members_by_id = tallies["members"]
+    for actor in (save.get("actors_data") or []) if not _NEEDS_ACTORS.isdisjoint(sections) else ():
+        if cid := actor.get("culture"):
+            members_by_id[cid].append(actor)
 
-    members = tallies["members"].get(culture_id, [])
+    # The four sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
+    if "ranks" in sections:
+        housed, money, renown, warriors = (tallies[k] for k in ("housed", "money", "renown_total", "warriors"))
+        for cid, following in members_by_id.items():
+            roofs = coins = fame = fighters = 0
+            for actor in following:
+                roofs += bool(actor.get("homeBuildingID"))
+                coins += int(actor.get("money") or 0)
+                fame += int(actor.get("renown") or 0)
+                fighters += actor.get("profession") == PROFESSION_WARRIOR
+            housed[cid], money[cid], renown[cid], warriors[cid] = roofs, coins, fame, fighters
+
+    members = members_by_id.get(culture_id, [])
     ctx = {
         **build_actor_stats_context(save),  # brings the trait libraries and `subspecies_by_id`, `languages_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),

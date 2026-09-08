@@ -19,7 +19,7 @@
       </nz-descriptions-item>
     }
     <nz-descriptions-item [nzTitle]="crewTitle">{{ b.crew.total }}</nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="ageTitle">{{ b.metadata.age }} ans</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="ageTitle">{{ b.metadata.age }}{{ 'ui_years' | translate }}</nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="healthTitle">
       <span [class]="b.metadata.health | tier: b.metadata.health_max">{{ b.metadata.health | number: '1.0-0' }}</span>
       / {{ b.metadata.health_max | number: '1.0-0' }}

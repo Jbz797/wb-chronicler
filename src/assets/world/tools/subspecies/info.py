@@ -69,7 +69,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
-# The subspecies' identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
+# The biology's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
     biome_id = (subspecies.get("biome_variant") or "").removeprefix("biome_")
     causes = {k.removeprefix(_DEATH_PREFIX): v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
@@ -134,24 +134,24 @@ def _build_traits(subspecies: dict, detailed: bool) -> dict:
     return carried if detailed else light(carried)
 
 
-# What a biology is ranked on among the world's others. Living counts read off the one actor pass: the podium weighs every biology, on each dimension.
-def _rank_getters(tallies: dict, world_time: float) -> dict:
+# What a biology is ranked on among the world's others. Living counts come off the rosters that one actor pass built — the podium weighs every biology.
+def _rank_getters(members: dict, housed: Counter, money: Counter, renown: Counter, warriors: Counter, world_time: float) -> dict:
     return {
         "age": lambda s: entity_age(s, world_time),
         "births": lambda s: int(s.get("total_births") or 0),
         "births_per_death": lambda s: int(s.get("total_births") or 0) / d if (d := int(s.get("total_deaths") or 0)) else 0.0,
         # The reach `metadata` already prints, ranked as a custom and a creed rank theirs — both read off the one actor pass, no second walk.
-        "cities": lambda s: len({cid for a in tallies["members"].get(s["id"], ()) if (cid := a.get("cityID"))}),
+        "cities": lambda s: len({cid for a in members.get(s["id"], ()) if (cid := a.get("cityID"))}),
         "deaths": lambda s: int(s.get("total_deaths") or 0),
-        "housed_pct": lambda s: tallies["housed"][s["id"]] / n if (n := len(tallies["members"].get(s["id"], ()))) else 0.0,
+        "housed_pct": lambda s: housed[s["id"]] / n if (n := len(members.get(s["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "kills": lambda s: int(s.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
-        "kills_per_capita": lambda s: int(s.get("total_kills") or 0) / n if (n := len(tallies["members"].get(s["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
-        "kingdoms": lambda s: len({kid for a in tallies["members"].get(s["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
-        "members": lambda s: len(tallies["members"].get(s["id"], ())),
-        "money": lambda s: tallies["money"][s["id"]],
-        "renown_total": lambda s: tallies["renown_total"][s["id"]],  # WB's own `renown` only counts births; this one is the renown its bearers carry
-        "warriors": lambda s: tallies["warriors"][s["id"]],
+        "kills_per_capita": lambda s: int(s.get("total_kills") or 0) / n if (n := len(members.get(s["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "kingdoms": lambda s: len({kid for a in members.get(s["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
+        "members": lambda s: len(members.get(s["id"], ())),
+        "money": lambda s: money[s["id"]],
+        "renown_total": lambda s: renown[s["id"]],  # WB's own `renown` only counts births; this one is the renown its bearers carry
+        "warriors": lambda s: warriors[s["id"]],
     }
 
 
@@ -204,25 +204,25 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown subspecies: {subspecies_id}", file=sys.stderr)
         return 1
 
-    # One pass feeds every tally: WB points the actor at its biology, never the reverse. Skipped whole where no section asked — `taxonomy` reads a data file.
-    tallies: dict = {
-        "housed": Counter(),
-        "members": defaultdict(list),  # a factory, `setdefault` costing a fresh list per actor to throw it away on all but the first
-        "money": Counter(),
-        "renown_total": Counter(),
-        "warriors": Counter(),
-    }
+    # One pass groups the living by the biology they carry: WB points the actor at its subspecies, never the reverse. Skipped whole where no section asked.
+    housed, money, renown, warriors = Counter(), Counter(), Counter(), Counter()
+    members_by_id: defaultdict[int, list] = defaultdict(list)  # a factory, `setdefault` costing a fresh list per actor to throw it away on all but the first
+    for actor in (save.get("actors_data") or []) if not _NEEDS_ACTORS.isdisjoint(sections) else ():
+        if sid := actor.get("subspecies"):
+            members_by_id[sid].append(actor)
 
-    for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
-        if not (sid := actor.get("subspecies")):
-            continue
-        tallies["housed"][sid] += bool(actor.get("homeBuildingID"))
-        tallies["members"][sid].append(actor)
-        tallies["money"][sid] += int(actor.get("money") or 0)
-        tallies["renown_total"][sid] += int(actor.get("renown") or 0)
-        tallies["warriors"][sid] += actor.get("profession") == PROFESSION_WARRIOR
+    # The four sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
+    if "ranks" in sections:
+        for sid, group in members_by_id.items():
+            roofs = coins = fame = fighters = 0
+            for actor in group:
+                roofs += bool(actor.get("homeBuildingID"))
+                coins += int(actor.get("money") or 0)
+                fame += int(actor.get("renown") or 0)
+                fighters += actor.get("profession") == PROFESSION_WARRIOR
+            housed[sid], money[sid], renown[sid], warriors[sid] = roofs, coins, fame, fighters
 
-    members = tallies["members"].get(subspecies_id, [])
+    members = members_by_id.get(subspecies_id, [])
     ctx = {
         **build_actor_stats_context(save),  # brings the trait libraries and `languages_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),  # `population_of` pairs lovers through it, and only a mutual pair counts
@@ -247,7 +247,8 @@ def main(argv: list[str]) -> int:
     if "population" in sections:
         out["population"] = _build_population(members, ctx)
     if "ranks" in sections:
-        out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), _rank_getters(tallies, ctx["world_time"]))
+        getters = _rank_getters(members_by_id, housed, money, renown, warriors, ctx["world_time"])
+        out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), getters)
     if "species" in sections:
         out["species"] = _build_species(subspecies, save)
     if "stats" in sections:

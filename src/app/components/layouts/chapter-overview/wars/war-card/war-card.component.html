@@ -10,7 +10,7 @@
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="renownTitle">{{ w.metadata.renown_at_stake }}</nz-descriptions-item>
   @if (w.metadata.age > 0) {
-    <nz-descriptions-item [nzTitle]="durationTitle">{{ w.metadata.age }} ans</nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="durationTitle">{{ w.metadata.age }}{{ 'ui_years' | translate }}</nz-descriptions-item>
   }
 
   <nz-descriptions-item [nzTitle]="attackersTitle"><span appSectionRow></span></nz-descriptions-item>

@@ -12,9 +12,9 @@
     <nz-descriptions-item [nzTitle]="ageTitle">
       <app-ranked-stat stat="age" [hideDelta]="true" [suffix]="ageSuffix()" />
     </nz-descriptions-item>
-    @if (fav.metadata.tenure_years; as tenure) {
-      <nz-descriptions-item [nzTitle]="tenureTitle">{{ tenure }} ans</nz-descriptions-item>
-    }
+    <nz-descriptions-item *appPresent="fav.metadata.tenure_years" [nzTitle]="tenureTitle">
+      {{ fav.metadata.tenure_years }}{{ 'ui_years' | translate }}
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="lifespanTitle">
       <app-ranked-stat stat="lifespan" suffix="ui_years" />
     </nz-descriptions-item>
@@ -110,11 +110,11 @@
     <nz-descriptions-item [nzTitle]="staminaTitle">
       <app-ranked-stat stat="stamina" />
     </nz-descriptions-item>
-    @if (fav.stats.happiness; as happiness) {
-      <nz-descriptions-item [nzTitle]="happinessTitle">
-        <span [class]="happiness | tier: 100">{{ happiness }}%</span>
-      </nz-descriptions-item>
-    }
+    <nz-descriptions-item *appPresent="fav.stats.happiness" [nzTitle]="happinessTitle">
+      <!-- The guard above already proved the share present; the fallback only feeds `tier`, which takes a number. -->
+      @let happiness = fav.stats.happiness ?? 0;
+      <span [class]="happiness | tier: 100">{{ happiness }}%</span>
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="nutritionTitle">
       <span [class]="fav.stats.nutrition | tier: 100">{{ fav.stats.nutrition }}%</span>
     </nz-descriptions-item>

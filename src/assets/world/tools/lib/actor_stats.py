@@ -22,6 +22,7 @@ from functools import cache
 from math import inf
 
 from shared import (
+    MIN_PER_CAPITA_UNITS,
     NON_FOOD_SPECIES,
     PROFESSION_KING,
     PROFESSION_LEADER,
@@ -753,28 +754,29 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
     total = len(actors)
 
     return {
-        "adults": stages["adult"],
-        "babies": stages["baby"],
-        "children": stages["child"],
-        "couples": counts["couples"],
+        **({"adults": n} if (n := stages["adult"]) else {}),
+        **({"babies": n} if (n := stages["baby"]) else {}),
+        **({"children": n} if (n := stages["child"]) else {}),
+        **({"couples": n} if (n := counts["couples"]) else {}),
         **({"eggs": n} if (n := stages["egg"]) else {}),  # a laying biology alone ever carries the line, as `immortals` and `sick` carry theirs
-        "elders": stages["elder"],
-        "familyless": counts["familyless"],
-        "fed_pct": round(100 * counts["fed"] / eaters) if (eaters := counts["eaters"]) else 0,  # share of the food-needing sated (nutrition ≥ 60)
+        **({"elders": n} if (n := stages["elder"]) else {}),
+        **({"familyless": n} if (n := counts["familyless"]) else {}),
+        # Share of the food-needing sated (nutrition ≥ 60), dropped under the floor: below it the figure reports the divisor, not the body — as the podiums have it.
+        **({"fed_pct": round(100 * counts["fed"] / eaters)} if (eaters := counts["eaters"]) >= MIN_PER_CAPITA_UNITS else {}),
         # Dropped whole where the body holds nobody, as `eggs` and `immortals` drop at nought: a depth of 0 is no depth, WB counting a parentless founder its 1.
         **({"gen_deepest": max(generations), "gen_median": round(_median(generations))} if total else {}),
-        "happy": counts["happy"],
-        "housed_pct": round((total - counts["homeless"]) / total * 100) if total else 0,
+        **({"happy": n} if (n := counts["happy"]) else {}),
+        **({"housed_pct": round((total - counts["homeless"]) / total * 100)} if total >= MIN_PER_CAPITA_UNITS else {}),
         **({"immortals": n} if (n := counts["immortals"]) else {}),
         **({"infected": n} if (n := counts["infected"]) else {}),
-        "men": counts["men"],
-        "money": counts["money"],  # every coin the living carry between them
-        "renown_total": counts["renown"],  # summed renown of the members, distinct from whatever the body itself is worth
+        **({"men": n} if (n := counts["men"]) else {}),
+        **({"money": n} if (n := counts["money"]) else {}),  # every coin the living carry between them
+        **({"renown_total": n} if (n := counts["renown"]) else {}),  # summed renown, distinct from whatever the body itself is worth
         **({"sick": n} if (n := counts["sick"]) else {}),
-        "teens": stages["teen"],
+        **({"teens": n} if (n := stages["teen"]) else {}),
         "total": total,
-        "warriors": counts["warriors"],
-        "women": total - counts["men"],
+        **({"warriors": n} if (n := counts["warriors"]) else {}),
+        **({"women": n} if (n := total - counts["men"]) else {}),
     }
 
 
@@ -786,18 +788,18 @@ def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
         return ctx[f"{name}_by_{tier}"][entity_id]
 
     population = population_of(ctx[f"actors_by_{tier}"].get(entity_id, []), ctx)
-    money, nobles_money, total = population["money"], tally("nobles_money"), population["total"]
+    money, nobles_money, total = population.get("money", 0), tally("nobles_money"), population["total"]  # `money` drops at nought, `total` never does
 
     # What a roof over stores and a head on the throne add to what the people alone say — a biology or a band has neither, and reads `population_of` bare.
     return dict(
         sorted(
             {
                 **population,
-                "food_per_capita": round(tally("food") / total, 1) if total else 0,  # eatable stock ÷ population — food security
-                "nobles": tally("nobles"),
-                "nobles_money": nobles_money,  # the other nobles' coins, the head excluded — his own purse sits in `metadata`
-                "subjects_money": money - head_money(entity, ctx, tier) - nobles_money,  # commoners' coins: `money` less the head and the nobility
-                "wealth_per_capita": round((money + tally("gold")) / total, 1) if total else 0,  # `metadata.wealth` ÷ population
+                **({"food_per_capita": round(tally("food") / total, 1)} if total >= MIN_PER_CAPITA_UNITS else {}),  # eatable stock ÷ population
+                **({"nobles": n} if (n := tally("nobles")) else {}),
+                **({"nobles_money": nobles_money} if nobles_money else {}),  # the other nobles' coins, the head excluded — his purse sits in `metadata`
+                **({"subjects_money": n} if (n := money - head_money(entity, ctx, tier) - nobles_money) else {}),  # commoners' coins, head and nobility aside
+                **({"wealth_per_capita": round((money + tally("gold")) / total, 1)} if total >= MIN_PER_CAPITA_UNITS else {}),  # `metadata.wealth` ÷ population
             }.items()
         )
     )
