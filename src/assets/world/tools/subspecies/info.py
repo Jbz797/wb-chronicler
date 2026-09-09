@@ -123,13 +123,10 @@ def _build_taxonomy(subspecies: dict) -> dict:
 # Two libraries on one axis: `biology` what WB mutated the subspecies into, `birth` what its newborns inherit — both keyed by trait group, at any size.
 def _build_traits(subspecies: dict, detailed: bool) -> dict:
     build = build_trait_list if detailed else partial(build_trait_ids, key="group")
-    library, sworn = load_data("subspecies-traits.json"), subspecies.get("saved_traits") or []
-    # WB derives a biology's own faculties from its traits (`Subspecies.cacheTags`): it feels through an `amygdala`, eats through a `stomach`, lays or bears.
-    tags = sorted({tag for tid in sworn for tag in (library.get(tid) or {}).get("tags") or ()})
+    # WB reads a biology's faculties off its traits' tags (`Subspecies.cacheTags`) — each spelled-out entry carries its own, so they ride the named section alone.
     carried = {
-        "biology": build(sworn, library),
+        "biology": build(subspecies.get("saved_traits") or [], load_data("subspecies-traits.json")),
         "birth": build(subspecies.get("saved_actor_birth_traits") or [], load_data("creature-traits.json")),
-        **({"tags": tags} if tags else {}),
     }
     return carried if detailed else light(carried)
 

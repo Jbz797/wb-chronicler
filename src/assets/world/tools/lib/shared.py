@@ -300,7 +300,7 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
     for tid in trait_ids or []:
         entry = traits_data.get(tid) or {}
         item: dict = {"id": tid, "stats": entry.get("stats") or {}}
-        for key in ("description", "flavor", "group", "name", "rarity"):
+        for key in ("description", "flavor", "group", "name", "rarity", "tags"):
             if key in entry:
                 item[key] = entry[key]
         out.append(item)  # keys left as inserted: `render` sorts every record-shaped dict on the way out, so ordering them here would be sorting twice
