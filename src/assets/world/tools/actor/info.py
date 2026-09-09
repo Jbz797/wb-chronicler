@@ -167,6 +167,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     _, island_lookup = compute_islands_cached(save, ctx["save_path"])
 
     return {
+        # Chronicler-only, and only while it still bites: the age WB gives the child its halved `damage_max`/`health_max` back at — a bridling, not an infirmity.
+        **({"adult_age": round(age_adult, 1)} if age < age_adult else {}),
         "age": age,
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),

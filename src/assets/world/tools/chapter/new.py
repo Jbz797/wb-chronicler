@@ -60,6 +60,7 @@ _AUDIT = {
     "identity": frozenset({"founding_city", "founding_clan", "founding_kingdom", "motto", "name_culture", "name_template_set", "worldview"}),
     "metadata": frozenset(
         {
+            "adult_age",
             "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
             "besieged_by",
             "can_reproduce",
