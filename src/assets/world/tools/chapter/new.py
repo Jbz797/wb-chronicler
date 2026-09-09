@@ -53,9 +53,8 @@ _ALERTS = {
     },
 }
 
-# What no panel reads, cut by its section and never by name alone — `nobles` and `loot` have homonyms; a `<tier>.<section>` key overrides the bare one.
+# What no panel reads, cut by its section and never by name alone — `nobles` and `loot` have homonyms. A tier shedding more says so in `_AUDIT_TIERS`.
 _AUDIT = {
-    "alliance.identity": frozenset({"founding_kingdom", "motto"}),  # the pact is read by its own name and its members, not by the crown that opened it
     "army": frozenset({"captain_years", "total_captains"}),  # the corps' tenure and its roll of captains — the panel names the one in post, and only him
     "identity": frozenset({"founding_city", "founding_clan", "founding_kingdom", "motto", "name_culture", "name_template_set", "worldview"}),
     "metadata": frozenset(
@@ -63,6 +62,7 @@ _AUDIT = {
             "adult_age",
             "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
             "besieged_by",
+            "breeding_age",
             "can_reproduce",
             "clan_chief_years",
             "deaths_by_cause",
@@ -121,8 +121,8 @@ _AUDIT_TIERS = {
     "wars.metadata": {"started_by"},  # the soul who declared it — the card names the crown alone, and `war/info.py <id>` still hands the chronicler the man
 }
 
-# No panel reads them: `report` is per-call, `taxonomy` comes from `identity.species`, `passengers` counts souls at sea, the age pair English, `sapient` gates a tag.
-_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "sapient", "taxonomy"})
+# No panel reads them: `report` and `info` are per-call, `taxonomy` comes from `identity.species`, `hall_of_fame` and `passengers` are the chronicler's own readings.
+_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "hall_of_fame", "info", "passengers", "report", "sapient", "taxonomy"})
 
 # `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset(
@@ -692,7 +692,7 @@ def main(argv: list[str]) -> int:
 
     # No `age_label`: the panel translates `world.metadata.age_id`. `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
     chapter_json = {
-        **blocks,  # `render` sorts a record's keys, so the eight tiers need no place of their own here
+        **blocks,  # `render` sorts a record's keys, so the tiers need no place of their own here
         "boat": boat,
         "favorite": favorite,
         "tags": tags,

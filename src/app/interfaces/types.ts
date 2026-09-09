@@ -62,7 +62,7 @@ export type ReligionRegistry = Record<string, ReligionInfo>;
 
 export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'buildings' | 'cities' | 'clans'
   | 'cultures' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'
-  | 'languages' | 'population' | 'religions' | 'sick' | 'subspecies' | 'trees' | 'vegetation'
+  | 'languages' | 'religions' | 'sapient_population' | 'sick' | 'subspecies' | 'trees' | 'vegetation'
   | 'wars' | 'wild_creatures';
 
 export type SubspeciesRegistry = Record<string, SubspeciesInfo>;

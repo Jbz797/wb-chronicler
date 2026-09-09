@@ -115,8 +115,9 @@ export const SKILL_STATS: StatConfig[] = [
 ];
 
 // Snapshot world stats — display order: demography → environment → society → conflict → culture → activity. `hideIfZero` hides outbreak-style rows when idle.
-export const SNAPSHOT_STATS: { hideIfZero?: boolean; key: SnapshotStat; label: string }[] = [
-  { key: 'population', label: 'ui_sapient_population' },
+// `icon` names the sprite in `assets/img/world/`, filed by concept: `population.png` draws a crowd, whichever crowd the key happens to count.
+export const SNAPSHOT_STATS: { hideIfZero?: boolean; icon?: string; key: SnapshotStat; label: string }[] = [
+  { icon: 'population', key: 'sapient_population', label: 'ui_sapient_population' },
   { hideIfZero: true, key: 'sick', label: 'ui_sick' },
   { hideIfZero: true, key: 'infected', label: 'ui_infected' },
   { key: 'wild_creatures', label: 'ui_creatures' },

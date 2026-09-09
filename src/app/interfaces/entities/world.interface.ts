@@ -4,6 +4,9 @@ import { LeaderKind } from '../types';
 // A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
 export interface LeaderRow extends Omit<Leader, 'name' | 'value'> { isNew: boolean; key: LeaderKind; name: string }
 
+// A snapshot row while it is still being built — `hideIfZero` drops the idle ones on the way out, `icon` names the sprite where the key is not what it draws.
+export interface SnapshotRow { delta: number | undefined; hideIfZero: boolean | undefined; icon: string | undefined; key: string; label: string; value: number }
+
 // The world panel's four blocks: live snapshot, cumulative counters, « Records » leaders, and metadata.
 export interface World {
   boats: HullCount;
@@ -58,7 +61,7 @@ interface WorldCumulative {
 // The world's current age id and its `world_time` clock — what the chapter header reads.
 interface WorldMetadata { age_id: string; world_time: number }
 
-// Live counts of every world entity at this chapter (population, buildings, cultures…); `infected`/`sick` are omitted when 0.
+// Live counts of every world entity at this chapter (thinking souls, buildings, cultures…); `infected`/`sick` are omitted when 0.
 interface WorldSnapshot {
   alliances: number;
   armies: number;
@@ -73,8 +76,8 @@ interface WorldSnapshot {
   infected?: number;
   kingdoms: number;
   languages: number;
-  population: number;
   religions: number;
+  sapient_population: number;
   sick?: number;
   subspecies: number;
   trees: number;

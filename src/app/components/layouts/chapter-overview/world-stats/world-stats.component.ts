@@ -7,7 +7,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { DeltaComponent } from '..';
 import { CUMULATIVE_STATS, DEATH_CAUSES, LEADERS_BY_LEVEL, LEADERS_BY_MEMBERS, LEADERS_BY_SCORE, SNAPSHOT_STATS } from '../../../../constants';
-import { LeaderKind, LeaderRow } from '../../../../interfaces';
+import { LeaderKind, LeaderRow, SnapshotRow } from '../../../../interfaces';
 import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 
@@ -52,20 +52,18 @@ export class WorldStatsComponent {
   protected readonly memberRows = computed(() => this._leaderRows(LEADERS_BY_MEMBERS));
   protected readonly scoreRows = computed(() => this._leaderRows(LEADERS_BY_SCORE));
   // Rows resolved here rather than in the template: every count sits under `snapshot`, except the hulls, which own a block so the chronicler can list them.
-  protected readonly snapshotRows = computed<{ delta: number | undefined; key: string; label: string; value: number }[]>(() => {
+  protected readonly snapshotRows = computed<Omit<SnapshotRow, 'hideIfZero'>[]>(() => {
     const world = this.currentChapter()?.meta.world;
     if (!world) return [];
     const before = this._chronicler.previousChapter()?.meta.world;
     // `infected` is omitted at 0 (outbreak-style), so an absent count reads as 0 on either side.
-    const rows: { delta: number | undefined; hideIfZero: boolean | undefined; key: string; label: string; value: number }[] = this.snapshotStats.map(
-      ({ hideIfZero, key, label }) => {
-        const value = world.snapshot[key] ?? 0;
-        return { delta: before ? value - (before.snapshot[key] ?? 0) : undefined, hideIfZero, key, label, value };
-      },
-    );
+    const rows: SnapshotRow[] = this.snapshotStats.map(({ hideIfZero, icon, key, label }) => {
+      const value = world.snapshot[key] ?? 0;
+      return { delta: before ? value - (before.snapshot[key] ?? 0) : undefined, hideIfZero, icon, key, label, value };
+    });
     const boats = world.boats.total;
-    rows.push({ delta: before ? boats - before.boats.total : undefined, hideIfZero: true, key: 'boats', label: 'ui_boats', value: boats });
-    return rows.filter(r => !r.hideIfZero || r.value > 0).map(({ delta, key, label, value }) => ({ delta, key, label, value }));
+    rows.push({ delta: before ? boats - before.boats.total : undefined, hideIfZero: true, icon: undefined, key: 'boats', label: 'ui_boats', value: boats });
+    return rows.filter(r => !r.hideIfZero || r.value > 0).map(({ delta, icon, key, label, value }) => ({ delta, icon, key, label, value }));
   });
   // Causes with > 0 deaths this chapter, sorted by count desc — 0-rows are hidden (16 categories incl. peste/poison/etc. that stay idle most chapters).
   protected readonly sortedDeathCauses = computed(() => {

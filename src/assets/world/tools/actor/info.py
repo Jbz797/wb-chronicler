@@ -145,9 +145,7 @@ def _build_inventory(actor: dict) -> dict:
 # The actor's identity card: civic ties (city/kingdom/culture/family…), body (age tier, mass), posts held and their tenure.
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     snap = compute_actor_stats(actor, ctx)
-
     lifespan = snap.get("lifespan", 0)
-
     age = actor_age(actor, ctx["world_time"])
 
     # Both off the biology, as WB writes them onto the subspecies — never off this body's own span. `age_adult` is nil where no baby form was ever drawn.
@@ -173,6 +171,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "asset_id": actor.get("asset_id"),
+        # Chronicler-only, and only while it still bites: the age WB opens a body's own line at — `adult_age` lifts a bridling, it never grants the right to bear.
+        **({"breeding_age": round(age_breeding, 1)} if age < age_breeding else {}),
         "can_reproduce": can_reproduce,
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
         "clan": entity_ref(actor.get("clan"), ctx["clans_by_id"]),  # a ref, not a bare name: `clan/info.py <id>` can be called on it, as on `family`
@@ -298,7 +298,7 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
     return [role for role in _ROLE_ORDER if checks[role]]
 
 
-# `compute_actor_stats` returns the cleaned pipeline output — we append always-surface counters here (chronicler expects them even at 0).
+# `compute_actor_stats` hands back the cleaned pipeline — what the save carries on the body is appended here: the five vitals always, life's tallies above nought.
 def _compute_stats(actor: dict, ctx: dict) -> dict:
     cleaned = compute_actor_stats(actor, ctx)
     if not cleaned:
