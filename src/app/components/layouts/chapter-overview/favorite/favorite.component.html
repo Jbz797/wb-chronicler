@@ -21,19 +21,20 @@
     <nz-descriptions-item [nzTitle]="levelTitle">
       <app-ranked-stat stat="level" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTitle">
+    <nz-descriptions-item *appPresent="fav.stats.renown" [nzTitle]="renownTitle">
       <app-ranked-stat stat="renown" />
     </nz-descriptions-item>
+    <!-- Kept at nought, unlike its neighbours: the row reads « 0 / 5 », and the pair says what the body could still bear. -->
     <nz-descriptions-item [nzTitle]="childrenTitle">
       <app-ranked-stat stat="children" [suffix]="`/ ${fav.stats.max_children}`" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="killsTitle">
+    <nz-descriptions-item *appPresent="fav.stats.kills" [nzTitle]="killsTitle">
       <app-ranked-stat stat="kills" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="moneyTitle">
+    <nz-descriptions-item *appPresent="fav.stats.money" [nzTitle]="moneyTitle">
       <app-ranked-stat stat="money" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="equipmentPowerTitle">
+    <nz-descriptions-item *appPresent="fav.stats.equipment_power" [nzTitle]="equipmentPowerTitle">
       <app-ranked-stat stat="equipment_power" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="inventoryTitle">
@@ -153,7 +154,7 @@
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_skills' | translate">
     @for (s of skillStats; track s.key) {
       <ng-template #titleRef>
-        <img [src]="`assets/img/stats/${s.key}.png`" />
+        <img [src]="`assets/img/stats/${s.icon ?? s.key}.png`" />
         <span>{{ s.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
@@ -171,7 +172,7 @@
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_combat' | translate">
     @for (s of combatStats; track s.key) {
       <ng-template #titleRef>
-        <img [src]="`assets/img/stats/${s.key}.png`" />
+        <img [src]="`assets/img/stats/${s.icon ?? s.key}.png`" />
         <span>{{ s.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">

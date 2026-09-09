@@ -56,28 +56,28 @@ interface FavoriteRanks {
   warfare?: number;
 }
 
-// The favorite's raw combat / social / vital stats — WB runtime values, always present.
+// The favorite's raw combat / social / vital stats, WB runtime values. Life's tallies drop at nought: no kill, no coin and no child are told by their absence.
 interface FavoriteStats {
   armor?: number;
   attack_speed?: number;
-  children: number;
+  children?: number;
   critical_chance?: number;
   damage_max: number;
   diplomacy?: number;
-  equipment_power: number;
+  equipment_power?: number;
   happiness?: number; // absent where the biology bears no `amygdala`: WB grants such a soul no emotions, and writes it no happiness either
   health: number;
   health_max: number;
   intelligence?: number;
-  kills: number;
+  kills?: number;
   level: number;
   lifespan: number;
   mana: number;
   mana_max?: number;
   max_children: number;
-  money: number;
+  money?: number;
   nutrition: number;
-  renown: number;
+  renown?: number;
   speed: number;
   stamina: number;
   stamina_max: number;

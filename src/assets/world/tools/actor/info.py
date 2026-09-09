@@ -305,19 +305,20 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
         return {}
     cleaned.update(
         {
-            "births": int(actor.get("births") or 0),
-            "children": ctx["children_by_parent"].get(actor.get("id"), 0),
-            "equipment_power": _equipment_power(actor, ctx),
+            # Life's tallies, silent at nought as every other stat is: a soul that has killed nobody and owns nothing says so by carrying none of them.
+            **({"births": n} if (n := int(actor.get("births") or 0)) else {}),
+            **({"children": n} if (n := ctx["children_by_parent"].get(actor.get("id"), 0)) else {}),
+            **({"equipment_power": n} if (n := _equipment_power(actor, ctx)) else {}),
             # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
             **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
             "health": int(actor.get("health") or 0),
-            "kills": int(actor.get("kills") or 0),
+            **({"kills": n} if (n := int(actor.get("kills") or 0)) else {}),
             "level": max(int(actor.get("level") or 0), 1),  # WB displays level 1 as the floor, even when the raw save field is absent / 0.
-            "loot": int(actor.get("loot") or 0),
+            **({"loot": n} if (n := int(actor.get("loot") or 0)) else {}),
             "mana": int(actor.get("mana") or 0),
-            "money": int(actor.get("money") or 0),
+            **({"money": n} if (n := int(actor.get("money") or 0)) else {}),
             "nutrition": int(actor.get("nutrition") or 0),
-            "renown": int(actor.get("renown") or 0),
+            **({"renown": n} if (n := int(actor.get("renown") or 0)) else {}),
             "stamina": int(actor.get("stamina") or 0),
         }
     )

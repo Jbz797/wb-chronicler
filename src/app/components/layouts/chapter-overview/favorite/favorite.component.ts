@@ -42,7 +42,6 @@ export class FavoriteComponent {
   private readonly _registry = inject(RegistryService);
   private readonly _translate = inject(TranslateService);
 
-  protected readonly combatStats = COMBAT_STATS;
   protected readonly skillStats = SKILL_STATS;
 
   protected currentChapter = this._chronicler.currentChapter;
@@ -95,6 +94,11 @@ export class FavoriteComponent {
       plot: hasPlotChanged,
       role: this.roleTags().some(tag => tag.isNew),
     };
+  });
+  // A stat Python never wrote has nothing to show: `critical_chance` drops at nought, where `armor` at 0 stays — WB counts no armor as a fact about the body.
+  protected readonly combatStats = computed(() => {
+    const stats = this.currentChapter()?.meta.favorite?.stats;
+    return COMBAT_STATS.filter(({ key }) => stats?.[key as keyof typeof stats] !== undefined);
   });
   // An absent attachment drops its row, sparing the template a fallback. Labels agree with the companion, whose sex only the registry holds — the ref is id + name.
   protected readonly companionRows = computed(() => {
