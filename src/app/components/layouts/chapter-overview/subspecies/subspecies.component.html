@@ -1,7 +1,7 @@
 @if (subspecies(); as s) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
     <nz-descriptions-item [nzTitle]="ageTitle">
-      <app-ranked-stat source="subspecies" stat="age" suffix="ui_years" />
+      <app-ranked-stat source="subspecies" stat="age" suffix="ui_years" [hideDelta]="true" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="s.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="subspecies" stat="renown_total" />

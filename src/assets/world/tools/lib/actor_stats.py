@@ -215,8 +215,8 @@ _NORMALIZE = {
 
 # The same table in the shape the hot loop wants: WB leaves eight of the twenty-three unbounded above, and those skip the ceiling rather than clamp to infinity.
 _NORMALIZE_BOTH = tuple((stat, low, high) for stat, (low, high) in _NORMALIZE.items() if high != inf)
-_NORMALIZE_FLOOR = tuple((stat, low) for stat, (low, high) in _NORMALIZE.items() if high == inf)
 
+_NORMALIZE_FLOOR = tuple((stat, low) for stat, (low, high) in _NORMALIZE.items() if high == inf)
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
 
 _RENAMES = {
@@ -232,7 +232,10 @@ _RENAMES = {
 _SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 _SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_bonus_male`/`is_bonus_female` — the block each one feeds.
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
+
+# WB `synergy_sides_always` — `bad` bears it too but `isNextToBad` turns the neighbour away first. None of them is given a DNA either, so no code of theirs is read.
 _SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
+
 _UNHAPPY_MAX_HAPPINESS = -40  # WB `Actor.isUnhappy`: `getHappinessRatio < 0.3` ⟺ raw happiness < -40. Like `isHappy`, it answers only for a feeling actor.
 
 _scoring_memo: dict[int, dict] = {}  # `_scoring_traits`' slots, one per library — module state rather than `@cache`, a library dict being unhashable
@@ -261,7 +264,7 @@ def _add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> dict:
     return sex_bonus
 
 
-# Civil progression accumulator (`actor.custom_data_float`) — diplomacy/warfare/stewardship/intelligence +1 per conversation/event/aging tick over actor's life.
+# Civil progression (`actor.custom_data_float`) — a point of diplomacy, warfare, stewardship or intelligence per conversation or ageing tick, kept for life.
 def _add_custom_data_float(totals: dict, custom: dict | None) -> None:
     for k, v in (custom or {}).items():
         totals[k] = totals.get(k, 0) + v
@@ -432,6 +435,7 @@ def _gene_colors(gene: str, life_dna: int) -> dict:
         return {}
     rnd = _SystemRandom(_to_int32(life_dna + idx))
     text = "".join("ACGT"[rnd.Next(4)] for _ in range(15))
+    # WB `generateDNA` reads 0, 8, 10 and last of a string `generateRandomCodonString` spaces every third codon — on the bare letters that is 0, 6, 8, 14.
     return {"left": _COLOR_MAP[text[0]], "up": _COLOR_MAP[text[6]], "down": _COLOR_MAP[text[8]], "right": _COLOR_MAP[text[14]]}
 
 
@@ -451,19 +455,26 @@ def _is_bad(loci: list[str], idx: int) -> bool:
     return False
 
 
-# WB `GeneAsset.isGolden`: gold takes every side the gene actually has agreeing — borders and empty slots abstain, so an edge gene reaches it on fewer accords.
+# WB `hasFullSynergyAt`: gold takes every side the gene has agreeing, one no side contradicts included — bar `isAllSidesVoidLocus`, a locus walled in by void alone.
 def _is_golden(loci: list[str], idx: int, void_set: set[int], super_set: set[int], life_dna: int) -> bool:
+    rows, x, y = len(loci) // _GRID_COLS, idx % _GRID_COLS, idx // _GRID_COLS
+    # The sides that exist, walked once and carried through both guards and the tally — `_neighbor` would recompute the row and column on each of the four.
+    sides = [(nx + ny * _GRID_COLS, dx, dy) for dx, dy in _DIRECTIONS if 0 <= (nx := x + dx) < _GRID_COLS and 0 <= (ny := y + dy) < rows]
+    if sides and all(nidx in void_set for nidx, _, _ in sides):
+        return False
+    # WB `isNextToBadAmplifier`: an amplifier soured by a `bad` of its own sours the whole neighbourhood — the gene beside it takes no gold, whatever it agrees with.
+    if any(nidx in super_set and _is_bad(loci, nidx) for nidx, _, _ in sides):
+        return False
     gene = loci[idx]
     non_border = synergized = 0
-    for dx, dy in _DIRECTIONS:
-        ngene, nidx = _neighbor(loci, void_set, idx, dx, dy)
-        # An empty slot reads as a border, not a side that failed — WB shows the same `Guérilla I` at +2 beside an empty and +1 beside a real gene.
-        if ngene is None or ngene == "empty":
+    for nidx, dx, dy in sides:
+        # A void or empty side reads as a border, not one that failed — unless it amplifies: `hasSynergyConnection` turns an empty away only when it does not.
+        if nidx in void_set or ((ngene := loci[nidx]) == "empty" and nidx not in super_set):
             continue
         non_border += 1
         if _synergizes(gene, ngene, dx, dy, super_set, idx, nidx, life_dna):
             synergized += 1
-    return synergized >= 1 and synergized == non_border
+    return synergized == non_border
 
 
 # `statistics.median`, inlined: that module costs 10 ms to import — a fifth of a tool's whole run — and this is the only call any script makes to it.
@@ -619,6 +630,7 @@ def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) ->
         low, high = _NORMALIZE["lifespan"]
         span = min(max(totals["lifespan"], low), high)
         return {"lifespan": span * (1 + totals["multiplier_lifespan"]) if "multiplier_lifespan" in totals else span}
+    # WB adds it here. A fiche read in-game can lag behind — `stats` is recomputed on event — but a reload settles it, and that state is the one a save describes.
     _add_custom_data_float(totals, actor.get("custom_data_float"))
     _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
     # After the scaling, never before: `updateStats` merges the racks last, so a blade's health/mana/stamina rides flat — a veteran's gear is worth a recruit's.

@@ -255,6 +255,14 @@
     "group": "mind",
     "name": "Dreamweavers"
   },
+  "egg_alien": {
+    "description": "Eggs with an alien appearance",
+    "flavor": "Evolution got creative here",
+    "group": "eggs",
+    "meta_stats": { "maturation": 7 },
+    "name": "Alien"
+  },
+  "egg_blob": { "description": "Blobby eggs", "flavor": "Shape is merely a suggestion", "group": "eggs", "meta_stats": { "maturation": 2 }, "name": "Blob" },
   "egg_bubble": {
     "description": "Delicate, translucent eggs",
     "flavor": "Nature's most fragile packaging",
@@ -283,6 +291,20 @@
     "meta_stats": { "maturation": 3 },
     "name": "Colored"
   },
+  "egg_crystal": {
+    "description": "Eggs with a crystal-like appearance",
+    "flavor": "Life refracts through geometry",
+    "group": "eggs",
+    "meta_stats": { "maturation": 10 },
+    "name": "Crystal"
+  },
+  "egg_eyeball": {
+    "description": "Eggs that look like eyeballs",
+    "flavor": "The egg that sees the world before it even opens",
+    "group": "eggs",
+    "meta_stats": { "maturation": 4 },
+    "name": "Eyeball"
+  },
   "egg_face": {
     "description": "Eggs in a form of a weird face",
     "flavor": "Their eggs stare back at you",
@@ -298,12 +320,26 @@
     "name": "Flames"
   },
   "egg_ice": { "description": "Eggs made out of ice", "flavor": "Life sleeps in frozen dreams", "group": "eggs", "meta_stats": { "maturation": 8 }, "name": "Ice" },
+  "egg_metal_box": {
+    "description": "Eggs that look like a metal box",
+    "flavor": "What's in the box?",
+    "group": "eggs",
+    "meta_stats": { "maturation": 15 },
+    "name": "Metal Box"
+  },
   "egg_orb": {
     "description": "Eggs shaped like mysterious orbs",
     "flavor": "Tomorrow comes in perfect spheres",
     "group": "eggs",
     "meta_stats": { "maturation": 6 },
     "name": "Orb"
+  },
+  "egg_pumpkin": {
+    "description": "Eggs that look like pumpkins",
+    "flavor": "Spooky birth, normal death",
+    "group": "eggs",
+    "meta_stats": { "maturation": 5 },
+    "name": "Pumpkin"
   },
   "egg_rainbow": {
     "description": "Eggs with a rainbow pattern",
