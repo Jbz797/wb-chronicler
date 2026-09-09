@@ -193,6 +193,7 @@ _NORMALIZE = {
     "attack_speed": (0.5, 10),
     "bonus_towers": (0, 2),
     "construction_speed": (1, 100),
+    "critical_chance": (0, inf),  # `normalize_min` 0 and no ceiling — a cursed blade drags it down, never below nothing
     "damage": (1, inf),
     "damage_range": (0.1, inf),
     "diplomacy": (0, 999),
@@ -217,7 +218,17 @@ _NORMALIZE_BOTH = tuple((stat, low, high) for stat, (low, high) in _NORMALIZE.it
 _NORMALIZE_FLOOR = tuple((stat, low) for stat, (low, high) in _NORMALIZE.items() if high == inf)
 
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
-_RENAMES = {"cities": "max_cities", "damage": "damage_max", "health": "health_max", "mana": "mana_max", "offspring": "max_children", "stamina": "stamina_max"}
+
+_RENAMES = {
+    "cities": "max_cities",
+    "damage": "damage_max",
+    "health": "health_max",
+    "mana": "mana_max",
+    "mutation": "max_mutations",
+    "offspring": "max_children",
+    "stamina": "stamina_max",
+}
+
 _SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 _SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_bonus_male`/`is_bonus_female` — the block each one feeds.
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
@@ -393,26 +404,18 @@ def _apply_tier(gene: str, value: float, bad: bool, golden: bool) -> float:
 
 
 # Truncate toward zero like C#'s `(int)`, not floor — negatives occur. `health`/`mana` => `health_max`/`mana_max`, post-pipeline maximums; `render` does the sorting.
-def _cleanup_stats(totals: dict) -> dict:
+def _cleanup_stats(totals: dict, *, delta: bool = False) -> dict:
     result = {}
     for k, v in totals.items():
         if k in _DROP:
             continue
-        if isinstance(v, float):
+        if type(v) is float:  # as `render` reads its own leaves: no float subclass ever reaches here, and the exact type spares what `isinstance` walks
             v = round(v, 1) if k in _KEEP_DECIMAL else int(v)
         name = _RENAMES.get(k, k)  # hoisted: `_KEEP_ZERO` is named after the rename, `max_children` being the `offspring` WB actually writes
-        if v or name in _KEEP_ZERO:
+        # `_KEEP_ZERO` answers for an absolute, where 0 armor is a fact — in a `delta` block it would only say « no difference », which is the block's absence.
+        if v or (name in _KEEP_ZERO and not delta):
             result[name] = v
     return result
-
-
-# WB `GeneLibrary.addSpecial` puts one point on `base_stats_meta` per locus — the loose count `Subspecies.getMaxRandomMutations` returns, void loci excluded.
-def _count_mutagenic(subspecies: dict) -> int:
-    total = 0
-    for chrom in subspecies.get("saved_chromosome_data") or []:
-        void = set(chrom.get("void_loci") or [])
-        total += sum(gene == "mutagenic" and idx not in void for idx, gene in enumerate(chrom.get("loci") or []))
-    return total
 
 
 # The age of the world puts to sleep a trait it does not carry the flag of — an era-gated one alone, so a world in the light lists both of them.
@@ -468,6 +471,18 @@ def _median(values: list[int]) -> float:
     ordered = sorted(values)
     mid = len(ordered) // 2
     return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+
+
+# What `getMaxRandomMutations` reads back: `addSpecial` hangs `base_stats_meta["mutation"] = 1` on the `mutagenic` gene, off `base_stats` so no actor is handed it.
+def _mutation_rate(subspecies: dict) -> int:
+    total = 0.0
+    for chrom in subspecies.get("saved_chromosome_data") or []:
+        loci, void = chrom.get("loci") or [], set(chrom.get("void_loci") or [])
+        for idx, gene in enumerate(loci):
+            # Halved beside a `bad` like any gene, and never doubled: `getBonusesFromGene` skips the golden merge for a gene whose sides always synergize.
+            if gene == "mutagenic" and idx not in void:
+                total += _apply_tier(gene, 1, _is_bad(loci, idx), golden=False)
+    return int(total)
 
 
 # The gene one step away, `None` past the grid's edge or on a voided slot — the index rides along, since synergy asks whether that slot amplifies.
@@ -820,10 +835,10 @@ def subspecies_stats(subspecies: dict, ctx: dict) -> dict:
     for trait_id in subspecies.get("saved_traits") or []:  # WB `base_stats_meta`: a handful of traits grant a gestation, a food cap, a colony ceiling
         for stat, value in ((ctx["subspecies_traits"].get(trait_id) or {}).get("meta_stats") or {}).items():
             base[stat] = base.get(stat, 0) + value
-    if mutagenic := _count_mutagenic(subspecies):  # a biology's own reading: no `Actor` ever asks for its mutation count
+    if mutagenic := _mutation_rate(subspecies):  # a biology's own reading: WB keeps it off `base_stats`, so no `Actor` is ever handed it
         base["mutation"] = mutagenic
     out = {"base": _cleanup_stats(base)}
-    for sex in ("female", "male"):  # one sex or neither carries the bonus — WB never writes both, so the empty block drops
-        if cleaned := _cleanup_stats(dict(sex_bonus[sex])):
+    for sex in ("female", "male"):  # a chromosome may hold a bonus locus of each, so both blocks can stand — the one nobody pays into simply drops
+        if cleaned := _cleanup_stats(sex_bonus[sex], delta=True):
             out[sex] = cleaned
     return out
