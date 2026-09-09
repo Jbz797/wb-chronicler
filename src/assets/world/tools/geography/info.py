@@ -12,11 +12,24 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import decode_tile_grid, tile_biome, tile_layer
 from islands import compute_islands_cached
-from shared import CACHE_DIR, biome_lore, civic_building_ids, emit, load_data, load_save, parse_sections, save_cache_key, take_chapter
+from shared import (
+    CACHE_DIR,
+    biome_lore,
+    civic_building_ids,
+    emit,
+    index_by_id,
+    is_boat,
+    load_data,
+    load_save,
+    parse_sections,
+    save_cache_key,
+    take_chapter,
+)
 
-_ALL_SECTIONS = ("biomes", "entity_types", "islands", "positions", "waters")
+_ALL_SECTIONS = ("biomes", "entity_types", "equipment", "islands", "positions", "waters")
 _COORDS = {"actors_data": ("x", "y"), "buildings": ("mainX", "mainY")}  # Collection → its coordinate fields. No `asset_id` sits in both, so a kind names its own.
 _DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
+_MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _MIN_LAKE_TILES = 64  # WB knows no lake at all, so the floor is ours: WB `CITY_ZONE_TILES`, one city zone — under it no town could ever sit on the shore.
 _OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart from the lakes indexed from 0
 
@@ -37,6 +50,27 @@ def _build_entity_types(save: dict) -> dict:
         group = "buildings" if asset in civic else categories.get(asset) or "other"  # `civic` knows the built kinds the manifest itself never declared
         groups[group][asset] += 1
     return {group: dict(counts) for group, counts in groups.items() if counts}
+
+
+# Who bears what, land by land — an item carries no coordinates of its own: it exists through the hand that holds it, and a land with no bearer drops.
+def _build_equipment(save: dict, save_path: Path) -> dict:
+    items = index_by_id(save.get("items") or [])
+    _, island_of = compute_islands_cached(save, save_path)
+    by_island: defaultdict[int | None, list] = defaultdict(list)  # a factory, `setdefault` minting a list per bearer to drop it on all but the first
+    for actor in save.get("actors_data") or []:
+        if is_boat(actor) or not (worn := actor.get("saved_items")):
+            continue
+        by_island[island_of.get((int(actor["x"]), int(actor["y"])))].append(
+            # An id the collection never resolves names nothing, so it is dropped rather than sorted against the rest as a `None`.
+            {"id": actor["id"], "items": sorted(a for i in worn if (a := (items.get(i) or {}).get("asset_id"))), "name": actor.get("name")},
+        )
+    out = {}
+    for island_id, bearers in sorted(by_island.items(), key=lambda kv: (kv[0] is None, kv[0] or 0)):  # the landless last, and `None` never reaches a `<`
+        block: dict = {"carriers": len(bearers), "items": sum(len(b["items"]) for b in bearers)}  # annotated: the roster below widens it past its two counts
+        if len(bearers) < _MAX_NAMED_CARRIERS:  # no `light()` here: naming them is all this section could ever hand over, so there is no fuller form to call
+            block["roster"] = sorted(bearers, key=lambda b: b["id"])
+        out["adrift" if island_id is None else str(island_id)] = block  # a bearer at sea or on a rock too small to count belongs to no land
+    return out
 
 
 # Where every instance of one kind stands. Its `id` opens its own script; `island_id` names the land mass, absent over water — a hull at sea, a dock on shallows.
@@ -183,28 +217,46 @@ def _pool_map(grid: list[list[int]], sea: list[bool]) -> tuple[dict[tuple[int, i
 # The narrowest water between each pair of lands: every coast floods the sea at once, and where two tides meet their depths add up to the crossing.
 def _straits(grid: list[list[int]], sea: list[bool], island_of) -> list[dict]:
     height, width = len(grid), len(grid[0])
-    nearest = [[0] * width for _ in range(height)]
-    depth = [[-1] * width for _ in range(height)]
-    queue: deque[tuple[int, int]] = deque()
-
+    size = height * width
+    # Flat rows and sea-ness settled once, as `islands.py` keeps its own grid: the sweep below reads a million tiles, and a nested list costs an index at each.
+    water = bytearray(size)
+    for y, row in enumerate(grid):
+        base = y * width
+        for x, tile in enumerate(row):
+            if sea[tile]:
+                water[base + x] = 1
+    depth = [-1] * size
+    nearest = [0] * size
+    queue: deque[int] = deque()
     for x, y, island_id in island_of.land():
-        nearest[y][x], depth[y][x] = island_id, 0
-        queue.append((x, y))
+        nearest[i := y * width + x], depth[i] = island_id, 0
+        queue.append(i)
 
     gaps: dict[tuple[int, int], int] = {}
+    push = queue.append
+
+    # One tile of sea, met from a shore: unclaimed it joins the front, claimed by another island it closes a gap — the narrowest the two ever leave.
+    def reach(j: int, own: int, here: int) -> None:
+        if not water[j]:
+            return
+        if (reached := depth[j]) == -1:
+            nearest[j], depth[j] = own, here + 1
+            push(j)
+        elif (rival := nearest[j]) != own:
+            pair = (own, rival) if own < rival else (rival, own)
+            if (span := here + reached) < gaps.get(pair, span + 1):
+                gaps[pair] = span
+
     while queue:
-        x, y = queue.popleft()
-        own, here = nearest[y][x], depth[y][x]
-        for dx, dy in _DELTAS_4:
-            nx, ny = x + dx, y + dy
-            if not (0 <= nx < width and 0 <= ny < height) or not sea[grid[ny][nx]]:
-                continue
-            if depth[ny][nx] == -1:
-                nearest[ny][nx], depth[ny][nx] = own, here + 1
-                queue.append((nx, ny))
-            elif nearest[ny][nx] != own:
-                pair = (min(own, nearest[ny][nx]), max(own, nearest[ny][nx]))
-                gaps[pair] = min(gaps.get(pair, here + depth[ny][nx]), here + depth[ny][nx])
+        own, here = nearest[i := queue.popleft()], depth[i]
+        if i >= width:
+            reach(i - width, own, here)
+        if i + width < size:
+            reach(i + width, own, here)
+        if x := i % width:
+            reach(i - 1, own, here)
+        if x + 1 < width:
+            reach(i + 1, own, here)
     return [{"between": list(pair), "gap": gap} for pair, gap in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))]
 
 
@@ -235,6 +287,8 @@ def main(argv: list[str]) -> int:
         out["biomes"] = _build_biomes(save, save_path)
     if "entity_types" in sections:
         out["entity_types"] = _build_entity_types(save)
+    if "equipment" in sections:
+        out["equipment"] = _build_equipment(save, save_path)
     if "islands" in sections:
         islands, _ = compute_islands_cached(save, save_path)
         out["islands"] = islands
