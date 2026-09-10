@@ -20,6 +20,7 @@ from shared import (
     actor_age,
     build_trait_ids,
     build_trait_list,
+    building_tile,
     civic_building_ids,
     competition_ranks,
     emit,
@@ -270,7 +271,7 @@ def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
 # Built structures by their tile, so `metadata` can name the roof a soul stands under. Nature files under `buildings` too, and nobody steps « inside » a field.
 def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
     civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
-    return {(b.get("mainX"), b.get("mainY")): b for b in save.get("buildings") or [] if b.get("asset_id") in civic}
+    return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
 
 
 # `Actor.getMassKG`: (`scale` / 0.1) × `mass_2`, cut to two fifths on a child. Both stats ride off the pipeline, where the traits and multipliers have had their say.

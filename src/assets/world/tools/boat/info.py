@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import (
     build_trait_ids,
     build_trait_list,
+    building_tile,
     civic_building_ids,
     emit,
     entity_age,
@@ -80,7 +81,9 @@ def _build_identity(boat: dict, ctx: dict) -> dict:
 
 # The hull as WB's panel reads it, its « Statuts » being `traits`. WB writes `level`, `kills` and `renown` only once it has fought: an unblooded hull reads level 1.
 def _build_metadata(boat: dict, ctx: dict) -> dict:
-    home = ctx["buildings_by_id"].get(boat.get("homeBuildingID"))
+    # One dock to find, so a scan beats indexing every building of the world for it — as `ground/info.py` finds its own. A dangling id reads as none.
+    home_id = boat.get("homeBuildingID")
+    home = next((b for b in ctx["buildings"] if b.get("id") == home_id), None) if home_id else None
     level = max(int(boat.get("level") or 0), 1)  # WB scales from level 1 even where the field is absent, as `Actor.updateStats` does
     return {
         "age": entity_age(boat, ctx["world_time"]),
@@ -108,7 +111,7 @@ def _build_traits(boat: dict, detailed: bool) -> dict | list[dict]:
 # Built structures by their tile, so `metadata` can name the quay a hull is moored at. Nature files under `buildings` too, and nobody ties up to a field.
 def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
     civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
-    return {(b.get("mainX"), b.get("mainY")): b for b in save.get("buildings") or [] if b.get("asset_id") in civic}
+    return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
 
 
 # WB `BaseSimObject.getMaxHealth` reads the finished `health` stat: the template's, lifted a twentieth per level, then multiplied by whatever the traits grant.
@@ -160,7 +163,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     ctx = {
-        "buildings_by_id": index_by_id(save.get("buildings") or []),
+        "buildings": save.get("buildings") or [],
         "buildings_by_tile": cache(lambda: _buildings_by_tile(save)),  # called not stored: only `metadata` asks what quay a hull is tied to
         "cities_by_id": index_by_id(save.get("cities") or []),
         "creature_traits": load_data("creature-traits.json"),

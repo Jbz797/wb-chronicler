@@ -22,6 +22,7 @@ from shared import (
     ZONE_TILES,
     asset_set,
     books_held,
+    building_tile,
     children_by_id,
     civic_building_ids,
     competition_ranks,
@@ -42,6 +43,7 @@ from shared import (
     succession_heir,
     take_chapter,
     wants_detail,
+    zone_xy,
 )
 
 _ALL_SECTIONS = ("boats", "breakdown", "cities", "equipment", "identity", "leaders", "metadata", "population", "ranks", "relations", "wars")
@@ -163,7 +165,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         warriors_by_kingdom[kid] += warriors_by_city[city["id"]]
         zones = city.get("zones") or []
         territory_by_kingdom[kid] = territory_by_kingdom.get(kid, 0) + len(zones)
-        zones_by_kingdom[kid].extend((z["x"], z["y"]) for z in zones)
+        zones_by_kingdom[kid].extend(map(zone_xy, zones))
 
     buildings_by_kingdom: Counter[int] = Counter()
     civic = civic_building_ids()  # Tallied per kingdom below (tile inside a city zone); `houses` = the dwelling subset.
@@ -190,8 +192,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         asset_id = b.get("asset_id")
         if asset_id not in civic:
             continue
-        bx, by = b.get("mainX"), b.get("mainY")
-        if bx is not None and by is not None and (kid := zone_to_kingdom.get((bx // ZONE_TILES, by // ZONE_TILES))) is not None:
+        if (tile := building_tile(b)) is not None and (kid := zone_to_kingdom.get((tile[0] // ZONE_TILES, tile[1] // ZONE_TILES))) is not None:
             buildings_by_kingdom[kid] += 1
             if asset_id.startswith("house"):
                 houses_by_kingdom[kid] += 1
@@ -236,7 +237,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "racks_by_kingdom": racks_by_kingdom,
         "religions_by_id": index_by_id(save.get("religions", [])),  # The other breakdown indexes (`cultures`/`languages`/`subspecies`) already ride in ctx.
         "renown_by_kingdom": renown_by_kingdom,
-        "save_path": save_path,  # islands cache key — the loaded save's real path (live or a chapter's map.wbox), not the module default.
         "score_dimensions": cache(lambda: kingdom_score_dimensions(save)),  # the composite score's tallies, some sourced nowhere else; same two callers
         "sick_by_kingdom": sick_by_kingdom,
         "supreme_kingdom_id": supreme_kingdom_id,
@@ -417,8 +417,8 @@ def _capital_island(kingdom: dict, ctx: dict) -> int | None:
     zones = (capital or {}).get("zones") or []
     if not zones:
         return None
-    z = zones[0]
-    return ctx["island_lookup"]().get((z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2))
+    zx, zy = zone_xy(zones[0])
+    return ctx["island_lookup"]().get((zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2))
 
 
 # Mirror `DiplomacyRelation.recalculate` IL: each numbered modifier = a WB `OpinionAsset`. Runtime stats reconstructed via `actor_stats.compute_actor_stats`.
@@ -677,10 +677,10 @@ def main(argv: list[str]) -> int:
     ctx = _build_context(save, save_path)
 
     out: dict = {}
-    if "breakdown" in sections:
-        out["breakdown"] = {k: v for k, v in population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx).items() if k != "kingdoms"}
     if "boats" in sections:
         out["boats"] = _build_boats(kingdom, ctx, requested)
+    if "breakdown" in sections:
+        out["breakdown"] = {k: v for k, v in population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx).items() if k != "kingdoms"}
     if "cities" in sections:
         out["cities"] = _build_cities(kingdom, ctx)
     if "equipment" in sections:

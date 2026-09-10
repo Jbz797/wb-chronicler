@@ -14,6 +14,7 @@ from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     ZONE_TILES,
+    building_tile,
     children_by_id,
     civic_building_ids,
     competition_ranks,
@@ -28,6 +29,7 @@ from shared import (
     population_breakdown,
     settlement_leaders,
     take_chapter,
+    zone_xy,
 )
 
 _ALL_SECTIONS = ("breakdown", "identity", "kingdoms", "leaders", "metadata", "population", "ranks", "wars")
@@ -170,16 +172,15 @@ def main(argv: list[str]) -> int:
         pooled["cities"][pact] += 1
         zones = city.get("zones") or []
         pooled["territory"][pact] += len(zones)
-        for z in zones:
-            zone_to_pact[(z["x"], z["y"])] = pact
+        for zone in zones:
+            zone_to_pact[zone_xy(zone)] = pact
 
     # Civic buildings standing on the pact's ground, as a crown counts its own — `civic` gates first, one building in twenty passing it.
     civic = civic_building_ids()
     for b in save.get("buildings") or [] if ground else ():
         if b.get("asset_id") not in civic:
             continue
-        bx, by = b.get("mainX"), b.get("mainY")
-        if bx is not None and by is not None and (pact := zone_to_pact.get((bx // ZONE_TILES, by // ZONE_TILES))) is not None:
+        if (tile := building_tile(b)) is not None and (pact := zone_to_pact.get((tile[0] // ZONE_TILES, tile[1] // ZONE_TILES))) is not None:
             pooled["buildings"][pact] += 1
 
     members = set(alliance.get("kingdoms") or [])

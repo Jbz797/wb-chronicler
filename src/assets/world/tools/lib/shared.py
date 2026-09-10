@@ -308,6 +308,12 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
     return sorted(out, key=lambda t: t["id"])
 
 
+# A building's tile. WB omits a zero at save time, so a lone missing coordinate reads 0 — the first row writes no `mainY` — and neither written leaves it unsited.
+def building_tile(building: dict) -> tuple[int, int] | None:
+    x, y = building.get("mainX"), building.get("mainY")
+    return None if x is None and y is None else (x or 0, y or 0)  # WB writes both as ints, so no `int()` to pay on every building of the world
+
+
 # Living children per parent, counted off `parent_id_1`/`parent_id_2`. World-wide on purpose — a parent's brood is theirs wherever it settled.
 def children_by_id(save: dict) -> Counter:
     tally: Counter = Counter()
@@ -321,7 +327,7 @@ def children_by_id(save: dict) -> Counter:
 
 # WB's own anchor for a town (`updateCityCenter`), so what sites one and what distances aim at: the zone centre closest to their average, nudged 2 tiles north.
 def city_centre(city: dict) -> tuple[int, int] | None:
-    zones = [(z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2) for z in city.get("zones") or []]
+    zones = [(zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2) for zx, zy in map(zone_xy, city.get("zones") or [])]
     if not zones:
         return None
     mean_x, mean_y = (sum(c) / len(zones) for c in zip(*zones))
@@ -866,3 +872,8 @@ def write_save(wbox: Path, save: dict) -> None:
     staged = wbox.with_suffix(".wbox.tmp")
     staged.write_bytes(zlib.compress(json.dumps(save, separators=(",", ":"), ensure_ascii=False).encode(), _COMPRESSION))
     staged.replace(wbox)
+
+
+# A city zone's `(x, y)`, in zone units. WB omits a zero at save time, so the first row writes no `y` and the first column no `x` — both read 0.
+def zone_xy(zone: dict) -> tuple[int, int]:
+    return zone.get("x", 0), zone.get("y", 0)

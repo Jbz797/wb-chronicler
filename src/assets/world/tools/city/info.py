@@ -48,11 +48,12 @@ from shared import (
     succession_heir,
     take_chapter,
     wants_detail,
+    zone_xy,
 )
 
 _ALL_SECTIONS = ("army", "books", "breakdown", "equipment", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks")
 
-_CAPTURE_PROFESSIONS = frozenset({3, 4, 5})  # WB `ProfessionAsset.can_capture` — the three professions imported above, spelt out: they sort before this.
+_CAPTURE_PROFESSIONS = frozenset({PROFESSION_KING, PROFESSION_LEADER, PROFESSION_WARRIOR})  # WB `ProfessionAsset.can_capture`
 
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the crown's base rate. Emitted as a tier — the rates are WB's to change, the tier isn't.
 _CITY_TAX_TRAITS = {
@@ -81,14 +82,8 @@ def _actor_stats(actor: dict | None, ctx: dict) -> dict:
 
 # WB `City.isGettingCaptured`: the enemy crowns whose warriors, kings or leaders stand in a town's zones — WB excuses one indoors, which a save never records.
 def _besieging_kingdoms(save: dict) -> dict[int, set[int]]:
-    enemies: defaultdict[int, set[int]] = defaultdict(set)
-    for war in save.get("wars") or []:
-        if not war.get("winner"):
-            sides = [({war.get(f"main_{camp}")} | set(war.get(f"list_{camp}s") or [])) - {None} for camp in ("attacker", "defender")]
-            for side, foes in (sides, sides[::-1]):
-                for kid in side:
-                    enemies[kid].update(foes)
-    zone_city = {(z["x"], z["y"]): c["id"] for c in save.get("cities") or [] for z in c.get("zones") or []}
+    enemies = _enemies_by_kingdom(save)
+    zone_city = {zone_xy(z): c["id"] for c in save.get("cities") or [] for z in c.get("zones") or []}
     owner = {c["id"]: c.get("kingdomID") for c in save.get("cities") or []}
     besieging: defaultdict[int, set[int]] = defaultdict(set)
     for actor in save.get("actors_data") or []:
@@ -344,7 +339,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
     island_lookup = ctx["island_lookup"]()
 
     # Chronicler-only: distinct island ids under the city's zones, sorted asc (1 = biggest) — probed at each zone's centre tile.
-    centres = ((z["x"] * ZONE_TILES + ZONE_TILES // 2, z["y"] * ZONE_TILES + ZONE_TILES // 2) for z in city.get("zones") or [])
+    centres = ((zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2) for zx, zy in map(zone_xy, city.get("zones") or []))
     islands = sorted({iid for pos in centres if (iid := island_lookup.get(pos)) is not None})
 
     dims = ctx["score_dimensions"]()
@@ -408,20 +403,12 @@ def _build_realm_context(save: dict, warriors_by_city: Counter) -> dict:
     # WB `nearbyBorders`/`neighbours_cities_kingdom`: two settlements border when a zone of one touches a zone of the other, diagonals included.
     neighbours_by_city: dict[int, set[int]] = {}
     for peers in cities_by_kingdom.values():
-        zones = {c["id"]: {(z["x"], z["y"]) for z in c.get("zones") or []} for c in peers}
+        zones = {c["id"]: set(map(zone_xy, c.get("zones") or [])) for c in peers}
         for city in peers:
             halo = {(x + dx, y + dy) for x, y in zones[city["id"]] for dx in (-1, 0, 1) for dy in (-1, 0, 1)}
             neighbours_by_city[city["id"]] = {other["id"] for other in peers if other["id"] != city["id"] and halo & zones[other["id"]]}
 
-    enemies_by_kingdom: defaultdict[int, set[int]] = defaultdict(set)
-    for war in save.get("wars") or []:
-        if war.get("winner"):  # WB stamps a winner the moment a war ends; only the ones still being fought make a realm feel besieged
-            continue
-        attackers = ({war.get("main_attacker")} | set(war.get("list_attackers") or [])) - {None}
-        defenders = ({war.get("main_defender")} | set(war.get("list_defenders") or [])) - {None}
-        for side, foes in ((attackers, defenders), (defenders, attackers)):
-            for kid in side:
-                enemies_by_kingdom[kid].update(foes)
+    enemies_by_kingdom = _enemies_by_kingdom(save)
 
     # `DiplomacyManager.findSupremeKingdom`: warriors weigh double, holdings quintuple. The top two get their own loyalty bonus.
     kingdoms = save.get("kingdoms") or []
@@ -621,6 +608,20 @@ def _connected_to_capital(city: dict, capital: dict, neighbours: dict[int, set[i
         if not (wave := {n for w in wave for n in neighbours.get(w, set())} - seen):
             return False
     return False
+
+
+# The crowns each realm is fighting now: WB stamps a `winner` the moment a war ends, so open wars alone count, and `None` pads the lists it never filled.
+def _enemies_by_kingdom(save: dict) -> defaultdict[int, set[int]]:
+    enemies: defaultdict[int, set[int]] = defaultdict(set)
+    for war in save.get("wars") or []:
+        if war.get("winner"):
+            continue
+        attackers = ({war.get("main_attacker")} | set(war.get("list_attackers") or [])) - {None}
+        defenders = ({war.get("main_defender")} | set(war.get("list_defenders") or [])) - {None}
+        for side, foes in ((attackers, defenders), (defenders, attackers)):
+            for kid in side:
+                enemies[kid].update(foes)
+    return enemies
 
 
 # Whether an actor's own culture carries a trait — `None` actor included, since loyalty asks it of seats that may stand vacant.

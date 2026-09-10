@@ -96,8 +96,9 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
         for record in save.get(collection) or []:
             if record.get("asset_id") != asset_id:
                 continue
-            if (x := record.get(field_x)) is not None and (y := record.get(field_y)) is not None:
-                out.append({"id": record.get("id"), "name": record.get("name"), "x": int(x), "y": int(y)})
+            x, y = record.get(field_x), record.get(field_y)
+            if x is not None or y is not None:  # WB omits a zero at save time: one coordinate sites the record, the absent one reads 0
+                out.append({"id": record.get("id"), "name": record.get("name"), "x": int(x or 0), "y": int(y or 0)})
         if out:  # what one collection holds, the other never does — no need to walk 16k buildings to find an orc
             break
     if out:  # the lookup costs half a second cold, so a kind nobody built never pays for it

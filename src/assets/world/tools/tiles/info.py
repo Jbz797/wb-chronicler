@@ -13,7 +13,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import LazyTileGrid, listed_tiles, tile_biome, tile_elevation, tile_kind, tile_layer
 from islands import compute_islands_cached
-from shared import ZONE_TILES, city_centre, civic_building_ids, emit, entity_ref, index_by_id, load_data, load_save, parse_sections, take_chapter
+from shared import (
+    ZONE_TILES,
+    building_tile,
+    city_centre,
+    civic_building_ids,
+    emit,
+    entity_ref,
+    index_by_id,
+    load_data,
+    load_save,
+    parse_sections,
+    take_chapter,
+    zone_xy,
+)
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
 _DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))  # the wave spreads by the square, so a diagonal step costs one tile
@@ -59,8 +72,8 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     if "ground" in sections:
         ctx["categories"], ctx["civic"] = load_data("building-categories.json"), civic_building_ids()
         for b in save.get("buildings") or []:
-            bx, by = b.get("mainX"), b.get("mainY")
-            if bx is not None and by is not None and (pos := (int(bx), int(by))) in wanted:
+            # The bare tuple sifts the whole world first and the helper reads only what lands in the window — both take WB's omitted coordinate as 0.
+            if (b.get("mainX", 0), b.get("mainY", 0)) in wanted and (pos := building_tile(b)) is not None:
                 ctx["ground_by_pos"][pos] = b
 
     if {"actors", "context", "distances"} & sections:  # the two id maps resolve refs for `actors` as well as `context`
@@ -141,8 +154,8 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
             continue
         anchors[city["id"]] = anchor
         for zone in city["zones"]:
-            if (zx := zone.get("x")) is not None and (zy := zone.get("y")) is not None and (zx, zy) in wanted_zones:
-                ctx["city_by_pos"][(zx, zy)] = city
+            if (tile := zone_xy(zone)) in wanted_zones:
+                ctx["city_by_pos"][tile] = city
 
     ctx["city_anchors"] = list(anchors.values())
     for kingdom in ctx["kingdoms_by_id"].values():

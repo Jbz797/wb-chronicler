@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from islands import compute_islands_cached
 from shared import (
     actor_age,
+    building_tile,
     civic_building_ids,
     emit,
     entity_age,
@@ -52,12 +53,11 @@ def _build_inventory(house: dict) -> dict:
 # `families` answers for the dwellers alone — a bonfire keeps no hearth. Hunger is a people's measure, not a roof's: the tiers own `fed_pct`.
 def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
     city = ctx["cities_by_id"].get(house.get("cityID")) or {}
-    hx, hy = house.get("mainX"), house.get("mainY")
-    island_id = None
+    tile = building_tile(house)
+    hx, hy = tile if tile is not None else (None, None)
 
-    # WB writes both coordinates or neither, so one guard serves the pair — and a wall torn mid-tick, left unsited, never pays for the island map at all.
-    if hx is not None and hy is not None:
-        island_id = ctx["island_lookup"]().get((int(hx), int(hy)))
+    # A wall torn mid-tick, left unsited, never pays for the island map at all — `building_tile` already reads a lone missing coordinate as WB's omitted zero.
+    island_id = ctx["island_lookup"]().get(tile) if tile is not None else None
 
     return {
         # Dropped where it reads under zero: a reset before landmarks were stamped left them older than the world, and no age beats one counting backwards.
@@ -100,7 +100,7 @@ def _build_occupants(residents: list[dict], house: dict, ctx: dict, save: dict, 
 def _here(actor: dict, house: dict, civic: bool) -> dict:
     if not civic:  # nobody steps « inside » a field
         return {}
-    return {"in_building": True} if (actor.get("x"), actor.get("y")) == (house.get("mainX"), house.get("mainY")) else {}
+    return {"in_building": True} if (actor.get("x"), actor.get("y")) == building_tile(house) else {}
 
 
 def main(argv: list[str]) -> int:
@@ -126,7 +126,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown building: {house_id}", file=sys.stderr)
         return 1
 
-    tile = (house.get("mainX"), house.get("mainY"))
+    tile = building_tile(house)
     civic = house.get("asset_id") in civic_building_ids()  # WB files trees and wheat under `buildings` too, and nobody stands « inside » a field
     dwellers: list[dict] = []
     visitors: list[dict] = []
