@@ -23,7 +23,6 @@ from grid import tile_layer, tile_runs
 from shared import (
     SAVES_DIR,
     UNITS_PER_YEAR,
-    dev_mode,
     index_by_id,
     is_boat,
     is_sapient,
@@ -181,6 +180,7 @@ _RESET_PROMPT = """? first chapter — nothing is written until the player has a
   the name is forged after a survey of the bare map, its geography being all that survives it: Tolkien-flavoured without pastiche, on the ground,
   the mood or whatever outlasts the ages, never the age itself. Yours alone to choose — his yes was the agreement."""
 
+_SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # the reader's settings, where the player's workshop switch sits beside the live save's path
 _SHORT_AGES = frozenset({"age_despair", "age_ice"})
 _SHORT_AGE_YEARS = (30, 40)
 
@@ -272,6 +272,14 @@ def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> list[str]:
         else:
             owed.append(tier)
     return owed
+
+
+# The player's own workshop switch, off the reader's settings. Absent or false on a player who only ever plays — and a missing file reads the same way.
+def _dev_mode() -> bool:
+    try:
+        return bool(json.loads(_SETTINGS_JSON.read_text()).get("dev"))
+    except (OSError, ValueError):
+        return False
 
 
 # `_CHRONICLER_ONLY` cuts at every depth of the tree, `_AUDIT` from one named section alone — neither loses the chronicler a thing, `<tier>/info.py` replaying both.
@@ -733,7 +741,7 @@ def main(argv: list[str]) -> int:
         print("  → each summary: one string under the block's own `traits` key, replacing the raw list the script dropped")
         print("    what those traits make of the body, 400 characters at the very most — a ceiling, not a target; never a list, never a count")
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and nothing beside it.
-    if not dev_mode():
+    if not _dev_mode():
         print("  → mode: player, not developer — deliver the chapter and stop there, skipping `chronicler.md` § « Après livraison »")
 
     return 0

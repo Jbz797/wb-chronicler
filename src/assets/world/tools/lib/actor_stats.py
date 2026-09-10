@@ -23,7 +23,6 @@ from math import inf
 
 from shared import (
     MIN_PER_CAPITA_UNITS,
-    NON_FOOD_SPECIES,
     PROFESSION_KING,
     PROFESSION_LEADER,
     PROFESSION_WARRIOR,
@@ -37,6 +36,7 @@ from shared import (
     is_sapient,
     life_stage,
     load_data,
+    needs_food,
     sex_label,
     weapon_assets,
 )
@@ -158,6 +158,7 @@ _GRID_COLS = 6
 _GROUP_TRAITS = (("clan", "clans_by_id", "clan_traits"), ("language", "languages_by_id", "language_traits"))
 
 _HAPPY_MIN_HAPPINESS = 20  # WB `Actor.isHappy`: `getHappinessRatio ≥ 0.6` ⟺ raw happiness ≥ 20, and only where `has_emotions` — which every caller gates on.
+_HUNGRY_RATIO = 0.5  # WB `SimGlobalAsset.nutrition_level_hungry`: `Actor.isHungry` answers at half the cap or under — `fed_pct` counts the rest
 _KEEP_DECIMAL = {"attack_speed"}  # One decimal kept: it lives under 1, flooring at 0.5, where an int would flatten it away
 
 # The rows WB's own unit panel always prints, where a nought is a fact and not an absence — a sterile body reads `max_children: 0`, a meek one `diplomacy: 0`.
@@ -217,6 +218,7 @@ _NORMALIZE = {
 _NORMALIZE_BOTH = tuple((stat, low, high) for stat, (low, high) in _NORMALIZE.items() if high != inf)
 
 _NORMALIZE_FLOOR = tuple((stat, low) for stat, (low, high) in _NORMALIZE.items() if high == inf)
+_NUTRITION_MAX = 100  # WB `ActorAsset.nutrition_max`, left at its default by every species: only a biology's `max_nutrition` widens it
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
 
 _RENAMES = {
@@ -229,7 +231,6 @@ _RENAMES = {
     "stamina": "stamina_max",
 }
 
-_SATED_MIN_NUTRITION = 60  # `fed_pct` threshold: nutrition ratio ≥ 0.6 (like `tier-high`) — stricter than WB's own `isHungry` (≤ 50).
 _SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_bonus_male`/`is_bonus_female` — the block each one feeds.
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
 
@@ -519,6 +520,17 @@ def _normalize(totals: dict) -> None:
             totals[stat] = min(max(totals[stat], low), high)
 
 
+# WB `Actor.getMaxNutrition`, widened by the biology's `max_nutrition` (`big_stomach` doubles it) — `None` where it has no gut and never eats. Once per subspecies.
+def _nutrition_max(actor: dict, ctx: dict) -> int | None:
+    memo, sub_id = ctx["nutrition_memo"], actor.get("subspecies")
+    if sub_id not in memo:
+        subspecies = ctx["subspecies_by_id"].get(sub_id)
+        traits = (subspecies or {}).get("saved_traits") or []
+        widened = sum(((ctx["subspecies_traits"].get(t) or {}).get("meta_stats") or {}).get("max_nutrition", 0) for t in traits)
+        memo[sub_id] = _NUTRITION_MAX + int(widened) if needs_food(subspecies) else None
+    return memo[sub_id]
+
+
 # Most traits are behaviour, not numbers: 7 of a biology's 186 carry stats, and none of a tongue's 26. Sieved once per library so the hot loop walks only those.
 def _scoring_traits(traits_data: dict) -> dict:
     key = id(traits_data)  # `load_data` is `@cache`d, so each library is one object for the run's lifetime and its identity holds
@@ -675,6 +687,7 @@ def build_actor_stats_context(save: dict) -> dict:
         "language_traits": load_data("language-traits.json"),
         "languages_by_id": index_by_id(save.get("languages", [])),
         "life_dna": int(save["mapStats"].get("life_dna") or 0),
+        "nutrition_memo": {},  # `_nutrition_max`: a stomach's cap hangs on the biology, so it is summed once per subspecies rather than per body
         "species_data": load_data("species.json"),
         "subspecies_base_cache": {},  # Filled by the first `actor_stat_totals`: the species + chromosomes + traits base, one per subspecies, not per body.
         "subspecies_by_id": index_by_id(save.get("subspecies", [])),
@@ -698,6 +711,8 @@ def compute_actor_stats(actor: dict, ctx: dict) -> dict:
     # Closed last, on the halved ceiling: WB multiplies the two at the moment it draws them, so a child's floor follows the blow it can actually land.
     if (ceiling := cleaned.get("damage_max")) is not None:
         cleaned["damage_min"] = int(ceiling * totals.get("damage_range", 0))
+    if (cap := _nutrition_max(actor, ctx)) is not None:  # a cap like the others, read off `base_stats_meta` — and none on a body with no gut
+        cleaned["nutrition_max"] = cap
     return cleaned
 
 
@@ -766,9 +781,9 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
         counts["homeless"] += not a.get("homeBuildingID")
         counts["familyless"] += not a.get("family")
         counts["happy"] += int(a.get("happiness") or 0) >= _HAPPY_MIN_HAPPINESS and has_emotions(a, ctx["subspecies_by_id"])
-        if (a.get("asset_id") or "") not in NON_FOOD_SPECIES:  # WB `needsFood`: undead have no diet, so they never weigh on the hunger share
+        if (cap := _nutrition_max(a, ctx)) is not None:  # WB `Actor.needsFood` reads the biology's gut: a snowman never weighs on the hunger share
             counts["eaters"] += 1
-            counts["fed"] += int(a.get("nutrition") or 0) >= _SATED_MIN_NUTRITION
+            counts["fed"] += int(a.get("nutrition") or 0) > cap * _HUNGRY_RATIO
         traits = a.get("saved_traits") or []
         counts["immortals"] += "immortal" in traits
         if not SICK_TRAITS.isdisjoint(traits):  # `infected` ⊂ `SICK_TRAITS`: the narrow test rides inside, one walk of the traits
@@ -788,7 +803,7 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
         **({"eggs": n} if (n := stages["egg"]) else {}),  # a laying biology alone ever carries the line, as `immortals` and `sick` carry theirs
         **({"elders": n} if (n := stages["elder"]) else {}),
         **({"familyless": n} if (n := counts["familyless"]) else {}),
-        # Share of the food-needing sated (nutrition ≥ 60), dropped under the floor: below it the figure reports the divisor, not the body — as the podiums have it.
+        # Share of the food-needing not hungry by WB's measure (above half their cap), dropped under the floor where the figure reports the divisor, not the body.
         **({"fed_pct": round(100 * counts["fed"] / eaters)} if (eaters := counts["eaters"]) >= MIN_PER_CAPITA_UNITS else {}),
         # Dropped whole where the body holds nobody, as `eggs` and `immortals` drop at nought: a depth of 0 is no depth, WB counting a parentless founder its 1.
         **({"gen_deepest": max(generations), "gen_median": round(_median(generations))} if total else {}),

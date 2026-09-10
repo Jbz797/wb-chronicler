@@ -10,7 +10,7 @@ import { InventoryComponent, NewBadgeComponent, RankedStatComponent, TraitSummar
 import { ACTIVE_ROLES, COMBAT_STATS, SKILL_STATS } from '../../../../constants';
 import { PresentDirective } from '../../../../directives';
 import { LabelHelpers } from '../../../../helpers';
-import { TierPipe } from '../../../../pipes';
+import { HungerPipe, TierPipe } from '../../../../pipes';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { PersonTagComponent } from '../tags';
 
@@ -21,6 +21,7 @@ import { PlotCardComponent } from './plot-card/plot-card.component';
   selector: 'app-favorite',
   imports: [
     BoatCardComponent,
+    HungerPipe,
     InventoryComponent,
     NewBadgeComponent,
     NzBadgeModule,
@@ -112,6 +113,11 @@ export class FavoriteComponent {
       if (!row.person) return [];
       return [{ ...row, label: LabelHelpers.gendered(this._translate, row.key, persons[String(row.person.id)]?.sex), person: row.person }];
     });
+  });
+  // A share of the body's own cap — `big_stomach` doubles it, so the raw count reads as a percentage only on a narrow stomach.
+  protected readonly nutritionPct = computed(() => {
+    const stats = this.currentChapter()?.meta.favorite?.stats;
+    return stats?.nutrition_max ? Math.round((100 * stats.nutrition) / stats.nutrition_max) : 0;
   });
   // Names the post `tenure_years` counts — only kings/leaders/captains hold one, so the fallback never surfaces.
   protected readonly tenureLabel = computed(() => {

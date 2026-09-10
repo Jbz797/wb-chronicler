@@ -28,7 +28,6 @@ EQUIPMENT_RACKS = {
 
 MIN_PER_CAPITA_UNITS = 3  # Below three souls a per-head ratio measures the divisor, not the body — a lone survivor would top every podium.
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
-NON_FOOD_SPECIES = frozenset({"skeleton"})  # WB `needsFood`=false (undead have no diet ⇒ never hungry); excluded from `fed_pct`.
 PODIUM_PLACES = 3  # gold, silver, bronze — and the widest tie a place can hold, past which the medal marks the field, not the one who takes it.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
@@ -172,7 +171,7 @@ def _leader_ref(record: dict) -> dict:
     return {"id": record["id"], "name": record.get("name")}
 
 
-# The standout souls. `hungriest` skips the undead, who hold no nutrition to be low on; the combat stats share one pass, that being the cost.
+# The standout souls. `hungriest` skips a body with no gut, which carries no `nutrition_max` to fall short of; the combat stats share one pass, that being the cost.
 def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of) -> dict:
     picks = {
         "births": _top_by(actors, lambda a: int(a.get("births") or 0)),
@@ -192,8 +191,10 @@ def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of
     out["oldest"] = _leader_ref(min(actors, key=lambda a: (float(a.get("created_time") or 0), a["id"])))
     out["youngest"] = _leader_ref(max(actors, key=lambda a: (float(a.get("created_time") or 0), -a["id"])))
 
-    if eaters := [a for a in actors if (a.get("asset_id") or "") not in NON_FOOD_SPECIES]:
-        out["hungriest"] = _leader_ref(min(eaters, key=lambda a: (int(a.get("nutrition") or 0), a["id"])))
+    # By share of each body's own cap, as WB's `isHungry` reads it: a stomach `big_stomach` widened, half empty, is hungrier than a narrow one a little lower.
+    if eaters := [(actor, stats) for actor, stats in scored if "nutrition_max" in stats]:
+        actor, _ = min(eaters, key=lambda pair: (int(pair[0].get("nutrition") or 0) / pair[1]["nutrition_max"], pair[0]["id"]))
+        out["hungriest"] = _leader_ref(actor)
     return dict(sorted(out.items()))
 
 
@@ -410,14 +411,6 @@ def competition_ranks(entity, peers: list, getters: dict) -> dict:
         if ahead < PODIUM_PLACES:
             ranks[stat] = ahead + 1
     return ranks
-
-
-# The player's own workshop switch, off the reader's settings. Absent or false on a player who only ever plays — and a missing file reads the same way.
-def dev_mode() -> bool:
-    try:
-        return bool(json.loads(_SETTINGS_JSON.read_text()).get("dev"))
-    except (OSError, ValueError):
-        return False
 
 
 def emit(out: dict) -> None:

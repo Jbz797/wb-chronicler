@@ -77,6 +77,7 @@ interface FavoriteStats {
   max_children: number;
   money?: number;
   nutrition: number;
+  nutrition_max?: number; // WB `Actor.getMaxNutrition`: 100, which `big_stomach` doubles — absent on a body with no gut, which never eats
   renown?: number;
   speed: number;
   stamina: number;
