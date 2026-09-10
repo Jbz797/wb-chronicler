@@ -32,7 +32,8 @@
   @let totalDeaths = totalDeathsSincePrevious() ?? 0;
   @if (totalDeaths) {
     <nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="'ui_causes_of_death' | translate">
-      @for (cause of sortedDeathCauses(); track cause.key) {
+      <!-- Tracked by place, not by cause: the ranking reorders between chapters, and a moved `nz-descriptions-item` loses the value it projects. -->
+      @for (cause of sortedDeathCauses(); track $index) {
         @let deaths = deathsSincePrevious()?.[cause.key] ?? 0;
         <ng-template #titleRef>
           <img [src]="`assets/img/world/deaths/${cause.key}.png`" />
