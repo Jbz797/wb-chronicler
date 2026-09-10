@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 09/09/26 15:46</p>
+<p class="metadata">Date de mise à jour : 10/09/26 10:23</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -14,7 +14,7 @@ Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie 
 | `clan/info.py <id>`                | `full`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                  |
 | `culture/info.py <id>`             | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                         |
 | `family/info.py <id>`              | `full`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`                                            |
-| `geography/info.py`                | `biomes`, `entity_types`, `equipment`, `islands`, `positions [-t <type>]`, `waters`                                                 |
+| `geography/info.py`                | `biomes`, `burning`, `entity_types`, `equipment`, `frozen`, `islands`, `positions [-t <type>]`, `waters`                            |
 | `ground/info.py <id>`              | `full`, `boats`, `inventory`, `metadata`, `occupants`                                                                               |
 | `kingdom/info.py <id>`             | `full`, `boats`, `breakdown`, `cities`, `equipment`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `wars`  |
 | `language/info.py <id>`            | `full`, `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                         |

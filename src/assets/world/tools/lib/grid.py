@@ -1,4 +1,4 @@
-# Tile-level primitives. No save-wide state, no caching — just functions over a tile name, or over the tile rows the save folds away as runs.
+# Tile-level primitives. No save-wide state, no module cache — just functions over a tile name, the rows the save folds away as runs, or the tiles it lists by id.
 
 from collections.abc import Iterator
 from itertools import chain, repeat
@@ -22,7 +22,7 @@ _KIND_BY_BASE = {
     "shallow_waters": "water",
     "summit": "summit",
 }
-# Tile name → WB `TileLayerType`, extracted from `Assembly-CSharp.dll` (TileType init). Unlisted bases default to Ground (lava* → Lava via prefix).
+# Tile name → WB `TileLayerType`, extracted from `Assembly-CSharp.dll` (TileType init).
 _LAYER_BY_TILE = {
     "$wall$": "Block",
     "close_ocean": "Ocean",
@@ -34,14 +34,40 @@ _LAYER_BY_TILE = {
 }
 
 
-# Each row's RLE, its tile ids paired with its run lengths — the module's one and only reading of the save's own shape.
+# Each row's RLE, its tile ids paired with its run lengths — the module's one and only reading of the grid's own shape.
 def _tile_rows(save: dict) -> Iterator[tuple[list[int], list[int]]]:
     return zip(save.get("tileArray") or [], save.get("tileAmounts") or [])
 
 
+def _unfold(ids: list[int], runs: list[int]) -> list[int]:
+    return list(chain.from_iterable(map(repeat, ids, runs)))
+
+
+# The grid unfolded a row at a time, on first read: a caller that looks at a few tiles never pays for the whole map, some thirty-five milliseconds of it.
+class LazyTileGrid(dict):
+    __slots__ = ("_rows", "height", "width")
+
+    # Nothing is decoded here — the runs are only indexed, so that `grid[y]` can reach its own.
+    def __init__(self, save: dict):
+        super().__init__()
+        self._rows = list(_tile_rows(save))
+        self.height, self.width = len(self._rows), sum(self._rows[0][1]) if self._rows else 0
+
+    # `dict` calls it once per row, on its first read: every later `grid[y][x]` is a plain lookup.
+    def __missing__(self, y: int) -> list[int]:
+        row = self[y] = _unfold(*self._rows[y])
+        return row
+
+
 # The save's runs unfolded into a 2D `grid[y][x]` of tile ids — `y` IS the WB-actor y, north-growing, so no caller has to flip it.
 def decode_tile_grid(save: dict) -> list[list[int]]:
-    return [list(chain.from_iterable(map(repeat, ids, runs))) for ids, runs in _tile_rows(save)]
+    return [_unfold(ids, runs) for ids, runs in _tile_rows(save)]
+
+
+# What WB `SavedMap.create` lists by `tile_id` rather than on the grid — `fire`, `frozen_tiles` — packed row-major as `y * width + x`, unpacked into `(x, y)`.
+def listed_tiles(save: dict, key: str) -> Iterator[tuple[int, int]]:
+    width = sum(next(_tile_rows(save), ((), ()))[1])
+    return ((i % width, i // width) for i in save.get(key) or [])
 
 
 # Vegetation biome (jungle/savanna/swamp/…). `None` for terrain-only tiles and overlays (`*:road`, `*:field`).

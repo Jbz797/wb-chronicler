@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import decode_tile_grid, tile_biome, tile_elevation, tile_kind, tile_layer
+from grid import LazyTileGrid, listed_tiles, tile_biome, tile_elevation, tile_kind, tile_layer
 from islands import compute_islands_cached
 from shared import ZONE_TILES, city_centre, civic_building_ids, emit, entity_ref, index_by_id, load_data, load_save, parse_sections, take_chapter
 
@@ -36,7 +36,7 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
 
 
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
-def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], width: int) -> dict:
+def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int]) -> dict:
     wanted = set(coords)
 
     # `actors_by_pos` alone takes a factory: it is the one filled per actor, where the others are assigned whole once their section asks for them.
@@ -44,7 +44,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         "actors_by_pos": defaultdict(list),
         "center": center,
         "cities_by_id": {},
-        "grid": [],
+        "grid": {},
         "ground_by_pos": {},
         "kingdoms_by_id": {},
         "tile_map": save["tileMap"],
@@ -68,19 +68,24 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["kingdoms_by_id"] = index_by_id(save.get("kingdoms") or [])
 
     if {"distances", "tile_info"} & sections:
-        ctx["grid"] = decode_tile_grid(save)
+        ctx["grid"] = LazyTileGrid(save)
 
     if {"context", "distances"} & sections:
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
 
     if {"distances", "tile_info"} & sections:  # `distances` needs it too, to say how far a rock lies from a land a city could hold
         _, ctx["tile_to_island"] = compute_islands_cached(save, save_path)
-        # `frozen_tiles` are packed as `y * width + x` ints — decode to positions, keeping only the queried ones.
-        ctx["frozen_set"] = {pos for idx in save.get("frozen_tiles") or [] if (pos := (idx % width, idx // width)) in wanted}
+
+    if "tile_info" in sections:
+        ctx["burning_set"] = wanted.intersection(listed_tiles(save, "fire"))
+        ctx["frozen_set"] = wanted.intersection(listed_tiles(save, "frozen_tiles"))
 
     if "distances" in sections:
         ctx["layer_by_id"] = [tile_layer(name) for name in ctx["tile_map"]]
         ctx["water_at_center"] = _water_distance(*center, ctx["grid"], ctx["layer_by_id"])
+        ctx["land_at_center"] = land = _land_distance(*center, ctx)
+        # The centre's reach as a number, `0` on a land itself and one past `_LAND_REACH` where none is seen — the floor its neighbours' rings start from.
+        ctx["land_floor"] = 0 if ctx["tile_to_island"].get(center) is not None else _LAND_REACH + 1 if land is None else land["tiles"]
 
     return ctx
 
@@ -90,7 +95,7 @@ def _city_at(x: int, y: int, ctx: dict) -> dict | None:
     return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
 
 
-# Returns `{}` for unclaimed tiles (stripped by `emit`). Distances live in the `distances` section, not here.
+# `{}` on unclaimed ground, which `emit` strips from the cell.
 def _context_at(x: int, y: int, ctx: dict) -> dict:
     city = _city_at(x, y, ctx)
     if city is None:
@@ -98,14 +103,15 @@ def _context_at(x: int, y: int, ctx: dict) -> dict:
     return {"city": {"id": city["id"], "name": city.get("name")}, "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"])}
 
 
-# No neighbour undercuts the centre's water by their gap, so its diamond starts there.
+# No neighbour undercuts the centre by more than their gap — Manhattan for the water's diamonds, Chebyshev for the land's rings — so each search starts there.
 def _distances_at(x: int, y: int, ctx: dict) -> dict:
     cx, cy = ctx["center"]
     gap, floor = abs(x - cx) + abs(y - cy), ctx["water_at_center"]
     water = floor if gap == 0 or floor < 0 else _water_distance(x, y, ctx["grid"], ctx["layer_by_id"], max(0, floor - gap))
 
     out: dict = {"to_water": water}
-    if (land := _land_distance(x, y, ctx)) is not None:
+    land = ctx["land_at_center"] if gap == 0 else _land_distance(x, y, ctx, max(1, ctx["land_floor"] - max(abs(x - cx), abs(y - cy))))
+    if land is not None:
         out["to_land"] = land
     city = _city_at(x, y, ctx)
     if city is None:
@@ -145,15 +151,15 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
 
 
 # How far the tile's rock lies from a land a city could hold, and which one — measured whole, a castaway being isolated by his island's strait, not his footing.
-def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
+def _land_distance(x: int, y: int, ctx: dict, start: int = 1) -> dict | None:
     island_at, grid, layer = ctx["tile_to_island"].get, ctx["grid"], ctx["layer_by_id"]
-    height, width = len(grid), len(grid[0])
+    height, width = grid.height, grid.width
     if island_at((x, y)) is not None:
         return None
 
     # Afloat the source is the tile alone, and an 8-way wave off one point is the square ring at that Chebyshev radius — walked straight, no front to carry.
     if layer[grid[y][x]] == "Ocean":
-        for r in range(1, _LAND_REACH + 1):
+        for r in range(start, _LAND_REACH + 1):
             x0, x1, y0, y1 = x - r, x + r, y - r, y + r
             for nx in range(max(0, x0), min(width - 1, x1) + 1):  # the two horizontal sides, corners included
                 for ny in (y0, y1):
@@ -197,21 +203,23 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
 
-# `frozen` only when true — a `false` per cell otherwise; the biome flavour rides on the queried tile alone, most sweeps holding a single biome.
+# `burning` and `frozen` only when true — a `false` per cell otherwise; the biome flavour rides on the queried tile alone, most sweeps holding a single biome.
 def _tile_info_at(x: int, y: int, ctx: dict, queried: bool) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
     biome = tile_biome(name)
     out: dict = {"biome": biome, "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}
     if biome and queried:  # chronicler-only: WB's own English line on the terrain, which nothing else in the tools surfaces
         out["biome_description"] = (load_data("biomes.json").get(biome) or {}).get("description")
+    if (x, y) in ctx["burning_set"]:
+        out["burning"] = True
     if (x, y) in ctx["frozen_set"]:
         out["frozen"] = True
     return out
 
 
 # Diamonds expand to the first Ocean ring, every cell walkable — coastal sites end fast, vs a 300 k-cell BFS. `-1` = no water, and one tile settles it for all.
-def _water_distance(x: int, y: int, grid: list[list[int]], layer_by_id: list[str], start: int = 0) -> int:
-    height, width = len(grid), len(grid[0])
+def _water_distance(x: int, y: int, grid: LazyTileGrid, layer_by_id: list[str], start: int = 0) -> int:
+    height, width = grid.height, grid.width
     for r in range(start, width + height):
         for dx in range(-r, r + 1):
             nx = x + dx
@@ -263,7 +271,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     coords = _radius_tiles(cx, cy, args.radius, width, height)
-    ctx = _build_context(save, save_path, sections, coords, (cx, cy), width)
+    ctx = _build_context(save, save_path, sections, coords, (cx, cy))
 
     out: dict = {}
     for x, y in coords:

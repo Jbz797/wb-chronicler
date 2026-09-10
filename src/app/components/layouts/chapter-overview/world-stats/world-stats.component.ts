@@ -77,7 +77,7 @@ export class WorldStatsComponent {
     return breakdown ? Object.values(breakdown).reduce((sum, v) => sum + v, 0) : null;
   });
 
-  // Only present entries, each tagged with `isNew` when the top entity changed since the previous chapter.
+  // Only present entries, each tagged with `isNew` when the top entity changed since the previous chapter — or took a category that then had none, a tie included.
   private _leaderRows(scale: { icon?: string; key: LeaderKind; label: string }[]): { data: LeaderRow; icon: string; label: string }[] {
     const current = this.currentChapter()?.meta.world.leaders;
     if (!current) return [];
@@ -85,8 +85,7 @@ export class WorldStatsComponent {
     return scale.flatMap(({ icon, key, label }) => {
       const entry = current[key];
       if (!entry) return [];
-      const p = previous?.[key];
-      const isNew = !!previous && !!p && (entry.id !== p.id);
+      const isNew = !!previous && entry.id !== previous[key]?.id;
       // Only `highest_level_person` can reach here unnamed; every other entity row and the dominant traits always carry one.
       return [{ data: { ...entry, isNew, key, name: entry.name ?? (this._translate.instant('anonymous') as string) }, icon: icon ?? key, label }];
     });
