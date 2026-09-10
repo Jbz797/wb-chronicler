@@ -5,6 +5,7 @@
 import sys
 from collections import defaultdict
 from functools import cache
+from math import hypot
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -28,6 +29,7 @@ from shared import (
     has_emotions,
     index_by_id,
     is_aboard,
+    is_boat,
     is_sapient,
     life_stage,
     light,
@@ -38,11 +40,14 @@ from shared import (
     resolve_profession,
     sex_label,
     take_chapter,
+    wants_detail,
 )
 
-_ALL_SECTIONS = ("companions", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats", "traits")
+_ALL_SECTIONS = ("companions", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
+_CIRCLES = (("intimate", 25), ("common", 120))  # chronicler.md's tiers by distance, in tiles — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
+_DOMINANT_AXIS = 0.4  # chronicler.md « Calcul des directions »: an axis under this share of the other drops out of the bearing
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
@@ -120,10 +125,10 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: `metadata` and `surroundings` alone ask
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
         "religions_by_id": index_by_id(save.get("religions") or []),
-        "save_path": save_path,  # islands cache key — must be the loaded save's real path (live or a chapter's map.wbox), not the module default.
     }
 
 
@@ -162,7 +167,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         and (not needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) or int(actor.get("nutrition") or 0) >= _NEW_BABY_NUTRITION)
     )
 
-    _, island_lookup = compute_islands_cached(save, ctx["save_path"])
+    island_lookup = ctx["island_lookup"]()
 
     return {
         # Chronicler-only, and only while it still bites: the age WB gives the child its halved `damage_max`/`health_max` back at — a bridling, not an infirmity.
@@ -230,6 +235,30 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
         # The scheme's kind, as a book carries its genre: WB's English for the chronicler, the id for the panel — the save's own `name` is that label localised.
         "type": {"description": kind.get("description"), "id": type_id, "name": kind.get("name")},
     }
+
+
+# Every living body within the common reach, nearest first, as the crow flies — a line is built only for a printed circle: `full` never makes the common one.
+def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
+    if actor.get("x") is None or actor.get("y") is None:
+        return {}
+    cx, cy = int(actor["x"]), int(actor["y"])
+    circles: dict[str, list[tuple]] = {name: [] for name, _ in _CIRCLES}
+    for other in ctx["actors_by_id"].values():
+        if other is actor or is_boat(other) or other.get("x") is None or ctx["subspecies_by_id"].get(other.get("subspecies")) is None:
+            continue
+        dx, dy = int(other["x"]) - cx, int(other["y"]) - cy
+        # Whole tiles, and the circle drawn on the same figure it prints: the scale reads no finer, and a decimal alone pushes a killer's line past the width.
+        if (distance := round(hypot(dx, dy))) <= _CIRCLES[-1][1]:
+            circles[next(name for name, reach in _CIRCLES if distance <= reach)].append((distance, other["id"], dx, dy))
+    detailed = wants_detail(requested, len(circles["common"]))
+    island_of, by_id = ctx["island_lookup"](), ctx["actors_by_id"]
+    home = island_of.get((cx, cy))
+    rings = {
+        name: [_surroundings_row(by_id[i], ctx, distance, dx, dy, home, island_of.get((cx + dx, cy + dy))) for distance, i, dx, dy in sorted(entries)]
+        for name, entries in circles.items()
+        if detailed or name == "intimate"
+    }
+    return rings if detailed else light(rings, withheld=True)  # `full` keeps the circle a chapter opens on, and says the common one waits to be named
 
 
 # What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
@@ -325,6 +354,18 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
     return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
 
 
+# The bearing as a compass point in WB's axes, y growing north: one wind or two, never a third, and none for a body on the very tile.
+def _direction(dx: int, dy: int) -> str | None:
+    if not dx and not dy:
+        return None
+    north_south, east_west = ("N" if dy > 0 else "S"), ("E" if dx > 0 else "W")
+    if abs(dy) < _DOMINANT_AXIS * abs(dx):
+        return east_west
+    if abs(dx) < _DOMINANT_AXIS * abs(dy):
+        return north_south
+    return north_south + east_west
+
+
 # Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
 def _equipment_power(actor: dict, ctx: dict) -> int:
     items = ctx["items_by_id"]
@@ -349,6 +390,25 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
         if entries and entries[-1].get("id") == actor_id:
             return int((world_time - float(entries[-1].get("timestamp_ago") or 0)) / UNITS_PER_YEAR)
     return None
+
+
+# One line of `surroundings`: silent on his own land, off it the land's id — or `adrift` in water or on an uncounted rock, where a bare null would read as home.
+def _surroundings_row(other: dict, ctx: dict, distance: int, dx: int, dy: int, home: int | None, land: int | None) -> dict:
+    # Raw totals narrowed to `lifespan`, as `population_of` reads a stage: it alone is kept, and the whole pipeline doubled the sweep.
+    age, lifespan = actor_age(other, ctx["world_time"]), int(actor_stat_totals(other, ctx, lifespan_only=True).get("lifespan", 0))
+    return {
+        **({} if land == home else {"adrift": True} if land is None else {"island_id": land}),
+        "asset_id": other.get("asset_id"),
+        "direction": _direction(dx, dy),
+        "distance": distance,
+        "id": other["id"],
+        **({"kills": n} if (n := int(other.get("kills") or 0)) else {}),
+        "life_stage": life_stage(age, adult_age(other, ctx), lifespan, is_egg(other, ctx)),
+        "name": other.get("name"),
+        # Only when true, as a tally drops at nought: a `false` on every beast would push a named killer's line past the inline width.
+        **({"sapient": True} if is_sapient(ctx["subspecies_by_id"][other["subspecies"]]) else {}),
+        "sex": sex_label(other),
+    }
 
 
 def main(argv: list[str]) -> int:
@@ -394,6 +454,8 @@ def main(argv: list[str]) -> int:
         out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx)
     if "stats" in sections:
         out["stats"] = _compute_stats(actor, ctx)
+    if "surroundings" in sections:
+        out["surroundings"] = _build_surroundings(actor, ctx, requested)
     if "traits" in sections:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
 

@@ -346,9 +346,10 @@ def _fold_cumulative(world: dict) -> None:
         world["cumulative"] = {key: value for key, value in block.items() if key in _UI_CUMULATIVE}
 
 
-# Folds the favorite's heavy blocks: his traits, his gear and the scheme's detail all go — `actor/info.py <id>` still hands the chronicler each one whole.
+# Folds the favorite's heavy blocks: his traits, his gear, who stands around him and the scheme's detail all go — `actor/info.py <id>` still hands each one whole.
 def _fold_favorite_detail(favorite: dict) -> None:
-    favorite.pop("equipment", None)
+    for section in ("equipment", "surroundings"):
+        favorite.pop(section, None)
     # The panel prints the type, the target and the gauge: WB's English is the chronicler's, and so is how long the scheme has run.
     plot = favorite.get("plot") or {}
     plot.pop("months", None)
@@ -732,7 +733,7 @@ def main(argv: list[str]) -> int:
     print(f"  → chronicler: {todo}")
     # Said where it is acted on, as the summaries' shape is: a descriptor is written once per favorite, and the ceiling only matters at that moment.
     if favorite and not favorite.get("descriptor"):
-        print("  → the descriptor: 72 characters at the very most — a ceiling, not a target")
+        print("  → the descriptor: 66 characters at the very most — a ceiling, not a target")
     # Said here rather than in the manual: an alert reads as news unless its nature is said, and only a chapter that fires one needs to hear it.
     if new_alerts:
         print("  → each alert is a state, not an event: it fires again every chapter until the law is off")

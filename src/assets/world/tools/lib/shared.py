@@ -586,9 +586,9 @@ def life_stage(age: int, age_adult: float, lifespan: float, egg: bool) -> str:
     return "adult"
 
 
-# Stamps a summarised section with its own way out, so no doc has to list which ones shrink under `full` — an empty payload stays bare, hiding nothing.
-def light(payload: dict) -> dict:
-    if not any(payload.values()):
+# Stamps a summarised section with its own way out, so no doc has to list which ones shrink under `full` — bare when empty, unless the caller `withheld` some.
+def light(payload: dict, *, withheld: bool = False) -> dict:
+    if not withheld and not any(payload.values()):
         return payload
     return {**payload, "info": "call this section for the full detail"}
 
