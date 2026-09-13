@@ -65,10 +65,10 @@ Every player's chronicle stays local to their machine — the repo carries the t
 
 ## Requirements
 
-- **WorldBox** (Steam) and a save to follow
 - **Claude Code**, with a Claude subscription — Max or higher is recommended
 - **Node** 22+ and **Yarn** for the reader
 - **Python 3** (standard library only) for the `tools/` extractors
+- **WorldBox** (Steam) and a save to follow
 
 On first run the reader opens its settings panel: pick the tongue the chronicle is kept in, and the save to follow among those found on this machine.
 

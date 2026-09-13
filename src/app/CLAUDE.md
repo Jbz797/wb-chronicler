@@ -1,7 +1,7 @@
 ## Arborescence
 
-- Un composant vit là où il est **appelé**, en transitif : il n'est transverse que si l'un de ses usagers l'est, sinon il descend avec lui
 - Un `index.ts` regroupe ce que plusieurs dossiers consomment ; un sous-composant privé à son parent s'importe par chemin direct
+- Un composant vit là où il est **appelé**, en transitif : il n'est transverse que si l'un de ses usagers l'est, sinon il descend avec lui
 
 ## Commentaires
 
@@ -15,9 +15,9 @@
 
 ## i18n
 
+- `fr.json` et `en.json` portent les mêmes clés, triées ; un genre s'écrit `<base>_f` / `<base>_m`, la clé nue servant de repli aux langues qui ne fléchissent pas.
 - Beaucoup de clés sont consommées via template literal (ex: `species_${assetId}`, `role_${role}`). Toujours grep le préfixe avant de supprimer une clé.
 - Les libellés que WorldBox connaît viennent de ses propres locales (`locales/<lang>/` dans `resources.assets`) ; le reste est du vocabulaire chroniqueur, traduit à la main.
-- `fr.json` et `en.json` portent les mêmes clés, triées ; un genre s'écrit `<base>_f` / `<base>_m`, la clé nue servant de repli aux langues qui ne fléchissent pas.
 
 ## Méthodes
 
