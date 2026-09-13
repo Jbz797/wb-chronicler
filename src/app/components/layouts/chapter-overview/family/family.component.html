@@ -1,6 +1,7 @@
 @if (family(); as f) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    @for (founder of founders(); track founder.id) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (founder of founders(); track $index) {
       <ng-template #founderTitle>
         <img src="assets/img/world/founder.png" />
         <span>{{ founder.label }}</span>
@@ -26,7 +27,7 @@
       <app-ranked-stat source="family" stat="members" />
     </nz-descriptions-item>
 
-    @for (s of lifetimeStats(); track s.stat) {
+    @for (s of lifetimeStats(); track $index) {
       <ng-template #lifetimeTitle>
         <img [src]="s.icon" />
         <span>{{ s.label | translate }}</span>

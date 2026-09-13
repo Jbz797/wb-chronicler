@@ -865,6 +865,12 @@ def subspecies_stats(subspecies: dict, ctx: dict) -> dict:
     if mutagenic := _mutation_rate(subspecies):  # a biology's own reading: WB keeps it off `base_stats`, so no `Actor` is ever handed it
         base["mutation"] = mutagenic
     out = {"base": _cleanup_stats(base)}
+    # The ages the lineage hands every body it bears, which a fiche shows only while they bite — no `adult_age` for a stock `adult_age()` finds grown from birth.
+    adult, breeding = _age_thresholds(int(base.get("lifespan") or 0), is_sapient(subspecies))
+    if adult and (ctx["species_data"].get(subspecies.get("species_id")) or {}).get("baby_form"):
+        out["base"]["adult_age"] = round(adult, 1)
+    if breeding:  # a stock WB gave no lifespan answers 0 to both, and a threshold of nought says nothing a body's first day does not
+        out["base"]["breeding_age"] = round(breeding, 1)
     for sex in ("female", "male"):  # a chromosome may hold a bonus locus of each, so both blocks can stand — the one nobody pays into simply drops
         if cleaned := _cleanup_stats(sex_bonus[sex], delta=True):
             out[sex] = cleaned

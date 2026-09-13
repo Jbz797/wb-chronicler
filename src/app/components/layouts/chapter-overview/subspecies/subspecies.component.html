@@ -10,7 +10,8 @@
       <app-ranked-stat source="subspecies" stat="members" />
     </nz-descriptions-item>
 
-    @for (row of lifetimeStats(); track row.stat) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (row of lifetimeStats(); track $index) {
       <ng-template #lifetimeTitle>
         <img [src]="row.icon" />
         <span>{{ row.label | translate }}</span>

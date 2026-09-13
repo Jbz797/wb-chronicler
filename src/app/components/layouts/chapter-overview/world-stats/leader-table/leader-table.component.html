@@ -1,8 +1,9 @@
 @if (rows().length) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="heading()">
-    @for (row of rows(); track row.data.key) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (row of rows(); track $index) {
       <ng-template #titleRef>
-        <img [src]="`assets/img/world/${row.icon}.png`" />
+        <img [src]="row.icon" />
         <span>{{ row.label | translate }}</span>
         <app-new-badge [show]="row.data.isNew ?? false" />
       </ng-template>

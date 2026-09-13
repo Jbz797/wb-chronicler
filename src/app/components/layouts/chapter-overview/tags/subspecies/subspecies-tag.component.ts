@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, computed, ElementRef, inject, input, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, viewChild } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
@@ -12,7 +12,7 @@ import { RegistryService } from '../../../../../services';
   imports: [NzTagModule, NzTooltipModule, TruncatedDirective],
   templateUrl: './subspecies-tag.component.html',
 })
-export class SubspeciesTagComponent implements AfterViewInit {
+export class SubspeciesTagComponent {
 
   private readonly _registry = inject(RegistryService);
 
@@ -26,10 +26,12 @@ export class SubspeciesTagComponent implements AfterViewInit {
 
   private readonly _canvas = viewChild<ElementRef<HTMLCanvasElement>>('bookmark');
 
-  ngAfterViewInit(): void {
-    const canvas = this._canvas()?.nativeElement;
-    const subspecies = this.subspecies();
-    if (canvas && subspecies) SubspeciesSpriteHelpers.paint(canvas, subspecies).catch(() => {}); // a biology with no colour leaves it collapsed
+  constructor() {
+    effect(() => {
+      const canvas = this._canvas()?.nativeElement;
+      const subspecies = this.subspecies();
+      if (canvas && subspecies) SubspeciesSpriteHelpers.paint(canvas, subspecies).catch(() => {}); // a biology with no colour leaves it collapsed
+    });
   }
 
 }

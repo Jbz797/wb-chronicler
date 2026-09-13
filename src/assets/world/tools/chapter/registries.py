@@ -15,15 +15,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     MIN_RANK_PEERS,
+    MIN_SCORE_PEERS,
     PODIUM_PLACES,
     SAVES_DIR,
-    city_score_ranks,
+    city_score_dimensions,
     index_by_id,
     is_boat,
-    kingdom_score_ranks,
+    kingdom_score_dimensions,
     load_data,
     load_save,
     resolve_profession,
+    score_totals,
     sex_label,
     weapon_assets,
 )
@@ -144,11 +146,13 @@ def _build_registries(save: dict, prev: dict) -> dict:
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
         crowd[actor_id] = (a, resolve_profession(a, save))
 
-    rank_by_person = _podium(Counter({aid: int(a.get("level") or 0) for aid, (a, _) in crowd.items()}))  # a level, where every other podium counts heads
+    # A level, where every other podium counts heads — past the 1 WB starts every body on, or the whole world would tie for a medal nobody earned.
+    rank_by_person = _podium(Counter({aid: level for aid, (a, _) in crowd.items() if (level := int(a.get("level") or 0)) > 1}))
     persons = {str(aid): _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid)) for aid, (a, job) in crowd.items()}
 
-    rank_by_city = {cid: r for cid, r in city_score_ranks(save).items() if r <= PODIUM_PLACES}  # the composite settlement weight → same medal as a realm's
-    rank_by_kingdom = {kid: r for kid, r in kingdom_score_ranks(save).items() if r <= PODIUM_PLACES}  # the composite power score → gold/silver/bronze medal
+    # The composite score's points, medalled as every other podium is — from three rivals up, a world raising its towns and crowns by the handful.
+    rank_by_city = _podium(score_totals([c["id"] for c in cities], city_score_dimensions(save)), MIN_SCORE_PEERS)
+    rank_by_kingdom = _podium(score_totals([k["id"] for k in kingdoms], kingdom_score_dimensions(save)), MIN_SCORE_PEERS)
 
     city_registry = {
         str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID")), rank_by_city.get(c["id"])) for c in cities
@@ -331,10 +335,10 @@ def _language_entry(language: dict, speakers: int, rank: int | None) -> dict:
         "name": language.get("name"),
         "species": language.get("creator_species_id"),  # the founder's stock, which those who answer in it need not share — the pip right of the name
     }
-    if rank is not None:
-        entry["rank"] = rank
     if (size := _size_tier(speakers)) > 1:
         entry["size"] = size
+    if rank is not None:
+        entry["rank"] = rank
     entry |= {  # WB `LanguageBanner.setupBanner`: ten parchment fields and twenty-one scripts of its own, indexed straight by these two ids.
         "banner_bg": language.get("banner_background_id") or 0,
         "banner_bg_color": palette.get("color_main_2"),
@@ -383,7 +387,7 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
         entry["job"] = profession
     if kingdom := actor.get("civ_kingdom_id"):  # Their realm's hue dyes the clothes — kept as a ref so the palette lives in one place, the kingdom registry.
         entry["kingdom"] = kingdom
-    if (level := max(int(actor.get("level") or 0), 1)) > 1:  # most of a world sits at 1 — a medallion on every subject would say nothing, so it stays earned
+    if (level := int(actor.get("level") or 0)) > 1:  # most of a world sits at 1 — a medallion on every subject would say nothing, so it stays earned
         entry["level"] = level
     if rank is not None:
         entry["rank"] = rank
@@ -399,8 +403,8 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
 
 
 # Competition ranks (1, 2, 2, 4) over three places, `{}` where the medal says nothing — too thin a field, or a tie so wide that gold marks the world, not the winner.
-def _podium(counts: Counter) -> dict[int, int]:
-    if len(counts) < MIN_RANK_PEERS:
+def _podium(counts: Counter, min_peers: int = MIN_RANK_PEERS) -> dict[int, int]:
+    if len(counts) < min_peers:
         return {}
     ranks: dict[int, int] = {}
     place = 1

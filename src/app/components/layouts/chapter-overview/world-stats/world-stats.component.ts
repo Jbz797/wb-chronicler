@@ -6,8 +6,8 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { DeltaComponent } from '..';
-import { CUMULATIVE_STATS, DEATH_CAUSES, LEADERS_BY_LEVEL, LEADERS_BY_MEMBERS, LEADERS_BY_SCORE, SNAPSHOT_STATS } from '../../../../constants';
-import { LeaderKind, LeaderRow, SnapshotRow } from '../../../../interfaces';
+import { CUMULATIVE_STATS, DEATH_CAUSES, LEADER_GROUPS, LEADER_MEASURES, SNAPSHOT_STATS } from '../../../../constants';
+import { LeaderGroup, LeaderMeasure, LeaderRow, SnapshotRow } from '../../../../interfaces';
 import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 
@@ -47,10 +47,8 @@ export class WorldStatsComponent {
     const previous = this._chronicler.previousChapter()?.meta.world.cumulative?.deaths;
     return Object.fromEntries(this.deathCauses.map(({ key }) => [key, (current[key] ?? 0) - (previous?.[key] ?? 0)]));
   });
-  // The two podiums, each flattened for the template: who leads on a headcount, and who leads on the composite score only a town and a crown are given.
-  protected readonly levelRows = computed(() => this._leaderRows(LEADERS_BY_LEVEL));
-  protected readonly memberRows = computed(() => this._leaderRows(LEADERS_BY_MEMBERS));
-  protected readonly scoreRows = computed(() => this._leaderRows(LEADERS_BY_SCORE));
+  // One « Records » table per group, flattened for the template — a table whose records all went unclaimed hides itself.
+  protected readonly leaderTables = computed(() => LEADER_GROUPS.map(({ group, label, measures }) => ({ group, label, rows: this._leaderRows(group, measures) })));
   // Rows resolved here rather than in the template: every count sits under `snapshot`, except the hulls, which own a block so the chronicler can list them.
   protected readonly snapshotRows = computed<Omit<SnapshotRow, 'hideIfZero'>[]>(() => {
     const world = this.currentChapter()?.meta.world;
@@ -77,17 +75,18 @@ export class WorldStatsComponent {
     return breakdown ? Object.values(breakdown).reduce((sum, v) => sum + v, 0) : null;
   });
 
-  // Only present entries, each tagged with `isNew` when the top entity changed since the previous chapter — or took a category that then had none, a tie included.
-  private _leaderRows(scale: { icon?: string; key: LeaderKind; label: string }[]): { data: LeaderRow; icon: string; label: string }[] {
-    const current = this.currentChapter()?.meta.world.leaders;
+  // Only present entries, each tagged with `isNew` when the top entity changed since the previous chapter — or took a record that then had none.
+  private _leaderRows(group: LeaderGroup, measures: LeaderMeasure[]): { data: LeaderRow; icon: string; label: string }[] {
+    const current = this.currentChapter()?.meta.world.leaders?.[group];
     if (!current) return [];
-    const previous = this._chronicler.previousChapter()?.meta.world.leaders;
-    return scale.flatMap(({ icon, key, label }) => {
-      const entry = current[key];
+    const previous = this._chronicler.previousChapter();
+    return measures.flatMap((measure) => {
+      const entry = current[measure];
       if (!entry) return [];
-      const isNew = !!previous && entry.id !== previous[key]?.id;
-      // Only `highest_level_person` can reach here unnamed; every other entity row and the dominant traits always carry one.
-      return [{ data: { ...entry, isNew, key, name: entry.name ?? (this._translate.instant('anonymous') as string) }, icon: icon ?? key, label }];
+      const before = previous?.meta.world.leaders?.[group]?.[measure];
+      const isNew = !!previous && (entry.id ?? entry.asset_id) !== (before?.id ?? before?.asset_id); // a species has no id, its `asset_id` standing in
+      // Only a soul can reach here unnamed: every other entity row carries its name, and a species names itself through its `asset_id`.
+      return [{ ...LEADER_MEASURES[measure], data: { ...entry, group, isNew, name: entry.name ?? (this._translate.instant('anonymous') as string) } }];
     });
   }
 

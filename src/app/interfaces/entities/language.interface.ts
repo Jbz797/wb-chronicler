@@ -30,7 +30,6 @@ interface LanguageMetadata {
   name: string;
   native?: number;
   renown?: number;
-  traits?: number;
 }
 
 // Podium-only, like every other tier: absent where the language places outside the top 3 among the world's tongues.

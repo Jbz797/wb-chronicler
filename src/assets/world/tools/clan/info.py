@@ -124,7 +124,7 @@ def _clan_culture(clan: dict, ctx: dict) -> int | None:
     return chief.get("culture") or clan.get("culture_id")
 
 
-# The rank getters, shared with `competition_ranks` — living counts off the one actor pass. No `traits`: WB lets a band gain none, so the count never moves.
+# The rank getters, shared with `competition_ranks` — living counts off the rosters one actor pass built. No `traits`: WB lets a band gain none, the count fixed.
 def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda c: entity_age(c, world_time),
@@ -180,23 +180,26 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown clan: {clan_id}", file=sys.stderr)
         return 1
 
-    # One pass feeds every tally: WB points the actor at its band, never the reverse. Skipped whole where no section asked — `traits` reads a data file.
-    tallies: dict = {
-        "members": defaultdict(list),
-        "money": Counter(),
-        "renown_total": Counter(),
-        "warriors": Counter(),
-    }
+    tallies: dict = {"members": defaultdict(list), "money": Counter(), "renown_total": Counter(), "warriors": Counter()}
 
+    # WB points the actor at its band, never the reverse, so the bands are gathered in one walk — skipped whole where no section wants the living.
+    members_by_id = tallies["members"]
     for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
-        if not (cid := actor.get("clan")):
-            continue
-        tallies["members"][cid].append(actor)
-        tallies["money"][cid] += int(actor.get("money") or 0)
-        tallies["renown_total"][cid] += int(actor.get("renown") or 0)
-        tallies["warriors"][cid] += actor.get("profession") == PROFESSION_WARRIOR
+        if cid := actor.get("clan"):
+            members_by_id[cid].append(actor)
 
-    members = tallies["members"].get(clan_id, [])
+    # The three sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
+    if "ranks" in sections:
+        money, renown, warriors = (tallies[k] for k in ("money", "renown_total", "warriors"))
+        for cid, band in members_by_id.items():
+            coins = fame = fighters = 0
+            for actor in band:
+                coins += int(actor.get("money") or 0)
+                fame += int(actor.get("renown") or 0)
+                fighters += actor.get("profession") == PROFESSION_WARRIOR
+            money[cid], renown[cid], warriors[cid] = coins, fame, fighters
+
+    members = members_by_id.get(clan_id, [])
     ctx = {
         **build_actor_stats_context(save),  # brings the trait libraries and `subspecies_by_id`, `languages_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),
@@ -214,8 +217,8 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(clan, ctx)
-    if "leaders" in sections:  # WB names no such podium — ours, and it drops below five members, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
+    if "leaders" in sections:  # WB names no such podium — ours, and it drops below four members, where a champion among three names nobody
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:

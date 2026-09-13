@@ -26,7 +26,6 @@ interface CultureMetadata {
   kingdoms?: number;
   name: string;
   renown?: number;
-  traits?: number;
 }
 
 // Podium-only, like every other tier: absent where the culture places outside the top 3 among the world's cultures.
@@ -41,5 +40,4 @@ interface CultureRanks {
   money?: number;
   renown?: number;
   renown_total?: number;
-  traits?: number;
 }

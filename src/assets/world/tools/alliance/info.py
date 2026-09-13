@@ -92,7 +92,7 @@ def _build_wars(members: set[int], save: dict) -> list[dict]:
     return sorted(out, key=lambda w: w["id"])
 
 
-# The rank getters, weighed against the other pacts. Pooled tallies ride off the one actor pass; WB's own counters are read straight off the record.
+# The rank getters, weighed against the other pacts. Pooled tallies ride off the rosters one actor pass built; WB's own counters off the record.
 def _rank_getters(pooled: dict, world_time: float) -> dict:
     return {
         "age": lambda a: entity_age(a, world_time),
@@ -137,7 +137,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown alliance: {alliance_id}", file=sys.stderr)
         return 1
 
-    # A realm sits in one pact at most, so a single map carries every membership — and one actor pass then pools every tally by pact.
+    # A realm sits in one pact at most, so a single map carries every membership — and one actor pass then gathers every pact's subjects.
     pact_of = {kid: a["id"] for a in alliances_by_id.values() for kid in a.get("kingdoms") or []}
     populations_by_kingdom: Counter[int] = Counter()
     pooled: dict = {
@@ -155,14 +155,19 @@ def main(argv: list[str]) -> int:
         if not (kid := actor.get("civ_kingdom_id")) or is_boat(actor):  # the crown first: a soul owing none never pays for the hull test
             continue
         populations_by_kingdom[kid] += 1
-        if (pact := pact_of.get(kid)) is None:
-            continue
-        pooled["subjects"][pact].append(actor)
-        pooled["money"][pact] += int(actor.get("money") or 0)
-        pooled["population"][pact] += 1
-        pooled["warriors"][pact] += actor.get("profession") == PROFESSION_WARRIOR
-        if fame := actor.get("renown"):
-            pooled["renown_total"][pact] += int(fame)
+        if (pact := pact_of.get(kid)) is not None:
+            pooled["subjects"][pact].append(actor)
+
+    # The four sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
+    if "ranks" in sections:
+        money, population, renown, warriors = (pooled[k] for k in ("money", "population", "renown_total", "warriors"))
+        for pact, flock in pooled["subjects"].items():
+            coins = fame = fighters = 0
+            for actor in flock:
+                coins += int(actor.get("money") or 0)
+                fame += int(actor.get("renown") or 0)
+                fighters += actor.get("profession") == PROFESSION_WARRIOR
+            money[pact], population[pact], renown[pact], warriors[pact] = coins, len(flock), fame, fighters
 
     ground = save.get("cities") or [] if _NEEDS_GROUND.intersection(sections) else ()  # the zones only serve the building walk right below
     zone_to_pact: dict[tuple[int, int], int] = {}
@@ -205,7 +210,7 @@ def main(argv: list[str]) -> int:
     if "kingdoms" in sections:
         out["kingdoms"] = _build_kingdoms(members, ctx)
     if "leaders" in sections:
-        podium = settlement_leaders(subjects, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
+        podium = settlement_leaders(subjects, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
         out["leaders"] = {key: value for key, value in podium.items() if key != "families"}  # a lineage answers to a crown, never to the pact above it
     if "metadata" in sections:
         out["metadata"] = _build_metadata(alliance, subjects, members, ctx)

@@ -4,7 +4,8 @@
       {{ 'ui_ongoing_plots' | translate }}
       <app-new-badge [dot]="false" [show]="isNew()" />
     </ng-template>
-    @for (row of rows(); track row.schemer.id) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (row of rows(); track $index) {
       <ng-template #plotTitle>
         <img [src]="`assets/img/plots/${row.icon}.png`" />
         <span>{{ row.label | translate }}</span>

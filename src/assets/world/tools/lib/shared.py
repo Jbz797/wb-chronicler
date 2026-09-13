@@ -28,6 +28,7 @@ EQUIPMENT_RACKS = {
 
 MIN_PER_CAPITA_UNITS = 3  # Below three souls a per-head ratio measures the divisor, not the body — a lone survivor would top every podium.
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
+MIN_SCORE_PEERS = 3  # The one exception, for a town and a crown: a world raises them by the handful, so three rivals already make a place worth naming.
 PODIUM_PLACES = 3  # gold, silver, bronze — and the widest tie a place can hold, past which the medal marks the field, not the one who takes it.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
@@ -85,10 +86,14 @@ _META_REPORTS = {
 }
 
 _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homeless` — the two that count heads rather than weigh hearts.
-_MIN_LEADERS_UNITS = 5  # below this a podium names a champion among two or three — the body is too small for any of its members to stand out
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 _NEEDS_ESCAPE = re.compile(r'["\\\x00-\x1f]')  # what `json.encoder.ESCAPE` covers, its named `\b\f\n\r\t` all sitting inside the control range
+
+# Ranked on a key of our own making — a negated birth, a share of a stomach: `_leader_refs` leaves their value to the caller, who fills in years or a share.
+_ORDER_ROWS = frozenset({"hungriest", "oldest", "youngest"})
+
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
+_RANK_FLOORS = {"level": 1}  # where WB starts every body, so a place held there ranks nobody — any other stat floors at the 0 `competition_ranks` skips
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy"})  # shapes whose key order carries meaning: stores heaviest-first, ranks broadest-first
 
@@ -137,7 +142,7 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
 
 
 # The families with someone on the ground: `oldest`/`kills`/`deaths` are WB's own counters, `population`/`renown` are scoped to who is present.
-def _family_leaders(actors: Sequence[dict], families_by_id: dict) -> dict:
+def _family_leaders(actors: Sequence[dict], families_by_id: dict, world_time: float) -> dict:
     members: Counter = Counter()
     renown: Counter = Counter()
 
@@ -147,18 +152,18 @@ def _family_leaders(actors: Sequence[dict], families_by_id: dict) -> dict:
             if fame := actor.get("renown"):
                 renown[family_id] += int(fame)
 
-    present = [family for fid in members if (family := families_by_id.get(fid))]
-    if not present:
-        return {}
-    picks = {
-        "deaths": _top_by(present, lambda f: int(f.get("total_deaths") or 0)),
-        "kills": _top_by(present, lambda f: int(f.get("total_kills") or 0)),
-        "population": _top_by(present, lambda f: members[f["id"]]),
-        "renown": _top_by(present, lambda f: renown[f["id"]]),
+    present = {fid: family for fid in members if (family := families_by_id.get(fid))}
+    tallies = {  # measure => value per family, the eldest founding negated so that every tally reads the same way: the highest takes the place
+        "deaths": {fid: int(f.get("total_deaths") or 0) for fid, f in present.items()},
+        "kills": {fid: int(f.get("total_kills") or 0) for fid, f in present.items()},
+        "oldest": {fid: -float(f.get("created_time") or 0) for fid, f in present.items()},
+        "population": {fid: members[fid] for fid in present},
+        "renown": {fid: renown[fid] for fid in present},
     }
-    out = {name: _leader_ref(family) for name, family in picks.items() if family is not None}
-    out["oldest"] = _leader_ref(min(present, key=lambda f: (float(f.get("created_time") or 0), f["id"])))
-    return dict(sorted(out.items()))
+    refs = _leader_refs(tallies, present)
+    for ref in refs.get("oldest", ()):  # the sort ran on a negated founding — what a reader wants is the years since
+        ref["value"] = entity_age(present[ref["id"]], world_time)
+    return refs
 
 
 # WB `Subspecies.cacheTags` reads a biology's faculties off meta tags, not trait names — a mod's own answers too. `isdisjoint` spares a set built per body.
@@ -166,54 +171,54 @@ def _has_meta_tag(subspecies: dict | None, tag: str) -> bool:
     return not _tagged_traits(tag).isdisjoint((subspecies or {}).get("saved_traits") or [])
 
 
-# `{id, name}` off a record carrying its own name — a family or an actor the caller already holds. `emit` drops `name` where WB wrote none, leaving `{id}` alone.
-def _leader_ref(record: dict) -> dict:
-    return {"id": record["id"], "name": record.get("name")}
+# Each measure's first place off its tally, as `{id, name, value}` refs — a measure nobody holds drops out, and `emit` a `name` WB never wrote.
+def _leader_refs(tallies: dict, records: Mapping) -> dict:
+    refs = {}
+    for name, values in tallies.items():
+        if held := first_place(values, MIN_RANK_PEERS):
+            refs[name] = [{"id": key, "name": records[key].get("name"), "value": None if name in _ORDER_ROWS else value} for key, value in held]
+    return refs
 
 
 # The standout souls. `hungriest` skips a body with no gut, which carries no `nutrition_max` to fall short of; the combat stats share one pass, that being the cost.
-def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of) -> dict:
-    picks = {
-        "births": _top_by(actors, lambda a: int(a.get("births") or 0)),
-        "children": _top_by(actors, lambda a: children.get(a["id"], 0)),
-        "kills": _top_by(actors, lambda a: int(a.get("kills") or 0)),
-        "level": _top_by(actors, lambda a: int(a.get("level") or 0)),
-        "money": _top_by(actors, lambda a: int(a.get("money") or 0)),
-        "renown": _top_by(actors, lambda a: int(a.get("renown") or 0)),
+def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of, world_time: float) -> dict:
+    by_id = {actor["id"]: actor for actor in actors}
+    stats = {aid: stat_of(actor) for aid, actor in by_id.items()}
+    tallies = {  # measure => value per soul, the four stats as `compute_actor_stats` hands them out — a child's blows already halved there
+        **{name: {aid: s.get(name, 0) for aid, s in stats.items()} for name in ("damage_max", "health_max", "intelligence", "speed")},
+        "births": {aid: int(a.get("births") or 0) for aid, a in by_id.items()},
+        "children": {aid: children.get(aid, 0) for aid in by_id},
+        "kills": {aid: int(a.get("kills") or 0) for aid, a in by_id.items()},
+        "level": {aid: int(a.get("level") or 0) for aid, a in by_id.items()},
+        "money": {aid: int(a.get("money") or 0) for aid, a in by_id.items()},
+        "oldest": {aid: -float(a.get("created_time") or 0) for aid, a in by_id.items()},
+        "renown": {aid: int(a.get("renown") or 0) for aid, a in by_id.items()},
+        "youngest": {aid: float(a.get("created_time") or 0) for aid, a in by_id.items()},
     }
-    scored = [(actor, stat_of(actor)) for actor in actors]
-
-    for name in ("damage_max", "health_max", "intelligence", "speed"):  # the names `compute_actor_stats` hands out, a child's two already halved
-        actor, stats = max(scored, key=lambda pair: (pair[1].get(name, 0), -pair[0]["id"]))
-        picks[name] = actor if stats.get(name, 0) > 0 else None
-
-    out = {name: _leader_ref(actor) for name, actor in picks.items() if actor is not None}
-    out["oldest"] = _leader_ref(min(actors, key=lambda a: (float(a.get("created_time") or 0), a["id"])))
-    out["youngest"] = _leader_ref(max(actors, key=lambda a: (float(a.get("created_time") or 0), -a["id"])))
-
     # By share of each body's own cap, as WB's `isHungry` reads it: a stomach `big_stomach` widened, half empty, is hungrier than a narrow one a little lower.
-    if eaters := [(actor, stats) for actor, stats in scored if "nutrition_max" in stats]:
-        actor, _ = min(eaters, key=lambda pair: (int(pair[0].get("nutrition") or 0) / pair[1]["nutrition_max"], pair[0]["id"]))
-        out["hungriest"] = _leader_ref(actor)
-    return dict(sorted(out.items()))
+    if eaters := {aid: -int(by_id[aid].get("nutrition") or 0) / s["nutrition_max"] for aid, s in stats.items() if "nutrition_max" in s}:
+        tallies["hungriest"] = eaters
+
+    refs = _leader_refs(tallies, by_id)
+    for row in ("oldest", "youngest"):  # both sort on a birth, the one negated: each holder shows the years its fiche would give
+        for ref in refs.get(row, ()):
+            ref["value"] = actor_age(by_id[ref["id"]], world_time)
+    for ref in refs.get("hungriest", ()):  # the share of its own cap a belly still carries, as a fiche reads it — WB bites at half or less
+        ref["value"] = round(-eaters[ref["id"]] * 100)
+    return refs
 
 
 def _save_cache_name(path: Path) -> str:
     return f"save_v1_{save_cache_key(path)}.pkl"
 
 
-# Borda shared by both composites → `{id: place}`, 1 = strongest: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens.
+# `score_totals` as competition places `{id: place}` (1, 2, 2, 4), 1 = strongest — none below `MIN_SCORE_PEERS`, where a lone town would outrank nobody.
 def _score_ranks(ids: list[int], dimensions: dict[str, dict]) -> dict[int, int]:
-    if not ids:
+    if len(ids) < MIN_SCORE_PEERS:
         return {}
-    totals: Counter = Counter()
-    for values in dimensions.values():
-        owns = [values.get(eid, 0) for eid in ids]  # read once, then sorted: those at or below `own` are exactly `N − those ahead`, one sort per dimension.
-        ordered = sorted(owns)
-        for eid, own in zip(ids, owns):
-            if own > 0:
-                totals[eid] += bisect_right(ordered, own)
-    return {eid: place + 1 for place, eid in enumerate(sorted(ids, key=lambda eid: (-totals[eid], eid)))}
+    totals = score_totals(ids, dimensions)
+    ordered = sorted(totals[eid] for eid in ids)
+    return {eid: 1 + len(ids) - bisect_right(ordered, totals[eid]) for eid in ids}  # 1 + those strictly ahead
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
@@ -228,12 +233,6 @@ def _strip_none(value):
 @cache
 def _tagged_traits(tag: str) -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if tag in (spec.get("tags") or []))
-
-
-# Highest `key`, ties to the lowest id. `None` when nobody scores above zero — a settlement without a killer has no deadliest soul, and that is not a zero.
-def _top_by(records: Sequence[dict], key) -> dict | None:
-    best = max(records, key=lambda r: (key(r), -r["id"]), default=None)
-    return best if best is not None and key(best) > 0 else None
 
 
 # Orphan slots go — a chapter's save never changes, where the live one mints a fresh key at every in-game save. `_CACHE_KEEP` then caps what survives, newest first.
@@ -386,7 +385,7 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
     }
 
 
-# Composite « settlement weight » ranking → `{city id: place}` (1 = heaviest, id-tiebroken). Drives the tag medal and the world panel's dominant village.
+# Composite « settlement weight » ranking → `{city id: place}` (1 = heaviest, ties sharing a place, none under `MIN_SCORE_PEERS`): a city's `score_rank`.
 def city_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, int]:
     return _score_ranks([c["id"] for c in save.get("cities") or []], dimensions if dimensions is not None else city_score_dimensions(save))
 
@@ -398,14 +397,14 @@ def civic_building_ids() -> frozenset[str]:
     return frozenset(listed | {f"fishing_{asset}" for asset in listed if asset.startswith("docks_")})
 
 
-# Standard competition rank (1,2,2,4) among `peers`, the entity among them: top 3 only, a metric at 0 skipped, and the key order left to `render`, which sorts.
+# Standard competition rank (1,2,2,4) among `peers`, the entity among them: top 3 only, a metric at 0 or at its floor skipped, the key order left to `render`.
 def competition_ranks(entity, peers: list, getters: dict) -> dict:
     if len(peers) < MIN_RANK_PEERS:  # one guard for all eleven ranked blocks: each of them reaches its podium through here
         return {}
     ranks = {}
     for stat, getter in getters.items():
         own = getter(entity)
-        if own == 0:
+        if own == 0 or (stat in _RANK_FLOORS and own <= _RANK_FLOORS[stat]):
             continue
         # Stopped at the body that puts the entity off the podium: past there the place is never printed, so weighing the rest of the field buys nothing.
         ahead = 0
@@ -466,6 +465,18 @@ def equipment_rarity(modifiers: list[str]) -> str:
     if max_level >= 3:
         return "Rare"
     return "Normal"
+
+
+# A tally's first place, ex æquo ordered by key — nobody past `PODIUM_PLACES` sharing it, nor under `min_peers` rivals: the best of a handful is a draw of lots.
+def first_place(values: Mapping, min_peers: int) -> list[tuple]:
+    if len(values) < min_peers:
+        return []
+    best = max(values.values())
+    tied = sorted(key for key, value in values.items() if value == best)
+    if len(tied) > PODIUM_PLACES:
+        return []
+    # Three of four hold a place as tellingly as three of a hundred do not: past half the field it is the field that is even, towns and crowns included.
+    return [] if len(tied) * 2 > len(values) else [(key, best) for key in tied]
 
 
 # WB `Actor.hasEmotions`, which reads its biology's `has_emotions` meta tag — a single trait grants it, and without it a soul is never happy nor unhappy.
@@ -566,7 +577,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     }
 
 
-# Composite « kingdom power » ranking → `{kingdom id: place}` (1 = strongest, id-tiebroken). Drives the tag medal.
+# Composite « kingdom power » ranking → `{kingdom id: place}` (1 = strongest, ties sharing a place, none under `MIN_SCORE_PEERS`): a realm's `score_rank`.
 def kingdom_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, int]:
     return _score_ranks([k["id"] for k in save.get("kingdoms") or []], dimensions if dimensions is not None else kingdom_score_dimensions(save))
 
@@ -755,11 +766,23 @@ def save_cache_key(path: Path) -> str | None:
     return f"{int(stat.st_mtime)}_{stat.st_size}"
 
 
-# Who stands out among a body's own — its leading lineages and its most singular souls, `{id, name}` apiece. Shared by every tier that rosters people.
-def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of) -> dict:
-    if len(actors) < _MIN_LEADERS_UNITS:
+# Borda shared by both composites: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens. Ties are left standing here.
+def score_totals(ids: list[int], dimensions: dict[str, dict]) -> Counter:
+    totals: Counter = Counter()
+    for values in dimensions.values():
+        owns = [values.get(eid, 0) for eid in ids]  # read once, then sorted: those at or below `own` are exactly `N − those ahead`, one sort per dimension.
+        ordered = sorted(owns)
+        for eid, own in zip(ids, owns):
+            if own > 0:
+                totals[eid] += bisect_right(ordered, own)
+    return totals
+
+
+# Who stands out among a body's own — its leading lineages and its most singular souls, each measure's first place. Shared by every tier that rosters people.
+def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of, world_time: float) -> dict:
+    if len(actors) < MIN_RANK_PEERS:  # the bar a rank clears too: under four, a first place tells the body's size and not who holds it
         return {}
-    return {"families": _family_leaders(actors, families_by_id), "persons": _person_leaders(actors, children, stat_of)}
+    return {"families": _family_leaders(actors, families_by_id, world_time), "persons": _person_leaders(actors, children, stat_of, world_time)}
 
 
 # The rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.

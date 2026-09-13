@@ -1,7 +1,8 @@
 @let c = currentChapter();
 @if (c) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    @for (row of snapshotRows(); track row.key) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (row of snapshotRows(); track $index) {
       <ng-template #titleRef>
         <img [src]="`assets/img/world/${row.icon ?? row.key}.png`" />
         <span>{{ row.label | translate }}</span>
@@ -17,7 +18,7 @@
 
   @if (activityRows().length) {
     <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_recent_activity' | translate">
-      @for (row of activityRows(); track row.icon) {
+      @for (row of activityRows(); track $index) {
         <ng-template #titleRef>
           <img [src]="`assets/img/world/${row.icon}.png`" />
           <span>{{ row.label | translate }}</span>
@@ -32,7 +33,6 @@
   @let totalDeaths = totalDeathsSincePrevious() ?? 0;
   @if (totalDeaths) {
     <nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="'ui_causes_of_death' | translate">
-      <!-- Tracked by place, not by cause: the ranking reorders between chapters, and a moved `nz-descriptions-item` loses the value it projects. -->
       @for (cause of sortedDeathCauses(); track $index) {
         @let deaths = deathsSincePrevious()?.[cause.key] ?? 0;
         <ng-template #titleRef>
@@ -53,7 +53,7 @@
     </nz-descriptions>
   }
 
-  <app-leader-table [heading]="'ui_standing_by_level' | translate" [rows]="levelRows()" />
-  <app-leader-table [heading]="'ui_standing_by_number' | translate" [rows]="memberRows()" />
-  <app-leader-table [heading]="'ui_standing_by_score' | translate" [rows]="scoreRows()" />
+  @for (table of leaderTables(); track table.group) {
+    <app-leader-table [heading]="table.label | translate" [rows]="table.rows" />
+  }
 }

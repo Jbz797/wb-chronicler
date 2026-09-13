@@ -9,7 +9,6 @@ export interface Alliance {
   metadata: AllianceMetadata;
   population: TierPopulation;
   ranks?: AllianceRanks;
-  wars?: AllianceWar[];
 }
 
 // What the pact was sworn as: the soul who signed and the crown that opened it, both of whom it may long outlive.
@@ -23,11 +22,9 @@ interface AllianceMetadata {
   age: number;
   births?: number;
   buildings?: number;
-  cities: number;
   deaths?: number;
   id: number;
   kills?: number;
-  kingdoms: number;
   name: string; // read by the panel's header chip, not by any row — the tag beside the title carries it
   population: number; // pooled from its realms, where a sworn body would count a roster
   renown?: number;
@@ -35,19 +32,11 @@ interface AllianceMetadata {
 
 interface AllianceRanks {
   age?: number;
-  births?: number;
   buildings?: number;
-  cities?: number;
   deaths?: number;
   kills?: number;
-  kingdoms?: number;
-  money?: number;
   population?: number;
   renown?: number;
-  renown_total?: number;
   territory?: number;
   warriors?: number;
 }
-
-// An ongoing war a member is drawn into. `split` marks the pact standing on both sides of one — WB lets allies field against each other, rare as it is.
-interface AllianceWar { attackers?: EntityReference[]; defenders?: EntityReference[]; id: number; name: string; split?: boolean }

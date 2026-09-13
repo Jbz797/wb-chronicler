@@ -50,7 +50,7 @@ def _books_by_language(save: dict) -> dict[int, list[dict]]:
     return by_language
 
 
-# Every volume still written in this script — `written` counts the standing ones, `metadata.written` WB's lifetime tally. `book/info.py <id>` carries the volume.
+# Every volume still written in this script: `written` counts the standing ones, `metadata.books_written` WB's lifetime count. `book/info.py <id>` has the rest.
 def _build_books(language: dict, ctx: dict, requested: str | None) -> dict:
     standing = ctx["books_by_language"]().get(language["id"], ())
     if not wants_detail(requested, len(standing)):
@@ -177,7 +177,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown language: {language_id}", file=sys.stderr)
         return 1
 
-    # Towns and crowns answer off their own records; the living are grouped below. Skipped whole where no section asked — `traits` reads a data file.
+    # Towns and crowns answer off their own records, counted whatever the call asked: two short collections cost less to tally than the branch that would skip them.
     tallies: dict = {
         "cities": Counter(c["id_language"] for c in save.get("cities") or [] if c.get("id_language")),
         "housed": Counter(),
@@ -188,7 +188,7 @@ def main(argv: list[str]) -> int:
         "warriors": Counter(),
     }
 
-    # WB points the actor at the tongue it answers in, never the reverse, so the speakers are gathered in one walk.
+    # WB points the actor at the tongue it answers in, never the reverse, so the speakers are gathered in one walk — skipped whole where no section wants the living.
     members_by_id = tallies["members"]
     for actor in (save.get("actors_data") or []) if not _NEEDS_ACTORS.isdisjoint(sections) else ():
         if lid := actor.get("language"):
@@ -228,8 +228,8 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "languages"}
     if "identity" in sections:
         out["identity"] = _build_identity(language, ctx)
-    if "leaders" in sections:  # WB names no such podium — ours, and it drops below five souls, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
+    if "leaders" in sections:  # WB names no such podium — ours, and it drops below four souls, where a champion among three names nobody
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:

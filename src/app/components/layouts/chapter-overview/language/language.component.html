@@ -19,7 +19,8 @@
       <app-ranked-stat source="language" stat="members" />
     </nz-descriptions-item>
 
-    @for (s of speakerFlow(); track s.stat) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (s of speakerFlow(); track $index) {
       <ng-template #flowTitle>
         <img [src]="s.icon" />
         <span>{{ s.label | translate }}</span>
@@ -29,7 +30,7 @@
       </nz-descriptions-item>
     }
 
-    @for (s of lifetimeStats(); track s.stat) {
+    @for (s of lifetimeStats(); track $index) {
       <ng-template #lifetimeTitle>
         <img [src]="s.icon" />
         <span>{{ s.label | translate }}</span>

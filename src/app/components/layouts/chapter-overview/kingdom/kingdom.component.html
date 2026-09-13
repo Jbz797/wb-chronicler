@@ -27,7 +27,7 @@
       <nz-descriptions-item [nzTitle]="capitalTitle"><app-city-tag [id]="capital.id" [name]="capital.name" /></nz-descriptions-item>
     }
 
-    <nz-descriptions-item [nzTitle]="scoreRankTitle">
+    <nz-descriptions-item *appPresent="k.metadata.score_rank" [nzTitle]="scoreRankTitle">
       <app-ranked-stat source="kingdom" stat="score_rank" [inverted]="true" [ordinal]="true" [showRank]="false" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="ageTitle">
@@ -51,7 +51,8 @@
     <nz-descriptions-item *appPresent="k.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="kingdom" stat="renown_total" />
     </nz-descriptions-item>
-    @for (s of scoreStats(); track s.stat) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (s of scoreStats(); track $index) {
       <ng-template #scoreTitle>
         <img [src]="s.icon" />
         <span>{{ s.label | translate }}</span>
@@ -60,7 +61,7 @@
         <app-ranked-stat source="kingdom" [stat]="s.stat" />
       </nz-descriptions-item>
     }
-    @for (o of optionalStats(); track o.stat) {
+    @for (o of optionalStats(); track $index) {
       <ng-template #optionalTitle>
         <img [src]="o.icon" />
         <span>{{ o.label | translate }}</span>

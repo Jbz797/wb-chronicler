@@ -19,7 +19,8 @@
       <app-ranked-stat source="culture" stat="members" />
     </nz-descriptions-item>
 
-    @for (s of lifetimeStats(); track s.stat) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (s of lifetimeStats(); track $index) {
       <ng-template #lifetimeTitle>
         <img [src]="s.icon" />
         <span>{{ s.label | translate }}</span>

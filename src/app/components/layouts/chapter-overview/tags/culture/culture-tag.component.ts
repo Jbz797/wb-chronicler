@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, computed, ElementRef, inject, input, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, viewChild } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
@@ -12,7 +12,7 @@ import { RegistryService } from '../../../../../services';
   imports: [NzTagModule, NzTooltipModule, TruncatedDirective],
   templateUrl: './culture-tag.component.html',
 })
-export class CultureTagComponent implements AfterViewInit {
+export class CultureTagComponent {
 
   private readonly _registry = inject(RegistryService);
 
@@ -25,10 +25,12 @@ export class CultureTagComponent implements AfterViewInit {
 
   private readonly _canvas = viewChild<ElementRef<HTMLCanvasElement>>('emblem');
 
-  ngAfterViewInit(): void {
-    const canvas = this._canvas()?.nativeElement;
-    const culture = this.culture();
-    if (canvas && culture) CultureSpriteHelpers.paint(canvas, culture).catch(() => {}); // a missing sprite leaves it collapsed
+  constructor() {
+    effect(() => {
+      const canvas = this._canvas()?.nativeElement;
+      const culture = this.culture();
+      if (canvas && culture) CultureSpriteHelpers.paint(canvas, culture).catch(() => {}); // a missing sprite leaves it collapsed
+    });
   }
 
 }

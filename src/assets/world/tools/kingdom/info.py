@@ -284,7 +284,7 @@ def _build_identity(kingdom: dict, ctx: dict) -> dict:
 def _build_leaders(kingdom: dict, ctx: dict) -> dict:
     actors = ctx["actors_by_kingdom"].get(kingdom["id"], [])
     # `compute_actor_stats`, as every other tier: the podium reads the names it hands out, and a child's blow is halved there — raw totals would flatter one.
-    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx))
+    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
 
 
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.

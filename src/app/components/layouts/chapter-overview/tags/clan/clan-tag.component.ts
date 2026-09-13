@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, computed, ElementRef, inject, input, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, viewChild } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
@@ -12,7 +12,7 @@ import { RegistryService } from '../../../../../services';
   imports: [NzTagModule, NzTooltipModule, TruncatedDirective],
   templateUrl: './clan-tag.component.html',
 })
-export class ClanTagComponent implements AfterViewInit {
+export class ClanTagComponent {
 
   private readonly _registry = inject(RegistryService);
 
@@ -25,10 +25,12 @@ export class ClanTagComponent implements AfterViewInit {
 
   private readonly _canvas = viewChild<ElementRef<HTMLCanvasElement>>('banner');
 
-  ngAfterViewInit(): void {
-    const canvas = this._canvas()?.nativeElement;
-    const clan = this.clan();
-    if (canvas && clan) ClanSpriteHelpers.paint(canvas, clan).catch(() => {}); // a species with no banner set leaves it collapsed
+  constructor() {
+    effect(() => {
+      const canvas = this._canvas()?.nativeElement;
+      const clan = this.clan();
+      if (canvas && clan) ClanSpriteHelpers.paint(canvas, clan).catch(() => {}); // a species with no banner set leaves it collapsed
+    });
   }
 
 }

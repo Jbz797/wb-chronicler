@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, computed, ElementRef, inject, input, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, viewChild } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
@@ -12,7 +12,7 @@ import { RegistryService } from '../../../../../services';
   imports: [NzTagModule, NzTooltipModule, TruncatedDirective],
   templateUrl: './language-tag.component.html',
 })
-export class LanguageTagComponent implements AfterViewInit {
+export class LanguageTagComponent {
 
   private readonly _registry = inject(RegistryService);
 
@@ -25,10 +25,12 @@ export class LanguageTagComponent implements AfterViewInit {
 
   private readonly _canvas = viewChild<ElementRef<HTMLCanvasElement>>('emblem');
 
-  ngAfterViewInit(): void {
-    const canvas = this._canvas()?.nativeElement;
-    const language = this.language();
-    if (canvas && language) LanguageSpriteHelpers.paint(canvas, language).catch(() => {}); // a missing sprite leaves it collapsed
+  constructor() {
+    effect(() => {
+      const canvas = this._canvas()?.nativeElement;
+      const language = this.language();
+      if (canvas && language) LanguageSpriteHelpers.paint(canvas, language).catch(() => {}); // a missing sprite leaves it collapsed
+    });
   }
 
 }

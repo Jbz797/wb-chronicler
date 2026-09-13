@@ -30,13 +30,11 @@ interface ClanMetadata {
   name: string;
   past_chiefs: number;
   renown?: number;
-  traits?: number;
 }
 
 // Podium-only, like every other tier: absent where the clan places outside the top 3 among the world's clans.
 interface ClanRanks {
   age?: number;
-  births?: number;
   books_written?: number;
   deaths?: number;
   kills?: number;
@@ -44,5 +42,4 @@ interface ClanRanks {
   money?: number;
   renown?: number;
   renown_total?: number;
-  traits?: number;
 }

@@ -26,7 +26,6 @@ interface ReligionMetadata {
   kingdoms?: number;
   name: string;
   renown?: number;
-  traits?: number;
 }
 
 // Podium-only, like every other tier: absent where the religion places outside the top 3 among the world's creeds.
@@ -41,5 +40,4 @@ interface ReligionRanks {
   money?: number;
   renown?: number;
   renown_total?: number;
-  traits?: number;
 }

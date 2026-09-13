@@ -40,7 +40,8 @@
     <nz-descriptions-item [nzTitle]="inventoryTitle">
       <app-inventory [resources]="fav.inventory ?? {}" />
     </nz-descriptions-item>
-    @for (row of companionRows(); track row.label) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (row of companionRows(); track $index) {
       <ng-template #companionTitle>
         <img [src]="`assets/img/stats/${row.icon}.png`" />
         <span>{{ row.label | translate }}</span>
@@ -154,7 +155,7 @@
   <app-trait-summary source="favorite" [heading]="'ui_traits' | translate" />
 
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_skills' | translate">
-    @for (s of skillStats; track s.key) {
+    @for (s of skillStats; track $index) {
       <ng-template #titleRef>
         <img [src]="`assets/img/stats/${s.icon ?? s.key}.png`" />
         <span>{{ s.label | translate }}</span>
@@ -172,7 +173,7 @@
   </nz-descriptions>
 
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_combat' | translate">
-    @for (s of combatStats(); track s.key) {
+    @for (s of combatStats(); track $index) {
       <ng-template #titleRef>
         <img [src]="`assets/img/stats/${s.icon ?? s.key}.png`" />
         <span>{{ s.label | translate }}</span>

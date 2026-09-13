@@ -52,7 +52,7 @@ interface KingdomMetadata {
   king?: PersonReference & { money: number };
   name: string;
   renown: number;
-  score_rank: number;
+  score_rank?: number; // absent where the realm stands alone — a place needs a rival
   territory: number;
   wars_won?: number;
   wealth: number;

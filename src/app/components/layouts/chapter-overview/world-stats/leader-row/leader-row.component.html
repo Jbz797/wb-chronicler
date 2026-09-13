@@ -6,39 +6,33 @@
   }
   {{ r.asset_id ? (`species_${r.asset_id}` | translate) : r.name }}
 } @else {
-  @switch (r.key) {
-    @case ('dominant_culture') {
-      <app-culture-tag [id]="r.id" [medal]="false" [name]="r.name" />
-    }
-    @case ('dominant_language') {
-      <app-language-tag [id]="r.id" [medal]="false" [name]="r.name" />
-    }
-    @case ('dominant_religion') {
-      <app-religion-tag [id]="r.id" [medal]="false" [name]="r.name" />
-    }
-    @case ('dominant_subspecies') {
-      <app-subspecies-tag [id]="r.id" [medal]="false" [name]="r.name" />
-    }
-    @case ('largest_city') {
+  @switch (r.group) {
+    @case ('cities') {
       <app-city-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
-    @case ('largest_kingdom') {
-      <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
-    }
-    @case ('most_dominant_village') {
-      <app-city-tag [id]="r.id" [medal]="false" [name]="r.name" />
-    }
-    @case ('most_powerful_kingdom') {
-      <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
-    }
-    @case ('largest_clan') {
+    @case ('clans') {
       <app-clan-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
-    @case ('largest_family') {
+    @case ('cultures') {
+      <app-culture-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
+    @case ('families') {
       <app-family-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
-    @case ('highest_level_person') {
+    @case ('kingdoms') {
+      <app-kingdom-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
+    @case ('languages') {
+      <app-language-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
+    @case ('persons') {
       <app-person-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
+    @case ('religions') {
+      <app-religion-tag [id]="r.id" [medal]="false" [name]="r.name" />
+    }
+    @case ('subspecies') {
+      <app-subspecies-tag [id]="r.id" [medal]="false" [name]="r.name" />
     }
     @default {
       {{ r.name }}

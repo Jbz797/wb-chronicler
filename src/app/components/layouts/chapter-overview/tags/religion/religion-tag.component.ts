@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, computed, ElementRef, inject, input, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, viewChild } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
@@ -12,7 +12,7 @@ import { RegistryService } from '../../../../../services';
   imports: [NzTagModule, NzTooltipModule, TruncatedDirective],
   templateUrl: './religion-tag.component.html',
 })
-export class ReligionTagComponent implements AfterViewInit {
+export class ReligionTagComponent {
 
   private readonly _registry = inject(RegistryService);
 
@@ -25,10 +25,12 @@ export class ReligionTagComponent implements AfterViewInit {
 
   private readonly _canvas = viewChild<ElementRef<HTMLCanvasElement>>('emblem');
 
-  ngAfterViewInit(): void {
-    const canvas = this._canvas()?.nativeElement;
-    const religion = this.religion();
-    if (canvas && religion) ReligionSpriteHelpers.paint(canvas, religion).catch(() => {}); // a missing sprite leaves it collapsed
+  constructor() {
+    effect(() => {
+      const canvas = this._canvas()?.nativeElement;
+      const religion = this.religion();
+      if (canvas && religion) ReligionSpriteHelpers.paint(canvas, religion).catch(() => {}); // a missing sprite leaves it collapsed
+    });
   }
 
 }

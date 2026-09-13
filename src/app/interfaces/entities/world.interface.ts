@@ -1,8 +1,11 @@
 import { EntityReference, HullCount } from '../entity.interface';
-import { LeaderKind } from '../types';
+import { LeaderGroup, LeaderMeasure } from '../types';
 
-// A « Records » row ready for the UI: a Leader tagged with its category key + whether it changed since the previous chapter.
-export interface LeaderRow extends Omit<Leader, 'name' | 'value'> { isNew: boolean; key: LeaderKind; name: string }
+// A « Records » table: the group it reads, its heading, and the records it names, in order.
+export interface LeaderGroupConfig { group: LeaderGroup; label: string; measures: LeaderMeasure[] }
+
+// A « Records » row ready for the UI: a Leader tagged with its group + whether it changed since the previous chapter.
+export interface LeaderRow extends Omit<Leader, 'name'> { group: LeaderGroup; isNew: boolean; name: string }
 
 // A snapshot row while it is still being built — `hideIfZero` drops the idle ones on the way out, `icon` names the sprite where the key is not what it draws.
 export interface SnapshotRow { delta: number | undefined; hideIfZero: boolean | undefined; icon: string | undefined; key: string; label: string; value: number }
@@ -11,7 +14,7 @@ export interface SnapshotRow { delta: number | undefined; hideIfZero: boolean | 
 export interface World {
   boats: HullCount;
   cumulative?: WorldCumulative; // absent on a bare world — Python omits the block when every counter is 0
-  leaders?: Partial<Record<LeaderKind, Leader>>;
+  leaders?: Partial<Record<LeaderGroup, Partial<Record<LeaderMeasure, Leader>>>>;
   metadata: WorldMetadata;
   plots?: WorldPlot[]; // absent where nobody schemes — Python omits the empty list
   snapshot: WorldSnapshot;
@@ -43,8 +46,8 @@ interface DeathBreakdown {
   weapon?: number;
 }
 
-// The winner of a « Records » category: `dominant_species` carries `asset_id` (its icon); every other kind is a `{id, name}` ref the UI resolves via its registry.
-interface Leader { asset_id?: string; id?: number; name?: string; value?: number }
+// The first holder of a « Records » place: `species` carries `asset_id` (its icon); every other group is a `{id, name}` ref the UI resolves via its registry.
+interface Leader { asset_id?: string; id?: number; name?: string }
 
 // Since-world-start counters the UI diffs per chapter; Python omits 0-counts, so an absent key means 0.
 interface WorldCumulative {

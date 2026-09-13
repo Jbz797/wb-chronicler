@@ -169,7 +169,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ unknown religion: {religion_id}", file=sys.stderr)
         return 1
 
-    # Towns and crowns answer off their own records; the living are grouped below. Skipped whole where no section asked — `traits` reads a data file.
+    # Towns and crowns answer off their own records, counted whatever the call asked: two short collections cost less to tally than the branch that would skip them.
     tallies: dict = {
         "cities": Counter(c["id_religion"] for c in save.get("cities") or [] if c.get("id_religion")),
         "housed": Counter(),
@@ -180,7 +180,7 @@ def main(argv: list[str]) -> int:
         "warriors": Counter(),
     }
 
-    # WB points the actor at the faith it holds, never the reverse, so the flocks are gathered in one walk.
+    # WB points the actor at the faith it holds, never the reverse, so the flocks are gathered in one walk — skipped whole where no section wants the living.
     members_by_id = tallies["members"]
     for actor in (save.get("actors_data") or []) if not _NEEDS_ACTORS.isdisjoint(sections) else ():
         if rid := actor.get("religion"):
@@ -219,8 +219,8 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "religions"}
     if "identity" in sections:
         out["identity"] = _build_identity(religion, ctx)
-    if "leaders" in sections:  # WB names no such podium — ours, and it drops below five faithful, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx))
+    if "leaders" in sections:  # WB names no such podium — ours, and it drops below four faithful, where a champion among three names nobody
+        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
     if "members" in sections:
         out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:

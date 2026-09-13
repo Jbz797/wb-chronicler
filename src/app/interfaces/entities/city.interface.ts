@@ -61,7 +61,7 @@ interface CityMetadata {
   leader?: PersonReference & { money: number };
   name: string;
   renown: number;
-  score_rank: number;
+  score_rank?: number; // absent where the town stands alone — a place needs a rival
   territory: number;
   wealth: number;
 }

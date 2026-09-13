@@ -65,6 +65,7 @@ _AUDIT = {
             "can_reproduce",
             "clan_chief_years",
             "deaths_by_cause",
+            "families",
             "favorite_food",
             "founding_city",
             "founding_kingdom",
@@ -104,8 +105,9 @@ _AUDIT = {
             "traits",
         }
     ),
-    "ranks_in_species": frozenset({"birth_rate", "loot"}),
+    "ranks_in_species": frozenset({"birth_rate", "damage_min", "loot"}),
     "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
+    "snapshot": frozenset({"equipment"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
     "stats": frozenset({"birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities"}),
 }
 
@@ -114,14 +116,18 @@ _AUDIT_TIERS = {
     "alliance.metadata": {"cities", "kingdoms"},  # the pact names its realms and towns as tags, so counting either says nothing the list has not
     "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
     "clan.ranks": {"kingdoms"},  # its crowns tie on one realm apiece — `clan/info.py <id> ranks` still places the band that spans eight
+    "culture.identity": {"species", "subspecies"},  # the founder's stock — the panel names the founder alone, whose own tag carries it
     "family.identity": {"culture", "species", "subspecies"},  # the lineage is read by the souls it seated, its blood and its tongue answering from their own tiers
     "family.metadata": {"kingdoms"},  # a lineage spans two crowns too rarely for a panel row, so the count rides the script's output alone
     "family.ranks": {"cities"},  # towns follow the heads that hold them, so the podium repeats the one `members` already draws
+    "favorite.metadata": {"clan", "culture", "family", "language", "religion", "subspecies"},  # the bodies it belongs to, each read to open its own tier block
+    "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
+    "religion.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
     "wars.metadata": {"started_by"},  # the soul who declared it — the card names the crown alone, and `war/info.py <id>` still hands the chronicler the man
 }
 
-# No panel reads them: `report` and `info` are per-call, `taxonomy` comes from `identity.species`, `hall_of_fame` and `passengers` are the chronicler's own readings.
-_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "hall_of_fame", "info", "passengers", "report", "sapient", "taxonomy"})
+# No panel reads them: `report` and `info` are per-call, `taxonomy` comes from `identity.species`, `passengers` is the chronicler's own reading.
+_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "sapient", "taxonomy"})
 
 # `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset(
@@ -324,6 +330,16 @@ def _fired_alerts(save: dict) -> list[tuple[str, str]]:
     return [(code, spec["message"]) for code, spec in standing.items() if spec["condition"](pops, quota)]
 
 
+# The one name a panel prints per record: a shared first place travels as its first holder, bare of the count the chronicler reads off the script.
+def _first_holder(holders: list[dict]) -> dict:
+    return {k: v for k, v in holders[0].items() if k != "value"}
+
+
+# The wars a pact's members are drawn into — the chapter fields the crowns' own under `wars`, and `alliance/info.py <id> wars` still names the pact's.
+def _fold_alliance_detail(alliance: dict) -> None:
+    alliance.pop("wars", None)
+
+
 # The panel prints the hull's name, stock, crown, port, age and health; `boat/info.py <id>` has the rest. `kind` goes: WB boards souls onto `$boat_transport$` alone.
 def _fold_boat_detail(boat: dict) -> None:
     (boat.get("identity") or {}).pop("kind", None)
@@ -365,12 +381,12 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
     _fold_total(kingdom, "equipment")
 
 
-# A tier's podium cut to the six rows its panel names — each rank being a full `{id, name}` ref, the ones it never prints outweigh the ones it does.
+# A tier's podium cut to the six rows its panel names, each to its first holder — the ones it never prints outweighing the ones it does.
 def _fold_leaders(entity: dict) -> None:
     podium = entity.get("leaders") or {}
     for block, kept in _LEADER_ROWS.items():
         if isinstance(rows := podium.get(block), dict):
-            podium[block] = {key: ref for key, ref in rows.items() if key in kept}
+            podium[block] = {key: _first_holder(refs) for key, refs in rows.items() if key in kept}
 
 
 # The age and sex slices, the lineage depth, the count of nobles — figures the chronicler writes with and no panel prints. `population` keeps what the UI reads.
@@ -390,6 +406,12 @@ def _fold_total(entity: dict, *keys: str) -> None:
     for key in keys:
         if isinstance(block := entity.get(key), dict):
             entity[key] = {"total": block.get("total", 0)}
+
+
+# Every record of the world's « Palmarès », each to its first holder — `world/info.py <chapter> leaders` naming them all.
+def _fold_world_leaders(world: dict) -> None:
+    if isinstance(block := world.get("leaders"), dict):
+        world["leaders"] = {group: {row: _first_holder(holders) for row, holders in rows.items()} for group, rows in block.items()}
 
 
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
@@ -650,7 +672,12 @@ def main(argv: list[str]) -> int:
         calls.append((_run, "boat/info.py", boat_id, "full", chapter) if boat_id else None)
         *bodies, boat = _run_together(*calls)
         blocks = dict(zip(_TIERS, bodies))
-        folds = {"city": _fold_city_detail, "kingdom": _fold_kingdom_detail, "subspecies": _fold_subspecies_detail}  # on top of what every tier sheds alike
+        folds = {  # on top of what every tier sheds alike
+            "alliance": _fold_alliance_detail,
+            "city": _fold_city_detail,
+            "kingdom": _fold_kingdom_detail,
+            "subspecies": _fold_subspecies_detail,
+        }
         for tier, block in blocks.items():
             if not block:
                 continue
@@ -675,6 +702,7 @@ def main(argv: list[str]) -> int:
     owed = _carry_trait_summaries(n, summaries, live)
 
     _fold_cumulative(world)
+    _fold_world_leaders(world)
     _fold_total(world, "boats")  # Counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand.
     for scheme in world.get("plots") or []:  # the schemer and the type's key: WB's English is the chronicler's, and the panel owns the French
         scheme["type"] = {"id": (scheme.get("type") or {}).get("id")}

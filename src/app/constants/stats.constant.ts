@@ -1,4 +1,4 @@
-import { CumulativeStat, DeathCause, Favorite, LeaderKind, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
+import { CumulativeStat, DeathCause, Favorite, LeaderGroupConfig, LeaderMeasure, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
 
 // City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `cities`, plus the `attractivity` only a settlement can have.
 export const CITY_META_STATS = new Set<RankedStatKind>([
@@ -50,32 +50,35 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
   { key: 'evolutions', label: 'ui_evolutions' },
 ];
 
-// Who leads on a headcount — the measure each tag's medal ranks on, in the panels' own order, the parent species ahead of the biology it holds.
-export const LEADERS_BY_MEMBERS: { icon?: string; key: LeaderKind; label: string }[] = [
-  { icon: 'species', key: 'dominant_species', label: 'ui_species' },
-  { icon: 'subspecies', key: 'dominant_subspecies', label: 'ui_subspecies' },
-  { icon: 'families', key: 'largest_family', label: 'ui_lineage' },
-  { icon: 'most_renowned_clan', key: 'largest_clan', label: 'ui_clan' },
-  { icon: 'cultures', key: 'dominant_culture', label: 'ui_culture' },
-  { icon: 'languages', key: 'dominant_language', label: 'ui_language' },
-  { icon: 'religions', key: 'dominant_religion', label: 'ui_religion' },
-  { icon: 'village', key: 'largest_city', label: 'ui_city' },
-  { icon: 'kingdom', key: 'largest_kingdom', label: 'ui_kingdom' },
-];
-
-// A soul answers to no headcount — its own medal ranks it on the level it has earned.
-export const LEADERS_BY_LEVEL: { icon?: string; key: LeaderKind; label: string }[] = [{ icon: 'person', key: 'highest_level_person', label: 'ui_nobody' }];
-
-// The two tiers WB weighs on a composite score — eleven dimensions apiece, where a headcount is only one of them.
-export const LEADERS_BY_SCORE: { icon?: string; key: LeaderKind; label: string }[] = [
-  { icon: 'village', key: 'most_dominant_village', label: 'ui_city' },
-  { icon: 'kingdom', key: 'most_powerful_kingdom', label: 'ui_kingdom' },
-];
-
 // The one family a settlement/realm panel names in its « Palmarès », out of the five `leaders.families` rankings Python emits.
 export const LEADER_FAMILY_ROWS: { icon: string; key: 'population'; label: string }[] = [
   { icon: 'assets/img/world/families.png', key: 'population', label: 'ui_leading_family' },
 ];
+
+// The world « Palmarès », one table per group: a soul's level and skills first (in `SKILL_STATS` order), then the parent species ahead of the biology it holds.
+export const LEADER_GROUPS: LeaderGroupConfig[] = [
+  { group: 'persons', label: 'ui_persons', measures: ['level', 'diplomacy', 'warfare', 'stewardship', 'intelligence'] },
+  { group: 'species', label: 'ui_species_plural', measures: ['population'] },
+  { group: 'subspecies', label: 'ui_subspecies_count', measures: ['population'] },
+  { group: 'families', label: 'ui_families', measures: ['population'] },
+  { group: 'clans', label: 'ui_clans', measures: ['population'] },
+  { group: 'cultures', label: 'ui_cultures', measures: ['population'] },
+  { group: 'languages', label: 'ui_languages', measures: ['population'] },
+  { group: 'religions', label: 'ui_religions', measures: ['population'] },
+  { group: 'cities', label: 'ui_cities', measures: ['population', 'score'] },
+  { group: 'kingdoms', label: 'ui_kingdoms', measures: ['population', 'score'] },
+];
+
+// Each world record's sprite and label — `score`, the composite WB weighs a town and a crown on, reads as the ranking the city panel prints.
+export const LEADER_MEASURES: Record<LeaderMeasure, { icon: string; label: string }> = {
+  diplomacy: { icon: 'assets/img/stats/diplomacy.png', label: 'ui_diplomacy' },
+  intelligence: { icon: 'assets/img/stats/intelligence.png', label: 'ui_intelligence' },
+  level: { icon: 'assets/img/stats/level.png', label: 'ui_level' },
+  population: { icon: 'assets/img/world/population.png', label: 'ui_population' },
+  score: { icon: 'assets/img/podium/1.png', label: 'ui_ranking' },
+  stewardship: { icon: 'assets/img/stats/stewardship.png', label: 'ui_stewardship' },
+  warfare: { icon: 'assets/img/stats/warfare.png', label: 'ui_warfare' },
+};
 
 // The souls a settlement/realm panel names, out of all the `leaders.persons` rankings: fame, power, violence, fortune, age.
 export const LEADER_PERSON_ROWS: { icon: string; key: 'kills' | 'level' | 'money' | 'oldest' | 'renown'; label: string }[] = [

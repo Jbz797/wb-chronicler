@@ -30,8 +30,6 @@ interface FamilyMetadata {
 // Podium-only, like every other tier: absent where the lineage places outside the top 3 among the world's families.
 interface FamilyRanks {
   age?: number;
-  births?: number;
-  cities?: number;
   deaths?: number;
   houses?: number;
   kills?: number;

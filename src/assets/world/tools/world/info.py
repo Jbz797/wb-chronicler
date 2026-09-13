@@ -4,9 +4,8 @@
 # `chapter/registries.py` (the bootstrap), not here. User-facing docs — usage and sections — live in `tools/tools.md`.
 #
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
-# Exception: WB-native names verbatim for raw-save fields (e.g. `relations`, `world_time`) — chronicler reads save directly, divergent names would cause friction.
+# Exception: WB-native names kept verbatim for raw-save fields (e.g. `world_time`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
-import heapq
 import sys
 from collections import Counter
 from pathlib import Path
@@ -15,25 +14,28 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import build_actor_stats_context, compute_actor_stats
 from shared import (
-    PODIUM_PLACES,
+    MIN_RANK_PEERS,
+    MIN_SCORE_PEERS,
     SICK_TRAITS,
-    city_score_ranks,
+    city_score_dimensions,
     civic_building_ids,
     emit,
+    first_place,
     index_by_id,
     is_aboard,
     is_boat,
     is_sapient,
-    kingdom_score_ranks,
+    kingdom_score_dimensions,
     light,
     load_data,
     load_save,
     parse_sections,
+    score_totals,
     take_chapter,
     wants_detail,
 )
 
-_ALL_SECTIONS = ("boats", "cumulative", "hall_of_fame", "leaders", "metadata", "plots", "snapshot")
+_ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "plots", "snapshot")
 
 # Chronicler key => WB `mapStats` counter — UI keys (`CUMULATIVE_STATS`) + churn a net snapshot hides; `_created` stored, `destroyed = created − snapshot.alive`.
 _CUMULATIVE_COUNTERS = {
@@ -82,16 +84,23 @@ _DEATH_CAUSES = {
     "weapon": "deaths_weapon",
 }
 
-# Actor field => the save collection naming it. Each yields a `dominant_<field>` leader; the plurals are irregular enough (`subspecies`) to spell out.
-_DOMINANT = {
-    "culture": "cultures",
+# Actor field => the save collection it points into, feeding its `population` record — every actor counted, wildlife included, as each tier's medal counts its own.
+_GROUP_FIELDS = {
+    "cityID": "cities",  # a townsman need answer to no crown — counted apart from the kingdom's roll
+    "civ_kingdom_id": "kingdoms",  # the crown's own roll, which many a thinking soul is not on — a people can stand before any banner is raised
+    "clan": "clans",  # a band outlives the crown it served
+    "culture": "cultures",  # a culture or a tongue outlives the crown that carried it
+    "family": "families",
     "language": "languages",
     "religion": "religions",
     "subspecies": "subspecies",
 }
 
-# WB's four skills, the ones every `ranks_in_species` podium reads — weighed here across every body, a beast against a king.
-_HALL_OF_FAME_STATS = ("diplomacy", "intelligence", "stewardship", "warfare")
+# The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
+_MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
+
+# WB's four skills, the ones every `ranks_in_species` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
+_SKILLS = ("diplomacy", "intelligence", "stewardship", "warfare")
 
 # Chronicler key => save collection simply counted. What needs classifying (buildings) or filtering (actors, wars) lives in `_build_snapshot` instead.
 _SNAPSHOT_COLLECTIONS = {
@@ -112,7 +121,7 @@ _SNAPSHOT_COLLECTIONS = {
 # The world's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
 def _build_boats(save: dict, requested: str | None) -> dict:
     afloat = [b for b in save.get("actors_data") or [] if is_boat(b)]
-    if not wants_detail(requested, len(afloat)):  # `full` keeps the chapter light — one count, the hulls themselves only when the section is asked for by name
+    if not wants_detail(requested, len(afloat)):  # `full` shrinks a fleet past `wants_detail`'s floor to its count — a handful, or the section by name, lists each
         return light({"total": len(afloat)})
     return {"afloat": [{"asset_id": b.get("asset_id"), "id": b["id"], "name": b.get("name")} for b in afloat], "total": len(afloat)}
 
@@ -124,84 +133,39 @@ def _build_cumulative(map_stats: dict) -> dict:
     return out
 
 
-# The four skills over the whole world, beasts included: a per-species podium can never show a fox outthinking the crowned, and that turn is the chronicle's.
-def _build_hall_of_fame(save: dict) -> dict:
-    ctx = build_actor_stats_context(save)
-    bodies = [(a, compute_actor_stats(a, ctx)) for a in save.get("actors_data") or [] if not is_boat(a)]
-    out = {}
-    for stat in _HALL_OF_FAME_STATS:
-        # Three places asked of the heap, not a ranking; the key keeps two bodies tied on a skill from being compared as dicts, the id settling the order.
-        top = heapq.nsmallest(PODIUM_PLACES, bodies, key=lambda body, st=stat: (-body[1].get(st, 0), body[0]["id"]))
-        if leaders := [{"id": a["id"], "name": a.get("name"), "value": v} for a, s in top if (v := s.get(stat, 0))]:
-            out[stat] = leaders
-    return out
-
-
-# Top entity per category — WB's « Records ». Three readings the panel tables apart: a level, a headcount, and the composite score only a town and a crown take.
+# The world's standouts, shaped as every tier's `leaders`: group, then measure, then its first place — `species` and `persons` weighing thinking souls alone.
 def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
-
-    # Single pass over actors feeds every leader: the category counts, the highest-level thinking soul and the four rolls below — each gated apart, none re-scanned.
-    counts: dict[str, Counter] = {k: Counter() for k in (*_DOMINANT, "species")}
-    city_members: Counter[int] = Counter()
-    clan_members: Counter[int] = Counter()
-    family_members: Counter[int] = Counter()
-    kingdom_members: Counter[int] = Counter()
+    ctx = build_actor_stats_context(save)
+    members: dict[str, Counter] = {coll: Counter() for coll in _GROUP_FIELDS.values()}
+    persons: dict[str, Counter] = {stat: Counter() for stat in (*_SKILLS, "level")}
     sapient = _sapient_subspecies(save)
-    top_person, top_level = None, -1
+    species: Counter[str] = Counter()
 
+    # One pass over actors feeds every tally: the rolls first, then the thinking population's levels and skills — only the scores walk them again, in `shared`.
     for a in actors:
         if is_boat(a):
             continue
-        if a.get("subspecies") in sapient:  # a mind, not an allegiance: `species` is the « thinking population », and one owing no crown thinks all the same
-            counts["species"][a.get("asset_id")] += 1
-            if (level := int(a.get("level") or 0)) > top_level:
-                top_person, top_level = a, level
-        if kid := a.get("civ_kingdom_id"):  # the crown's own roll, which many a thinking soul is not on — a people can stand before any banner is raised
-            kingdom_members[kid] += 1
-        if (cid := a.get("cityID")) is not None:  # a townsman need answer to no crown — counted apart from the kingdom roll above
-            city_members[cid] += 1
-        if cid := a.get("clan"):  # the sworn and the born are counted over every actor, as their registries do — a band outlives the crown it served
-            clan_members[cid] += 1
-        if fid := a.get("family"):
-            family_members[fid] += 1
-        for field in _DOMINANT:  # counted on every actor, wildlife included — a culture or a tongue outlives the crown that carried it
+        for field, coll in _GROUP_FIELDS.items():
             if (v := a.get(field)) is not None:
-                counts[field][v] += 1
+                members[coll][v] += 1
+        if a.get("subspecies") not in sapient:  # a mind, not an allegiance: the thinking population counts one owing no crown all the same
+            continue
+        species[a.get("asset_id")] += 1
+        persons["level"][a["id"]] = int(a.get("level") or 0)
+        stats = compute_actor_stats(a, ctx)
+        for stat in _SKILLS:
+            persons[stat][a["id"]] = stats.get(stat, 0)
 
-    # The four dominant traits, emitted as `{id, name, value}` — the UI reads the rest (palette, banner, size, species) from the registries.
-    out: dict[str, dict] = {}
-    for field, coll in _DOMINANT.items():
-        if win := _clear_winner(counts[field]):
-            out[f"dominant_{field}"] = {"id": win[0], "name": _name_of(save.get(coll) or [], win[0]), "value": win[1]}
-
-    if win := _clear_winner(city_members):  # the most populous, where `most_dominant_village` weighs eleven dimensions — two readings, each with its own table
-        out["largest_city"] = {"id": win[0], "name": _name_of(save.get("cities") or [], win[0]), "value": win[1]}
-
-    if win := _clear_winner(kingdom_members):
-        out["largest_kingdom"] = {"id": win[0], "name": _name_of(save.get("kingdoms") or [], win[0]), "value": win[1]}
-
-    if scores := city_score_ranks(save):  # heaviest settlement by the composite score, not the most populous — size is only one dimension of it
-        top_cid = min(scores, key=scores.__getitem__)
-        out["most_dominant_village"] = {"id": top_cid, "name": _name_of(save.get("cities") or [], top_cid)}
-
-    if scores := kingdom_score_ranks(save):  # strongest realm by the composite power score, `{id, name}` only — its score is meaningless to the chronicler
-        top_kid = min(scores, key=scores.__getitem__)
-        out["most_powerful_kingdom"] = {"id": top_kid, "name": _name_of(save.get("kingdoms") or [], top_kid)}
-
-    if win := _clear_winner(counts["species"]):  # `asset_id` alone: the icon key doubles as the key `SPECIES_NAMES` translates, as a biome's does.
-        out["dominant_species"] = {"asset_id": win[0], "value": win[1]}
-
-    # Highest-level thinking soul — `{id, name}` (+ level), visuals off the person registry. Nil where none has earned one: a medal the whole field wears.
-    if top_person and top_level > 0:
-        out["highest_level_person"] = {"id": top_person.get("id"), "name": top_person.get("name"), "value": top_level}
-
-    if win := _clear_winner(clan_members):  # the sworn, as the band's medal counts them — WB scores a clan's `renown` too, but no plate reads it
-        out["largest_clan"] = {"id": win[0], "name": _name_of(save.get("clans") or [], win[0]), "value": win[1]}
-
-    if win := _clear_winner(family_members):  # the living who carry the name, as the lineage's medal counts them
-        out["largest_family"] = {"id": win[0], "name": _name_of(save.get("families") or [], win[0]), "value": win[1]}
-
+    # `{id, name}` apiece, `value` on a tally, the UI reading the rest (palette, banner, size, species) off the registries — `new.py` keeping the first holder.
+    out: dict[str, dict] = {
+        coll: {"population": _count_leaders(tally, save.get(coll) or [], _MIN_PEERS.get(coll, MIN_RANK_PEERS))} for coll, tally in members.items()
+    }
+    out["persons"] = {stat: _count_leaders(tally, actors, MIN_RANK_PEERS) for stat, tally in persons.items()}
+    out["species"] = {"population": [{"asset_id": asset, "value": n} for asset, n in first_place(species, MIN_RANK_PEERS)]}  # `asset_id`: its icon
+    for coll, dimensions in (("cities", city_score_dimensions), ("kingdoms", kingdom_score_dimensions)):
+        records = save.get(coll) or []
+        out[coll]["score"] = _score_leaders(score_totals([r["id"] for r in records], dimensions(save)), records)
     return out
 
 
@@ -215,7 +179,7 @@ def _build_metadata(map_stats: dict) -> dict:
         "age_description": age.get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
         "age_id": age_id.removeprefix("age_"),  # `WorldAgeLibrary` key without WB's prefix — `hope`, as the panel keys its French and its icon
         "age_name": age.get("name"),  # Chronicler-only: WB's own English title, the id above being what the panel translates
-        # Chronicler-only narrative hint, matches WB's UI counter « Lunes jusqu'au prochain âge ». Omitted when 0 / no current age.
+        # Chronicler-only narrative hint, matches WB's UI counter « Lunes jusqu'au prochain âge ». `0` where no age runs: WB then stores no span to count down.
         "months_until_next_age": int(age_duration * (1 - age_progress) / 5) if age_duration > 0 else 0,
         "world_time": round(float(map_stats.get("world_time", 0)), 2),
     }
@@ -273,10 +237,8 @@ def _build_snapshot(save: dict) -> dict:
     }
 
 
-# The one that leads, or nothing: a tally its runner-up matches names the field and not a winner — the medal `registries._podium` already refuses to hand out.
-def _clear_winner(counts: Counter) -> tuple | None:
-    (top_id, value), *rest = counts.most_common(2) or [(None, 0)]
-    return None if top_id is None or (rest and rest[0][1] == value) else (top_id, value)
+def _count_leaders(counts: Counter, records: list[dict], min_peers: int) -> list[dict]:
+    return [{"id": eid, "name": _name_of(records, eid), "value": n} for eid, n in first_place(counts, min_peers)]
 
 
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
@@ -287,6 +249,12 @@ def _name_of(records: list[dict], target_id) -> str | None:
 # The subspecies WB hangs `has_sapience` on, as a set of ids — an allegiance is not a mind, and a world can think long before it crowns anyone.
 def _sapient_subspecies(save: dict) -> frozenset:
     return frozenset(sid for sid, sub in index_by_id(save.get("subspecies") or []).items() if is_sapient(sub))
+
+
+# Whoever holds the composite's first place, `{id, name}` alone: a Borda total climbs with every rival, so the points never travel.
+def _score_leaders(totals: Counter, records: list[dict]) -> list[dict]:
+    field = {r["id"]: totals[r["id"]] for r in records}  # every town or crown a rival, the ones `score_totals` credits nothing included
+    return [{"id": eid, "name": _name_of(records, eid)} for eid, _ in first_place(field, MIN_SCORE_PEERS)]
 
 
 def main(argv: list[str]) -> int:
@@ -304,8 +272,6 @@ def main(argv: list[str]) -> int:
         out["boats"] = _build_boats(save, requested)
     if "cumulative" in sections:
         out["cumulative"] = _build_cumulative(map_stats)
-    if "hall_of_fame" in sections:
-        out["hall_of_fame"] = _build_hall_of_fame(save)
     if "leaders" in sections:
         out["leaders"] = _build_leaders(save)
     if "metadata" in sections:

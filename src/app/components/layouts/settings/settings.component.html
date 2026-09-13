@@ -29,7 +29,7 @@
     <nz-radio-group class="choices" [ngModel]="picked()" (ngModelChange)="picked.set($event)">
       @for (candidate of candidates(); track candidate.path) {
         <label nz-radio [nzValue]="candidate.path">
-          <span class="world">{{ candidate.world ?? ('ui_unnamed_world' | translate) }}</span>
+          <span>{{ candidate.world ?? ('ui_unnamed_world' | translate) }}</span>
           <span class="detail" nz-tooltip [nzTooltipTitle]="candidate.path">
             {{ shortPath(candidate.path) }} · {{ candidate.size / 1024 | number: '1.0-0' }} {{ 'ui_size_kb' | translate }} · {{ 'ui_modified_on' | translate }}
             {{ candidate.mtime | date: ('ui_date_format' | translate) }}

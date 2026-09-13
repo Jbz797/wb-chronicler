@@ -315,7 +315,7 @@ export class MarkedHelpers {
   private static _renderWar(this: ParserThis, token: Tokens.Generic): string {
     const { tokens: children } = token as IconToken;
     const img = '<img class="icon" src="assets/img/world/wars.png" />';
-    return `<span class="icon-wrap war-name">${this.parser.parseInline(children ?? [])}${img}</span>`;
+    return `<span class="icon-wrap">${this.parser.parseInline(children ?? [])}${img}</span>`;
   }
 
 }

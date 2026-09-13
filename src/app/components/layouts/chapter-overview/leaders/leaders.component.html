@@ -1,6 +1,7 @@
 @if (personRows().length || familyRows().length) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_standing' | translate">
-    @for (row of personRows(); track row.key) {
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (row of personRows(); track $index) {
       <ng-template #personTitle>
         <img [src]="row.icon" />
         <span>{{ row.label | translate }}</span>
@@ -9,7 +10,7 @@
         <app-person-tag [id]="row.ref.id" [name]="row.ref.name" />
       </nz-descriptions-item>
     }
-    @for (row of familyRows(); track row.key) {
+    @for (row of familyRows(); track $index) {
       <ng-template #familyTitle>
         <img [src]="row.icon" />
         <span>{{ row.label | translate }}</span>
