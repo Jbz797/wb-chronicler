@@ -134,6 +134,8 @@ _DEMOGRAPHY = frozenset(
     {"adults", "babies", "children", "couples", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
 )
 
+_DRAFT_HEADINGS = {"en": "Draft", "fr": "Brouillon"}  # one per language the settings panel offers: a language added there owes its word here
+
 # Everything a reset sweeps away. `tiles` holds the ticking ones (fires, melting ice), not the ground — that lives in `tileMap`/`tileArray`/`tileAmounts`.
 _EMPTIED = (
     "actors_data",
@@ -280,14 +282,6 @@ def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> list[str]:
     return owed
 
 
-# The player's own workshop switch, off the reader's settings. Absent or false on a player who only ever plays — and a missing file reads the same way.
-def _dev_mode() -> bool:
-    try:
-        return bool(json.loads(_SETTINGS_JSON.read_text()).get("dev"))
-    except (OSError, ValueError):
-        return False
-
-
 # `_CHRONICLER_ONLY` cuts at every depth of the tree, `_AUDIT` from one named section alone — neither loses the chronicler a thing, `<tier>/info.py` replaying both.
 def _drop_chronicler_keys(node, parent: str = ""):
     if isinstance(node, dict):
@@ -303,6 +297,15 @@ def _drop_chronicler_keys(node, parent: str = ""):
             kept[key] = _drop_chronicler_keys(value, key)
         return kept
     return [_drop_chronicler_keys(value, parent) for value in node] if isinstance(node, list) else node
+
+
+# Whether the crown was drawn into a war begun after `since`, on either side and ended or not — the declaration is the event the chapter owes, not the fighting.
+def _entered_war(save: dict, kingdom_id: int, since: float) -> bool:
+    return any(
+        float(war.get("created_time") or 0) > since
+        and kingdom_id in {war.get("main_attacker"), war.get("main_defender"), *(war.get("list_attackers") or []), *(war.get("list_defenders") or [])}
+        for war in save.get("wars") or []
+    )
 
 
 def _entity_id(block: dict) -> int | None:
@@ -426,19 +429,22 @@ def _life_dna() -> int:
     return int(datetime.now(timezone.utc).strftime("%Y%m%d%H"))
 
 
-# One scan of the prior chapters, for all they arbitrate: alert de-dup, descriptor carry-forward, a null→real favorite, a turned age, an unadvanced save.
-def _prior_context(n: int) -> tuple[set, dict | None, dict]:
+# One scan of prior chapters for all they arbitrate: alert de-dup, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.
+def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
     tags: set = set()
+    sworn: set = set()
     favorite, world = None, {}
     for prior in range(1, n):
         if not (prior_json := SAVES_DIR / f"C{prior}" / "chapter.json").exists():
             continue
         data = json.loads(prior_json.read_text())
         tags |= set(data.get("tags") or [])
+        if data.get("kingdom") and (sworn_id := ((data.get("favorite") or {}).get("metadata") or {}).get("id")) is not None:
+            sworn.add(sworn_id)
         if prior == n - 1:
             favorite = data.get("favorite")
             world = (data.get("world") or {}).get("metadata") or {}
-    return tags, favorite, world
+    return tags, favorite, world, sworn
 
 
 # Empties a world's own chronicle, table by table, leaving the schema WB expects. `VACUUM` hands the megabytes back rather than leaving a hollow file.
@@ -534,6 +540,14 @@ def _sapient_kingdoms(save: dict) -> list[int]:
     return list(pops.values())
 
 
+# The reader's settings: the player's workshop switch and the chronicle's language. A missing or broken file reads as a player who never opened the panel.
+def _settings() -> dict:
+    try:
+        return json.loads(_SETTINGS_JSON.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
 # An entity's traits as the save spells them, id included so a change of clan reads like a change of traits — both mean the summary must be written afresh.
 def _trait_fingerprint(save: dict, tier: str, entity_id: int | None) -> tuple | None:
     if entity_id is None:
@@ -620,7 +634,7 @@ def main(argv: list[str]) -> int:
     actors = live.get("actors_data") or []
     world_time = round(float(live["mapStats"].get("world_time", 0)), 2)
     fav_id = next((a["id"] for a in actors if a.get("favorite") is True), None)
-    already, prev_favorite, prev_world = _prior_context(n)
+    already, prev_favorite, prev_world, sworn = _prior_context(n)
     prev_fav_id = ((prev_favorite or {}).get("metadata") or {}).get("id")
     # A favorite the chapter before did not carry — the world's first, or a successor to one who died. Both earn a chapter at an unchanged timestamp, and the tag.
     just_designated = fav_id is not None and fav_id != prev_fav_id
@@ -711,18 +725,30 @@ def main(argv: list[str]) -> int:
 
     # Mechanical event codes, `chapter.json.tags` their only log. The order is a priority: the nav badges the first three, so the rarest come first, alerts last.
     tags = ["NEW_FAVORITE"] if just_designated else []
+
+    # The favorite's first crown, once a soul and not once a world — a successor designated already inside a realm joined nothing the chronicle saw.
+    if blocks.get("kingdom") and not just_designated and fav_id not in sworn:
+        tags.append("FAVORITE_FIRST_KINGDOM")
+
     if (prev_age_id := prev_world.get("age_id")) and age_id != prev_age_id:
         tags.append("NEW_AGE")
 
     # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. One-time, like the `DISABLE_*` alerts.
     if "NAVIGATION" not in already and any(is_boat(a) for a in actors):
         tags.append("NAVIGATION")
+
+    # A war the favorite's crown found itself in since the chapter before, whoever declared it — the first chapter having no before, it owes none.
+    if (realm := _entity_id(blocks.get("kingdom") or {})) is not None and (since := prev_world.get("world_time")) is not None and _entered_war(live, realm, since):
+        tags.append("FAVORITE_KINGDOM_NEW_WAR")
+
     if boat:  # a chapter caught at sea — the favorite is aboard right now, which the panel badges and the chronicler owes a scene
         tags.append("FAVORITE_ABOARD")
+
     # A scheme afoot under the favorite's own hand. Read after the fold, which leaves the type's key behind: a plot ripens in months, so it may be gone next chapter.
     if (favorite or {}).get("plot"):
         tags.append("FAVORITE_PLOTTING")
     new_alerts = _fired_alerts(live)
+
     tags += [code for code, _message in new_alerts]
 
     age_label = (_AGE_LABELS.get(f"age_{age_id}") or {}).get("name") or age_id  # recap line only, the chapter carrying the id alone
@@ -740,6 +766,10 @@ def main(argv: list[str]) -> int:
 
     # `render`, not `json.dumps(indent=2)`: same tree, a good quarter fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong.
     (chapter_dir / "chapter.json").write_text(render(_drop_chronicler_keys(chapter_json)) + "\n")
+    settings = _settings()
+
+    # The draft's H1, in the language the chronicler writes the chapter in: the reader has a page, and it reads unfinished.
+    (chapter_dir / "chapter.md").write_text(f"# {_DRAFT_HEADINGS.get(settings.get('lang', ''), 'Draft')}\n")
     _write_index()
 
     year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
@@ -770,7 +800,7 @@ def main(argv: list[str]) -> int:
         print("  → each summary: one string under the block's own `traits` key, replacing the raw list the script dropped")
         print("    what those traits make of the body, 400 characters at the very most — a ceiling, not a target; never a list, never a count")
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and nothing beside it.
-    if not _dev_mode():
+    if not settings.get("dev"):
         print("  → mode: player, not developer — deliver the chapter and stop there, skipping `chronicler.md` § « Après livraison »")
 
     return 0
