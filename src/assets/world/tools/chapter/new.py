@@ -163,7 +163,7 @@ _EMPTIED = (
 
 _FLAGS = frozenset({"--description", "--force", "--name", "--reset", "--reset-asked"})  # all `main` reads — silence on the rest would make a typo an answer
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
-_HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # cumulative WB SQLite → one copy, overwritten each chapter, for the chronicler to browse
+_HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # WB's cumulative SQLite, copied each chapter: the chronicler browses it, the recap prints its log
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
@@ -415,6 +415,19 @@ def _fold_total(entity: dict, *keys: str) -> None:
 def _fold_world_leaders(world: dict) -> None:
     if isinstance(block := world.get("leaders"), dict):
         world["leaders"] = {group: {row: _first_holder(holders) for row, holders in rows.items()} for group, rows in block.items()}
+
+
+# WB's own log since `since`: crowns and favorites fallen with their killer, realms and towns raised or razed, wars, pacts. WB stamps a whole unit, hence `>=`.
+def _journal_since(since: float | None) -> list[tuple]:
+    try:
+        with sqlite3.connect(f"file:{_HISTORY_S3DB}?mode=ro", uri=True) as conn:
+            return conn.execute(
+                "SELECT timestamp, asset_id, special1, special2, special3, x, y FROM WorldLogMessage"
+                " WHERE timestamp >= ? AND asset_id != 'auto_tester' ORDER BY timestamp, rowid",
+                (int(since or 0),),
+            ).fetchall()
+    except sqlite3.Error:  # no copy yet, the live save having come without one: the recap goes on, a journal short
+        return []
 
 
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
@@ -783,6 +796,9 @@ def main(argv: list[str]) -> int:
     print(f"  regime: {_regime(n, actors, fav_id, prev_fav_id)}")
     for _code, message in new_alerts:
         print(f"  ⚠ {message}")
+    # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file.
+    for timestamp, asset_id, *names, x, y in _journal_since(prev_world.get("world_time")):
+        print(f"  ✎ year {timestamp // UNITS_PER_YEAR + 1} · {asset_id} · {' · '.join(filter(None, names))} ({x},{y})")
     todo = "§ « Phase d'analyse obligatoire » · chapter.md, its H1 copied into `title`"
     if favorite and not favorite.get("descriptor"):  # new favorite → its epithet is the one favorite field the chronicler still writes
         todo += " · the favorite's descriptor"
