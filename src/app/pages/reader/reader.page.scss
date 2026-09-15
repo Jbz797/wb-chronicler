@@ -116,6 +116,12 @@
       letter-spacing: 0.02em;
       margin: 0 0 1.6em;
       text-align: center;
+
+      // `text-top` pins the 20px plate to a Cinzel box that grows with the fitted size, so it drifts; `middle` holds it on the small caps at any size.
+      .entity-tag {
+        top: -2px;
+        vertical-align: middle;
+      }
     }
   }
 

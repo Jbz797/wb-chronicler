@@ -497,7 +497,7 @@ def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -
     if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
         if fav_id is None:  # `favorite.py` has not run yet: the successor is still to be picked
             return "the favorite has left the world — pick a successor, get the player's word, then `tools/chapter/favorite.py <id>`"
-        return "the favorite has left the world, his successor is in place — open on that death before the tiers, then follow the successor's eyes from here on"
+        return "the favorite has left the world, the successor is in place — open on that death before the tiers, then follow the successor's eyes from here on"
     if fav_id is None:
         return "no favorite yet"
     return "favorite designated"
@@ -820,17 +820,26 @@ def main(argv: list[str]) -> int:
         todo += " · the favorite's descriptor"
     if owed:
         todo += f" · trait summaries ({', '.join(sorted(owed))})"
+    thinking = index_by_id(live.get("subspecies") or [])
+
+    # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
+    if fav_id is None and any(is_sapient(thinking.get(a.get("subspecies"))) for a in actors if not is_boat(a)):
+        todo = "§ « Choix du favori » before a single word — `tools/chapter/favorite.py <id>` rebuilds this chapter; told without one only if none is worth it"
     print(f"  → chronicler: {todo}")
+
     # Said where it is acted on, as the summaries' shape is: a descriptor is written once per favorite, and the ceiling only matters at that moment.
     if favorite and not favorite.get("descriptor"):
         print("  → the descriptor: 66 characters at the very most — a ceiling, not a target")
+
     # Said here rather than in the manual: an alert reads as news unless its nature is said, and only a chapter that fires one needs to hear it.
     if new_alerts:
         print("  → each alert is a state, not an event: it fires again every chapter until the law is off")
+
     # Said where it is acted on rather than in the manual: what a summary owes is its shape, and the shape only matters at the moment one is written.
     if owed:
         print("  → each summary: one string under the block's own `traits` key, replacing the raw list the script dropped")
         print("    what those traits make of the body, 400 characters at the very most — a ceiling, not a target; never a list, never a count")
+
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and nothing beside it.
     if not settings.get("dev"):
         print("  → mode: player, not developer — deliver the chapter and stop there, skipping `chronicler.md` § « Après livraison »")

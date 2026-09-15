@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 15/09/26 21:39</p>
+<p class="metadata">Date de mise à jour : 15/09/26 22:50</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -38,10 +38,6 @@ Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie 
 ## Description du monde :
 
 `chapter/new.py --description "…"` — reformule le monde sans écrire de chapitre. **WorldBox fermé**, rouvrir la save ensuite. **Force majeure seulement** : elle se pose au reset.
-
-## Favori :
-
-`chapter/favorite.py <id>` — marque l'acteur favori dans la save et régénère le chapitre courant. **Après accord du joueur**, **WorldBox fermé** ; cf. « Choix du favori » dans `chronicler.md`.
 
 ## Lire les sorties :
 

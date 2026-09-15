@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Marks an actor as the world's favorite in the live WorldBox save, then rebuilds the current chapter around him. Spares the player the in-game marking and the
-# re-save: the chronicler names his pick, the player agrees, and the chapter is born with its favorite. Docs: `tools/tools.md`, the rules in `chronicler.md`.
+# Marks an actor as the world's favorite in the live WorldBox save, then rebuilds the current chapter around the pick. Spares the player the in-game marking and
+# the re-save: the chronicler names a pick, the player agrees, and the chapter is born with its favorite. Its rules: `chronicler.md` § « Choix du favori ».
 
 import re
 import shutil
@@ -15,11 +15,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import SAVES_DIR, index_by_id, is_sapient, latest_chapter, live_save, load_save, worldbox_running, write_save
 
 
-# The actor the chronicler picked, refused unless he can actually carry a chronicle: alive in the save, and thinking — a beast holds no story of its own.
+# The actor the chronicler picked, refused unless the body can actually carry a chronicle: alive in the save, and thinking — a beast holds no story of its own.
 def _picked(save: dict, actor_id: int) -> dict | None:
     actor = next((a for a in save.get("actors_data") or [] if a.get("id") == actor_id), None)
     if actor is None:
-        print(f"✗ no actor {actor_id} in the save — either he is dead, or the id is wrong", file=sys.stderr)
+        print(f"✗ no actor {actor_id} in the save — either the body is dead, or the id is wrong", file=sys.stderr)
         return None
     if not is_sapient(index_by_id(save.get("subspecies") or []).get(actor.get("subspecies"))):
         print(f"✗ {actor.get('name')} ({actor.get('asset_id')}) is not sapient — a favorite must be able to hold a chronicle", file=sys.stderr)
@@ -44,8 +44,7 @@ def _write_flag(wbox: Path, save: dict, favorite: dict) -> None:
     meta = wbox.parent / "map.meta"
     if not meta.exists():
         return
-    count = sum(1 for a in save.get("actors_data") or [] if a.get("favorite"))
-    patched, hits = re.subn(r'"favorites":\s*\d+', f'"favorites":{count}', meta.read_text(), count=1)
+    patched, hits = re.subn(r'"favorites":\s*\d+', '"favorites":1', meta.read_text(), count=1)  # the loop above left exactly one
     if hits:  # a miss leaves WB showing its old tally in the save list, the save itself staying right — nothing the chronicler could act on, so nothing is said
         meta.write_text(patched)
 
@@ -93,12 +92,12 @@ def main(argv: list[str]) -> int:
 
     print(f"✓ {actor.get('name')} ({actor.get('asset_id')}, id {actor_id}) is the world's favorite")
 
-    # The whole chapter goes, prose included: a world with a favorite is told in circles around him. The hour has not moved, so only the words are lost.
+    # The whole chapter goes, prose included: a world with a favorite is told in circles around that body. The hour has not moved, so only the words are lost.
     had_prose = (chapter_dir / "chapter.md").exists()
     shutil.rmtree(chapter_dir)
-    print(f"  C{n} erased then rebuilt around him — `new.py` lays the NEW_FAVORITE tag on its own")
+    print(f"  C{n} erased then rebuilt around the favorite — `new.py` lays the NEW_FAVORITE tag on its own")
     if had_prose:
-        print(f"  → chronicler: its prose went with it — write C{n} afresh, from his eyes, in circles")
+        print(f"  → chronicler: its prose went with it — write C{n} afresh, from the favorite's eyes, in circles")
     print(flush=True)  # a blank line, flushed: the child writes next
 
     # `--reset-asked` because reaching here means a chapter stood a moment ago, so the reset question was settled long before — without it C1 would ask again.
