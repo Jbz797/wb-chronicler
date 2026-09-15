@@ -22,12 +22,16 @@
     @if (c.metadata.past_chiefs > 1) {
       <nz-descriptions-item [nzTitle]="chiefsTitle">{{ c.metadata.past_chiefs }}</nz-descriptions-item>
     }
-    <nz-descriptions-item [nzTitle]="ageTitle">
-      <app-ranked-stat source="clan" stat="age" suffix="ui_years" />
-    </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTitle">
-      <app-ranked-stat source="clan" stat="renown" />
-    </nz-descriptions-item>
+    @if (c.metadata.age > 0) {
+      <nz-descriptions-item [nzTitle]="ageTitle">
+        <app-ranked-stat source="clan" stat="age" suffix="ui_years" />
+      </nz-descriptions-item>
+    }
+    @if (c.metadata.renown) {
+      <nz-descriptions-item [nzTitle]="renownTitle">
+        <app-ranked-stat source="clan" stat="renown" />
+      </nz-descriptions-item>
+    }
     <nz-descriptions-item *appPresent="c.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="clan" stat="renown_total" />
     </nz-descriptions-item>

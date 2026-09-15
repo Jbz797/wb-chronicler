@@ -30,10 +30,11 @@
     <nz-descriptions-item *appPresent="k.metadata.score_rank" [nzTitle]="scoreRankTitle">
       <app-ranked-stat source="kingdom" stat="score_rank" [inverted]="true" [ordinal]="true" [showRank]="false" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="ageTitle">
+    <!-- `*appPresent` where the other panels use `@if`: this template sits at its complexity cap, and `|| undefined` hides age and renown at 0 all the same. -->
+    <nz-descriptions-item *appPresent="k.metadata.age || undefined" [nzTitle]="ageTitle">
       <app-ranked-stat source="kingdom" stat="age" suffix="ui_years" [hideDelta]="true" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTitle">
+    <nz-descriptions-item *appPresent="k.metadata.renown || undefined" [nzTitle]="renownTitle">
       <app-ranked-stat source="kingdom" stat="renown" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="populationTitle">

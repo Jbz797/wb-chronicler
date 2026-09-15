@@ -89,11 +89,10 @@ export class ChapterOverviewComponent {
   // ng-zorro 22 dropped `nzDisabled` for `nzCollapsible`, whose union has no "default" member — `undefined` restores it (cast for `exactOptionalPropertyTypes`).
   protected collapsible = (enabled: unknown): 'disabled' | 'header' | 'icon' => (enabled ? undefined : 'disabled') as 'disabled';
 
-  // The body a panel is about has changed hands since the previous chapter — the favorite moved to another clan, another creed, or is himself a successor.
-  protected isNewPanel = (panel: ChapterTier): boolean => {
-    const previous = this._chronicler.previousChapter()?.meta[panel]?.metadata;
-    return !!previous && !!this.currentChapter()?.meta[panel]?.metadata && !this._chronicler.carriesOver(panel);
-  };
+  // The panel's body is new to the favorite since the previous chapter — joined, founded, or changed hands. C1 has no chapter before to be new against.
+  protected isNewPanel(panel: ChapterTier): boolean {
+    return !!this._chronicler.previousChapter() && !!this.currentChapter()?.meta[panel]?.metadata && !this._chronicler.carriesOver(panel);
+  }
 
   // A body this chapter does not carry leaves its panel `disabled`, so a name restored from the session would open it on an empty strip nothing could shut.
   protected isOpen = (panel: ChapterOverviewPanel, body: unknown): boolean => this.activePanel() === panel && !!body;

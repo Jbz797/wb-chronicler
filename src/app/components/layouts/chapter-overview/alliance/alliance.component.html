@@ -5,14 +5,18 @@
         <app-person-tag [id]="f.id" [name]="f.name ?? ''" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item [nzTitle]="ageTitle"><app-ranked-stat source="alliance" stat="age" suffix="ui_years" /></nz-descriptions-item>
+    @if (a.metadata.age > 0) {
+      <nz-descriptions-item [nzTitle]="ageTitle"><app-ranked-stat source="alliance" stat="age" suffix="ui_years" /></nz-descriptions-item>
+    }
     <nz-descriptions-item [nzTitle]="kingdomsTitle">
       @for (k of a.kingdoms; track k.id) {
         <app-kingdom-tag [id]="k.id" [name]="k.name" />
       }
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="populationTitle"><app-ranked-stat source="alliance" stat="population" /></nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTitle"><app-ranked-stat source="alliance" stat="renown" /></nz-descriptions-item>
+    @if (a.metadata.renown) {
+      <nz-descriptions-item [nzTitle]="renownTitle"><app-ranked-stat source="alliance" stat="renown" /></nz-descriptions-item>
+    }
     <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
     @for (row of lifetimeStats(); track $index) {
       <ng-template #lifetimeTitle>

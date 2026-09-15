@@ -6,12 +6,16 @@
       </nz-descriptions-item>
     }
 
-    <nz-descriptions-item [nzTitle]="ageTitle">
-      <app-ranked-stat source="religion" stat="age" suffix="ui_years" />
-    </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="renownTitle">
-      <app-ranked-stat source="religion" stat="renown" />
-    </nz-descriptions-item>
+    @if (r.metadata.age > 0) {
+      <nz-descriptions-item [nzTitle]="ageTitle">
+        <app-ranked-stat source="religion" stat="age" suffix="ui_years" />
+      </nz-descriptions-item>
+    }
+    @if (r.metadata.renown) {
+      <nz-descriptions-item [nzTitle]="renownTitle">
+        <app-ranked-stat source="religion" stat="renown" />
+      </nz-descriptions-item>
+    }
     <nz-descriptions-item *appPresent="r.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="religion" stat="renown_total" />
     </nz-descriptions-item>
