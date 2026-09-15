@@ -133,7 +133,7 @@ def _build_cumulative(map_stats: dict) -> dict:
     return out
 
 
-# The world's standouts, shaped as every tier's `leaders`: group, then measure, then its first place — `species` and `persons` weighing thinking souls alone.
+# The world's standouts, shaped as every tier's `leaders`: group, then measure, then its first place — `persons` weighing thinking souls alone.
 def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
     ctx = build_actor_stats_context(save)
@@ -142,16 +142,16 @@ def _build_leaders(save: dict) -> dict:
     sapient = _sapient_subspecies(save)
     species: Counter[str] = Counter()
 
-    # One pass over actors feeds every tally: the rolls first, then the thinking population's levels and skills — only the scores walk them again, in `shared`.
+    # One pass over actors feeds every tally: the rolls and the species first, then the thinking population's levels and skills — only the scores walk them again.
     for a in actors:
         if is_boat(a):
             continue
         for field, coll in _GROUP_FIELDS.items():
             if (v := a.get(field)) is not None:
                 members[coll][v] += 1
+        species[a.get("asset_id")] += 1  # every body, beasts included, as the rolls above count them
         if a.get("subspecies") not in sapient:  # a mind, not an allegiance: the thinking population counts one owing no crown all the same
             continue
-        species[a.get("asset_id")] += 1
         persons["level"][a["id"]] = int(a.get("level") or 0)
         stats = compute_actor_stats(a, ctx)
         for stat in _SKILLS:
