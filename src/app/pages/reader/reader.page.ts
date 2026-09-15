@@ -85,13 +85,25 @@ export class ReaderPage {
     this._restoreScroll();
   }
 
+  // The epigraph's larger face can wrap where the prose did not: laid out on one unbroken line, its overflow tells how far the size must shrink to fit.
+  private _fitOneLine(opening: HTMLElement): void {
+    opening.style.whiteSpace = 'nowrap';
+    const { clientWidth, scrollWidth } = opening;
+    opening.style.removeProperty('white-space');
+    if (scrollWidth <= clientWidth) return;
+    const size = Number.parseFloat(getComputedStyle(opening).fontSize);
+    opening.style.fontSize = `${Math.floor(((size * clientWidth) / scrollWidth) * 10) / 10}px`; // floored, since a fraction of a pixel over is enough to wrap
+  }
+
   // A chapter opening shorter than the two-line cap forgoes it — measured, not counted, since chars per line follow the window. A workshop page's is instruction.
   private _plainOpening(root: HTMLElement): void {
     const opening = root.querySelector<HTMLElement>(':scope h1 + p:not(.metadata)');
     if (!opening) return;
     opening.classList.remove('plain-opening'); // the cap shapes the wrap, so the height that decides its fate is measured with it on
+    opening.style.removeProperty('font-size');
     const line = Number.parseFloat(getComputedStyle(opening).lineHeight);
     opening.classList.toggle('plain-opening', opening.getBoundingClientRect().height < line * 2);
+    if (opening.classList.contains('plain-opening')) this._fitOneLine(opening);
   }
 
   // One frame after the prose lands, which is when the viewport has its full height — the canvas sprites are sized in CSS and never move it afterwards.

@@ -86,6 +86,11 @@
       padding-bottom: 0;
     }
 
+    // An opening set as an epigraph belongs to the title, so the typography's 0.5em gap closes and the two read as one heading.
+    &:has(+ p.plain-opening) {
+      margin-bottom: 0.2em;
+    }
+
     // The drop cap, worn by whatever paragraph opens the page: straight after the title in a chapter, after the date stamp on a workshop page.
     & + p:not(.metadata)::first-letter,
     & + p.metadata + p::first-letter {
