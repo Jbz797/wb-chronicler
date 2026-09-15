@@ -685,8 +685,11 @@ def main(argv: list[str]) -> int:
         (_featured_favorite, chapter, fav_id, prev_favorite) if fav_id is not None else None,
     )
 
-    if world is None:
-        print("✗ world/info.py failed — check the save", file=sys.stderr)
+    # Both are the chapter's spine, and a half-written one would push the next run to C<n+1>: the directory this run made goes, so a rerun lands on it again.
+    if world is None or (fav_id is not None and favorite is None):
+        failed = "world/info.py" if world is None else f"actor/info.py {fav_id} full"
+        shutil.rmtree(chapter_dir)
+        print(f"✗ {failed} failed — nothing written, report the error above and run again once it answers", file=sys.stderr)
         return 1
 
     blocks: dict = dict.fromkeys(_TIERS)  # `None` where the favorite belongs to no such body — the chapter carries the key either way

@@ -21,6 +21,7 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
+    actor_xy,
     asset_set,
     books_held,
     children_by_id,
@@ -89,7 +90,8 @@ def _besieging_kingdoms(save: dict) -> dict[int, set[int]]:
     for actor in save.get("actors_data") or []:
         if actor.get("profession") not in _CAPTURE_PROFESSIONS or is_aboard(actor) or not (kid := actor.get("civ_kingdom_id")):
             continue
-        cid = zone_city.get((int(actor["x"]) // ZONE_TILES, int(actor["y"]) // ZONE_TILES))
+        ax, ay = actor_xy(actor)
+        cid = zone_city.get((ax // ZONE_TILES, ay // ZONE_TILES))
         if cid is not None and kid in enemies.get(owner[cid], ()):
             besieging[cid].add(kid)
     return besieging

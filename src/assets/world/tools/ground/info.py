@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from islands import compute_islands_cached
 from shared import (
     actor_age,
+    actor_xy,
     building_tile,
     civic_building_ids,
     emit,
@@ -100,7 +101,7 @@ def _build_occupants(residents: list[dict], house: dict, ctx: dict, save: dict, 
 def _here(actor: dict, house: dict, civic: bool) -> dict:
     if not civic:  # nobody steps « inside » a field
         return {}
-    return {"in_building": True} if (actor.get("x"), actor.get("y")) == building_tile(house) else {}
+    return {"in_building": True} if actor_xy(actor) == building_tile(house) else {}
 
 
 def main(argv: list[str]) -> int:
@@ -135,7 +136,7 @@ def main(argv: list[str]) -> int:
     # WB moors a hull to its dock through the same `homeBuildingID` a soul sleeps under, so one walk sorts both — and none at all when no section asks.
     if {"boats", "metadata", "occupants"} & set(sections):
         for actor in save.get("actors_data") or []:
-            here = (actor.get("x"), actor.get("y")) == tile
+            here = actor_xy(actor) == tile
             home = actor.get("homeBuildingID") == house_id
             if is_boat(actor):  # a hull may moor at a rival's dock, and only the tile says which are there right now
                 if home or here:

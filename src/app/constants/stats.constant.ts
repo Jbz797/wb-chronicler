@@ -69,13 +69,13 @@ export const LEADER_GROUPS: LeaderGroupConfig[] = [
   { group: 'kingdoms', label: 'ui_kingdoms', measures: ['population', 'score'] },
 ];
 
-// Each world record's sprite and label — `score`, the composite WB weighs a town and a crown on, reads as the ranking the city panel prints.
+// Each world record's sprite and label — `score`, the composite WB weighs a town and a crown on, under the label the city and kingdom panels print.
 export const LEADER_MEASURES: Record<LeaderMeasure, { icon: string; label: string }> = {
   diplomacy: { icon: 'assets/img/stats/diplomacy.png', label: 'ui_diplomacy' },
   intelligence: { icon: 'assets/img/stats/intelligence.png', label: 'ui_intelligence' },
   level: { icon: 'assets/img/stats/level.png', label: 'ui_level' },
   population: { icon: 'assets/img/world/population.png', label: 'ui_population' },
-  score: { icon: 'assets/img/podium/1.png', label: 'ui_ranking' },
+  score: { icon: 'assets/img/podium/1.png', label: 'ui_score' },
   stewardship: { icon: 'assets/img/stats/stewardship.png', label: 'ui_stewardship' },
   warfare: { icon: 'assets/img/stats/warfare.png', label: 'ui_warfare' },
 };

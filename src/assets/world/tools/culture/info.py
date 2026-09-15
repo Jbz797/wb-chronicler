@@ -16,6 +16,7 @@ from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     actor_age,
+    actor_xy,
     build_trait_ids,
     build_trait_list,
     children_by_id,
@@ -81,7 +82,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
             "age": actor_age(actor, ctx["world_time"]),
             "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs some 40 chars and blows the inline budget
             "id": actor["id"],
-            "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
+            "island_id": island_of.get(actor_xy(actor)),  # Chronicler-only: land mass (`geography/info.py islands`)
             "job": resolve_profession(actor, save),
             **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — a rung above is earned, and unaggregated.
             "name": actor.get("name"),

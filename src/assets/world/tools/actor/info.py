@@ -18,6 +18,7 @@ from shared import (
     UNITS_PER_MONTH,
     UNITS_PER_YEAR,
     actor_age,
+    actor_xy,
     build_trait_ids,
     build_trait_list,
     building_tile,
@@ -156,8 +157,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
 
     # Both off the biology, as WB writes them onto the subspecies — never off this body's own span. `age_adult` is nil where no baby form was ever drawn.
     age_adult, age_breeding = adult_age(actor, ctx), breeding_age(actor, ctx)
-    ax, ay = actor.get("x"), actor.get("y")
-    tile = (int(ax), int(ay)) if ax is not None and ay is not None else None  # WB writes both coordinates or neither, so one guard serves every lookup below
+    tile = actor_xy(actor)
     profession = resolve_profession(actor, save)
 
     # WB `Actor.canBreed` and `BabyHelper.canMakeBabies` merged: the age covers both, `isBreedingAge` sitting above `isAdult`; a gut-less body is fed by definition.
@@ -195,7 +195,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
         **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"]().get(tile)) else {}),
-        "island_id": island_lookup.get(tile) if tile else None,  # Chronicler-only: land mass (geography/info.py).
+        "island_id": island_lookup.get(tile),  # Chronicler-only: land mass (geography/info.py).
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in
@@ -211,8 +211,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
         # WB `isInsideSomething`: a save keeps the boat half, never the building. A plain ref, souls boarding transports alone — `boat/info.py <id>` spells it out.
         **({"transport": entity_ref(actor.get("transportID"), ctx["actors_by_id"])} if is_aboard(actor) else {}),
-        "x": ax,
-        "y": ay,
+        "x": tile[0],
+        "y": tile[1],
     }
 
 
@@ -240,14 +240,13 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
 
 # Every living body within the common reach, nearest first, as the crow flies — a line is built only for a printed circle: `full` never makes the common one.
 def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
-    if actor.get("x") is None or actor.get("y") is None:
-        return {}
-    cx, cy = int(actor["x"]), int(actor["y"])
+    cx, cy = actor_xy(actor)
     circles: dict[str, list[tuple]] = {name: [] for name, _ in _CIRCLES}
     for other in ctx["actors_by_id"].values():
-        if other is actor or is_boat(other) or other.get("x") is None or ctx["subspecies_by_id"].get(other.get("subspecies")) is None:
+        if other is actor or is_boat(other) or ctx["subspecies_by_id"].get(other.get("subspecies")) is None:
             continue
-        dx, dy = int(other["x"]) - cx, int(other["y"]) - cy
+        ox, oy = actor_xy(other)
+        dx, dy = ox - cx, oy - cy
         # Whole tiles, and the circle drawn on the same figure it prints: the scale reads no finer, and a decimal alone pushes a killer's line past the width.
         if (distance := round(hypot(dx, dy))) <= _CIRCLES[-1][1]:
             circles[next(name for name, reach in _CIRCLES if distance <= reach)].append((distance, other["id"], dx, dy))

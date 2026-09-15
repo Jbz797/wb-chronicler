@@ -17,6 +17,7 @@ from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     actor_age,
+    actor_xy,
     biome_lore,
     build_trait_ids,
     build_trait_list,
@@ -58,7 +59,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
             "age": actor_age(actor, ctx["world_time"]),
             "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # The roster's one entity: a line holds a handful of bearers, a town dozens.
             "id": actor["id"],
-            "island_id": island_of.get((int(actor["x"]), int(actor["y"]))),  # Chronicler-only: land mass (`geography/info.py islands`)
+            "island_id": island_of.get(actor_xy(actor)),  # Chronicler-only: land mass (`geography/info.py islands`)
             "job": resolve_profession(actor, save),
             **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — as in `clan`, no aggregate here carries it.
             "name": actor.get("name"),
@@ -88,7 +89,7 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the biology has been dying, which its totals alone never say
         **({"families": len(families)} if families else {}),  # bloodlines carrying it — the count says whether the biology runs in one line or fans out over many
         "id": subspecies["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
-        "islands": sorted({iid for a in members if (iid := island_of.get((int(a["x"]), int(a["y"])))) is not None}),  # 1 = biggest — presence, not weight.
+        "islands": sorted({iid for a in members if (iid := island_of.get(actor_xy(a))) is not None}),  # 1 = biggest — presence, not weight.
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
         "name": subspecies.get("name"),

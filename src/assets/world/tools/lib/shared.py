@@ -253,6 +253,11 @@ def actor_age(actor: dict, world_time: float) -> int:
     return entity_age(actor, world_time) + (actor.get("age_overgrowth") or 0)
 
 
+# A body's tile, soul or hull. WB omits a zero at save time, one coordinate at a time: a body on the first row writes an `x` and no `y`, as a zone does.
+def actor_xy(actor: dict) -> tuple[int, int]:
+    return actor.get("x", 0), actor.get("y", 0)
+
+
 # A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
 @cache
 def asset_set(name: str) -> frozenset[str]:

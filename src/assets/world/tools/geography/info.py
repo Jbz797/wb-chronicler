@@ -14,7 +14,9 @@ from grid import LazyTileGrid, decode_tile_grid, listed_tiles, tile_biome, tile_
 from islands import compute_islands_cached
 from shared import (
     CACHE_DIR,
+    actor_xy,
     biome_lore,
+    building_tile,
     civic_building_ids,
     emit,
     index_by_id,
@@ -27,7 +29,7 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("biomes", "burning", "entity_types", "equipment", "frozen", "islands", "positions", "waters")
-_COORDS = {"actors_data": ("x", "y"), "buildings": ("mainX", "mainY")}  # Collection → its coordinate fields. No `asset_id` sits in both, so a kind names its own.
+_COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection → the helper that sites a record, WB's omitted zero read as 0. No kind sits in both.
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _MIN_LAKE_TILES = 64  # WB knows no lake at all, so the floor is ours: WB `CITY_ZONE_TILES`, one city zone — under it no town could ever sit on the shore.
 _OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart from the lakes indexed from 0
@@ -59,7 +61,7 @@ def _build_equipment(save: dict, save_path: Path) -> dict:
     for actor in save.get("actors_data") or []:
         if is_boat(actor) or not (worn := actor.get("saved_items")):
             continue
-        by_island[island_of.get((int(actor["x"]), int(actor["y"])))].append(
+        by_island[island_of.get(actor_xy(actor))].append(
             # An id the collection never resolves names nothing, so it is dropped rather than sorted against the rest as a `None`.
             {"id": actor["id"], "items": sorted(a for i in worn if (a := (items.get(i) or {}).get("asset_id"))), "name": actor.get("name")},
         )
@@ -92,13 +94,10 @@ def _build_flagged_tiles(save: dict, save_path: Path, key: str) -> dict:
 # Where every instance of one kind stands. Its `id` opens its own script; `island_id` names the land mass, absent over water — a hull at sea, a dock on shallows.
 def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
     out = []
-    for collection, (field_x, field_y) in _COORDS.items():
+    for collection, site in _COORDS.items():
         for record in save.get(collection) or []:
-            if record.get("asset_id") != asset_id:
-                continue
-            x, y = record.get(field_x), record.get(field_y)
-            if x is not None or y is not None:  # WB omits a zero at save time: one coordinate sites the record, the absent one reads 0
-                out.append({"id": record.get("id"), "name": record.get("name"), "x": int(x or 0), "y": int(y or 0)})
+            if record.get("asset_id") == asset_id and (tile := site(record)) is not None:
+                out.append({"id": record.get("id"), "name": record.get("name"), "x": tile[0], "y": tile[1]})
         if out:  # what one collection holds, the other never does — no need to walk 16k buildings to find an orc
             break
     if out:  # the lookup costs half a second cold, so a kind nobody built never pays for it

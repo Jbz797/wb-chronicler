@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
+    actor_xy,
     build_trait_ids,
     build_trait_list,
     building_tile,
@@ -35,7 +36,7 @@ _MASS_SCALE_UNIT = 0.1  # WB `Actor.getMassKG` weighs a hull as `mass_2 × (scal
 
 # Moored on a quay's own tile — rare, a hull riding two tiles offshore at best, and never necessarily its own: WB lets one tie up at a rival's dock.
 def _berth(boat: dict, ctx: dict) -> dict | None:
-    quay = ctx["buildings_by_tile"]().get((boat.get("x"), boat.get("y")))
+    quay = ctx["buildings_by_tile"]().get(actor_xy(boat))
     return {"asset_id": quay.get("asset_id"), "id": quay["id"]} if quay else None
 
 
@@ -85,6 +86,7 @@ def _build_metadata(boat: dict, ctx: dict) -> dict:
     home_id = boat.get("homeBuildingID")
     home = next((b for b in ctx["buildings"] if b.get("id") == home_id), None) if home_id else None
     level = max(int(boat.get("level") or 0), 1)  # WB scales from level 1 even where the field is absent, as `Actor.updateStats` does
+    x, y = actor_xy(boat)
     return {
         "age": entity_age(boat, ctx["world_time"]),
         "health": boat.get("health"),
@@ -97,8 +99,8 @@ def _build_metadata(boat: dict, ctx: dict) -> dict:
         "mass_kg": _mass_kg(boat),
         "renown": boat.get("renown", 0),
         "speed": load_data("boat-assets.json").get("kinds", {}).get(_kind_of(boat), {}).get("speed", 0),  # the trade sets it: a skiff dawdles where a trader races
-        "x": boat.get("x"),
-        "y": boat.get("y"),
+        "x": x,
+        "y": y,
     }
 
 

@@ -15,6 +15,7 @@ from grid import LazyTileGrid, listed_tiles, tile_biome, tile_elevation, tile_ki
 from islands import compute_islands_cached
 from shared import (
     ZONE_TILES,
+    actor_xy,
     building_tile,
     city_centre,
     civic_building_ids,
@@ -65,8 +66,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 
     if "actors" in sections:
         for a in save.get("actors_data") or []:
-            ax, ay = a.get("x"), a.get("y")
-            if ax is not None and ay is not None and (pos := (int(ax), int(ay))) in wanted:
+            if (pos := actor_xy(a)) in wanted:
                 ctx["actors_by_pos"][pos].append(a)
 
     if "ground" in sections:

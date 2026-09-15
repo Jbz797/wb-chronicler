@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 14/09/26 01:37</p>
+<p class="metadata">Date de mise à jour : 14/09/26 16:36</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -47,6 +47,7 @@ Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie 
 
 ### Formes et mesures :
 
+- `actor … metadata` : `can_reproduce` ne vaut vrai qu'à quatre conditions — l'âge de reproduction de la lignée, aucun trait `infertile`, moins d'enfants que `max_children`, et, pour un corps qui mange, une `nutrition` d'au moins 50. Un `false` après un `true` ne dit donc pas l'infertilité : une réserve entamée suffit à le basculer.
 - `actor … stats` rend des valeurs **déjà agrégées** — tout y est, du socle de l'espèce aux bonus de niveau : n'ajoute rien par-dessus. Celles d'un mineur sont **bridées** : `damage_max` et `health_max` valent la moitié tant qu'`adult_age` n'est pas atteint, seuil que `subspecies … stats` donne pour toute la lignée, avec `breeding_age`. La valeur adulte ne s'en déduit pas pour autant : la base de la lignée n'est pas celle du corps.
 - `actor … surroundings`, à vol d'oiseau : `intimate` ≤ 25 tuiles, `common` ≤ 120. `sapient` n'y paraît que vrai, `island_id` que sur une autre terre, `adrift` hors terre comptée.
 - `island_id` **absent** couvre deux cas opposés : un îlot trop petit pour compter, ou l'eau. `tiles/info.py <x,y> tile_info` tranche — `kind: water` pour le second.
