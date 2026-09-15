@@ -89,7 +89,7 @@
       <app-ranked-stat source="city" stat="goods" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="inventoryTitle">
-      <app-inventory [resources]="c.inventory" />
+      <app-inventory [resources]="c.inventory ?? {}" />
     </nz-descriptions-item>
   </nz-descriptions>
 

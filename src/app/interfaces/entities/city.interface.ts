@@ -7,7 +7,7 @@ export interface City {
   breakdown: PopulationBreakdown;
   gear: EquipmentStock;
   identity: CityIdentity;
-  inventory: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
+  inventory?: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
   leaders?: Leaders;
   loyalty: CityLoyalty;
   metadata: CityMetadata;
