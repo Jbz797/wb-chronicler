@@ -18,32 +18,31 @@
       </nz-descriptions-item>
     }
 
-    <nz-descriptions-item [nzTitle]="loyaltyTitle">
+    <nz-descriptions-item *appNonZero="c.loyalty.total" [nzTitle]="loyaltyTitle">
       <app-ranked-stat source="city" stat="loyalty" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="c.metadata.score_rank" [nzTitle]="scoreRankTitle">
       <app-ranked-stat source="city" stat="score_rank" [inverted]="true" [ordinal]="true" [showRank]="false" />
     </nz-descriptions-item>
-    <!-- `*appPresent` where the other panels use `@if`: this template sits at its complexity cap, and `|| undefined` hides age and renown at 0 all the same. -->
-    <nz-descriptions-item *appPresent="c.metadata.age || undefined" [nzTitle]="ageTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.age" [nzTitle]="ageTitle">
       <app-ranked-stat source="city" stat="age" suffix="ui_years" [hideDelta]="true" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="c.metadata.renown || undefined" [nzTitle]="renownTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.renown" [nzTitle]="renownTitle">
       <app-ranked-stat source="city" stat="renown" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="populationTitle">
+    <nz-descriptions-item *appNonZero="c.population.total" [nzTitle]="populationTitle">
       <app-ranked-stat source="city" stat="population" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="c.population.warriors" [nzTitle]="warriorsTitle">
+    <nz-descriptions-item *appNonZero="c.population.warriors" [nzTitle]="warriorsTitle">
       <app-ranked-stat source="city" stat="warriors" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="deathsTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.deaths" [nzTitle]="deathsTitle">
       <app-ranked-stat source="city" stat="deaths" [inverted]="true" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="killsTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.kills" [nzTitle]="killsTitle">
       <app-ranked-stat source="city" stat="kills" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="c.population.renown_total" [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appNonZero="c.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="city" stat="renown_total" />
     </nz-descriptions-item>
     <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
@@ -65,31 +64,31 @@
         <app-ranked-stat source="city" [stat]="o.stat" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item [nzTitle]="buildingsTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.buildings" [nzTitle]="buildingsTitle">
       <app-ranked-stat source="city" stat="buildings" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="housesTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.houses" [nzTitle]="housesTitle">
       <app-ranked-stat source="city" stat="houses" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="c.population.housed_pct" [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appNonZero="c.population.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="city" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="territoryTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.territory" [nzTitle]="territoryTitle">
       <app-ranked-stat source="city" stat="territory" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="foodTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.food" [nzTitle]="foodTitle">
       <app-ranked-stat source="city" stat="food" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="c.population.food_per_capita" [nzTitle]="foodPerCapitaTitle">
+    <nz-descriptions-item *appNonZero="c.population.food_per_capita" [nzTitle]="foodPerCapitaTitle">
       <app-ranked-stat numberFormat="1.1-1" source="city" stat="food_per_capita" suffix="ui_per_inhabitant" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="c.population.fed_pct" [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appNonZero="c.population.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="city" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="goodsTitle">
+    <nz-descriptions-item *appNonZero="c.metadata.goods" [nzTitle]="goodsTitle">
       <app-ranked-stat source="city" stat="goods" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="inventoryTitle">
+    <nz-descriptions-item *appPresent="c.inventory" [nzTitle]="inventoryTitle">
       <app-inventory [resources]="c.inventory ?? {}" />
     </nz-descriptions-item>
   </nz-descriptions>
@@ -106,25 +105,25 @@
           —
         }
       </nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="armyAgeTitle">
+      <nz-descriptions-item *appNonZero="army.age" [nzTitle]="armyAgeTitle">
         <app-ranked-stat source="city" stat="army_age" suffix="ui_years" [hideDelta]="true" />
       </nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="armyMoneyTitle">
+      <nz-descriptions-item *appNonZero="army.money" [nzTitle]="armyMoneyTitle">
         <app-ranked-stat source="city" stat="army_money" />
       </nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="armyKillsTitle">
+      <nz-descriptions-item *appNonZero="army.kills" [nzTitle]="armyKillsTitle">
         <app-ranked-stat source="city" stat="army_kills" />
       </nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="armyDeathsTitle">
+      <nz-descriptions-item *appNonZero="army.deaths" [nzTitle]="armyDeathsTitle">
         <app-ranked-stat source="city" stat="army_deaths" [inverted]="true" />
       </nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="armyRenownTitle">
+      <nz-descriptions-item *appNonZero="army.renown" [nzTitle]="armyRenownTitle">
         <app-ranked-stat source="city" stat="army_renown" />
       </nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="armyMeleeTitle">
+      <nz-descriptions-item *appNonZero="army.melee" [nzTitle]="armyMeleeTitle">
         <app-ranked-stat source="city" stat="army_melee" />
       </nz-descriptions-item>
-      <nz-descriptions-item [nzTitle]="armyRangedTitle">
+      <nz-descriptions-item *appNonZero="army.ranged" [nzTitle]="armyRangedTitle">
         <app-ranked-stat source="city" stat="army_ranged" />
       </nz-descriptions-item>
     </nz-descriptions>

@@ -30,26 +30,25 @@
     <nz-descriptions-item *appPresent="k.metadata.score_rank" [nzTitle]="scoreRankTitle">
       <app-ranked-stat source="kingdom" stat="score_rank" [inverted]="true" [ordinal]="true" [showRank]="false" />
     </nz-descriptions-item>
-    <!-- `*appPresent` where the other panels use `@if`: this template sits at its complexity cap, and `|| undefined` hides age and renown at 0 all the same. -->
-    <nz-descriptions-item *appPresent="k.metadata.age || undefined" [nzTitle]="ageTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.age" [nzTitle]="ageTitle">
       <app-ranked-stat source="kingdom" stat="age" suffix="ui_years" [hideDelta]="true" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="k.metadata.renown || undefined" [nzTitle]="renownTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.renown" [nzTitle]="renownTitle">
       <app-ranked-stat source="kingdom" stat="renown" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="populationTitle">
+    <nz-descriptions-item *appNonZero="k.population.total" [nzTitle]="populationTitle">
       <app-ranked-stat source="kingdom" stat="population" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="k.population.warriors" [nzTitle]="warriorsTitle">
+    <nz-descriptions-item *appNonZero="k.population.warriors" [nzTitle]="warriorsTitle">
       <app-ranked-stat source="kingdom" stat="warriors" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="deathsTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.deaths" [nzTitle]="deathsTitle">
       <app-ranked-stat source="kingdom" stat="deaths" [inverted]="true" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="killsTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.kills" [nzTitle]="killsTitle">
       <app-ranked-stat source="kingdom" stat="kills" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="k.population.renown_total" [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appNonZero="k.population.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="kingdom" stat="renown_total" />
     </nz-descriptions-item>
     <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
@@ -71,34 +70,34 @@
         <app-ranked-stat source="kingdom" [stat]="o.stat" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item [nzTitle]="citiesTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.cities" [nzTitle]="citiesTitle">
       <app-ranked-stat source="kingdom" stat="cities" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="buildingsTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.buildings" [nzTitle]="buildingsTitle">
       <app-ranked-stat source="kingdom" stat="buildings" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="housesTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.houses" [nzTitle]="housesTitle">
       <app-ranked-stat source="kingdom" stat="houses" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="k.population.housed_pct" [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appNonZero="k.population.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="kingdom" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="territoryTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.territory" [nzTitle]="territoryTitle">
       <app-ranked-stat source="kingdom" stat="territory" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="boatsTitle">
+    <nz-descriptions-item *appNonZero="k.boats.total" [nzTitle]="boatsTitle">
       <app-ranked-stat source="kingdom" stat="boats" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="foodTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.food" [nzTitle]="foodTitle">
       <app-ranked-stat source="kingdom" stat="food" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="k.population.food_per_capita" [nzTitle]="foodPerCapitaTitle">
+    <nz-descriptions-item *appNonZero="k.population.food_per_capita" [nzTitle]="foodPerCapitaTitle">
       <app-ranked-stat numberFormat="1.1-1" source="kingdom" stat="food_per_capita" suffix="ui_per_inhabitant" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="k.population.fed_pct" [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appNonZero="k.population.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="kingdom" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="goodsTitle">
+    <nz-descriptions-item *appNonZero="k.metadata.goods" [nzTitle]="goodsTitle">
       <app-ranked-stat source="kingdom" stat="goods" />
     </nz-descriptions-item>
   </nz-descriptions>

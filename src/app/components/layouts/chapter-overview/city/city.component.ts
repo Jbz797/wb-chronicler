@@ -5,7 +5,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { BreakdownComponent, InventoryComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '..';
-import { PresentDirective } from '../../../../directives';
+import { NonZeroDirective, PresentDirective } from '../../../../directives';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 import { LeadersComponent } from '../leaders/leaders.component';
@@ -18,6 +18,7 @@ import { PersonTagComponent } from '../tags';
     InventoryComponent,
     LeadersComponent,
     NewBadgeComponent,
+    NonZeroDirective,
     NzDescriptionsModule,
     PersonTagComponent,
     PresentDirective,
@@ -58,12 +59,12 @@ export class CityComponent {
     ];
     return rows.filter(r => (p[r.stat] ?? 0) > 0);
   });
-  // Score dimensions with no other home in the panel — a row appears when Python emitted the field, so `attractivity` always shows, 0 and negatives included.
+  // Score dimensions with no other home in the panel — a row appears where the value is not 0, `attractivity` showing its negatives all the same.
   protected readonly scoreStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
     const c = this.city();
     if (!c) return [];
     const rows = [
-      { icon: 'assets/img/world/population.png', label: 'ui_attractiveness', shown: true, stat: 'attractivity' as const },
+      { icon: 'assets/img/world/population.png', label: 'ui_attractiveness', shown: c.metadata.attractivity !== 0, stat: 'attractivity' as const },
       { icon: 'assets/img/world/books_read.png', label: 'ui_reach', shown: (c.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
       { icon: 'assets/img/world/books.png', label: 'ui_books', shown: !!c.books.total, stat: 'books' as const },
       { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!c.gear.total, stat: 'gear' as const },
