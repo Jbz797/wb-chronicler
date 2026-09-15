@@ -731,7 +731,8 @@ def main(argv: list[str]) -> int:
     if "books" in sections:
         out["books"] = _build_books(city, ctx, requested)
     if "breakdown" in sections:
-        out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
+        # No `kingdoms`: a townsman answers to the town's own crown, which `metadata.kingdom` already names.
+        out["breakdown"] = {k: v for k, v in population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx).items() if k != "kingdoms"}
     if "gear" in sections:
         out["gear"] = _build_gear(city, ctx, requested)
     if "identity" in sections:

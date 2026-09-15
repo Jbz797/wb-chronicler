@@ -1,21 +1,23 @@
-<nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="'ui_wealth' | translate">
-  <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
-  @for (s of shares(); track $index) {
-    <ng-template #shareTitle>
-      <img [src]="`assets/img/${s.icon}.png`" />
-      <span>{{ s.label | translate }}</span>
-    </ng-template>
-    <nz-descriptions-item [nzTitle]="shareTitle">
-      <span nz-tooltip [nzTooltipTitle]="s.value === undefined ? '' : (s.value | exact)">{{ s.value === undefined ? '—' : (s.value | compact) }}</span>
+@if (total()) {
+  <nz-descriptions nzBordered nzSize="small" [nzColumn]="2" [nzTitle]="'ui_wealth' | translate">
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (s of shares(); track $index) {
+      <ng-template #shareTitle>
+        <img [src]="`assets/img/${s.icon}.png`" />
+        <span>{{ s.label | translate }}</span>
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="shareTitle">
+        <span nz-tooltip [nzTooltipTitle]="s.value === undefined ? '' : (s.value | exact)">{{ s.value === undefined ? '—' : (s.value | compact) }}</span>
+      </nz-descriptions-item>
+    }
+    <nz-descriptions-item [nzSpan]="2" [nzTitle]="totalTitle">
+      <app-ranked-stat stat="wealth" [source]="source()" />
     </nz-descriptions-item>
-  }
-  <nz-descriptions-item [nzSpan]="2" [nzTitle]="totalTitle">
-    <app-ranked-stat stat="wealth" [source]="source()" />
-  </nz-descriptions-item>
-  <nz-descriptions-item *appPresent="perCapita()" [nzSpan]="2" [nzTitle]="perCapitaTitle">
-    <app-ranked-stat numberFormat="1.1-1" stat="wealth_per_capita" suffix="ui_per_inhabitant" [source]="source()" />
-  </nz-descriptions-item>
-</nz-descriptions>
+    <nz-descriptions-item *appPresent="perCapita()" [nzSpan]="2" [nzTitle]="perCapitaTitle">
+      <app-ranked-stat numberFormat="1.1-1" stat="wealth_per_capita" suffix="ui_per_inhabitant" [source]="source()" />
+    </nz-descriptions-item>
+  </nz-descriptions>
+}
 
 <ng-template #perCapitaTitle>
   <img src="assets/img/stats/loot.png" />

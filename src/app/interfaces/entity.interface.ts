@@ -39,7 +39,7 @@ export interface PersonReference { id: number; name?: string }
 // Top-3 shares of a civ population per dimension (% of the whole). All optional: a tier drops the dimension it is defined by, which would read 100 %.
 export interface PopulationBreakdown {
   cultures?: { id: number; name: string; pct: number }[];
-  kingdoms?: { id: number; name: string; pct: number }[]; // absent on a realm, which would restate itself at 100 % — present on an alliance, which spans several
+  kingdoms?: { id: number; name: string; pct: number }[]; // absent on a realm and a town, both at 100 % one crown — present on an alliance, which spans several
   languages?: { id: number; name: string; pct: number }[];
   religions?: { id: number; name: string; pct: number }[];
   species?: { asset_id: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %

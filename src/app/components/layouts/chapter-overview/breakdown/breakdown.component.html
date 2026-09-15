@@ -1,5 +1,25 @@
 @if (breakdown()) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_make_up' | translate">
+    <!-- In the panels' own order below the favorite: its biology first, then its custom, tongue and creed, its crown last. -->
+    @if (tops().species; as s) {
+      <nz-descriptions-item [nzTitle]="speciesTitle">
+        <div class="composition-row">
+          <span>
+            <img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" />
+            {{ `species_${s.asset_id}` | translate }}
+          </span>
+          <span class="share">{{ share(s.pct) }}</span>
+        </div>
+      </nz-descriptions-item>
+    }
+    @if (tops().subspecies; as ss) {
+      <nz-descriptions-item [nzTitle]="subspeciesTitle">
+        <div class="composition-row">
+          <app-subspecies-tag [id]="ss.id" [name]="ss.name" />
+          <span class="share">{{ share(ss.pct) }}</span>
+        </div>
+      </nz-descriptions-item>
+    }
     @if (tops().culture; as c) {
       <nz-descriptions-item [nzTitle]="cultureTitle">
         <div class="composition-row">
@@ -21,25 +41,6 @@
         <div class="composition-row">
           <app-religion-tag [id]="r.id" [name]="r.name" />
           <span class="share">{{ share(r.pct) }}</span>
-        </div>
-      </nz-descriptions-item>
-    }
-    @if (tops().species; as s) {
-      <nz-descriptions-item [nzTitle]="speciesTitle">
-        <div class="composition-row">
-          <span>
-            <img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" />
-            {{ `species_${s.asset_id}` | translate }}
-          </span>
-          <span class="share">{{ share(s.pct) }}</span>
-        </div>
-      </nz-descriptions-item>
-    }
-    @if (tops().subspecies; as ss) {
-      <nz-descriptions-item [nzTitle]="subspeciesTitle">
-        <div class="composition-row">
-          <app-subspecies-tag [id]="ss.id" [name]="ss.name" />
-          <span class="share">{{ share(ss.pct) }}</span>
         </div>
       </nz-descriptions-item>
     }

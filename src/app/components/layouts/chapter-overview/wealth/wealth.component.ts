@@ -49,5 +49,10 @@ export class WealthComponent {
       { icon: 'world/gold', label: 'ui_ingots', value: k.metadata.gold },
     ];
   });
+  // `metadata.wealth`, the sum of the shares: at nought the table would print nothing but noughts, so it goes whole.
+  protected readonly total = computed(() => {
+    const meta = this._chronicler.currentChapter()?.meta;
+    return this.source() === 'city' ? meta?.city?.metadata.wealth : meta?.kingdom?.metadata.wealth;
+  });
 
 }
