@@ -456,7 +456,7 @@ def equipment_entry(item: dict, item_stats: dict, mod_stats: dict, world_time: f
         "durability": item.get("durability"),
         "from": item.get("from"),
         "id": item["id"],
-        "kills": item.get("kills", 0),
+        "kills": item.get("kills") or None,  # a nought goes with the blanks around it: `_strip_none` drops `None`, never 0
         "modifiers": mods,
         "name": item.get("name"),
         "rarity": equipment_rarity(mods),
