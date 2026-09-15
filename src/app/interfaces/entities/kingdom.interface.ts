@@ -5,13 +5,14 @@ export interface Kingdom {
   boats: HullCount;
   breakdown: PopulationBreakdown;
   cities?: KingdomCity[];
-  equipment: EquipmentStock;
+  gear: EquipmentStock;
   identity: KingdomIdentity;
   leaders?: Leaders;
   metadata: KingdomMetadata;
   population: KingdomPopulation;
   ranks?: KingdomRanks;
   relations?: KingdomRelation[];
+  rulers?: [PersonReference]; // the sitting king alone, absent at an interregnum
 }
 
 // This kingdom's diplomatic tie to one other — ally/enemy/neutral, with the net opinion score driving the tag colour.
@@ -30,7 +31,7 @@ interface KingdomIdentity {
   subspecies?: EntityReference;
 }
 
-// The kingdom's own attributes (age, capital, king/heir/founder, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
+// The kingdom's own attributes (age, capital, heir, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
 interface KingdomMetadata {
   age: number;
   births?: number;
@@ -49,7 +50,6 @@ interface KingdomMetadata {
   houses: number;
   id: number;
   kills: number;
-  king?: PersonReference & { money: number };
   name: string;
   renown: number;
   score_rank?: number; // absent where the realm stands alone — a place needs a rival
@@ -67,6 +67,7 @@ interface KingdomPopulation {
   infected?: number;
   nobles_money?: number;
   renown_total?: number;
+  ruler_money?: number; // the king's own purse, the third share of `money` beside the nobles' and the subjects'
   sick?: number;
   subjects_money?: number;
   total: number;
@@ -84,10 +85,10 @@ interface KingdomRanks {
   cities?: number;
   culture_traits?: number;
   deaths?: number;
-  equipment?: number;
   food?: number;
   food_per_capita?: number;
   foundings?: number;
+  gear?: number;
   goods?: number;
   housed_pct?: number;
   houses?: number;

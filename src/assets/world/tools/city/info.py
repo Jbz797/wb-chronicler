@@ -43,6 +43,7 @@ from shared import (
     meta_report,
     parse_sections,
     population_breakdown,
+    reigns,
     settlement_leaders,
     settlement_rank_getters,
     sex_label,
@@ -52,7 +53,7 @@ from shared import (
     zone_xy,
 )
 
-_ALL_SECTIONS = ("army", "books", "breakdown", "equipment", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks")
+_ALL_SECTIONS = ("army", "books", "breakdown", "gear", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks", "rulers")
 
 _CAPTURE_PROFESSIONS = frozenset({PROFESSION_KING, PROFESSION_LEADER, PROFESSION_WARRIOR})  # WB `ProfessionAsset.can_capture`
 
@@ -244,7 +245,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "children_by_id": cache(lambda: children_by_id(save)),  # living offspring per parent, world-wide: a resident's child may live elsewhere
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
-        # Racked gear per city, the six `item_storage_*` lists summed — a stat of its own, and what `_build_equipment` details on request.
+        # Racked gear per city, the six `item_storage_*` lists summed — a stat of its own, and what `_build_gear` details on request.
         "equipment_by_city": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in save.get("cities") or []},
         "families_by_city": families_by_city,
         "families_by_id": index_by_id(save.get("families") or []),
@@ -282,7 +283,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
 
 # The city's armoury: gear on its racks, worn by nobody. `total` is the ranked stat; `full` counts each rack, naming the section spells every piece out.
-def _build_equipment(city: dict, ctx: dict, requested: str | None) -> dict:
+def _build_gear(city: dict, ctx: dict, requested: str | None) -> dict:
     storage = city.get("equipment") or {}
     total = ctx["equipment_by_city"].get(city["id"], 0)
     if not wants_detail(requested, total):  # `full` keeps the chapter light: a count per stocked rack, the pieces themselves only when the section is named
@@ -377,12 +378,6 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "islands": islands,
         "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
-        # The sitting mayor (`None` between leaders). `money` = his own purse: inside `population.money`, netted out of `subjects_money` so both show apart.
-        **(
-            {"leader": {"id": lead["id"], "money": int(lead.get("money") or 0), "name": lead.get("name")}}
-            if (lead := ctx["actors_by_id"].get(city.get("leaderID")))
-            else {}
-        ),
         "name": city.get("name"),
         "renown": city.get("renown", 0),
         "report": report,  # what WB has the settlement say of itself
@@ -592,7 +587,7 @@ def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
             "attractivity": lambda c: dims["attractivity"].get(c.get("id"), 0),
             "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
             "books": lambda c: books[c.get("id")],
-            "equipment": lambda c: ctx["equipment_by_city"].get(c.get("id"), 0),
+            "gear": lambda c: ctx["equipment_by_city"].get(c.get("id"), 0),
             "loyalty": lambda c: loyalty.get(c.get("id"), 0),
         }
     )
@@ -737,8 +732,8 @@ def main(argv: list[str]) -> int:
         out["books"] = _build_books(city, ctx, requested)
     if "breakdown" in sections:
         out["breakdown"] = population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx)
-    if "equipment" in sections:
-        out["equipment"] = _build_equipment(city, ctx, requested)
+    if "gear" in sections:
+        out["gear"] = _build_gear(city, ctx, requested)
     if "identity" in sections:
         out["identity"] = _build_identity(city, ctx)
     if "inventory" in sections:
@@ -753,6 +748,8 @@ def main(argv: list[str]) -> int:
         out["population"] = settlement_population(city, ctx, "city")
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(city, ctx, save)
+    if "rulers" in sections:
+        out["rulers"] = reigns(city, ctx["actors_by_id"], requested)  # its mayors, the sitting one last; the founder, a first settler, stays in `identity`
 
     emit(out)
     return 0

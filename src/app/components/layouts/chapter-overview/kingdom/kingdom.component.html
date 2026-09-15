@@ -1,6 +1,6 @@
 @if (kingdom(); as k) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    @if (k.metadata.king; as king) {
+    @if (k.rulers?.[0]; as king) {
       <ng-template #kingTitle>
         <img src="assets/img/professions/king.png" />
         <span>{{ kingLabel() }}</span>

@@ -38,6 +38,7 @@ from shared import (
     meta_report,
     parse_sections,
     population_breakdown,
+    reigns,
     settlement_leaders,
     settlement_rank_getters,
     succession_heir,
@@ -46,7 +47,7 @@ from shared import (
     zone_xy,
 )
 
-_ALL_SECTIONS = ("boats", "breakdown", "cities", "equipment", "identity", "leaders", "metadata", "population", "ranks", "relations", "wars")
+_ALL_SECTIONS = ("boats", "breakdown", "cities", "gear", "identity", "leaders", "metadata", "population", "ranks", "relations", "rulers", "wars")
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
 _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
 
@@ -247,30 +248,19 @@ def _build_context(save: dict, save_path: Path) -> dict:
     }
 
 
-# The realm's armoury: its towns' racks summed. `total` is the ranked stat; per-city pieces are `city/info.py <id> equipment`, a crown holds nothing itself.
-def _build_equipment(kingdom: dict, ctx: dict) -> dict:
+# The realm's armoury: its towns' racks summed. `total` is the ranked stat; per-city pieces are `city/info.py <id> gear`, a crown holds nothing itself.
+def _build_gear(kingdom: dict, ctx: dict) -> dict:
     racks = ctx["racks_by_kingdom"][kingdom["id"]]
     return {"racks": {rack: n for rack, n in sorted(racks.items()) if n}, "total": sum(racks.values())}
 
 
-# Chronicler-only: what the crown officially is, not what its subjects are (`breakdown`). It all rides on the king: a succession can turn it over, conquest cannot.
+# Chronicler-only: what the crown officially is, not what its subjects are (`breakdown`). A succession can turn it over, conquest cannot; its founder heads `rulers`.
 def _build_identity(kingdom: dict, ctx: dict) -> dict:
-    # Founder = first ruler (`past_rulers[0]`) — dead ones left `actors_by_id`, so fall back to the name kept in the record.
-    founder = None
-    past_rulers = kingdom.get("past_rulers") or []
-
-    if past_rulers:
-        fid = past_rulers[0].get("id")
-        founder_actor = ctx["actors_by_id"].get(fid)
-        name = founder_actor.get("name") if founder_actor else past_rulers[0].get("name")
-        founder = {"id": fid, "name": name}
-
     culture = ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}
 
     return {
         "clan": entity_ref(kingdom.get("royal_clan_id"), ctx["clans_by_id"]),  # WB's `royal_clan_id` — the reigning house
         "culture": entity_ref(kingdom.get("id_culture"), ctx["cultures_by_id"]),
-        "founder": founder,
         "language": entity_ref(kingdom.get("id_language"), ctx["languages_by_id"]),
         "motto": kingdom.get("motto"),  # what the crown swore by — its own words, worth quoting verbatim, as a pact's are
         "religion": entity_ref(kingdom.get("id_religion"), ctx["religions_by_id"]),
@@ -300,14 +290,6 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     centres = ((zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2) for zx, zy in ctx["zones_by_kingdom"].get(kid, []))
     islands = sorted({iid for pos in centres if (iid := island_lookup.get(pos)) is not None})
 
-    # Reigning king (`kingID`), emitted as `{id, name}` (+ his purse). `None` at interregnum.
-    king_actor = ctx["actors_by_id"].get(kingdom.get("kingID"))
-    king = None
-
-    if king_actor:
-        # `money` = his own purse: inside `population.money`, netted out of `subjects_money` so both show apart.
-        king = {"id": king_actor.get("id"), "money": int(king_actor.get("money") or 0), "name": king_actor.get("name")}
-
     heir = _resolve_heir(kingdom, ctx)
     pact = next((a for a in save.get("alliances") or [] if kid in (a.get("kingdoms") or [])), None)  # a realm sits in one pact at most
 
@@ -335,7 +317,6 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "id": kid,
         "islands": islands,
         "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
-        "king": king,
         "name": kingdom.get("name"),
         **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
         "renown": kingdom.get("renown", 0),
@@ -556,13 +537,10 @@ def _compute_opinion(main: dict, side: dict, target: dict, ctx: dict, relation: 
     return {"top_drivers": dict(sorted([kv for kv in (top_pos, top_neg) if kv is not None])), "total": sum(mod.values())}
 
 
-# City-tier getters + the kingdom-only metrics (city count, health tallies, the wealth split by rank). Top 3 via `competition_ranks`, like every ranks section.
+# City-tier getters + the kingdom-only metrics (cities, births, fleets, the score's dimensions). Top 3 via `competition_ranks`, like every ranks section.
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
     books = ctx["books_by_kingdom"]()  # resolved once here rather than inside the getter, which `competition_ranks` fires per kingdom
     dims = ctx["score_dimensions"]()
-
-    def king_money(k: dict) -> int:
-        return int((ctx["actors_by_id"].get(k.get("kingID")) or {}).get("money") or 0)
 
     def populations(k: dict) -> int:
         return ctx["populations_by_kingdom"].get(k.get("id"), 0)
@@ -578,11 +556,10 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
             "books": lambda k: books[k.get("id")],
             "cities": lambda k: ctx["cities_by_kingdom"].get(k.get("id"), 0),
             "culture_traits": lambda k: dims["culture_traits"].get(k.get("id"), 0),
-            "equipment": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
             "foundings": lambda k: dims["foundings"].get(k.get("id"), 0),
+            "gear": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
             # How dearly a crown sells its dead. A realm that lost nobody is left out — a bare kill count would win the podium on 0 losses.
             "kills_per_death": lambda k: int(k.get("total_kills") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
-            "king_money": king_money,
             "population_per_city": lambda k: p / c if (c := ctx["cities_by_kingdom"].get(k.get("id"), 0)) and (p := populations(k)) >= MIN_PER_CAPITA_UNITS else 0.0,
             "territory": lambda k: ctx["territory_by_kingdom"].get(k.get("id"), 0),  # A kingdom record has no `zones` — the tally sums its cities'.
             "wars_won": lambda k: dims["wars_won"].get(k.get("id"), 0),
@@ -683,8 +660,8 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = {k: v for k, v in population_breakdown(ctx["actors_by_kingdom"].get(kingdom_id, []), ctx).items() if k != "kingdoms"}
     if "cities" in sections:
         out["cities"] = _build_cities(kingdom, ctx)
-    if "equipment" in sections:
-        out["equipment"] = _build_equipment(kingdom, ctx)
+    if "gear" in sections:
+        out["gear"] = _build_gear(kingdom, ctx)
     if "identity" in sections:
         out["identity"] = _build_identity(kingdom, ctx)
     if "leaders" in sections:
@@ -698,6 +675,8 @@ def main(argv: list[str]) -> int:
     if "relations" in sections:
         # Naming a section is asking for it in depth, so its opinions come with the full ledger; `full` sweeps everything and keeps the two-line summary.
         out["relations"] = _build_relations(kingdom, ctx, save, detailed=requested not in (None, "full"))
+    if "rulers" in sections:
+        out["rulers"] = reigns(kingdom, ctx["actors_by_id"], requested)  # the sitting king is its last entry, the founder its first
     if "wars" in sections:
         out["wars"] = _build_wars(kingdom, save)
 

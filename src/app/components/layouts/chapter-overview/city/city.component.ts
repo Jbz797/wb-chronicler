@@ -42,10 +42,10 @@ export class CityComponent {
     return current.heir.id !== previous.heir.id;
   });
   protected readonly isNewLeader = computed(() => {
-    const current = this.city()?.metadata;
-    const previous = this._chronicler.previousChapter()?.meta.city?.metadata;
-    if (!current?.leader || !previous?.leader || current.id !== previous.id) return false;
-    return current.leader.id !== previous.leader.id;
+    const current = this.city();
+    const previous = this._chronicler.previousChapter()?.meta.city;
+    if (!current?.rulers || !previous?.rulers || current.metadata.id !== previous.metadata.id) return false;
+    return current.rulers[0].id !== previous.rulers[0].id;
   });
   // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
   protected readonly optionalStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
@@ -66,7 +66,7 @@ export class CityComponent {
       { icon: 'assets/img/world/population.png', label: 'ui_attractiveness', shown: true, stat: 'attractivity' as const },
       { icon: 'assets/img/world/books_read.png', label: 'ui_reach', shown: (c.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
       { icon: 'assets/img/world/books.png', label: 'ui_books', shown: !!c.books.total, stat: 'books' as const },
-      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!c.equipment.total, stat: 'equipment' as const },
+      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!c.gear.total, stat: 'gear' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));
   });

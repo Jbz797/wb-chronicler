@@ -5,7 +5,7 @@ export interface City {
   army?: CityArmy;
   books: BookShelf;
   breakdown: PopulationBreakdown;
-  equipment: EquipmentStock;
+  gear: EquipmentStock;
   identity: CityIdentity;
   inventory: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
   leaders?: Leaders;
@@ -13,6 +13,7 @@ export interface City {
   metadata: CityMetadata;
   population: CityPopulation;
   ranks?: CityRanks;
+  rulers?: [PersonReference]; // the sitting mayor alone, absent between two
 }
 
 // The city's whole military, absent where there is none. `captain_years`, `kills_per_death` and `total_captains` ship in the JSON but stay chronicler-only.
@@ -41,7 +42,7 @@ interface CityIdentity {
 // How firmly the city holds to its crown: `new.py` keeps only the `total` for the reader, `city/info.py <id> loyalty` itemises the modifiers for the chronicler.
 interface CityLoyalty { total: number }
 
-// The city's own attributes (age, leader/founder, stocks…) — `population` aggregates its inhabitants instead. Its culture/language/religion ship chronicler-only.
+// The city's own attributes (age, heir, stocks…) — `population` aggregates its inhabitants instead. Its culture/language/religion ship chronicler-only.
 interface CityMetadata {
   age: number;
   attractivity: number; // `migrated - left`, emitted whatever its sign — 0 and negatives are readings too
@@ -58,7 +59,6 @@ interface CityMetadata {
   id: number;
   kills: number;
   kingdom?: EntityReference;
-  leader?: PersonReference & { money: number };
   name: string;
   renown: number;
   score_rank?: number; // absent where the town stands alone — a place needs a rival
@@ -76,6 +76,7 @@ interface CityPopulation {
   money?: number;
   nobles_money?: number;
   renown_total?: number;
+  ruler_money?: number; // the mayor's own purse, the third share of `money` beside the nobles' and the subjects'
   sick?: number;
   subjects_money?: number;
   total: number;
@@ -95,9 +96,9 @@ interface CityRanks {
   books?: number;
   buildings?: number;
   deaths?: number;
-  equipment?: number;
   food?: number;
   food_per_capita?: number;
+  gear?: number;
   goods?: number;
   housed_pct?: number;
   houses?: number;

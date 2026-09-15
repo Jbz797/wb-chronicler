@@ -48,9 +48,9 @@ export type RankedStatKind = 'age' | 'armor'
   | 'army_age' | 'army_deaths' | 'army_kills' | 'army_melee' | 'army_money' | 'army_ranged' | 'army_renown'
   | 'attack_speed' | 'attractivity' | 'births' | 'boats' | 'book_reach' | 'books' | 'books_written' | 'buildings' | 'children' | 'cities' | 'converted'
   | 'critical_chance' | 'culture_traits' | 'damage_max' | 'deaths'
-  | 'diplomacy' | 'equipment' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
-  | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'lost' | 'loyalty'
-  | 'mana' | 'members' | 'money'
+  | 'diplomacy' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
+  | 'gear' | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'lost'
+  | 'loyalty' | 'mana' | 'members' | 'money'
   | 'native' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'territory'
   | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
 

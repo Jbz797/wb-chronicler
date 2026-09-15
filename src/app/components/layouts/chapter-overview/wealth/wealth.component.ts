@@ -33,7 +33,7 @@ export class WealthComponent {
       const c = meta?.city;
       if (!c) return [];
       return [
-        { icon: 'professions/leader', label: 'ui_ruler', value: c.metadata.leader?.money },
+        { icon: 'professions/leader', label: 'ui_ruler', value: c.population.ruler_money },
         { icon: 'world/nobles', label: 'ui_nobles', value: c.population.nobles_money },
         { icon: 'world/population', label: 'ui_inhabitants', value: c.population.subjects_money },
         { icon: 'world/gold', label: 'ui_ingots', value: c.metadata.gold },
@@ -43,7 +43,7 @@ export class WealthComponent {
     if (!k) return [];
     // `undefined` renders as `—`: on chapters predating the split the share is unknown, not zero (those coins fall back into the subjects' cell).
     return [
-      { icon: 'professions/king', label: 'ui_lord', value: k.metadata.king?.money },
+      { icon: 'professions/king', label: 'ui_lord', value: k.population.ruler_money },
       { icon: 'world/nobles', label: 'ui_nobles', value: k.population.nobles_money },
       { icon: 'world/population', label: 'ui_inhabitants', value: k.population.subjects_money },
       { icon: 'world/gold', label: 'ui_ingots', value: k.metadata.gold },

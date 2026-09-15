@@ -831,6 +831,7 @@ def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
 
     population = population_of(ctx[f"actors_by_{tier}"].get(entity_id, []), ctx)
     money, nobles_money, total = population.get("money", 0), tally("nobles_money"), population["total"]  # `money` drops at nought, `total` never does
+    ruler_money = head_money(entity, ctx, tier)
 
     # What a roof over stores and a head on the throne add to what the people alone say — a biology or a band has neither, and reads `population_of` bare.
     return dict(
@@ -839,8 +840,9 @@ def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
                 **population,
                 **({"food_per_capita": round(tally("food") / total, 1)} if total >= MIN_PER_CAPITA_UNITS else {}),  # eatable stock ÷ population
                 **({"nobles": n} if (n := tally("nobles")) else {}),
-                **({"nobles_money": nobles_money} if nobles_money else {}),  # the other nobles' coins, the head excluded — his purse sits in `metadata`
-                **({"subjects_money": n} if (n := money - head_money(entity, ctx, tier) - nobles_money) else {}),  # commoners' coins, head and nobility aside
+                **({"nobles_money": nobles_money} if nobles_money else {}),  # the other nobles' coins, the head's own being `ruler_money`
+                **({"ruler_money": ruler_money} if ruler_money else {}),  # the head's own purse — with `nobles_money` and `subjects_money`, all of `money`
+                **({"subjects_money": n} if (n := money - ruler_money - nobles_money) else {}),  # commoners' coins, head and nobility aside
                 **({"wealth_per_capita": round((money + tally("gold")) / total, 1)} if total >= MIN_PER_CAPITA_UNITS else {}),  # `metadata.wealth` ÷ population
             }.items()
         )

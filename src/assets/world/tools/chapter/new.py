@@ -97,17 +97,17 @@ _AUDIT = {
             "gold",
             "kills_per_capita",
             "kills_per_death",
-            "king_money",
             "loot",
             "nobles",
             "nobles_money",
             "renown_per_capita",
+            "ruler_money",
             "traits",
         }
     ),
     "ranks_in_species": frozenset({"birth_rate", "damage_min", "loot"}),
     "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
-    "snapshot": frozenset({"equipment"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
+    "snapshot": frozenset({"gear"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
     "stats": frozenset({"birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities"}),
 }
 
@@ -353,10 +353,11 @@ def _fold_boat_detail(boat: dict) -> None:
         metadata.pop(key, None)
 
 
-# Drops the loyalty summary and both stock lists, keeping their `total` — the panels print that alone, the sections still itemising each modifier and piece.
+# Drops the loyalty summary and both stock lists, keeping their `total`, and the mayors past — the panels print those alone, the sections still itemising the rest.
 def _fold_city_detail(city: dict) -> None:
     (city.get("loyalty") or {}).pop("top_drivers", None)
-    _fold_total(city, "books", "equipment")
+    _fold_rulers(city)
+    _fold_total(city, "books", "gear")
 
 
 # Cut to what « Activité récente » charts — WB tallies a good deal more, and `world/info.py <chapter> cumulative` still hands the chronicler every one of them.
@@ -365,9 +366,9 @@ def _fold_cumulative(world: dict) -> None:
         world["cumulative"] = {key: value for key, value in block.items() if key in _UI_CUMULATIVE}
 
 
-# Folds the favorite's heavy blocks: his traits, his gear, who stands around him and the scheme's detail all go — `actor/info.py <id>` still hands each one whole.
+# Folds the favorite's heavy blocks: their traits, their gear, who stands around them and the scheme's detail all go — `actor/info.py <id>` still hands each whole.
 def _fold_favorite_detail(favorite: dict) -> None:
-    for section in ("equipment", "surroundings"):
+    for section in ("gear", "surroundings"):
         favorite.pop(section, None)
     # The panel prints the type, the target and the gauge: WB's English is the chronicler's, and so is how long the scheme has run.
     plot = favorite.get("plot") or {}
@@ -377,11 +378,13 @@ def _fold_favorite_detail(favorite: dict) -> None:
     favorite.pop("traits", None)  # the chronicler's summary takes its place, carried over or owed
 
 
-# Drops every `opinion.top_drivers`: the table prints the standing alone, and `kingdom/info.py <id> relations` still gives the chronicler the whole ledger.
+# Drops every `opinion.top_drivers` and the kings past: the table prints the standing, the panel the sitting king and the founder, the sections the rest.
 def _fold_kingdom_detail(kingdom: dict) -> None:
     for relation in kingdom.get("relations") or []:
         (relation.get("opinion") or {}).pop("top_drivers", None)
-    _fold_total(kingdom, "equipment")
+    if founder := _fold_rulers(kingdom):
+        kingdom.setdefault("identity", {})["founder"] = founder
+    _fold_total(kingdom, "gear")
 
 
 # A tier's podium cut to the six rows its panel names, each to its first holder — the ones it never prints outweighing the ones it does.
@@ -396,6 +399,16 @@ def _fold_leaders(entity: dict) -> None:
 def _fold_population(entity: dict) -> None:
     if isinstance(block := entity.get("population"), dict):
         entity["population"] = {k: v for k, v in block.items() if k not in _DEMOGRAPHY}
+
+
+# The sitting ruler alone and undated, the panels naming no other. Returns the first reign's `{id, name}`, a crown's founder — a town's is its first settler.
+def _fold_rulers(entity: dict) -> dict | None:
+    block = entity.pop("rulers", None) or []
+    if not (line := [block["first"], *block["latest"]] if isinstance(block, dict) else block):
+        return None
+    if "to" not in line[-1]:
+        entity["rulers"] = [{key: line[-1][key] for key in ("id", "name") if key in line[-1]}]
+    return {key: line[0][key] for key in ("id", "name") if key in line[0]}
 
 
 # `stats` goes here rather than through `_CHRONICLER_ONLY`, which would take the favorite's own block along with it.

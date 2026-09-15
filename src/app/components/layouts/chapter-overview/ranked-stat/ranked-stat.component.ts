@@ -105,7 +105,7 @@ export class RankedStatComponent {
 
       if (key === 'score_rank') return this._snap(k.metadata.score_rank ?? 0, undefined); // the value IS the placement — no podium rank of its own
       if (key === 'boats') return this._snap(k.boats.total, k.ranks?.boats); // its own block: the hulls ride alongside the total
-      if (key === 'equipment') return this._snap(k.equipment.total, k.ranks?.equipment); // its own block: the racks ride alongside the total
+      if (key === 'gear') return this._snap(k.gear.total, k.ranks?.gear); // its own block: the racks ride alongside the total
       if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
 
       // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
@@ -119,13 +119,13 @@ export class RankedStatComponent {
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
   }
 
-  // Per-kind accessor for a city — `army`, `books`, `equipment` and `loyalty` each own a block, score dimensions sit in `metadata`, the rest in `population`.
+  // Per-kind accessor for a city — `army`, `books`, `gear` and `loyalty` each own a block, score dimensions sit in `metadata`, the rest in `population`.
   private _resolveCity(c: NonNullable<ChapterMeta['city']>): RankedStatSnapshot {
     const key = this.stat();
 
     if (key === 'score_rank') return this._snap(c.metadata.score_rank ?? 0, undefined); // the value IS the placement — no podium rank of its own
     if (key === 'books') return this._snap(c.books.total, c.ranks?.books); // its own block: the volumes ride alongside the total
-    if (key === 'equipment') return this._snap(c.equipment.total, c.ranks?.equipment); // its own block: the racks ride alongside the total
+    if (key === 'gear') return this._snap(c.gear.total, c.ranks?.gear); // its own block: the racks ride alongside the total
     if (key === 'loyalty') return this._snap(c.loyalty.total, c.ranks?.loyalty); // its own block, not `metadata`: the modifiers ride alongside the total
     if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
 
@@ -138,7 +138,7 @@ export class RankedStatComponent {
     // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
     if (CITY_META_STATS.has(key)) return this._snap(c.metadata[key as CityMetaStat] ?? 0, c.ranks?.[key as CityMetaStat]);
 
-    // The money ranks stay chronicler-only on both tiers, so a `nobles_money`/`subjects_money` lookup simply misses — the value still reads from `population`.
+    // The money ranks stay chronicler-only on both tiers, so a money share's lookup simply misses — the value still reads from `population`.
     const pk = key as PopulationStat;
     const ranks = c.ranks as Record<string, number | undefined> | undefined;
     return this._snap(c.population[pk] ?? 0, ranks?.[pk]);

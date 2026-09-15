@@ -55,6 +55,7 @@ _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild 
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
+_MAX_REIGNS_SHOWN = 3  # a succession in `full`: the first reign and the two latest, a lighter cut than a roster's since its summary still names them
 
 _META_CONDITIONS = {  # WB `MetaTextReportLibrary`, one lambda per verdict, ported field for field — ratios are shares of the living, stocks raw amounts.
     "food_none": lambda s: not s["food"],
@@ -233,6 +234,11 @@ def _strip_none(value):
 @cache
 def _tagged_traits(tag: str) -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if tag in (spec.get("tags") or []))
+
+
+# A `world_time` as the chronicle dates it, both counts 1-based as WB displays them: `t = 1181` is the ninth month of year 20.
+def _world_date(world_time: float) -> dict:
+    return {"month": int(world_time % UNITS_PER_YEAR // UNITS_PER_MONTH) + 1, "year": int(world_time // UNITS_PER_YEAR) + 1}
 
 
 # Orphan slots go — a chapter's save never changes, where the live one mints a fresh key at every in-game save. `_CACHE_KEEP` then caps what survives, newest first.
@@ -489,7 +495,7 @@ def has_emotions(actor: dict, subspecies_by_id: dict) -> bool:
     return _has_meta_tag(subspecies_by_id.get(actor.get("subspecies")), "has_emotions")
 
 
-# The office-holder's own purse — a mayor's or a king's. Netted out of `subjects_money` on both tiers, and reported on its own in `metadata`.
+# The office-holder's own purse — a mayor's or a king's. Netted out of `subjects_money` on both tiers, and reported on its own as `ruler_money`.
 def head_money(entity: dict, ctx: dict, tier: str) -> int:
     return int((ctx["actors_by_id"].get(entity.get(_HEAD_FIELD[tier])) or {}).get("money") or 0)
 
@@ -709,6 +715,20 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     }
 
 
+# A crown's or a town's succession off WB's `past_rulers`, oldest first, dated as the game shows — the sitting reign open-ended, its purse `population.ruler_money`.
+def reigns(record: dict, actors_by_id: dict, requested: str | None) -> list[dict] | dict:
+    out = []
+    for past in record.get("past_rulers") or []:
+        live = actors_by_id.get(past.get("id"))
+        reign = {"from": _world_date(past.get("timestamp_ago") or 0), "id": past.get("id"), "name": (live or {}).get("name") or past.get("name")}
+        if (end := past.get("timestamp_end")) is not None:
+            reign["to"] = _world_date(end)
+        out.append(reign)
+    if requested not in (None, "full") or len(out) <= _MAX_REIGNS_SHOWN:
+        return out
+    return light({"first": out[0], "latest": out[-2:], "total": len(out)})
+
+
 # `json.dumps(indent=2)` that inlines whatever fits `_INLINE_WIDTH`. `used` = what the caller already spent (key + comma), so the test measures the real line.
 def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str:
     if not isinstance(value, (dict, list)) or not value:
@@ -821,11 +841,12 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "kills_per_capita": lambda r: r.get("total_kills", 0) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
         "money": money,
         "nobles": tally("nobles"),
-        "nobles_money": nobles_money,  # the head's own purse excluded — it is reported on its own in `metadata`
+        "nobles_money": nobles_money,  # the head's own purse excluded — it is reported on its own as `ruler_money`
         "population": populations,
         "renown": lambda r: r.get("renown", 0),
         "renown_per_capita": lambda r: r.get("renown", 0) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": tally("renown"),
+        "ruler_money": lambda r: head_money(r, ctx, tier),
         "sick": tally("sick"),
         "subjects_money": lambda r: money(r) - head_money(r, ctx, tier) - nobles_money(r),  # commoners' coins: `money` minus the head and the nobility
         "territory": lambda r: len(r.get("zones") or []),

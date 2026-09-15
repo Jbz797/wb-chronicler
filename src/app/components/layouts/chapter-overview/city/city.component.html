@@ -1,6 +1,6 @@
 @if (city(); as c) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    @if (c.metadata.leader; as leader) {
+    @if (c.rulers?.[0]; as leader) {
       <nz-descriptions-item [nzTitle]="leaderTitle">
         <app-person-tag [id]="leader.id" [name]="leader.name" />
       </nz-descriptions-item>

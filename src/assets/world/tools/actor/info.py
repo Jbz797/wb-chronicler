@@ -45,7 +45,7 @@ from shared import (
     wants_detail,
 )
 
-_ALL_SECTIONS = ("companions", "equipment", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
+_ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
 _CIRCLES = (("intimate", 25), ("common", 120))  # chronicler.md's tiers by distance, in tiles — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
@@ -135,7 +135,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
 
 # Each carried item with provenance (`by`/`from`), wear, kill count and its aggregated stats — sorted by item id for stable output.
-def _build_equipment_list(actor: dict, ctx: dict) -> list:
+def _build_gear(actor: dict, ctx: dict) -> list:
     item_stats = ctx["equipment"]["items"]
     mod_stats = ctx["equipment"]["modifiers"]
     world_time = ctx["world_time"]
@@ -442,8 +442,8 @@ def main(argv: list[str]) -> int:
     if "companions" in sections:  # both attachments as plain refs — `emit` drops whichever is unset or dead, and the section itself when the actor has neither
         by_id = ctx["actors_by_id"]
         out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": entity_ref(actor.get("lover"), by_id)}
-    if "equipment" in sections:
-        out["equipment"] = _build_equipment_list(actor, ctx)
+    if "gear" in sections:
+        out["gear"] = _build_gear(actor, ctx)
     if "inventory" in sections:
         out["inventory"] = _build_inventory(actor)
     if "metadata" in sections:

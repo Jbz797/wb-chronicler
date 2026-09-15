@@ -47,14 +47,14 @@ export class KingdomComponent {
     return current.heir.id !== previous.heir.id;
   });
   protected readonly isNewKing = computed(() => {
-    const current = this.kingdom()?.metadata;
-    const previous = this._chronicler.previousChapter()?.meta.kingdom?.metadata;
-    if (!current?.king || !previous?.king || current.id !== previous.id) return false;
-    return current.king.id !== previous.king.id;
+    const current = this.kingdom();
+    const previous = this._chronicler.previousChapter()?.meta.kingdom;
+    if (!current?.rulers || !previous?.rulers || current.metadata.id !== previous.metadata.id) return false;
+    return current.rulers[0].id !== previous.rulers[0].id;
   });
-  // The « Reine/Roi » descriptions title — the registry holds the sex, `king` being emitted as `{id, name}`.
+  // The « Reine/Roi » descriptions title — the registry holds the sex, the sitting ruler being emitted as `{id, name}`.
   protected readonly kingLabel = computed(() => {
-    const sex = this._registry.persons()[String(this.kingdom()?.metadata.king?.id)]?.sex;
+    const sex = this._registry.persons()[String(this.kingdom()?.rulers?.[0].id)]?.sex;
     return LabelHelpers.gendered(this._translate, 'ui_monarch', sex);
   });
   // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
@@ -78,7 +78,7 @@ export class KingdomComponent {
       { icon: 'assets/img/world/books_read.png', label: 'ui_reach', shown: (k.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
       { icon: 'assets/img/world/books.png', label: 'ui_books', shown: (k.metadata.books ?? 0) > 0, stat: 'books' as const },
       { icon: 'assets/img/world/wars.png', label: 'ui_wars_won', shown: (k.metadata.wars_won ?? 0) > 0, stat: 'wars_won' as const },
-      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!k.equipment.total, stat: 'equipment' as const },
+      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!k.gear.total, stat: 'gear' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));
   });
