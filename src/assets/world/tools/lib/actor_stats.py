@@ -28,7 +28,6 @@ from shared import (
     PROFESSION_WARRIOR,
     SICK_TRAITS,
     UNITS_PER_MONTH,
-    UNITS_PER_YEAR,
     actor_age,
     has_emotions,
     head_money,
@@ -653,9 +652,10 @@ def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) ->
     _apply_multipliers(totals)
     _apply_damage_finalize(totals)
     _normalize(totals)  # and again at the very end, once the multipliers have had their say
-    age_units = ctx["world_time"] - float(actor.get("created_time") or 0)
-    lifespan_units = totals.get("lifespan", 0) * UNITS_PER_YEAR
-    _apply_offspring_age_scaling(totals, age_units / lifespan_units if lifespan_units else 0)
+    # WB `getAgeRatio` divides the age a fiche shows by the lifespan, and `calculateOffspringBasedOnAge` spares an immortal the scaling altogether.
+    if "immortal" not in (actor.get("saved_traits") or ()):
+        lifespan = totals.get("lifespan", 0)
+        _apply_offspring_age_scaling(totals, actor_age(actor, ctx["world_time"]) / lifespan if lifespan else 0)
     return totals
 
 

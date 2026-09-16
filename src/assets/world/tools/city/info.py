@@ -21,6 +21,7 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
+    actor_age,
     actor_xy,
     asset_set,
     books_held,
@@ -544,7 +545,7 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
     if king and (years := _years_since(kingdom.get("timestamp_king_rule") or 0, ctx)) >= 5:
         add("king_rule", min(years, 40))
     add("world_era", _ERA_LOYALTY.get(realm["world_age_id"], 0))
-    if king and entity_age(king, ctx["world_time"]) < 18:
+    if king and actor_age(king, ctx["world_time"]) < 18:  # a body, so the age WB judges it on — `entity_age` would keep the malus a year too long
         add("baby_king", -50)
 
     # 28-29. A crown whose sex its own official culture rejects — only where town and realm share that culture.

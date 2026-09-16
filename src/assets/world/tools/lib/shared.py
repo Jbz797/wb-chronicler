@@ -254,9 +254,9 @@ def _write_save_cache(cache_file: Path, save: dict) -> None:
         doomed.unlink(missing_ok=True)
 
 
-# Years lived, as the WB tooltip reads it: elapsed world time plus `age_overgrowth`, the years a soul carries past its species' cap.
+# The age a body reads in-game, and the one every threshold is judged on: the year it is in, so a 15-year-old in its 16th shows 16, plus its `age_overgrowth`.
 def actor_age(actor: dict, world_time: float) -> int:
-    return entity_age(actor, world_time) + (actor.get("age_overgrowth") or 0)
+    return entity_age(actor, world_time) + 1 + (actor.get("age_overgrowth") or 0)
 
 
 # A body's tile, soul or hull. WB omits a zero at save time, one coordinate at a time: a body on the first row writes an `x` and no `y`, as a zone does.
@@ -433,9 +433,9 @@ def emit(out: dict) -> None:
     print(render(_strip_none(out)))
 
 
-# The year a record is in, as WB counts it and a city, a crown or a roof reads it: its 16th year shows 16, the way « year 31 » stands on 30 behind it.
+# Years a record has behind it — a city, a crown, a clan, a lineage, a roof. Only a body counts the year it is in, and `actor_age` adds that one.
 def entity_age(record: dict, world_time: float) -> int:
-    return int((world_time - float(record.get("created_time") or 0)) / UNITS_PER_YEAR) + 1
+    return int((world_time - float(record.get("created_time") or 0)) / UNITS_PER_YEAR)
 
 
 # `{id, name}` ref or `None` — the name feeds the narration, the id a follow-up query; an unnamed entity keeps the id and loses the key, having nothing to quote.
@@ -449,7 +449,7 @@ def equipment_entry(item: dict, item_stats: dict, mod_stats: dict, world_time: f
     mods = sorted(item.get("modifiers") or [])
     asset_id = item["asset_id"]
     return {
-        "age": entity_age(item, world_time) if "created_time" in item else None,  # WB dates a blade as it dates a body
+        "age": int((world_time - created) / UNITS_PER_YEAR) if (created := item.get("created_time")) is not None else None,  # WB: « created N years ago »
         "asset_id": asset_id,
         "by": item.get("by"),
         "durability": item.get("durability"),
