@@ -161,6 +161,17 @@ _EMPTIED = (
     "wars",
 )
 
+# What each event tag tells, printed in the recap: a tag written into `chapter.json` alone never reaches the one who owes the reader its story.
+_EVENT_NEWS = {
+    "FAVORITE_ABOARD": "the favorite is aboard a hull, at sea right now",
+    "FAVORITE_FIRST_KINGDOM": "the favorite answers to a crown for the first time",
+    "FAVORITE_KINGDOM_NEW_WAR": "the favorite's crown has entered a war since the chapter before",
+    "FAVORITE_PLOTTING": "the favorite leads a plot right now",
+    "NAVIGATION": "the world's first hull is afloat: navigation is discovered",
+    "NEW_AGE": "the world has turned to a new age",
+    "NEW_FAVORITE": "a new favorite has just been designated",
+}
+
 _FLAGS = frozenset({"--description", "--force", "--name", "--reset", "--reset-asked"})  # all `main` reads — silence on the rest would make a typo an answer
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # WB's cumulative SQLite, copied each chapter: the chronicler browses it, the recap prints its log
@@ -813,6 +824,9 @@ def main(argv: list[str]) -> int:
     print(f"  registries: {counts}")
     print(f"  favorite: {fav_name or 'none'}")
     print(f"  regime: {_regime(n, actors, fav_id, prev_fav_id)}")
+    events = [code for code in tags if code not in _ALERTS]  # the alerts say their own errand below; a code with no gloss yet still points somewhere
+    for code in events:
+        print(f"  ⚑ {code} — {_EVENT_NEWS.get(code, 'see tags.md')}")
     for _code, message in new_alerts:
         print(f"  ⚠ {message}")
     # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file.
@@ -833,6 +847,10 @@ def main(argv: list[str]) -> int:
     # Said where it is acted on, as the summaries' shape is: a descriptor is written once per favorite, and the ceiling only matters at that moment.
     if favorite and not favorite.get("descriptor"):
         print("  → the descriptor: 66 characters at the very most — a ceiling, not a target")
+
+    # Said here rather than in the manual, like the alerts' nature: only a chapter that raises an event needs telling that it must be told.
+    if events:
+        print("  → each ⚑ is an event this chapter owes its reader: tell it in the circle it belongs to")
 
     # Said here rather than in the manual: an alert reads as news unless its nature is said, and only a chapter that fires one needs to hear it.
     if new_alerts:
