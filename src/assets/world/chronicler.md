@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 16/09/26 13:25</p>
+<p class="metadata">Date de mise à jour : 16/09/26 14:04</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en mode observation (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -203,7 +203,7 @@ Chaque chapitre mélange le **récit** et les **données** — tableaux, chiffre
 
 ## Audit avant livraison
 
-Le brouillon écrit, tu lances dessus **3 sous-agents à la fois**, en ne donnant à chacun **que** sa tâche et le chemin du `chapter.md` — ni ton analyse, ni tes notes. Chacun **ne rend que des écarts** — ligne, citation, ce qu'il attendait, etc. — sans rien écrire : tu corriges chaque écart confirmé, puis cherches la même valeur ou le même mot ailleurs — épigraphe, puces, titre, `descriptor`, etc. Un passage réécrit plutôt que corrigé repasse l'audit, sur ce seul passage. En mode développeur (`settings.json.dev`), chaque ligne du compte rendu détaille ses écarts ; sinon, aucun commentaire.
+Le brouillon écrit, tu lances dessus **3 sous-agents à la fois**, en ne donnant à chacun **que** sa tâche et le chemin du `chapter.md` — ni ton analyse, ni tes notes. Chacun **ne rend que des écarts** — ligne, citation, ce qu'il attendait, etc. — sans rien écrire : tu corriges chaque écart confirmé, puis cherches la même valeur ou le même mot ailleurs — épigraphe, puces, titre, `descriptor`, etc. En mode développeur (`settings.json.dev`), chaque ligne du compte rendu détaille ses écarts ; sinon, aucun commentaire.
 
 ### Audit de conformité
 
@@ -211,7 +211,11 @@ Un sous-agent confronte le chapitre à ce document, **§ I à § V**, sous-secti
 
 ### Vérification des faits
 
-Deux sous-agents, **chacun de son côté**, recalculent chaque affirmation vérifiable — nombre, date, durée, comparaison au passé, absolu, mécanique, cause, etc. — avec les outils, sur la sauvegarde qu'elle vise (`C<n>` pour un « il y a N ans »), et joignent à chaque écart sa commande et la valeur vraie. Un écart qu'un seul des deux relève se vérifie quand même, l'outil tranche s'ils se contredisent, et le compte rendu d'audit gagne une ligne : `Vérification des faits : N écarts corrigés`.
+Deux sous-agents, **chacun de son côté**, recalculent chaque affirmation vérifiable — nombre, date, durée, comparaison au passé, absolu, mécanique, cause, etc. — avec les outils, sur la sauvegarde qu'elle vise (`C<n>` pour un « il y a N ans »), et joignent à chaque écart sa commande et la valeur vraie. Un écart qu'un seul des deux relève se vérifie quand même, l'outil tranche s'ils se contredisent, et le compte rendu d'audit gagne une ligne : `Vérification des faits : N écarts fix`.
+
+### Réaudit
+
+Tu corriges où la correction suffit, et ne réécris que ce qu'elle ne répare pas. Un passage réécrit repasse l'audit, les 3 sous-agents bornés à ses lignes, et le compte rendu gagne `Réaudit : N écarts fix`.
 
 ## Après livraison
 
