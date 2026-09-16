@@ -429,6 +429,11 @@ def competition_ranks(entity, peers: list, getters: dict) -> dict:
     return ranks
 
 
+# Deaths by cause as WB keeps them: a `deaths_<cause>` field each, none at nought, old age under `natural` — on clans, subspecies, towns and crowns alone.
+def death_causes(record: dict) -> dict[str, int]:
+    return {k.removeprefix("deaths_"): v for k, v in record.items() if k.startswith("deaths_") and v}
+
+
 def emit(out: dict) -> None:
     print(render(_strip_none(out)))
 

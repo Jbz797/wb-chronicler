@@ -26,6 +26,7 @@ from shared import (
     children_by_id,
     civic_building_ids,
     competition_ranks,
+    death_causes,
     emit,
     entity_age,
     entity_ref,
@@ -307,6 +308,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "cities": ctx["cities_by_kingdom"].get(kid, 0),
         **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
+        **({"deaths_by_cause": causes} if (causes := death_causes(kingdom)) else {}),  # chronicler-only: what its members died of, which `deaths` never says
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
         **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),

@@ -21,6 +21,7 @@ from shared import (
     build_trait_list,
     children_by_id,
     competition_ranks,
+    death_causes,
     emit,
     entity_age,
     entity_ref,
@@ -40,7 +41,6 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
-_DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field; the clan's set is narrower than the world's and names old age `natural`.
 _NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # `identity` reads the founding record, `traits` a data file
 
 
@@ -80,11 +80,10 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 
 # The clan's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
+    causes = death_causes(clan)
     cities = {c for a in members if (c := a.get("cityID"))}
     families = {f for a in members if (f := a.get("family"))}
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
-    # Each cause WB bothered to write, its prefix stripped; a clan that never lost anyone to fire carries no key rather than a zero.
-    causes = {k.removeprefix(_DEATH_PREFIX): v for k, v in clan.items() if k.startswith(_DEATH_PREFIX) and v}
     report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the band say of itself
 
     return {

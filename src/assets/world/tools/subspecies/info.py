@@ -23,6 +23,7 @@ from shared import (
     build_trait_list,
     children_by_id,
     competition_ranks,
+    death_causes,
     emit,
     entity_age,
     entity_ref,
@@ -43,7 +44,6 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("breakdown", "leaders", "members", "metadata", "population", "ranks", "species", "stats", "taxonomy", "traits")
-_DEATH_PREFIX = "deaths_"  # WB spells each cause as its own field, the same narrow set a clan carries — old age answers to `natural`.
 _EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "population": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
 _NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the subspecies record and its libraries
 _TAXONOMY_RANKS = ("kingdom", "phylum", "class", "order", "family", "genus")  # WB's own order, broadest first — `render` keeps it, not alphabetical.
@@ -73,7 +73,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 # The biology's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
     biome_id = (subspecies.get("biome_variant") or "").removeprefix("biome_")
-    causes = {k.removeprefix(_DEATH_PREFIX): v for k, v in subspecies.items() if k.startswith(_DEATH_PREFIX) and v}
+    causes = death_causes(subspecies)
     cities = {c for a in members if (c := a.get("cityID"))}
     families = {f for a in members if (f := a.get("family"))}
     island_of = ctx["island_lookup"]()
