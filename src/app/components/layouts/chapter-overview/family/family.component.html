@@ -43,7 +43,7 @@
       <!-- No podium: a lineage cannot hold more towns than it has souls, so the rank would restate `members` rather than measure any spread. -->
       <app-ranked-stat source="family" stat="cities" [showRank]="false" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="housesTitle">
+    <nz-descriptions-item *appNonZero="f.metadata.houses" [nzTitle]="housesTitle">
       <app-ranked-stat source="family" stat="houses" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="f.population.housed_pct" [nzTitle]="housedTitle">
