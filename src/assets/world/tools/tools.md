@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 15/09/26 23:15</p>
+<p class="metadata">Date de mise à jour : 16/09/26 17:23</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -26,8 +26,8 @@ Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie 
 
 ## Options :
 
-- `r <n>` : rayon
-- `t <type>` : **un `asset_id` exact**, jamais une famille (ex. `pine_tree` répond, `tree` rend `{}` sans rien dire) ; `entity_types` donne la liste
+- `-r <n>` : rayon, de 0 à 2
+- `-t <type>` : **un `asset_id` exact**, jamais une famille (ex. `pine_tree` répond, `tree` rend `{}` sans rien dire) ; `entity_types` donne la liste
 
 ---
 
@@ -58,7 +58,3 @@ Toute section `leaders` nomme la première place, ex æquo compris : personne qu
 
 - Chaque titulaire porte sa `value`, un `score` excepté : ses points grimpent avec le nombre de rivaux. Seul `hungriest` se lit à l'envers — il donne la part du ventre encore pleine, en pourcentage, donc son titulaire est celui qui en a le moins.
 - Un `rank` est un rang de compétition (1, 2, 2, 4) : des ex æquo partagent la place. Un niveau 1 n'en reçoit jamais.
-
-## Nouveau chapitre :
-
-`chapter/new.py` — crée le chapitre suivant depuis le save live ; le cycle complet (garde-fous, ce que le chroniqueur remplit ensuite) est décrit dans `chronicler.md`.
