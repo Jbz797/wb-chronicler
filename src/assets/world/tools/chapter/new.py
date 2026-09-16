@@ -844,9 +844,9 @@ def main(argv: list[str]) -> int:
         todo = "§ « Choix du favori » before a single word — `tools/chapter/favorite.py <id>` rebuilds this chapter; told without one only if none is worth it"
     print(f"  → chronicler: {todo}")
 
-    # Said where it is acted on, as the summaries' shape is: a descriptor is written once per favorite, and the ceiling only matters at that moment.
-    if favorite and not favorite.get("descriptor"):
-        print("  → the descriptor: 66 characters at the very most — a ceiling, not a target")
+    # Said every chapter a favorite stands: its descriptor is carried over, rewritten on a notable change or written anew, and a rewrite owes the ceiling too.
+    if favorite:
+        print("  → the descriptor: 64 characters at the very most — a ceiling, not a target")
 
     # Said here rather than in the manual, like the alerts' nature: only a chapter that raises an event needs telling that it must be told.
     if events:
