@@ -25,6 +25,17 @@
     <nz-descriptions-item *appPresent="fav.stats.renown" [nzTitle]="renownTitle">
       <app-ranked-stat stat="renown" />
     </nz-descriptions-item>
+    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
+    @for (row of companionRows(); track $index) {
+      <ng-template #companionTitle>
+        <img [src]="`assets/img/stats/${row.icon}.png`" />
+        <span>{{ row.label | translate }}</span>
+        <app-new-badge [show]="row.isNew" />
+      </ng-template>
+      <nz-descriptions-item [nzTitle]="companionTitle">
+        <app-person-tag [id]="row.person.id" [name]="row.person.name" />
+      </nz-descriptions-item>
+    }
     <!-- Kept at nought, unlike its neighbours: the row reads « 0 / 5 », and the pair says what the body could still bear. -->
     <nz-descriptions-item [nzTitle]="childrenTitle">
       <app-ranked-stat stat="children" [suffix]="`/ ${fav.stats.max_children}`" />
@@ -41,17 +52,6 @@
     <nz-descriptions-item [nzTitle]="inventoryTitle">
       <app-inventory [resources]="fav.inventory ?? {}" />
     </nz-descriptions-item>
-    <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
-    @for (row of companionRows(); track $index) {
-      <ng-template #companionTitle>
-        <img [src]="`assets/img/stats/${row.icon}.png`" />
-        <span>{{ row.label | translate }}</span>
-        <app-new-badge [show]="row.isNew" />
-      </ng-template>
-      <nz-descriptions-item [nzTitle]="companionTitle">
-        <app-person-tag [id]="row.person.id" [name]="row.person.name" />
-      </nz-descriptions-item>
-    }
   </nz-descriptions>
 
   <ng-template #ageTitle>
