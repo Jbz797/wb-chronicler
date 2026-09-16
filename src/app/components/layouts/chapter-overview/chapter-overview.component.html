@@ -83,7 +83,7 @@
   <ng-template #religionChip><app-panel-extra panel="religion" /></ng-template>
   <ng-template #subspeciesChip><app-panel-extra panel="subspecies" /></ng-template>
 
-  <nz-collapse nzAccordion nzSize="small">
+  <nz-collapse *appFresh="c" nzAccordion nzSize="small">
     <nz-collapse-panel [nzActive]="activePanel() === 'world-stats'" [nzHeader]="worldStatsHeader" (nzActiveChange)="onPanelToggle('world-stats', $event)">
       <ng-scrollbar class="panel-scroll">
         <app-world-stats />

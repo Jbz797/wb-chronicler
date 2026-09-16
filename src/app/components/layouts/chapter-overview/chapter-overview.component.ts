@@ -11,6 +11,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
 import { CITY_SIZE_TERMS, HISTORY_DIR, KINGDOM_SIZE_TERMS } from '../../../constants';
+import { FreshDirective } from '../../../directives';
 import { ChapterOverviewPanel, ChapterTier, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
 
@@ -39,6 +40,7 @@ import { NewBadgeComponent } from '.';
     CultureComponent,
     FamilyComponent,
     FavoriteComponent,
+    FreshDirective,
     KingdomComponent,
     LanguageComponent,
     NewBadgeComponent,
