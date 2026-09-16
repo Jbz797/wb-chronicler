@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries (via `registries.py`) and a
-# `chapter.json` skeleton. The chronicler then analyses (§ « Phase d'analyse obligatoire »), writes `chapter.md`, and fills `title`,
+# `chapter.json` skeleton. The chronicler then analyses (§ « Phase d'analyse obligatoire »), writes `chapter.md`, and fills
 # the favorite's `descriptor` and the trait summaries this run says are owed. Docs: `tools/tools.md`.
 
 import json
@@ -796,13 +796,12 @@ def main(argv: list[str]) -> int:
 
     age_label = (_AGE_LABELS.get(f"age_{age_id}") or {}).get("name") or age_id  # recap line only, the chapter carrying the id alone
 
-    # No `age_label`: the panel translates `world.metadata.age_id`. `title` stays empty — the chronicler writes it post-audit; everything else is script-generated.
+    # No `age_label`: the panel translates `world.metadata.age_id`. No `title` either: the H1 of `chapter.md` is the title, and nothing reads a copy of it.
     chapter_json = {
         **blocks,  # `render` sorts a record's keys, so the tiers need no place of their own here
         "boat": boat,
         "favorite": favorite,
         "tags": tags,
-        "title": "",
         "wars": wars,
         "world": world,
     }
@@ -832,7 +831,7 @@ def main(argv: list[str]) -> int:
     # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file.
     for timestamp, asset_id, *names, x, y in _journal_since(prev_world.get("world_time")):
         print(f"  ✎ year {timestamp // UNITS_PER_YEAR + 1} · {asset_id} · {' · '.join(filter(None, names))} ({x},{y})")
-    todo = "§ « Phase d'analyse obligatoire » · chapter.md, its H1 copied into `title`"
+    todo = "§ « Phase d'analyse obligatoire » · chapter.md"
     if favorite and not favorite.get("descriptor"):  # new favorite → its epithet is the one favorite field the chronicler still writes
         todo += " · the favorite's descriptor"
     if owed:
