@@ -768,7 +768,7 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
     world_time = ctx["world_time"]
 
     for a in actors:
-        age = int((world_time - float(a.get("created_time") or 0)) / UNITS_PER_YEAR) + (a.get("age_overgrowth") or 0)
+        age = actor_age(a, world_time)
         # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
         lifespan = int(actor_stat_totals(a, ctx, lifespan_only=True).get("lifespan", 0))
         # `adult_age` and not this body's own span: WB hangs the coming of age on the biology, and answers 0 where the species was drawn no baby form.

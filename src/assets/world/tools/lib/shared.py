@@ -433,9 +433,9 @@ def emit(out: dict) -> None:
     print(render(_strip_none(out)))
 
 
-# Years since a record was created: a city, a crown, a clan, a lineage, a biology, a roof. An actor answers to `actor_age`, which adds its `age_overgrowth`.
+# The year a record is in, as WB counts it and a city, a crown or a roof reads it: its 16th year shows 16, the way « year 31 » stands on 30 behind it.
 def entity_age(record: dict, world_time: float) -> int:
-    return int((world_time - float(record.get("created_time") or 0)) / UNITS_PER_YEAR)
+    return int((world_time - float(record.get("created_time") or 0)) / UNITS_PER_YEAR) + 1
 
 
 # `{id, name}` ref or `None` — the name feeds the narration, the id a follow-up query; an unnamed entity keeps the id and loses the key, having nothing to quote.
@@ -447,10 +447,9 @@ def entity_ref(entity_id: int | None, by_id: dict) -> dict | None:
 # One equipped-or-racked item as both tiers report it: provenance (`by`/`from`), wear, kills, and its stats already folded with the modifiers' bonuses.
 def equipment_entry(item: dict, item_stats: dict, mod_stats: dict, world_time: float, described: bool = False) -> dict:
     mods = sorted(item.get("modifiers") or [])
-    created = item.get("created_time")
     asset_id = item["asset_id"]
     return {
-        "age": int((world_time - created) / UNITS_PER_YEAR) if created is not None else None,
+        "age": entity_age(item, world_time) if "created_time" in item else None,  # WB dates a blade as it dates a body
         "asset_id": asset_id,
         "by": item.get("by"),
         "durability": item.get("durability"),

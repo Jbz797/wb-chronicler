@@ -12,8 +12,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     PROFESSION_WARRIOR,
-    UNITS_PER_YEAR,
     emit,
+    entity_age,
     index_by_id,
     is_boat,
     load_save,
@@ -30,7 +30,7 @@ def _build_metadata(war: dict, attackers: set[int], defenders: set[int], ctx: di
     besieged = ctx["besieged_kingdoms"]
     deaths = int(war.get("total_deaths") or 0)
     started_by = ctx["started_by_actor"]  # WB stores the declaring kingdom's name but not the actor's, so a bare `{id}` is all a dead one leaves
-    years = int((ctx["world_time"] - float(war.get("created_time") or 0)) / UNITS_PER_YEAR)
+    years = entity_age(war, ctx["world_time"])
     state = {"age": years, "attackers_besieged": bool(attackers & besieged), "deaths": deaths, "defenders_besieged": bool(defenders & besieged)}
     return {
         "age": years,
@@ -97,11 +97,15 @@ def main(argv: list[str]) -> int:
     started_by_actor = None
     warriors_by_kingdom: Counter[int] = Counter()
 
-    # The declaring king is picked up on the walk the tallies already make: indexing every soul alive would build thousands of entries to answer for one.
-    for actor in save.get("actors_data") or []:
+    # The declaring king rides the walk the tallies make, indexing no one: `metadata` wants no tally, so it stops at him — and never starts where none declared it.
+    sides = bool({"attackers", "defenders"}.intersection(sections))
+    walked = (save.get("actors_data") or []) if sides or started_by_id is not None else ()
+    for actor in walked:
         if actor["id"] == started_by_id:
             started_by_actor = actor
-        if is_boat(actor) or not (kid := actor.get("civ_kingdom_id")):
+            if not sides:
+                break
+        if not sides or is_boat(actor) or not (kid := actor.get("civ_kingdom_id")):
             continue
         populations_by_kingdom[kid] += 1
         warriors_by_kingdom[kid] += actor.get("profession") == PROFESSION_WARRIOR

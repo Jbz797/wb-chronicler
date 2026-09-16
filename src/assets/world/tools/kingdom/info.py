@@ -27,6 +27,7 @@ from shared import (
     civic_building_ids,
     competition_ranks,
     emit,
+    entity_age,
     entity_ref,
     index_by_id,
     kingdom_score_dimensions,
@@ -283,7 +284,6 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     dims = ctx["score_dimensions"]()
     subjects = ctx["actors_by_kingdom"].get(kid, [])
     report = meta_report("meta", {"units": len(subjects), **meta_ratios(subjects, ctx)})  # `None` where none of the realm's four verdicts holds
-    age_units = ctx["world_time"] - float(kingdom.get("created_time") or 0)
 
     # Chronicler-only: island ids the kingdom's city zones touch, sorted asc (1 = biggest), probed at each zone centre. From ctx — recomputing re-reads the disk.
     island_lookup = ctx["island_lookup"]()
@@ -297,7 +297,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     tribute = next((tier for t in kingdom.get("saved_traits") or [] if (tier := _KINGDOM_TRIBUTE_TRAITS.get(t))), "normal")
 
     return {
-        "age": int(age_units / UNITS_PER_YEAR),
+        "age": entity_age(kingdom, ctx["world_time"]),
         **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
         **({"births": born} if (born := int(kingdom.get("total_births") or 0)) else {}),  # Members born over its lifetime, the counterpart WB keeps to `deaths`.
         **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # `_BOOK_POINTS` per authored book + how widely it's read

@@ -332,7 +332,6 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
     cleaned = compute_actor_stats(actor, ctx)
     if not cleaned:
         return {}
-    health = int(actor.get("health") or 0)
     cleaned.update(
         {
             # Life's tallies, silent at nought as every other stat is: a soul that has killed nobody and owns nothing says so by carrying none of them.
@@ -341,7 +340,7 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
             **({"equipment_power": n} if (n := _equipment_power(actor, ctx)) else {}),
             # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
             **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
-            "health": min(health, cleaned.get("health_max", health)),  # the save can hold more than the halved cap of a child, where no sheet reads over its own
+            "health": int(actor.get("health") or 0),
             **({"kills": n} if (n := int(actor.get("kills") or 0)) else {}),
             "level": max(int(actor.get("level") or 0), 1),  # WB displays level 1 as the floor, even when the raw save field is absent / 0.
             **({"loot": n} if (n := int(actor.get("loot") or 0)) else {}),
