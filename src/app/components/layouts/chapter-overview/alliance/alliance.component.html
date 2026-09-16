@@ -6,7 +6,7 @@
       </nz-descriptions-item>
     }
     @if (a.metadata.age > 0) {
-      <nz-descriptions-item [nzTitle]="ageTitle"><app-ranked-stat source="alliance" stat="age" suffix="ui_years" /></nz-descriptions-item>
+      <nz-descriptions-item [nzTitle]="ageTitle"><app-ranked-stat source="alliance" stat="age" suffix="ui_years" [hideDelta]="true" /></nz-descriptions-item>
     }
     <nz-descriptions-item [nzTitle]="kingdomsTitle">
       @for (k of a.kingdoms; track k.id) {

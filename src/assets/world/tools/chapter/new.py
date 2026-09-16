@@ -38,15 +38,15 @@ from shared import (
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
 
-# World-law alerts, each firing while the law it asks to turn off is on — a state, not an errand. Both weigh the sapient crowns against what the dry ground can feed.
+# World-law alerts, a state while the law stays on: sapient crowns weighed against dry ground, and no settlers cut off while the favorite's own crown stands short
 _ALERTS = {
     "DISABLE_DROP_OF_THOUGHTS": {
-        "condition": lambda pops, quota: len(pops) >= quota,
+        "condition": lambda pops, quota, _own: len(pops) >= quota,
         "law": "world_law_drop_of_thoughts",
         "message": "at the chapter's end, ask the player to turn the Drop of Thoughts world law off",
     },
     "DISABLE_HANDSOME_MIGRANTS": {
-        "condition": lambda pops, quota: sum(1 for pop in pops if pop >= _MIN_KINGDOM_POP) >= quota,
+        "condition": lambda pops, quota, own: own >= _MIN_KINGDOM_POP and sum(1 for pop in pops if pop >= _MIN_KINGDOM_POP) >= quota,
         "law": "world_law_civ_migrants",
         "message": "at the chapter's end, ask the player to turn the Handsome Migrants world law off",
     },
@@ -324,13 +324,14 @@ def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) ->
 
 
 # `(code, message)` of alerts whose law is on and whose condition holds — WB writes an untouched law as a bare `{"name": …}`, so an absent `boolVal` reads as on.
-def _fired_alerts(save: dict) -> list[tuple[str, str]]:
+def _fired_alerts(save: dict, realm: int | None) -> list[tuple[str, str]]:
     laws = {law["name"]: law.get("boolVal", True) for law in (save.get("worldLaws") or {}).get("list") or []}
     standing = {code: spec for code, spec in _ALERTS.items() if laws.get(spec["law"], True)}  # the laws first: once both are off, neither world is walked at all
     if not standing:
         return []
-    pops, quota = _sapient_kingdoms(save), _kingdom_quota(save)
-    return [(code, spec["message"]) for code, spec in standing.items() if spec["condition"](pops, quota)]
+    crowns, quota = _sapient_kingdoms(save), _kingdom_quota(save)
+    pops, own = crowns.values(), crowns.get(realm, 0)  # hoisted, and a view: no condition asks the tally more than a length and a walk
+    return [(code, spec["message"]) for code, spec in standing.items() if spec["condition"](pops, quota, own)]
 
 
 # The one name a panel prints per record: a shared first place travels as its first holder, bare of the count the chronicler reads off the script.
@@ -557,13 +558,13 @@ def _run_together(*calls: tuple | None) -> list:
 
 
 # The headcount of each crown a thinking people answers to — a beast bows to none, a hull is no subject, and a soul under no banner raises no crown of its own.
-def _sapient_kingdoms(save: dict) -> list[int]:
+def _sapient_kingdoms(save: dict) -> Counter:
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
     pops: Counter = Counter()
     for actor in save.get("actors_data") or []:  # the crown first, being both the cheapest test and the one that turns most of a wild world away
         if (kid := actor.get("civ_kingdom_id")) and not is_boat(actor) and is_sapient(subspecies_by_id.get(actor.get("subspecies"))):
             pops[kid] += 1
-    return list(pops.values())
+    return pops
 
 
 # The reader's settings: the player's workshop switch and the chronicle's language. A missing or broken file reads as a player who never opened the panel.
@@ -766,8 +767,10 @@ def main(argv: list[str]) -> int:
     if "NAVIGATION" not in already and any(is_boat(a) for a in actors):
         tags.append("NAVIGATION")
 
+    realm = _entity_id(blocks.get("kingdom") or {})  # read twice below: the war tag for what the favorite's crown enters, the migrants alert for what it holds
+
     # A war the favorite's crown found itself in since the chapter before, whoever declared it — the first chapter having no before, it owes none.
-    if (realm := _entity_id(blocks.get("kingdom") or {})) is not None and (since := prev_world.get("world_time")) is not None and _entered_war(live, realm, since):
+    if realm is not None and (since := prev_world.get("world_time")) is not None and _entered_war(live, realm, since):
         tags.append("FAVORITE_KINGDOM_NEW_WAR")
 
     if boat:  # a chapter caught at sea — the favorite is aboard right now, which the panel badges and the chronicler owes a scene
@@ -776,7 +779,7 @@ def main(argv: list[str]) -> int:
     # A scheme afoot under the favorite's own hand. Read after the fold, which leaves the type's key behind: a plot ripens in months, so it may be gone next chapter.
     if (favorite or {}).get("plot"):
         tags.append("FAVORITE_PLOTTING")
-    new_alerts = _fired_alerts(live)
+    new_alerts = _fired_alerts(live, realm)
 
     tags += [code for code, _message in new_alerts]
 

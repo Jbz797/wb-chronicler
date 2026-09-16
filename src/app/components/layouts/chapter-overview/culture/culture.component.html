@@ -8,7 +8,7 @@
 
     @if (c.metadata.age > 0) {
       <nz-descriptions-item [nzTitle]="ageTitle">
-        <app-ranked-stat source="culture" stat="age" suffix="ui_years" />
+        <app-ranked-stat source="culture" stat="age" suffix="ui_years" [hideDelta]="true" />
       </nz-descriptions-item>
     }
     @if (c.metadata.renown) {
