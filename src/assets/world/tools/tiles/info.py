@@ -132,15 +132,20 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
         out["to_land"] = land
     city = _city_at(x, y, ctx)
     if city is None:
-        if anchors := ctx["city_anchors"]:
-            out["to_nearest_city"] = min(abs(x - ox) + abs(y - oy) for ox, oy in anchors)
-    elif (kid := city.get("kingdomID")) and (cap := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
-        out["to_capital"] = abs(x - cap[0]) + abs(y - cap[1])
+        if quarters := ctx["city_quarters"]:
+            out["to_nearest_city"] = _fabric_distance(x, y, quarters)
+    elif (kid := city.get("kingdomID")) and (seat := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
+        out["to_capital"] = max(abs(x - seat[0]), abs(y - seat[1]))  # a seat is a point, where a town is a fabric — the throne, not the last house of the capital
     if gap:  # the lands ride on the tile asked for, a neighbour two steps over reading the same distances to a tile's precision
         return out
     if near := ctx["islands_near"]:
         out["to_islands"] = near
     return out if ctx["detailed"] else light(out, withheld=True)
+
+
+# A town is its fabric, not its centre, as `to_land` takes a shore: at the edge of a sprawling town a body stands at the gate, not a centre away.
+def _fabric_distance(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
+    return min(max(qx - x, x - qx - ZONE_TILES + 1, qy - y, y - qy - ZONE_TILES + 1, 0) for qx, qy in quarters)
 
 
 # One object per tile, never two. WB's `buildings` collection holds the flowers and the ore too, hence the family, named as `geography` names them.
@@ -151,21 +156,23 @@ def _ground_at(x: int, y: int, ctx: dict) -> dict:
     return {"asset_id": asset, "id": b.get("id"), "type": "buildings" if asset in ctx["civic"] else ctx["categories"].get(asset) or "other"}
 
 
-# Every town sits on WB's own centre, as `city/info.py` sites one, so a crown's seat and its cities share an anchor.
+# Quarters are held by their corner tile, a town being the ground they cover — while a crown's seat stays the one centre `city/info.py` sites a capital by.
 def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
     anchors: dict[int, tuple[int, int]] = {}
     ctx["capital_pos_by_kingdom"] = {}
     ctx["city_by_pos"] = {}
+    ctx["city_quarters"] = []
 
     for city in ctx["cities_by_id"].values():
         if (anchor := city_centre(city)) is None:  # a city holding no zone stands nowhere: nothing to site it by, nothing to measure towards
             continue
         anchors[city["id"]] = anchor
         for zone in city["zones"]:
-            if (tile := zone_xy(zone)) in wanted_zones:
-                ctx["city_by_pos"][tile] = city
+            zx, zy = zone_xy(zone)
+            ctx["city_quarters"].append((zx * ZONE_TILES, zy * ZONE_TILES))
+            if (zx, zy) in wanted_zones:
+                ctx["city_by_pos"][(zx, zy)] = city
 
-    ctx["city_anchors"] = list(anchors.values())
     for kingdom in ctx["kingdoms_by_id"].values():
         if (seat := anchors.get(kingdom.get("capitalID"))) is not None:
             ctx["capital_pos_by_kingdom"][kingdom["id"]] = seat
