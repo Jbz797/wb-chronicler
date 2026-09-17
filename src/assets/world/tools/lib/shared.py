@@ -96,7 +96,7 @@ _ORDER_ROWS = frozenset({"hungriest", "oldest", "youngest"})
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 _RANK_FLOORS = {"cities": 1, "kingdoms": 1, "level": 1}  # where every body starts, so a place held there ranks nobody — other stats floor at the skipped 0
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
-_VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy"})  # shapes whose key order carries meaning: stores heaviest-first, ranks broadest-first
+_VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy", "to_islands"})  # shapes whose key order carries meaning: stores heaviest-first, lands nearest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 _captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
@@ -773,10 +773,11 @@ def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str
 
     if isinstance(value, dict):
         parts = []
-        record = all(isinstance(k, str) and k.isidentifier() for k in value)  # Records sort; late keys move nothing. Data-keyed maps and `_VALUE_ORDERED` apart.
+        ordered = key in _VALUE_ORDERED  # the block was built in the order it means to be read, and any sort below would undo it without a word
+        record = all(isinstance(k, str) and k.isidentifier() for k in value)  # Records sort; late keys move nothing. Data-keyed maps and ordered ones apart.
         # ids as keys sort on their value: `2` before `10`. Second, and skipped on a record: a key all digits is no identifier, so the two never both hold.
-        numbered = not record and all(isinstance(k, str) and k.lstrip("-").isdigit() for k in value)
-        items = sorted(value.items(), key=lambda kv: int(kv[0])) if numbered else sorted(value.items()) if record and key not in _VALUE_ORDERED else value.items()
+        numbered = not record and not ordered and all(isinstance(k, str) and k.lstrip("-").isdigit() for k in value)
+        items = sorted(value.items(), key=lambda kv: int(kv[0])) if numbered else sorted(value.items()) if record and not ordered else value.items()
         for k, v in items:
             dumped = f'"{k}"' if record else json.dumps(k, ensure_ascii=False)  # `record` proved every key an identifier; the rest keep their accents
             parts.append(f"{dumped}: {render(v, indent + 1, len(dumped) + 3, k)}")

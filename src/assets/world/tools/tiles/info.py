@@ -22,6 +22,7 @@ from shared import (
     emit,
     entity_ref,
     index_by_id,
+    light,
     load_data,
     load_save,
     parse_sections,
@@ -33,6 +34,7 @@ _ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
 _DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))  # the wave spreads by the square, so a diagonal step costs one tile
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `to_land` says nothing rather than a number
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
+_NEAR_ISLANDS = 10  # the lands a reading names around a point: past ten, the rest are the far side of the world whatever the tile
 
 
 # Identity and allegiance only — the chronicler follows up with `actor/info.py <id>` for the rest, so a tile sweep stays readable at 25 cells.
@@ -50,7 +52,7 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
 
 
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
-def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int]) -> dict:
+def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], detailed: bool) -> dict:
     wanted = set(coords)
 
     # `actors_by_pos` alone takes a factory: it is the one filled per actor, where the others are assigned whole once their section asks for them.
@@ -58,6 +60,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         "actors_by_pos": defaultdict(list),
         "center": center,
         "cities_by_id": {},
+        "detailed": detailed,
         "grid": {},
         "ground_by_pos": {},
         "kingdoms_by_id": {},
@@ -99,6 +102,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["land_at_center"] = land = _land_distance(*center, ctx)
         # The centre's reach as a number, `0` on a land itself and one past `_LAND_REACH` where none is seen — the floor its neighbours' rings start from.
         ctx["land_floor"] = 0 if ctx["tile_to_island"].get(center) is not None else _LAND_REACH + 1 if land is None else land["tiles"]
+        ctx["islands_near"] = _islands_near(ctx) if detailed else {}  # a pass over every land tile, paid only where the lands are printed
 
     return ctx
 
@@ -132,7 +136,11 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
             out["to_nearest_city"] = min(abs(x - ox) + abs(y - oy) for ox, oy in anchors)
     elif (kid := city.get("kingdomID")) and (cap := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
         out["to_capital"] = abs(x - cap[0]) + abs(y - cap[1])
-    return out
+    if gap:  # the lands ride on the tile asked for, a neighbour two steps over reading the same distances to a tile's precision
+        return out
+    if near := ctx["islands_near"]:
+        out["to_islands"] = near
+    return out if ctx["detailed"] else light(out, withheld=True)
 
 
 # One object per tile, never two. WB's `buildings` collection holds the flowers and the ore too, hence the family, named as `geography` names them.
@@ -161,6 +169,20 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
     for kingdom in ctx["kingdoms_by_id"].values():
         if (seat := anchors.get(kingdom.get("capitalID"))) is not None:
             ctx["capital_pos_by_kingdom"][kingdom["id"]] = seat
+
+
+# Every land by its nearest tile, Chebyshev as `to_land` measures — read at the centre alone, a pass over every land tile costing a fifth of a second.
+def _islands_near(ctx: dict) -> dict[str, int]:
+    cx, cy = ctx["center"]
+    own = ctx["tile_to_island"].get((cx, cy))
+    nearest: dict[int, int] = {}
+    for x, y, island in ctx["tile_to_island"].land():
+        if island == own:  # its own shore is where it stands, and `tile_info` already names that land
+            continue
+        if (tiles := max(abs(x - cx), abs(y - cy))) < nearest.get(island, tiles + 1):
+            nearest[island] = tiles
+    ranked = sorted(nearest.items(), key=lambda item: (item[1], item[0]))[:_NEAR_ISLANDS]
+    return {str(island): tiles for island, tiles in ranked}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
 
 
 # How far the tile's rock lies from a land a city could hold, and which one — measured whole, a castaway being isolated by his island's strait, not his footing.
@@ -284,7 +306,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     coords = _radius_tiles(cx, cy, args.radius, width, height)
-    ctx = _build_context(save, save_path, sections, coords, (cx, cy))
+    ctx = _build_context(save, save_path, sections, coords, (cx, cy), args.sections != "full")
 
     out: dict = {}
     for x, y in coords:
