@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 17/09/26 14:36</p>
+<p class="metadata">Date de mise à jour : 17/09/26 15:12</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -41,11 +41,15 @@ Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie 
 
 ## Lire les sorties :
 
-### Formes et mesures :
+### Acteurs :
 
 - `actor … metadata` : `can_reproduce` demande l'âge de reproduction et, chez qui mange, une `nutrition` d'au moins 50 ; `infertile` et `max_children` (enfants vivants) n'arrêtent que qui porte. Un mâle d'espèce sexuée n'a donc pas de `max_children` : il engendre si sa compagne peut porter. Un `false` après un `true` ne dit pas l'infertilité : une réserve entamée suffit.
 - `actor … stats` rend des valeurs **déjà agrégées** — tout y est, du socle de l'espèce aux bonus de niveau (santé, mana et endurance seulement), jusqu'aux points de compétence que le corps gagne à vivre et qu'aucune autre sortie ne détaille : n'ajoute rien par-dessus. Celles d'un mineur sont **bridées** : `damage_max` et `health_max` valent la moitié tant qu'`adult_age` n'est pas atteint, seuil que `subspecies … stats` donne pour toute la lignée, avec `breeding_age`. La valeur adulte ne s'en déduit pas pour autant : la base de la lignée n'est pas celle du corps.
 - `actor … surroundings`, à vol d'oiseau : `intimate` ≤ 25 tuiles, `common` ≤ 120, `common_with_boat` ≤ 240 si son royaume a un bateau de transport. Une autre terre n'y paraît qu'à portée de nage (`gap` ≤ 16), ou dans le cercle du bateau ; `adrift` : dans l'eau ou sur un îlot non compté. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. `life_stage` se tait à `adult`, `sapient` devant `kin`, `job` ou `role`.
+- `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu) sont des savoirs : `warfare` dit ce qu'un corps sait de la guerre, pas la force de ses coups, qui se lit dans `damage_*` (un cinquième du `warfare` y entre).
+
+### Formes et mesures :
+
 - `city … rulers` et `kingdom … rulers` donnent la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain en place : `population.ruler_money`.
 - `island_id` **absent** couvre deux cas opposés : un îlot trop petit pour compter, ou l'eau. `tiles/info.py <x,y> tile_info` tranche — `kind: water` pour le second.
 - `to_land` (section `distances`) mesure le bras d'eau depuis **tout le rocher**, pas depuis la tuile : un naufragé s'isole par le détroit de son île, pas par l'endroit où il se tient. Absent sur une île comptée.

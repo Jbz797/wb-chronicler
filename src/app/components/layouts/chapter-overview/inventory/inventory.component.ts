@@ -1,10 +1,12 @@
 import { Component, computed, input } from '@angular/core';
 
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+
 import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-inventory',
-  imports: [TranslatePipe],
+  imports: [NzTooltipModule, TranslatePipe],
   templateUrl: './inventory.component.html',
 })
 export class InventoryComponent {
