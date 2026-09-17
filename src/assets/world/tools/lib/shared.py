@@ -94,7 +94,7 @@ _NEEDS_ESCAPE = re.compile(r'["\\\x00-\x1f]')  # what `json.encoder.ESCAPE` cove
 _ORDER_ROWS = frozenset({"hungriest", "oldest", "youngest"})
 
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
-_RANK_FLOORS = {"level": 1}  # where WB starts every body, so a place held there ranks nobody — any other stat floors at the 0 `competition_ranks` skips
+_RANK_FLOORS = {"cities": 1, "kingdoms": 1, "level": 1}  # where every body starts, so a place held there ranks nobody — other stats floor at the skipped 0
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy"})  # shapes whose key order carries meaning: stores heaviest-first, ranks broadest-first
 
@@ -418,13 +418,16 @@ def competition_ranks(entity, peers: list, getters: dict) -> dict:
         if own == 0 or (stat in _RANK_FLOORS and own <= _RANK_FLOORS[stat]):
             continue
         # Stopped at the body that puts the entity off the podium: past there the place is never printed, so weighing the rest of the field buys nothing.
-        ahead = 0
+        ahead = tied = 0
         for peer in peers:
-            if getter(peer) > own:
+            if (value := getter(peer)) > own:
                 ahead += 1
                 if ahead == PODIUM_PLACES:
                     break
-        if ahead < PODIUM_PLACES:
+            elif value == own:
+                tied += 1
+        # A place held by more than half the field marks the field, not the entity — the rule `first_place` holds the podiums of `leaders` to.
+        if ahead < PODIUM_PLACES and tied * 2 <= len(peers):
             ranks[stat] = ahead + 1
     return ranks
 

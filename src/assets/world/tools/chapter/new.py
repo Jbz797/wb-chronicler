@@ -99,8 +99,10 @@ _AUDIT = {
             "loot",
             "nobles",
             "nobles_money",
+            "population_per_city",
             "renown_per_capita",
             "ruler_money",
+            "subjects_money",
             "traits",
         }
     ),
@@ -121,6 +123,7 @@ _AUDIT_TIERS = {
     "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
     "city.metadata": {"births", "capital", "kingdom"},  # no row counts its births, and its crown and seat are the kingdom panel's to name
     "city.population": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
+    "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
     "clan.metadata": {"births"},  # unlike a lineage, a pact or a biology, the clan panel prints no births row
     "clan.ranks": {"kingdoms"},  # its crowns tie on one realm apiece — `clan/info.py <id> ranks` still places the band that spans eight
@@ -134,6 +137,7 @@ _AUDIT_TIERS = {
     "kingdom.identity": {"clan", "culture", "language", "religion", "subspecies"},  # as a town's
     "kingdom.metadata": {"births"},  # as a town's
     "kingdom.population": {"money"},  # as a town's
+    "kingdom.ranks": {"money"},  # as a town's
     "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
     "religion.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
     "wars.metadata": {"deaths", "started_by"},  # the card sets each camp's toll and crown, never the sum or the man — `war/info.py <id>` hands over both

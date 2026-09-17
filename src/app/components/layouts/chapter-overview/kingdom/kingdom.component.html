@@ -36,6 +36,9 @@
     <nz-descriptions-item *appNonZero="k.metadata.renown" [nzTitle]="renownTitle">
       <app-ranked-stat source="kingdom" stat="renown" />
     </nz-descriptions-item>
+    <nz-descriptions-item *appNonZero="k.population.renown_total" [nzTitle]="renownTotalTitle">
+      <app-ranked-stat source="kingdom" stat="renown_total" />
+    </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="k.population.total" [nzTitle]="populationTitle">
       <app-ranked-stat source="kingdom" stat="population" />
     </nz-descriptions-item>
@@ -47,9 +50,6 @@
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="k.metadata.kills" [nzTitle]="killsTitle">
       <app-ranked-stat source="kingdom" stat="kills" />
-    </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="k.population.renown_total" [nzTitle]="renownTotalTitle">
-      <app-ranked-stat source="kingdom" stat="renown_total" />
     </nz-descriptions-item>
     <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
     @for (s of scoreStats(); track $index) {
@@ -112,7 +112,7 @@
 
   <ng-template #ageTitle>
     <img src="assets/img/stats/age.png" />
-    <span>{{ 'ui_kingdom_age' | translate }}</span>
+    <span>{{ 'ui_age' | translate }}</span>
   </ng-template>
   <ng-template #boatsTitle>
     <img src="assets/img/world/boats.png" />
