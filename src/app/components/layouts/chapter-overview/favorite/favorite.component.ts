@@ -109,10 +109,7 @@ export class FavoriteComponent {
     return [
       { icon: 'lovers', isNew: changed.lover, key: 'companion_lover', person: companions?.lover },
       { icon: 'friendship', isNew: changed.bestFriend, key: 'companion_best_friend', person: companions?.best_friend },
-    ].flatMap((row) => {
-      if (!row.person) return [];
-      return [{ ...row, label: LabelHelpers.gendered(this._translate, row.key, persons[String(row.person.id)]?.sex), person: row.person }];
-    });
+    ].flatMap(({ person, ...row }) => person ? [{ ...row, label: LabelHelpers.gendered(this._translate, row.key, persons[String(person.id)]?.sex), person }] : []);
   });
   // A share of the body's own cap — `big_stomach` doubles it, so the raw count reads as a percentage only on a narrow stomach.
   protected readonly nutritionPct = computed(() => {

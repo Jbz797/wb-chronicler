@@ -6,7 +6,6 @@ export interface AllianceInfo {
   banner_icon_color?: string;
   banner_unity?: boolean; // `alliance_type` is not 0 — WB frames such a pact in gold rather than in plain metal
   color: string;
-  color_main?: string;
   dead?: boolean;
   kingdoms?: number; // crowns bound by the pact — the badge set into the right link
 }
@@ -17,7 +16,6 @@ export interface BookInfo {
   cover?: string;
   dead?: boolean; // burnt since this chapter: WB drops it from `save.books`, the registry keeps its board and strikes the title through
   icon?: string; // `<genre folder>/<sheet>`, the folder parting from the genre id for `bad_story_about_king` alone
-  name: string;
   rank?: number; // podium place by readings, top 3 only — the medal right of the name
   reads?: number;
 }
@@ -32,7 +30,7 @@ export interface CityInfo {
   species?: string;
 }
 
-// A clan's tag: its own hue (sworn, not granted, so no crown lends it one), the founder's species pip and the living headcount. Its `name` survives extinction.
+// A clan's tag: its own hue (sworn, not granted, so no crown lends it one), the founder's species pip and the living headcount. Its `name` is chronicler-only.
 export interface ClanInfo {
   banner_bg?: number;
   banner_bg_color?: string;
@@ -40,13 +38,12 @@ export interface ClanInfo {
   banner_icon_color?: string;
   color: string;
   dead?: boolean;
-  name: string;
   rank?: number; // podium place by members, top 3 only — the medal right of the name
   size?: number;
   species?: string;
 }
 
-// A culture's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living headcount. Its `name` survives extinction.
+// A culture's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living headcount. Its `name` is chronicler-only.
 export interface CultureInfo {
   banner_bg?: number;
   banner_bg_color?: string;
@@ -54,18 +51,16 @@ export interface CultureInfo {
   banner_icon_color?: string;
   color: string;
   dead?: boolean;
-  name: string;
   rank?: number; // podium place by followers, top 3 only — the medal right of the name
   size?: number;
   species?: string;
 }
 
-// A lineage's tag: the frame worn as a border, the flattened backing hue, the founding species' pip and its living headcount. Its `name` survives extinction.
+// A lineage's tag: the frame worn as a border, the flattened backing hue, the founding species' pip and its living headcount. Its `name` is chronicler-only.
 export interface FamilyInfo {
   bg_color?: string;
   dead?: boolean;
   frame?: number;
-  name: string;
   rank?: number; // podium place by members, top 3 only — the medal right of the name
   size?: number;
   species?: string;
@@ -85,7 +80,7 @@ export interface KingdomInfo {
   species?: string;
 }
 
-// A tongue's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living speakers. Its `name` survives extinction.
+// A tongue's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living speakers. Its `name` is chronicler-only.
 export interface LanguageInfo {
   banner_bg?: number;
   banner_bg_color?: string;
@@ -93,7 +88,6 @@ export interface LanguageInfo {
   banner_icon_color?: string;
   color: string;
   dead?: boolean;
-  name: string;
   rank?: number; // podium place by population, top 3 only — the medal right of the name
   size?: number;
   species?: string;
@@ -116,7 +110,7 @@ export interface PersonInfo {
   weapon?: string;
 }
 
-// A creed's tag: its own hue (preached, not granted, so no crown lends it one), the founder's species pip and the living faithful. Its `name` survives extinction.
+// A creed's tag: its own hue (preached, not granted, so no crown lends it one), the founder's species pip and the living faithful. Its `name` is chronicler-only.
 export interface ReligionInfo {
   banner_bg?: number;
   banner_bg_color?: string;
@@ -124,7 +118,6 @@ export interface ReligionInfo {
   banner_icon_color?: string;
   color: string;
   dead?: boolean;
-  name: string;
   rank?: number; // podium place by faithful, top 3 only — the medal right of the name
   size?: number;
   species?: string;
@@ -137,7 +130,6 @@ export interface SubspeciesInfo {
   color_main?: string;
   color_main_2?: string;
   dead?: boolean;
-  name: string;
   rank?: number; // podium place by bearers, top 3 only — the medal right of the name
   size?: number;
   species?: string;

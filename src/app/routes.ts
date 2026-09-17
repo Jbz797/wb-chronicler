@@ -9,8 +9,7 @@ import { ChroniclerService, RegistryService } from './services';
 // A chapter slug (`C<n>`) loads its registries and its blocks before the reader activates, so prose tags and panels resolve against it. A static page needs none.
 const chapterResolver = (route: ActivatedRouteSnapshot): Observable<unknown> => {
   const slug = route.paramMap.get('slug') ?? '';
-  if (!/^C\d+$/.test(slug)) return of(null);
-  return forkJoin([inject(RegistryService).load(slug), inject(ChroniclerService).load(slug)]);
+  return /^C\d+$/.test(slug) ? forkJoin([inject(RegistryService).load(slug), inject(ChroniclerService).load(slug)]) : of(null);
 };
 
 export const ROUTES: Routes = [

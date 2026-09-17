@@ -35,7 +35,6 @@ interface SubspeciesMetadata {
   kills?: number;
   kingdoms?: number;
   name: string;
-  renown?: number;
 }
 
 // Podium-only, like every other tier: absent where the biology places outside the top 3 among the world's subspecies.

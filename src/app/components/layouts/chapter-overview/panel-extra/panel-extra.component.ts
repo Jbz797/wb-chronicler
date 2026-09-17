@@ -35,8 +35,7 @@ export class PanelExtraComponent {
     const panel = this.panel();
     const meta = this._chronicler.currentChapter()?.meta;
     // The two panels that are no tier: the world names no body, and the wars are several — that one hangs a count of its own rather than a plate.
-    if (!meta || panel === 'world-stats' || panel === 'wars') return null;
-    return meta[panel]?.metadata ?? null;
+    return meta && panel !== 'world-stats' && panel !== 'wars' ? (meta[panel]?.metadata ?? null) : null;
   });
 
 }

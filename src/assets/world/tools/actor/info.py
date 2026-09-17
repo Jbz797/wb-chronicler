@@ -3,7 +3,7 @@
 # User-facing docs (usage, available sections) live in `tools/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from functools import cache
 from math import hypot
 from pathlib import Path
@@ -44,13 +44,16 @@ from shared import (
     take_chapter,
     wants_detail,
 )
+from waters import waters_cached
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
+_BOAT_REACH = 240  # chronicler.md « La mer coupe »: a transport boat carries the common reach this far across the sea
 _CIRCLES = (("intimate", 25), ("common", 120))  # chronicler.md's tiers by distance, in tiles — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DOMINANT_AXIS = 0.4  # chronicler.md « Calcul des directions »: an axis under this share of the other drops out of the bearing
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
+_POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
 _RANKED_STATS = {
@@ -95,6 +98,7 @@ _ROLE_ORDER = (
 )
 
 _SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
+_SWIM_REACH = 16  # chronicler.md « La portée d'une nage »: up to this strait a passage is crossed, past it the other shore is out of reach
 
 # Profession → (current-holder field, save collection, history list). Every post keeps a `past_*` history whose last entry is the sitting holder's start.
 _TENURE_ROLES = {
@@ -104,14 +108,26 @@ _TENURE_ROLES = {
 }
 
 
+# Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
+def _bears(actor: dict, ctx: dict) -> bool | None:
+    biology = (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
+    if "reproduction_sexual" in biology:
+        return actor.get("sex") == 1
+    return None if "reproduction_hermaphroditic" in biology else True  # a lone breeder bears its own
+
+
 # One home for every index the sections read, so no caller rolls its own. Actor loop = one pass: id, asset_id, children-per-parent (`get_current_children_count`).
 def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_asset: defaultdict[str, list[dict]] = defaultdict(list)
     actors_by_id: dict[int, dict] = {}
     children_by_parent: dict[int, int] = {}
+    ferrying: set[int] = set()
     for actor in save.get("actors_data") or []:
+        asset = actor.get("asset_id")
         actors_by_id[actor["id"]] = actor
-        actors_by_asset[actor.get("asset_id")].append(actor)
+        actors_by_asset[asset].append(actor)
+        if asset and asset.startswith("boat_transport") and (kid := actor.get("civ_kingdom_id")):
+            ferrying.add(kid)
         # Unrolled: the pair literal rebuilt a tuple per actor. A `Counter` here would read cleaner but measures some 60 % slower than `dict.get` on this pattern.
         if parent := actor.get("parent_id_1"):
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
@@ -125,12 +141,16 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "buildings_by_tile": cache(lambda: _buildings_by_tile(save)),  # called not stored: `metadata` alone asks, and the walk covers every building of the world
         "children_by_parent": children_by_parent,
         "cities_by_id": index_by_id(save.get("cities") or []),
+        "clan_chiefs": frozenset(chief for c in save.get("clans") or [] if (chief := c.get("chief_id"))),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
+        "ferrying_kingdoms": ferrying,  # the crowns a transport boat serves: only their people reach, and are measured, past the common circle
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: `metadata` and `surroundings` alone ask
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
         "religions_by_id": index_by_id(save.get("religions") or []),
+        # Called not stored: only a neighbour on another land asks, and the sweep of the water costs a second on a save not yet cached.
+        "strait_gaps": cache(lambda: {tuple(s["between"]): s["gap"] for s in waters_cached(save, save_path)["straits"]}),
     }
 
 
@@ -160,12 +180,14 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     tile = actor_xy(actor)
     profession = resolve_profession(actor, save)
 
-    # WB `Actor.canBreed` and `BabyHelper.canMakeBabies` merged: the age covers both, `isBreedingAge` sitting above `isAdult`; a gut-less body is fed by definition.
+    # WB `Actor.canBreed` asks every partner its age and reserve, a gut-less body fed by definition; `infertile` and the cap stop the one who must bear alone.
     can_reproduce = (
         age >= age_breeding
-        and "infertile" not in (actor.get("saved_traits") or [])
-        and ctx["children_by_parent"].get(actor.get("id"), 0) < int(snap.get("max_children") or 0)
         and (not needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) or int(actor.get("nutrition") or 0) >= _NEW_BABY_NUTRITION)
+        and (
+            _bears(actor, ctx) is not True
+            or ("infertile" not in (actor.get("saved_traits") or []) and ctx["children_by_parent"].get(actor.get("id"), 0) < int(snap.get("max_children") or 0))
+        )
     )
 
     island_lookup = ctx["island_lookup"]()
@@ -242,23 +264,46 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
 def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     cx, cy = actor_xy(actor)
     circles: dict[str, list[tuple]] = {name: [] for name, _ in _CIRCLES}
+    island_of, gaps = ctx["island_lookup"](), ctx["strait_gaps"]
+    home = island_of.get((cx, cy))
+    # A crown that ferries none reaches no shore: without a transport boat the sea stays the far-off, and no hull nor body past the common reach is measured.
+    ferried = actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]
+    reach = _BOAT_REACH if ferried else _CIRCLES[-1][1]
+    offshore: list[tuple] = []
+    kin: dict[int, str] = {}
+    ties = _ties(actor)
     for other in ctx["actors_by_id"].values():
-        if other is actor or is_boat(other) or ctx["subspecies_by_id"].get(other.get("subspecies")) is None:
+        if other is actor:
+            continue
+        if boat := is_boat(other):
+            if not ferried:
+                continue
+        elif ctx["subspecies_by_id"].get(other.get("subspecies")) is None:
             continue
         ox, oy = actor_xy(other)
         dx, dy = ox - cx, oy - cy
         # Whole tiles, and the circle drawn on the same figure it prints: the scale reads no finer, and a decimal alone pushes a killer's line past the width.
-        if (distance := round(hypot(dx, dy))) <= _CIRCLES[-1][1]:
-            circles[next(name for name, reach in _CIRCLES if distance <= reach)].append((distance, other["id"], dx, dy))
-    detailed = wants_detail(requested, len(circles["common"]))
-    island_of, by_id = ctx["island_lookup"](), ctx["actors_by_id"]
-    home = island_of.get((cx, cy))
-    rings = {
-        name: [_surroundings_row(by_id[i], ctx, distance, dx, dy, home, island_of.get((cx + dx, cy + dy))) for distance, i, dx, dy in sorted(entries)]
-        for name, entries in circles.items()
-        if detailed or name == "intimate"
-    }
-    return rings if detailed else light(rings, withheld=True)  # `full` keeps the circle a chapter opens on, and says the common one waits to be named
+        if (distance := round(hypot(dx, dy))) > reach:
+            continue
+        # His parents, children, siblings and mate stand in full wherever they live: a count by town would drop where they are, which no roster of theirs says.
+        if not boat and (tie := _kin_tie(ties, other)):
+            kin[other["id"]] = tie
+        land = island_of.get((ox, oy))
+        # On foot or at a swim: his own land, the water, or another land a passage joins — the strait, never the crow's line, says whether its shore is in reach.
+        walked = not boat and (land is None or home is None or land == home or gaps().get(tuple(sorted((land, home))), _SWIM_REACH + 1) <= _SWIM_REACH)
+        if walked and distance <= _CIRCLES[-1][1]:
+            circles[next(name for name, reach in _CIRCLES if distance <= reach)].append((distance, other["id"], dx, dy, land))
+        elif ferried and (boat or land != home):  # what only a hull brings in reach: every boat, and every body off his land that no circle above holds
+            offshore.append((distance, other["id"], dx, dy, land))
+    if ferried:
+        circles["common_with_boat"] = offshore
+    by_id = ctx["actors_by_id"]
+    near = sorted(circles.pop("intimate"))
+    rings: dict = {"intimate": [_surroundings_row(by_id[i], ctx, distance, dx, dy, home, land, kin.get(i)) for distance, i, dx, dy, land in near]}
+    plans = {name: _surroundings_plan(entries, ctx, kin) for name, entries in circles.items()}
+    if detailed := wants_detail(requested, sum(map(len, plans.values()))):
+        rings.update({name: _surroundings_rows(plan, ctx, home, kin) for name, plan in plans.items()})
+    return rings if detailed else light(rings, withheld=True)  # `full` keeps the circle a chapter opens on, and says the wider ones wait to be named
 
 
 # What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
@@ -332,6 +377,8 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
     cleaned = compute_actor_stats(actor, ctx)
     if not cleaned:
         return {}
+    if _bears(actor, ctx) is False:  # a sire's `offspring` only bars him from starting — his mate starts in his stead, so no count of his says what he can father
+        cleaned.pop("max_children", None)
     cleaned.update(
         {
             # Life's tallies, silent at nought as every other stat is: a soul that has killed nobody and owns nothing says so by carrying none of them.
@@ -377,6 +424,19 @@ def _equipment_power(actor: dict, ctx: dict) -> int:
     return total
 
 
+# The actor's tie to another body, or `None`, off his `_ties`: WB keeps two parents and one mate each — a child names him, a sibling shares a parent.
+def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str | None:
+    aid, parents, lover = ties
+    lineage = (other.get("parent_id_1"), other.get("parent_id_2"))
+    if other["id"] in parents:
+        return "parent"
+    if aid in lineage:
+        return "child"
+    if other["id"] == lover or other.get("lover") == aid:
+        return "lover"
+    return "sibling" if not parents.isdisjoint(lineage) else None
+
+
 # Years the actor has held `role` = (holder field, collection, history). `None` unless the history's last entry still names them.
 def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, world_time: float) -> int | None:
     if role is None:
@@ -392,23 +452,76 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
     return None
 
 
+# A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
+def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> list[tuple | dict]:
+    by_id, chiefs = ctx["actors_by_id"], ctx["clan_chiefs"]
+    groups: dict[tuple, dict] = {}
+    plan: list[tuple | dict] = []  # the entries come sorted, so a group stands where its nearest member was met, and nothing is re-sorted
+    for entry in sorted(entries):
+        distance, i, dx, dy, _ = entry
+        other = by_id[i]
+        sapient = not is_boat(other) and is_sapient(ctx["subspecies_by_id"][other["subspecies"]])
+        city = other.get("cityID") if sapient else None
+        charged = other.get("profession") in _POSTS or i in chiefs
+        if other.get("kills") or charged or i in kin or (city is None if sapient else other.get("name")):
+            plan.append(entry)
+            continue
+        key = ("city", city) if sapient else ("asset_id", other.get("asset_id"))
+        if (group := groups.get(key)) is None:
+            head = {"city": entity_ref(city, ctx["cities_by_id"]), "species": Counter()} if sapient else {"asset_id": key[1]}
+            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"dir": _direction(dx, dy), "distance": distance}}
+            plan.append(group)
+        group["count"] += 1
+        if sapient:
+            group["species"][other.get("asset_id")] += 1
+    return plan
+
+
 # One line of `surroundings`: silent on his own land, off it the land's id — or `adrift` in water or on an uncounted rock, where a bare null would read as home.
-def _surroundings_row(other: dict, ctx: dict, distance: int, dx: int, dy: int, home: int | None, land: int | None) -> dict:
-    # Raw totals narrowed to `lifespan`, as `population_of` reads a stage: it alone is kept, and the whole pipeline doubled the sweep.
-    age, lifespan = actor_age(other, ctx["world_time"]), int(actor_stat_totals(other, ctx, lifespan_only=True).get("lifespan", 0))
-    return {
-        **({} if land == home else {"adrift": True} if land is None else {"island_id": land}),
+def _surroundings_row(other: dict, ctx: dict, distance: int, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
+    row = {
         "asset_id": other.get("asset_id"),
-        "direction": _direction(dx, dy),
+        "dir": _direction(dx, dy),
         "distance": distance,
         "id": other["id"],
         **({"kills": n} if (n := int(other.get("kills") or 0)) else {}),
-        "life_stage": life_stage(age, adult_age(other, ctx), lifespan, is_egg(other, ctx)),
         "name": other.get("name"),
+    }
+    if is_boat(other):  # a hull: always afloat, sexless and thoughtless — its asset already says what it carries
+        return row
+    # Raw totals narrowed to `lifespan`, as `population_of` reads a stage: it alone is kept, and the whole pipeline doubled the sweep.
+    age, lifespan = actor_age(other, ctx["world_time"]), int(actor_stat_totals(other, ctx, lifespan_only=True).get("lifespan", 0))
+    # Why a line stands in full, where the reason tells a story: the tie before the post, a crown before a clan. Each marks a thinker, so `sapient` falls silent.
+    job = None if tie else _POSTS.get(other.get("profession", 0))  # WB omits `profession` at 0, its « nothing »
+    mark = {"kin": tie} if tie else {"job": job} if job else {"role": "clan_chief"} if other["id"] in ctx["clan_chiefs"] else {}
+    return {
+        **({} if land == home else {"adrift": True} if land is None else {"island_id": land}),
+        **row,
+        # Silent at `adult`, the stage most bodies stand at, as a tally at nought: printed on every line it would push a named killer's past the inline width.
+        **({} if (stage := life_stage(age, adult_age(other, ctx), lifespan, is_egg(other, ctx))) == "adult" else {"life_stage": stage}),
+        **mark,
         # Only when true, as a tally drops at nought: a `false` on every beast would push a named killer's line past the inline width.
-        **({"sapient": True} if is_sapient(ctx["subspecies_by_id"][other["subspecies"]]) else {}),
+        **({"sapient": True} if not mark and is_sapient(ctx["subspecies_by_id"][other["subspecies"]]) else {}),
         "sex": sex_label(other),
     }
+
+
+# A plan written out: a group of one is no group, so its body stands in full. No `kills` summed on the rest — whoever has killed already stands in full.
+def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, kin: dict[int, str]) -> list[dict]:
+    rows = []
+    for item in plan:
+        entry = item.pop("first") if isinstance(item, dict) else item
+        if isinstance(item, dict) and item["count"] > 1:
+            rows.append(item)
+            continue
+        distance, i, dx, dy, land = entry
+        rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, distance, dx, dy, home, land, kin.get(i)))
+    return rows
+
+
+# What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
+def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
+    return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
 
 
 def main(argv: list[str]) -> int:

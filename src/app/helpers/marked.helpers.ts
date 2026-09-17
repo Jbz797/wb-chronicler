@@ -109,8 +109,7 @@ export class MarkedHelpers {
   private static _renderBoat(this: ParserThis, token: Tokens.Generic): string {
     const { tokens: children } = token as IconToken;
     const img = '<img class="icon" src="assets/img/world/boats.png" />';
-    if (!children?.length) return img;
-    return `<span class="icon-wrap boat-ink">${this.parser.parseInline(children)}${img}</span>`;
+    return children?.length ? `<span class="icon-wrap boat-ink">${this.parser.parseInline(children)}${img}</span>` : img;
   }
 
   // A book plate: its own board, the title in its genre's hue, the readings badged — a volume answers to no crown and no stock, so it wears neither palette nor pip.
@@ -279,8 +278,7 @@ export class MarkedHelpers {
   private static _renderResource(this: ParserThis, token: Tokens.Generic): string {
     const { id, tokens: children } = token as IconToken;
     const img = `<img class="icon" src="assets/img/resources/${id}.png" />`;
-    if (!children?.length) return img;
-    return `<span class="icon-wrap">${this.parser.parseInline(children)}${img}</span>`;
+    return children?.length ? `<span class="icon-wrap">${this.parser.parseInline(children)}${img}</span>` : img;
   }
 
   // Species: icon + optional inline text coloured by `SPECIES_COLORS`.

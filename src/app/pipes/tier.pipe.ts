@@ -9,8 +9,7 @@ export class TierPipe implements PipeTransform {
     const r = max > 0 ? current / max : 0;
     if (r >= 0.8) return 'tier-full';
     if (r >= 0.6) return 'tier-high';
-    if (r >= 0.3) return 'tier-mid';
-    return 'tier-low';
+    return r >= 0.3 ? 'tier-mid' : 'tier-low';
   }
 
 }

@@ -14,8 +14,7 @@ export interface Alliance {
 // What the pact was sworn as: the soul who signed and the crown that opened it, both of whom it may long outlive.
 interface AllianceIdentity { founder?: EntityReference }
 
-// A member realm, with what it brings to the pool.
-interface AllianceKingdom { id: number; name: string; population: number }
+interface AllianceKingdom { id: number; name: string }
 
 // WB keeps a pact's lifetime counters apart from its members' — these are its own, never their sum. Each drops at zero, so the panel reads them through `?? 0`.
 interface AllianceMetadata {
@@ -26,7 +25,6 @@ interface AllianceMetadata {
   id: number;
   kills?: number;
   name: string; // read by the panel's header chip, not by any row — the tag beside the title carries it
-  population: number; // pooled from its realms, where a sworn body would count a roster
   renown?: number;
 }
 

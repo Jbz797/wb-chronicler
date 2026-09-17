@@ -50,11 +50,8 @@ export interface PopulationBreakdown {
 export interface TierPopulation {
   fed_pct?: number;
   housed_pct?: number;
-  immortals?: number;
-  infected?: number;
   money?: number;
   renown_total?: number;
-  sick?: number;
   total?: number; // the pooled living, on the tiers that gather rather than enrol — a clan counts its own under `members`
   warriors?: number;
 }

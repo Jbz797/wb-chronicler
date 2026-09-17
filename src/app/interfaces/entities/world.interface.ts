@@ -61,8 +61,8 @@ interface WorldCumulative {
   plots_succeeded?: number;
 }
 
-// The world's current age id and its `world_time` clock — what the chapter header reads.
-interface WorldMetadata { age_id: string; world_time: number }
+// The world's current age id — the panel title's age. Its `world_time` clock reaches the nav through `index.json`.
+interface WorldMetadata { age_id: string }
 
 // Live counts of every world entity at this chapter (thinking souls, buildings, cultures…); `infected`/`sick` are omitted when 0.
 interface WorldSnapshot {

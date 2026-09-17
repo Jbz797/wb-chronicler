@@ -55,8 +55,7 @@ export class RankedStatComponent {
     const s = this._chronicler.currentChapter()?.meta.favorite?.stats;
     if (k === 'health') return s?.health;
     if (k === 'mana') return s?.mana;
-    if (k === 'stamina') return s?.stamina;
-    return null;
+    return k === 'stamina' ? s?.stamina : null;
   });
   // The unit printed after the figure: an ordinal takes the placement's own mark, anything else its translated word. Nothing asked for, nothing printed.
   protected readonly unit = computed(() => {
@@ -80,8 +79,7 @@ export class RankedStatComponent {
       return current < previous ? 'success' : 'error';
     }
     if (current === undefined && previous !== undefined) return 'error';
-    if (current !== undefined && previous === undefined) return 'success';
-    return null;
+    return current !== undefined && previous === undefined ? 'success' : null;
   }
 
   // Branches on `source()` to pull value + rank from the favorite, the kingdom/city snapshot, or any body that rosters the living — the pact included.
@@ -170,19 +168,15 @@ export class RankedStatComponent {
   }
 
   // Omits `rank` when undefined — required by `exactOptionalPropertyTypes`.
-  private _snap(value: number, rank: number | undefined): RankedStatSnapshot {
-    const out: RankedStatSnapshot = { value };
-    if (rank !== undefined) out.rank = rank;
-    return out;
-  }
+  private readonly _snap = (value: number, rank: number | undefined): RankedStatSnapshot => rank === undefined ? { value } : { rank, value };
 
   // Picks the favorite, the kingdom, the city, or any tier block from a chapter's meta based on the configured source.
   private _sourceOf(
     meta: ChapterMeta | undefined,
   ): NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding | null {
     if (!meta) return null;
-    if (this.source() === 'species') return meta.subspecies?.species ?? null; // a section of the subspecies, where every other source is a chapter block
-    return meta[this.source() as ChapterTier];
+    // A section of the subspecies, where every other source is a chapter block.
+    return this.source() === 'species' ? (meta.subspecies?.species ?? null) : meta[this.source() as ChapterTier];
   }
 
 }

@@ -26,8 +26,7 @@ export class KingdomRelationsComponent {
   protected opinionClass = (total: number): string => {
     if (total >= 50) return 'tier-full';
     if (total >= 0) return 'tier-high';
-    if (total >= -50) return 'tier-mid';
-    return 'tier-low';
+    return total >= -50 ? 'tier-mid' : 'tier-low';
   };
 
 }

@@ -41,8 +41,8 @@ export class SubspeciesSpriteHelpers {
 
   // Keyed on the two hues alone — every biology sharing a colour wears one bookmark between them, the slab underneath varying on its own.
   private static async _compose(subspecies: SubspeciesInfo): Promise<HTMLCanvasElement | null> {
-    if (!subspecies.color_main && !subspecies.color_main_2) return null;
-    return SpriteHelpers.compose(this._bookmarks, `${subspecies.color_main},${subspecies.color_main_2}`, () => this._build(subspecies));
+    const { color_main: main, color_main_2: second } = subspecies;
+    return main || second ? SpriteHelpers.compose(this._bookmarks, `${main},${second}`, () => this._build(subspecies)) : null;
   }
 
   // Each ribbon dyed on a canvas of its own, so the inner hue never reaches the outer already painted underneath.

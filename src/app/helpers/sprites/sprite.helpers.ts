@@ -91,12 +91,11 @@ export class SpriteHelpers {
     const px = data.data;
     for (let index = 0; index < px.length; index += 4) {
       const swap = px[index + 3] === 0 ? undefined : swaps.get(`${px[index]},${px[index + 1]},${px[index + 2]}`);
-      if (swap) {
-        const [r, g, b] = swap.split(',');
-        px[index] = Number(r);
-        px[index + 1] = Number(g);
-        px[index + 2] = Number(b);
-      }
+      if (!swap) continue;
+      const [r, g, b] = swap.split(',');
+      px[index] = Number(r);
+      px[index + 1] = Number(g);
+      px[index + 2] = Number(b);
     }
     context.putImageData(data, 0, 0);
   }

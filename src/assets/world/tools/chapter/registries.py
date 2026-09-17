@@ -59,7 +59,6 @@ def _alliance_entry(alliance: dict) -> dict:
         "banner_icon_color": palette.get("color_banner"),
         **({"banner_unity": True} if alliance.get("alliance_type") else {}),
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
-        "color_main": palette.get("color_main"),
         "kingdoms": len(alliance.get("kingdoms") or []),  # the badge in the right link: crowns bound, the one count that tells two pacts apart at a glance
         "name": alliance.get("name"),
     }

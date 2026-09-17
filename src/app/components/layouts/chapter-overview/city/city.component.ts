@@ -39,14 +39,12 @@ export class CityComponent {
   protected readonly isNewHeir = computed(() => {
     const current = this.city()?.metadata;
     const previous = this._chronicler.previousChapter()?.meta.city?.metadata;
-    if (!current?.heir || !previous?.heir || current.id !== previous.id) return false;
-    return current.heir.id !== previous.heir.id;
+    return !!current?.heir && !!previous?.heir && current.id === previous.id && current.heir.id !== previous.heir.id;
   });
   protected readonly isNewLeader = computed(() => {
     const current = this.city();
     const previous = this._chronicler.previousChapter()?.meta.city;
-    if (!current?.rulers || !previous?.rulers || current.metadata.id !== previous.metadata.id) return false;
-    return current.rulers[0].id !== previous.rulers[0].id;
+    return !!current?.rulers && !!previous?.rulers && current.metadata.id === previous.metadata.id && current.rulers[0].id !== previous.rulers[0].id;
   });
   // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
   protected readonly optionalStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {

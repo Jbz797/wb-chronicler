@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-# Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries (via `registries.py`) and a
-# `chapter.json` skeleton. The chronicler then analyses (§ « Phase d'analyse obligatoire »), writes `chapter.md`, and fills
-# the favorite's `descriptor` and the trait summaries this run says are owed. Docs: `tools/tools.md`.
+# Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries (via `registries.py`) and a `chapter.json` skeleton.
+# The chronicler analyses (§ « Phase d'analyse obligatoire »), writes `chapter.md`, fills the favorite's `descriptor` and owed trait summaries. Docs: `tools.md`.
 
 import json
 import random
@@ -105,7 +104,7 @@ _AUDIT = {
             "traits",
         }
     ),
-    "ranks_in_species": frozenset({"birth_rate", "damage_min", "loot"}),
+    "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
     "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
     "snapshot": frozenset({"gear"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
     "stats": frozenset({"birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities"}),
@@ -113,17 +112,31 @@ _AUDIT = {
 
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
 _AUDIT_TIERS = {
+    # A people's health is charted by a town and a crown alone: no other body's panel prints it, and `<tier>/info.py <id> population` still counts it
+    **{f"{tier}.population": {"immortals", "infected", "sick"} for tier in ("alliance", "clan", "culture", "family", "language", "religion", "subspecies")},
+    "alliance.kingdoms": {"population"},  # each member a tag, its headcount the crown's own panel to print
     "alliance.metadata": {"cities", "kingdoms"},  # the pact names its realms and towns as tags, so counting either says nothing the list has not
     "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
+    "attackers.kingdoms": {"population"},  # a camp's realms as tags, the side's pooled `population` printed beside them
+    "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
+    "city.metadata": {"births", "capital", "kingdom"},  # no row counts its births, and its crown and seat are the kingdom panel's to name
+    "city.population": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
+    "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
+    "clan.metadata": {"births"},  # unlike a lineage, a pact or a biology, the clan panel prints no births row
     "clan.ranks": {"kingdoms"},  # its crowns tie on one realm apiece — `clan/info.py <id> ranks` still places the band that spans eight
     "culture.identity": {"species", "subspecies"},  # the founder's stock — the panel names the founder alone, whose own tag carries it
+    "defenders.kingdoms": {"population"},  # as `attackers`
     "family.identity": {"culture", "species", "subspecies"},  # the lineage is read by the souls it seated, its blood and its tongue answering from their own tiers
-    "family.metadata": {"kingdoms"},  # a lineage spans two crowns too rarely for a panel row, so the count rides the script's output alone
-    "family.ranks": {"cities"},  # towns follow the heads that hold them, so the podium repeats the one `members` already draws
-    "favorite.metadata": {"clan", "culture", "family", "language", "religion", "subspecies"},  # the bodies it belongs to, each read to open its own tier block
+    "family.metadata": {"kingdoms", "parents"},  # a second crown or a parent line is too rare for a panel row, so both ride the script's output alone
+    "family.ranks": {"cities", "kingdoms"},  # towns and crowns follow the heads that hold them, so the podium repeats the one `members` already draws
+    # The bodies it belongs to, each read to open its own tier block — and its stock, which the portrait draws off the persons registry
+    "favorite.metadata": {"asset_id", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies"},
+    "kingdom.identity": {"clan", "culture", "language", "religion", "subspecies"},  # as a town's
+    "kingdom.metadata": {"births"},  # as a town's
+    "kingdom.population": {"money"},  # as a town's
     "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
     "religion.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
-    "wars.metadata": {"started_by"},  # the soul who declared it — the card names the crown alone, and `war/info.py <id>` still hands the chronicler the man
+    "wars.metadata": {"deaths", "started_by"},  # the card sets each camp's toll and crown, never the sum or the man — `war/info.py <id>` hands over both
 }
 
 # No panel reads them: `report` and `info` are per-call, `taxonomy` comes from `identity.species`, `passengers` is the chronicler's own reading.
@@ -390,8 +403,9 @@ def _fold_favorite_detail(favorite: dict) -> None:
     favorite.pop("traits", None)  # the chronicler's summary takes its place, carried over or owed
 
 
-# Drops every `opinion.top_drivers` and the kings past: the table prints the standing, the panel the sitting king and the founder, the sections the rest.
+# Drops every `opinion.top_drivers`, the kings past and the town list: the table prints the standing, the panel the sitting king, the founder and a town count.
 def _fold_kingdom_detail(kingdom: dict) -> None:
+    kingdom.pop("cities", None)
     for relation in kingdom.get("relations") or []:
         (relation.get("opinion") or {}).pop("top_drivers", None)
     if founder := _fold_rulers(kingdom):

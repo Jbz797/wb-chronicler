@@ -1,4 +1,4 @@
-import { BookShelf, EntityReference, EquipmentStock, Leaders, PersonReference, PopulationBreakdown } from '../entity.interface';
+import { BookShelf, EquipmentStock, Leaders, PersonReference, PopulationBreakdown } from '../entity.interface';
 
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium (`ranks`) or an empty dimension means no key at all. A city is a kingdom's settlement.
 export interface City {
@@ -16,7 +16,7 @@ export interface City {
   rulers?: [PersonReference]; // the sitting mayor alone, absent between two
 }
 
-// The city's whole military, absent where there is none. `captain_years`, `kills_per_death` and `total_captains` ship in the JSON but stay chronicler-only.
+// The city's whole military, absent where there is none. Its captains past and the sitting one's tenure stay in `city/info.py <id> army`.
 interface CityArmy {
   age: number;
   captain?: PersonReference;
@@ -29,27 +29,18 @@ interface CityArmy {
   renown: number;
 }
 
-// What the town officially answers to, and the settler who raised it — the bodies it is affiliated with, never what it counts.
-interface CityIdentity {
-  clan?: EntityReference;
-  culture?: EntityReference;
-  founder?: PersonReference;
-  language?: EntityReference;
-  religion?: EntityReference;
-  subspecies?: EntityReference;
-}
+// The settler who raised the town. The bodies it answers to stay in `city/info.py <id> identity`, each tier's own panel naming the favorite's.
+interface CityIdentity { founder?: PersonReference }
 
 // How firmly the city holds to its crown: `new.py` keeps only the `total` for the reader, `city/info.py <id> loyalty` itemises the modifiers for the chronicler.
 interface CityLoyalty { total: number }
 
-// The city's own attributes (age, heir, stocks…) — `population` aggregates its inhabitants instead. Its culture/language/religion ship chronicler-only.
+// The city's own attributes (age, heir, stocks…) — `population` aggregates its inhabitants instead.
 interface CityMetadata {
   age: number;
   attractivity: number; // `migrated - left`, emitted whatever its sign — 0 and negatives are readings too
-  births?: number;
   book_reach?: number;
   buildings: number;
-  capital?: boolean;
   deaths: number;
   food: number;
   gold: number;
@@ -58,7 +49,6 @@ interface CityMetadata {
   houses: number;
   id: number;
   kills: number;
-  kingdom?: EntityReference;
   name: string;
   renown: number;
   score_rank?: number; // absent where the town stands alone — a place needs a rival
@@ -66,14 +56,13 @@ interface CityMetadata {
   wealth: number;
 }
 
-// The city's inhabitants aggregated, not its `metadata`: `immortals`/`infected`/`sick` omitted at 0, age/sex tallies ship but stay chronicler-only.
+// The city's inhabitants aggregated, not its `metadata`: `immortals`/`infected`/`sick` omitted at 0, age/sex tallies and the `money` total left to the chronicler.
 interface CityPopulation {
   fed_pct?: number;
   food_per_capita?: number;
   housed_pct?: number;
   immortals?: number;
   infected?: number;
-  money?: number;
   nobles_money?: number;
   renown_total?: number;
   ruler_money?: number; // the mayor's own purse, the third share of `money` beside the nobles' and the subjects'

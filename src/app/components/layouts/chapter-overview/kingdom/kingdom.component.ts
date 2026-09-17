@@ -44,14 +44,12 @@ export class KingdomComponent {
   protected readonly isNewHeir = computed(() => {
     const current = this.kingdom()?.metadata;
     const previous = this._chronicler.previousChapter()?.meta.kingdom?.metadata;
-    if (!current?.heir || !previous?.heir || current.id !== previous.id) return false;
-    return current.heir.id !== previous.heir.id;
+    return !!current?.heir && !!previous?.heir && current.id === previous.id && current.heir.id !== previous.heir.id;
   });
   protected readonly isNewKing = computed(() => {
     const current = this.kingdom();
     const previous = this._chronicler.previousChapter()?.meta.kingdom;
-    if (!current?.rulers || !previous?.rulers || current.metadata.id !== previous.metadata.id) return false;
-    return current.rulers[0].id !== previous.rulers[0].id;
+    return !!current?.rulers && !!previous?.rulers && current.metadata.id === previous.metadata.id && current.rulers[0].id !== previous.rulers[0].id;
   });
   // The « Reine/Roi » descriptions title — the registry holds the sex, the sitting ruler being emitted as `{id, name}`.
   protected readonly kingLabel = computed(() => {

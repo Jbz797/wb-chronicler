@@ -66,8 +66,7 @@ export class WorldStatsComponent {
   // Causes with > 0 deaths this chapter, sorted by count desc — 0-rows are hidden (16 categories incl. peste/poison/etc. that stay idle most chapters).
   protected readonly sortedDeathCauses = computed(() => {
     const counts = this.deathsSincePrevious();
-    if (!counts) return [];
-    return this.deathCauses.filter(c => (counts[c.key] ?? 0) > 0).toSorted((a, b) => (counts[b.key] ?? 0) - (counts[a.key] ?? 0));
+    return counts ? this.deathCauses.filter(c => (counts[c.key] ?? 0) > 0).toSorted((a, b) => (counts[b.key] ?? 0) - (counts[a.key] ?? 0)) : [];
   });
   // Sum of per-cause death counts since previous chapter — `null` mirrors `deathsSincePrevious`.
   protected readonly totalDeathsSincePrevious = computed(() => {

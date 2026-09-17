@@ -36,9 +36,9 @@
         <app-person-tag [id]="row.person.id" [name]="row.person.name" />
       </nz-descriptions-item>
     }
-    <!-- Kept at nought, unlike its neighbours: the row reads « 0 / 5 », and the pair says what the body could still bear. -->
+    <!-- Kept at nought, unlike its neighbours: the row reads « 0 / 5 », and the pair says what the body could still bear — a sire bears none, so his count stands alone. -->
     <nz-descriptions-item [nzTitle]="childrenTitle">
-      <app-ranked-stat stat="children" [suffix]="`/ ${fav.stats.max_children}`" />
+      <app-ranked-stat stat="children" [suffix]="fav.stats.max_children === undefined ? '' : `/ ${fav.stats.max_children}`" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="fav.stats.kills" [nzTitle]="killsTitle">
       <app-ranked-stat stat="kills" />

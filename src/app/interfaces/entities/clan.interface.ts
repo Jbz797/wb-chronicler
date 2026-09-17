@@ -1,4 +1,4 @@
-import { EntityReference, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
 // The favourite's clan. Joined, not inherited — so unlike its `Family`, its members share colours rather than blood, and its `traits` are sworn to.
 export interface Clan {
@@ -12,13 +12,12 @@ export interface Clan {
   traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
 
-// Where the band comes from and what it holds to — its founding, its culture and the stock it sprang from.
-interface ClanIdentity { culture?: EntityReference; founder?: PersonReference; species?: string; subspecies?: EntityReference }
+// Who founded the band. Its culture and the stock it sprang from stay in `clan/info.py <id> identity`.
+interface ClanIdentity { founder?: PersonReference }
 
 // Every counter drops at zero, so panels read them via `?? 0` — bar `past_chiefs`, which WB never leaves empty and the panel prints directly.
 interface ClanMetadata {
   age: number;
-  births?: number;
   books_written?: number;
   chief?: PersonReference;
   cities?: number;

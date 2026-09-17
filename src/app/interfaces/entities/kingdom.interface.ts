@@ -4,7 +4,6 @@ import { EntityReference, EquipmentStock, HullCount, Leaders, PersonReference, P
 export interface Kingdom {
   boats: HullCount;
   breakdown: PopulationBreakdown;
-  cities?: KingdomCity[];
   gear: EquipmentStock;
   identity: KingdomIdentity;
   leaders?: Leaders;
@@ -18,23 +17,12 @@ export interface Kingdom {
 // This kingdom's diplomatic tie to one other — ally/enemy/neutral, with the net opinion score driving the tag colour.
 export interface KingdomRelation { kingdom: EntityReference; opinion: { total: number }; status: 'ally' | 'enemy' | 'neutral' }
 
-// The kingdom's settlements, most populous first — chronicler-oriented list, also handy to resolve city names.
-interface KingdomCity { id: number; name: string; population: number }
-
-// What the crown officially is, and the ruler who opened it — its affiliations, never the counters `metadata` keeps.
-interface KingdomIdentity {
-  clan?: EntityReference;
-  culture?: EntityReference;
-  founder?: PersonReference;
-  language?: EntityReference;
-  religion?: EntityReference;
-  subspecies?: EntityReference;
-}
+// The ruler who opened the crown. What it officially is stays in `kingdom/info.py <id> identity`, each tier's own panel naming the favorite's.
+interface KingdomIdentity { founder?: PersonReference }
 
 // The kingdom's own attributes (age, capital, heir, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
 interface KingdomMetadata {
   age: number;
-  births?: number;
   book_reach?: number;
   books?: number; // volumes shelved across its towns, whoever wrote them
   buildings: number;
@@ -58,7 +46,7 @@ interface KingdomMetadata {
   wealth: number;
 }
 
-// Aggregates over the kingdom's inhabitants, not its own `metadata` — age/sex tallies and the `money` total chronicler-only, the Richesse card summing the shares.
+// Aggregates over the kingdom's inhabitants, not its `metadata` — age/sex tallies and the `money` total left to the chronicler, Richesse summing the shares.
 interface KingdomPopulation {
   fed_pct?: number;
   food_per_capita?: number;

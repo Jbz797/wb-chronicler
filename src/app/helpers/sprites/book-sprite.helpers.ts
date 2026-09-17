@@ -30,8 +30,7 @@ export class BookSpriteHelpers {
 
   // Keyed on the two sheets alone — every volume sharing a cover and a glyph wears the same board, whatever its title.
   private static async _compose(book: BookInfo): Promise<HTMLCanvasElement | null> {
-    if (!book.cover || !book.icon) return null;
-    return SpriteHelpers.compose(this._volumes, `${book.cover},${book.icon}`, () => this._build(book));
+    return book.cover && book.icon ? SpriteHelpers.compose(this._volumes, `${book.cover},${book.icon}`, () => this._build(book)) : null;
   }
 
 }

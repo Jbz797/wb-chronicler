@@ -16,14 +16,11 @@ export interface Favorite {
 // The favorite's two attachments. Python emits each with its full stat line for the chronicler; the UI only ever draws their `[p]` tag, hence `EntityReference`.
 interface Companions { best_friend?: PersonReference; lover?: PersonReference }
 
-// The favorite's identity and civic standing (species, kingdom, roles…); optional fields are dropped by Python when the actor has none.
+// The favorite's standing (job, life stage, roles…); optional fields are dropped by Python when the actor has none. Its bodies each open their own panel.
 interface FavoriteMetadata {
   age: number;
-  asset_id: string;
-  city?: EntityReference;
   id: number;
   job: string;
-  kingdom?: EntityReference;
   life_stage: LifeStage;
   name: string;
   personality?: string;
@@ -74,7 +71,7 @@ interface FavoriteStats {
   lifespan: number;
   mana: number;
   mana_max?: number;
-  max_children: number;
+  max_children?: number; // absent on a sexed species' male: WB weighs the cap on the one who bears alone, so a sire at his count still fathers
   money?: number;
   nutrition: number;
   nutrition_max?: number; // WB `Actor.getMaxNutrition`: 100, which `big_stomach` doubles — absent on a body with no gut, which never eats

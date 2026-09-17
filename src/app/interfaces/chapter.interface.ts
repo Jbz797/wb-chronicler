@@ -19,7 +19,7 @@ export interface Chapter extends Page { previewUrl: string; tags: string[] }
 // One row of `saves/index.json`, written by `new.py`: enough to name and date a chapter, never enough to draw a panel.
 export interface ChapterIndexEntry { n: number; tags: string[]; world_time: number }
 
-// A parsed chapter.json: a block per overview panel — the world, the favorite and each body it belongs to — plus the age label and prose tags.
+// A parsed chapter.json: a block per overview panel — the world, the favorite and each body it belongs to. Its `tags` reach the nav through `index.json`.
 export interface ChapterMeta extends Record<ChapterTier, unknown> {
   alliance: Alliance | null;
   boat: Boat | null;
@@ -32,7 +32,6 @@ export interface ChapterMeta extends Record<ChapterTier, unknown> {
   language: Language | null;
   religion: Religion | null;
   subspecies: Subspecies | null;
-  tags: string[];
   wars: War[]; // the crown's own, each answering for itself — its `kingdom.wars` names them, this block fields them
   world: World;
 }

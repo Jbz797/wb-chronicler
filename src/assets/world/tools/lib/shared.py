@@ -690,6 +690,29 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: b
     return requested
 
 
+# A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.
+def pickle_cached(name: str, save_path: Path, compute) -> dict:
+    key = save_cache_key(save_path)
+    cache_file = CACHE_DIR / f"{name}_{key}.pkl" if key else None
+    if cache_file and cache_file.exists():
+        try:
+            with cache_file.open("rb") as f:
+                return pickle.load(f)
+        except Exception:  # noqa: BLE001 — corrupt cache, fall through and recompute.
+            cache_file.unlink(missing_ok=True)
+    out = compute()
+    if cache_file:
+        CACHE_DIR.mkdir(exist_ok=True)
+        with cache_file.open("wb") as f:
+            pickle.dump(out, f)
+        # One slot per save, capped like the saves themselves: a reading that weighs C<n-1> against C<n> would otherwise sweep the map again at every switch.
+        current = sorted(CACHE_DIR.glob(f"{name}_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)
+        outdated = [f for f in CACHE_DIR.glob(f"{name.rsplit('_', 1)[0]}_*.pkl") if not f.name.startswith(f"{name}_")]  # an older version of the sweep
+        for doomed in outdated + current[_CACHE_KEEP:]:
+            doomed.unlink(missing_ok=True)
+    return out
+
+
 # Top-3 shares per dimension over civ `actors` (% of the group); `species` also carries its `asset_id`. Needs the five `*_by_id` indexes in `ctx`.
 def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     species, cultures, kingdoms, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter(), Counter()

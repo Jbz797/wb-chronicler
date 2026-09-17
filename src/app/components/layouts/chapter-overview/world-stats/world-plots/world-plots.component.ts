@@ -24,8 +24,7 @@ export class WorldPlotsComponent {
   // Badged whenever the board has moved: one schemer scheming something else counts, and so does a plot hatched or abandoned since the previous chapter.
   protected readonly isNew = computed(() => {
     const previous = this._chronicler.previousChapter()?.meta.world.plots;
-    if (!previous) return false;
-    return this._signature(this._chronicler.currentChapter()?.meta.world.plots ?? []) !== this._signature(previous);
+    return !!previous && this._signature(this._chronicler.currentChapter()?.meta.world.plots ?? []) !== this._signature(previous);
   });
   // Every scheme afoot, its label resolved here: WB hangs a plot on one schemer, and `actor/info.py <id> plot` tells the chronicler the rest.
   protected readonly rows = computed(() => {
