@@ -21,7 +21,7 @@ export class BreakdownComponent {
   public readonly source = input.required<BreakdownSource>();
 
   protected readonly breakdown = computed(() => this._chronicler.currentChapter()?.meta[this.source()]?.breakdown ?? null);
-  // The most-represented entry of each dimension — the table shows the leader, the chronicler keeps the full top-3. `null` for a dimension with no data.
+  // Each dimension's leader, `null` where the chapter carries none — the runners-up and any leader at 100 % stay in `<tier>/info.py <id> breakdown`.
   protected readonly tops = computed(() => {
     const b = this.breakdown();
     return {
@@ -33,8 +33,5 @@ export class BreakdownComponent {
       subspecies: b?.subspecies?.[0] ?? null,
     };
   });
-
-  // A dimension the whole body shares says nothing the row does not already say — the share prints only where there is something to share.
-  protected share = (pct: number): string => pct < 100 ? `${pct}%` : '';
 
 }

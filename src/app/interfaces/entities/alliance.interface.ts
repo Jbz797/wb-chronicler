@@ -2,7 +2,7 @@ import { EntityReference, Leaders, PopulationBreakdown, TierPopulation } from '.
 
 // A pact of crowns, and the one tier the favourite reaches through another: his kingdom's. Absent, not empty — Python's `emit` strips `None`/`[]`/`{}`.
 export interface Alliance {
-  breakdown: PopulationBreakdown;
+  breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: AllianceIdentity;
   kingdoms: AllianceKingdom[];
   leaders?: Leaders;

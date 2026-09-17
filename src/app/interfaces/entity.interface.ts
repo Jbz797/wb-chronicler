@@ -36,14 +36,14 @@ export interface PeopleTier {
 // A soul, not a place: 42 % of WB's actors go unnamed; `PersonTagComponent` prints `ANONYMOUS_NAME`.
 export interface PersonReference { id: number; name?: string }
 
-// Top-3 shares of a civ population per dimension (% of the whole). All optional: a tier drops the dimension it is defined by, which would read 100 %.
+// Each dimension's leader and its share of a civ population, `new.py` folding the runners-up away and any leader at 100 %, which its own panel already names.
 export interface PopulationBreakdown {
-  cultures?: { id: number; name: string; pct: number }[];
-  kingdoms?: { id: number; name: string; pct: number }[]; // absent on a realm and a town, both at 100 % one crown — present on an alliance, which spans several
-  languages?: { id: number; name: string; pct: number }[];
-  religions?: { id: number; name: string; pct: number }[];
-  species?: { asset_id: string; pct: number }[]; // absent on a lineage: WB has species inherited, so it would restate `identity.species` at 100 %
-  subspecies?: { id: number; name: string; pct: number }[]; // the species alone goes without an id: every other dimension has a tag to resolve against a registry
+  cultures?: [{ id: number; name: string; pct: number }];
+  kingdoms?: [{ id: number; name: string; pct: number }];
+  languages?: [{ id: number; name: string; pct: number }];
+  religions?: [{ id: number; name: string; pct: number }];
+  species?: [{ asset_id: string; pct: number }]; // the species alone goes without an id: every other dimension has a tag to resolve against a registry
+  subspecies?: [{ id: number; name: string; pct: number }];
 }
 
 // What the living of a body say of it, of which the panels print these — the age and sex slices stay in `<tier>/info.py <id> population`, for the chronicler.

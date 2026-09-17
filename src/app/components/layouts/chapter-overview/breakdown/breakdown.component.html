@@ -8,7 +8,7 @@
             <img class="species-icon" [src]="`assets/img/species/${s.asset_id}.png`" />
             {{ `species_${s.asset_id}` | translate }}
           </span>
-          <span class="share">{{ share(s.pct) }}</span>
+          <span class="share">{{ s.pct }}%</span>
         </div>
       </nz-descriptions-item>
     }
@@ -16,7 +16,7 @@
       <nz-descriptions-item [nzTitle]="subspeciesTitle">
         <div class="composition-row">
           <app-subspecies-tag [id]="ss.id" [name]="ss.name" />
-          <span class="share">{{ share(ss.pct) }}</span>
+          <span class="share">{{ ss.pct }}%</span>
         </div>
       </nz-descriptions-item>
     }
@@ -24,7 +24,7 @@
       <nz-descriptions-item [nzTitle]="cultureTitle">
         <div class="composition-row">
           <app-culture-tag [id]="c.id" [name]="c.name" />
-          <span class="share">{{ share(c.pct) }}</span>
+          <span class="share">{{ c.pct }}%</span>
         </div>
       </nz-descriptions-item>
     }
@@ -32,7 +32,7 @@
       <nz-descriptions-item [nzTitle]="languageTitle">
         <div class="composition-row">
           <app-language-tag [id]="l.id" [name]="l.name" />
-          <span class="share">{{ share(l.pct) }}</span>
+          <span class="share">{{ l.pct }}%</span>
         </div>
       </nz-descriptions-item>
     }
@@ -40,7 +40,7 @@
       <nz-descriptions-item [nzTitle]="religionTitle">
         <div class="composition-row">
           <app-religion-tag [id]="r.id" [name]="r.name" />
-          <span class="share">{{ share(r.pct) }}</span>
+          <span class="share">{{ r.pct }}%</span>
         </div>
       </nz-descriptions-item>
     }
@@ -48,7 +48,7 @@
       <nz-descriptions-item [nzTitle]="kingdomTitle">
         <div class="composition-row">
           <app-kingdom-tag [id]="k.id" [name]="k.name" />
-          <span class="share">{{ share(k.pct) }}</span>
+          <span class="share">{{ k.pct }}%</span>
         </div>
       </nz-descriptions-item>
     }

@@ -182,7 +182,7 @@
         padding: 6px 12px !important;
 
         // The plain badges a row hangs — a NEW, a role, a war type. The registry plates keep their own 12.5px, which this rule outranked on specificity alone.
-        nz-tag:not(.entity-tag, .family-tag) {
+        nz-tag:not(.entity-tag) {
           font-size: 13px;
           margin-left: 4px;
           margin-right: 0;
@@ -195,7 +195,7 @@
         }
 
         // A delta wraps its own tag, so it is always a first child — yet it trails a number, never opens a cell: the `:not` outweighs the rule above.
-        app-delta nz-tag:not(.entity-tag, .family-tag):first-child {
+        app-delta nz-tag:not(.entity-tag):first-child {
           margin-left: 4px;
         }
 
@@ -236,8 +236,11 @@
           top: -1px;
         }
 
+        // `text-top` sets the 20px plate 4px down a 24px line and flush with its foot: lifted by half, it meets the row's centre and leaves the row's height alone.
         .entity-tag {
           margin: 0;
+          position: relative;
+          top: -2px;
         }
       }
     }

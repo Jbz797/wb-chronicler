@@ -2,7 +2,7 @@ import { Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopula
 
 // The favourite's bloodline. A lineage, not a household — `houses` counts the roofs its members sleep under, rarely one. The roster stays chronicler-only.
 export interface Family {
-  breakdown: PopulationBreakdown;
+  breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: FamilyIdentity;
   leaders?: Leaders;
   members: MemberRoster;

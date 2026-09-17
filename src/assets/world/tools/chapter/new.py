@@ -378,6 +378,13 @@ def _fold_boat_detail(boat: dict) -> None:
         metadata.pop(key, None)
 
 
+# The composition table names each dimension's leader and its share: the runners-up print nowhere, and a leader holding everyone restates its own panel.
+def _fold_breakdown(entity: dict) -> None:
+    block = entity.pop("breakdown", None) or {}
+    if kept := {dimension: rows[:1] for dimension, rows in block.items() if rows[0]["pct"] < 100}:
+        entity["breakdown"] = kept
+
+
 # Drops the loyalty summary and both stock lists, keeping their `total`, and the mayors past — the panels print those alone, the sections still itemising the rest.
 def _fold_city_detail(city: dict) -> None:
     (city.get("loyalty") or {}).pop("top_drivers", None)
@@ -750,6 +757,7 @@ def main(argv: list[str]) -> int:
         for tier, block in blocks.items():
             if not block:
                 continue
+            _fold_breakdown(block)
             _fold_leaders(block)
             _fold_population(block)
             block.pop("traits", None)  # the raw list goes; `_carry_trait_summaries` writes the chronicler's prose in its place

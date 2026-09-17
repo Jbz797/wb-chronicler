@@ -26,7 +26,7 @@ EQUIPMENT_RACKS = {
     "weapons": "item_storage_weapons",
 }
 
-MIN_PER_CAPITA_UNITS = 3  # Below three souls a per-head ratio measures the divisor, not the body — a lone survivor would top every podium.
+MIN_PER_CAPITA_UNITS = 4  # Below four souls a per-head ratio or a share measures the divisor, not the body — a lone survivor would top every podium.
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 MIN_SCORE_PEERS = 3  # The one exception, for a town and a crown: a world raises them by the handful, so three rivals already make a place worth naming.
 PODIUM_PLACES = 3  # gold, silver, bronze — and the widest tie a place can hold, past which the medal marks the field, not the one who takes it.
@@ -715,6 +715,8 @@ def pickle_cached(name: str, save_path: Path, compute) -> dict:
 
 # Top-3 shares per dimension over civ `actors` (% of the group); `species` also carries its `asset_id`. Needs the five `*_by_id` indexes in `ctx`.
 def population_breakdown(actors: list[dict], ctx: dict) -> dict:
+    if (pop := len(actors)) < MIN_PER_CAPITA_UNITS:  # one soul weighs a quarter or more: the shares would measure the divisor
+        return {}
     species, cultures, kingdoms, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter(), Counter()
 
     # Hoisted out of the loop below: written inline, this literal would rebuild five tuples for every actor.
@@ -724,11 +726,10 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
         for counter, field in optional:
             if (v := a.get(field)) is not None:
                 counter[v] += 1
-    pop = len(actors)
 
     # The id rides along on every dimension here: each has a tag to resolve and a script to query. The species has neither, and builds its own rows below.
     def top3(counter: Counter, names: dict) -> list[dict]:
-        return [{"id": k, "name": (names.get(k) or {}).get("name"), "pct": pct} for k, n in counter.most_common(3) if pop and (pct := round(n / pop * 100)) > 0]
+        return [{"id": k, "name": (names.get(k) or {}).get("name"), "pct": pct} for k, n in counter.most_common(3) if (pct := round(n / pop * 100)) > 0]
 
     return {
         "cultures": top3(cultures, ctx["cultures_by_id"]),
@@ -736,7 +737,7 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
         "languages": top3(languages, ctx["languages_by_id"]),
         "religions": top3(religions, ctx["religions_by_id"]),
         "species": [  # the `asset_id` alone, which the UI translates; the others carry a world-generated name no table could hold.
-            {"asset_id": k, "pct": pct} for k, n in species.most_common(3) if pop and (pct := round(n / pop * 100)) > 0
+            {"asset_id": k, "pct": pct} for k, n in species.most_common(3) if (pct := round(n / pop * 100)) > 0
         ],
         "subspecies": top3(subspecies, ctx["subspecies_by_id"]),
     }

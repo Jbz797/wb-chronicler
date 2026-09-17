@@ -22,8 +22,7 @@ canvas {
 
 .ant-tag {
   // One plate for all four: a subject, its village, its crown and its lineage share a body, so they read as one family. Only ground and ink part them.
-  &.entity-tag,
-  &.family-tag {
+  &.entity-tag {
     align-items: center;
     display: inline-flex;
     font-family: $font-body;

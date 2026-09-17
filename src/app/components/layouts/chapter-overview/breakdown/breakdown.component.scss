@@ -8,9 +8,4 @@
 
 .share {
   white-space: nowrap;
-
-  // A body entirely of one stock prints no share — dropped rather than blank, else the flex gap would still hold a margin for it.
-  &:empty {
-    display: none;
-  }
 }

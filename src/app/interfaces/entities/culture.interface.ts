@@ -3,7 +3,7 @@ import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown,
 // The favourite's culture: caught at the cradle, not sworn — so its `breakdown` drifts furthest from the founder whose card `identity` holds.
 export interface Culture {
   books: BookShelf; // volumes written under it, whoever holds them now — the mirror of a town's shelf, which counts what it holds whoever wrote it
-  breakdown: PopulationBreakdown;
+  breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: CultureIdentity;
   leaders?: Leaders;
   members: MemberRoster;

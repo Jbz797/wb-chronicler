@@ -2,7 +2,7 @@ import { Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopula
 
 // The favourite's clan. Joined, not inherited — so unlike its `Family`, its members share colours rather than blood, and its `traits` are sworn to.
 export interface Clan {
-  breakdown: PopulationBreakdown;
+  breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: ClanIdentity;
   leaders?: Leaders;
   members: MemberRoster;

@@ -14,7 +14,7 @@ export interface SpeciesTotals {
 
 // The favourite's subspecies. Neither joined nor inherited but born into — WB fixes it at birth, so its bearers span every crown and clan without ever choosing it.
 export interface Subspecies {
-  breakdown: PopulationBreakdown;
+  breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   leaders?: Leaders;
   members: MemberRoster;
   metadata: SubspeciesMetadata;

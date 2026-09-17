@@ -4,7 +4,7 @@ import { BookShelf, EquipmentStock, Leaders, PersonReference, PopulationBreakdow
 export interface City {
   army?: CityArmy;
   books: BookShelf;
-  breakdown: PopulationBreakdown;
+  breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   gear: EquipmentStock;
   identity: CityIdentity;
   inventory?: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
