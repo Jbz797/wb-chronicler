@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 17/09/26 15:12</p>
+<p class="metadata">Date de mise à jour : 17/09/26 16:11</p>
 
 Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie JSON sur `stdout`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city/info.py 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -51,6 +51,7 @@ Invoquer chaque script via `python3 tools/<commande> [sections] [C<n>]`, sortie 
 ### Formes et mesures :
 
 - `city … rulers` et `kingdom … rulers` donnent la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain en place : `population.ruler_money`.
+- `geography … frozen` compte la glace posée sur le sol (`frozen_tiles`), pas le biome `permafrost`, gelé par nature : une part « gelée » s'entend hors permafrost, que `biomes` donne à part.
 - `island_id` **absent** couvre deux cas opposés : un îlot trop petit pour compter, ou l'eau. `tiles/info.py <x,y> tile_info` tranche — `kind: water` pour le second.
 - `to_land` (section `distances`) mesure le bras d'eau depuis **tout le rocher**, pas depuis la tuile : un naufragé s'isole par le détroit de son île, pas par l'endroit où il se tient. Absent sur une île comptée.
 - `world … metadata` : `months_until_next_age` est **déjà en mois**, 12 par an — il ne repasse pas par le `/ 5` d'un `world_time`.

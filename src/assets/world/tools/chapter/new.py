@@ -869,6 +869,9 @@ def main(argv: list[str]) -> int:
         todo = "§ « Choix du favori » before a single word — `tools/chapter/favorite.py <id>` rebuilds this chapter; told without one only if none is worth it"
     print(f"  → chronicler: {todo}")
 
+    # Said every chapter, where it is acted on as the descriptor's ceiling is: cuts from three audits can thin a chapter past telling anything.
+    print("  → chapter.md: 4000 characters at the very least, once the audits have cut — a floor, not a target")
+
     # Said every chapter a favorite stands: its descriptor is carried over, rewritten on a notable change or written anew, and a rewrite owes the ceiling too.
     if favorite:
         print("  → the descriptor: 64 characters at the very most — a ceiling, not a target")
