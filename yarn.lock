@@ -429,9 +429,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ant-design/icons-angular@npm:^22.0.0":
-  version: 22.0.0
-  resolution: "@ant-design/icons-angular@npm:22.0.0"
+"@ant-design/icons-angular@npm:^22.1.0":
+  version: 22.1.0
+  resolution: "@ant-design/icons-angular@npm:22.1.0"
   dependencies:
     "@ant-design/colors": "npm:^7.0.0"
     tslib: "npm:^2.0.0"
@@ -440,7 +440,7 @@ __metadata:
     "@angular/core": ^22.0.0
     "@angular/platform-browser": ^22.0.0
     rxjs: ^6.5.3 || ^7.4.0
-  checksum: 10c0/21c4f58a2bc7ce1604efda03004d6519c02dc022f40497b5ad6c476dc233776ef414ecfaddd2a127316a2a8e27aa5ad2587b7e25c5b4287ddbb8d81b610389e8
+  checksum: 10c0/2ed0391cd9d201fedbf3f4683e8d23b7cb08357083827293c905bcc342300edb9b691a335718ea05f172926f92ada5fa0b23a4351f26224fa1658beef31f8629
   languageName: node
   linkType: hard
 
@@ -6836,12 +6836,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ng-zorro-antd@npm:22.0.1":
-  version: 22.0.1
-  resolution: "ng-zorro-antd@npm:22.0.1"
+"ng-zorro-antd@npm:22.1.0":
+  version: 22.1.0
+  resolution: "ng-zorro-antd@npm:22.1.0"
   dependencies:
     "@angular/cdk": "npm:^22.0.0"
-    "@ant-design/icons-angular": "npm:^22.0.0"
+    "@ant-design/icons-angular": "npm:^22.1.0"
     "@ctrl/tinycolor": "npm:^3.6.0"
     date-fns: "npm:^4.1.0"
     tslib: "npm:^2.3.0"
@@ -6851,7 +6851,7 @@ __metadata:
     "@angular/forms": ^22.0.0
     "@angular/platform-browser": ^22.0.0
     "@angular/router": ^22.0.0
-  checksum: 10c0/dbff1818b683c1953a44e065bacc91a19121192b0d58595a581c0481ae4a43bb839af74941db9c007a55dc862326c9eec7e41c4dbab65059ae3b206a90000c08
+  checksum: 10c0/1778301e94ecc147e856d05ae98da7c2490f2a8949305170c7404c184cf749664ccc20676f05017a00b4fe888cbfc0d1fa9d82a8fa9044fb63155461b0c168ec
   languageName: node
   linkType: hard
 
@@ -9095,7 +9095,7 @@ __metadata:
     less: "npm:4.9.1"
     marked: "npm:18.0.13"
     marked-gfm-heading-id: "npm:4.1.4"
-    ng-zorro-antd: "npm:22.0.1"
+    ng-zorro-antd: "npm:22.1.0"
     ngx-markdown: "npm:22.0.2"
     ngx-scrollbar: "npm:^19.1.5"
     prettier: "npm:3.9.7"

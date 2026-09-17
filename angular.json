@@ -9,7 +9,13 @@
       "architect": {
         "build": {
           "builder": "@angular/build:application",
+          "configurations": {
+            "development": { "optimization": false, "sourceMap": true },
+            "production": { "optimization": true, "sourceMap": false }
+          },
+          "defaultConfiguration": "development",
           "options": {
+            "allowedCommonJsDependencies": ["prismjs"],
             "assets": [
               {
                 "glob": "**/*",
@@ -33,9 +39,7 @@
             "browser": "src/main.ts",
             "externalDependencies": ["marked-katex-extension"],
             "index": "src/index.html",
-            "optimization": false,
             "polyfills": ["zone.js"],
-            "sourceMap": true,
             "stylePreprocessorOptions": { "includePaths": ["src"] },
             "styles": ["src/theme.less", "src/styles.scss", "node_modules/prism-themes/themes/prism-gruvbox-dark.css"],
             "tsConfig": "tsconfig.json"
@@ -43,7 +47,11 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": { "buildTarget": "wb-chronicler:build" }
+          "configurations": {
+            "development": { "buildTarget": "wb-chronicler:build:development" },
+            "production": { "buildTarget": "wb-chronicler:build:production" }
+          },
+          "defaultConfiguration": "development"
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",

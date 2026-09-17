@@ -83,6 +83,7 @@ The CLI is what the chronicle expects — the session opens on a single order, _
 ```sh
 yarn install
 yarn start          # ng serve on http://localhost:4200, plus the local service the settings panel needs
+yarn start:prod     # the same, production build: no dev-mode checks and a third of the bundle — to read the chronicle, not to work on the reader
 yarn lint:fix       # auto-fix all three
 ```
 

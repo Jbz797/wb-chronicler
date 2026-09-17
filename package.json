@@ -32,7 +32,8 @@
     "build": "ng build",
     "lint": "ng lint && stylelint \"src/**/*.scss\" && prettier --check \"src/**/*.html\"",
     "lint:fix": "ng lint --fix && stylelint --fix \"src/**/*.scss\" && prettier --write \"src/**/*.html\"",
-    "start": "concurrently --kill-others --names \"ng,watch\" -c \"green,cyan\" \"ng serve\" \"node scripts/watch-saves.mjs\""
+    "start": "concurrently --kill-others --names \"ng,watch\" -c \"green,cyan\" \"ng serve\" \"node scripts/watch-saves.mjs\"",
+    "start:prod": "concurrently --kill-others --names \"ng,watch\" -c \"green,cyan\" \"ng serve --configuration production\" \"node scripts/watch-saves.mjs\""
   },
   "dependencies": {
     "@angular/common": "22.1.7",
@@ -44,7 +45,7 @@
     "@ngx-translate/core": "18.0.0",
     "marked": "18.0.13",
     "marked-gfm-heading-id": "4.1.4",
-    "ng-zorro-antd": "22.0.1",
+    "ng-zorro-antd": "22.1.0",
     "ngx-markdown": "22.0.2",
     "ngx-scrollbar": "^19.1.5",
     "prism-themes": "1.9.0",
