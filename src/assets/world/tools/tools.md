@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 18/09/26 14:49</p>
+<p class="metadata">Date de mise à jour : 18/09/26 17:11</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON sur `stdout` — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata` pour la section `metadata` de `kingdom`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -54,6 +54,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `city … rulers` et `kingdom … rulers` donnent la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain en place : `population.ruler_money`.
 - `geography … frozen` compte la glace posée sur le sol (`frozen_tiles`), pas le biome `permafrost`, gelé par nature : une part « gelée » s'entend hors permafrost, que `biomes` donne à part.
 - `geography … waters` cesse de lister un bras au-delà de toute nage : ce qui n'y figure pas, personne ne le franchit — l'inverse ne se déduit pas.
+- `houses` (cité, royaume) compte les chantiers, comme le jeu : `ground … metadata` les signale par `under_construction`.
 - `island_id` **absent** couvre deux cas opposés : un îlot trop petit pour compter, ou l'eau. `tiles … tile_info` tranche — `kind: water` pour le second.
 - `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule suffit, et elle sert tout le royaume — la cité qui l'abrite n'y change rien.
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : une cité ne la prend que si son chef y croit, un royaume que si son roi la décrète.

@@ -70,6 +70,8 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         **({"health": int(health)} if (health := house.get("health")) is not None else {}),  # WB writes `health` only when hurt — absent means intact, not unknown.
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
+        # A site still rising: nobody sleeps in it yet, though WB already counts it among a town's `houses` (`City.getHouseCurrent`).
+        **({"under_construction": True} if "under_construction" in (house.get("custom_data_flags") or ()) else {}),
         "x": hx,
         "y": hy,
     }
