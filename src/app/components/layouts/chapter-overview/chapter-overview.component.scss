@@ -253,6 +253,11 @@
           top: -2px;
         }
       }
+
+      // One line per table cell: a plate, a figure and its trend arrow read as one, and a wrap would drop the arrow under its number.
+      .ant-table-cell {
+        white-space: nowrap;
+      }
     }
 
     .ant-table-tbody nz-tag {

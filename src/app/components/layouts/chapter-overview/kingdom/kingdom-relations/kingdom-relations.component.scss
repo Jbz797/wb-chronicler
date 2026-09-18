@@ -1,0 +1,14 @@
+@use 'variables' as *;
+
+// The opinion's move since the chapter before, in its own colour: the cell wears its standing's tier, and an arrow tinted by it would say the wrong thing.
+.trend {
+  margin-left: 4px;
+
+  &.trend-down {
+    color: $error;
+  }
+
+  &.trend-up {
+    color: $success;
+  }
+}
