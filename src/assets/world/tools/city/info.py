@@ -68,7 +68,7 @@ _CITY_TAX_TRAITS = {
 }
 
 _CIV_BASE_CITIES = {"dwarf": 3, "elf": 3, "orc": 4}  # WB `ActorAsset.civ_base_cities`; every other civ keeps the `$civ_unit$` template's 5.
-_ERA_LOYALTY = {"age_chaos": -10, "age_dark": -5, "age_hope": 15, "age_moon": -25, "age_sun": 5, "age_tears": -55}  # `WorldAgeAsset.bonus_loyalty`
+_ERA_LOYALTY = {"age_ash": -25, "age_chaos": -55, "age_dark": -5, "age_despair": -10, "age_hope": 15, "age_sun": 5}  # `WorldAgeAsset.bonus_loyalty`, 0 elsewhere
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
 _RANGED_ATTACKS = asset_set("ranged")  # WB `attack_type != 0`: every asset cloned from the `$range` template (`ItemLibrary`).
 _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  # `ActorTrait.same_trait_mod`/`opposite_trait_mod` — the kingdom reads it too.
@@ -262,9 +262,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "inventory_by_city": inventory_by_city,
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: half a second cold, only `metadata` needs
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
-        # The 29 modifiers per town, then the total the panel prints — defined in one place so the `loyalty` section and the `ranks` sort never drift.
-        "loyalty_by_city": cache(lambda: {c["id"]: _city_loyalty(c, ctx) for c in save.get("cities") or []}),
-        "loyalty_total_by_city": cache(lambda: {cid: sum(mods.values()) for cid, mods in ctx["loyalty_by_city"]().items()}),
+        # A town's 29 modifiers, one definition for the `loyalty` section and the `ranks` sort — memoised per town, so a lone section pays for its own alone.
+        "loyalty_of": cache(lambda cid: _city_loyalty(ctx["cities_by_id"][cid], ctx)),
         "melee_by_city": melee_by_city,
         "money_by_city": money_by_city,
         "nobles_by_city": nobles_by_city,
@@ -329,8 +328,8 @@ def _build_leaders(city: dict, ctx: dict) -> dict:
 
 # The city's hold on its crown — the panel prints `total`. Chronicler-only beside it: `drivers` is every modifier and sums to `total`, `top_drivers` does not.
 def _build_loyalty(city_id: int, ctx: dict, detailed: bool) -> dict:
-    mods = ctx["loyalty_by_city"]().get(city_id, {})
-    total = ctx["loyalty_total_by_city"]().get(city_id, 0)
+    mods = ctx["loyalty_of"](city_id)
+    total = sum(mods.values())
     if detailed:
         return {"drivers": mods, "total": total}  # already ordered like WB's tooltip, strongest bond first
     top_pos = max((kv for kv in mods.items() if kv[1] > 0), key=lambda kv: kv[1], default=None)
@@ -577,7 +576,7 @@ def _city_taxes(kingdom: dict | None) -> dict:
 
 # The shared settlement getters plus the ones this tier owns. Top 3 among the world's cities via `competition_ranks`, like every ranks section.
 def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
-    books, loyalty = ctx["books_by_city"](), ctx["loyalty_total_by_city"]()  # resolved once, not inside getters `competition_ranks` fires per city
+    books = ctx["books_by_city"]()  # resolved once, not inside getters `competition_ranks` fires per city
     dims = ctx["score_dimensions"]()
     armies = {c["id"]: _build_army(c, ctx) or {} for c in save.get("cities") or []}  # built once per city, not once per city and per stat
     getters = settlement_rank_getters(ctx, "city")
@@ -591,7 +590,7 @@ def _compute_ranks(city: dict, ctx: dict, save: dict) -> dict:
             "book_reach": lambda c: dims["book_reach"].get(c.get("id"), 0),
             "books": lambda c: books[c.get("id")],
             "gear": lambda c: ctx["equipment_by_city"].get(c.get("id"), 0),
-            "loyalty": lambda c: loyalty.get(c.get("id"), 0),
+            "loyalty": lambda c: sum(ctx["loyalty_of"](c["id"]).values()),
         }
     )
     return competition_ranks(city, save.get("cities") or [], getters)
