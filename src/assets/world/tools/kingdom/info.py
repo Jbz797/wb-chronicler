@@ -221,6 +221,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cities_by_kingdom": cities_by_kingdom,
         "cultures_by_id": index_by_id(save.get("cultures", [])),
         "families_by_id": index_by_id(save.get("families") or []),
+        "era_opinion": (load_data("world-ages.json").get(save["mapStats"].get("world_age_id") or "") or {}).get("bonus_opinion", 0),
         "families_by_kingdom": families_by_kingdom,
         "food_by_kingdom": food_by_kingdom,
         "gold_by_kingdom": gold_by_kingdom,
@@ -246,7 +247,6 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "supreme_kingdom_id": supreme_kingdom_id,
         "territory_by_kingdom": territory_by_kingdom,
         "warriors_by_kingdom": warriors_by_kingdom,
-        "world_age_id": save["mapStats"].get("world_age_id"),
         "zones_by_kingdom": zones_by_kingdom,
     }
 
@@ -512,10 +512,8 @@ def _compute_opinion(main: dict, side: dict, target: dict, ctx: dict, relation: 
         mod["truce"] = 100
 
     # 20. world_era: bonus_opinion of the current world age.
-    era = ctx.get("world_age_id")
-    era_bonus = _OPINION_CONSTANTS.get("world_age_bonus_opinion", {}).get(era)
-    if era_bonus:
-        mod["world_era"] = era_bonus
+    if era := ctx["era_opinion"]:
+        mod["world_era"] = era
 
     # 21. baby_king: -50 if main's king is no baby and the target's is. WB `calcIsBaby`, which `is_baby` carries — a mark on the biology, never an age in years.
     if main_king and target_king and not is_baby(main_king, ctx) and is_baby(target_king, ctx):

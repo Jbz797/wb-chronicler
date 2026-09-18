@@ -1,23 +1,33 @@
 {
   "age_ash": {
+    "bonus_loyalty": -25,
+    "bonus_opinion": -10,
     "description": "This age will be a time of sickness, with the air thick with smoke and dust particles that cause a deadly illness known as ash fever. It will not be a good time to live, but people will still hope to see another day.",
     "name": "Age of Ash"
   },
   "age_chaos": {
+    "bonus_loyalty": -55,
+    "bonus_opinion": -35,
     "description": "This age will be a time of blood and death, where the world will be in turmoil and anarchy will reign supreme. It will be a time of war and destruction, where every day will be a struggle for survival. The end of the world will seem to be drawing ever nearer, as those in power fight for dominance and the common people are left to fend for themselves.",
     "name": "Age of Chaos"
   },
   "age_dark": {
+    "bonus_loyalty": -5,
+    "bonus_opinion": -5,
     "description": "It will be a time of great darkness, when the world will be shrouded in a veil of shadows that will seem to swallow all light and hope. Foul creatures will lurk in the darkness, preying on the unwary, while the shadows themselves will hold nightmares and illusions that could drive a person to madness.",
     "name": "Age of Dark",
     "overlay_darkness": true
   },
   "age_despair": {
+    "bonus_loyalty": -10,
+    "bonus_opinion": -10,
     "description": "This age will be a long and grueling era of endless winter and darkness, where the world will be shrouded in an unrelenting cold that threatens to snuff out all life. The darkness will be all-consuming, and even the bravest of hearts will be tested in such an unforgiving environment. Yet even in the midst of such starkness, there will still be those who hold on to hope, who believe that the thaw will come and life will bloom once again. They will keep alive the flame of life, and it is their faith and resilience that will ultimately see the world through the Age of Despair, into a new era of growth and renewal.",
     "name": "Age of Despair",
     "overlay_darkness": true
   },
   "age_hope": {
+    "bonus_loyalty": 15,
+    "bonus_opinion": 15,
     "description": "This is a time of great promise, where the future is bright and full of possibilities. The world is full of life and hope, and people feel optimistic about what was to come.",
     "name": "Age of Hope"
   },
@@ -32,6 +42,8 @@
     "overlay_darkness": true
   },
   "age_sun": {
+    "bonus_loyalty": 5,
+    "bonus_opinion": 5,
     "description": "This is a time of intense heat and brightness, where the sun blazed down on the world. Living in this age is tough as people battle to find ways to survive the harsh conditions",
     "name": "Age of Sun"
   },

@@ -24,6 +24,5 @@
     "veteran": { "opposite": 0, "opposite_trait": null, "same": 5 },
     "weak": { "opposite": -10, "opposite_trait": "strong", "same": 0 }
   },
-  "minimum_years_between_wars": 5,
-  "world_age_bonus_opinion": { "age_chaos": -10, "age_dark": -5, "age_hope": 15, "age_moon": -10, "age_sun": 5, "age_tears": -35 }
+  "minimum_years_between_wars": 5
 }

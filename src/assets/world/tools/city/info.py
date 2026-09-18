@@ -68,7 +68,6 @@ _CITY_TAX_TRAITS = {
 }
 
 _CIV_BASE_CITIES = {"dwarf": 3, "elf": 3, "orc": 4}  # WB `ActorAsset.civ_base_cities`; every other civ keeps the `$civ_unit$` template's 5.
-_ERA_LOYALTY = {"age_ash": -25, "age_chaos": -55, "age_dark": -5, "age_despair": -10, "age_hope": 15, "age_sun": 5}  # `WorldAgeAsset.bonus_loyalty`, 0 elsewhere
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
 _RANGED_ATTACKS = asset_set("ranged")  # WB `attack_type != 0`: every asset cloned from the `$range` template (`ItemLibrary`).
 _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  # `ActorTrait.same_trait_mod`/`opposite_trait_mod` — the kingdom reads it too.
@@ -418,12 +417,12 @@ def _build_realm_context(save: dict, warriors_by_city: Counter) -> dict:
     return {
         "cities_by_kingdom": cities_by_kingdom,
         "enemies_by_kingdom": enemies_by_kingdom,
+        "era_loyalty": (load_data("world-ages.json").get(save["mapStats"].get("world_age_id") or "") or {}).get("bonus_loyalty", 0),
         "kingdom_count": len(kingdoms),
         "kingdom_power": power,
         "neighbours_by_city": neighbours_by_city,
         "second_kingdom_id": ranked[1]["id"] if len(ranked) > 1 else None,
         "supreme_kingdom_id": ranked[0]["id"] if ranked else None,
-        "world_age_id": save["mapStats"].get("world_age_id"),
     }
 
 
@@ -545,7 +544,7 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
     # 25-27. The reign itself: one point per year past the fifth (capped at 40), the age's own temper, and a child on the throne.
     if king and (years := _years_since(kingdom.get("timestamp_king_rule") or 0, ctx)) >= 5:
         add("king_rule", min(years, 40))
-    add("world_era", _ERA_LOYALTY.get(realm["world_age_id"], 0))
+    add("world_era", realm["era_loyalty"])
     if king and actor_age(king, ctx["world_time"]) < 18:  # a body, so the age WB judges it on — `entity_age` would keep the malus a year too long
         add("baby_king", -50)
 
