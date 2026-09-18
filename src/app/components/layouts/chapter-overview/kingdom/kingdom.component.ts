@@ -5,7 +5,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { BreakdownComponent, NewBadgeComponent, RankedStatComponent, WealthComponent } from '..';
-import { NonZeroDirective, PresentDirective } from '../../../../directives';
+import { NonZeroDirective, PluralDirective, PresentDirective } from '../../../../directives';
 import { LabelHelpers } from '../../../../helpers';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
@@ -25,6 +25,7 @@ import { KingdomRelationsComponent } from './kingdom-relations/kingdom-relations
     NonZeroDirective,
     NzDescriptionsModule,
     PersonTagComponent,
+    PluralDirective,
     PresentDirective,
     RankedStatComponent,
     TranslatePipe,

@@ -50,10 +50,10 @@
       </nz-descriptions-item>
     }
 
-    <nz-descriptions-item [nzTitle]="citiesTitle">
+    <nz-descriptions-item *appPlural="c.metadata.cities" [nzTitle]="citiesTitle">
       <app-ranked-stat source="clan" stat="cities" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="kingdomsTitle">
+    <nz-descriptions-item *appPlural="c.metadata.kingdoms" [nzTitle]="kingdomsTitle">
       <!-- No podium: a band answers to one crown or to eight, nothing between, so the whole field ties on the second value and every clan takes a medal. -->
       <app-ranked-stat source="clan" stat="kingdoms" [showRank]="false" />
     </nz-descriptions-item>

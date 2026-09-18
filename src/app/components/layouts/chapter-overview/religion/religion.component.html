@@ -34,10 +34,10 @@
       </nz-descriptions-item>
     }
 
-    <nz-descriptions-item [nzTitle]="citiesTitle">
+    <nz-descriptions-item *appPlural="r.metadata.cities" [nzTitle]="citiesTitle">
       <app-ranked-stat source="religion" stat="cities" />
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="kingdomsTitle">
+    <nz-descriptions-item *appPlural="r.metadata.kingdoms" [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="religion" stat="kingdoms" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="r.population.housed_pct" [nzTitle]="housedPctTitle">

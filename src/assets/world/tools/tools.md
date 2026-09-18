@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 18/09/26 10:42</p>
+<p class="metadata">Date de mise à jour : 18/09/26 14:49</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON sur `stdout` — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata` pour la section `metadata` de `kingdom`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -56,6 +56,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `geography … waters` cesse de lister un bras au-delà de toute nage : ce qui n'y figure pas, personne ne le franchit — l'inverse ne se déduit pas.
 - `island_id` **absent** couvre deux cas opposés : un îlot trop petit pour compter, ou l'eau. `tiles … tile_info` tranche — `kind: water` pour le second.
 - `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule suffit, et elle sert tout le royaume — la cité qui l'abrite n'y change rien.
+- `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : une cité ne la prend que si son chef y croit, un royaume que si son roi la décrète.
 - `to_islands` (section `distances`) donne les 5 îles les plus proches, de la plus proche à la plus lointaine, par leur **tuile la plus proche** : un centroïde se trompe de tranche.
 - `to_land` (section `distances`) mesure le bras d'eau depuis **tout le rocher**, pas depuis la tuile : un naufragé s'isole par le détroit de son île, pas par l'endroit où il se tient. Absent sur une île comptée.
 - `to_nearest_city` (section `distances`) vise le **quartier** le plus proche, pas le centre : on touche une ville par son bord. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.

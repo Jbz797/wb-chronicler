@@ -5,14 +5,23 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { BreakdownComponent, RankedStatComponent, TraitSummaryComponent } from '..';
-import { PresentDirective } from '../../../../directives';
+import { PluralDirective, PresentDirective } from '../../../../directives';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
 import { LeadersComponent } from '../leaders/leaders.component';
 
 @Component({
   selector: 'app-subspecies',
-  imports: [BreakdownComponent, LeadersComponent, NzDescriptionsModule, PresentDirective, RankedStatComponent, TraitSummaryComponent, TranslatePipe],
+  imports: [
+    BreakdownComponent,
+    LeadersComponent,
+    NzDescriptionsModule,
+    PluralDirective,
+    PresentDirective,
+    RankedStatComponent,
+    TraitSummaryComponent,
+    TranslatePipe,
+  ],
   templateUrl: './subspecies.component.html',
 })
 export class SubspeciesComponent {

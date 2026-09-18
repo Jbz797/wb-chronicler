@@ -23,10 +23,10 @@
       </nz-descriptions-item>
     }
 
-    <nz-descriptions-item *appPresent="s.metadata.cities" [nzTitle]="citiesTitle">
+    <nz-descriptions-item *appPlural="s.metadata.cities" [nzTitle]="citiesTitle">
       <app-ranked-stat source="subspecies" stat="cities" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.metadata.kingdoms" [nzTitle]="kingdomsTitle">
+    <nz-descriptions-item *appPlural="s.metadata.kingdoms" [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="subspecies" stat="kingdoms" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="s.population.housed_pct" [nzTitle]="housedPctTitle">
@@ -65,10 +65,10 @@
     <nz-descriptions-item *appPresent="s.species.subspecies" [nzTitle]="stockSubspeciesTitle">
       <app-ranked-stat source="species" stat="subspecies" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.species.cities" [nzTitle]="stockCitiesTitle">
+    <nz-descriptions-item *appPlural="s.species.cities" [nzTitle]="stockCitiesTitle">
       <app-ranked-stat source="species" stat="cities" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.species.kingdoms" [nzTitle]="stockKingdomsTitle">
+    <nz-descriptions-item *appPlural="s.species.kingdoms" [nzTitle]="stockKingdomsTitle">
       <app-ranked-stat source="species" stat="kingdoms" />
     </nz-descriptions-item>
   </nz-descriptions>

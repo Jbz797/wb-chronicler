@@ -5,7 +5,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { BreakdownComponent, RankedStatComponent } from '..';
-import { NonZeroDirective, PresentDirective } from '../../../../directives';
+import { NonZeroDirective, PluralDirective, PresentDirective } from '../../../../directives';
 import { LabelHelpers } from '../../../../helpers';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
@@ -14,7 +14,17 @@ import { PersonTagComponent } from '../tags';
 
 @Component({
   selector: 'app-family',
-  imports: [BreakdownComponent, LeadersComponent, NonZeroDirective, NzDescriptionsModule, PersonTagComponent, PresentDirective, RankedStatComponent, TranslatePipe],
+  imports: [
+    BreakdownComponent,
+    LeadersComponent,
+    NonZeroDirective,
+    NzDescriptionsModule,
+    PersonTagComponent,
+    PluralDirective,
+    PresentDirective,
+    RankedStatComponent,
+    TranslatePipe,
+  ],
   templateUrl: './family.component.html',
 })
 export class FamilyComponent {
