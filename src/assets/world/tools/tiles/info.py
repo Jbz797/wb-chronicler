@@ -7,6 +7,7 @@
 import argparse
 import sys
 from collections import defaultdict
+from heapq import heapify, heappop, heappush
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -14,27 +15,31 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from grid import LazyTileGrid, listed_tiles, tile_biome, tile_elevation, tile_kind, tile_layer
 from islands import compute_islands_cached
 from shared import (
+    DIAGONAL_EXTRA,
     ZONE_TILES,
     actor_xy,
+    bearing,
     building_tile,
     city_centre,
     civic_building_ids,
     emit,
     entity_ref,
     index_by_id,
-    light,
     load_data,
     load_save,
     parse_sections,
     take_chapter,
+    walk_tiles,
     zone_xy,
 )
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
-_DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))  # the wave spreads by the square, so a diagonal step costs one tile
+_FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `to_land` says nothing rather than a number
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
-_NEAR_ISLANDS = 10  # the lands a reading names around a point: past ten, the rest are the far side of the world whatever the tile
+_NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
+# The eight steps a tide takes, each with what it costs — a slanted one being longer than a straight one, the cheapest water is not the nearest in rings.
+_WEIGHTED_DELTAS = tuple(((dx, dy), 1.0 if dx == 0 or dy == 0 else 1 + DIAGONAL_EXTRA) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)
 
 
 # Identity and allegiance only — the chronicler follows up with `actor/info.py <id>` for the rest, so a tile sweep stays readable at 25 cells.
@@ -52,7 +57,7 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
 
 
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
-def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], detailed: bool) -> dict:
+def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], mark: tuple[int, int] | None) -> dict:
     wanted = set(coords)
 
     # `actors_by_pos` alone takes a factory: it is the one filled per actor, where the others are assigned whole once their section asks for them.
@@ -60,11 +65,11 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         "actors_by_pos": defaultdict(list),
         "center": center,
         "cities_by_id": {},
-        "detailed": detailed,
         "grid": {},
         "ground_by_pos": {},
         "kingdoms_by_id": {},
         "tile_map": save["tileMap"],
+        "to_point": mark,
     }
 
     if "actors" in sections:
@@ -98,11 +103,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 
     if "distances" in sections:
         ctx["layer_by_id"] = [tile_layer(name) for name in ctx["tile_map"]]
-        ctx["water_at_center"] = _water_distance(*center, ctx["grid"], ctx["layer_by_id"])
-        ctx["land_at_center"] = land = _land_distance(*center, ctx)
-        # The centre's reach as a number, `0` on a land itself and one past `_LAND_REACH` where none is seen — the floor its neighbours' rings start from.
-        ctx["land_floor"] = 0 if ctx["tile_to_island"].get(center) is not None else _LAND_REACH + 1 if land is None else land["tiles"]
-        ctx["islands_near"] = _islands_near(ctx) if detailed else {}  # a pass over every land tile, paid only where the lands are printed
+        ctx["islands_near"] = _islands_near(ctx)  # a pass over every land tile, and the section it feeds is read at the queried tile alone
 
     return ctx
 
@@ -110,6 +111,19 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 # WB claims land by the zone, never by the tile — so a tile's town is its zone's, and both sections that ask read it the one way.
 def _city_at(x: int, y: int, ctx: dict) -> dict | None:
     return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
+
+
+# The square ring at Chebyshev radius `r` around a tile, clipped to the map — the shape an 8-way search grows by, whatever it then costs a body to walk.
+def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
+    x0, x1, y0, y1 = x - r, x + r, y - r, y + r
+    for nx in range(max(0, x0), min(width - 1, x1) + 1):  # the two horizontal sides, corners included
+        for ny in {y0, y1}:
+            if 0 <= ny < height:
+                yield nx, ny
+    for ny in range(max(0, y0 + 1), min(height - 1, y1 - 1) + 1):  # and the two vertical ones, corners already walked
+        for nx in {x0, x1}:
+            if 0 <= nx < width:
+                yield nx, ny
 
 
 # `{}` on unclaimed ground, which `emit` strips from the cell.
@@ -120,32 +134,27 @@ def _context_at(x: int, y: int, ctx: dict) -> dict:
     return {"city": {"id": city["id"], "name": city.get("name")}, "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"])}
 
 
-# No neighbour undercuts the centre by more than their gap — Manhattan for the water's diamonds, Chebyshev for the land's rings — so each search starts there.
+# Every reading counts steps, WB walking its eight directions — and the whole section answers for the queried tile, a neighbour two steps over reading the same.
 def _distances_at(x: int, y: int, ctx: dict) -> dict:
-    cx, cy = ctx["center"]
-    gap, floor = abs(x - cx) + abs(y - cy), ctx["water_at_center"]
-    water = floor if gap == 0 or floor < 0 else _water_distance(x, y, ctx["grid"], ctx["layer_by_id"], max(0, floor - gap))
-
-    out: dict = {"to_water": water}
-    land = ctx["land_at_center"] if gap == 0 else _land_distance(x, y, ctx, max(1, ctx["land_floor"] - max(abs(x - cx), abs(y - cy))))
-    if land is not None:
+    out: dict = {"to_water": _water_distance(x, y, ctx["grid"], ctx["layer_by_id"])}
+    if (land := _land_distance(x, y, ctx)) is not None:
         out["to_land"] = land
     city = _city_at(x, y, ctx)
     if city is None:
         if quarters := ctx["city_quarters"]:
             out["to_nearest_city"] = _fabric_distance(x, y, quarters)
     elif (kid := city.get("kingdomID")) and (seat := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
-        out["to_capital"] = max(abs(x - seat[0]), abs(y - seat[1]))  # a seat is a point, where a town is a fabric — the throne, not the last house of the capital
-    if gap:  # the lands ride on the tile asked for, a neighbour two steps over reading the same distances to a tile's precision
-        return out
+        out["to_capital"] = round(walk_tiles(x - seat[0], y - seat[1]))  # a seat is a point, where a town is a fabric — the throne, not the capital's last house
     if near := ctx["islands_near"]:
         out["to_islands"] = near
-    return out if ctx["detailed"] else light(out, withheld=True)
+    if (mark := ctx["to_point"]) is not None:  # the tile the reading was asked to reach: the one distance no other key holds
+        out["to_point"] = {"dir": bearing(mark[0] - x, mark[1] - y), "tiles": round(walk_tiles(mark[0] - x, mark[1] - y))}
+    return out
 
 
 # A town is its fabric, not its centre, as `to_land` takes a shore: at the edge of a sprawling town a body stands at the gate, not a centre away.
 def _fabric_distance(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
-    return min(max(qx - x, x - qx - ZONE_TILES + 1, qy - y, y - qy - ZONE_TILES + 1, 0) for qx, qy in quarters)
+    return round(min(walk_tiles(max(qx - x, x - qx - ZONE_TILES + 1, 0), max(qy - y, y - qy - ZONE_TILES + 1, 0)) for qx, qy in quarters))
 
 
 # One object per tile, never two. WB's `buildings` collection holds the flowers and the ore too, hence the family, named as `geography` names them.
@@ -178,40 +187,42 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
             ctx["capital_pos_by_kingdom"][kingdom["id"]] = seat
 
 
-# Every land by its nearest tile, Chebyshev as `to_land` measures — read at the centre alone, a pass over every land tile costing a fifth of a second.
+# Every land by its nearest tile, walked as `to_land` measures — read at the queried tile alone, a pass over every land tile costing some 85 ms.
 def _islands_near(ctx: dict) -> dict[str, int]:
     cx, cy = ctx["center"]
     own = ctx["tile_to_island"].get((cx, cy))
-    nearest: dict[int, int] = {}
+    nearest: dict[int, float] = {}
     for x, y, island in ctx["tile_to_island"].land():
         if island == own:  # its own shore is where it stands, and `tile_info` already names that land
             continue
-        if (tiles := max(abs(x - cx), abs(y - cy))) < nearest.get(island, tiles + 1):
+        ax, ay = abs(x - cx), abs(y - cy)
+        far, near = (ax, ay) if ax > ay else (ay, ax)
+        # The octile never falls under the wider leg, so a tile losing on that leg alone is dropped before the multiply — the world's land, bar a handful.
+        if (best := nearest.get(island, _FARTHER)) <= far:
+            continue
+        if (tiles := far + DIAGONAL_EXTRA * near) < best:
             nearest[island] = tiles
     ranked = sorted(nearest.items(), key=lambda item: (item[1], item[0]))[:_NEAR_ISLANDS]
-    return {str(island): tiles for island, tiles in ranked}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
+    return {str(island): round(tiles) for island, tiles in ranked}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
 
 
 # How far the tile's rock lies from a land a city could hold, and which one — measured whole, a castaway being isolated by his island's strait, not his footing.
-def _land_distance(x: int, y: int, ctx: dict, start: int = 1) -> dict | None:
+def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
     island_at, grid, layer = ctx["tile_to_island"].get, ctx["grid"], ctx["layer_by_id"]
     height, width = grid.height, grid.width
     if island_at((x, y)) is not None:
         return None
 
-    # Afloat the source is the tile alone, and an 8-way wave off one point is the square ring at that Chebyshev radius — walked straight, no front to carry.
+    # Afloat the source is the tile alone, so the search grows by square rings — whose tiles cost `r` to `r√2`, hence the sweep carried past the first land seen.
     if layer[grid[y][x]] == "Ocean":
-        for r in range(start, _LAND_REACH + 1):
-            x0, x1, y0, y1 = x - r, x + r, y - r, y + r
-            for nx in range(max(0, x0), min(width - 1, x1) + 1):  # the two horizontal sides, corners included
-                for ny in (y0, y1):
-                    if 0 <= ny < height and (island := island_at((nx, ny))) is not None:
-                        return {"island_id": island, "tiles": r}
-            for ny in range(max(0, y0 + 1), min(height - 1, y1 - 1) + 1):  # and the two vertical ones, corners already walked
-                for nx in (x0, x1):
-                    if 0 <= nx < width and (island := island_at((nx, ny))) is not None:
-                        return {"island_id": island, "tiles": r}
-        return None
+        found: tuple[float, int] | None = None
+        for r in range(_LAND_REACH + 1):
+            if found is not None and r >= found[0]:
+                break
+            for nx, ny in _ring_tiles(x, y, r, width, height):
+                if (island := island_at((nx, ny))) is not None and (swum := walk_tiles(nx - x, ny - y)) < (found[0] if found else swum + 1):
+                    found = (swum, island)
+        return {"island_id": found[1], "tiles": round(found[0])} if found else None
 
     def dry(px: int, py: int) -> bool:  # the uncounted rock and nothing else — take the sea in and the fill would run to the map's end
         return layer[grid[py][px]] != "Ocean" and island_at((px, py)) is None
@@ -224,20 +235,24 @@ def _land_distance(x: int, y: int, ctx: dict, start: int = 1) -> dict | None:
             if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in seen and dry(nx, ny):
                 seen.add((nx, ny))
                 stack.append((nx, ny))
-    # One wave off the whole rock rather than a ring per tile: the shore is found on the first tide that touches it, whatever stone that tide left from.
-    front = list(seen)
-    for r in range(1, _LAND_REACH + 1):
-        wave = []
-        for cx, cy in front:
-            for dx, dy in _DELTAS_8:
-                nx, ny = cx + dx, cy + dy
-                if not (0 <= nx < width and 0 <= ny < height) or (nx, ny) in seen:
-                    continue
-                if (island := island_at((nx, ny))) is not None:
-                    return {"island_id": island, "tiles": r}
-                seen.add((nx, ny))
-                wave.append((nx, ny))
-        front = wave
+    # One tide off the whole rock rather than a ring per tile, and the cheapest water always taken first: a slanted stretch costs more than a straight one.
+    swum = dict.fromkeys(seen, 0.0)
+    tide = [(0.0, tile) for tile in seen]
+    heapify(tide)
+    while tide:
+        here, tile = heappop(tide)
+        if here > _LAND_REACH:
+            break
+        if here > swum[tile]:
+            continue
+        if (island := island_at(tile)) is not None:
+            return {"island_id": island, "tiles": round(here)}
+        cx, cy = tile
+        for (dx, dy), cost in _WEIGHTED_DELTAS:
+            nx, ny = cx + dx, cy + dy
+            if 0 <= nx < width and 0 <= ny < height and (reached := here + cost) < swum.get((nx, ny), reached + 1):
+                swum[(nx, ny)] = reached
+                heappush(tide, (reached, (nx, ny)))
     return None
 
 
@@ -259,18 +274,17 @@ def _tile_info_at(x: int, y: int, ctx: dict, queried: bool) -> dict:
     return out
 
 
-# Diamonds expand to the first Ocean ring, every cell walkable — coastal sites end fast, vs a 300 k-cell BFS. `-1` = no water, and one tile settles it for all.
-def _water_distance(x: int, y: int, grid: LazyTileGrid, layer_by_id: list[str], start: int = 0) -> int:
-    height, width = grid.height, grid.width
-    for r in range(start, width + height):
-        for dx in range(-r, r + 1):
-            nx = x + dx
-            if not 0 <= nx < width:
-                continue
-            for ny in {y + r - abs(dx), y - r + abs(dx)}:
-                if 0 <= ny < height and layer_by_id[grid[ny][nx]] == "Ocean":
-                    return r
-    return -1
+# Rings widen until the sea is met, every cell walkable — a coastal tile ends in two or three, where a BFS would carry a front. `-1` where no water is found.
+def _water_distance(x: int, y: int, grid: LazyTileGrid, layer_by_id: list[str]) -> int:
+    height, width, best = grid.height, grid.width, None
+    # A ring holds tiles worth `r` walked to `r * √2`, so the first water met may still be beaten one ring out — the search stops once no ring left can.
+    for r in range(max(width, height)):
+        if best is not None and r >= best:
+            break
+        for nx, ny in _ring_tiles(x, y, r, width, height):
+            if layer_by_id[grid[ny][nx]] == "Ocean" and (walked := walk_tiles(nx - x, ny - y)) < (best if best is not None else walked + 1):
+                best = walked
+    return round(best) if best is not None else -1
 
 
 # argparse type converter — raising `ArgumentTypeError` is what makes it print the usage line rather than a traceback.
@@ -289,6 +303,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("xy", type=_xy, metavar="x,y", help="Tile coords (WB UI, y grows north), comma-separated — e.g. `415,117`.")
     parser.add_argument("sections", nargs="?", default="full", help=f"Comma-separated sections or `full`. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
+    parser.add_argument("--to", type=_xy, metavar="x,y", help="A second tile: `distances` then gives `to_point`, what a body walks from one to the other.")
     args = parser.parse_args(argv)
     cx, cy = args.xy
 
@@ -308,12 +323,13 @@ def main(argv: list[str]) -> int:
         print("✗ empty grid", file=sys.stderr)
         return 2
 
-    if not (0 <= cx < width and 0 <= cy < height):
-        print(f"✗ coords ({cx}, {cy}) out of bounds — map is {width}×{height}", file=sys.stderr)
-        return 2
+    for x, y in ((cx, cy), args.to or (cx, cy)):
+        if not (0 <= x < width and 0 <= y < height):
+            print(f"✗ coords ({x}, {y}) out of bounds — map is {width}×{height}", file=sys.stderr)
+            return 2
 
     coords = _radius_tiles(cx, cy, args.radius, width, height)
-    ctx = _build_context(save, save_path, sections, coords, (cx, cy), args.sections != "full")
+    ctx = _build_context(save, save_path, sections, coords, (cx, cy), args.to)
 
     out: dict = {}
     for x, y in coords:
@@ -322,7 +338,7 @@ def main(argv: list[str]) -> int:
             cell["actors"] = _actors_at(x, y, ctx)
         if "context" in sections:
             cell["context"] = _context_at(x, y, ctx)
-        if "distances" in sections:
+        if "distances" in sections and (x, y) == (cx, cy):  # what a sweep's neighbours would repeat to the tile, said once for the tile asked about
             cell["distances"] = _distances_at(x, y, ctx)
         if "ground" in sections:
             cell["ground"] = _ground_at(x, y, ctx)

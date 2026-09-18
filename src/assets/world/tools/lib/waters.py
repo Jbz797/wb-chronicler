@@ -7,8 +7,12 @@ from grid import decode_tile_grid, tile_layer
 from islands import compute_islands_cached
 from shared import pickle_cached
 
+_FARTHEST_SWIM = 128  # two tides make a crossing, so none past twice this is kept — no speed the game grants buys a swim that long
 _MIN_LAKE_TILES = 64  # WB knows no lake at all, so the floor is ours: WB `CITY_ZONE_TILES`, one city zone — under it no town could ever sit on the shore.
 _OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart from the lakes indexed from 0
+_STEP = 10_000  # a tide counts a straight step in ten-thousandths of a tile, so its two costs stay whole and its depths can be walked in order
+_STEP_SLANT = round(_STEP * 2**0.5)  # what a slanted stretch of sea costs a swimmer, against one for its straight neighbour
+_UNREACHED = 1 << 40  # deeper than any tide runs, so the first to claim a tile always undercuts it
 
 
 # Every land tile that touches water, with its island, listed once for both sweeps: an inland tile neither rings a lake nor raises a tide, and most land is inland.
@@ -90,33 +94,43 @@ def _pool_map(water: bytearray, stride: int) -> tuple[list[int], list[tuple[int,
     return pool_at, pools
 
 
-# The narrowest water between each pair of lands: every coast floods the sea at once, and where two tides meet their depths add up to the crossing.
+# The narrowest water between each pair of lands, in tiles swum: every coast floods the sea at once, and where two tides meet their depths add up to the crossing.
 def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> list[dict]:
-    depth, nearest, front = [-1] * len(water), [0] * len(water), []
+    straight = (-stride, stride, -1, 1)
+    steps = (*((step, _STEP) for step in straight), *((step, _STEP_SLANT) for step in (-stride - 1, -stride + 1, stride - 1, stride + 1)))
+    depth, nearest = [_UNREACHED] * len(water), [0] * len(water)
+    # Two costs only, so the cheapest water is found by walking the depths in order rather than by a heap — a ring one slant deep holds every tide in flight.
+    ring = _STEP_SLANT + 1
+    buckets: list[list[int]] = [[] for _ in range(ring)]
     for i, island_id in coast:
-        nearest[i] = island_id  # a shore's own depth is never read: only water tiles are ever met, so it keeps the -1 the sweep never looks at
-        front.append(i)
+        depth[i], nearest[i] = 0, island_id
+        buckets[0].append(i)
 
-    # A tide at a time, its whole ring swept before the next: a tile of sea met unclaimed joins the front, met claimed by another island it closes a gap.
     gaps: dict[tuple[int, int], int] = {}
-    here = 0
-    while front:
-        ring: list[int] = []
-        push = ring.append
-        for i in front:
+    here, afloat = 0, len(coast)
+    while afloat and here <= _FARTHEST_SWIM * _STEP:  # a tide reaching nobody is not worth raising: what it would still close, no body could swim
+        slot = buckets[here % ring]
+        while slot:
+            i = slot.pop()
+            afloat -= 1
+            if depth[i] != here:  # a cheaper tide claimed it since, leaving this entry behind
+                continue
             own = nearest[i]
-            for j in (i - stride, i + stride, i - 1, i + 1):
+            for step, cost in steps:
+                j = i + step
                 if not water[j]:
                     continue
-                if (reached := depth[j]) == -1:
-                    nearest[j], depth[j] = own, here + 1
-                    push(j)
+                swum = here + cost
+                if (reached := depth[j]) > swum:
+                    depth[j], nearest[j] = swum, own
+                    buckets[swum % ring].append(j)
+                    afloat += 1
                 elif (rival := nearest[j]) != own:
                     pair = (own, rival) if own < rival else (rival, own)
-                    if (span := here + reached) < gaps.get(pair, span + 1):  # the narrowest the two ever leave
+                    if (span := swum + reached) < gaps.get(pair, span + 1):  # the narrowest the two ever leave
                         gaps[pair] = span
-        front, here = ring, here + 1
-    return [{"between": list(pair), "gap": gap} for pair, gap in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))]
+        here += 1
+    return [{"between": list(pair), "gap": round(gap / _STEP)} for pair, gap in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))]
 
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.

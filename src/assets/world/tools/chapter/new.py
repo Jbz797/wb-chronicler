@@ -135,7 +135,7 @@ _AUDIT_TIERS = {
     # The bodies it belongs to, each read to open its own tier block — and its stock, which the portrait draws off the persons registry
     "favorite.metadata": {"asset_id", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies"},
     "kingdom.identity": {"clan", "culture", "language", "religion", "subspecies"},  # as a town's
-    "kingdom.metadata": {"births"},  # as a town's
+    "kingdom.metadata": {"births", "ferries"},  # as a town's, and no panel asks whether a crown ferries — that answers a rule of the chronicle, not a row
     "kingdom.population": {"money"},  # as a town's
     "kingdom.ranks": {"money"},  # as a town's
     "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's

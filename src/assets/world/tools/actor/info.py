@@ -5,7 +5,6 @@
 import sys
 from collections import Counter, defaultdict
 from functools import cache
-from math import hypot
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -19,6 +18,7 @@ from shared import (
     UNITS_PER_YEAR,
     actor_age,
     actor_xy,
+    bearing,
     build_trait_ids,
     build_trait_list,
     building_tile,
@@ -33,6 +33,7 @@ from shared import (
     is_aboard,
     is_boat,
     is_sapient,
+    is_transport,
     life_stage,
     light,
     load_data,
@@ -42,6 +43,7 @@ from shared import (
     resolve_profession,
     sex_label,
     take_chapter,
+    walk_tiles,
     wants_detail,
 )
 from waters import waters_cached
@@ -51,7 +53,6 @@ _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a 
 _BOAT_REACH = 240  # chronicler.md « La mer coupe »: a transport boat carries the common reach this far across the sea
 _CIRCLES = (("intimate", 25), ("common", 120))  # chronicler.md's tiers by distance, in tiles — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
-_DOMINANT_AXIS = 0.4  # chronicler.md « Calcul des directions »: an axis under this share of the other drops out of the bearing
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -98,7 +99,7 @@ _ROLE_ORDER = (
 )
 
 _SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
-_SWIM_REACH = 16  # chronicler.md « La portée d'une nage »: up to this strait a passage is crossed, past it the other shore is out of reach
+_SWIM_SECONDS = 3.0  # what deep water leaves a whole body: `getWaterDamage` takes a tenth of its `health_max` per hit, one hit per 0.3s cooldown
 
 # Profession → (current-holder field, save collection, history list). Every post keeps a `past_*` history whose last entry is the sitting holder's start.
 _TENURE_ROLES = {
@@ -126,7 +127,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         asset = actor.get("asset_id")
         actors_by_id[actor["id"]] = actor
         actors_by_asset[asset].append(actor)
-        if asset and asset.startswith("boat_transport") and (kid := actor.get("civ_kingdom_id")):
+        if is_transport(actor) and (kid := actor.get("civ_kingdom_id")):
             ferrying.add(kid)
         # Unrolled: the pair literal rebuilt a tuple per actor. A `Counter` here would read cleaner but measures some 60 % slower than `dict.get` on this pattern.
         if parent := actor.get("parent_id_1"):
@@ -268,7 +269,7 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     home = island_of.get((cx, cy))
     # A crown that ferries none reaches no shore: without a transport boat the sea stays the far-off, and no hull nor body past the common reach is measured.
     ferried = actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]
-    reach = _BOAT_REACH if ferried else _CIRCLES[-1][1]
+    reach, swim = _BOAT_REACH if ferried else _CIRCLES[-1][1], _swim_reach(actor, ctx)
     offshore: list[tuple] = []
     kin: dict[int, str] = {}
     ties = _ties(actor)
@@ -282,15 +283,15 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
             continue
         ox, oy = actor_xy(other)
         dx, dy = ox - cx, oy - cy
-        # Whole tiles, and the circle drawn on the same figure it prints: the scale reads no finer, and a decimal alone pushes a killer's line past the width.
-        if (distance := round(hypot(dx, dy))) > reach:
+        # Whole tiles walked, the circle drawn on the figure it prints: the scale reads no finer, and a decimal alone pushes a killer's line past the width..
+        if (distance := round(walk_tiles(dx, dy))) > reach:
             continue
         # His parents, children, siblings and mate stand in full wherever they live: a count by town would drop where they are, which no roster of theirs says.
         if not boat and (tie := _kin_tie(ties, other)):
             kin[other["id"]] = tie
         land = island_of.get((ox, oy))
         # On foot or at a swim: his own land, the water, or another land a passage joins — the strait, never the crow's line, says whether its shore is in reach.
-        walked = not boat and (land is None or home is None or land == home or gaps().get(tuple(sorted((land, home))), _SWIM_REACH + 1) <= _SWIM_REACH)
+        walked = not boat and (land is None or home is None or land == home or gaps().get(tuple(sorted((land, home))), swim + 1) <= swim)
         if walked and distance <= _CIRCLES[-1][1]:
             circles[next(name for name, reach in _CIRCLES if distance <= reach)].append((distance, other["id"], dx, dy, land))
         elif ferried and (boat or land != home):  # what only a hull brings in reach: every boat, and every body off his land that no circle above holds
@@ -401,18 +402,6 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
     return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
 
 
-# The bearing as a compass point in WB's axes, y growing north: one wind or two, never a third, and none for a body on the very tile.
-def _direction(dx: int, dy: int) -> str | None:
-    if not dx and not dy:
-        return None
-    north_south, east_west = ("N" if dy > 0 else "S"), ("E" if dx > 0 else "W")
-    if abs(dy) < _DOMINANT_AXIS * abs(dx):
-        return east_west
-    if abs(dx) < _DOMINANT_AXIS * abs(dy):
-        return north_south
-    return north_south + east_west
-
-
 # Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
 def _equipment_power(actor: dict, ctx: dict) -> int:
     items = ctx["items_by_id"]
@@ -452,6 +441,14 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
     return None
 
 
+# How wide a strait this body crosses before deep water kills it: ten hits at a tenth of its `health_max`, one every 0.3s, so a wound shortens the swim.
+def _swim_reach(actor: dict, ctx: dict) -> int:
+    totals = actor_stat_totals(actor, ctx)
+    if not (speed := totals.get("speed")) or not (health_max := totals.get("health_max")):
+        return 0
+    return round(speed * _SWIM_SECONDS * min(1.0, int(actor.get("health") or 0) / health_max))
+
+
 # A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
 def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> list[tuple | dict]:
     by_id, chiefs = ctx["actors_by_id"], ctx["clan_chiefs"]
@@ -469,7 +466,7 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> 
         key = ("city", city) if sapient else ("asset_id", other.get("asset_id"))
         if (group := groups.get(key)) is None:
             head = {"city": entity_ref(city, ctx["cities_by_id"]), "species": Counter()} if sapient else {"asset_id": key[1]}
-            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"dir": _direction(dx, dy), "distance": distance}}
+            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"dir": bearing(dx, dy), "distance": distance}}
             plan.append(group)
         group["count"] += 1
         if sapient:
@@ -481,7 +478,7 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> 
 def _surroundings_row(other: dict, ctx: dict, distance: int, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
     row = {
         "asset_id": other.get("asset_id"),
-        "dir": _direction(dx, dy),
+        "dir": bearing(dx, dy),
         "distance": distance,
         "id": other["id"],
         **({"kills": n} if (n := int(other.get("kills") or 0)) else {}),

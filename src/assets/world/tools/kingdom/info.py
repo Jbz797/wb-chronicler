@@ -31,6 +31,7 @@ from shared import (
     entity_age,
     entity_ref,
     index_by_id,
+    is_transport,
     kingdom_score_dimensions,
     kingdom_score_ranks,
     light,
@@ -310,6 +311,8 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
         **({"deaths_by_cause": causes} if (causes := death_causes(kingdom)) else {}),  # chronicler-only: what its members died of, which `deaths` never says
         "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct family lineages; `familyless` count is in `population`.
+        # Chronicler-only: whether the crown can carry its people over the sea — a ferry serves any request of its kingdom, whichever of its towns docks it.
+        **({"ferries": True} if any(is_transport(b) for b in ctx["boats_by_kingdom"].get(kid) or ()) else {}),
         "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
         **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
         "gold": ctx["gold_by_kingdom"][kid],  # Gold ore in the kingdom's buildings: mined from `mineral_gold` + half of each taxpayer's loot. Not coins.

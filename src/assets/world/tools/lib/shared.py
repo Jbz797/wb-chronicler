@@ -15,6 +15,7 @@ from functools import cache
 from pathlib import Path
 
 CACHE_DIR = Path(__file__).parent.parent / ".cache"  # holds the save and islands pickles alike; gitignored via the root `.gitignore`
+DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
 EQUIPMENT_RACKS = {
@@ -49,6 +50,7 @@ _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "st
 
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
+_DOMINANT_AXIS = 0.4  # chronicler.md « Directions et distances »: an axis under this share of the other drops out of the bearing
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
@@ -318,6 +320,18 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
     return sorted(out, key=lambda t: t["id"])
 
 
+# The bearing as a compass point in WB's axes, y growing north: one wind or two, never a third, and none for a body on the very tile.
+def bearing(dx: int, dy: int) -> str | None:
+    if not dx and not dy:
+        return None
+    north_south, east_west = ("N" if dy > 0 else "S"), ("E" if dx > 0 else "W")
+    if abs(dy) < _DOMINANT_AXIS * abs(dx):
+        return east_west
+    if abs(dx) < _DOMINANT_AXIS * abs(dy):
+        return north_south
+    return north_south + east_west
+
+
 # A building's tile. WB omits a zero at save time, so a lone missing coordinate reads 0 — the first row writes no `mainY` — and neither written leaves it unsited.
 def building_tile(building: dict) -> tuple[int, int] | None:
     x, y = building.get("mainX"), building.get("mainY")
@@ -519,6 +533,11 @@ def is_aboard(actor: dict) -> bool:
 # WB models boats as actors: they sit in `actors_data` and even carry a `civ_kingdom_id`, so every actor tally must decide whether to skip them.
 def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
+
+
+# WB names a ferry `boat_transport_<species>`, and only that kind boards souls — a fishing or trading hull sails its errand alone.
+def is_transport(actor: dict) -> bool:
+    return (actor.get("asset_id") or "").startswith("boat_transport")
 
 
 # WB `Subspecies.isSapient`: the faculty rides on the biology, so a soul without one — as `Actor.isSapient` has it — never thinks.
@@ -931,6 +950,14 @@ def take_chapter(argv: list[str]) -> tuple[Path, list[str], str | None]:
     live = live_save()
     print("⚠ no chapter yet — reading the live save itself, which moves under a player still at play", file=sys.stderr)
     return live, argv, None
+
+
+# What a body actually walks between two points: WB paths in eight directions but spends its speed on each step's length, which is the octile distance.
+def walk_tiles(dx: int, dy: int) -> float:
+    far, near = abs(dx), abs(dy)
+    if far < near:
+        far, near = near, far
+    return far + DIAGONAL_EXTRA * near
 
 
 # Spelled out because the section was named, or too small for a summary to earn the call it forces — only where that summary is a pure signpost, never traits.
