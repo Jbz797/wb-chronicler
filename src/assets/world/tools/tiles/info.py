@@ -57,19 +57,17 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
 
 
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
-def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], center: tuple[int, int], mark: tuple[int, int] | None) -> dict:
+def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]]) -> dict:
     wanted = set(coords)
 
     # `actors_by_pos` alone takes a factory: it is the one filled per actor, where the others are assigned whole once their section asks for them.
     ctx: dict = {
         "actors_by_pos": defaultdict(list),
-        "center": center,
         "cities_by_id": {},
         "grid": {},
         "ground_by_pos": {},
         "kingdoms_by_id": {},
         "tile_map": save["tileMap"],
-        "to_point": mark,
     }
 
     if "actors" in sections:
@@ -103,7 +101,6 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 
     if "distances" in sections:
         ctx["layer_by_id"] = [tile_layer(name) for name in ctx["tile_map"]]
-        ctx["islands_near"] = _islands_near(ctx)  # a pass over every land tile, and the section it feeds is read at the queried tile alone
 
     return ctx
 
@@ -145,10 +142,8 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
             out["to_nearest_city"] = _fabric_distance(x, y, quarters)
     elif (kid := city.get("kingdomID")) and (seat := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
         out["to_capital"] = round(walk_tiles(x - seat[0], y - seat[1]))  # a seat is a point, where a town is a fabric — the throne, not the capital's last house
-    if near := ctx["islands_near"]:
+    if near := _islands_near(x, y, ctx):
         out["to_islands"] = near
-    if (mark := ctx["to_point"]) is not None:  # the tile the reading was asked to reach: the one distance no other key holds
-        out["to_point"] = {"dir": bearing(mark[0] - x, mark[1] - y), "tiles": round(walk_tiles(mark[0] - x, mark[1] - y))}
     return out
 
 
@@ -187,9 +182,8 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
             ctx["capital_pos_by_kingdom"][kingdom["id"]] = seat
 
 
-# Every land by its nearest tile, walked as `to_land` measures — read at the queried tile alone, a pass over every land tile costing some 85 ms.
-def _islands_near(ctx: dict) -> dict[str, int]:
-    cx, cy = ctx["center"]
+# Every land by its nearest tile, walked as `to_land` measures — read at a queried tile alone, a pass over every land tile costing some 85 ms.
+def _islands_near(cx: int, cy: int, ctx: dict) -> dict[str, int]:
     own = ctx["tile_to_island"].get((cx, cy))
     nearest: dict[int, float] = {}
     for x, y, island in ctx["tile_to_island"].land():
@@ -260,13 +254,10 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
 
-# `burning` and `frozen` only when true — a `false` per cell otherwise; the biome flavour rides on the queried tile alone, most sweeps holding a single biome.
-def _tile_info_at(x: int, y: int, ctx: dict, queried: bool) -> dict:
+# `burning` and `frozen` only when true — a `false` per cell otherwise. A biome's own line is `geography … biomes`'s to give, once for the whole map.
+def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
-    biome = tile_biome(name)
-    out: dict = {"biome": biome, "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}
-    if biome and queried:  # chronicler-only: WB's own English line on the terrain, which nothing else in the tools surfaces
-        out["biome_description"] = (load_data("biomes.json").get(biome) or {}).get("description")
+    out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}
     if (x, y) in ctx["burning_set"]:
         out["burning"] = True
     if (x, y) in ctx["frozen_set"]:
@@ -303,7 +294,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("xy", type=_xy, metavar="x,y", help="Tile coords (WB UI, y grows north), comma-separated — e.g. `415,117`.")
     parser.add_argument("sections", nargs="?", default="full", help=f"Comma-separated sections or `full`. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
-    parser.add_argument("--to", type=_xy, metavar="x,y", help="A second tile: `distances` then gives `to_point`, what a body walks from one to the other.")
+    parser.add_argument("--to", type=_xy, metavar="x,y", help="A second tile, read as the first is, and a `to` key: what a body walks from the first to it.")
     args = parser.parse_args(argv)
     cx, cy = args.xy
 
@@ -311,6 +302,10 @@ def main(argv: list[str]) -> int:
         sections = set(parse_sections(args.sections, _ALL_SECTIONS))  # membership only, never walked in order — the emitting `if`s below name each one
     except ValueError as e:
         print(str(e), file=sys.stderr)
+        return 2
+
+    if args.to and args.radius:  # refused before the save is read: a call that cannot be answered should not cost the load
+        print("✗ `--to` reads two tiles and `--radius` a square around one: they don't combine", file=sys.stderr)
         return 2
 
     save = load_save(save_path)
@@ -328,8 +323,9 @@ def main(argv: list[str]) -> int:
             print(f"✗ coords ({x}, {y}) out of bounds — map is {width}×{height}", file=sys.stderr)
             return 2
 
-    coords = _radius_tiles(cx, cy, args.radius, width, height)
-    ctx = _build_context(save, save_path, sections, coords, (cx, cy), args.to)
+    coords = [(cx, cy), args.to] if args.to else _radius_tiles(cx, cy, args.radius, width, height)
+    queried = set(coords) if args.to else {(cx, cy)}  # the tiles a reading is about: both ends of a `--to`, the centre of a sweep
+    ctx = _build_context(save, save_path, sections, coords)
 
     out: dict = {}
     for x, y in coords:
@@ -338,13 +334,16 @@ def main(argv: list[str]) -> int:
             cell["actors"] = _actors_at(x, y, ctx)
         if "context" in sections:
             cell["context"] = _context_at(x, y, ctx)
-        if "distances" in sections and (x, y) == (cx, cy):  # what a sweep's neighbours would repeat to the tile, said once for the tile asked about
+        if "distances" in sections and (x, y) in queried:  # what a sweep's neighbours would repeat to the tile, said once for the tile asked about
             cell["distances"] = _distances_at(x, y, ctx)
         if "ground" in sections:
             cell["ground"] = _ground_at(x, y, ctx)
         if "tile_info" in sections:
-            cell["tile_info"] = _tile_info_at(x, y, ctx, (x, y) == (cx, cy))
+            cell["tile_info"] = _tile_info_at(x, y, ctx)
         out[f"{x},{y}"] = cell
+    if args.to:  # a relation between the two ends, not a trait of either: its own key, the cap read from the first toward the second
+        tx, ty = args.to
+        out["to"] = {"dir": bearing(tx - cx, ty - cy), "tiles": round(walk_tiles(tx - cx, ty - cy))}
 
     emit(out)
     return 0

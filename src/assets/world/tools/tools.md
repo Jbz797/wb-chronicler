@@ -1,6 +1,6 @@
 # 🛠 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 18/09/26 01:58</p>
+<p class="metadata">Date de mise à jour : 18/09/26 10:42</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON sur `stdout` — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata` pour la section `metadata` de `kingdom`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city 3 C5 metadata`) lit `saves/C<n>/map.wbox` au lieu du save live.
 
@@ -27,7 +27,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ## Options :
 
 - `-r <n>` : rayon, de 0 à 2 — `distances` ne répond que pour la tuile demandée, ses voisines ne diraient rien d'autre
-- `--to <x,y>` : une seconde tuile — `distances` rend alors `to_point`, ce qu'un corps marche de l'une à l'autre, et le cap : la seule mesure entre deux points quelconques
+- `--to <x,y>` : une seconde tuile, lue comme la première, et une clé `to` qui porte la marche et le cap depuis la première : la seule mesure entre deux points quelconques ; ne se combine pas avec `-r`
 - `-t <type>` : **un `asset_id` exact**, jamais une famille (ex. `pine_tree` répond, `tree` rend `{}` sans rien dire) ; `entity_types` donne la liste
 
 ---
