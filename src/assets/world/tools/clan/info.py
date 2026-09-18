@@ -213,7 +213,7 @@ def main(argv: list[str]) -> int:
 
     out: dict = {}
     if "breakdown" in sections:
-        # The living against the founder's `identity`, drifting harder than a lineage's — species goes, `ClanManager.newClan` seeding the roster from his bloodline.
+        # The living against the founder's `identity`, drifting harder than a family's — species goes, `ClanManager.newClan` seeding the roster from his bloodline.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(clan, ctx)

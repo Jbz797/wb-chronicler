@@ -211,7 +211,7 @@ def main(argv: list[str]) -> int:
         out["kingdoms"] = _build_kingdoms(members, ctx)
     if "leaders" in sections:
         podium = settlement_leaders(subjects, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
-        out["leaders"] = {key: value for key, value in podium.items() if key != "families"}  # a lineage answers to a crown, never to the pact above it
+        out["leaders"] = {key: value for key, value in podium.items() if key != "families"}  # a family answers to a crown, never to the pact above it
     if "metadata" in sections:
         out["metadata"] = _build_metadata(alliance, subjects, members, ctx)
     if "population" in sections:

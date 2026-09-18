@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One lineage: its founding couple, its living members and where they scattered. User-facing docs: `tools/tools.md`.
+# One family: its founding couple, its living members and where they scattered. User-facing docs: `tools/tools.md`.
 # A WorldBox family is a bloodline, not a household — see `metadata.houses`, which counts the roofs its members sleep under.
 
 import sys
@@ -36,7 +36,7 @@ _ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "pop
 _NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # `identity` alone reads the founding record and nothing else
 
 
-# Chronicler-only: what the lineage was stamped as at its founding, not what its living carry — most still share both, the `breakdown` section telling how many.
+# Chronicler-only: what the family was stamped as at its founding, not what its living carry — most still share both, the `breakdown` section telling how many.
 def _build_identity(family: dict, ctx: dict) -> dict:
     # WB stores the founding pair as loose name/id fields rather than refs; the second is absent wherever a lone settler started the line.
     founders = [{"id": fid, "name": family.get(f"founder_actor_name_{n}")} for n in (1, 2) if (fid := family.get(f"main_founder_id_{n}")) is not None]
@@ -70,7 +70,7 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
     return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
-# The lineage's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
+# The family's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
     report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the line say of itself
     houses = {home for a in members if (home := a.get("homeBuildingID"))}  # its own roster alone: a handful of souls, where the podium's pass walks the world
@@ -79,7 +79,7 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
         "age": entity_age(family, ctx["world_time"]),
         **({"alpha": entity_ref(family.get("alpha_id"), ctx["actors_by_id"])} if family.get("alpha_id") else {}),  # its head, on the few clans WB gave one
         **({"births": births} if (births := int(family.get("total_births") or 0)) else {}),
-        # Towns and crowns its living answer from. A lineage almost always holds to one of each — which is what makes the line that says otherwise worth reading.
+        # Towns and crowns its living answer from. A family almost always holds to one of each — which is what makes the line that says otherwise worth reading.
         **({"cities": len(cities)} if (cities := {cid for a in members if (cid := a.get("cityID"))}) else {}),
         **({"deaths": deaths} if (deaths := int(family.get("total_deaths") or 0)) else {}),
         **({"houses": len(houses)} if houses else {}),  # roofs they sleep under: two or three for most
@@ -98,7 +98,7 @@ def _build_population(members: list[dict], ctx: dict) -> dict:
     return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
 
 
-# What a lineage is ranked on among the world's others. Living counts read off the rosters one actor pass built: the podium weighs every line, on each below.
+# What a family is ranked on among the world's others. Living counts read off the rosters one actor pass built: the podium weighs every line, on each below.
 def _rank_getters(tallies: dict, world_time: float) -> dict:
     return {
         "age": lambda f: entity_age(f, world_time),
@@ -106,7 +106,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "births_per_death": lambda f: int(f.get("total_births") or 0) / d if (d := int(f.get("total_deaths") or 0)) else 0.0,
         "cities": lambda f: len({cid for a in tallies["members"].get(f["id"], ()) if (cid := a.get("cityID"))}),
         "deaths": lambda f: int(f.get("total_deaths") or 0),
-        # No `housed_pct` here nor on a clan: a lineage runs a handful of souls, and a share capped at one ties most of the field — `population` says the share.
+        # No `housed_pct` here nor on a clan: a family runs a handful of souls, and a share capped at one ties most of the field — `population` says the share.
         "houses": lambda f: len(tallies["houses"].get(f["id"], ())),
         "kills": lambda f: int(f.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
@@ -114,7 +114,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "kingdoms": lambda f: len({kid for a in tallies["members"].get(f["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
         "members": lambda f: len(tallies["members"].get(f["id"], ())),
         "money": lambda f: tallies["money"][f["id"]],
-        "renown_total": lambda f: tallies["renown_total"][f["id"]],  # a lineage has no renown of its own, unlike a clan — only what its members carry
+        "renown_total": lambda f: tallies["renown_total"][f["id"]],  # a family has no renown of its own, unlike a clan — only what its members carry
         "warriors": lambda f: tallies["warriors"][f["id"]],
     }
 
@@ -145,7 +145,7 @@ def main(argv: list[str]) -> int:
 
     tallies: dict = {"houses": {}, "members": defaultdict(list), "money": Counter(), "renown_total": Counter(), "warriors": Counter()}
 
-    # WB points each actor at its lineage and never the reverse, so the lines are gathered in one walk — skipped whole where no section wants the living.
+    # WB points each actor at its family and never the reverse, so the lines are gathered in one walk — skipped whole where no section wants the living.
     members_by_id = tallies["members"]
     for actor in (save.get("actors_data") or []) if _NEEDS_ACTORS.intersection(sections) else ():
         if fid := actor.get("family"):
@@ -181,7 +181,7 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(family, ctx)
-    if "leaders" in sections:  # its own lineage would win every family row, so only the souls stand — and the podium drops below four, naming nobody among three
+    if "leaders" in sections:  # its own family would win every family row, so only the souls stand — and the podium drops below four, naming nobody among three
         podium = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
         out["leaders"] = {key: value for key, value in podium.items() if key != "families"}
     if "members" in sections:

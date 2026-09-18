@@ -28,7 +28,7 @@ export class SubspeciesComponent {
     const label = this._translate.instant(`biome_${key}`) as string;
     return label === `biome_${key}` ? key : label;
   });
-  // WB writes these only once the biology has scored on them, so a row appears the year it first matters — same rule as the clan's and the lineage's.
+  // WB writes these only once the biology has scored on them, so a row appears the year it first matters — same rule as the clan's and the family's.
   protected readonly lifetimeStats = computed<{ icon: string; inverted: boolean; label: string; stat: RankedStatKind }[]>(() => {
     const tier = this.subspecies();
     if (!tier) return [];

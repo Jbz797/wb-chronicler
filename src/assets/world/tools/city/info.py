@@ -371,7 +371,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
         "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
         **({"deaths_by_cause": causes} if (causes := death_causes(city)) else {}),  # chronicler-only: what the town's people died of, which `deaths` never says
-        "families": len(ctx["families_by_city"].get(cid, ())),  # Distinct family lineages among its residents; the `familyless` count is in `population`.
+        "families": len(ctx["families_by_city"].get(cid, ())),  # Distinct families among its residents; the `familyless` count is in `population`.
         "food": ctx["food_by_city"][cid],  # Eatable resources stocked in the city's buildings.
         "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.
         "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).

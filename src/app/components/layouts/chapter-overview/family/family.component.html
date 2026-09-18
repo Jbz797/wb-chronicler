@@ -40,7 +40,7 @@
     }
 
     <nz-descriptions-item [nzTitle]="citiesTitle">
-      <!-- No podium: a lineage cannot hold more towns than it has souls, so the rank would restate `members` rather than measure any spread. -->
+      <!-- No podium: a family cannot hold more towns than it has souls, so the rank would restate `members` rather than measure any spread. -->
       <app-ranked-stat source="family" stat="cities" [showRank]="false" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="f.metadata.houses" [nzTitle]="housesTitle">
@@ -63,7 +63,7 @@
 
   <ng-template #ageTitle>
     <img src="assets/img/stats/age.png" />
-    <span>{{ 'ui_lineage_age' | translate }}</span>
+    <span>{{ 'ui_family_age' | translate }}</span>
   </ng-template>
   <ng-template #alphaTitle>
     <img src="assets/img/world/most_renowned_person.png" />

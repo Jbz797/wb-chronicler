@@ -151,7 +151,7 @@ export class RankedStatComponent {
     return this._snap(f.stats[field as keyof typeof f.stats] ?? 0, ranks[field as keyof typeof ranks]);
   }
 
-  // A clan, a culture, a lineage, a tongue, a biology, built alike: the body in `metadata`, its living in `population` as on a city, the roster apart.
+  // A clan, a culture, a family, a tongue, a biology, built alike: the body in `metadata`, its living in `population` as on a city, the roster apart.
   private _resolvePeople(entity: PeopleTier): RankedStatSnapshot {
     const ranks = entity.ranks as Record<string, number | undefined> | undefined;
     const key = this.stat();

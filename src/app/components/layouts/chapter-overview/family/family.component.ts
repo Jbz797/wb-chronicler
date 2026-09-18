@@ -30,7 +30,7 @@ export class FamilyComponent {
     const title = (id: number): string => LabelHelpers.gendered(this._translate, 'ui_founder', persons[String(id)]?.sex);
     return (this.family()?.identity.founders ?? []).map(founder => ({ ...founder, label: title(founder.id) }));
   });
-  // WB writes these only once the lineage has scored on them, so a row appears the year it first matters. Ordered births → deaths → kills, as the other tiers are.
+  // WB writes these only once the family has scored on them, so a row appears the year it first matters. Ordered births → deaths → kills, as the other tiers are.
   protected readonly lifetimeStats = computed<{ icon: string; inverted: boolean; label: string; stat: RankedStatKind }[]>(() => {
     const tier = this.family();
     if (!tier) return [];

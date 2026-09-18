@@ -21,7 +21,7 @@ canvas {
 }
 
 .ant-tag {
-  // One plate for all four: a subject, its village, its crown and its lineage share a body, so they read as one family. Only ground and ink part them.
+  // One plate for all four: a subject, its village, its crown and its family share a body, so they read as one set. Only ground and ink part them.
   &.entity-tag {
     align-items: center;
     display: inline-flex;
@@ -45,7 +45,7 @@ canvas {
       }
     }
 
-    // The species pip and the sex glyph, capped alike on every plate so a lineage sits level with its village and its crown.
+    // The species pip and the sex glyph, capped alike on every plate so a family sits level with its village and its crown.
     img {
       max-height: 14px;
       max-width: 14px;
@@ -277,7 +277,7 @@ canvas {
     }
   }
 
-  // The lineage stands apart: it wears no crown's hue, so it carries its own fill and the frame WB hangs it in, 9-sliced as a border.
+  // The family stands apart: it wears no crown's hue, so it carries its own fill and the frame WB hangs it in, 9-sliced as a border.
   &.family-tag {
     background-color: var(--tag-fill, #f4f1ea);
     border: 1px solid rgb(0 0 0 / 28%);
@@ -314,7 +314,7 @@ canvas {
       }
     }
 
-    // The tier, inverting the tag — ink for ground, fill for figure — so it reads on any lineage, which wears no crown's hue to take one from.
+    // The tier, inverting the tag — ink for ground, fill for figure — so it reads on any family, which wears no crown's hue to take one from.
     .tag-badge {
       background-color: var(--tag-ink, #23211d);
       color: var(--tag-fill, #f4f1ea);

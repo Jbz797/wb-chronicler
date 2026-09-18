@@ -13,7 +13,7 @@ export interface EquipmentStock { total: number }
 // Hulls afloat, on a realm or on the world. Only the count rides in the chapter — `<tier>/info.py … boats` names them for the chronicler.
 export interface HullCount { total: number }
 
-// The standout lineage and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
+// The standout family and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
 export interface Leaders {
   families?: { population?: EntityReference };
   persons?: {
@@ -25,10 +25,10 @@ export interface Leaders {
   };
 }
 
-// The living of a clan, a lineage or a biology, counted and nothing more — the roster stays behind in `<tier>/info.py <id> members`, where the chronicler reads it.
+// The living of a clan, a family or a biology, counted and nothing more — the roster stays behind in `<tier>/info.py <id> members`, where the chronicler reads it.
 export interface MemberRoster { total: number }
 
-// A clan, a culture, a lineage, a tongue and a biology answer the same shape, served by one resolver — structural, since naming them would reach into `types.ts`.
+// A clan, a culture, a family, a tongue and a biology answer the same shape, served by one resolver — structural, since naming them would reach into `types.ts`.
 export interface PeopleTier {
   members?: MemberRoster; // every tier names its roster alike, a tongue's speakers included
   metadata: object; // each tier's own shape; the resolver reads it by key, so it casts rather than narrowing

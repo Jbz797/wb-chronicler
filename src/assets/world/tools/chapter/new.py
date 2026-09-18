@@ -125,11 +125,11 @@ _AUDIT_TIERS = {
     "city.population": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
     "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
-    "clan.metadata": {"births"},  # unlike a lineage, a pact or a biology, the clan panel prints no births row
+    "clan.metadata": {"births"},  # unlike a family, a pact or a biology, the clan panel prints no births row
     "clan.ranks": {"kingdoms"},  # its crowns tie on one realm apiece — `clan/info.py <id> ranks` still places the band that spans eight
     "culture.identity": {"species", "subspecies"},  # the founder's stock — the panel names the founder alone, whose own tag carries it
     "defenders.kingdoms": {"population"},  # as `attackers`
-    "family.identity": {"culture", "species", "subspecies"},  # the lineage is read by the souls it seated, its blood and its tongue answering from their own tiers
+    "family.identity": {"culture", "species", "subspecies"},  # the family is read by the souls it seated, its blood and its tongue answering from their own tiers
     "family.metadata": {"kingdoms", "parents"},  # a second crown or a parent line is too rare for a panel row, so both ride the script's output alone
     "family.ranks": {"cities", "kingdoms"},  # towns and crowns follow the heads that hold them, so the podium repeats the one `members` already draws
     # The bodies it belongs to, each read to open its own tier block — and its stock, which the portrait draws off the persons registry

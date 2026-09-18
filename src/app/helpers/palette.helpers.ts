@@ -13,7 +13,7 @@ export class PaletteHelpers {
   // Any hue lifted to readable on the tag's black plate — a pact carries its own, where a realm's is looked up by id.
   public static liftedText = (hue: string | undefined): string => this._lift(hue ?? REALM_FALLBACK_HUE, this._textTarget);
 
-  // Ink for a tag carrying its own fill (the lineages): `_contrast` measures against black, so above √21 ≈ 4.58 the fill is nearer white — dark ink then wins.
+  // Ink for a tag carrying its own fill (the families): `_contrast` measures against black, so above √21 ≈ 4.58 the fill is nearer white — dark ink then wins.
   public static readableOn = (fill: string | undefined): string => fill && this._contrast(SpriteHelpers.hexRgb(fill)) > 4.58 ? '#141414' : '#F5F2EA';
 
   // A realm's `getColorText` hue, verbatim — WB's own value, and the root both `realmRamp` and `realmText` build on. The crownless wear undyed grey.

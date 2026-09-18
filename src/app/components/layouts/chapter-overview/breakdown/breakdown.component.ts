@@ -39,7 +39,7 @@ export class BreakdownComponent {
       kingdom: b?.kingdoms?.[0] ?? null,
       language: b?.languages?.[0] ?? null,
       religion: b?.religions?.[0] ?? null,
-      species: b?.species?.[0] ?? null, // a lineage carries none — it would only restate the species its `identity` already stamps
+      species: b?.species?.[0] ?? null, // a family carries none — it would only restate the species its `identity` already stamps
       subspecies: b?.subspecies?.[0] ?? null,
     };
   });

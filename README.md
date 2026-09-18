@@ -28,7 +28,7 @@ The player runs **WorldBox** in pure observation mode (zero intervention, sandbo
 
 1. **The Chronicler** — the Claude Code CLI, run from a terminal with `src/assets/world/` as its working directory, reads the rules in `chronicler.md`, questions the world through the `tools/` commands it is given — a script per subject (`world`, `actor`, `city`, `geography`…) that decodes the `map.wbox` save (zlib-compressed JSON) and answers in JSON — browses the `map_stats.s3db` SQLite itself, and writes the next narrative chapter in a Tolkien-inspired voice (no pastiche, every claim traced back to data) — in whichever tongue `history/settings.json` records.
 
-2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters — and, in developer mode, the rules documents — on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world's leaderboards, the favorite character, and every body it belongs to: village, kingdom, clan, lineage…
+2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters — and, in developer mode, the rules documents — on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world's leaderboards, the favorite character, and every body it belongs to: village, kingdom, clan, family…
 
 Every person, town, kingdom, clan, culture and creed the prose names carries its tag — sprite, banner and colours composed from the save, so the story stays anchored to what the world actually held.
 

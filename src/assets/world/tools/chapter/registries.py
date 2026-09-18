@@ -32,7 +32,7 @@ from shared import (
 
 _ENCODE = json.JSONEncoder(ensure_ascii=False, sort_keys=True).encode  # mounted once: given keyword arguments, `json.dumps` builds a fresh encoder per call
 
-# Where each tier keeps its founder(s) and the stock to draw them from — WB names the field differently on every one, and a lineage claims two.
+# Where each tier keeps its founder(s) and the stock to draw them from — WB names the field differently on every one, and a family claims two.
 _FOUNDER_FIELDS = (
     ("cities", ("founder_id",), "original_actor_asset"),
     ("clans", ("founder_actor_id",), "original_actor_asset"),
@@ -110,7 +110,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
     crowd: dict[int, tuple[dict, str | None]] = {}
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
 
-    # Headcount and dominant species are all an entry needs, so tally straight away — and WB points the actor at its clan, lineage and biology, never the reverse.
+    # Headcount and dominant species are all an entry needs, so tally straight away — and WB points the actor at its clan, family and biology, never the reverse.
     members_by_clan: Counter = Counter()
     members_by_culture: Counter = Counter()
     members_by_family: Counter = Counter()
@@ -289,7 +289,7 @@ def _family_entry(family: dict, members: int, rank: int | None) -> dict:
         "frame": family.get("banner_frame_id") or 0,  # an absent banner id arrives as C#'s 0 — slot zero, not no slot
         "name": family.get("name"),
     }
-    if (size := _size_tier(members)) > 1:  # a lineage carried over from an older chapter keeps none, as every tag pill stays silent at its lowest tier
+    if (size := _size_tier(members)) > 1:  # a family carried over from an older chapter keeps none, as every tag pill stays silent at its lowest tier
         entry["size"] = size
     if rank is not None:
         entry["rank"] = rank
@@ -297,7 +297,7 @@ def _family_entry(family: dict, members: int, rank: int | None) -> dict:
         entry["species"] = species
     # WB paints the backing sprite with `getColorMainSecond` (families borrow the realms' palette). Flattened to one hex: the tag fills rather than stacks.
     backing = load_data("colors.json")["family_frames"].get(f"{family.get('banner_background_id') or 0:02}")
-    tint = _palette(family.get("color_id", "")).get("color_main_2") or _REALM_FALLBACK_HUE  # WB grants a handful of lineages no palette at all — grey, as it does
+    tint = _palette(family.get("color_id", "")).get("color_main_2") or _REALM_FALLBACK_HUE  # WB grants a handful of families no palette at all — grey, as it does
     if backing:
         entry["bg_color"] = _multiply(backing, tint)
     return _defined(entry)

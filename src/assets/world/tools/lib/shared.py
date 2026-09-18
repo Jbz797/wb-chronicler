@@ -455,7 +455,7 @@ def emit(out: dict) -> None:
     print(render(_strip_none(out)))
 
 
-# Years a record has behind it — a city, a crown, a clan, a lineage, a roof. Only a body counts the year it is in, and `actor_age` adds that one.
+# Years a record has behind it — a city, a crown, a clan, a family, a roof. Only a body counts the year it is in, and `actor_age` adds that one.
 def entity_age(record: dict, world_time: float) -> int:
     return int((world_time - float(record.get("created_time") or 0)) / UNITS_PER_YEAR)
 
@@ -854,7 +854,7 @@ def score_totals(ids: list[int], dimensions: dict[str, dict]) -> Counter:
     return totals
 
 
-# Who stands out among a body's own — its leading lineages and its most singular souls, each measure's first place. Shared by every tier that rosters people.
+# Who stands out among a body's own — its leading families and its most singular souls, each measure's first place. Shared by every tier that rosters people.
 def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of, world_time: float) -> dict:
     if len(actors) < MIN_RANK_PEERS:  # the bar a rank clears too: under four, a first place tells the body's size and not who holds it
         return {}

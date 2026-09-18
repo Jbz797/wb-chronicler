@@ -56,7 +56,7 @@ export interface CultureInfo {
   species?: string;
 }
 
-// A lineage's tag: the frame worn as a border, the flattened backing hue, the founding species' pip and its living headcount. Its `name` is chronicler-only.
+// A family's tag: the frame worn as a border, the flattened backing hue, the founding species' pip and its living headcount. Its `name` is chronicler-only.
 export interface FamilyInfo {
   bg_color?: string;
   dead?: boolean;

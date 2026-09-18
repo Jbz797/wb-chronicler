@@ -180,14 +180,14 @@ export class MarkedHelpers {
     return `<span class="ant-tag entity-tag culture-tag${dead}" style="--tag-color: ${info?.color}">${emblem}${label}${medal}${size}${species}</span>`;
   }
 
-  // A lineage wears no crown's hue, so its tag is the frame alone on a plain ground — nothing to resolve but the sprite.
+  // A family wears no crown's hue, so its tag is the frame alone on a plain ground — nothing to resolve but the sprite.
   private static _renderFamily(this: ParserThis, token: Tokens.Generic): string {
     const { id, tokens: children } = token as IconToken;
     const info = FAMILY_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
     const medal = info?.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by members, as the clan's is
 
-    const dead = info?.dead ? ' dead' : ''; // lineage died out since this chapter → drained + struck-through
+    const dead = info?.dead ? ' dead' : ''; // family died out since this chapter → drained + struck-through
     const framed = info?.frame === undefined ? '' : ' framed';
     const n = info?.frame === undefined ? null : String(info.frame).padStart(2, '0');
 

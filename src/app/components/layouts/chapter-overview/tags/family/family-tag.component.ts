@@ -24,12 +24,12 @@ export class FamilyTagComponent {
   protected readonly border = computed(() => this._sprite('frame'));
   // Its corner volutes overflow that slice, so they ride on a second layer — see the `::after` rule in `styles.scss`.
   protected readonly corner = computed(() => this._sprite('corner'));
-  // Frame, backing hue and founding species come from the families registry, rebuilt each chapter. `null` until the lineage is registered.
+  // Frame, backing hue and founding species come from the families registry, rebuilt each chapter. `null` until the family is registered.
   protected readonly family = computed(() => this._registry.families()[String(this.id())] ?? null);
-  // A lineage carries its own fill, so its ink is chosen against that fill rather than inherited from a crown.
+  // A family carries its own fill, so its ink is chosen against that fill rather than inherited from a crown.
   protected readonly ink = computed(() => PaletteHelpers.readableOn(this.family()?.bg_color));
 
-  // Both layers hang off the same frame number — `null` until the lineage is registered, which drops the `framed` class with them.
+  // Both layers hang off the same frame number — `null` until the family is registered, which drops the `framed` class with them.
   private _sprite(kind: 'corner' | 'frame'): string | null {
     const frame = this.family()?.frame;
     return frame === undefined ? null : `url(assets/img/families/${kind}_${String(frame).padStart(2, '0')}.png)`;
