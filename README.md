@@ -37,16 +37,41 @@ Each chapter is a self-contained folder under `saves/C<n>/` carrying its own nar
 > **Notes**
 >
 > - **One save = one chapter.** The system is built around **manual saves only** — disable WorldBox auto-saves before you start. The player decides when a chapter begins and asks for it; the chronicler then works from the latest save on disk, and an auto-save would slip in an intermediate state nobody chose. Overwriting the same WorldBox slot is safe: every chapter archives the save it was built from.
-> - **Claude Max** (or higher) is recommended — the chronicler reads, cross-checks, and writes a multi-section chapter on every save.
 > - **French or English.** One setting, `lang` in `history/settings.json`, governs both sides: the chronicler answers and writes its chapters in it, the reader's panels follow. Pick it from the settings panel, which will not save without one.
 > - **Developer mode.** A second setting, `dev`, says who the reader is for. Left off — the ordinary case — the Précepte pages stay out of the nav and the chronicler delivers the chapter and nothing beside it. Turned on, the manual, the tag list and the tooling docs are there to read, and the chronicler may close on what it would see improved in the scripts or the docs.
-> - **macOS, Windows and Linux.** On first run the reader opens its settings panel, finds the WorldBox saves this machine holds — including a Proton prefix on Linux — and records the one to follow, along with the tongue the chronicle is kept in.
+> - **macOS, Windows and Linux.** The reader finds the WorldBox saves this machine holds, a Proton prefix on Linux included.
 
 ## State lives on disk, not in context
 
 The chronicle runs as a **single, continuous CLI session** — `claude` left open from one chapter to the next, rather than restarted for each. Every durable piece of state is persisted to disk — the `chronicler.md` manual, the self-contained per-chapter folders, and the deterministic `tools/` extractors (a save → JSON on demand, same input → same output). Nothing that matters lives in the context window.
 
 The model's **1M-token context window** lets that single thread run a long way before compaction is even needed. And because the filesystem holds everything durable, **compaction costs nothing** when it does happen — the conversation can be summarized as aggressively as needed and the agent simply re-grounds itself from these files. That's what makes the single-thread approach viable: more practical, and it keeps the model sharper than cold-starting.
+
+## Requirements
+
+- **Claude Code**, with a Claude subscription — Pro or higher is recommended, the chronicler reading, cross-checking and writing a multi-section chapter on every save
+- **Node** 22+ and **Yarn** for the reader
+- **Python 3** for the `tools/` extractors — the standard library, plus **Pillow** for `map/show.py` (`pip install pillow`)
+- **WorldBox** (Steam) and a save to follow
+
+## Getting started
+
+To write the chronicle, open the chronicler in its own directory:
+
+```sh
+cd src/assets/world && claude # works inside the chronicle, ruled by `chronicler.md` alone
+```
+
+The session opens on a single order, _« Lis le chronicler.md »_ — the chronicler takes it from there.
+
+To read it, start the reader — a separate process — on its production build:
+
+```sh
+yarn install
+yarn start:prod # the reader on http://localhost:4200, a third of the dev bundle
+```
+
+On first run the reader opens its settings panel: pick the tongue the chronicle is kept in, and the save to follow among those found on this machine.
 
 ## Chronicle layout
 
@@ -57,34 +82,20 @@ src/assets/world/
 ├── chronicler.md
 ├── tags.md
 ├── history/
+├── i18n/
 ├── saves/
 └── tools/
 ```
 
 Every player's chronicle stays local to their machine — the repo carries the tooling and the manual, not the story.
 
-## Requirements
-
-- **Claude Code**, with a Claude subscription — Max or higher is recommended
-- **Node** 22+ and **Yarn** for the reader
-- **Python 3** (standard library only) for the `tools/` extractors
-- **WorldBox** (Steam) and a save to follow
-
-On first run the reader opens its settings panel: pick the tongue the chronicle is kept in, and the save to follow among those found on this machine.
-
 ## Dev
 
-```sh
-cd src/assets/world && claude   # the chronicler: its working directory is the chronicle, and `chronicler.md` alone rules it
-```
-
-The CLI is what the chronicle expects — the session opens on a single order, _« Lis le chronicler.md »_, after which it reads and writes the files under `src/assets/world/` and runs the `tools/` scripts itself. The reader is a separate process:
+To work on the reader:
 
 ```sh
-yarn install
-yarn start          # ng serve on http://localhost:4200, plus the local service the settings panel needs
-yarn start:prod     # the same, production build: no dev-mode checks and a third of the bundle — to read the chronicle, not to work on the reader
-yarn lint:fix       # auto-fix all three
+yarn start    # ng serve on http://localhost:4200, plus the saves and settings service
+yarn lint:fix # ESLint, Stylelint and Prettier, auto-fixed
 ```
 
 ## Tech stack
@@ -93,5 +104,5 @@ yarn lint:fix       # auto-fix all three
 - **NG-ZORRO** (dark layout, custom gold/parchment palette)
 - **ngx-markdown** + Marked + Prism.js (gruvbox-dark)
 - **ngx-translate** (French and English, off WorldBox's own locale files where the game names a thing)
-- **Python** (standard library only) for the `tools/` extractors — zlib and JSON off the save, SQLite for the history
+- **Python** for the `tools/` extractors — zlib and JSON off the save, SQLite for the history, Pillow for the map
 - **TypeScript**, ESLint, Stylelint, Prettier
