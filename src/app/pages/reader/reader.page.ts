@@ -95,9 +95,16 @@ export class ReaderPage {
   // The epigraph's larger face can wrap: shrunk by its one-line overflow, pass after pass, since a tag keeps its pixel size and one proportional cut falls short.
   private _fitOneLine(opening: HTMLElement): void {
     opening.style.whiteSpace = 'nowrap';
-    for (let pass = 0; pass < 8 && opening.scrollWidth > opening.clientWidth; pass++) {
+    const range = document.createRange();
+    for (let pass = 0; pass < 8; pass++) {
+      // Measured in fractions: `scrollWidth` and `clientWidth` round to whole pixels, and a tenth of one over the line is enough to wrap.
+      range.selectNodeContents(opening);
+      const content = range.getBoundingClientRect().width;
+      const room = opening.getBoundingClientRect().width;
+      if (content <= room) break;
       const size = Number.parseFloat(getComputedStyle(opening).fontSize);
-      opening.style.fontSize = `${Math.floor(((size * opening.clientWidth) / opening.scrollWidth) * 10) / 10}px`; // floored: a fraction of a pixel over wraps
+      // A tenth off at the very least: a browser snapping the size to its pixel grid hands back what was just set, and a proportional cut alone would stall there.
+      opening.style.fontSize = `${Math.min(Math.floor(((size * room) / content) * 10) / 10, size - 0.1)}px`;
     }
     opening.style.removeProperty('white-space');
   }
