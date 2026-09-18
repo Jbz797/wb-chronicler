@@ -5,6 +5,7 @@
       <ng-template #personTitle>
         <img [src]="row.icon" />
         <span>{{ row.label | translate }}</span>
+        <app-new-badge [show]="row.isNew" />
       </ng-template>
       <nz-descriptions-item [nzTitle]="personTitle">
         <app-person-tag [id]="row.ref.id" [name]="row.ref.name" />
@@ -14,6 +15,7 @@
       <ng-template #familyTitle>
         <img [src]="row.icon" />
         <span>{{ row.label | translate }}</span>
+        <app-new-badge [show]="row.isNew" />
       </ng-template>
       <nz-descriptions-item [nzTitle]="familyTitle">
         <app-family-tag [id]="row.ref.id" [name]="row.ref.name" />

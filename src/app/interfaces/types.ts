@@ -7,7 +7,6 @@ import {
 export type ActorRect = [number, number, number, number, number]; // x, y, width, height, pivot drop from the top — a part sits where its pivot meets the anchor's.
 export type AllianceRegistry = Record<string, AllianceInfo>;
 export type BookRegistry = Record<string, BookInfo>;
-export type BreakdownSource = Exclude<ChapterTier, 'favorite'>; // a « Composition » needs a population, and the favourite is one soul
 export type ChapterOverviewPanel = 'wars' | 'world-stats' | ChapterTier; // the collapse's panels: every tier, plus the world and the wars, which are no tier
 
 // Every body a chapter names, and the four types below are cut from it. `ChapterMeta extends Record<ChapterTier, unknown>` closes the loop from downstream.
@@ -42,6 +41,7 @@ export type LeaderMeasure = 'diplomacy' | 'intelligence' | 'level' | 'population
 export type LifeStage = 'adult' | 'baby' | 'child' | 'egg' | 'elder' | 'teen';
 export type PeopleTierName = Exclude<ChapterTier, 'city' | 'favorite' | 'kingdom'>; // those `_resolvePeople` serves — the bodies that roster the living
 export type PersonRegistry = Record<string, PersonInfo>;
+export type PopulatedTier = Exclude<ChapterTier, 'favorite'>; // a « Composition » or a « Palmarès » needs a population, and the favourite is one soul
 export type PopulationStat = 'fed_pct' | 'food_per_capita' | 'housed_pct' | 'immortals' | 'infected' | 'renown_total' | 'sick' | 'warriors' | 'wealth_per_capita';
 
 export type RankedStatKind = 'age' | 'armor'

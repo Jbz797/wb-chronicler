@@ -4,7 +4,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { BreakdownLeader, BreakdownSource } from '../../../../interfaces';
+import { BreakdownLeader, PopulatedTier } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
 import { NewBadgeComponent } from '../new-badge/new-badge.component';
 import { CultureTagComponent, KingdomTagComponent, LanguageTagComponent, ReligionTagComponent, SubspeciesTagComponent } from '../tags';
@@ -28,7 +28,7 @@ export class BreakdownComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
 
-  public readonly source = input.required<BreakdownSource>();
+  public readonly source = input.required<PopulatedTier>();
 
   protected readonly breakdown = computed(() => this._chronicler.currentChapter()?.meta[this.source()]?.breakdown ?? null);
   // Each dimension's leader, `null` where the chapter carries none — the runners-up and any leader at 100 % stay in `<tier>/info.py <id> breakdown`.
