@@ -57,25 +57,31 @@
   <ng-template #cultureTitle>
     <img src="assets/img/world/cultures.png" />
     <span>{{ 'ui_culture' | translate }}</span>
+    <app-new-badge [show]="renewed().culture" />
   </ng-template>
   <ng-template #kingdomTitle>
     <img src="assets/img/world/kingdom.png" />
     <span>{{ 'ui_kingdom' | translate }}</span>
+    <app-new-badge [show]="renewed().kingdom" />
   </ng-template>
   <ng-template #languageTitle>
     <img src="assets/img/world/languages.png" />
     <span>{{ 'ui_tongue' | translate }}</span>
+    <app-new-badge [show]="renewed().language" />
   </ng-template>
   <ng-template #religionTitle>
     <img src="assets/img/world/religions.png" />
     <span>{{ 'ui_religion' | translate }}</span>
+    <app-new-badge [show]="renewed().religion" />
   </ng-template>
   <ng-template #speciesTitle>
     <img src="assets/img/world/species.png" />
     <span>{{ 'ui_species' | translate }}</span>
+    <app-new-badge [show]="renewed().species" />
   </ng-template>
   <ng-template #subspeciesTitle>
     <img src="assets/img/world/subspecies.png" />
     <span>{{ 'ui_subsp' | translate }}</span>
+    <app-new-badge [show]="renewed().subspecies" />
   </ng-template>
 }

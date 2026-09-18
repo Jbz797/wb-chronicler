@@ -1,6 +1,9 @@
 // A library counted, on a town's shelves or under a culture's name. Only the total reaches the UI — each volume ships in the `books` section, for the chronicler.
 export interface BookShelf { total: number }
 
+// A « Composition » leader as every dimension carries it: an id, or an `asset_id` for a species, which alone goes without one.
+export interface BreakdownLeader { asset_id?: string; id?: number }
+
 // A minimal id + name pointer to a kingdom / city / alliance, for tags and cross-links.
 export interface EntityReference { id: number; name: string }
 
