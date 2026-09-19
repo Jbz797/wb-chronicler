@@ -28,7 +28,6 @@ from shared import (
     children_by_id,
     city_centre,
     city_score_dimensions,
-    city_score_ranks,
     civic_building_ids,
     competition_ranks,
     death_causes,
@@ -46,6 +45,7 @@ from shared import (
     parse_sections,
     population_breakdown,
     reigns,
+    score_ranks,
     settlement_leaders,
     settlement_rank_getters,
     sex_label,
@@ -382,7 +382,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "name": city.get("name"),
         "renown": city.get("renown", 0),
         "report": report,  # what WB has the settlement say of itself
-        "score_rank": city_score_ranks(save, dims).get(cid),  # placement on the composite settlement score (1 = heaviest); the total stays internal
+        "score_rank": score_ranks([e["id"] for e in save.get("cities") or []], dims).get(cid),  # composite settlement place (1 = heaviest), total kept internal
         "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
         "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
         # Last, and out of order on purpose: the pair rides in on one spread, so it sorts under the `x` its own key never spells. WB's `updateCityCenter` anchor.
@@ -702,7 +702,7 @@ def _years_since(timestamp: float, ctx: dict) -> int:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
         return 2
     try:
         city_id = int(argv[0])

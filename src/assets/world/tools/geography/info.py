@@ -2,7 +2,6 @@
 
 # Geographic stats reserved for the chronicler (not consumed by the UI). User-facing docs: `tools/tools.md`.
 
-import argparse
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -13,6 +12,7 @@ from grid import LazyTileGrid, decode_tile_grid, listed_tiles, tile_biome, tile_
 from islands import compute_islands_cached
 from shared import (
     actor_xy,
+    arg_parser,
     biome_lore,
     building_tile,
     civic_building_ids,
@@ -131,7 +131,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
-    parser = argparse.ArgumentParser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
+    parser = arg_parser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
     parser.add_argument("sections", help=f"Comma-separated sections. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--type", "-t", help="Asset id `positions` reports every instance of — e.g. `volcano`, `orc`. `entity_types` lists what the save holds.")
     args = parser.parse_args(argv)

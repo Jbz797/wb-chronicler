@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds the registries (via `registries.py`) and a `chapter.json` skeleton.
-# The chronicler analyses (§ « Phase d'analyse obligatoire »), writes `chapter.md`, fills the favorite's `descriptor` and owed trait summaries. Docs: `tools.md`.
+# Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds its registries (`registries.py`) and `chapter.json` (`fold.py`).
+# The recap steers the chronicler's analysis; `--finalize` then lays out step 5 and the audit's briefs, `--deliver` the delivery. Docs: `tools.md`.
 
 import json
 import random
@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
+from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_world
 from grid import tile_layer, tile_runs
 from shared import (
     SAVES_DIR,
@@ -30,8 +31,24 @@ from shared import (
     load_data,
     load_save,
     render,
+    rounded_world_time,
     worldbox_running,
     write_save,
+)
+
+_ACCOUNT = {  # the audit account's labels, in the tongue the chapter is written in — the player reads them beside it
+    "en": {"facts": "Fact check: {} gaps fixed", "none": "not applicable", "reaudit": "Re-audit: {} gaps fixed"},
+    "fr": {"facts": "Vérification des faits : {} écarts fix", "none": "non applicable", "reaudit": "Réaudit : {} écarts fix"},
+}
+
+# What becomes of the auditors' reports — the chronicler's to follow between rounds, said where the audit is handed over.
+_AFTER_REPORTS = (
+    "the 3 reports in hand, never before: correct each confirmed gap — one raised by a single fact check is checked all the same, the tool settling a disagreement",
+    "then look for the same value or word elsewhere: all of chapter.md, title and epigraph included, and your prose in chapter.json — descriptor, trait summaries",
+    "correct where a correction suffices, rewrite only what it cannot mend",
+    "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
+    "what asserts anything new goes back to the same 3 — new ones if they no longer answer — its lines flagged as new, the only ones they reopen",
+    "the last round settled: `tools/chapter/new.py --deliver`",
 )
 
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
@@ -42,115 +59,48 @@ _ALERTS = {
     "DISABLE_DROP_OF_THOUGHTS": {
         "condition": lambda pops, quota, _own: len(pops) >= quota,
         "law": "world_law_drop_of_thoughts",
-        "message": "at the chapter's end, ask the player to turn the Drop of Thoughts world law off",
+        "title": "Drop of Thoughts",
     },
     "DISABLE_HANDSOME_MIGRANTS": {
         "condition": lambda pops, quota, own: own >= _MIN_KINGDOM_POP and sum(1 for pop in pops if pop >= _MIN_KINGDOM_POP) >= quota,
         "law": "world_law_civ_migrants",
-        "message": "at the chapter's end, ask the player to turn the Handsome Migrants world law off",
+        "title": "Handsome Migrants",
     },
 }
 
-# What no panel reads, cut by its section and never by name alone — `nobles` and `loot` have homonyms. A tier shedding more says so in `_AUDIT_TIERS`.
-_AUDIT = {
-    "army": frozenset({"captain_years", "total_captains"}),  # the corps' tenure and its roll of captains — the panel names the one in post, and only him
-    "identity": frozenset({"founding_city", "founding_clan", "founding_kingdom", "motto", "name_culture", "name_template_set", "worldview"}),
-    "metadata": frozenset(
-        {
-            "adult_age",
-            "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
-            "besieged_by",
-            "breeding_age",
-            "can_reproduce",
-            "clan_chief_years",
-            "deaths_by_cause",
-            "families",
-            "favorite_food",
-            "founding_city",
-            "founding_kingdom",
-            "gen",
-            "hatch_months",
-            "home",
-            "in_building",
-            "island_id",
-            "islands",
-            "mass",
-            "months_until_next_age",
-            "motto",
-            "peace_time",
-            "tax_local",
-            "tax_tribute",
-            "traits",
-            "x",
-            "y",
-        }
+_BRIEFS = (  # the auditors' own briefs, handed over as they stand: a sub-agent knows nothing but its brief, so nothing of its task may live elsewhere
+    (
+        "compliance",
+        "Confront {targets} with chronicler.md, § I to § V, subsection by subsection,"
+        " and judge the manner, not the truth: what the text asserts is not yours to check."
+        " Return only gaps — line, quote, what you expected — and write nothing."
+        " Close on one line per section: `§ N : ` and its verdict, `{none}`, `✓` or `✓ (2 corrections)`.",
     ),
-    "ranks": frozenset(
-        {
-            "army_captain_years",
-            "army_kills_per_death",
-            "birth_rate",
-            "births",
-            "births_per_death",
-            "damage_min",
-            "gold",
-            "kills_per_capita",
-            "kills_per_death",
-            "loot",
-            "nobles",
-            "nobles_money",
-            "population_per_city",
-            "renown_per_capita",
-            "ruler_money",
-            "subjects_money",
-            "traits",
-        }
+    (
+        "facts, twice, each on its own",
+        "Recompute every checkable claim of {targets} — figure, date, span, comparison with the past, absolute, mechanism, cause… —"
+        " with the tools of tools/tools.md, on the save it speaks of (`C<n>` for « N years ago »), giving each gap its command and the true value."
+        " A mechanism neither the outputs nor chronicler.md give is checked on the wiki (chronicler.md § « Accès au wiki »), the output prevailing if they differ."
+        " Return only gaps — line, quote, true value — and write nothing.",
     ),
-    "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
-    "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
-    "snapshot": frozenset({"gear"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
-    "stats": frozenset({"birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities"}),
-}
-
-# What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
-_AUDIT_TIERS = {
-    # A people's health is charted by a town and a crown alone: no other body's panel prints it, and `<tier>/info.py <id> population` still counts it
-    **{f"{tier}.population": {"immortals", "infected", "sick"} for tier in ("alliance", "clan", "culture", "family", "language", "religion", "subspecies")},
-    "alliance.kingdoms": {"population"},  # each member a tag, its headcount the crown's own panel to print
-    "alliance.metadata": {"cities", "kingdoms"},  # the pact names its realms and towns as tags, so counting either says nothing the list has not
-    "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
-    "attackers.kingdoms": {"population"},  # a camp's realms as tags, the side's pooled `population` printed beside them
-    "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
-    "city.metadata": {"births", "capital", "kingdom"},  # no row counts its births, and its crown and seat are the kingdom panel's to name
-    "city.population": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
-    "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
-    "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
-    "clan.metadata": {"births"},  # unlike a family, a pact or a biology, the clan panel prints no births row
-    "clan.ranks": {"kingdoms"},  # its crowns tie on one realm apiece — `clan/info.py <id> ranks` still places the band that spans eight
-    "culture.identity": {"species", "subspecies"},  # the founder's stock — the panel names the founder alone, whose own tag carries it
-    "defenders.kingdoms": {"population"},  # as `attackers`
-    "family.identity": {"culture", "species", "subspecies"},  # the family is read by the souls it seated, its blood and its tongue answering from their own tiers
-    "family.metadata": {"kingdoms", "parents"},  # a second crown or a parent line is too rare for a panel row, so both ride the script's output alone
-    "family.ranks": {"cities", "kingdoms"},  # towns and crowns follow the heads that hold them, so the podium repeats the one `members` already draws
-    # The bodies it belongs to, each read to open its own tier block — and its stock, which the portrait draws off the persons registry
-    "favorite.metadata": {"asset_id", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies"},
-    "kingdom.identity": {"clan", "culture", "language", "religion", "subspecies"},  # as a town's
-    "kingdom.metadata": {"births", "ferries"},  # as a town's, and no panel asks whether a crown ferries — that answers a rule of the chronicle, not a row
-    "kingdom.population": {"money"},  # as a town's
-    "kingdom.ranks": {"money"},  # as a town's
-    "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
-    "religion.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
-    "wars.metadata": {"deaths", "started_by"},  # the card sets each camp's toll and crown, never the sum or the man — `war/info.py <id>` hands over both
-}
-
-# No panel reads them: `report` and `info` are per-call, `taxonomy` comes from `identity.species`, `passengers` is the chronicler's own reading.
-_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "sapient", "taxonomy"})
-
-# `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
-_DEMOGRAPHY = frozenset(
-    {"adults", "babies", "children", "couples", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
 )
 
+_DESCRIPTOR_CAP = 64
+_DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
+    "announce it to the player, showing him where it stands (`tools/map/show.py <x,y>`): among a thousand creatures, only the map finds it",
+    "his word given — you are the one who will embody it — have him close WorldBox, then `tools/chapter/favorite.py <id>` rebuilds this chapter around it",
+    "refused: offer another if one is worth it, never of the kind just turned down — else the chapter goes without, and the question returns next save",
+)
+_DEV_NOTE = (  # what a developer's closing note may hold — flagged, never done by the chronicler's own hand
+    "doc adjustment: a passage of chronicler.md or tools.md unclear, contradictory, out of date, or a term to harmonise — flagged, never corrected by your hand",
+    "script improvement spotted on the way: a bug, a field misread, a wrong formula, an awkward output — name the file; no code change of your own",
+    "doc and recap at odds: the recap is right for now, but one of the two needs fixing — say which",
+    "obscure field: one whose meaning stays uncertain, the wiki included",
+    "costly reading: a step that ate the context — say what you read and what you sought — or a passage, an output section, costing without serving: say which",
+    "new tag: an important kind of event that no code in tags.md covers",
+    "missing tool: a recurring analysis that deserves its own script",
+    "and any other observation within your remit",
+)
 _DRAFT_HEADINGS = {"en": "Draft", "fr": "Brouillon"}  # one per language the settings panel offers: a language added there owes its word here
 
 # Everything a reset sweeps away. `tiles` holds the ticking ones (fires, melting ice), not the ground — that lives in `tileMap`/`tileArray`/`tileAmounts`.
@@ -178,7 +128,7 @@ _EMPTIED = (
     "wars",
 )
 
-# What each event tag tells, printed in the recap: a tag written into `chapter.json` alone never reaches the one who owes the reader its story.
+# The recap's gloss per event, a tag in `chapter.json` alone never reaching the chronicler; alerts wait for `--deliver`, and `NEW_FAVORITE` is his own pick.
 _EVENT_NEWS = {
     "FAVORITE_ABOARD": "the favorite is aboard a hull, at sea right now",
     "FAVORITE_FIRST_KINGDOM": "the favorite answers to a crown for the first time",
@@ -188,17 +138,14 @@ _EVENT_NEWS = {
     "NEW_AGE": "the world has turned to a new age",
 }
 
-_FLAGS = frozenset({"--description", "--force", "--name", "--reset", "--reset-asked"})  # all `main` reads — silence on the rest would make a typo an answer
+_FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked"})  # all `main` reads — others are refused as typos
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
+_H1_CAP = 68  # chronicler.md § « Titre » holds the same figure, and the compliance audit judges by it
 _HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # WB's cumulative SQLite, copied each chapter: the chronicler browses it, the recap prints its log
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
 _LAND_PER_KINGDOM = 52_044  # a quarter of what a map carries once grown — measured at ~12k land tiles per crown on two worlds
-
-# The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
-_LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
-
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
@@ -207,31 +154,21 @@ _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the 
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
 
 # Put to the player at the first chapter, before a line is written. The three commands answer it, and the naming brief rides with the third.
-_RESET_PROMPT = """? first chapter — nothing is written until the player has answered. Put this to him, in one go:
-  « Do you want to start over from a bare map — relief, biomes, volcanoes and geysers kept, everything else erased (creatures, buildings, kingdoms…),
-    back to year 1 of the Age of Hope with a new genetic seed? And if so, shall I name it too? »
-  → no: `tools/chapter/new.py --reset-asked`
-  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries
-  → reset and naming: `tools/chapter/new.py --reset --name "…" --description "…"`
-  the name is forged after a survey of the bare map, its geography being all that survives it: Tolkien-flavoured without pastiche, on the ground,
-  the mood or whatever outlasts the ages, never the age itself. Yours alone to choose — his yes was the agreement."""
+_RESET_PROMPT = (
+    "? first chapter — nothing is written until the player has answered. Put this to him, in one go:",
+    "  « Do you want to start over from a bare map — relief, biomes, volcanoes and geysers kept, everything else erased (creatures, trees, plants, ores,",
+    "    buildings, kingdoms…), back to year 1 of the Age of Hope with a new genetic seed? And if so, shall I name it too? »",
+    "  → no: `tools/chapter/new.py --reset-asked`",
+    "  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries",
+    '  → reset and naming: `tools/chapter/new.py --reset --name "…" --description "…"`',
+    "    the name is forged after a survey of its geography, the one thing the reset spares: Tolkien-flavoured without pastiche, on the ground,",
+    "    the mood or whatever outlasts the ages, never the age itself. Yours alone to choose — his yes was the agreement.",
+)
 
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # the reader's settings, where the player's workshop switch sits beside the live save's path
 _SHORT_AGES = frozenset({"age_despair", "age_ice"})
 _SHORT_AGE_YEARS = (30, 40)
-_SILENT_TAGS = frozenset({"NEW_FAVORITE"})  # tagged for the reader's badge, never recapped: the chronicler picked that favorite himself
-
-# Rosters, libraries and fleets kept as a count alone — the tier's own `info.py <id> <section>` still names every soul, volume and hull behind the figure.
-_TALLIES = {
-    "clan": ("members",),
-    "culture": ("books", "members"),
-    "family": ("members",),
-    "kingdom": ("boats",),
-    "language": ("books", "members"),
-    "religion": ("books", "members"),
-    "subspecies": ("members",),
-}
-
+_SUMMARY_CAP = 400
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
 _TOOLS = Path(__file__).parent.parent
 
@@ -245,30 +182,20 @@ _TRAIT_SOURCES = {
     "subspecies": ("subspecies", ("saved_actor_birth_traits", "saved_traits")),
 }
 
-# The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
-_UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
-
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity and span, off the save each chapter — the reader shows the name, the chronicler the rest
+
+
+# A body half-read is a chapter half-told, and its folder would push the next run on to C<n+1>: it goes, so a rerun lands on the same chapter.
+def _abandon(chapter_dir: Path, failed: list[str]) -> int:
+    shutil.rmtree(chapter_dir)
+    print(f"✗ {', '.join(failed)} failed — nothing written, report the error above and run again once it answers", file=sys.stderr)
+    return 1
 
 
 # The bare world's own age, drawn as WB draws it — the span is random, so two resets of the same map never run to the same calendar.
 def _age_duration(age_id: str) -> float:
     low, high = _SHORT_AGE_YEARS if age_id in _SHORT_AGES else _LONG_AGE_YEARS
     return float(random.randint(low, high) * UNITS_PER_YEAR)
-
-
-# The world's blurb, reworded on a world already under way. Its name is not amendable: a chronicle names its world once, and every chapter header stands on that.
-def _amend_world(live_wbox: Path, description: str) -> int:
-    if worldbox_running():
-        print("✗ WorldBox is running — quit the game before amending, or it will write its own save back over this one", file=sys.stderr)
-        return 1
-    save = load_save(live_wbox)
-    save["mapStats"]["description"] = description
-    write_save(live_wbox, save)
-    _write_world(save)  # the chapters already archived keep the words of their own day; only the reader's `world.json` follows the change
-    print(f"✓ world described — {description}")
-    print("  → player: reopen this save in WorldBox before playing on, or the game would write the old words back")
-    return 0
 
 
 # The whole rewind, in the order WB's fields depend on one another: survivors first, `id_building` counting from them. Of `buildings`, only landmarks stand.
@@ -292,27 +219,23 @@ def _bare_world(save: dict, name: str, description: str) -> None:
     stats["world_ages_slots"] = list(_AGE_SLOTS)
 
 
-# Carries last chapter's trait summaries over wherever neither the entity nor its traits moved, and names those still owed — as `descriptor` is already carried.
-def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> list[str]:
+# Carries last chapter's trait summaries over wherever neither the entity nor its traits moved — what stays bare is owed, and `--finalize` names it.
+def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> None:
     prior_dir = SAVES_DIR / f"C{n - 1}"
     prior = json.loads(path.read_text()) if (path := prior_dir / "chapter.json").exists() else {}
     # A chapter from before the summaries holds a tally there, which is no summary to carry. The save behind it is parsed only to date what is worth carrying.
     written = {tier: text.strip() for tier in blocks if isinstance(text := (prior.get(tier) or {}).get("traits"), str) and text.strip()}
     prior_save = load_save(wbox) if written and (wbox := prior_dir / "map.wbox").exists() else {}
-    owed = []
     for tier, block in blocks.items():
         if not block:
             continue
-        # Both saves are walked only where a summary stands to be carried — an owed tier is owed whether or not its traits moved.
+        # Both saves are walked only where a summary stands to be carried — a tier with nothing written is owed whether or not its traits moved.
         if tier in written and _trait_fingerprint(live, tier, _entity_id(block)) == _trait_fingerprint(prior_save, tier, _entity_id(prior.get(tier) or {})):
             block["traits"] = written[tier]  # same entity, same traits: what the chronicler wrote still holds
-        else:
-            owed.append(tier)
-    return owed
 
 
 # The chapter's event codes, `chapter.json.tags` their only log. The order is a priority, the nav badging the first three: the rarest first, the alerts last.
-def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | None, just_designated: bool, prior: tuple, age_id: str) -> tuple[list, list]:
+def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | None, just_designated: bool, prior: tuple, age_id: str) -> list[str]:
     already, _prev_favorite, prev_world, sworn = prior
     tags = ["NEW_FAVORITE"] if just_designated else []
 
@@ -323,7 +246,7 @@ def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | 
     if (prev_age_id := prev_world.get("age_id")) and age_id != prev_age_id:
         tags.append("NEW_AGE")
 
-    # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. One-time, like the `DISABLE_*` alerts.
+    # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. Once in a chronicle.
     if "NAVIGATION" not in already and any(is_boat(a) for a in live.get("actors_data") or []):
         tags.append("NAVIGATION")
 
@@ -339,25 +262,44 @@ def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | 
     # A scheme afoot under the favorite's own hand. Read after the fold, which leaves the type's key behind: a plot ripens in months, so it may be gone next chapter.
     if (favorite or {}).get("plot"):
         tags.append("FAVORITE_PLOTTING")
-    new_alerts = _fired_alerts(live, realm)
-    return tags + [code for code, _message in new_alerts], new_alerts
+    return tags + _fired_alerts(live, realm)
 
 
-# `_CHRONICLER_ONLY` cuts at every depth of the tree, `_AUDIT` from one named section alone — neither loses the chronicler a thing, `<tier>/info.py` replaying both.
-def _drop_chronicler_keys(node, parent: str = ""):
-    if isinstance(node, dict):
-        kept = {}
-        for key, value in node.items():
-            if key in _CHRONICLER_ONLY:
-                continue
-            if cut := _AUDIT.get(key, frozenset()) | _AUDIT_TIERS.get(f"{parent}.{key}", frozenset()):  # a section is a dict, save `relations`, a list of them
-                if isinstance(value, dict):
-                    value = _without(value, cut)
-                elif isinstance(value, list):
-                    value = [_without(item, cut) if isinstance(item, dict) else item for item in value]
-            kept[key] = _drop_chronicler_keys(value, key)
-        return kept
-    return [_drop_chronicler_keys(value, parent) for value in node] if isinstance(node, list) else node
+# The close of the audit, once its last round is settled: step 5 checked again, the audit having maybe moved it, then the delivery and the hand-back.
+def _deliver() -> int:
+    if not (n := latest_chapter()):
+        print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
+        return 1
+    settings = _settings()
+    facts = _step_five_facts(n, settings.get("lang", ""))
+    if not facts["done"]:
+        print(f"✗ C{n} — not yet deliverable")
+        _print_step_five(n, facts)
+        print("  → set these right, then run `tools/chapter/new.py --deliver` again")
+        return 1
+    print(f"✓ C{n} — delivery")
+    print("  ✓ step 5 still holds after the audit")
+    labels = _ACCOUNT.get(settings.get("lang", ""), _ACCOUNT["en"])
+    detail = "each line details its gaps" if settings.get("dev") else "no comment beside them"
+    facts_line, reaudit_line = labels["facts"].format("N"), labels["reaudit"].format("N")
+    print(f"  → with the chapter, the audit's account: a line `§ N : …` per section, « {facts_line} », « {reaudit_line} » if rerun — {detail}")
+
+    # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and its account, nothing more.
+    if settings.get("dev"):
+        # The fact checkers walk tools.md and the outputs claim by claim: their snags are the dev's to hear too, asked once the audit is settled.
+        print(
+            "  → mode: developer — ask the fact checkers whether anything got in their way, then you may close on a brief note of the frictions met,"
+            " theirs and yours, crossed where they meet — none at all if there are none. What may go in it:"
+        )
+        for line in _DEV_NOTE:
+            print(f"    · {line}")
+    else:
+        print("  → mode: player — the chapter and that account, nothing else")
+    # A world law's alert asks the player at the close, where the errand is due: raised at step 2, it would have to outlast the whole audit to be remembered.
+    laws = [_ALERTS[code]["title"] for code in json.loads((SAVES_DIR / f"C{n}" / "chapter.json").read_text()).get("tags") or [] if code in _ALERTS]
+    off = f"to turn the {' and '.join(laws)} world law{'s' if len(laws) > 1 else ''} off, then " if laws else ""
+    print(f"  → then hand back: ask the player {off}to tell you once the save has moved on — without that, he cannot know the chapter is closed")
+    return 0
 
 
 # Whether the crown was drawn into a war begun after `since`, on either side and ended or not — the declaration is the event the chapter owes, not the fighting.
@@ -378,159 +320,44 @@ def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) ->
     favorite = _run("actor/info.py", fav_id, "full", chapter)
     if favorite is None:
         return None
-    _fold_favorite_detail(favorite)
+    fold_favorite_detail(favorite)
     if prev_favorite and (prev_favorite.get("metadata") or {}).get("id") == fav_id and (descriptor := prev_favorite.get("descriptor")):
         favorite["descriptor"] = descriptor  # same favorite → keep the chronicler's epithet
     return favorite
 
 
-# `(code, message)` of alerts whose law is on and whose condition holds — WB writes an untouched law as a bare `{"name": …}`, so an absent `boolVal` reads as on.
-def _fired_alerts(save: dict, realm: int | None) -> list[tuple[str, str]]:
+# Step 5, reprinted from the chapter's own files on demand: what is left to write, what already holds, then what the audit is to be handed.
+def _finalize() -> int:
+    if not (n := latest_chapter()):
+        print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
+        return 1
+    lang = _settings().get("lang", "")
+    facts = _step_five_facts(n, lang)
+    print(f"✓ C{n} — step 5")
+    _print_step_five(n, facts)
+    # The briefs name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
+    if not facts["done"]:
+        print("  → once H1, descriptor and summaries all read ✓, run `tools/chapter/new.py --finalize` again: the audit's briefs come with them")
+        return 0
+    fields = f", and in saves/C{n}/chapter.json {', '.join(facts['audited'])}" if facts["audited"] else ""
+    targets, none = f"saves/C{n}/chapter.md{fields}", _ACCOUNT.get(lang, _ACCOUNT["en"])["none"]
+    print("  → then the audit: 3 new sub-agents at once, each handed its brief below as it stands — nothing of your analysis, nor of your notes")
+    for name, brief in _BRIEFS:
+        print(f"    · {name}: « {brief.format(targets=targets, none=none)} »")
+    for line in _AFTER_REPORTS:
+        print(f"  → {line}")
+    return 0
+
+
+# The alerts whose law is on and whose condition holds — WB writes an untouched law as a bare `{"name": …}`, so an absent `boolVal` reads as on.
+def _fired_alerts(save: dict, realm: int | None) -> list[str]:
     laws = {law["name"]: law.get("boolVal", True) for law in (save.get("worldLaws") or {}).get("list") or []}
     standing = {code: spec for code, spec in _ALERTS.items() if laws.get(spec["law"], True)}  # the laws first: once both are off, neither world is walked at all
     if not standing:
         return []
     crowns, quota = _sapient_kingdoms(save), _kingdom_quota(save)
     pops, own = crowns.values(), crowns.get(realm, 0)  # hoisted, and a view: no condition asks the tally more than a length and a walk
-    return [(code, spec["message"]) for code, spec in standing.items() if spec["condition"](pops, quota, own)]
-
-
-# The one name a panel prints per record: a shared first place travels as its first holder, bare of the count the chronicler reads off the script.
-def _first_holder(holders: list[dict]) -> dict:
-    return {k: v for k, v in holders[0].items() if k != "value"}
-
-
-# The wars a pact's members are drawn into — the chapter fields the crowns' own under `wars`, and `alliance/info.py <id> wars` still names the pact's.
-def _fold_alliance_detail(alliance: dict) -> None:
-    alliance.pop("wars", None)
-
-
-# The panel prints the hull's name, stock, crown, port, age and health; `boat/info.py <id>` has the rest. `kind` goes: WB boards souls onto `$boat_transport$` alone.
-def _fold_boat_detail(boat: dict) -> None:
-    (boat.get("identity") or {}).pop("kind", None)
-    for section in ("combat", "traits"):
-        boat.pop(section, None)  # a hull's merits — `kingslayer`, `veteran` — narrate well and print nowhere
-    metadata = boat.get("metadata") or {}
-    for key in ("kills", "level", "loot", "mass_kg", "renown", "speed"):  # `home`, `x` and `y` go with `_AUDIT`, which takes them from every `metadata`
-        metadata.pop(key, None)
-
-
-# What every tier sheds alike, then what its own panel spares — and the hull's crew, counted rather than listed.
-def _fold_bodies(blocks: dict, boat: dict | None) -> None:
-    folds = {  # on top of what every tier sheds alike
-        "alliance": _fold_alliance_detail,
-        "city": _fold_city_detail,
-        "kingdom": _fold_kingdom_detail,
-        "subspecies": _fold_subspecies_detail,
-    }
-    for tier, block in blocks.items():
-        if not block:
-            continue
-        _fold_breakdown(block)
-        _fold_leaders(block)
-        _fold_population(block)
-        block.pop("traits", None)  # the raw list goes; `_carry_trait_summaries` writes the chronicler's prose in its place
-        if fold := folds.get(tier):
-            fold(block)
-        if keys := _TALLIES.get(tier):
-            _fold_total(block, *keys)
-    if boat:
-        _fold_boat_detail(boat)
-        _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
-
-
-# The composition table names each dimension's leader and its share: the runners-up print nowhere, and a leader holding everyone restates its own panel.
-def _fold_breakdown(entity: dict) -> None:
-    block = entity.pop("breakdown", None) or {}
-    if kept := {dimension: rows[:1] for dimension, rows in block.items() if rows[0]["pct"] < 100}:
-        entity["breakdown"] = kept
-
-
-# Drops the loyalty summary and both stock lists, keeping their `total`, and the mayors past — the panels print those alone, the sections still itemising the rest.
-def _fold_city_detail(city: dict) -> None:
-    (city.get("loyalty") or {}).pop("top_drivers", None)
-    _fold_rulers(city)
-    _fold_total(city, "books", "gear")
-
-
-# Cut to what « Activité récente » charts — WB tallies a good deal more, and `world/info.py <chapter> cumulative` still hands the chronicler every one of them.
-def _fold_cumulative(world: dict) -> None:
-    if isinstance(block := world.get("cumulative"), dict):
-        world["cumulative"] = {key: value for key, value in block.items() if key in _UI_CUMULATIVE}
-
-
-# Folds the favorite's heavy blocks: their traits, their gear, who stands around them and the scheme's detail all go — `actor/info.py <id>` still hands each whole.
-def _fold_favorite_detail(favorite: dict) -> None:
-    for section in ("gear", "surroundings"):
-        favorite.pop(section, None)
-    # The panel prints the type, the target and the gauge: WB's English is the chronicler's, and so is how long the scheme has run.
-    plot = favorite.get("plot") or {}
-    plot.pop("months", None)
-    if kind := plot.get("type"):
-        plot["type"] = {"id": kind.get("id")}
-    favorite.pop("traits", None)  # the chronicler's summary takes its place, carried over or owed
-
-
-# Drops every `opinion.top_drivers`, the kings past and the town list: the table prints the standing, the panel the sitting king, the founder and a town count.
-def _fold_kingdom_detail(kingdom: dict) -> None:
-    kingdom.pop("cities", None)
-    for relation in kingdom.get("relations") or []:
-        (relation.get("opinion") or {}).pop("top_drivers", None)
-    if founder := _fold_rulers(kingdom):
-        kingdom.setdefault("identity", {})["founder"] = founder
-    _fold_total(kingdom, "gear")
-
-
-# A tier's podium cut to the six rows its panel names, each to its first holder — the ones it never prints outweighing the ones it does.
-def _fold_leaders(entity: dict) -> None:
-    podium = entity.get("leaders") or {}
-    for block, kept in _LEADER_ROWS.items():
-        if isinstance(rows := podium.get(block), dict):
-            podium[block] = {key: _first_holder(refs) for key, refs in rows.items() if key in kept}
-
-
-# The age and sex slices, the lineage depth, the count of nobles — figures the chronicler writes with and no panel prints. `population` keeps what the UI reads.
-def _fold_population(entity: dict) -> None:
-    if isinstance(block := entity.get("population"), dict):
-        entity["population"] = {k: v for k, v in block.items() if k not in _DEMOGRAPHY}
-
-
-# The sitting ruler alone and undated, the panels naming no other. Returns the first reign's `{id, name}`, a crown's founder — a town's is its first settler.
-def _fold_rulers(entity: dict) -> dict | None:
-    block = entity.pop("rulers", None) or []
-    if not (line := [block["first"], *block["latest"]] if isinstance(block, dict) else block):
-        return None
-    if "to" not in line[-1]:
-        entity["rulers"] = [{key: line[-1][key] for key in ("id", "name") if key in line[-1]}]
-    return {key: line[0][key] for key in ("id", "name") if key in line[0]}
-
-
-# `stats` goes here rather than through `_CHRONICLER_ONLY`, which would take the favorite's own block along with it.
-def _fold_subspecies_detail(subspecies: dict) -> None:
-    subspecies.pop("stats", None)
-    (subspecies.get("species") or {}).pop("description", None)  # WB's blurb on the parent stock — narrative, and the panel never prints it
-
-
-# The panels read nothing but the `total`, whichever form `full` handed over — nothing is lost, the chapter's own `map.wbox` replaying any section.
-def _fold_total(entity: dict, *keys: str) -> None:
-    for key in keys:
-        if isinstance(block := entity.get(key), dict):
-            entity[key] = {"total": block.get("total", 0)}
-
-
-# The world block as its panels print it: the tallies and podiums folded, each scheme's type cut to its key.
-def _fold_world(world: dict) -> None:
-    _fold_cumulative(world)
-    _fold_world_leaders(world)
-    _fold_total(world, "boats")  # Counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand.
-    for scheme in world.get("plots") or []:  # the schemer and the type's key: WB's English is the chronicler's, and the panel owns the French
-        scheme["type"] = {"id": (scheme.get("type") or {}).get("id")}
-
-
-# Every record of the world's « Palmarès », each to its first holder — `world/info.py <chapter> leaders` naming them all.
-def _fold_world_leaders(world: dict) -> None:
-    if isinstance(block := world.get("leaders"), dict):
-        world["leaders"] = {group: {row: _first_holder(holders) for row, holders in rows.items()} for group, rows in block.items()}
+    return [code for code, spec in standing.items() if spec["condition"](pops, quota, own)]
 
 
 # WB's own log since `since`: crowns and favorites fallen with their killer, realms and towns raised or razed, wars, pacts. WB stamps a whole unit, hence `>=`.
@@ -558,70 +385,81 @@ def _life_dna() -> int:
     return int(datetime.now(timezone.utc).strftime("%Y%m%d%H"))
 
 
-# The recap's second half: what is the chronicler's to write, then the terms each errand comes with — said here, where it is acted on.
-def _print_errands(n: int, live: dict, favorite: dict | None, tags: list[str], new_alerts: list, owed: list[str], settings: dict) -> None:
-
-    todo = "resume the cycle at step 3"  # the cycle is the manual's to tell; the recap says where to resume, and below what this chapter owes besides
-
+# The recap's closing lines: the choice of a favorite before anything else, then step 3, the analysis, with the commands and chapters this one calls for.
+def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
     if favorite is None and any(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a)):
-        todo = "§ « Choix du favori » before a single word — `tools/chapter/favorite.py <id>` rebuilds this chapter; told without one only if none is worth it"
-    print(f"  → chronicler: {todo}")
-
-    # Said every chapter a favorite stands. A carried descriptor is quoted: it tells a standing, which ages, and the recap is all that makes it be reread.
-    if favorite:
-        text = favorite.get("descriptor")
-        carried = f", carried from C{n - 1}: « {text} » — keep it or rewrite it on a notable change;" if text else ", yet to be written:"
-        print(f"  → the descriptor{carried} 64 characters at the very most — a ceiling, not a target")
-
-    # Which summaries, where and in what shape, said as they are owed — each is carried over unread while its traits hold, so nothing in it may age.
-    if owed:
-        print(f"  → step 6 also owes trait summaries ({', '.join(sorted(owed))}): one string each under the block's own `traits` key")
-        print("    what those traits make of the body, 400 characters at most — a ceiling, not a target; never a list, a tally of the traits or a figure that ages")
-
-    # Said here rather than in the manual, like the alerts' nature: only a chapter that raises an event needs telling that it must be told.
-    if any(code not in _ALERTS and code not in _SILENT_TAGS for code in tags):
-        print("  → each ⚑ is an event this chapter owes its reader: tell it in the circle it belongs to")
-
-    # Said here rather than in the manual: an alert reads as news unless its nature is said, and only a chapter that fires one needs to hear it.
-    if new_alerts:
-        print("  → each alert is a state, not an event: it fires again every chapter until the law is off")
-
-    # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and nothing beside it.
-    if not settings.get("dev"):
-        print("  → mode: player, not developer — deliver the chapter and stop there, skipping `chronicler.md` § « Après livraison »")
+        print("  → chronicler: choose a favorite before a single word — chronicler.md § « Choix du favori » says who; then, the one chosen:")
+        for line in _DESIGNATION:
+            print(f"    · {line}")
+        print("  → chronicler: should the chapter go without, step 3, the analysis, before its first word and not to be hurried:")
+    else:
+        print("  → chronicler: chapter laid out — step 3, the analysis, before the first word and not to be hurried:")
+    fav_id = ((favorite or {}).get("metadata") or {}).get("id")
+    if n > 1:
+        order = ", the favorite first, then circle by circle:" if fav_id else ","  # the chapter's own order, so the analysis lands already sorted by tier
+        print(f"    · the deltas since C{n - 1}{order} what moved as much as what held")
+    print("    · the thresholds just crossed: the first times, the levels reached")
+    if fav_id:
+        print(f"    · who lives around the favorite: `actor {fav_id} C{n} surroundings`, each one followed by id — a name is shared; directions are in the output")
+    if n > 1:
+        print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md` — its hooks are owed a follow-up, its form a change")
 
 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.
-def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None, regime: str, tags: list[str], new_alerts: list, prev_world: dict) -> None:
-    chapter_dir = SAVES_DIR / f"C{n}"
+def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None, regime: str, tags: list[str], prev_world: dict) -> None:
     age_label = (_AGE_LABELS.get(f"age_{age_id}") or {}).get("name") or age_id  # recap line only, the chapter carrying the id alone
     year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
-    counts = " · ".join(  # The chronicler's own order: the map first, then who fills it.
-        f"{len(json.loads((chapter_dir / f'{name}.json').read_text()))} {name}" for name in ("cities", "kingdoms", "clans", "families", "subspecies", "persons")
-    )
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ C{n} — year {year}, {age_label} (world_time {world_time})")
-    print(f"  registries: {counts}")
     print(f"  favorite: {fav_name or 'none'}{f' — {regime}' if regime else ''}")
     print(_RECAP_RULE)
-    events = [code for code in tags if code not in _ALERTS and code not in _SILENT_TAGS]  # the alerts say their own errand; an unglossed code still points somewhere
-    for code in events:
-        print(f"  ⚑ {code} — {_EVENT_NEWS.get(code, 'see tags.md')}")
-    for _code, message in new_alerts:
-        print(f"  ⚠ {message}")
-    if events or new_alerts:
+    if events := [code for code in tags if code in _EVENT_NEWS]:
+        for code in events:
+            print(f"  ⚑ {code} — {_EVENT_NEWS[code]}")
+        print("  → each ⚑ is an event this chapter owes its reader: tell it in the circle it belongs to")
         print(_RECAP_RULE)
-    # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file.
-    journal = _journal_since(prev_world.get("world_time"))
+    # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file. C1 has no « since »: the whole
+    # past of a world taken up as it stood would pour out, and that is the s3db's to browse.
+    journal = _journal_since(prev_world.get("world_time")) if n > 1 else []
     for timestamp, asset_id, *names, x, y in journal:
-        print(f"  ✎ year {timestamp // UNITS_PER_YEAR + 1} · {asset_id} · {' · '.join(filter(None, names))} ({x},{y})")
+        print(f"  ✎ {' · '.join((f'year {timestamp // UNITS_PER_YEAR + 1}', asset_id, *filter(None, names)))} ({x},{y})")  # a meteorite names no one
     if journal:
         print(_RECAP_RULE)
 
 
-# One scan of prior chapters for all they arbitrate: alert de-dup, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.
+# Step 5's lines, one per errand: a task left (→), a check passed (✓) or failed (✗). A carried descriptor is quoted, as it tells a standing, which ages.
+def _print_step_five(n: int, facts: dict) -> None:
+    carrying = facts["carried"] and not facts["h1"]  # keep or rewrite is the first pass's call: once the H1 is in, a carried descriptor reads as checked
+    sized = not facts["h1"] or (facts["favorite"] and (not facts["descriptor"] or carrying)) or facts["owed"]  # any length still to write
+    if h1 := facts["h1"]:
+        print(f"  {'✓' if len(h1) <= _H1_CAP else '✗'} H1, {len(h1)} characters of {_H1_CAP}: « {h1} »")
+    else:
+        print(f"  → the final H1, alone and in place of « # {facts['draft']} »: {_H1_CAP} characters at most")
+    if facts["favorite"]:
+        if not (text := facts["descriptor"]):
+            print(f"  → `favorite.descriptor` in chapter.json, yet to be written: one line on where the favorite stands now — {_DESCRIPTOR_CAP} characters at most")
+        elif carrying:
+            print(
+                f"  → `favorite.descriptor`, carried from C{n - 1}: « {text} » — nothing notable since, it may stand;"
+                f" else rewrite it, {_DESCRIPTOR_CAP} characters at most"
+            )
+        else:
+            print(f"  {'✓' if len(text) <= _DESCRIPTOR_CAP else '✗'} descriptor, {len(text)} characters of {_DESCRIPTOR_CAP}: « {text} »")
+    if owed := facts["owed"]:
+        reads = ", ".join(f"`{'actor' if tier == 'favorite' else tier} {entity} traits C{n}`" for tier, entity in owed.items())
+        print(f"  → trait summaries owed ({', '.join(owed)}): one string each under the block's own `traits` key, read off {reads}")
+        print(f"    what those traits make of the body, {_SUMMARY_CAP} characters at most; never a list, a tally of the traits or a figure that ages")
+    if summaries := facts["summaries"]:  # written at this chapter, as the H1 and descriptor are: a carried one is no news
+        print(f"  ✓ trait summaries, characters of {_SUMMARY_CAP}: {', '.join(f'{tier} {size}' for tier, size in summaries.items())}")
+    if long := facts["long"]:
+        print(f"  ✗ trait summaries over {_SUMMARY_CAP} characters: {', '.join(long)}")
+    if sized:
+        print("  → every length above counts all in, and is a ceiling, not a target")
+
+
+# One scan of prior chapters for all they arbitrate: a first hull, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.
 def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
     tags: set = set()
     sworn: set = set()
@@ -640,20 +478,17 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
 
 
 # Empties a world's own chronicle, table by table, leaving the schema WB expects. `VACUUM` hands the megabytes back rather than leaving a hollow file.
-def _purge_history(s3db: Path) -> int:
+def _purge_history(s3db: Path) -> None:
     if not s3db.exists():
-        return 0
+        return
     s3db.chmod(0o644)  # WB leaves it read-only often enough that a bare `connect` would fail
     with sqlite3.connect(s3db) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        purged = 0
         for (table,) in cursor.fetchall():
             cursor.execute(f'DELETE FROM "{table}"')  # interpolated, but the name comes from the file's own schema a line above
-            purged += cursor.rowcount
         conn.commit()
         cursor.execute("VACUUM")
-    return purged
 
 
 # What the favorite line adds, so the chronicler need not deduce it — a favorite gone from `actors_data` is dead, and nothing else says so. Silent when it holds.
@@ -661,8 +496,8 @@ def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -
     if n == 1:
         return "first chapter"
     if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
-        if fav_id is None:  # `favorite.py` has not run yet: the successor is still to be picked
-            return "the favorite has left the world — pick a successor, get the player's word, then `tools/chapter/favorite.py <id>`"
+        if fav_id is None:  # the pick itself is the closing block's, printed only while a thinking soul is left to pick
+            return "the favorite has left the world"
         return "successor to one who has left the world: open on that death before the tiers, then follow these eyes from here on"
     return "yet to be designated" if fav_id is None else ""
 
@@ -689,18 +524,18 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     stats = save["mapStats"]
     write_save(live_wbox, save)
     _write_world(save)  # off the save, not off the arguments: a world that kept its name keeps it here too
-    purged = _purge_history(live_wbox.parent / "map_stats.s3db")
+    _purge_history(live_wbox.parent / "map_stats.s3db")
     (live_wbox.parent / "map.meta").unlink(missing_ok=True)  # WB rebuilds it from the save on opening; writing it ourselves would guess at a format we only read
 
     landmarks = ", ".join(f"{count} {asset}" for asset, count in sorted(Counter(b["asset_id"] for b in save["buildings"]).items())) or "none"
-    print(f"✓ world reset — year 1 of the Age of Hope, {stats['current_world_ages_duration'] / UNITS_PER_YEAR:.0f} years long, life_dna {stats['life_dna']}")
-    print(f"  map kept: {landmarks} · {purged} history rows purged · map.meta dropped, WorldBox rebuilds it")
+    print(f"✓ world reset — year 1 of the Age of Hope, {stats['current_world_ages_duration'] / UNITS_PER_YEAR:.0f} years long")
+    print(f"  map kept: {landmarks}")
     print(f"  named: {stats['name'] or '—'}")
 
     # WB re-pauses the ages on any year-1 load, so no flag set here holds; and it is saved, hence the wheel before the re-save — else a still world is archived.
     print("  → player, in this order: 1. reopen the save in WorldBox and press play on the age wheel — the reset leaves the ages paused, or the Era never turns")
     print("                           2. save again — only the game redraws preview.png, and the chapter then archives a world whose ages run")
-    print("  then `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
+    print("  → chronicler: once he has done both, `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
     return 0
 
 
@@ -708,7 +543,8 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
 def _run(rel_path: str, *args) -> dict | None:
     result = subprocess.run([sys.executable, str(_TOOLS / rel_path), *map(str, args)], capture_output=True, text=True, check=False)
     if result.returncode:
-        print(f"  ⚠ tools/{rel_path} {' '.join(map(str, args))}: {result.stderr.strip()[:200]}", file=sys.stderr)
+        cause = (result.stderr.strip().splitlines() or [f"exit {result.returncode}"])[-1]  # a traceback's last line names the fault, its head only the call stack
+        print(f"  ⚠ tools/{rel_path} {' '.join(map(str, args))}: {cause}", file=sys.stderr)
         return None
     return json.loads(result.stdout) if result.stdout.strip() else None
 
@@ -730,9 +566,8 @@ def _sapient_kingdoms(save: dict) -> Counter:
     return pops
 
 
-# The chapter's folder and what surrounds it: the save it is built from, the history the chronicler browses, the world card, the C1 toponyms, the registries.
-def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> None:
-    chapter_dir.mkdir(parents=True)
+# The chapter's folder and what surrounds it: the save, the history the chronicler browses, the world card, the C1 toponyms, the registries → a failed command.
+def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> str | None:
     live_dir = live_wbox.parent
     for name in _LIVE_FILES:
         if (src := live_dir / name).exists():
@@ -741,7 +576,8 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> N
         shutil.copy2(s3db, _HISTORY_S3DB)
     _write_world(live)
     if not _PLACES_JSON.exists():  # his toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge
-        surveyed = _run("geography/info.py", "islands,waters", chapter) or {}
+        if (surveyed := _run("geography/info.py", "islands,waters", chapter)) is None:  # seeded once and never again: an empty survey would stay empty
+            return "geography/info.py islands,waters"
         seeded = {
             "islands": _unnamed(surveyed.get("islands") or []),
             "lakes": _unnamed((surveyed.get("waters") or {}).get("lakes") or []),
@@ -750,6 +586,7 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> N
         _PLACES_JSON.write_text(render(seeded) + "\n")
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
+    return None
 
 
 # The reader's settings: the player's workshop switch and the chronicle's language. A missing or broken file reads as a player who never opened the panel.
@@ -758,6 +595,37 @@ def _settings() -> dict:
         return json.loads(_SETTINGS_JSON.read_text())
     except (OSError, ValueError):
         return {}
+
+
+# Step 5 read off the chapter's files: its H1, the favorite's descriptor and whether it was carried, the summaries owed or too long, and the prose new since C<n-1>.
+def _step_five_facts(n: int, lang: str) -> dict:
+    chapter_dir, prior_path = SAVES_DIR / f"C{n}", SAVES_DIR / f"C{n - 1}" / "chapter.json"
+    chapter = json.loads((chapter_dir / "chapter.json").read_text())
+    prior = json.loads(prior_path.read_text()) if prior_path.exists() else {}
+    headings = [line[2:] for line in (chapter_dir / "chapter.md").read_text().splitlines() if line.startswith("# ")]
+    draft = _DRAFT_HEADINGS.get(lang, "Draft")
+    favorite, before = chapter.get("favorite") or {}, prior.get("favorite") or {}
+    descriptor = favorite.get("descriptor")
+    carried = bool(descriptor) and (before.get("metadata") or {}).get("id") == (favorite.get("metadata") or {}).get("id") and descriptor == before.get("descriptor")
+    written = {tier: text for tier in _TRAIT_SOURCES if isinstance(text := (chapter.get(tier) or {}).get("traits"), str)}
+    h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
+    owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
+    long = sorted(tier for tier, text in written.items() if len(text) > _SUMMARY_CAP)
+    before_traits = {tier: (prior.get(tier) or {}).get("traits") for tier in _TRAIT_SOURCES}
+    # A summary or a descriptor carried word for word was audited when it was written — only what this chapter wrote, or still owes, goes to the audit.
+    fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != before_traits[tier]]
+    return {
+        "audited": sorted(fresh + (["favorite.descriptor"] if favorite and not carried else [])),
+        "carried": carried,
+        "descriptor": descriptor,
+        "done": bool(h1) and len(h1) <= _H1_CAP and (not favorite or (bool(descriptor) and len(descriptor) <= _DESCRIPTOR_CAP)) and not owed and not long,
+        "draft": draft,
+        "favorite": bool(favorite),
+        "h1": h1,
+        "long": long,
+        "owed": owed,
+        "summaries": {tier: len(text) for tier, text in written.items() if len(text) <= _SUMMARY_CAP and text != before_traits[tier]},
+    }
 
 
 # An entity's traits as the save spells them, id included so a change of clan reads like a change of traits — both mean the summary must be written afresh.
@@ -776,10 +644,6 @@ def _unnamed(features: list[dict]) -> dict:
 
 def _value(argv: list[str], flag: str) -> str:
     return argv[i] if flag in argv and (i := argv.index(flag) + 1) < len(argv) else ""
-
-
-def _without(block: dict, cut: frozenset) -> dict:
-    return {key: value for key, value in block.items() if key not in cut}
 
 
 # Every chapter in one file: what the nav prints beside a slug, and nothing else. Rewritten whole each time, so a chapter deleted by hand drops out on the next run.
@@ -811,40 +675,39 @@ def _write_world(save: dict) -> None:
 
 def main(argv: list[str]) -> int:
     if unknown := [a for a in argv if a.startswith("--") and a not in _FLAGS]:  # `--rest` would else read as « no reset asked » and put the question again
-        print(f"✗ unknown flag {', '.join(unknown)} — what each one does is in `tools/tools.md`", file=sys.stderr)
+        print(f"✗ unknown flag {', '.join(unknown)} — new.py knows {', '.join(sorted(_FLAGS))}", file=sys.stderr)
         return 2
+    if "--finalize" in argv:  # step 5 of the chapter under way, off its own files: nothing is built and no save is read
+        return _finalize()
+    if "--deliver" in argv:  # the close of the audit, off the same files
+        return _deliver()
     live_wbox = live_save()
     if not live_wbox.exists():
-        print(f"✗ no live save at {live_wbox} — ask the player to update the path, from the settings cog under the map", file=sys.stderr)
+        print(f"✗ no live save at {live_wbox} — ask the player to update the path, from the Settings button below the map", file=sys.stderr)
         return 2
 
-    # The two identity branches answer off `argv` alone, so they come before any chapter bookkeeping: a stray `saves/C<n>` is no reason to refuse a rewording.
+    # A world's name and blurb are set at its reset alone: accepted nowhere else, and staying mute on them would leave it bare while the run looked well.
     resetting = "--reset" in argv
-    if "--name" in argv and not resetting:  # accepted nowhere else, and staying mute on it would leave a world unnamed while the run looked well
-        print("✗ --name belongs to `--reset` alone — a chronicle names its world once, and every chapter header since then stands on that", file=sys.stderr)
+    if not resetting and (lone := [flag for flag in ("--description", "--name") if flag in argv]):
+        print(f"✗ {', '.join(lone)}: only with `--reset` — a world is named and described once, when it is reset", file=sys.stderr)
         return 2
-    description = _value(argv, "--description")
-    if description and not resetting:  # alone it rewords the world under way; under `--reset` it describes the bare one that run hands back
-        return _amend_world(live_wbox, description)
     n = latest_chapter() + 1
 
     chapter, chapter_dir = f"C{n}", SAVES_DIR / f"C{n}"
-    if chapter_dir.exists():  # a directory would have raised `latest_chapter` and carried `n` past it: only a file, or a broken link, can stand in its place
-        print(f"✗ {chapter_dir} exists but is not a chapter directory — remove it, then run again", file=sys.stderr)
-        return 1
     if resetting:  # the player said yes, and only he can: nothing but this flag ever reaches the branch below
         if n > 1:  # `n` already counted the chapters a moment ago, and a chronicle past its first cannot afford the world it tells of being unmade
-            print("✗ the chronicle has begun — a reset erases the world its chapters tell of, and only one not yet started can afford that", file=sys.stderr)
+            print("✗ the chronicle has begun — a reset would erase the world its chapters tell of", file=sys.stderr)
+            print("  → player: to start over, from the New game button below the map", file=sys.stderr)
             return 1
-        return _reset_world(live_wbox, _value(argv, "--name"), description)
+        return _reset_world(live_wbox, _value(argv, "--name"), _value(argv, "--description"))
 
     if n == 1 and "--reset-asked" not in argv:  # a reset would throw away whatever is written here, so nothing is, until the player has had his say
-        print(_RESET_PROMPT)
+        print("\n".join(_RESET_PROMPT))
         return 0
 
     live = load_save(live_wbox)
     actors = live.get("actors_data") or []
-    world_time = round(float(live["mapStats"].get("world_time", 0)), 2)
+    world_time = rounded_world_time(live["mapStats"])
     fav_id = next((a["id"] for a in actors if a.get("favorite") is True), None)
     prior = _prior_context(n)
     _, prev_favorite, prev_world, _ = prior
@@ -852,74 +715,84 @@ def main(argv: list[str]) -> int:
     # A favorite the chapter before did not carry — the world's first, or a successor to one who died. Both earn a chapter at an unchanged timestamp, and the tag.
     just_designated = fav_id is not None and fav_id != prev_fav_id
 
-    # Read off the chapter before rather than by re-parsing its save for one field — `world/info.py` rounds it exactly as `world_time` above does, to the digit.
-    if (prev_time := prev_world.get("world_time")) is not None and world_time <= prev_time and not just_designated and "--force" not in argv:
+    # Read off the chapter before rather than by re-parsing its save for one field — `world/info.py` wrote it through the same `rounded_world_time`.
+    if (prev_time := prev_world.get("world_time")) is not None and world_time <= prev_time and not just_designated:
         print(
             f"✗ save not advanced (world_time {world_time} ≤ C{n - 1} {prev_time}), and no new favorite either — ask the player to play on, then save again",
             file=sys.stderr,
         )
         return 1
 
-    _scaffold(chapter, chapter_dir, live_wbox, live)
+    chapter_dir.mkdir(parents=True)  # outside the guard: a folder this run did not make, it never removes
+    try:
+        if failed := _scaffold(chapter, chapter_dir, live_wbox, live):
+            return _abandon(chapter_dir, [failed])
 
-    # Two waves rather than a call per tier: the favorite's metadata names the bodies it belongs to, so none of those can start until it has landed.
-    world, favorite = _run_together(
-        (_run, "world/info.py", chapter),
-        (_featured_favorite, chapter, fav_id, prev_favorite) if fav_id is not None else None,
-    )
+        # Two waves rather than a call per tier: the favorite's metadata names the bodies it belongs to, so none of those can start until it has landed.
+        world, favorite = _run_together(
+            (_run, "world/info.py", chapter),
+            (_featured_favorite, chapter, fav_id, prev_favorite) if fav_id is not None else None,
+        )
 
-    # Both are the chapter's spine, and a half-written one would push the next run to C<n+1>: the directory this run made goes, so a rerun lands on it again.
-    if world is None or (fav_id is not None and favorite is None):
-        failed = "world/info.py" if world is None else f"actor/info.py {fav_id} full"
-        shutil.rmtree(chapter_dir)
-        print(f"✗ {failed} failed — nothing written, report the error above and run again once it answers", file=sys.stderr)
-        return 1
+        lost_favorite = fav_id is not None and favorite is None
+        if world is None or lost_favorite:  # the two ran together, so both may have failed
+            return _abandon(chapter_dir, [name for name, lost in (("world/info.py", world is None), (f"actor/info.py {fav_id} full", lost_favorite)) if lost])
 
-    blocks: dict = dict.fromkeys(_TIERS)  # `None` where the favorite belongs to no such body — the chapter carries the key either way
-    boat = None
-    if favorite:
-        meta = favorite.get("metadata") or {}
-        calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
-        # The hull rides the same wave, `transport` being a ref like the tiers. Popped, not read: the `boat` block replaces it, `actor/info.py <id>` keeping the ref.
-        boat_id = (meta.pop("transport", None) or {}).get("id")
-        calls.append((_run, "boat/info.py", boat_id, "full", chapter) if boat_id else None)
-        *bodies, boat = _run_together(*calls)
-        blocks = dict(zip(_TIERS, bodies))
-        _fold_bodies(blocks, boat)
+        blocks: dict = dict.fromkeys(_TIERS)  # `None` where the favorite belongs to no such body — the chapter carries the key either way
+        boat = None
+        if favorite:
+            meta = favorite.get("metadata") or {}
+            calls = [(_run, f"{tier}/info.py", tid, "full", chapter) if (tid := (meta.get(tier) or {}).get("id")) else None for tier in _TIERS]
+            # The hull rides the same wave, `transport` being a ref like the tiers. Popped, not read: the `boat` block replaces it, `actor/info.py` keeping the ref.
+            boat_id = (meta.pop("transport", None) or {}).get("id")
+            calls.append((_run, "boat/info.py", boat_id, "full", chapter) if boat_id else None)
+            results = _run_together(*calls)
+            if failed := [f"{call[1]} {call[2]} full" for call, block in zip(calls, results) if call and block is None]:
+                return _abandon(chapter_dir, failed)
+            *bodies, boat = results
+            blocks = dict(zip(_TIERS, bodies))
+            fold_bodies(blocks, boat)
 
-    # A third wave, the only one a tier opens — popped as `transport` is, the blocks it returns holding the same names the crown's list would otherwise say twice.
-    wars = [w for w in ((blocks.get("kingdom") or {}).pop("wars", None) or []) if w.get("id") is not None]
-    if wars:
-        fought = _run_together(*((_run, "war/info.py", w["id"], "full", chapter) for w in wars))
-        wars = [war for war in fought if war]
+        # A third wave, the only one a tier opens — popped as `transport` is, the blocks it returns holding the names the crown's list would otherwise say twice.
+        wars = [w for w in ((blocks.get("kingdom") or {}).pop("wars", None) or []) if w.get("id") is not None]
+        if wars:
+            fought = _run_together(*((_run, "war/info.py", w["id"], "full", chapter) for w in wars))
+            if failed := [f"war/info.py {w['id']} full" for w, war in zip(wars, fought) if war is None]:
+                return _abandon(chapter_dir, failed)
+            wars = fought
 
-    summaries = {tier: favorite if tier == "favorite" else blocks[tier] for tier in _TRAIT_SOURCES}  # a tier is summarised the day it gains a trait source
-    owed = _carry_trait_summaries(n, summaries, live)
-    _fold_world(world)
-    age_id = (live["mapStats"].get("world_age_id") or "").removeprefix("age_")  # short form, as `world/info.py` emits it — `prev_world` carries that one
-    tags, new_alerts = _chapter_tags(live, blocks, boat, favorite, just_designated, prior, age_id)
+        summaries = {tier: favorite if tier == "favorite" else blocks[tier] for tier in _TRAIT_SOURCES}  # a tier is summarised the day it gains a trait source
+        _carry_trait_summaries(n, summaries, live)
+        fold_world(world)
+        age_id = (live["mapStats"].get("world_age_id") or "").removeprefix("age_")  # short form, as `world/info.py` emits it — `prev_world` carries that one
+        tags = _chapter_tags(live, blocks, boat, favorite, just_designated, prior, age_id)
 
-    # No `age_label`: the panel translates `world.metadata.age_id`. No `title` either: the H1 of `chapter.md` is the title, and nothing reads a copy of it.
-    chapter_json = {
-        **blocks,  # `render` sorts a record's keys, so the tiers need no place of their own here
-        "boat": boat,
-        "favorite": favorite,
-        "tags": tags,
-        "wars": wars,
-        "world": world,
-    }
+        # No `age_label`: the panel translates `world.metadata.age_id`. No `title` either: the H1 of `chapter.md` is the title, and nothing reads a copy of it.
+        chapter_json = {
+            **blocks,  # `render` sorts a record's keys, so the tiers need no place of their own here
+            "boat": boat,
+            "favorite": favorite,
+            "tags": tags,
+            "wars": wars,
+            "world": world,
+        }
 
-    # `render`, not `json.dumps(indent=2)`: same tree, a good quarter fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong.
-    (chapter_dir / "chapter.json").write_text(render(_drop_chronicler_keys(chapter_json)) + "\n")
-    settings = _settings()
+        # `render`, not `json.dumps(indent=2)`: same tree, a quarter fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong.
+        (chapter_dir / "chapter.json").write_text(render(drop_chronicler_keys(chapter_json)) + "\n")
+        settings = _settings()
 
-    # The draft's H1, in the language the chronicler writes the chapter in: the reader has a page, and it reads unfinished.
-    (chapter_dir / "chapter.md").write_text(f"# {_DRAFT_HEADINGS.get(settings.get('lang', ''), 'Draft')}\n")
-    _write_index()
+        # The draft's H1, in the language the chronicler writes the chapter in: the reader has a page, and it reads unfinished.
+        (chapter_dir / "chapter.md").write_text(f"# {_DRAFT_HEADINGS.get(settings.get('lang', ''), 'Draft')}\n")
+        _write_index()
 
-    _print_report(n, world_time, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, new_alerts, prev_world)
-    _print_errands(n, live, favorite, tags, new_alerts, owed, settings)
-    return 0
+        _print_report(n, world_time, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, prev_world)
+        _print_next_step(n, live, favorite)
+        return 0
+    except BaseException as fault:  # a crash or a Ctrl-C halfway, which `_abandon` never sees: the half-built folder goes the same way, the fault still surfacing
+        shutil.rmtree(chapter_dir, ignore_errors=True)
+        if isinstance(fault, Exception):  # a Ctrl-C or an exit is no crash, and an exit has said its own ✗ already
+            print("✗ new.py crashed — nothing written, report the traceback below", file=sys.stderr)
+        raise
 
 
 if __name__ == "__main__":

@@ -37,6 +37,7 @@ interface ClanRanks {
   books_written?: number;
   deaths?: number;
   kills?: number;
+  kingdoms?: number;
   members?: number;
   money?: number;
   renown?: number;

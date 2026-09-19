@@ -502,7 +502,7 @@ def ensure(chapter: str, save: dict | None = None) -> None:
 def main(argv: list[str]) -> int:
     chapter = next((a for a in argv if a.startswith("C") and a[1:].isdigit()), None)
     if chapter is None:
-        print("usage: registries.py C<n> [--force] — (re)builds the saves/C<n>/ registries", file=sys.stderr)
+        print("✗ usage: registries.py C<n> [--force] — (re)builds the saves/C<n>/ registries", file=sys.stderr)
         return 2
     if "--force" in argv:  # clear first so `ensure` rebuilds from scratch (e.g. after a py change to an entry's shape)
         for name in _REGISTRIES:

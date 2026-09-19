@@ -4,8 +4,8 @@
 line-length = 165
 
 [lint]
-# All of these pass on the 26 files as they stand, and they fence what used to be hand-checked: `F401` the dead imports, `I001` the sorted ones.
+# All of these pass on every file as it stands, and they fence what used to be hand-checked: `F401` the dead imports, `I001` the sorted ones.
 select = ["ARG", "C4", "E4", "E7", "E9", "F", "I", "PTH", "SIM", "UP", "W"]
 
 [lint.isort]
-known-first-party = ["actor_stats", "grid", "islands", "registries", "shared", "waters"]
+known-first-party = ["actor_stats", "fold", "grid", "islands", "registries", "shared", "waters"]

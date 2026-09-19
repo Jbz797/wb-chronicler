@@ -54,8 +54,7 @@
       <app-ranked-stat source="clan" stat="cities" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPlural="c.metadata.kingdoms" [nzTitle]="kingdomsTitle">
-      <!-- No podium: a band answers to one crown or to eight, nothing between, so the whole field ties on the second value and every clan takes a medal. -->
-      <app-ranked-stat source="clan" stat="kingdoms" [showRank]="false" />
+      <app-ranked-stat source="clan" stat="kingdoms" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="c.population.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="clan" stat="housed_pct" suffix="%" />

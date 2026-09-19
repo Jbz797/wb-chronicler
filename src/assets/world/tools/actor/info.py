@@ -50,7 +50,7 @@ from waters import waters_cached
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
-_BOAT_REACH = 240  # chronicler.md « La mer coupe »: a transport boat carries the common reach this far across the sea
+_BOAT_REACH = 240  # chronicler.md « La mer ne coupe que… »: a transport boat carries the common reach this far across the sea
 _CIRCLES = (("intimate", 25), ("common", 120))  # chronicler.md's tiers by distance, in tiles — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
@@ -524,7 +524,7 @@ def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
         return 2
     try:
         actor_id = int(argv[0])

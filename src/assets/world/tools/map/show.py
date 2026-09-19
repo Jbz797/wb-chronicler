@@ -2,7 +2,6 @@
 
 # Rings a spot on the chapter's map and hands back the path — the player has no other way to find a tile by its numbers. Docs: `tools/tools.md`.
 
-import argparse
 import sys
 import tempfile
 from pathlib import Path
@@ -11,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from PIL import Image, ImageDraw
 
-from shared import SAVES_DIR, latest_chapter, live_save
+from shared import SAVES_DIR, arg_parser, latest_chapter, live_save
 
 _INK = (255, 30, 30)  # a red no biome wears, so the ring never sinks into the ground it marks
 _RADIUS = 46  # wide enough to be seen on a map two thousand tiles across, tight enough to leave the spot itself readable
@@ -26,7 +25,7 @@ def _pixel(y: int, height: int) -> int:
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(prog="map/show.py", description="Ring a tile on the chapter's map and hand back the path.")
+    parser = arg_parser(prog="map/show.py", description="Ring a tile on the chapter's map and hand back the path.")
     parser.add_argument("position", help="`x,y` in save coordinates — an actor's, a building's, anything `tiles/info.py` reads")
     args = parser.parse_args(argv)
 

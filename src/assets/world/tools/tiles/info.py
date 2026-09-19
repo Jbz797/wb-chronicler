@@ -18,6 +18,7 @@ from shared import (
     DIAGONAL_EXTRA,
     ZONE_TILES,
     actor_xy,
+    arg_parser,
     bearing,
     building_tile,
     city_centre,
@@ -290,7 +291,7 @@ def _xy(value: str) -> tuple[int, int]:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
-    parser = argparse.ArgumentParser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
+    parser = arg_parser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
     parser.add_argument("xy", type=_xy, metavar="x,y", help="Tile coords (WB UI, y grows north), comma-separated — e.g. `415,117`.")
     parser.add_argument("sections", nargs="?", default="full", help=f"Comma-separated sections or `full`. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")

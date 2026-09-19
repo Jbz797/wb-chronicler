@@ -116,7 +116,7 @@ def _rank_getters(pooled: dict, world_time: float) -> dict:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
         return 2
     try:
         alliance_id = int(argv[0])

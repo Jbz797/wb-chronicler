@@ -1,6 +1,7 @@
 # Cross-domain constants + helpers — one of the `tools/lib/` libraries every entry point puts on its `sys.path` (see each bootstrap).
 # Rule: a symbol lives here only if ≥2 scripts need it — directly, or through another exported symbol that does. Single-script helpers live in that script.
 
+import argparse
 import json
 import os
 import pickle
@@ -50,7 +51,7 @@ _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "st
 
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
-_DOMINANT_AXIS = 0.4  # chronicler.md « Directions et distances »: an axis under this share of the other drops out of the bearing
+_DOMINANT_AXIS = 0.4  # an axis under this share of the other drops out of the bearing: a heading mostly north reads N, not NE
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
@@ -215,15 +216,6 @@ def _save_cache_name(path: Path) -> str:
     return f"save_v1_{save_cache_key(path)}.pkl"
 
 
-# `score_totals` as competition places `{id: place}` (1, 2, 2, 4), 1 = strongest — none below `MIN_SCORE_PEERS`, where a lone town would outrank nobody.
-def _score_ranks(ids: list[int], dimensions: dict[str, dict]) -> dict[int, int]:
-    if len(ids) < MIN_SCORE_PEERS:
-        return {}
-    totals = score_totals(ids, dimensions)
-    ordered = sorted(totals[eid] for eid in ids)
-    return {eid: 1 + len(ids) - bisect_right(ordered, totals[eid]) for eid in ids}  # 1 + those strictly ahead
-
-
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
 def _strip_none(value):
     if isinstance(value, dict):
@@ -266,10 +258,29 @@ def actor_xy(actor: dict) -> tuple[int, int]:
     return actor.get("x", 0), actor.get("y", 0)
 
 
+# argparse's refusals, marked as every other script's are: its bare `usage:` and `error:` pair would be the one refusal a chronicler reads unflagged.
+def arg_parser(prog: str, description: str) -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog=prog, description=description)
+    parser.error = lambda message: parser.exit(2, f"✗ {message} — see tools/tools.md\n")
+    return parser
+
+
 # A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
 @cache
 def asset_set(name: str) -> frozenset[str]:
     return frozenset(load_data("asset-sets.json").get(name) or ())
+
+
+# The bearing as a compass point in WB's axes, y growing north: one wind or two, never a third, and none for a body on the very tile.
+def bearing(dx: int, dy: int) -> str | None:
+    if not dx and not dy:
+        return None
+    north_south, east_west = ("N" if dy > 0 else "S"), ("E" if dx > 0 else "W")
+    if abs(dy) < _DOMINANT_AXIS * abs(dx):
+        return east_west
+    if abs(dx) < _DOMINANT_AXIS * abs(dy):
+        return north_south
+    return north_south + east_west
 
 
 # What `datas/biomes.json` says of a biome, whichever of WB's two spellings it is asked under — `{}` for a tile that carries none.
@@ -318,18 +329,6 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
                 item[key] = entry[key]
         out.append(item)  # keys left as inserted: `render` sorts every record-shaped dict on the way out, so ordering them here would be sorting twice
     return sorted(out, key=lambda t: t["id"])
-
-
-# The bearing as a compass point in WB's axes, y growing north: one wind or two, never a third, and none for a body on the very tile.
-def bearing(dx: int, dy: int) -> str | None:
-    if not dx and not dy:
-        return None
-    north_south, east_west = ("N" if dy > 0 else "S"), ("E" if dx > 0 else "W")
-    if abs(dy) < _DOMINANT_AXIS * abs(dx):
-        return east_west
-    if abs(dx) < _DOMINANT_AXIS * abs(dy):
-        return north_south
-    return north_south + east_west
 
 
 # A building's tile. WB omits a zero at save time, so a lone missing coordinate reads 0 — the first row writes no `mainY` — and neither written leaves it unsited.
@@ -408,11 +407,6 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
         "warriors": warriors,
         "wealth": {c["id"]: money[c["id"]] + gold[c["id"]] for c in cities},
     }
-
-
-# Composite « settlement weight » ranking → `{city id: place}` (1 = heaviest, ties sharing a place, none under `MIN_SCORE_PEERS`): a city's `score_rank`.
-def city_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, int]:
-    return _score_ranks([c["id"] for c in save.get("cities") or []], dimensions if dimensions is not None else city_score_dimensions(save))
 
 
 # Built structures (`buildings/civ_*` in `datas/building-categories.json`), nature excluded — plus the `fishing_docks_*` that manifest omits, derived from `docks_*`.
@@ -535,14 +529,14 @@ def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
 
 
-# WB names a ferry `boat_transport_<species>`, and only that kind boards souls — a fishing or trading hull sails its errand alone.
-def is_transport(actor: dict) -> bool:
-    return (actor.get("asset_id") or "").startswith("boat_transport")
-
-
 # WB `Subspecies.isSapient`: the faculty rides on the biology, so a soul without one — as `Actor.isSapient` has it — never thinks.
 def is_sapient(subspecies: dict | None) -> bool:
     return _has_meta_tag(subspecies, "has_sapience")
+
+
+# WB names a ferry `boat_transport_<species>`, and only that kind boards souls — a fishing or trading hull sails its errand alone.
+def is_transport(actor: dict) -> bool:
+    return (actor.get("asset_id") or "").startswith("boat_transport")
 
 
 # `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces the ones nothing else covers.
@@ -614,11 +608,6 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     }
 
 
-# Composite « kingdom power » ranking → `{kingdom id: place}` (1 = strongest, ties sharing a place, none under `MIN_SCORE_PEERS`): a realm's `score_rank`.
-def kingdom_score_ranks(save: dict, dimensions: dict | None = None) -> dict[int, int]:
-    return _score_ranks([k["id"] for k in save.get("kingdoms") or []], dimensions if dimensions is not None else kingdom_score_dimensions(save))
-
-
 # The last chapter standing, 0 where none does yet. Three callers glob these dirs, and a chapter is `C<n>` on disk and nowhere else.
 def latest_chapter() -> int:
     return max((int(p.name[1:]) for p in SAVES_DIR.glob("C*") if p.is_dir() and p.name[1:].isdigit()), default=0)
@@ -650,7 +639,7 @@ def light(payload: dict, *, withheld: bool = False) -> dict:
 # The file itself, for the two scripts that must have it: one archives it into the chapter, the other writes the favorite's flag into it.
 def live_save() -> Path:
     if (live := _current_save()) is None:
-        raise SystemExit("✗ no WorldBox save on record — ask the player to point the reader at it, from the settings cog under the map")
+        raise SystemExit("✗ no WorldBox save on record — ask the player to point the reader at it, from the Settings button below the map")
     return live
 
 
@@ -833,6 +822,11 @@ def resolve_profession(actor: dict, save: dict) -> str | None:
     return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)
 
 
+# The save's hour to the hundredth, as `world/info.py` writes it into a chapter and `new.py`/`favorite.py` hold the live save against it: one rounding, one digit.
+def rounded_world_time(map_stats: dict) -> float:
+    return round(float(map_stats.get("world_time", 0)), 2)
+
+
 # A save's cache slot, keyed on `mtime+size`: a chapter's `map.wbox` never moves, so its slot holds for the world's life. `None` where the file is gone.
 def save_cache_key(path: Path) -> str | None:
     try:
@@ -840,6 +834,15 @@ def save_cache_key(path: Path) -> str | None:
     except OSError:
         return None
     return f"{int(stat.st_mtime)}_{stat.st_size}"
+
+
+# `score_totals` as competition places `{id: place}` (1, 2, 2, 4), 1 = strongest — none below `MIN_SCORE_PEERS`: a town's and a crown's `score_rank`.
+def score_ranks(ids: list[int], dimensions: dict[str, dict]) -> dict[int, int]:
+    if len(ids) < MIN_SCORE_PEERS:
+        return {}
+    totals = score_totals(ids, dimensions)
+    ordered = sorted(totals[eid] for eid in ids)
+    return {eid: 1 + len(ids) - bisect_right(ordered, totals[eid]) for eid in ids}  # 1 + those strictly ahead
 
 
 # Borda shared by both composites: each dimension awards `N − those strictly ahead`, a 0 none — so thousands can't drown tens. Ties are left standing here.

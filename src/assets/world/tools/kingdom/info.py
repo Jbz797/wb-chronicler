@@ -33,7 +33,6 @@ from shared import (
     index_by_id,
     is_transport,
     kingdom_score_dimensions,
-    kingdom_score_ranks,
     light,
     load_data,
     load_save,
@@ -42,6 +41,7 @@ from shared import (
     parse_sections,
     population_breakdown,
     reigns,
+    score_ranks,
     settlement_leaders,
     settlement_rank_getters,
     succession_heir,
@@ -326,7 +326,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
         **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
         "renown": kingdom.get("renown", 0),
         "report": report,  # what WB has the realm say of itself
-        "score_rank": kingdom_score_ranks(save, dims).get(kid),  # placement on the composite score (1 = strongest); the total stays internal
+        "score_rank": score_ranks([e["id"] for e in save.get("kingdoms") or []], dims).get(kid),  # composite power place (1 = strongest), total kept internal
         "tax_tribute": tribute,
         "territory": ctx["territory_by_kingdom"].get(kid, 0),
         **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
@@ -635,7 +635,7 @@ def _zone_halo(zones: list[tuple[int, int]]) -> set[tuple[int, int]]:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
         return 2
     try:
         kingdom_id = int(argv[0])

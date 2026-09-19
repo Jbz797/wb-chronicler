@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 # Marks an actor as the world's favorite in the live WorldBox save, then rebuilds the current chapter around the pick. Spares the player the in-game marking and
-# the re-save: the chronicler names a pick, the player agrees, and the chapter is born with its favorite. Its rules: `chronicler.md` § « Choix du favori ».
+# the re-save: the chronicler names a pick, the player agrees, and the chapter is born with its favorite. Who to pick: `chronicler.md` § « Choix du favori »;
+# how to put it to the player: the recap of `new.py`.
 
+import json
 import re
 import shutil
 import subprocess
@@ -12,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import SAVES_DIR, index_by_id, is_sapient, latest_chapter, live_save, load_save, worldbox_running, write_save
+from shared import SAVES_DIR, is_sapient, latest_chapter, live_save, load_save, rounded_world_time, worldbox_running, write_save
 
 
 # The actor the chronicler picked, refused unless the body can actually carry a chronicle: alive in the save, and thinking — a beast holds no story of its own.
@@ -21,15 +23,10 @@ def _picked(save: dict, actor_id: int) -> dict | None:
     if actor is None:
         print(f"✗ no actor {actor_id} in the save — either the body is dead, or the id is wrong", file=sys.stderr)
         return None
-    if not is_sapient(index_by_id(save.get("subspecies") or []).get(actor.get("subspecies"))):
+    if not is_sapient(next((s for s in save.get("subspecies") or [] if s.get("id") == actor.get("subspecies")), None)):
         print(f"✗ {actor.get('name')} ({actor.get('asset_id')}) is not sapient — a favorite must be able to hold a chronicle", file=sys.stderr)
         return None
     return actor
-
-
-# The hour the save was taken at, rounded as `new.py` rounds it so the two scripts never disagree over a digit.
-def _world_time(save: dict) -> float:
-    return round(float((save.get("mapStats") or {}).get("world_time", 0)), 2)
 
 
 # Moves the flag onto `favorite` and writes both files WB keeps in step: the save itself, and the `favorites` tally its save-list reads.
@@ -51,7 +48,7 @@ def _write_flag(wbox: Path, save: dict, favorite: dict) -> None:
 
 def main(argv: list[str]) -> int:
     if not argv or not argv[0].isdigit():
-        print("usage: favorite.py <actor_id>", file=sys.stderr)
+        print("✗ usage: favorite.py <actor_id>", file=sys.stderr)
         return 2
     actor_id = int(argv[0])
 
@@ -65,12 +62,13 @@ def main(argv: list[str]) -> int:
         return 1
     chapter_dir = SAVES_DIR / f"C{n}"
     # Judged on the world's clock, not the file's bytes: WorldBox rewrites a save whole on every quit, so saving twice without playing would else read as moved.
-    archived = chapter_dir / "map.wbox"
-    if not archived.exists():
-        print(f"✗ C{n} has no archived save — run `tools/chapter/new.py` again, then mark the favorite right after", file=sys.stderr)
+    # The chapter's hour is read off its card, as `new.py` reads it, rather than by parsing its archived save for one field.
+    card = chapter_dir / "chapter.json"
+    if not card.exists():
+        print(f"✗ C{n} has no chapter.json — run `tools/chapter/new.py` again, then mark the favorite right after", file=sys.stderr)
         return 1
     save = load_save(live_wbox)
-    if _world_time(load_save(archived)) != _world_time(save):
+    if ((json.loads(card.read_text()).get("world") or {}).get("metadata") or {}).get("world_time") != rounded_world_time(save.get("mapStats") or {}):
         print(f"✗ the world has turned since C{n} — run `tools/chapter/new.py` again, then mark the favorite right after", file=sys.stderr)
         return 1
 
@@ -81,7 +79,7 @@ def main(argv: list[str]) -> int:
     with tempfile.NamedTemporaryFile(suffix=".wbox", delete=False) as backup:
         shutil.copy2(live_wbox, backup.name)
     _write_flag(live_wbox, save, actor)
-    reread = load_save(live_wbox)  # read back from disk: the flag must have landed, and nothing else moved
+    reread = load_save(live_wbox)  # read back from disk: the flag must have landed, on that body alone — and `new.py` finds the parse cached
     marked = [a.get("id") for a in reread.get("actors_data") or [] if a.get("favorite")]
     if marked != [actor_id]:
         shutil.copy2(backup.name, live_wbox)
@@ -93,9 +91,10 @@ def main(argv: list[str]) -> int:
     print(f"✓ {actor.get('name')} ({actor.get('asset_id')}, id {actor_id}) is the world's favorite")
 
     # The whole chapter goes, prose included: a world with a favorite is told in circles around that body. The hour has not moved, so only the words are lost.
-    had_prose = (chapter_dir / "chapter.md").exists()
+    draft = chapter_dir / "chapter.md"
+    had_prose = draft.exists() and any(line.strip() and not line.startswith("# ") for line in draft.read_text().splitlines())  # beyond the H1 `new.py` lays
     shutil.rmtree(chapter_dir)
-    print(f"  C{n} erased then rebuilt around the favorite — `new.py` lays the NEW_FAVORITE tag on its own")
+    print(f"  C{n} erased then rebuilt around the favorite")
     if had_prose:
         print(f"  → chronicler: its prose went with it — write C{n} afresh, from the favorite's eyes, in circles")
     print(flush=True)  # a blank line, flushed: the child writes next

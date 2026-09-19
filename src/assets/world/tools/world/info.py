@@ -30,6 +30,7 @@ from shared import (
     load_data,
     load_save,
     parse_sections,
+    rounded_world_time,
     score_totals,
     take_chapter,
     wants_detail,
@@ -181,7 +182,7 @@ def _build_metadata(map_stats: dict) -> dict:
         "age_name": age.get("name"),  # Chronicler-only: WB's own English title, the id above being what the panel translates
         # Chronicler-only narrative hint, matches WB's UI counter « Lunes jusqu'au prochain âge ». `0` where no age runs: WB then stores no span to count down.
         "months_until_next_age": int(age_duration * (1 - age_progress) / 5) if age_duration > 0 else 0,
-        "world_time": round(float(map_stats.get("world_time", 0)), 2),
+        "world_time": rounded_world_time(map_stats),
     }
 
 
