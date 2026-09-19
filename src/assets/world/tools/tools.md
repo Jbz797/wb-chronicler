@@ -1,34 +1,40 @@
-# 🛠 Outils du chroniqueur
+# 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 19/09/26 16:31</p>
+<p class="metadata">Date de mise à jour : 19/09/26 19:32</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON sur `stdout` — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata` pour la section `metadata` de `kingdom`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city 3 C5 metadata`) lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
-| Commande                  | Sections                                                                                                                         |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `actor <id>`              | `companions`, `gear`, `inventory`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`                     |
-| `alliance <id>`           | `breakdown`, `identity`, `kingdoms`, `leaders`, `metadata`, `population`, `ranks`, `wars`                                        |
-| `boat <id>`               | `combat`, `crew`, `identity`, `inventory`, `metadata`, `traits`                                                                  |
-| `book <id>`               | `gains`, `metadata`, `origin`, `teaches`                                                                                         |
-| `city <id>`               | `army`, `books`, `breakdown`, `gear`, `identity`, `inventory`, `leaders`, `loyalty`, `metadata`, `population`, `ranks`, `rulers` |
-| `clan <id>`               | `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                       |
-| `culture <id>`            | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
-| `family <id>`             | `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`                                                 |
-| `geography`               | `biomes`, `burning`, `entity_types`, `frozen`, `gear`, `islands`, `positions [-t]`, `waters`                                     |
-| `ground <id>`             | `boats`, `inventory`, `metadata`, `occupants`                                                                                    |
-| `kingdom <id>`            | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `rulers`, `wars`  |
-| `language <id>`           | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
-| `religion <id>`           | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
-| `subspecies <id>`         | `breakdown`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                   |
-| `tiles <x,y> [-r] [--to]` | `actors`, `context`, `distances`, `ground`, `tile_info`                                                                          |
-| `war <id>`                | `attackers`, `defenders`, `metadata`                                                                                             |
-| `world`                   | `boats`, `cumulative`, `leaders`, `metadata`, `plots`, `snapshot`                                                                |
+| Commande          | Sections                                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `actor <id>`      | `companions`, `gear`, `inventory`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`                     |
+| `alliance <id>`   | `breakdown`, `identity`, `kingdoms`, `leaders`, `metadata`, `population`, `ranks`, `wars`                                        |
+| `boat <id>`       | `combat`, `crew`, `identity`, `inventory`, `metadata`, `traits`                                                                  |
+| `book <id>`       | `gains`, `metadata`, `origin`, `teaches`                                                                                         |
+| `city <id>`       | `army`, `books`, `breakdown`, `gear`, `identity`, `inventory`, `leaders`, `loyalty`, `metadata`, `population`, `ranks`, `rulers` |
+| `clan <id>`       | `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                       |
+| `culture <id>`    | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
+| `family <id>`     | `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`                                                 |
+| `geography`       | `biomes`, `burning`, `entity_types`, `frozen`, `gear`, `islands`, `positions`, `waters`                                          |
+| `ground <id>`     | `boats`, `inventory`, `metadata`, `occupants`                                                                                    |
+| `kingdom <id>`    | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `rulers`, `wars`  |
+| `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
+| `religion <id>`   | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
+| `subspecies <id>` | `breakdown`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                   |
+| `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `tile_info`                                                                          |
+| `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                             |
+| `world`           | `boats`, `cumulative`, `leaders`, `metadata`, `plots`, `snapshot`                                                                |
 
 ## Options :
 
+### `geography … positions` :
+
+- `-t <type>` : **un `asset_id` exact**, jamais une famille (ex. `pine_tree` répond, `tree` rend `{}` sans rien dire) ; `entity_types` donne la liste
+
+### `tiles` :
+
+- `-i <id>` : une terre par son id (`geography … islands`), mesurée dans `distances` comme `to_islands`, sous `to_island` : pour une terre hors des 5 plus proches — celle où l'on se tient vaut 0
 - `-r <n>` : rayon, de 0 à 2 — `distances` ne répond que pour la tuile demandée, ses voisines ne diraient rien d'autre
 - `--to <x,y>` : une seconde tuile, lue comme la première, et une clé `to` qui porte la marche et le cap depuis la première : la seule mesure entre deux points quelconques ; ne se combine pas avec `-r`
-- `-t <type>` : **un `asset_id` exact**, jamais une famille (ex. `pine_tree` répond, `tree` rend `{}` sans rien dire) ; `entity_types` donne la liste
 
 ---
 

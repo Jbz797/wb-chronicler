@@ -58,7 +58,7 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
 
 
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
-def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]]) -> dict:
+def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], island: int | None) -> dict:
     wanted = set(coords)
 
     # `actors_by_pos` alone takes a factory: it is the one filled per actor, where the others are assigned whole once their section asks for them.
@@ -94,7 +94,8 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
 
     if {"distances", "tile_info"} & sections:  # `distances` needs it too, to say how far a rock lies from a land a city could hold
-        _, ctx["tile_to_island"] = compute_islands_cached(save, save_path)
+        islands, ctx["tile_to_island"] = compute_islands_cached(save, save_path)
+        ctx["island"], ctx["island_ids"] = island, {land["id"] for land in islands}
 
     if "tile_info" in sections:
         ctx["burning_set"] = wanted.intersection(listed_tiles(save, "fire"))
@@ -109,19 +110,6 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 # WB claims land by the zone, never by the tile — so a tile's town is its zone's, and both sections that ask read it the one way.
 def _city_at(x: int, y: int, ctx: dict) -> dict | None:
     return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
-
-
-# The square ring at Chebyshev radius `r` around a tile, clipped to the map — the shape an 8-way search grows by, whatever it then costs a body to walk.
-def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
-    x0, x1, y0, y1 = x - r, x + r, y - r, y + r
-    for nx in range(max(0, x0), min(width - 1, x1) + 1):  # the two horizontal sides, corners included
-        for ny in {y0, y1}:
-            if 0 <= ny < height:
-                yield nx, ny
-    for ny in range(max(0, y0 + 1), min(height - 1, y1 - 1) + 1):  # and the two vertical ones, corners already walked
-        for nx in {x0, x1}:
-            if 0 <= nx < width:
-                yield nx, ny
 
 
 # `{}` on unclaimed ground, which `emit` strips from the cell.
@@ -143,8 +131,11 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
             out["to_nearest_city"] = _fabric_distance(x, y, quarters)
     elif (kid := city.get("kingdomID")) and (seat := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
         out["to_capital"] = round(walk_tiles(x - seat[0], y - seat[1]))  # a seat is a point, where a town is a fabric — the throne, not the capital's last house
-    if near := _islands_near(x, y, ctx):
-        out["to_islands"] = near
+    lands = _island_distances(x, y, ctx)
+    if ranked := sorted(lands.items(), key=lambda item: (item[1], item[0]))[:_NEAR_ISLANDS]:
+        out["to_islands"] = {str(island): round(tiles) for island, tiles in ranked}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
+    if (wanted := ctx["island"]) is not None:  # a named land, however far down the list: the tile's own reads 0, it stands on it
+        out["to_island"] = {str(wanted): round(lands.get(wanted, 0))}
     return out
 
 
@@ -184,7 +175,7 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
 
 
 # Every land by its nearest tile, walked as `to_land` measures — read at a queried tile alone, a pass over every land tile costing some 85 ms.
-def _islands_near(cx: int, cy: int, ctx: dict) -> dict[str, int]:
+def _island_distances(cx: int, cy: int, ctx: dict) -> dict[int, float]:
     own = ctx["tile_to_island"].get((cx, cy))
     nearest: dict[int, float] = {}
     for x, y, island in ctx["tile_to_island"].land():
@@ -197,8 +188,7 @@ def _islands_near(cx: int, cy: int, ctx: dict) -> dict[str, int]:
             continue
         if (tiles := far + DIAGONAL_EXTRA * near) < best:
             nearest[island] = tiles
-    ranked = sorted(nearest.items(), key=lambda item: (item[1], item[0]))[:_NEAR_ISLANDS]
-    return {str(island): round(tiles) for island, tiles in ranked}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
+    return nearest
 
 
 # How far the tile's rock lies from a land a city could hold, and which one — measured whole, a castaway being isolated by his island's strait, not his footing.
@@ -255,6 +245,19 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
 
+# The square ring at Chebyshev radius `r` around a tile, clipped to the map — the shape an 8-way search grows by, whatever it then costs a body to walk.
+def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
+    x0, x1, y0, y1 = x - r, x + r, y - r, y + r
+    for nx in range(max(0, x0), min(width - 1, x1) + 1):  # the two horizontal sides, corners included
+        for ny in {y0, y1}:
+            if 0 <= ny < height:
+                yield nx, ny
+    for ny in range(max(0, y0 + 1), min(height - 1, y1 - 1) + 1):  # and the two vertical ones, corners already walked
+        for nx in {x0, x1}:
+            if 0 <= nx < width:
+                yield nx, ny
+
+
 # `burning` and `frozen` only when true — a `false` per cell otherwise. A biome's own line is `geography … biomes`'s to give, once for the whole map.
 def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
@@ -294,6 +297,7 @@ def main(argv: list[str]) -> int:
     parser = arg_parser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
     parser.add_argument("xy", type=_xy, metavar="x,y", help="Tile coords (WB UI, y grows north), comma-separated — e.g. `415,117`.")
     parser.add_argument("sections", nargs="?", default="full", help=f"Comma-separated sections or `full`. Valid: {', '.join(_ALL_SECTIONS)}")
+    parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
     parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
     parser.add_argument("--to", type=_xy, metavar="x,y", help="A second tile, read as the first is, and a `to` key: what a body walks from the first to it.")
     args = parser.parse_args(argv)
@@ -307,6 +311,9 @@ def main(argv: list[str]) -> int:
 
     if args.to and args.radius:  # refused before the save is read: a call that cannot be answered should not cost the load
         print("✗ `--to` reads two tiles and `--radius` a square around one: they don't combine", file=sys.stderr)
+        return 2
+    if args.island is not None and "distances" not in sections:
+        print("✗ `--island` answers in `distances`: name that section, or leave `full`", file=sys.stderr)
         return 2
 
     save = load_save(save_path)
@@ -326,7 +333,10 @@ def main(argv: list[str]) -> int:
 
     coords = [(cx, cy), args.to] if args.to else _radius_tiles(cx, cy, args.radius, width, height)
     queried = set(coords) if args.to else {(cx, cy)}  # the tiles a reading is about: both ends of a `--to`, the centre of a sweep
-    ctx = _build_context(save, save_path, sections, coords)
+    ctx = _build_context(save, save_path, sections, coords, args.island)
+    if args.island is not None and args.island not in ctx["island_ids"]:
+        print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
+        return 2
 
     out: dict = {}
     for x, y in coords:
