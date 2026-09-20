@@ -446,18 +446,6 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
     return None
 
 
-# How wide a strait this body crosses: its breath first, at full pace, then the drowning that follows it, slower and one point of health at a time.
-def _swim_reach(actor: dict, ctx: dict) -> int:
-    stats = compute_actor_stats(actor, ctx)  # the cleaned stats, not the raw totals: a child swims on the halved ceiling WB gives it
-    if not (speed := stats.get("speed")) or not (health_max := stats.get("health_max")):
-        return 0
-    pace, health = speed * _TILES_PER_SPEED, min(int(actor.get("health") or 0), health_max)
-    if _water_burns(actor, ctx):  # the water takes a tenth of that ceiling per hit, so such a body burns long before it runs out of breath
-        return round(pace * _SWIM_SECONDS * health / health_max)
-    breath = actor["stamina"] if isinstance(actor.get("stamina"), int) else stats.get("stamina_max", 0)  # WB omits a full gauge
-    return round(pace * (breath / _STAMINA_PER_SECOND + _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND))
-
-
 # A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
 def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> list[tuple | dict]:
     by_id, chiefs = ctx["actors_by_id"], ctx["clan_chiefs"]
@@ -523,6 +511,18 @@ def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, ki
         distance, i, dx, dy, land = entry
         rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, distance, dx, dy, home, land, kin.get(i)))
     return rows
+
+
+# How wide a strait this body crosses: its breath first, at full pace, then the drowning that follows it, slower and one point of health at a time.
+def _swim_reach(actor: dict, ctx: dict) -> int:
+    stats = compute_actor_stats(actor, ctx)  # the cleaned stats, not the raw totals: a child swims on the halved ceiling WB gives it
+    if not (speed := stats.get("speed")) or not (health_max := stats.get("health_max")):
+        return 0
+    pace, health = speed * _TILES_PER_SPEED, min(int(actor.get("health") or 0), health_max)
+    if _water_burns(actor, ctx):  # the water takes a tenth of that ceiling per hit, so such a body burns long before it runs out of breath
+        return round(pace * _SWIM_SECONDS * health / health_max)
+    breath = int(actor.get("stamina") or 0)  # WB omits a zero, so a body without the field has no breath left — and a fly, with no gauge in its stats, has only this
+    return round(pace * (breath / _STAMINA_PER_SECOND + _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND))
 
 
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
