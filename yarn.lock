@@ -4459,9 +4459,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:22.3.3":
-  version: 22.3.3
-  resolution: "eslint-config-angular-strict@npm:22.3.3"
+"eslint-config-angular-strict@npm:22.3.4":
+  version: 22.3.4
+  resolution: "eslint-config-angular-strict@npm:22.3.4"
   dependencies:
     "@angular-eslint/builder": "npm:22.5.0"
     "@angular-eslint/eslint-plugin": "npm:22.5.0"
@@ -4470,12 +4470,12 @@ __metadata:
     "@stylistic/eslint-plugin": "npm:5.10.0"
     "@typescript-eslint/eslint-plugin": "npm:8.70.0"
     "@typescript-eslint/parser": "npm:8.70.0"
-    eslint: "npm:10.10.0"
+    eslint: "npm:10.11.0"
     eslint-config-airbnb-extended: "npm:3.2.0"
     eslint-plugin-import-x: "npm:4.17.1"
     eslint-plugin-perfectionist: "npm:5.11.1"
     eslint-plugin-unicorn: "npm:75.0.0"
-  checksum: 10c0/08badc82c8dcfd44826f15e162bd2be2e6f8fd8c6d9d4b1c78ec9df53617b1340a00cec61a309d350644a25ae5ac96f1baff56f22c6213def90533372da9776f
+  checksum: 10c0/34049bb53d7792a85369e5887af1072481de5a08d9ab21de97e095dfa4fc2e95933e2cb57c3969b6d29415fa634ad2ddf9b67895358736aa6d7eaae5147df898
   languageName: node
   linkType: hard
 
@@ -4777,9 +4777,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:10.10.0":
-  version: 10.10.0
-  resolution: "eslint@npm:10.10.0"
+"eslint@npm:10.11.0":
+  version: 10.11.0
+  resolution: "eslint@npm:10.11.0"
   dependencies:
     "@eslint-community/eslint-utils": "npm:^4.8.0"
     "@eslint-community/regexpp": "npm:^4.12.2"
@@ -4818,7 +4818,7 @@ __metadata:
       optional: true
   bin:
     eslint: bin/eslint.js
-  checksum: 10c0/ba583145305f088585f91c5dab6825492ec657614558e4610cffc94174cf800f456e39ec3cafd3eed73e04bd9a05794067ae33b553f1323e3e7c1157242409d2
+  checksum: 10c0/c767f45f21d1921b41d70e30b1c8fa7ec4e65c0f43a8d80cc4990ca3d923127fa7b9b3416b8f5be6e877d9286f97d3c51a04ed341bc6aa73c0dba0f463e1f861
   languageName: node
   linkType: hard
 
@@ -9091,7 +9091,7 @@ __metadata:
     "@ngx-translate/core": "npm:18.0.0"
     chokidar: "npm:5.0.0"
     concurrently: "npm:10.0.5"
-    eslint-config-angular-strict: "npm:22.3.3"
+    eslint-config-angular-strict: "npm:22.3.4"
     less: "npm:4.9.1"
     marked: "npm:18.0.13"
     marked-gfm-heading-id: "npm:4.1.4"

@@ -7,7 +7,7 @@ from grid import decode_tile_grid, tile_layer
 from islands import compute_islands_cached
 from shared import pickle_cached
 
-_FARTHEST_SWIM = 128  # two tides make a crossing, so none past twice this is kept — no speed the game grants buys a swim that long
+_FARTHEST_SWIM = 512  # two tides make a crossing, so none past twice this is kept — breath then drowning carry a body far (`actor/info.py`), and the sweep 30 ms
 _MIN_LAKE_TILES = 64  # WB knows no lake at all, so the floor is ours: WB `CITY_ZONE_TILES`, one city zone — under it no town could ever sit on the shore.
 _OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart from the lakes indexed from 0
 _STEP = 10_000  # a tide counts a straight step in ten-thousandths of a tile, so its two costs stay whole and its depths can be walked in order
@@ -135,4 +135,4 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v2", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v3", save_path, lambda: _compute_waters(save, save_path))

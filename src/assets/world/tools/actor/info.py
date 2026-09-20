@@ -53,6 +53,7 @@ _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a 
 _BOAT_REACH = 240  # chronicler.md « La mer ne coupe que… »: a transport boat carries the common reach this far across the sea
 _CIRCLES = (("intimate", 25), ("common", 120))  # chronicler.md's tiers by distance, in tiles — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
+_DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -99,7 +100,9 @@ _ROLE_ORDER = (
 )
 
 _SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
-_SWIM_SECONDS = 3.0  # what deep water leaves a whole body: `getWaterDamage` takes a tenth of its `health_max` per hit, one hit per 0.3s cooldown
+_SPENT_BREATH_PACE = 0.4  # WB's own multiplier for a body out of breath: it still swims, at two fifths of its pace
+_STAMINA_PER_SECOND = 10.0  # `spendStaminaWithCooldown` takes 1 to 5 points every 0.3s — `Randy.randomInt` leaves its top out, so three on average
+_SWIM_SECONDS = 3.0  # what the water leaves a body it burns: `getWaterDamage` takes a tenth of its `health_max` per hit, one hit per 0.3s cooldown
 
 # Profession → (current-holder field, save collection, history list). Every post keeps a `past_*` history whose last entry is the sitting holder's start.
 _TENURE_ROLES = {
@@ -107,6 +110,8 @@ _TENURE_ROLES = {
     "king": ("kingID", "kingdoms", "past_rulers"),
     "leader": ("leaderID", "cities", "past_rulers"),
 }
+
+_TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
 
 
 # Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
@@ -441,12 +446,16 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
     return None
 
 
-# How wide a strait this body crosses before deep water kills it: ten hits at a tenth of its `health_max`, one every 0.3s, so a wound shortens the swim.
+# How wide a strait this body crosses: its breath first, at full pace, then the drowning that follows it, slower and one point of health at a time.
 def _swim_reach(actor: dict, ctx: dict) -> int:
-    totals = actor_stat_totals(actor, ctx)
-    if not (speed := totals.get("speed")) or not (health_max := totals.get("health_max")):
+    stats = compute_actor_stats(actor, ctx)  # the cleaned stats, not the raw totals: a child swims on the halved ceiling WB gives it
+    if not (speed := stats.get("speed")) or not (health_max := stats.get("health_max")):
         return 0
-    return round(speed * _SWIM_SECONDS * min(1.0, int(actor.get("health") or 0) / health_max))
+    pace, health = speed * _TILES_PER_SPEED, min(int(actor.get("health") or 0), health_max)
+    if _water_burns(actor, ctx):  # the water takes a tenth of that ceiling per hit, so such a body burns long before it runs out of breath
+        return round(pace * _SWIM_SECONDS * health / health_max)
+    breath = actor["stamina"] if isinstance(actor.get("stamina"), int) else stats.get("stamina_max", 0)  # WB omits a full gauge
+    return round(pace * (breath / _STAMINA_PER_SECOND + _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND))
 
 
 # A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
@@ -519,6 +528,17 @@ def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, ki
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
 def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
+
+
+# WB's `isDamagedByOcean`: `hydrophobia` and any other trait tagged `damaged_by_water` — such a body burns in the water rather than drowning in it.
+def _water_burns(actor: dict, ctx: dict) -> bool:
+    biology = (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
+    return bool(_water_trait_ids().intersection(biology))
+
+
+@cache
+def _water_trait_ids() -> frozenset[str]:
+    return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if "damaged_by_water" in (spec.get("tags") or []))
 
 
 def main(argv: list[str]) -> int:
