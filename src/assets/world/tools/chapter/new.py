@@ -37,17 +37,24 @@ from shared import (
 )
 
 _ACCOUNT = {  # the audit account's labels, in the tongue the chapter is written in — the player reads them beside it
-    "en": {"facts": "Fact check: {} gaps fixed", "none": "not applicable", "reaudit": "Re-audit: {} gaps fixed"},
-    "fr": {"facts": "Vérification des faits : {} écarts fix", "none": "non applicable", "reaudit": "Réaudit : {} écarts fix"},
+    "en": {"facts": "Fact check: {} gaps fixed", "none": "not applicable", "reaudit": "Re-audit: {} gaps fixed", "story": "Story check: {} gaps fixed"},
+    "fr": {
+        "facts": "Vérification des faits : {} écarts fix",
+        "none": "non applicable",
+        "reaudit": "Réaudit : {} écarts fix",
+        "story": "Vérification du récit : {} écarts fix",
+    },
 }
 
 # What becomes of the auditors' reports — the chronicler's to follow between rounds, said where the audit is handed over.
 _AFTER_REPORTS = (
-    "the 3 reports in hand, never before: correct each confirmed gap — one raised by a single fact check is checked all the same, the tool settling a disagreement",
+    "every report in hand, never before: correct each confirmed gap — one raised by a single fact check is checked all the same, the tool settling a disagreement",
+    "the story check may propose as well as fault — a mend, a passage the chronicle lacks, an angle:"
+    " it is yours to take or leave, and what you take, you write in your own hand",
     "then look for the same value or word elsewhere: all of chapter.md, title and epigraph included, and your prose in chapter.json — descriptor, trait summaries",
     "correct where a correction suffices, rewrite only what it cannot mend",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
-    "what asserts anything new goes back to the same 3 — new ones if they no longer answer — its lines flagged as new, the only ones they reopen",
+    "what asserts anything new goes back to the same auditors — new ones if they no longer answer — its lines flagged as new, the only ones they reopen",
     "the last round settled: `tools/chapter/new.py --deliver`",
 )
 
@@ -62,15 +69,16 @@ _ALERTS = {
         "title": "Drop of Thoughts",
     },
     "DISABLE_HANDSOME_MIGRANTS": {
-        "condition": lambda pops, quota, own: own >= _MIN_KINGDOM_POP and sum(1 for pop in pops if pop >= _MIN_KINGDOM_POP) >= quota,
+        "condition": lambda pops, quota, own: _stands_alone(own) and sum(1 for sexes in pops if _stands_alone(sexes)) >= quota,
         "law": "world_law_civ_migrants",
         "title": "Handsome Migrants",
     },
 }
 
-_BRIEFS = (  # the auditors' own briefs, handed over as they stand: a sub-agent knows nothing but its brief, so nothing of its task may live elsewhere
+_BRIEFS = (  # the auditors' own briefs and how many of each: a sub-agent knows nothing but its brief, so nothing of its task may live elsewhere
     (
         "compliance",
+        1,
         "Confront {targets} with chronicler.md, § I to § V, subsection by subsection,"
         " and judge the manner, not the truth: what the text asserts is not yours to check."
         " Return only gaps — line, quote, what you expected — and write nothing."
@@ -78,19 +86,35 @@ _BRIEFS = (  # the auditors' own briefs, handed over as they stand: a sub-agent 
     ),
     (
         "facts, twice, each on its own",
+        2,
         "Recompute every checkable claim of {targets} — figure, date, span, comparison with the past, absolute, mechanism, cause… —"
         " with the tools of tools/tools.md, on the save it speaks of (`C<n>` for « N years ago »), giving each gap its command and the true value."
         " A mechanism neither the outputs nor chronicler.md give is checked on the wiki (chronicler.md § « Accès au wiki »), the output prevailing if they differ."
+        " A sentence the text itself gives as uncertain asserts nothing: check what it leans on, not what it supposes."
         " Return only gaps — line, quote, true value — and write nothing.",
+    ),
+    (
+        "story",
+        1,
+        "Read `{chapter}`, then as much of the chronicle as you need — `saves/C1/chapter.md` onward, no chapter out of your reach."
+        " Judge whether the story it tells still holds, not its figures nor its manner:"
+        " a thread it opened and never closed, an epithet or a bond the chapters no longer bear out,"
+        " a motive or a cause it gave once and crosses now, a soul or a place it dropped where the chronicle was waiting for it."
+        " Say so plainly where the story holds. Where it does not, give each gap its chapter, its line and its quote, and you may add what would mend it —"
+        " a correction, a passage the chronicle lacks, an angle it has never taken — as a direction, never as written prose."
+        " Rank them, the most load-bearing first, and say of each whether this chapter can mend it or the chronicle carries it from further back."
+        " Write nothing.",
     ),
 )
 
 _DESCRIPTOR_CAP = 64
+
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
     "announce it to the player, showing him where it stands (`tools/map/show.py <x,y>`): among a thousand creatures, only the map finds it",
     "his word given — you are the one who will embody it — have him close WorldBox, then `tools/chapter/favorite.py <id>` rebuilds this chapter around it",
     "refused: offer another if one is worth it, never of the kind just turned down — else the chapter goes without, and the question returns next save",
 )
+
 _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never done by the chronicler's own hand
     "doc adjustment: a passage of chronicler.md or tools.md unclear, contradictory, out of date, or a term to harmonise — flagged, never corrected by your hand",
     "script improvement spotted on the way: a bug, a field misread, a wrong formula, an awkward output — name the file; no code change of your own",
@@ -101,6 +125,7 @@ _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never don
     "missing tool: a recurring analysis that deserves its own script",
     "and any other observation within your remit",
 )
+
 _DRAFT_HEADINGS = {"en": "Draft", "fr": "Brouillon"}  # one per language the settings panel offers: a language added there owes its word here
 
 # Everything a reset sweeps away. `tiles` holds the ticking ones (fires, melting ice), not the ground — that lives in `tileMap`/`tileArray`/`tileAmounts`.
@@ -149,7 +174,7 @@ _LAND_PER_KINGDOM = 52_044  # a quarter of what a map carries once grown — mea
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
-_MIN_KINGDOM_POP = 4  # `DISABLE_HANDSOME_MIGRANTS`: under that headcount a crown is a hamlet with a banner, not a people standing on its own
+_MIN_PER_SEX = 2  # `DISABLE_HANDSOME_MIGRANTS`: a crown stands on its own with two of each sex — four bodies of one sex are a hamlet with a banner, and a dead end
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
 
@@ -281,8 +306,8 @@ def _deliver() -> int:
     print("  ✓ step 5 still holds after the audit")
     labels = _ACCOUNT.get(settings.get("lang", ""), _ACCOUNT["en"])
     detail = "each line details its gaps" if settings.get("dev") else "no comment beside them"
-    facts_line, reaudit_line = labels["facts"].format("N"), labels["reaudit"].format("N")
-    print(f"  → with the chapter, the audit's account: a line `§ N : …` per section, « {facts_line} », « {reaudit_line} » if rerun — {detail}")
+    account = ", ".join(f"« {labels[key].format('N')} »" for key in ("facts", "story"))  # no line for the compliance audit: its verdict is the `§ N` one
+    print(f"  → with the chapter, the audit's account: a line `§ N : …` per section, {account}, « {labels['reaudit'].format('N')} » if rerun — {detail}")
 
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and its account, nothing more.
     if settings.get("dev"):
@@ -339,11 +364,12 @@ def _finalize() -> int:
     if not facts["done"]:
         print("  → once H1, descriptor and summaries all read ✓, run `tools/chapter/new.py --finalize` again: the audit's briefs come with them")
         return 0
-    fields = f", and in saves/C{n}/chapter.json {', '.join(facts['audited'])}" if facts["audited"] else ""
-    targets, none = f"saves/C{n}/chapter.md{fields}", _ACCOUNT.get(lang, _ACCOUNT["en"])["none"]
-    print("  → then the audit: 3 new sub-agents at once, each handed its brief below as it stands — nothing of your analysis, nor of your notes")
-    for name, brief in _BRIEFS:
-        print(f"    · {name}: « {brief.format(targets=targets, none=none)} »")
+    chapter_md, none = f"saves/C{n}/chapter.md", _ACCOUNT.get(lang, _ACCOUNT["en"])["none"]  # the story read takes the chapter alone: the chronicle is its ground
+    targets = chapter_md + (f", and in saves/C{n}/chapter.json {', '.join(facts['audited'])}" if facts["audited"] else "")
+    auditors = sum(copies for _, copies, _ in _BRIEFS)
+    print(f"  → then the audit: {auditors} new sub-agents at once, each handed its brief below as it stands — nothing of your analysis, nor of your notes")
+    for name, _, brief in _BRIEFS:
+        print(f"    · {name}: « {brief.format(chapter=chapter_md, none=none, targets=targets)} »")
     for line in _AFTER_REPORTS:
         print(f"  → {line}")
     return 0
@@ -356,7 +382,7 @@ def _fired_alerts(save: dict, realm: int | None) -> list[str]:
     if not standing:
         return []
     crowns, quota = _sapient_kingdoms(save), _kingdom_quota(save)
-    pops, own = crowns.values(), crowns.get(realm, 0)  # hoisted, and a view: no condition asks the tally more than a length and a walk
+    pops, own = crowns.values(), (crowns.get(realm) if realm else None) or [0, 0]  # hoisted, and a view: no condition asks more than a length and a walk
     return [code for code, spec in standing.items() if spec["condition"](pops, quota, own)]
 
 
@@ -557,12 +583,12 @@ def _run_together(*calls: tuple | None) -> list:
 
 
 # The headcount of each crown a thinking people answers to — a beast bows to none, a hull is no subject, and a soul under no banner raises no crown of its own.
-def _sapient_kingdoms(save: dict) -> Counter:
+def _sapient_kingdoms(save: dict) -> dict[int, list[int]]:
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
-    pops: Counter = Counter()
+    pops: dict[int, list[int]] = {}
     for actor in save.get("actors_data") or []:  # the crown first, being both the cheapest test and the one that turns most of a wild world away
         if (kid := actor.get("civ_kingdom_id")) and not is_boat(actor) and is_sapient(subspecies_by_id.get(actor.get("subspecies"))):
-            pops[kid] += 1
+            pops.setdefault(kid, [0, 0])[actor.get("sex") or 0] += 1  # WB writes ♀ as `sex: 1` and omits ♂, so the field indexes its own tally
     return pops
 
 
@@ -595,6 +621,10 @@ def _settings() -> dict:
         return json.loads(_SETTINGS_JSON.read_text())
     except (OSError, ValueError):
         return {}
+
+
+def _stands_alone(sexes: list[int]) -> bool:
+    return min(sexes) >= _MIN_PER_SEX
 
 
 # Step 5 read off the chapter's files: its H1, the favorite's descriptor and whether it was carried, the summaries owed or too long, and the prose new since C<n-1>.
