@@ -32,6 +32,7 @@ from shared import (
     load_save,
     render,
     rounded_world_time,
+    world_laws,
     worldbox_running,
     write_save,
 )
@@ -375,9 +376,9 @@ def _finalize() -> int:
     return 0
 
 
-# The alerts whose law is on and whose condition holds — WB writes an untouched law as a bare `{"name": …}`, so an absent `boolVal` reads as on.
+# The alerts whose law is on and whose condition holds.
 def _fired_alerts(save: dict, realm: int | None) -> list[str]:
-    laws = {law["name"]: law.get("boolVal", True) for law in (save.get("worldLaws") or {}).get("list") or []}
+    laws = world_laws(save)
     standing = {code: spec for code, spec in _ALERTS.items() if laws.get(spec["law"], True)}  # the laws first: once both are off, neither world is walked at all
     if not standing:
         return []

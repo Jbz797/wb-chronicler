@@ -982,6 +982,11 @@ def weapon_assets() -> frozenset[str]:
     return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
 
 
+# The world's laws by name, on or off — WB writes a law left untouched as a bare `{"name": …}`, so an absent `boolVal` reads as on.
+def world_laws(save: dict) -> dict[str, bool]:
+    return {law["name"]: law.get("boolVal", True) for law in (save.get("worldLaws") or {}).get("list") or []}
+
+
 def worldbox_running() -> bool:
     return subprocess.run(["pgrep", "-i", "worldbox"], capture_output=True, check=False).returncode == 0
 

@@ -31,7 +31,8 @@
     "flavor": "They swim so well, it's almost suspicious",
     "group": "body",
     "name": "Blood of Sea",
-    "stats": { "stamina": 20 }
+    "stats": { "stamina": 20 },
+    "tags": ["fast_swimming"]
   },
   "blood_pact": {
     "description": "Betraying the chief means permanent exile",

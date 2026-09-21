@@ -7,7 +7,10 @@
 import argparse
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
+from functools import cache
 from heapq import heapify, heappop, heappush
+from itertools import compress
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -33,6 +36,7 @@ from shared import (
     walk_tiles,
     zone_xy,
 )
+from walking import WalkMap, walk_to
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
@@ -58,7 +62,8 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
 
 
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
-def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], island: int | None) -> dict:
+# `walks`: whether anything is walked — `distances`, or a `--to` whatever the sections, its two ends being measured either way.
+def _build_context(save: dict, save_path: Path, sections: set[str], coords: list[tuple[int, int]], island: int | None, walks: bool) -> dict:
     wanted = set(coords)
 
     # `actors_by_pos` alone takes a factory: it is the one filled per actor, where the others are assigned whole once their section asks for them.
@@ -93,7 +98,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     if {"context", "distances"} & sections:
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
 
-    if {"distances", "tile_info"} & sections:  # `distances` needs it too, to say how far a rock lies from a land a city could hold
+    if walks or "tile_info" in sections:  # `distances` needs it too, to say how far a rock lies from a land a city could hold, and a walk what land it keeps to
         islands, ctx["tile_to_island"] = compute_islands_cached(save, save_path)
         ctx["island"], ctx["island_ids"] = island, {land["id"] for land in islands}
 
@@ -103,6 +108,9 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 
     if "distances" in sections:
         ctx["layer_by_id"] = [tile_layer(name) for name in ctx["tile_map"]]
+
+    if walks:  # called not stored: a walk is drawn only where both ends stand on one land
+        ctx["walk_map"], ctx["width"] = cache(lambda: WalkMap(save)), sum(save["tileAmounts"][0])
 
     return ctx
 
@@ -127,10 +135,13 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
         out["to_land"] = land
     city = _city_at(x, y, ctx)
     if city is None:
-        if quarters := ctx["city_quarters"]:
-            out["to_nearest_city"] = _fabric_distance(x, y, quarters)
+        if quarters := ctx["city_quarters"]:  # a quarter lies whole on the map, WB sizing a world in blocks its zones divide
+            width, span = ctx["width"], range(ZONE_TILES)
+            fabric = ((qy + dy) * width + qx + dx for qx, qy in quarters for dy in span for dx in span)
+            out["to_nearest_city"] = _measure(x, y, _fabric_distance(x, y, quarters), fabric, ctx)
     elif (kid := city.get("kingdomID")) and (seat := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
-        out["to_capital"] = round(walk_tiles(x - seat[0], y - seat[1]))  # a seat is a point, where a town is a fabric — the throne, not the capital's last house
+        # A seat is a point, where a town is a fabric — the throne, not the capital's last house.
+        out["to_capital"] = _measure(x, y, round(walk_tiles(x - seat[0], y - seat[1])), (seat[1] * ctx["width"] + seat[0],), ctx)
     lands = _island_distances(x, y, ctx)
     if ranked := sorted(lands.items(), key=lambda item: (item[1], item[0]))[:_NEAR_ISLANDS]:
         out["to_islands"] = {str(island): round(tiles) for island, tiles in ranked}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
@@ -174,7 +185,7 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
             ctx["capital_pos_by_kingdom"][kingdom["id"]] = seat
 
 
-# Every land by its nearest tile, walked as `to_land` measures — read at a queried tile alone, a pass over every land tile costing some 85 ms.
+# Every land by its nearest tile, walked as `to_land` measures — read at a queried tile alone.
 def _island_distances(cx: int, cy: int, ctx: dict) -> dict[int, float]:
     own = ctx["tile_to_island"].get((cx, cy))
     nearest: dict[int, float] = {}
@@ -239,6 +250,17 @@ def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
                 swum[(nx, ny)] = reached
                 heappush(tide, (reached, (nx, ny)))
     return {"farther_than": _LAND_REACH}
+
+
+# The crow's line beside the walk, left out where no land joins them — `goals` are tile indices, read from a land alone and sifted to it: WB walks none off its own.
+def _measure(x: int, y: int, tiles: int, goals: Iterable[int], ctx: dict) -> dict:
+    island_of = ctx["tile_to_island"]
+    if (land := island_of.get((x, y))) is None or not (ends := set(compress(goals := list(goals), map(land.__eq__, island_of.listed_ids(goals))))):
+        return {"tiles": tiles}
+    walk_map = ctx["walk_map"]()
+    # A body no ground is home to, and that never swims: which body would, no tile says.
+    walked = walk_to(walk_map, walk_map.gait(None, frozenset()), x, y, ends)
+    return {"tiles": tiles} if walked is None else {"tiles": tiles, "walked": round(walked)}
 
 
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
@@ -339,7 +361,7 @@ def main(argv: list[str]) -> int:
 
     coords = [(cx, cy), args.to] if args.to else _radius_tiles(cx, cy, args.radius, width, height)
     queried = set(coords) if args.to else {(cx, cy)}  # the tiles a reading is about: both ends of a `--to`, the centre of a sweep
-    ctx = _build_context(save, save_path, sections, coords, args.island)
+    ctx = _build_context(save, save_path, sections, coords, args.island, "distances" in sections or args.to is not None)
     if args.island is not None and args.island not in ctx["island_ids"]:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
         return 2
@@ -360,7 +382,7 @@ def main(argv: list[str]) -> int:
         out[f"{x},{y}"] = cell
     if args.to:  # a relation between the two ends, not a trait of either: its own key, the cap read from the first toward the second
         tx, ty = args.to
-        out["to"] = {"dir": bearing(tx - cx, ty - cy), "tiles": round(walk_tiles(tx - cx, ty - cy))}
+        out["to"] = {"dir": bearing(tx - cx, ty - cy), **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (ty * width + tx,), ctx)}
 
     emit(out)
     return 0

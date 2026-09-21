@@ -8,4 +8,4 @@ line-length = 165
 select = ["ARG", "C4", "E4", "E7", "E9", "F", "I", "PTH", "SIM", "UP", "W"]
 
 [lint.isort]
-known-first-party = ["actor_stats", "fold", "grid", "islands", "registries", "shared", "waters"]
+known-first-party = ["actor_stats", "fold", "grid", "islands", "registries", "shared", "walking", "waters"]

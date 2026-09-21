@@ -4,7 +4,9 @@
 
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from functools import cache
+from math import inf
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -46,8 +48,10 @@ from shared import (
     walk_tiles,
     wants_detail,
 )
+from walking import Gait, WalkMap, walk_from, walk_to
 from waters import waters_cached
 
+_AIRBORNE = frozenset({"UFO", "dragon", "god_finger"})  # WB `ActorAsset.flying` (the dragon taking wing at will): straight over any ground, no path sought
 _ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
 _BOAT_REACH = 240  # chronicler.md « La mer ne coupe que… »: a transport boat carries the common reach this far across the sea
@@ -100,9 +104,9 @@ _ROLE_ORDER = (
 )
 
 _SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
+_SEA_BORN = frozenset({"ant_black", "ant_blue", "ant_green", "ant_red"})  # WB `force_ocean_creature` past the boats: the water is their ground
 _SPENT_BREATH_PACE = 0.4  # WB's own multiplier for a body out of breath: it still swims, at two fifths of its pace
 _STAMINA_PER_SECOND = 10.0  # `spendStaminaWithCooldown` takes 1 to 5 points every 0.3s — `Randy.randomInt` leaves its top out, so three on average
-_SWIM_SECONDS = 3.0  # what the water leaves a body it burns: `getWaterDamage` takes a tenth of its `health_max` per hit, one hit per 0.3s cooldown
 
 # Profession → (current-holder field, save collection, history list). Every post keeps a `past_*` history whose last entry is the sitting holder's start.
 _TENURE_ROLES = {
@@ -111,7 +115,13 @@ _TENURE_ROLES = {
     "leader": ("leaderID", "cities", "past_rulers"),
 }
 
+_TERRAIN_BLIND = frozenset({"crabzilla"})  # WB `ignore_tile_speed_multiplier` on a body that still walks: every ground at one pace
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
+
+
+# A `--to` no walk answers: its message says what bars the way, the water's width against the body's reach where the sea is to blame.
+class _Unreachable(Exception):
+    pass
 
 
 # Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
@@ -120,6 +130,12 @@ def _bears(actor: dict, ctx: dict) -> bool | None:
     if "reproduction_sexual" in biology:
         return actor.get("sex") == 1
     return None if "reproduction_hermaphroditic" in biology else True  # a lone breeder bears its own
+
+
+# The tags a body walks and swims by, off its biology's traits and its clan's: `walk_adaptation_*`, `fast_swimming`, `water_creature`.
+def _body_tags(actor: dict, biology: tuple | list, ctx: dict) -> frozenset[str]:
+    sources = ((biology, ctx["subspecies_traits"]), ((ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits") or (), ctx["clan_traits"]))
+    return frozenset(tag for traits, library in sources for trait in traits for tag in (library.get(trait) or {}).get("tags") or ())
 
 
 # One home for every index the sections read, so no caller rolls its own. Actor loop = one pass: id, asset_id, children-per-parent (`get_current_children_count`).
@@ -155,8 +171,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
         "religions_by_id": index_by_id(save.get("religions") or []),
-        # Called not stored: only a neighbour on another land asks, and the sweep of the water costs a second on a save not yet cached.
+        # Called not stored: only a `--to` the water bars asks, to say how wide it is, and the sweep of the water costs a second on a save not yet cached.
         "strait_gaps": cache(lambda: {tuple(s["between"]): s["gap"] for s in waters_cached(save, save_path)["straits"]}),
+        "walk_map": cache(lambda: WalkMap(save)),  # called not stored: `surroundings` and `--to` alone walk
     }
 
 
@@ -266,15 +283,16 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
     }
 
 
-# Every living body within the common reach, nearest first, as the crow flies — a line is built only for a printed circle: `full` never makes the common one.
+# Every living body within the common reach, nearest first, walked at its own gait — a line is built only for a printed circle: `full` never makes the common one.
 def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     cx, cy = actor_xy(actor)
     circles: dict[str, list[tuple]] = {name: [] for name, _ in _CIRCLES}
-    island_of, gaps = ctx["island_lookup"](), ctx["strait_gaps"]
+    island_of = ctx["island_lookup"]()
     home = island_of.get((cx, cy))
     # A crown that ferries none reaches no shore: without a transport boat the sea stays the far-off, and no hull nor body past the common reach is measured.
     ferried = actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]
-    reach, swim = _BOAT_REACH if ferried else _CIRCLES[-1][1], _swim_reach(actor, ctx)
+    reach, common = _BOAT_REACH if ferried else _CIRCLES[-1][1], _CIRCLES[-1][1]
+    walker = _walker(actor, ctx, common)
     offshore: list[tuple] = []
     kin: dict[int, str] = {}
     ties = _ties(actor)
@@ -288,19 +306,18 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
             continue
         ox, oy = actor_xy(other)
         dx, dy = ox - cx, oy - cy
-        # Whole tiles walked, the circle drawn on the figure it prints: the scale reads no finer, and a decimal alone pushes a killer's line past the width..
-        if (distance := round(walk_tiles(dx, dy))) > reach:
+        # The crow's line first, on whole tiles: no walk is shorter, and a swift swimmer's circles stop at their radius all the same.
+        if (crow := round(walk_tiles(dx, dy))) > reach:
             continue
         # His parents, children, siblings and mate stand in full wherever they live: a count by town would drop where they are, which no roster of theirs says.
         if not boat and (tie := _kin_tie(ties, other)):
             kin[other["id"]] = tie
         land = island_of.get((ox, oy))
-        # On foot or at a swim: his own land, the water, or another land a passage joins — the strait, never the crow's line, says whether its shore is in reach.
-        walked = not boat and (land is None or home is None or land == home or gaps().get(tuple(sorted((land, home))), swim + 1) <= swim)
-        if walked and distance <= _CIRCLES[-1][1]:
-            circles[next(name for name, reach in _CIRCLES if distance <= reach)].append((distance, other["id"], dx, dy, land))
-        elif ferried and (boat or land != home):  # what only a hull brings in reach: every boat, and every body off his land that no circle above holds
-            offshore.append((distance, other["id"], dx, dy, land))
+        distance = None if boat else crow if walker is None else walker(ox, oy, land)
+        if distance is not None and (distance := round(distance)) <= common:
+            circles[next(name for name, radius in _CIRCLES if distance <= radius)].append((distance, other["id"], dx, dy, land))
+        elif ferried and (boat or land != home):  # what only a hull brings in reach, as the crow flies: every boat, and every body off his land no walk reaches
+            offshore.append((crow, other["id"], dx, dy, land))
     if ferried:
         circles["common_with_boat"] = offshore
     by_id = ctx["actors_by_id"]
@@ -310,6 +327,24 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     if detailed := wants_detail(requested, sum(map(len, plans.values()))):
         rings.update({name: _surroundings_rows(plan, ctx, home, kin) for name, plan in plans.items()})
     return rings if detailed else light(rings, withheld=True)  # `full` keeps the circle a chapter opens on, and says the wider ones wait to be named
+
+
+# What the actor walks to a body or a tile, at his own gait and swimming within his reach — a flyer, a body of the water or a passenger goes as the crow flies.
+def _build_to(actor: dict, goal: tuple[int, int], whom: str, ctx: dict) -> dict:
+    (cx, cy), (gx, gy) = actor_xy(actor), goal
+    to = {"dir": bearing(gx - cx, gy - cy), "tiles": round(walk_tiles(gx - cx, gy - cy))}
+    if (gait := _gait(actor, ctx)) is None:  # its way is the straight line: said as a walk, so that no reader takes the silence for a sea it can't cross
+        return {**to, "walked": to["tiles"]}
+    walk_map, island_of = ctx["walk_map"](), ctx["island_lookup"]()
+    goals, home = {gy * walk_map.width + gx}, island_of.get((cx, cy))
+    # WB walks round the bays of his own land, and swims only toward another: an islet of his, small, is tried on foot before the water.
+    shore = not walk_map.wet(cx, cy) and (home is None or home == island_of.get(goal))
+    walked = walk_to(walk_map, gait.ashore(), cx, cy, goals) if shore else None
+    if walked is None and not (shore and home is not None):
+        walked = walk_to(walk_map, gait, cx, cy, goals)
+    if walked is None:
+        raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["tiles"], ctx))
+    return {**to, "walked": round(walked)}
 
 
 # What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
@@ -418,6 +453,18 @@ def _equipment_power(actor: dict, ctx: dict) -> int:
     return total
 
 
+# How this body walks, or `None` for one the ground never holds — a flyer, a body born to the water, one aboard a hull: all keep the crow's line.
+def _gait(actor: dict, ctx: dict) -> Gait | None:
+    asset, biology = actor.get("asset_id"), (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
+    tags = _body_tags(actor, biology, ctx)
+    if asset in _AIRBORNE or asset in _SEA_BORN or "water_creature" in tags or is_aboard(actor):
+        return None
+    # The cleaned stats, not the raw totals: a child walks and swims on the halved ceiling WB gives it.
+    stats, aloft, swift = compute_actor_stats(actor, ctx), "hovering" in biology, "fast_swimming" in tags
+    breath, reach = _swim_reach(actor, stats, biology, aloft, swift)
+    return ctx["walk_map"]().gait(stats.get("speed"), tags, aloft=aloft, blind=asset in _TERRAIN_BLIND, swift=swift, breath=breath, reach=reach)
+
+
 # The actor's tie to another body, or `None`, off his `_ties`: WB keeps two parents and one mate each — a child names him, a sibling shares a parent.
 def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str | None:
     aid, parents, lover = ties
@@ -429,6 +476,11 @@ def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str |
     if other["id"] == lover or other.get("lover") == aid:
         return "lover"
     return "sibling" if not parents.isdisjoint(lineage) else None
+
+
+# How a body is named in a refusal: its name, or its kind where it has none, and its id either way.
+def _named(body: dict) -> str:
+    return f"{body.get('name') or body.get('asset_id')} ({body['id']})"
 
 
 # Years the actor has held `role` = (holder field, collection, history). `None` unless the history's last entry still names them.
@@ -513,16 +565,30 @@ def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, ki
     return rows
 
 
-# How wide a strait this body crosses: its breath first, at full pace, then the drowning that follows it, slower and one point of health at a time.
-def _swim_reach(actor: dict, ctx: dict) -> int:
-    stats = compute_actor_stats(actor, ctx)  # the cleaned stats, not the raw totals: a child swims on the halved ceiling WB gives it
+# How far this body swims from a shore, in tiles: its breath at full pace, then its whole reach, the drowning that follows slower and a point of health at a time.
+def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, swift: bool) -> tuple[float, float]:
+    if _water_trait_ids().intersection(biology):  # WB routes no body the water burns through the sea (`ActorMove.goTo`): it walks, or it stays
+        return 0.0, 0.0
+    if aloft or swift:  # neither spends breath in the water, hovering over it or `fast_swimming` through it: the sea is a road
+        return inf, inf
     if not (speed := stats.get("speed")) or not (health_max := stats.get("health_max")):
-        return 0
+        return 0.0, 0.0
     pace, health = speed * _TILES_PER_SPEED, min(int(actor.get("health") or 0), health_max)
-    if _water_burns(actor, ctx):  # the water takes a tenth of that ceiling per hit, so such a body burns long before it runs out of breath
-        return round(pace * _SWIM_SECONDS * health / health_max)
-    breath = int(actor.get("stamina") or 0)  # WB omits a zero, so a body without the field has no breath left — and a fly, with no gauge in its stats, has only this
-    return round(pace * (breath / _STAMINA_PER_SECOND + _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND))
+    breath = pace * int(actor.get("stamina") or 0) / _STAMINA_PER_SECOND  # WB omits a zero, so a body without the field has no breath left
+    return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
+
+
+# `--to` lifted off the command line: an actor id, or a tile as `x,y` — and the words left for the id and the sections.
+def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | None, list[str]]:
+    if "--to" not in argv:
+        return None, argv
+    at = argv.index("--to")
+    try:
+        value, rest = argv[at + 1], argv[:at] + argv[at + 2 :]
+        x, sep, y = value.partition(",")
+        return ((int(x), int(y)) if sep else int(value)), rest
+    except (IndexError, ValueError):
+        raise ValueError("`--to` takes an actor id or a tile, e.g. `--to 42` or `--to 415,117`") from None
 
 
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
@@ -530,21 +596,56 @@ def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
 
 
+# How far on foot each tile lies, `None` for a body the ground never holds: round his land's bays, swum within reach toward another, each walk drawn once asked for.
+def _walker(actor: dict, ctx: dict, limit: float) -> Callable[[int, int, int | None], float | None] | None:
+    if (gait := _gait(actor, ctx)) is None:
+        return None
+    (cx, cy), walk_map = actor_xy(actor), ctx["walk_map"]()
+    home, afloat = ctx["island_lookup"]().get((cx, cy)), cache(lambda: walk_from(walk_map, gait, cx, cy, limit))
+    ashore = afloat if walk_map.wet(cx, cy) else cache(lambda: walk_from(walk_map, gait.ashore(), cx, cy, limit))
+
+    def walk(x: int, y: int, land: int | None) -> float | None:
+        tile = y * walk_map.width + x
+        if home is not None and land != home:
+            return afloat().get(tile)
+        if (cost := ashore().get(tile)) is None and home is None:  # off any counted land, his islet first on foot, then the water
+            cost = afloat().get(tile)
+        return cost
+
+    return walk
+
+
 # WB's `isDamagedByOcean`: `hydrophobia` and any other trait tagged `damaged_by_water` — such a body burns in the water rather than drowning in it.
-def _water_burns(actor: dict, ctx: dict) -> bool:
-    biology = (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
-    return bool(_water_trait_ids().intersection(biology))
-
-
 @cache
 def _water_trait_ids() -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if "damaged_by_water" in (spec.get("tags") or []))
 
 
+# Why no walk joins the two, named: the rock of their one land, the water between two lands too wide for his reach, or no crossing short enough at all.
+def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, crow: int, ctx: dict) -> str:
+    island_of = ctx["island_lookup"]()
+    home, land, who = island_of.get(actor_xy(actor)), island_of.get(goal), _named(actor)
+    head = f"✗ {who} can't reach {whom}, {crow} tiles away as the crow flies"
+    if (home is not None and home == land) or gait.reach == inf:  # his own land, walked round its bays, or a sea he crosses at will: the ground is to blame
+        return f"{head}: rock, lava or goo walls the way off"
+    swims = f"swims {round(gait.reach)} tiles at most" if gait.reach else "never takes to the water"
+    if home is not None and land is not None and (gap := ctx["strait_gaps"]().get(tuple(sorted((home, land))))) is not None and gap > gait.reach:
+        return f"{head}: lands {home} and {land} are {gap} tiles of water apart at their narrowest, and {who} {swims}"
+    where = f"land {land}" if land is not None else "its spot, off any counted land"
+    if not gait.reach:
+        return f"{head}: {who} {swims}, and no walk on land reaches {where}"
+    return f"{head}: no crossing short enough for {who}, who {swims}, reaches {where}"
+
+
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
+    try:
+        target, argv = _take_target(argv)
+    except ValueError as e:
+        print(f"✗ {e}", file=sys.stderr)
+        return 2
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>] [C<n>] — see tools/tools.md", file=sys.stderr)
         return 2
     try:
         actor_id = int(argv[0])
@@ -554,7 +655,7 @@ def main(argv: list[str]) -> int:
 
     requested = argv[1] if len(argv) > 1 else None
     try:
-        sections = parse_sections(requested, _ALL_SECTIONS)
+        sections = parse_sections(requested, _ALL_SECTIONS) if requested or target is None else ()  # a `--to` alone answers alone
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -567,6 +668,18 @@ def main(argv: list[str]) -> int:
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
         return 1
+    goal, whom = None, ""
+    if isinstance(target, int):
+        if (other := ctx["actors_by_id"].get(target)) is None:
+            print(f"✗ unknown actor: {target}", file=sys.stderr)
+            return 1
+        goal, whom = actor_xy(other), _named(other)
+    elif target is not None:
+        height, width = len(save.get("tileArray") or []), sum((save.get("tileAmounts") or [[]])[0])
+        if not (0 <= target[0] < width and 0 <= target[1] < height):
+            print(f"✗ coords {target} out of bounds — map is {width}×{height}", file=sys.stderr)
+            return 2
+        goal, whom = target, f"{target[0]},{target[1]}"
 
     out: dict = {}
     if "companions" in sections:  # both attachments as plain refs — `emit` drops whichever is unset or dead, and the section itself when the actor has neither
@@ -588,6 +701,12 @@ def main(argv: list[str]) -> int:
         out["surroundings"] = _build_surroundings(actor, ctx, requested)
     if "traits" in sections:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
+    if goal is not None:
+        try:
+            out["to"] = _build_to(actor, goal, whom, ctx)
+        except _Unreachable as e:
+            print(str(e), file=sys.stderr)
+            return 1
 
     emit(out)
     return 0

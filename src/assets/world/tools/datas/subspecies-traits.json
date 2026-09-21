@@ -15,7 +15,8 @@
     "description": "Adapted to life in mysterious deserts",
     "flavor": "Born from dust, destined to fade into dust",
     "group": "adaptations",
-    "name": "Arcane Desert Adaptation"
+    "name": "Arcane Desert Adaptation",
+    "tags": ["walk_adaptation_sand"]
   },
   "adaptation_infernal": {
     "description": "Adapted to living and building in the infernal biome",
@@ -27,13 +28,15 @@
     "description": "Adapted to life in the permafrost biome",
     "flavor": "Cold? What cold?",
     "group": "adaptations",
-    "name": "Permafrost Adaptation"
+    "name": "Permafrost Adaptation",
+    "tags": ["walk_adaptation_snow"]
   },
   "adaptation_swamp": {
     "description": "Adapted to living and building in swamps",
     "flavor": "Damp, dark, and full of smells. Just the way they like it",
     "group": "adaptations",
-    "name": "Swamp Adaptation"
+    "name": "Swamp Adaptation",
+    "tags": ["walk_adaptation_swamp"]
   },
   "advanced_hippocampus": {
     "description": "Enhanced memory capabilities allow this species to develop cultures and religions",
