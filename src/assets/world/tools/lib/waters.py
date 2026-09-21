@@ -153,4 +153,4 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v8", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v10", save_path, lambda: _compute_waters(save, save_path))

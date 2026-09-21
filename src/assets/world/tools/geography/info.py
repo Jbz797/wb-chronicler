@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, listed_tiles, tile_biome, tile_frost, tile_kind, tile_layer, tile_mask
+from grid import LazyTileGrid, frozen_tally, listed_tiles, tile_biome, tile_count, tile_frost, tile_kind, tile_layer, tile_mask
 from islands import compute_islands_cached
 from shared import (
     actor_xy,
@@ -30,12 +30,13 @@ from shared import (
 )
 from waters import waters_cached
 
-_ALL_SECTIONS = ("biomes", "burning", "entity_types", "frozen", "gear", "islands", "positions", "totals", "waters")
+_ALL_SECTIONS = ("biomes", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
 _COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection → the helper that sites a record, WB's omitted zero read as 0. No kind sits in both.
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PATCH_SHARE = 1  # percent of its land a biome must stay under to be sited, however few its tiles
 _PATCH_TILES = 50  # at most this many tiles of a biome on one land, it is a place rather than a landscape: each patch is sited, as a share alone could not find it
+_PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
 
 
 # Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
@@ -115,10 +116,10 @@ def _build_entity_types(save: dict) -> dict:
     return {group: dict(counts) for group, counts in groups.items() if counts}
 
 
-# A land's frost, share first: the map's `snow` and `ice`, the passing `frost` — no tile twice, WB freezing neither snow nor ice. Ice, on no land, goes to `adrift`.
+# A land's frost, share first — the `permafrost` WB keeps frozen for good (`isFrozen`), the map's `snow` and `ice`, the passing `frost` — no tile ever counted twice.
 def _build_frozen(save: dict, save_path: Path) -> dict:
-    code = {"ice": 2, "snow": 1}
-    flags = [code.get(tile_frost(name) or "", 0) for name in save.get("tileMap") or []]
+    code = {"ice": 2, "permafrost": 3, "snow": 1}
+    flags = [code.get(tile_frost(name) or tile_biome(name) or "", 0) for name in save.get("tileMap") or []]
     if not (passing := save.get("frozen_tiles") or []) and not any(flags):
         return {}
     islands, island_of = compute_islands_cached(save, save_path)
@@ -126,6 +127,7 @@ def _build_frozen(save: dict, save_path: Path) -> dict:
     by_island: defaultdict[int | None, Counter] = defaultdict(Counter)
     for island_id, n in Counter(island_of.listed_ids(passing)).items():
         by_island[island_id or None]["frost"] += n
+    # Ice is water and lies on no land; a run of permafrost is ground, one land all along; only snow, rock at times, is sited tile by tile.
     for y, marks in enumerate(tile_mask(save, flags) if any(flags) else ()):
         if ice := marks.count(2):
             by_island[None]["ice"] += ice
@@ -133,6 +135,8 @@ def _build_frozen(save: dict, save_path: Path) -> dict:
         while x != -1:
             by_island[lands[x] or None]["snow"] += 1
             x = marks.find(1, x + 1)
+        for match in _PERMAFROST_RUN.finditer(marks):
+            by_island[lands[match.start()] or None]["permafrost"] += match.end() - match.start()
     # The share left out where it rounds to nothing, and on the islets, which have no size of their own to share.
     return {
         "adrift" if island_id is None else str(island_id): (f"{pct:g}% · " if island_id and (pct := round(sum(counts.values()) / sizes[island_id] * 100, 1)) else "")
@@ -183,13 +187,14 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
 # The map's own sums, which no list adds up: its water, its land, and that land split between the counted lands and the islets too small to be one.
 def _build_totals(save: dict, save_path: Path) -> dict:
     islands, _ = compute_islands_cached(save, save_path)
-    layers = (tile_layer(name) for name in save.get("tileMap") or [])
-    # A byte per tile, 1 on land and 2 on goo, counted in C: the rest of the map is its water.
-    tally = b"".join(tile_mask(save, [1 if layer in ("Block", "Ground", "Lava") else 2 if layer == "Goo" else 0 for layer in layers]))
-    land, goo = tally.count(1), tally.count(2)
-    tiles, water, counted = len(tally) or 1, len(tally) - land - goo, sum(island["size"] for island in islands)
-    # Each share of what holds it: the land and the water of the map, the counted lands and the islets of the land. Goo, a layer of its own, only where it spread.
+    layers = [tile_layer(name) for name in save.get("tileMap") or []]
+    frozen, tiles = frozen_tally(save)
+    # Land and goo counted off the runs: the rest of the map is its water.
+    land, goo = tile_count(save, [layer in ("Block", "Ground", "Lava") for layer in layers]), tile_count(save, [layer == "Goo" for layer in layers])
+    water, counted, tiles = tiles - land - goo, sum(island["size"] for island in islands), tiles or 1
+    # Each share of what holds it: the land, the water and the frozen of the map, the counted lands and the islets of the land. Goo, its own layer, where it spread.
     return {
+        "frozen": {"pct": round(frozen / tiles * 100, 1), "tiles": frozen},
         "goo": {"pct": round(goo / tiles * 100, 1), "tiles": goo} if goo else None,
         "land": {
             "islets": {"pct": round((land - counted) / (land or 1) * 100, 1), "tiles": land - counted},
@@ -298,6 +303,8 @@ def main(argv: list[str]) -> int:
         out["islands"] = islands
     if "positions" in sections and wanted is not None:
         out["positions"] = _build_positions(save, save_path, wanted)
+    if "ridges" in sections:
+        out["ridges"] = compute_islands_cached(save, save_path)[1].ridges()
     if "totals" in sections:
         out["totals"] = _build_totals(save, save_path)
     if "waters" in sections:

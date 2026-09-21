@@ -8,7 +8,15 @@ export interface LeaderGroupConfig { group: LeaderGroup; label: string; measures
 export interface LeaderRow extends Omit<Leader, 'name'> { group: LeaderGroup; isNew: boolean; name: string }
 
 // A snapshot row while it is still being built — `hideIfZero` drops the idle ones on the way out, `icon` names the sprite where the key is not what it draws.
-export interface SnapshotRow { delta: number | undefined; hideIfZero: boolean | undefined; icon: string | undefined; key: string; label: string; value: number }
+export interface SnapshotRow {
+  delta: number | undefined;
+  hideIfZero: boolean | undefined;
+  icon: string | undefined;
+  key: string;
+  label: string;
+  suffix: string | undefined; // `%` on a share, printed to the tenth instead of in the compact form
+  value: number;
+}
 
 // The world panel's four blocks: live snapshot, cumulative counters, « Records » leaders, and metadata.
 export interface World {
@@ -74,7 +82,7 @@ interface WorldSnapshot {
   clans: number;
   cultures: number;
   families: number;
-  frozen_tiles: number;
+  frozen_pct: number;
   houses: number;
   infected?: number;
   kingdoms: number;

@@ -11,7 +11,7 @@ import pickle
 import re
 import sys
 from array import array
-from collections import Counter, deque
+from collections import Counter, defaultdict, deque
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -61,6 +61,24 @@ class _TileIslands:
     # The island ids of tiles listed row-major, as WB lists `fire` and `frozen_tiles`, read in C where a `get` per tile tests its bounds; `0` off the lands.
     def listed_ids(self, indices: list[int]) -> Iterator[int]:
         return map(self._grid.__getitem__, indices)
+
+    # Lands that touch with no water between, a crest no body crosses on foot: the border's length and its middle tile, off the edges, each pair of tiles met once.
+    def ridges(self) -> list[dict]:
+        rows = [self.row(y) for y in range(self._height)]
+        sides: defaultdict[tuple[int, int], tuple[set, set]] = defaultdict(lambda: (set(), set()))
+        for x, y, own in self.edges():
+            for nx, ny in ((x + 1, y), (x - 1, y + 1), (x, y + 1), (x + 1, y + 1)):
+                if 0 <= nx < self._width and ny < self._height and (other := rows[ny][nx]) and other != own:
+                    low, high = sides[(own, other) if own < other else (other, own)]
+                    (low if own < other else high).add((x, y))
+                    (high if own < other else low).add((nx, ny))
+        out = []
+        for pair, (low, high) in sides.items():
+            tiles = low | high
+            mean_x, mean_y = sum(x for x, _ in tiles) / len(tiles), sum(y for _, y in tiles) / len(tiles)
+            x, y = min(tiles, key=lambda t: ((t[0] - mean_x) ** 2 + (t[1] - mean_y) ** 2, t))
+            out.append({"at": {"x": x, "y": y}, "between": list(pair), "length": max(len(low), len(high))})
+        return sorted(out, key=lambda r: (-r["length"], r["between"]))
 
     # One row's island ids, `0` on water or a rock too small to count: a sweep that already walks the grid reads them by index rather than asking `get` per tile.
     def row(self, y: int) -> array:

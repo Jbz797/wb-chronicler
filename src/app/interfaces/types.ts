@@ -58,7 +58,7 @@ export type RankedStatSource = 'alliance' | 'species' | ChapterTier; // a tier, 
 export type ReligionRegistry = Record<string, ReligionInfo>;
 
 export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'buildings' | 'cities' | 'clans'
-  | 'cultures' | 'families' | 'frozen_tiles' | 'houses' | 'infected' | 'kingdoms'
+  | 'cultures' | 'families' | 'frozen_pct' | 'houses' | 'infected' | 'kingdoms'
   | 'languages' | 'religions' | 'sapient_population' | 'sick' | 'subspecies' | 'trees' | 'vegetation'
   | 'wars' | 'wild_creatures';
 

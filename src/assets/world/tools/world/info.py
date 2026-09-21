@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import build_actor_stats_context, compute_actor_stats
+from grid import frozen_tally
 from shared import (
     MIN_RANK_PEERS,
     MIN_SCORE_PEERS,
@@ -221,11 +222,12 @@ def _build_snapshot(save: dict) -> dict:
             sick += 1
             infected += "infected" in traits
 
+    frozen, tiles = frozen_tally(save)
     return {
         **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
         "armies": len(save.get("armies") or []),
         "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
-        "frozen_tiles": len(save.get("frozen_tiles") or []),
+        "frozen_pct": round(frozen / (tiles or 1) * 100, 1),  # the map's frozen share — permafrost, snow, ice and the passing frost, as `geography … totals` has it
         "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
         **({"infected": infected} if infected else {}),
         "passengers": passengers,  # souls at sea this instant, WB's own word (`Boat.countPassengers`) — chronicler-only, `boats` counts the hulls

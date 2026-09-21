@@ -8,8 +8,12 @@
         <span>{{ row.label | translate }}</span>
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
-        <span nz-tooltip [nzTooltipTitle]="row.value | exact">{{ row.value | compact }}</span>
-        <app-delta [value]="row.delta" />
+        @if (row.suffix) {
+          <span>{{ row.value | number: '1.0-1' }}{{ row.suffix }}</span>
+        } @else {
+          <span nz-tooltip [nzTooltipTitle]="row.value | exact">{{ row.value | compact }}</span>
+        }
+        <app-delta [suffix]="row.suffix ?? ''" [value]="row.delta" />
       </nz-descriptions-item>
     }
   </nz-descriptions>

@@ -36,7 +36,7 @@ from shared import (
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
-_LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `to_land` says nothing rather than a number
+_LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `to_land` gives the reach, not a number
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
 # The eight steps a tide takes, each with what it costs — a slanted one being longer than a straight one, the cheapest water is not the nearest in rings.
@@ -207,7 +207,7 @@ def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
             for nx, ny in _ring_tiles(x, y, r, width, height):
                 if (island := island_at((nx, ny))) is not None and (swum := walk_tiles(nx - x, ny - y)) < (found[0] if found else swum + 1):
                     found = (swum, island)
-        return {"island_id": found[1], "tiles": round(found[0])} if found else None
+        return {"island_id": found[1], "tiles": round(found[0])} if found else {"farther_than": _LAND_REACH}
 
     def dry(px: int, py: int) -> bool:  # the uncounted rock and nothing else — take the sea in and the fill would run to the map's end
         return layer[grid[py][px]] != "Ocean" and island_at((px, py)) is None
@@ -238,7 +238,7 @@ def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
             if 0 <= nx < width and 0 <= ny < height and (reached := here + cost) < swum.get((nx, ny), reached + 1):
                 swum[(nx, ny)] = reached
                 heappush(tide, (reached, (nx, ny)))
-    return None
+    return {"farther_than": _LAND_REACH}
 
 
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
@@ -258,7 +258,7 @@ def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
                 yield nx, ny
 
 
-# `block` (what bars the way), `burning`, `frozen` (passing frost), `snow` or `ice` (the map's own) only where they hold. A biome's line is `biomes`'s to give.
+# `block`, `burning`, `frozen` (passing frost), `islet` (land too small to count: without it and `island_id`, water) and `snow` or `ice` only where they hold.
 def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
     out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}
@@ -270,6 +270,8 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
         out[frost] = True
     if block := tile_block(name):
         out["block"] = block
+    if out["island_id"] is None and tile_layer(name) in ("Block", "Ground", "Lava"):
+        out["islet"] = True
     return out
 
 

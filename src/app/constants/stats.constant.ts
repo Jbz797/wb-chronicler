@@ -118,8 +118,8 @@ export const SKILL_STATS: StatConfig[] = [
 ];
 
 // Snapshot world stats — display order: demography → environment → society → conflict → culture → activity. `hideIfZero` hides outbreak-style rows when idle.
-// `icon` names the sprite in `assets/img/world/`, filed by concept: `population.png` draws a crowd, whichever crowd the key happens to count.
-export const SNAPSHOT_STATS: { hideIfZero?: boolean; icon?: string; key: SnapshotStat; label: string }[] = [
+// `icon` names the sprite in `assets/img/world/`, filed by concept: `population.png` draws a crowd, whichever crowd the key happens to count. `suffix`: a share.
+export const SNAPSHOT_STATS: { hideIfZero?: boolean; icon?: string; key: SnapshotStat; label: string; suffix?: string }[] = [
   { icon: 'population', key: 'sapient_population', label: 'ui_sapient_population' },
   { hideIfZero: true, key: 'sick', label: 'ui_sick' },
   { hideIfZero: true, key: 'infected', label: 'ui_infected' },
@@ -127,7 +127,7 @@ export const SNAPSHOT_STATS: { hideIfZero?: boolean; icon?: string; key: Snapsho
   { key: 'subspecies', label: 'ui_subspecies_count' },
   { key: 'trees', label: 'ui_trees' },
   { key: 'vegetation', label: 'ui_other_vegetation' },
-  { hideIfZero: true, key: 'frozen_tiles', label: 'ui_frozen_tiles' },
+  { hideIfZero: true, icon: 'frozen_tiles', key: 'frozen_pct', label: 'ui_frozen_surface', suffix: '%' },
   { key: 'kingdoms', label: 'ui_kingdoms' },
   { key: 'cities', label: 'ui_cities' },
   { key: 'buildings', label: 'ui_buildings' },

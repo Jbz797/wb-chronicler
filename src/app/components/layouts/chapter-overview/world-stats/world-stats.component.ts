@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
@@ -16,7 +17,7 @@ import { WorldPlotsComponent } from './world-plots/world-plots.component';
 
 @Component({
   selector: 'app-world-stats',
-  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, NzTooltipModule, TranslatePipe, WorldPlotsComponent],
+  imports: [CompactPipe, DecimalPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, NzTooltipModule, TranslatePipe, WorldPlotsComponent],
   templateUrl: './world-stats.component.html',
 })
 export class WorldStatsComponent {
@@ -55,13 +56,16 @@ export class WorldStatsComponent {
     if (!world) return [];
     const before = this._chronicler.previousChapter()?.meta.world;
     // `infected` is omitted at 0 (outbreak-style), so an absent count reads as 0 on either side.
-    const rows: SnapshotRow[] = this.snapshotStats.map(({ hideIfZero, icon, key, label }) => {
+    const rows: SnapshotRow[] = this.snapshotStats.map(({ hideIfZero, icon, key, label, suffix }) => {
       const value = world.snapshot[key] ?? 0;
-      return { delta: before ? value - (before.snapshot[key] ?? 0) : undefined, hideIfZero, icon, key, label, value };
+      // To the tenth, as a share is written: a float subtraction would otherwise print its noise.
+      return { delta: before ? Math.round((value - (before.snapshot[key] ?? 0)) * 10) / 10 : undefined, hideIfZero, icon, key, label, suffix, value };
     });
     const boats = world.boats.total;
-    rows.push({ delta: before ? boats - before.boats.total : undefined, hideIfZero: true, icon: undefined, key: 'boats', label: 'ui_boats', value: boats });
-    return rows.filter(r => !r.hideIfZero || r.value > 0).map(({ delta, icon, key, label, value }) => ({ delta, icon, key, label, value }));
+    rows.push({
+      delta: before ? boats - before.boats.total : undefined, hideIfZero: true, icon: undefined, key: 'boats', label: 'ui_boats', suffix: undefined, value: boats,
+    });
+    return rows.filter(r => !r.hideIfZero || r.value > 0).map(({ delta, icon, key, label, suffix, value }) => ({ delta, icon, key, label, suffix, value }));
   });
   // Causes with > 0 deaths this chapter, sorted by count desc — 0-rows are hidden (16 categories incl. peste/poison/etc. that stay idle most chapters).
   protected readonly sortedDeathCauses = computed(() => {

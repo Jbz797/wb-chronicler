@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 21/09/26 20:04</p>
+<p class="metadata">Date de mise à jour : 21/09/26 20:37</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON sur `stdout` — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** (ex. `city 3 C5 metadata`) lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -14,7 +14,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 | `clan <id>`       | `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                       |
 | `culture <id>`    | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
 | `family <id>`     | `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`                                                 |
-| `geography`       | `biomes`, `burning`, `entity_types`, `frozen`, `gear`, `islands`, `positions`, `totals`, `waters`                                |
+| `geography`       | `biomes`, `burning`, `entity_types`, `frozen`, `gear`, `islands`, `positions`, `ridges`, `totals`, `waters`                      |
 | `ground <id>`     | `boats`, `inventory`, `metadata`, `occupants`                                                                                    |
 | `kingdom <id>`    | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `rulers`, `wars`  |
 | `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
@@ -54,14 +54,13 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### Formes et mesures :
 
 - `city … rulers` et `kingdom … rulers` donnent la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain en place : `population.ruler_money`.
-- `geography … frozen` donne, terre par terre, la part gelée puis ses tuiles : `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager. Le biome `permafrost` n'y compte pas : `biomes` le donne à part.
+- `geography … frozen` donne, terre par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé pour toujours ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `houses` (cité, royaume) compte les chantiers, comme le jeu : `ground … metadata` les signale par `under_construction`.
-- `island_id` **absent** couvre deux cas opposés : un îlot trop petit pour compter, ou l'eau. `tiles … tile_info` tranche — `kind: water` pour le second.
 - `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule suffit, et elle sert tout le royaume — la cité qui l'abrite n'y change rien.
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : une cité ne la prend que si son chef y croit, un royaume que si son roi la décrète.
-- `tiles … tile_info` : `block` nomme ce qui barre la marche — montagne, sommet, bloc de neige, mur : personne ne le franchit à pied ; `snow` et `ice`, la neige et la glace de la carte ; `frozen`, le gel passager.
+- `tiles … tile_info` : `block` nomme ce qui barre la marche — montagne, sommet, bloc de neige, mur : personne ne le franchit à pied ; `islet`, une terre trop petite pour compter — sans elle ni `island_id`, c'est l'eau ; `snow` et `ice`, la neige et la glace de la carte ; `frozen`, le gel passager.
 - `to_islands` (section `distances`) donne les 5 îles les plus proches, dans l'ordre, par leur **tuile la plus proche** : un centroïde se trompe de tranche.
-- `to_land` (section `distances`) mesure le bras d'eau depuis **tout le rocher**, pas depuis la tuile : un naufragé s'isole par le détroit de son île, pas par l'endroit où il se tient. Absent sur une île comptée.
+- `to_land` (section `distances`) mesure le bras d'eau depuis **tout le rocher**, pas depuis la tuile : un naufragé s'isole par le détroit de son île, pas par l'endroit où il se tient.
 - `to_nearest_city` (section `distances`) vise le **quartier** le plus proche, pas le centre : on touche une ville par son bord. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
 - `world … metadata` : `months_until_next_age` est **déjà en mois**, 12 par an — il ne repasse pas par le `/ 5` d'un `world_time`.
 - Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, un champ `info` le signale, et la clé qui porte le bloc nomme la section à demander.

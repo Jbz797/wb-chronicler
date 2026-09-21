@@ -1,7 +1,7 @@
 # Tile-level primitives. No save-wide state, no module cache — just functions over a tile name, the rows the save folds away as runs, or the tiles it lists by id.
 
 from collections.abc import Iterator
-from itertools import chain, repeat
+from itertools import chain, compress, repeat
 
 # The tile types WB marks `block` (`TileLibrary`, `TopTileLibrary`): rock of the `Block` layer no body crosses on foot, from mountains to the walls a player paints.
 _BLOCKS = frozenset(
@@ -81,6 +81,12 @@ def decode_tile_grid(save: dict) -> list[list[int]]:
     return [_unfold(ids, runs) for ids, runs in _tile_rows(save)]
 
 
+# The map's frozen tiles, and all its tiles: permafrost, frozen for good in WB's eyes, the map's snow and ice, the passing frost a save lists — never one twice.
+def frozen_tally(save: dict) -> tuple[int, int]:
+    frozen = tile_count(save, [bool(tile_frost(name) or tile_biome(name) == "permafrost") for name in save.get("tileMap") or []])
+    return frozen + len(save.get("frozen_tiles") or []), sum(chain.from_iterable(runs for _, runs in _tile_rows(save)))
+
+
 # What WB `SavedMap.create` lists by `tile_id` rather than on the grid — `fire`, `frozen_tiles` — packed row-major as `y * width + x`, unpacked into `(x, y)`.
 def listed_tiles(save: dict, key: str) -> Iterator[tuple[int, int]]:
     width = sum(next(_tile_rows(save), ((), ()))[1])
@@ -98,6 +104,14 @@ def tile_biome(tile_name: str) -> str | None:
 def tile_block(tile_name: str) -> str | None:
     base, _, top = tile_name.partition(":")
     return kind if (kind := top or base) in _BLOCKS else None
+
+
+# How many tiles have `flags[tile id]` set, counted off the runs in C, each weighing its length: no tile unfolded, nor any mask built for a mere count.
+def tile_count(save: dict, flags: list[bool]) -> int:
+    if not any(flags):  # goo, most maps: nothing to count, so not a run is read
+        return 0
+    runs = chain.from_iterable(runs for _, runs in _tile_rows(save))
+    return sum(compress(runs, map(flags.__getitem__, chain.from_iterable(ids for ids, _ in _tile_rows(save)))))
 
 
 def tile_elevation(tile_name: str) -> str | None:
