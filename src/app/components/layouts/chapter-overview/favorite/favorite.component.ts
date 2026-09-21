@@ -84,8 +84,7 @@ export class FavoriteComponent {
     const isBoarded = !!previous && !!this.currentChapter()?.meta.boat && !this._chronicler.previousChapter()?.meta.boat;
     if (!previous || !current) return { bestFriend: false, boat: isBoarded, descriptor: false, lover: false, plot: false, role: false };
 
-    let hasPlotChanged = false;
-    if (current.plot) hasPlotChanged = previous.plot ? previous.plot.type.id !== current.plot.type.id : true;
+    const hasPlotChanged = !!current.plot && previous.plot?.type.id !== current.plot.type.id;
 
     return {
       bestFriend: !!current.companions?.best_friend && current.companions.best_friend.id !== previous.companions?.best_friend?.id,

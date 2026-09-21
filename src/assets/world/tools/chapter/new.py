@@ -103,7 +103,7 @@ _BRIEFS = (  # the auditors' own briefs and how many of each: a sub-agent knows 
         " Say so plainly where the story holds. Where it does not, give each gap its chapter, its line and its quote, and you may add what would mend it —"
         " a correction, a passage the chronicle lacks, an angle it has never taken — as a direction, never as written prose."
         " Rank them, the most load-bearing first, and say of each whether this chapter can mend it or the chronicle carries it from further back."
-        " Write nothing.",
+        " What it carries is said once: asked again, weigh only the lines handed to you. Write nothing.",
     ),
 )
 
