@@ -955,6 +955,13 @@ def take_chapter(argv: list[str]) -> tuple[Path, list[str], str | None]:
     return live, argv, None
 
 
+# The node a union-find set is known by, each one passed pointed a step nearer it so a map's unions stay shallow: `islands` and `waters` join their runs by it.
+def union_root(parent: list[int], node: int) -> int:
+    while (up := parent[node]) != node:
+        parent[node] = node = parent[up]
+    return node
+
+
 # What a body actually walks between two points: WB paths in eight directions but spends its speed on each step's length, which is the octile distance.
 def walk_tiles(dx: int, dy: int) -> float:
     far, near = abs(dx), abs(dy)

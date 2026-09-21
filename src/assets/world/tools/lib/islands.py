@@ -1,4 +1,4 @@
-# Reusable island detection — mirrors WB's `IslandsCalculator.countLandIslands`. Consumed by `actor/`, `city/`, `geography/`, `kingdom/` and `tiles/` alike.
+# Reusable island detection — mirrors WB's `IslandsCalculator.countLandIslands`. Consumed by every tool that sites a body or a place, and by `lib/waters.py`.
 #
 # Algorithm (extracted from `Assembly-CSharp.dll`):
 # 1. Each tile has a `TileLayerType` (Null/Ground/Ocean/Lava/Block/Goo) — Block covers mountains/summit/walls, NOT Ground.
@@ -8,18 +8,20 @@
 #    lets a compact islet straddling four chunks pass while a wider one inside two fails — a tally the game shows nowhere and no chronicle can use.
 
 import pickle
+import re
 from array import array
 from collections import Counter, deque
 from pathlib import Path
 
 from grid import decode_tile_grid, tile_kind, tile_layer
-from shared import CACHE_DIR, save_cache_key
+from shared import CACHE_DIR, save_cache_key, union_root
 
 _BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})  # WB `TileTypeBase.block` tiles — block diagonals, which splits regions.
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
 _CITY_MIN_ISLAND_TILES = 300  # WB `Globals.CITY_MIN_ISLAND_TILES`: under it no city is ever founded, so the land bears no history worth a name.
 _DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
-_DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+_ROCK = bytes.maketrans(b"\x01\x02", b"\x00\x01")  # the tile codes read for rock alone, ground cleared
+_RUN = re.compile(rb"\x01+")  # a run of ground, sought between a row's own bounds so that it never runs on into the next
 
 
 # Tile → island id over a flat row-major grid, `0` for water (ids start at 1). The dict it replaces cost 32 ms to unpickle and 1.95 MB; this costs neither.
@@ -54,150 +56,128 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     tile_map = save.get("tileMap") or []
     layer_by_id = [tile_layer(name) for name in tile_map]
     block_by_id = [name.split(":", 1)[0] in _BLOCK_TILES for name in tile_map]
-
-    # Precompute per-tile-id kind once — the Phase 1 and Phase 4 fills touch every land tile, and each would otherwise call it again for the same id.
     kind_by_id = [tile_kind(name) for name in tile_map]
     grid = decode_tile_grid(save)
     if not grid:
         return [], _TileIslands(array("H"), 0, 0)
     height, width = len(grid), len(grid[0])
+    # A byte per tile, 1 on ground and 2 on rock, so that C does the finding: a regex the runs of ground, a shift the ground beside rock.
+    code_by_id = [1 if layer == "Ground" else 2 if layer in ("Block", "Lava") else 0 for layer in layer_by_id]
+    codes = b"".join(bytes(map(code_by_id.__getitem__, row)) for row in grid)
+    rock = codes.translate(_ROCK)
 
-    # Phase 1: split each 16×16 chunk into MapRegions (8-conn components within the chunk, respecting `isDiagonalBlockedByCorners`) — of Ground alone:
-    # only it ever becomes an island, Block and Lava joining in Phase 4 by their own fill, so WB's ocean and rock regions would be filled for nothing.
-    region_grid: list[list[int]] = [[-1] * width for _ in range(height)]
-    regions: list[dict] = []
-
-    for cy0 in range(0, height, _CHUNK_SIZE):
-        for cx0 in range(0, width, _CHUNK_SIZE):
-            cy1, cx1 = min(cy0 + _CHUNK_SIZE, height), min(cx0 + _CHUNK_SIZE, width)
-            for sy in range(cy0, cy1):
-                for sx in range(cx0, cx1):
-                    if region_grid[sy][sx] != -1 or layer_by_id[grid[sy][sx]] != "Ground":
-                        continue
-                    region_id = len(regions)
-                    tiles: list[tuple[int, int]] = []
-                    kinds: list[str] = []  # tallied in one C-level pass below, where `counter[k] += 1` per tile would cost a bytecode round-trip each
-                    queue = [(sx, sy)]  # a list popped from the tail, not a deque: the fill is order-agnostic
-                    region_grid[sy][sx] = region_id
-                    while queue:
-                        x, y = queue.pop()
-                        tiles.append((x, y))
-                        tid = grid[y][x]
-                        kinds.append(kind_by_id[tid])
-                        inner = cx0 < x < cx1 - 1 and cy0 < y < cy1 - 1  # Off the chunk rim, four tiles in five, every neighbour is in: one test, not eight.
-                        for dx, dy in _DELTAS_8:
-                            nx, ny = x + dx, y + dy
-                            if not inner and not (cx0 <= nx < cx1 and cy0 <= ny < cy1):
-                                continue
-                            if region_grid[ny][nx] != -1 or layer_by_id[grid[ny][nx]] != "Ground":
-                                continue
-                            # `isDiagonalBlockedByCorners`: blocked if either orthogonal corner is a `block` tile — never out of bounds, the chunk test pins both.
-                            if dx and dy and (block_by_id[grid[y][x + dx]] or block_by_id[grid[y + dy][x]]):
-                                continue
-                            region_grid[ny][nx] = region_id
-                            queue.append((nx, ny))
-                    regions.append({"tile_kinds": Counter(kinds), "tiles": tiles})
-
-    # Phase 2: merge regions into TileIslands. Regions only meet across chunk borders — inside one, Ground 4-neighbours already share a region.
-    neighbours: list[set[int]] = [set() for _ in regions]
-
+    # Phase 1: WB's Ground masses off each row's runs — side by side tiles join, by a corner only within a chunk and past no `block` (`isDiagonalBlockedByCorners`).
+    runs: list[tuple[int, int, int]] = []  # `(y, west, east + 1)`, row-major
+    rows: list[list[tuple[int, int, int]]] = []  # each row's runs, as `(west, east + 1, run index)`
     for y in range(height):
-        row = region_grid[y]
-        for x in range(_CHUNK_SIZE, width, _CHUNK_SIZE):
-            a, b = row[x - 1], row[x]
-            if a != -1 and b != -1:  # both filled means both Ground: no other layer has a region
-                neighbours[a].add(b)
-                neighbours[b].add(a)
+        base, row = y * width, []
+        for match in _RUN.finditer(codes, base, base + width):
+            west, end = match.start() - base, match.end() - base
+            row.append((west, end, len(runs)))
+            runs.append((y, west, end))
+        rows.append(row)
 
-    for y in range(_CHUNK_SIZE, height, _CHUNK_SIZE):
-        row, above = region_grid[y], region_grid[y - 1]
-        for x in range(width):
-            a, b = above[x], row[x]
-            if a != -1 and b != -1:
-                neighbours[a].add(b)
-                neighbours[b].add(a)
+    parent = list(range(len(runs)))
+    for y in range(1, height):
+        above, one_chunk = rows[y - 1], y % _CHUNK_SIZE != 0
+        first = 0
+        for a, b, k in rows[y]:
+            while first < len(above) and above[first][1] < a:  # wholly west of this run and of every one after it: not even a corner touches
+                first += 1
+            for o in range(first, len(above)):
+                oa, ob, q = above[o]
+                if oa > b:
+                    break
+                if oa < b and a < ob:
+                    joined = True
+                elif not one_chunk:
+                    joined = False
+                elif ob == a:  # the run above stops just west of this one's start: they touch by a corner
+                    joined = a % _CHUNK_SIZE != 0 and not (block_by_id[grid[y - 1][a]] or block_by_id[grid[y][a - 1]])
+                else:  # it starts just east of this one's end
+                    joined = oa % _CHUNK_SIZE != 0 and not (block_by_id[grid[y - 1][oa - 1]] or block_by_id[grid[y][oa]])
+                if joined:
+                    rq, rk = union_root(parent, q), union_root(parent, k)
+                    parent[max(rq, rk)] = min(rq, rk)
 
-    island_of_region: list[int] = [-1] * len(regions)
-    component_regions: list[list[int]] = []
-
-    for start in range(len(regions)):
-        if island_of_region[start] != -1:
-            continue
-        cid = len(component_regions)
-        component_regions.append([])
-        queue = deque([start])
-        island_of_region[start] = cid
-        while queue:
-            r_idx = queue.popleft()
-            component_regions[cid].append(r_idx)
-            for other in neighbours[r_idx]:
-                if island_of_region[other] == -1:
-                    island_of_region[other] = cid
-                    queue.append(other)
+    # Per mass, its size, its runs, and where WB's chunk sweep first meets it — chunk by chunk, row by row: its regions were numbered so, and ties in size fall so.
+    chunks_across = -(-width // _CHUNK_SIZE)
+    masses: dict[int, list] = {}
+    for k, (y, a, b) in enumerate(runs):
+        met = ((y // _CHUNK_SIZE * chunks_across + a // _CHUNK_SIZE) * _CHUNK_SIZE + y % _CHUNK_SIZE) * _CHUNK_SIZE + a % _CHUNK_SIZE
+        if (mass := masses.get(root := union_root(parent, k))) is None:
+            masses[root] = [b - a, met, [(y, a, b)]]
+        else:
+            mass[0] += b - a
+            mass[1] = min(mass[1], met)
+            mass[2].append((y, a, b))
 
     # Phase 3: keep the Ground masses wide enough to ever carry a city. Block and Lava join in Phase 4, after the count, as WB's own Ground islands do.
-    kept: list[tuple[int, Counter[str], list[tuple[int, int]]]] = []
-
-    for r_indices in component_regions:
-        # Measured before anything is built: nine land masses in ten fall under the floor, and gathering their tiles and kinds first cost a fifth of the run.
-        if sum(len(regions[i]["tiles"]) for i in r_indices) < _CITY_MIN_ISLAND_TILES:
-            continue
-        tile_kinds = Counter()
-        tiles = []
-        for r_idx in r_indices:
-            tile_kinds.update(regions[r_idx]["tile_kinds"])
-            tiles.extend(regions[r_idx]["tiles"])
-        kept.append((len(tiles), tile_kinds, tiles))
-    kept.sort(key=lambda c: -c[0])
-    islands = []
+    kept = sorted((mass for mass in masses.values() if mass[0] >= _CITY_MIN_ISLAND_TILES), key=lambda m: (-m[0], m[1]))  # the id still provisional: see Phase 4
     island_tile_kinds: dict[int, Counter[str]] = {}
-
-    # Flat and row-major from the start: a `{(x, y): id}` dict would hash a tuple on every write, and again on every Phase 4 probe.
-    id_grid = array("H", bytes(2 * width * height))
+    # Phase 4 grows from ground beside rock alone, found in C by the rock mask shifted a tile each way: a shift wrapping a row seeds a tile that claims nothing.
+    wall = int.from_bytes(rock, "little")
+    beside_rock = ((wall >> 8) | (wall << 8) | (wall >> 8 * width) | (wall << 8 * width)).to_bytes(len(rock) + width, "little")
     seeds: deque[tuple[int, int]] = deque()
 
-    # Centroid and bounds summed in the same walk that stamps the ids: five passes over the island's tiles would otherwise do the work of one.
-    for idx, (size, tile_kinds, tiles) in enumerate(kept, start=1):
+    # Per provisional id, `[size, sum_x, sum_y, west, east, south, north]`: arithmetic over the runs, a run's columns summing as a series.
+    frames: list[list[int]] = [[]]
+    for idx, (size, _, own_runs) in enumerate(kept, start=1):
+        by_id: Counter[int] = Counter()
         sum_x = sum_y = 0
-        west, east, south, north = tiles[0][0], tiles[0][0], tiles[0][1], tiles[0][1]
-        for gx, gy in tiles:
-            sum_x += gx
-            sum_y += gy
-            if gx < west:  # bare comparisons, not `min`/`max`: two builtin calls per tile cost more than the whole of Phase 4
-                west = gx
-            elif gx > east:
-                east = gx
-            if gy < south:
-                south = gy
-            elif gy > north:
-                north = gy
-            id_grid[gy * width + gx] = idx
-            seeds.append((gx, gy))
-        island_tile_kinds[idx] = tile_kinds  # `kept` is spent from here on, so Phase 4 may swell this counter in place
-        # Of the ground alone, as the centroid is: the mountains Phase 4 lends the island can reach past these edges. `size` against the box says how ragged it is.
-        bounds = {"x": [west, east], "y": [south, north]}
-        islands.append({"bounds": bounds, "centroid": {"x": sum_x // size, "y": sum_y // size}, "id": idx, "size": size})
+        for y, a, b in own_runs:
+            by_id.update(grid[y][a:b])
+            sum_x += (a + b - 1) * (b - a) // 2
+            sum_y += y * (b - a)
+            seeds.extend((i, idx) for i in filter(beside_rock.__getitem__, range(y * width + a, y * width + b)))
+        kinds: Counter[str] = Counter()
+        for tile_id, n in by_id.items():
+            kinds[kind_by_id[tile_id]] += n
+        island_tile_kinds[idx] = kinds
+        west, east = min(a for _, a, _ in own_runs), max(b for _, _, b in own_runs) - 1
+        frames.append([size, sum_x, sum_y, west, east, own_runs[0][0], own_runs[-1][0]])
 
-    # Phase 4: bleed the id into adjacent Block/Lava so actors on mountains/lava resolve to their host island. Ocean/Goo stay out — not landmass.
+    # Phase 4: the id bleeds into nearby Block/Lava so a body on a mountain has a land, in size and frame too; a rock two lands reach at once takes the lower id.
+    lent: dict[int, int] = {}
     while seeds:
-        x, y = seeds.popleft()
-        iid = id_grid[y * width + x]
+        i, iid = seeds.popleft()
+        y, x = divmod(i, width)
         for dx, dy in _DELTAS_4:
             nx, ny = x + dx, y + dy
-            if not (0 <= nx < width and 0 <= ny < height):
+            if not (0 <= nx < width and 0 <= ny < height) or not rock[j := i + dy * width + dx] or j in lent:
                 continue
-            at = ny * width + nx
-            if id_grid[at] or layer_by_id[grid[ny][nx]] not in ("Block", "Lava"):
-                continue
-            id_grid[at] = iid
+            lent[j] = iid
             island_tile_kinds[iid][kind_by_id[grid[ny][nx]]] += 1
-            seeds.append((nx, ny))
+            frame = frames[iid]
+            frame[0] += 1
+            frame[1] += nx
+            frame[2] += ny
+            frame[3], frame[4], frame[5], frame[6] = min(frame[3], nx), max(frame[4], nx), min(frame[5], ny), max(frame[6], ny)
+            seeds.append((j, iid))
 
-    # Phase 5: finalize per-island `tiles` field — the ground it is made of, Block/Lava tiles from Phase 4 included. What grows on it is `geography biomes`.
-    for island in islands:
-        counter = island_tile_kinds[island["id"]]
-        total = sum(counter.values())
-        island["tiles"] = " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / total * 100)) > 0)
+    # Dealt again by the whole land, largest first, so the ids keep following size — ties hold the ground's order. Only then stamped: no grid to renumber.
+    order = sorted(range(1, len(frames)), key=lambda i: -frames[i][0])
+    final = [0] * len(frames)
+    for new_id, old_id in enumerate(order, start=1):
+        final[old_id] = new_id
+    # Flat and row-major: a `{(x, y): id}` dict would hash a tuple on every read, and `row` hands a caller its slice as is.
+    id_grid = array("H", bytes(2 * width * height))
+    for old_id, (_, _, own_runs) in enumerate(kept, start=1):
+        stamp = array("H", [final[old_id]])
+        for y, a, b in own_runs:
+            id_grid[y * width + a : y * width + b] = stamp * (b - a)
+    for j, iid in lent.items():
+        id_grid[j] = final[iid]
+
+    # Phase 5: the islands, with their `tiles` field — the ground they are made of, Block/Lava tiles from Phase 4 included. What grows on it is `geography biomes`.
+    islands = []
+    for new_id, old_id in enumerate(order, start=1):
+        size, sum_x, sum_y, west, east, south, north = frames[old_id]
+        counter = island_tile_kinds[old_id]
+        made_of = " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / size * 100)) > 0)
+        # `size` against the box says how ragged a land is: both of the whole land, mountains in, as the centroid is.
+        bounds = {"x": [west, east], "y": [south, north]}
+        islands.append({"bounds": bounds, "centroid": {"x": sum_x // size, "y": sum_y // size}, "id": new_id, "size": size, "tiles": made_of})
 
     return islands, _TileIslands(id_grid, width, height)
 
@@ -207,7 +187,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _Ti
     key = save_cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = CACHE_DIR / f"islands_v12_{key}.pkl"
+    cache_file = CACHE_DIR / f"islands_v13_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:
