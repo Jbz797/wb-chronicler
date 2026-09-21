@@ -230,7 +230,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "houses_by_kingdom": houses_by_kingdom,
         "immortals_by_kingdom": immortals_by_kingdom,
         "infected_by_kingdom": infected_by_kingdom,
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: half a second cold, few sections need
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: 0.2 s cold, few sections need
         "king_ids": king_ids,
         "kingdoms_at_war": {kid for w in save.get("wars", []) if not w.get("winner") for side in _war_sides(w) for kid in side},
         "kingdoms_by_id": index_by_id(save.get("kingdoms", [])),

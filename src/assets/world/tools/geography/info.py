@@ -97,10 +97,12 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
     for collection, site in _COORDS.items():
         for record in save.get(collection) or []:
             if record.get("asset_id") == asset_id and (tile := site(record)) is not None:
-                out.append({"id": record.get("id"), "name": record.get("name"), "x": tile[0], "y": tile[1]})
+                # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
+                asleep = "stop_spawn_drops" in (record.get("custom_data_flags") or ())
+                out.append({"dormant": asleep or None, "id": record.get("id"), "name": record.get("name"), "x": tile[0], "y": tile[1]})
         if out:  # what one collection holds, the other never does — no need to walk 16k buildings to find an orc
             break
-    if out:  # the lookup costs half a second cold, so a kind nobody built never pays for it
+    if out:  # the lookup costs 0.2 s cold, so a kind nobody built never pays for it
         _, island_of = compute_islands_cached(save, save_path)
         for position in out:
             position["island_id"] = island_of.get((position["x"], position["y"]))

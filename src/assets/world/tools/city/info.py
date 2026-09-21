@@ -259,7 +259,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "immortals_by_city": immortals_by_city,
         "infected_by_city": infected_by_city,
         "inventory_by_city": inventory_by_city,
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: half a second cold, only `metadata` needs
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: 0.2 s cold, only `metadata` needs
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         # A town's 29 modifiers, one definition for the `loyalty` section and the `ranks` sort — memoised per town, so a lone section pays for its own alone.
         "loyalty_of": cache(lambda cid: _city_loyalty(ctx["cities_by_id"][cid], ctx)),

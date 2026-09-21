@@ -59,19 +59,22 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
 
     # A wall torn mid-tick, left unsited, never pays for the island map at all — `building_tile` already reads a lone missing coordinate as WB's omitted zero.
     island_id = ctx["island_lookup"]().get(tile) if tile is not None else None
+    flags = house.get("custom_data_flags") or ()
 
     return {
         # Dropped where it reads under zero: a reset before landmarks were stamped left them older than the world, and no age beats one counting backwards.
         **({"age": age} if (age := entity_age(house, ctx["world_time"])) >= 0 else {}),
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
+        # A volcano or a geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops`, until lightning or the player flips it.
+        "dormant": "stop_spawn_drops" in flags or None,
         # Answers for the souls under the roof, so it goes where there are none: a dock, a mine, a bonfire house nobody, whoever stands in them.
         **({"families": len({fid for a in dwellers if (fid := a.get("family"))})} if dwellers else {}),
         **({"health": int(health)} if (health := house.get("health")) is not None else {}),  # WB writes `health` only when hurt — absent means intact, not unknown.
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
         # A site still rising: nobody sleeps in it yet, though WB already counts it among a town's `houses` (`City.getHouseCurrent`).
-        **({"under_construction": True} if "under_construction" in (house.get("custom_data_flags") or ()) else {}),
+        "under_construction": "under_construction" in flags or None,
         "x": hx,
         "y": hy,
     }
@@ -152,7 +155,7 @@ def main(argv: list[str]) -> int:
         "cities_by_id": index_by_id(save.get("cities") or []),
         "civic": civic,
         "families_by_id": index_by_id(save.get("families") or []),
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # called not stored: half a second cold, and only `metadata` needs it
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # called not stored: 0.2 s cold, and only `metadata` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "world_time": save["mapStats"]["world_time"],
     }
