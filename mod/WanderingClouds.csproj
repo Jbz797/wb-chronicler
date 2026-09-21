@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- For the IDE only: NML compiles the .cs sources itself when the game loads the mod. Override the two paths below if the game lives elsewhere. -->
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <LangVersion>9</LangVersion>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>disable</Nullable>
+        <OutputType>Library</OutputType>
+        <RootNamespace>WanderingClouds</RootNamespace>
+        <GameData Condition="'$(GameData)' == ''">$(HOME)/Library/Application Support/Steam/steamapps/common/worldbox/worldbox.app/Contents/Resources/Data</GameData>
+        <NmlDir Condition="'$(NmlDir)' == ''">$(GameData)/StreamingAssets/mods</NmlDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="icon.png" />
+        <Content Include="mod.json" />
+        <Content Include="README.md" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="0Harmony">
+            <HintPath>$(NmlDir)/NML/Assemblies/0Harmony.dll</HintPath>
+        </Reference>
+        <Reference Include="Assembly-CSharp">
+            <HintPath>$(GameData)/Managed/Assembly-CSharp.dll</HintPath>
+        </Reference>
+        <Reference Include="NeoModLoader">
+            <HintPath>$(NmlDir)/NeoModLoader.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine">
+            <HintPath>$(GameData)/Managed/UnityEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule">
+            <HintPath>$(GameData)/Managed/UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+</Project>

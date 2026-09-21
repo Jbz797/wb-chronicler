@@ -1,0 +1,12 @@
+{
+    "name": "Wandering Clouds",
+    "author": "Jbz797",
+    "version": "1.0.0",
+    "description": "Clouds rise anywhere across the sky and drift either way, so the seeds of life — and the first thinking peoples — fall all over the world, not just in its west.",
+    "GUID": "Jbz797.wanderingclouds",
+    "iconPath": "icon.png",
+    "RepoUrl": "https://github.com/Jbz797/wb-chronicler/tree/master/mod",
+    "Dependencies": [],
+    "OptionalDependencies": [],
+    "IncompatibleWith": []
+}

@@ -54,6 +54,10 @@ The model's **1M-token context window** lets that single thread run a long way b
 - **Python 3** for the `tools/` extractors — the standard library, plus **Pillow** for `map/show.py` (`pip install pillow`)
 - **WorldBox** (Steam) and a save to follow
 
+## Recommended mod: Wandering Clouds
+
+Vanilla clouds all rise on the west edge of the map, and they seed a young world's thinking peoples: its first civilizations start out crowded in the west. [Wandering Clouds](mod/), kept in this repository, lets clouds rise anywhere and drift either way, so peoples arise all over the map. Install it **before creating the world**.
+
 ## Getting started
 
 To write the chronicle, open the chronicler in its own directory:
