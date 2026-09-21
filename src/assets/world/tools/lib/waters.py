@@ -116,21 +116,23 @@ def _pool_map(water: bytearray, stride: int) -> tuple[list[int], list[tuple[int,
 def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> list[dict]:
     # The straight neighbours and the slanted ones, each at its own cost: the depth a step reaches is reckoned once for four neighbours, not once for each.
     moves = ((-stride, stride, -1, 1), _STEP), ((-stride - 1, -stride + 1, stride - 1, stride + 1), _STEP_SLANT)
-    depth, nearest = [_UNREACHED] * len(water), [0] * len(water)
+    # Each tide carries the coast tile it rose from, so that where two meet their two sources are the crossing's banks: the strait sited, not only measured.
+    depth, nearest, source = [_UNREACHED] * len(water), [0] * len(water), [0] * len(water)
     for i, island_id in coast:
-        depth[i], nearest[i] = 0, island_id
+        depth[i], nearest[i], source[i] = 0, island_id, i
     # Two costs only, so few depths are ever reached: a heap of them, each with its tiles, walks them in order — a count through every depth idles a million times.
     at_depth, pending = {0: [i for i, _ in coast]}, [0]
     farthest = _FARTHEST_SWIM * _STEP  # a tide reaching nobody is not worth raising: what it would still close, no body could swim
 
     gaps: dict[tuple[int, int], int] = {}
+    banks: dict[tuple[int, int], tuple[int, int]] = {}  # the lower id's bank first, as `between` is
     while pending and (here := heappop(pending)) <= farthest:
         slot = at_depth.pop(here)
         while slot:
             i = slot.pop()
             if depth[i] != here:  # a cheaper tide claimed it since, leaving this entry behind
                 continue
-            own = nearest[i]
+            own, origin = nearest[i], source[i]
             for steps, cost in moves:
                 swum = here + cost
                 bucket = at_depth.get(swum)
@@ -139,7 +141,7 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
                     if not water[j]:
                         continue
                     if (reached := depth[j]) > swum:
-                        depth[j], nearest[j] = swum, own
+                        depth[j], nearest[j], source[j] = swum, own, origin
                         if bucket is None:
                             bucket = at_depth[swum] = []
                             heappush(pending, swum)
@@ -148,9 +150,13 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
                         pair = (own, rival) if own < rival else (rival, own)
                         if (span := swum + reached) < gaps.get(pair, span + 1):  # the narrowest the two ever leave
                             gaps[pair] = span
-    return [{"between": list(pair), "gap": round(gap / _STEP)} for pair, gap in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))]
+                            banks[pair] = (origin, source[j]) if own < rival else (source[j], origin)
+    return [
+        {"banks": [{"x": i % stride - 1, "y": i // stride - 1} for i in banks[pair]], "between": list(pair), "gap": round(span / _STEP)}
+        for pair, span in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))
+    ]
 
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v5", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v6", save_path, lambda: _compute_waters(save, save_path))
