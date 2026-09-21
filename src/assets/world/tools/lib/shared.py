@@ -650,8 +650,9 @@ def load_data(name: str) -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
-# Path required on purpose — a default would silently read the live save. Disk-cached on `mtime+size`: unpickling runs some 3× faster than parsing the JSON.
-def load_save(path: Path) -> dict:
+# Path required on purpose — a default would silently read the live save — and taken as text too. Disk-cached on `mtime+size`: unpickling beats parsing 3×.
+def load_save(path: Path | str) -> dict:
+    path = Path(path)
     if not path.exists():
         print(f"✗ no save found at {path}", file=sys.stderr)
         sys.exit(2)
@@ -828,9 +829,9 @@ def rounded_world_time(map_stats: dict) -> float:
 
 
 # A save's cache slot, keyed on `mtime+size`: a chapter's `map.wbox` never moves, so its slot holds for the world's life. `None` where the file is gone.
-def save_cache_key(path: Path) -> str | None:
+def save_cache_key(path: Path | str) -> str | None:
     try:
-        stat = path.stat()
+        stat = Path(path).stat()
     except OSError:
         return None
     return f"{int(stat.st_mtime)}_{stat.st_size}"
