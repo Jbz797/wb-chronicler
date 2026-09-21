@@ -2,13 +2,15 @@
 
 # Geographic stats reserved for the chronicler (not consumed by the UI). User-facing docs: `tools/tools.md`.
 
+import math
+import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, decode_tile_grid, listed_tiles, tile_biome, tile_kind, tile_layer, tile_mask
+from grid import LazyTileGrid, listed_tiles, tile_biome, tile_kind, tile_layer, tile_mask
 from islands import compute_islands_cached
 from shared import (
     actor_xy,
@@ -24,12 +26,13 @@ from shared import (
     parse_sections,
     pickle_cached,
     take_chapter,
+    union_root,
 )
 from waters import waters_cached
 
 _ALL_SECTIONS = ("biomes", "burning", "entity_types", "frozen", "gear", "islands", "positions", "totals", "waters")
+_BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
 _COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection → the helper that sites a record, WB's omitted zero read as 0. No kind sits in both.
-_DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))  # a patch holds together as WB's own regions do, corners included
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PATCH_SHARE = 1  # percent of its land a biome must stay under to be sited, however few its tiles
 _PATCH_TILES = 50  # at most this many tiles of a biome on one land, it is a place rather than a landscape: each patch is sited, as a share alone could not find it
@@ -37,7 +40,49 @@ _PATCH_TILES = 50  # at most this many tiles of a biome on one land, it is a pla
 
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
 def _build_biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v5", save_path, lambda: _compute_biomes(save, save_path))
+    return pickle_cached("biomes_v7", save_path, lambda: _compute_biomes(save, save_path))
+
+
+# Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
+def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict[tuple[int | None, str], list[list]]:
+    names = sorted({biome for biome in biome_by_id if biome})
+    code_of = {biome: k + 1 for k, biome in enumerate(names)}
+    rows: list[list[tuple[int, int, int, int]]] = []  # each row's runs, as `(west, east + 1, land << 8 | biome code, run index)`
+    count = 0
+    for marks in tile_mask(save, [code_of.get(biome or "", 0) for biome in biome_by_id]):
+        lands, row = island_of.row(len(rows)), []
+        for match in _BIOME_RUN.finditer(marks):
+            west, end = match.span()
+            row.append((west, end, lands[west] << 8 | marks[west], count))  # side by side, two ground tiles are one land: a run never straddles two
+            count += 1
+        rows.append(row)
+
+    parent = list(range(count))
+    for y in range(1, len(rows)):
+        above, first = rows[y - 1], 0
+        for a, b, key, k in rows[y]:
+            while first < len(above) and above[first][1] < a:  # ends a column short of this run's corner, and of every later one's
+                first += 1
+            for o in range(first, len(above)):
+                oa, _, okey, q = above[o]
+                if oa > b:
+                    break
+                if okey == key:
+                    rq, rk = union_root(parent, q), union_root(parent, k)
+                    parent[max(rq, rk)] = min(rq, rk)
+
+    # Per patch, `[size, sum_x, sum_y, runs]`, arithmetic over its runs — a run's columns sum as a series. Keys come in the order the sweep first meets them.
+    found: dict[int, list] = {}
+    for y, row in enumerate(rows):
+        for a, b, key, k in row:
+            if (patch := found.get(root := union_root(parent, k))) is None:
+                patch = found[root] = [key, 0, 0, 0, []]
+            patch[1], patch[2], patch[3] = patch[1] + b - a, patch[2] + (a + b - 1) * (b - a) // 2, patch[3] + y * (b - a)
+            patch[4].append((y, a, b))
+    by_key: dict[tuple[int | None, str], list[list]] = {}
+    for key, *patch in found.values():
+        by_key.setdefault((key >> 8 or None, names[(key & 255) - 1]), []).append(patch)
+    return by_key
 
 
 # Every kind the save holds, grouped as WB groups them — its `buildings` collection also holds the flowers and the ore, so only the `civ_*` keep that name here.
@@ -132,48 +177,29 @@ def _build_totals(save: dict, save_path: Path) -> dict:
 
 # The sweep itself, run once per save: every land tile of the map asked its biome, which is why `_build_biomes` keeps the answer on disk.
 def _compute_biomes(save: dict, save_path: Path) -> dict:
-    _, island_of = compute_islands_cached(save, save_path)
-    grid = decode_tile_grid(save)
+    islands, island_of = compute_islands_cached(save, save_path)
     biome_by_id = [tile_biome(name) for name in save.get("tileMap") or []]  # already merged: `soil_high:paradox_high` and its low twin both read `paradox`
-    # Every tile as an (island, tile id) pair, `0` off the counted lands, tallied in C a row at a time — in first-seen order, so ties between biomes fall as met.
-    pairs: Counter = Counter()
-    for y, row in enumerate(grid):
-        pairs.update(zip(island_of.row(y), row))
+    # The patches tally the biomes too, land by land, in the order the sweep first meets each — so ties between biomes fall as met. Islets go under `None`.
+    patches = _biome_patches(save, island_of, biome_by_id)
     tallies: defaultdict[int | None, Counter] = defaultdict(Counter)
-    sizes: Counter = Counter()
-    for (island_id, tile), n in pairs.items():
-        if island_id:
-            sizes[island_id] += n
-            if biome := biome_by_id[tile]:
-                tallies[island_id][biome] += n
-    # What lies on no counted land, a rock too small to be one, is island `0`'s: taken in the order the whole map first meets each tile, as its lands are.
-    for tile in dict.fromkeys(tile for _, tile in pairs):
-        if (biome := biome_by_id[tile]) and (rest := pairs[(0, tile)]):
-            tallies[None][biome] += rest
+    for (island_id, biome), found in patches.items():
+        tallies[island_id][biome] = sum(size for size, *_ in found)
+    sizes = {island["id"]: island["size"] for island in islands}
 
-    # A place rather than a landscape: few tiles, and few for its land too — on a small one, fifty tiles of desert are the landscape. Sited in one more sweep.
+    # A place rather than a landscape: few tiles, and few for its land too — on a small one, fifty tiles of desert are the landscape. Each patch of it sited.
     small = {
         (island_id, biome)
         for island_id, counts in tallies.items()
         for biome, n in counts.items()
         if n <= _PATCH_TILES and (island_id is None or n / sizes[island_id] * 100 < _PATCH_SHARE)
     }
-    small_biomes = {biome for _, biome in small}
-    spots: defaultdict[tuple[int | None, str | None], list[tuple[int, int]]] = defaultdict(list)
-    # Only the tiles of a biome small somewhere are asked their land, found in C off a mask of the runs, where the sweep once walked every tile of the map.
-    for y, marks in enumerate(tile_mask(save, [biome in small_biomes for biome in biome_by_id]) if small else ()):
-        lands, row, x = island_of.row(y), grid[y], marks.find(1)
-        while x != -1:
-            if (key := (lands[x] or None, biome_by_id[row[x]])) in small:
-                spots[key].append((x, y))
-            x = marks.find(1, x + 1)
 
     # No share where it rounds to nothing, nor off the counted lands (as `burning`, `frozen`): the tiles say it, and a lone `paradox` tile is still a subject.
     per_island = {
         "adrift" if island_id is None else str(island_id): [
             {
+                **_patch_fields(patches[(island_id, biome)], (island_id, biome) in small),
                 "biome": biome,
-                "patches": _patches(spots[(island_id, biome)]) if (island_id, biome) in small else None,
                 "pct": None if island_id is None else round(n / sizes[island_id] * 100, 1) or None,
                 "tiles": n,
             }
@@ -187,25 +213,25 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
 
 
-# A small biome's tiles split into the patches they form, each sited on its own tile nearest its middle — a mean alone could fall on another ground, or at sea.
-def _patches(tiles: list[tuple[int, int]]) -> list[dict]:
-    left, patches = set(tiles), []
-    while left:
-        stack, patch = [left.pop()], []
-        while stack:
-            x, y = stack.pop()
-            patch.append((x, y))
-            for dx, dy in _DELTAS_8:
-                if (near := (x + dx, y + dy)) in left:
-                    left.remove(near)
-                    stack.append(near)
-        mx, my = sum(x for x, _ in patch) / len(patch), sum(y for _, y in patch) / len(patch)
-        x, y = min(patch, key=lambda t: ((t[0] - mx) ** 2 + (t[1] - my) ** 2, t))
-        patches.append({"tiles": len(patch), "x": x, "y": y})
-    patches.sort(key=lambda p: (-p["tiles"], p["x"], p["y"]))
-    if len(patches) == 1:  # a lone patch is the whole biome on its land: the row already says its size
-        del patches[0]["tiles"]
-    return patches
+# A place lists every patch it makes; a landscape, how many it breaks into and its largest — a lone patch is the whole biome, whose size the row already says.
+def _patch_fields(found: list[list], small: bool) -> dict:
+    top = max(size for size, *_ in found)
+    # Sited only where shown — every patch of a place, a landscape's largest alone — then sorted, ties in size to the lower `(x, y)`.
+    shown = [{**_site(sum_x / size, sum_y / size, runs), "tiles": size} for size, sum_x, sum_y, runs in found if small or size == top]
+    shown.sort(key=lambda p: (-p["tiles"], p["x"], p["y"]))
+    if len(found) == 1:
+        del shown[0]["tiles"]
+    return {"patches": shown} if small else {"largest": shown[0], "patches": len(found)}
+
+
+# A patch's own tile nearest its middle, ties to the lower `(x, y)` — a mean alone could fall on another ground, or at sea. Each run offers its nearest column.
+def _site(mean_x: float, mean_y: float, runs: list[tuple[int, int, int]]) -> dict:
+    column, offers = math.ceil(mean_x - 0.5), []  # the column nearest the mean, a tie going west as `(x, y)` orders it
+    for y, a, b in runs:
+        x = min(max(column, a), b - 1)
+        offers.append(((x - mean_x) ** 2 + (y - mean_y) ** 2, (x, y)))
+    x, y = min(offers)[1]
+    return {"x": x, "y": y}
 
 
 def main(argv: list[str]) -> int:
