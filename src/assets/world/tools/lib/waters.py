@@ -18,19 +18,13 @@ _STEP_SLANT = round(_STEP * 2**0.5)  # what a slanted stretch of sea costs a swi
 _UNREACHED = 1 << 40  # deeper than any tide runs, so the first to claim a tile always undercuts it
 
 
-# Every land tile that touches water, with its island, listed once for both sweeps: an inland tile neither rings a lake nor raises a tide, and most land is inland.
+# Every land tile that touches water, with its island, for both sweeps — an inland tile rings no lake and raises no tide. Read off the edges, where all coasts lie.
 def _coast(water: bytearray, stride: int, island_of) -> list[tuple[int, int]]:
-    # The mask as one integer, shifted a row and a tile each way: its dry tiles with a wet neighbour come out in C, and the inland is never visited.
-    wet = int.from_bytes(water, "little")
-    shore = (((wet >> 8 * stride) | (wet << 8 * stride) | (wet >> 8) | (wet << 8)) & ~wet).to_bytes(len(water) + stride, "little")
-    lands = [island_of.row(y) for y in range(len(water) // stride - 2)]
     coast: list[tuple[int, int]] = []
-    i, last = shore.find(1, stride), len(water) - stride
-    while 0 <= i < last:
-        y, x = divmod(i, stride)
-        if 0 < x < stride - 1 and (island_id := lands[y - 1][x - 1]):  # the border rings the map, and a rock too small to count is nobody's shore
+    for x, y, island_id in island_of.edges():
+        i = (y + 1) * stride + x + 1
+        if water[i - stride] or water[i + stride] or water[i - 1] or water[i + 1]:
             coast.append((i, island_id))
-        i = shore.find(1, i + 1)
     return coast
 
 
@@ -159,4 +153,4 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v6", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v8", save_path, lambda: _compute_waters(save, save_path))

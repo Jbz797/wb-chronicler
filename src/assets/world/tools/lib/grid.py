@@ -3,6 +3,11 @@
 from collections.abc import Iterator
 from itertools import chain, repeat
 
+# The tile types WB marks `block` (`TileLibrary`, `TopTileLibrary`): rock of the `Block` layer no body crosses on foot, from mountains to the walls a player paints.
+_BLOCKS = frozenset(
+    {"mountains", "snow_block", "snow_summit", "summit", "wall_ancient", "wall_evil", "wall_green", "wall_iron", "wall_light", "wall_order", "wall_wild"}
+)
+
 # Soil gradients (`low`/`high`) and water depths (`shallow`/`coastal`/`deep`). Other kinds encode their verticality in the kind itself.
 _ELEVATION_BY_BASE = {
     "close_ocean": "coastal",
@@ -11,6 +16,18 @@ _ELEVATION_BY_BASE = {
     "soil_high": "high",
     "soil_low": "low",
 }
+
+# WB's frozen forms, what each tile turns to when it freezes (`TileLibrary`, `freeze_to_id`) — snow and ice, never a biome (`TopTileLibrary.setSnow`).
+_FROST_BY_TOP = {
+    "frozen_high": "snow",
+    "frozen_low": "snow",
+    "ice": "ice",
+    "snow_block": "snow",
+    "snow_hills": "snow",
+    "snow_sand": "snow",
+    "snow_summit": "snow",
+}
+
 # Base tile names whose `tile_kind` doesn't follow a prefix rule (`soil_*` → plain, `lava*` → lava) or a suffix rule (`*:road`, `*:field`).
 _KIND_BY_BASE = {
     "close_ocean": "water",
@@ -22,9 +39,9 @@ _KIND_BY_BASE = {
     "shallow_waters": "water",
     "summit": "summit",
 }
+
 # Tile name → WB `TileLayerType`, extracted from `Assembly-CSharp.dll` (TileType init).
 _LAYER_BY_TILE = {
-    "$wall$": "Block",
     "close_ocean": "Ocean",
     "deep_ocean": "Ocean",
     "grey_goo": "Goo",
@@ -70,17 +87,29 @@ def listed_tiles(save: dict, key: str) -> Iterator[tuple[int, int]]:
     return ((i % width, i // width) for i in save.get(key) or [])
 
 
-# Vegetation biome (jungle/savanna/swamp/…). `None` for terrain-only tiles and overlays (`*:road`, `*:field`).
+# Vegetation biome (jungle/savanna/swamp/…). `None` for terrain-only tiles, overlays (`*:road`, `*:field`) and snow or ice, whose `frozen_low` is none either.
 def tile_biome(tile_name: str) -> str | None:
-    biome, sep, tier = tile_name.partition(":")[2].rpartition("_")
-    return biome if sep and tier in ("high", "low") else None
+    top = tile_name.partition(":")[2]
+    biome, sep, tier = top.rpartition("_")
+    return biome if sep and tier in ("high", "low") and top not in _FROST_BY_TOP else None
+
+
+# What bars the way on a tile, named as WB types it — its top, else its base: none crosses it on foot. `None` where the way is open.
+def tile_block(tile_name: str) -> str | None:
+    base, _, top = tile_name.partition(":")
+    return kind if (kind := top or base) in _BLOCKS else None
 
 
 def tile_elevation(tile_name: str) -> str | None:
     return _ELEVATION_BY_BASE.get(tile_name.partition(":")[0])
 
 
-# Structural terrain kind (mirrors WB UI). Overlay suffixes (`*:road`, `*:field`) win over the base.
+# `snow` or `ice` where the ground lies frozen for good — the map's own frost, beside the passing one a save lists as `frozen_tiles`.
+def tile_frost(tile_name: str) -> str | None:
+    return _FROST_BY_TOP.get(tile_name.partition(":")[2])
+
+
+# Structural terrain kind (mirrors WB UI), off the base: overlays (`*:road`, `*:field`) win, while snow and walls are told apart (`tile_frost`, `tile_block`).
 def tile_kind(tile_name: str) -> str:
     base, _, suffix = tile_name.partition(":")
     if suffix in ("road", "field"):
@@ -92,9 +121,11 @@ def tile_kind(tile_name: str) -> str:
     return _KIND_BY_BASE.get(base, base)
 
 
-# Lava (`lava0`..`lava3`+) lumps under "Lava"; everything unlisted defaults to Ground.
+# The top rules, as WB reads a tile (`top_type ?? main_type`): a blocking top is rock, ice water, any other ground; else the base, `lava*` Lava, the unlisted Ground.
 def tile_layer(tile_name: str) -> str:
-    base = tile_name.partition(":")[0]
+    base, _, top = tile_name.partition(":")
+    if top:
+        return "Block" if top in _BLOCKS else "Ocean" if top == "ice" else "Ground"
     if base.startswith("lava"):
         return "Lava"
     return _LAYER_BY_TILE.get(base, "Ground")

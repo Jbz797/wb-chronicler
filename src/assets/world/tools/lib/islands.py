@@ -9,28 +9,47 @@
 
 import pickle
 import re
+import sys
 from array import array
 from collections import Counter, deque
+from collections.abc import Iterator
 from pathlib import Path
 
-from grid import decode_tile_grid, tile_kind, tile_layer
+from grid import decode_tile_grid, tile_block, tile_kind, tile_layer
 from shared import CACHE_DIR, save_cache_key, union_root
 
-_BLOCK_TILES = frozenset({"$wall$", "frozen_low", "mountains", "summit"})  # WB `TileTypeBase.block` tiles — block diagonals, which splits regions.
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
 _CITY_MIN_ISLAND_TILES = 300  # WB `Globals.CITY_MIN_ISLAND_TILES`: under it no city is ever founded, so the land bears no history worth a name.
 _DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
+_LAND = bytes([0] + [255] * 255)  # a land id, one byte, read as a full byte and water as none: the mask the edges are cut to
 _ROCK = bytes.maketrans(b"\x01\x02", b"\x00\x01")  # the tile codes read for rock alone, ground cleared
 _RUN = re.compile(rb"\x01+")  # a run of ground, sought between a row's own bounds so that it never runs on into the next
+_SET = re.compile(rb"[^\x00]")  # a byte the mask kept
 
 
 # Tile → island id over a flat row-major grid, `0` for water (ids start at 1). The dict it replaces cost 32 ms to unpickle and 1.95 MB; this costs neither.
 class _TileIslands:
-    __slots__ = ("_grid", "_height", "_width")
+    __slots__ = ("_edges", "_grid", "_height", "_width")
 
-    # Wraps the grid the phases filled — handed over, not copied: it is already the shape this class reads from.
-    def __init__(self, id_grid: array, width: int, height: int):
-        self._grid, self._height, self._width = id_grid, height, width
+    # Wraps the grid the phases filled — handed over, not copied: it is already the shape this class reads from. `None` edges: every land tile stands in.
+    def __init__(self, id_grid: array, width: int, height: int, edges: array | None = None):
+        self._edges, self._grid, self._height, self._width = edges, id_grid, height, width
+
+    # Every land tile and its island, a row at a time off the flat grid: what `edges` hands out where one byte could not hold the ids.
+    def _land(self):
+        for y in range(self._height):
+            for x, island_id in enumerate(self.row(y)):
+                if island_id:
+                    yield x, y, island_id
+
+    # The land tiles with a neighbour off their own land, corners counting: a land's nearest tile to a point off it is one — a step toward the point leaves it.
+    def edges(self):
+        if self._edges is None:
+            yield from self._land()
+            return
+        for i in self._edges:
+            y, x = divmod(i, self._width)
+            yield x, y, self._grid[i]
 
     # Same contract as the dict it replaces — `default` off-map or on water.
     def get(self, pos: tuple[int, int], default=None):
@@ -39,12 +58,9 @@ class _TileIslands:
             return island_id
         return default
 
-    # Every land tile and the island it belongs to, a row at a time off the flat grid: a sweep of the map would otherwise pay a `get`, or an index, per tile.
-    def land(self):
-        for y in range(self._height):
-            for x, island_id in enumerate(self.row(y)):
-                if island_id:
-                    yield x, y, island_id
+    # The island ids of tiles listed row-major, as WB lists `fire` and `frozen_tiles`, read in C where a `get` per tile tests its bounds; `0` off the lands.
+    def listed_ids(self, indices: list[int]) -> Iterator[int]:
+        return map(self._grid.__getitem__, indices)
 
     # One row's island ids, `0` on water or a rock too small to count: a sweep that already walks the grid reads them by index rather than asking `get` per tile.
     def row(self, y: int) -> array:
@@ -55,7 +71,7 @@ class _TileIslands:
 def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     tile_map = save.get("tileMap") or []
     layer_by_id = [tile_layer(name) for name in tile_map]
-    block_by_id = [name.split(":", 1)[0] in _BLOCK_TILES for name in tile_map]
+    block_by_id = [tile_block(name) is not None for name in tile_map]  # a `block` tile bars diagonals, which splits regions
     kind_by_id = [tile_kind(name) for name in tile_map]
     grid = decode_tile_grid(save)
     if not grid:
@@ -179,7 +195,21 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
         bounds = {"x": [west, east], "y": [south, north]}
         islands.append({"bounds": bounds, "centroid": {"x": sum_x // size, "y": sum_y // size}, "id": new_id, "size": size, "tiles": made_of})
 
-    return islands, _TileIslands(id_grid, width, height)
+    return islands, _TileIslands(id_grid, width, height, _edge_tiles(id_grid, width))
+
+
+# Edge tiles, flat, found in C: a byte per land id, the grid one integer, a tile kept where a neighbour differs, a wrapped shift keeping more. `None` past 255 lands.
+def _edge_tiles(id_grid: array, width: int) -> array | None:
+    raw = id_grid.tobytes()
+    low, high = (0, 1) if sys.byteorder == "little" else (1, 0)
+    if raw[high::2].strip(b"\x00"):
+        return None
+    ids = raw[low::2]
+    whole, differs = int.from_bytes(ids, "little"), 0
+    for shift in (8, 8 * (width - 1), 8 * width, 8 * (width + 1)):
+        differs |= (whole ^ (whole >> shift)) | (whole ^ (whole << shift))
+    kept = (differs & int.from_bytes(ids.translate(_LAND), "little")).to_bytes(len(ids) + width + 2, "little")[: len(ids)]
+    return array("I", (match.start() for match in _SET.finditer(kept)))
 
 
 # Disk-cached `_compute_islands` — key = save `mtime+size`, pickle format, stale entries dropped on write (single-file cache).
@@ -187,7 +217,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _Ti
     key = save_cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = CACHE_DIR / f"islands_v13_{key}.pkl"
+    cache_file = CACHE_DIR / f"islands_v16_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:

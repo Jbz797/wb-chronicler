@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, listed_tiles, tile_biome, tile_elevation, tile_kind, tile_layer
+from grid import LazyTileGrid, listed_tiles, tile_biome, tile_block, tile_elevation, tile_frost, tile_kind, tile_layer
 from islands import compute_islands_cached
 from shared import (
     DIAGONAL_EXTRA,
@@ -178,7 +178,7 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
 def _island_distances(cx: int, cy: int, ctx: dict) -> dict[int, float]:
     own = ctx["tile_to_island"].get((cx, cy))
     nearest: dict[int, float] = {}
-    for x, y, island in ctx["tile_to_island"].land():
+    for x, y, island in ctx["tile_to_island"].edges():  # a land's nearest tile lies on its edge, so the rest is never walked
         if island == own:  # its own shore is where it stands, and `tile_info` already names that land
             continue
         ax, ay = abs(x - cx), abs(y - cy)
@@ -258,7 +258,7 @@ def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
                 yield nx, ny
 
 
-# `burning` and `frozen` only when true — a `false` per cell otherwise. A biome's own line is `geography … biomes`'s to give, once for the whole map.
+# `block` (what bars the way), `burning`, `frozen` (passing frost), `snow` or `ice` (the map's own) only where they hold. A biome's line is `biomes`'s to give.
 def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
     out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}
@@ -266,6 +266,10 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
         out["burning"] = True
     if (x, y) in ctx["frozen_set"]:
         out["frozen"] = True
+    if frost := tile_frost(name):
+        out[frost] = True
+    if block := tile_block(name):
+        out["block"] = block
     return out
 
 

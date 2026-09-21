@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, listed_tiles, tile_biome, tile_kind, tile_layer, tile_mask
+from grid import LazyTileGrid, listed_tiles, tile_biome, tile_frost, tile_kind, tile_layer, tile_mask
 from islands import compute_islands_cached
 from shared import (
     actor_xy,
@@ -36,11 +36,6 @@ _COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection �
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PATCH_SHARE = 1  # percent of its land a biome must stay under to be sited, however few its tiles
 _PATCH_TILES = 50  # at most this many tiles of a biome on one land, it is a place rather than a landscape: each patch is sited, as a share alone could not find it
-
-
-# Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
-def _build_biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v7", save_path, lambda: _compute_biomes(save, save_path))
 
 
 # Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
@@ -85,6 +80,28 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict
     return by_key
 
 
+# Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
+def _build_biomes(save: dict, save_path: Path) -> dict:
+    return pickle_cached("biomes_v9", save_path, lambda: _compute_biomes(save, save_path))
+
+
+# A fire WB saves tile by tile, counted land by land and at sea under `adrift` — each tile by its biome, else by its ground as `islands` names it.
+def _build_burning(save: dict, save_path: Path) -> dict:
+    if not (positions := list(listed_tiles(save, "fire"))):  # nothing listed, nothing to site: the islands are never unpickled
+        return {}
+    _, island_of = compute_islands_cached(save, save_path)
+    grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
+    by_island: defaultdict[int | None, Counter] = defaultdict(Counter)
+    for x, y in positions:
+        name = tile_map[grid[y][x]]
+        by_island[island_of.get((x, y))][tile_biome(name) or tile_kind(name)] += 1
+    # Counts, not the shares `islands` gives: a few dozen tiles read better whole than as percentages of themselves.
+    return {
+        "adrift" if island_id is None else str(island_id): " | ".join(f"{n} {ground}" for ground, n in counts.most_common())
+        for island_id, counts in sorted(by_island.items(), key=lambda kv: (kv[0] is None, kv[0] or 0))
+    }
+
+
 # Every kind the save holds, grouped as WB groups them — its `buildings` collection also holds the flowers and the ore, so only the `civ_*` keep that name here.
 def _build_entity_types(save: dict) -> dict:
     categories, civic = load_data("building-categories.json"), civic_building_ids()
@@ -98,19 +115,28 @@ def _build_entity_types(save: dict) -> dict:
     return {group: dict(counts) for group, counts in groups.items() if counts}
 
 
-# A fire or a frost WB saves tile by tile, counted land by land and at sea under `adrift` — each tile by its biome, else by its ground as `islands` names it.
-def _build_flagged_tiles(save: dict, save_path: Path, key: str) -> dict:
-    if not (positions := list(listed_tiles(save, key))):  # nothing listed, nothing to site: the islands are never unpickled
+# A land's frost, share first: the map's `snow` and `ice`, the passing `frost` — no tile twice, WB freezing neither snow nor ice. Ice, on no land, goes to `adrift`.
+def _build_frozen(save: dict, save_path: Path) -> dict:
+    code = {"ice": 2, "snow": 1}
+    flags = [code.get(tile_frost(name) or "", 0) for name in save.get("tileMap") or []]
+    if not (passing := save.get("frozen_tiles") or []) and not any(flags):
         return {}
-    _, island_of = compute_islands_cached(save, save_path)
-    grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
+    islands, island_of = compute_islands_cached(save, save_path)
+    sizes = {island["id"]: island["size"] for island in islands}
     by_island: defaultdict[int | None, Counter] = defaultdict(Counter)
-    for x, y in positions:
-        name = tile_map[grid[y][x]]
-        by_island[island_of.get((x, y))][tile_biome(name) or tile_kind(name)] += 1
-    # Counts, not the shares `islands` gives: a few dozen tiles read better whole than as percentages of themselves.
+    for island_id, n in Counter(island_of.listed_ids(passing)).items():
+        by_island[island_id or None]["frost"] += n
+    for y, marks in enumerate(tile_mask(save, flags) if any(flags) else ()):
+        if ice := marks.count(2):
+            by_island[None]["ice"] += ice
+        lands, x = island_of.row(y), marks.find(1)
+        while x != -1:
+            by_island[lands[x] or None]["snow"] += 1
+            x = marks.find(1, x + 1)
+    # The share left out where it rounds to nothing, and on the islets, which have no size of their own to share.
     return {
-        "adrift" if island_id is None else str(island_id): " | ".join(f"{n} {ground}" for ground, n in counts.most_common())
+        "adrift" if island_id is None else str(island_id): (f"{pct:g}% · " if island_id and (pct := round(sum(counts.values()) / sizes[island_id] * 100, 1)) else "")
+        + " | ".join(f"{n} {kind}" for kind, n in counts.most_common())
         for island_id, counts in sorted(by_island.items(), key=lambda kv: (kv[0] is None, kv[0] or 0))
     }
 
@@ -260,11 +286,11 @@ def main(argv: list[str]) -> int:
     if "biomes" in sections:
         out["biomes"] = _build_biomes(save, save_path)
     if "burning" in sections:
-        out["burning"] = _build_flagged_tiles(save, save_path, "fire")
+        out["burning"] = _build_burning(save, save_path)
     if "entity_types" in sections:
         out["entity_types"] = _build_entity_types(save)
     if "frozen" in sections:
-        out["frozen"] = _build_flagged_tiles(save, save_path, "frozen_tiles")
+        out["frozen"] = _build_frozen(save, save_path)
     if "gear" in sections:
         out["gear"] = _build_gear(save, save_path)
     if "islands" in sections:
