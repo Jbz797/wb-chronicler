@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, decode_tile_grid, listed_tiles, tile_biome, tile_kind, tile_mask
+from grid import LazyTileGrid, decode_tile_grid, listed_tiles, tile_biome, tile_kind, tile_layer, tile_mask
 from islands import compute_islands_cached
 from shared import (
     actor_xy,
@@ -27,7 +27,7 @@ from shared import (
 )
 from waters import waters_cached
 
-_ALL_SECTIONS = ("biomes", "burning", "entity_types", "frozen", "gear", "islands", "positions", "waters")
+_ALL_SECTIONS = ("biomes", "burning", "entity_types", "frozen", "gear", "islands", "positions", "totals", "waters")
 _COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection → the helper that sites a record, WB's omitted zero read as 0. No kind sits in both.
 _DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))  # a patch holds together as WB's own regions do, corners included
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
@@ -105,6 +105,27 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
         for position in out:
             position["island_id"] = island_of.get((position["x"], position["y"]))
     return sorted(out, key=lambda r: (r["y"], r["x"]))
+
+
+# The map's own sums, which no list adds up: its water, its land, and that land split between the counted lands and the islets too small to be one.
+def _build_totals(save: dict, save_path: Path) -> dict:
+    islands, _ = compute_islands_cached(save, save_path)
+    layers = (tile_layer(name) for name in save.get("tileMap") or [])
+    # A byte per tile, 1 on land and 2 on goo, counted in C: the rest of the map is its water.
+    tally = b"".join(tile_mask(save, [1 if layer in ("Block", "Ground", "Lava") else 2 if layer == "Goo" else 0 for layer in layers]))
+    land, goo = tally.count(1), tally.count(2)
+    tiles, water, counted = len(tally) or 1, len(tally) - land - goo, sum(island["size"] for island in islands)
+    # Each share of what holds it: the land and the water of the map, the counted lands and the islets of the land. Goo, a layer of its own, only where it spread.
+    return {
+        "goo": {"pct": round(goo / tiles * 100, 1), "tiles": goo} if goo else None,
+        "land": {
+            "islets": {"pct": round((land - counted) / (land or 1) * 100, 1), "tiles": land - counted},
+            "lands": {"count": len(islands), "pct": round(counted / (land or 1) * 100, 1), "tiles": counted},
+            "pct": round(land / tiles * 100, 1),
+            "tiles": land,
+        },
+        "water": {"pct": round(water / tiles * 100, 1), "tiles": water},
+    }
 
 
 # The sweep itself, run once per save: every land tile of the map asked its biome, which is why `_build_biomes` keeps the answer on disk.
@@ -223,6 +244,8 @@ def main(argv: list[str]) -> int:
         out["islands"] = islands
     if "positions" in sections and wanted is not None:
         out["positions"] = _build_positions(save, save_path, wanted)
+    if "totals" in sections:
+        out["totals"] = _build_totals(save, save_path)
     if "waters" in sections:
         out["waters"] = waters_cached(save, save_path)
 
