@@ -37,14 +37,16 @@ class _TileIslands:
             return island_id
         return default
 
-    # Every land tile and the island it belongs to, read straight off the flat grid: a sweep of the map would otherwise pay a `get` per tile, water included.
+    # Every land tile and the island it belongs to, a row at a time off the flat grid: a sweep of the map would otherwise pay a `get`, or an index, per tile.
     def land(self):
-        width = self._width
         for y in range(self._height):
-            row = y * width
-            for x in range(width):
-                if island_id := self._grid[row + x]:
+            for x, island_id in enumerate(self.row(y)):
+                if island_id:
                     yield x, y, island_id
+
+    # One row's island ids, `0` on water or a rock too small to count: a sweep that already walks the grid reads them by index rather than asking `get` per tile.
+    def row(self, y: int) -> array:
+        return self._grid[y * self._width : (y + 1) * self._width]
 
 
 # Build the islands list and a tile-to-island lookup keyed by WB-actor coordinates (no y inversion — `row` IS the actor y, see `chronicler.md`).
@@ -53,14 +55,15 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     layer_by_id = [tile_layer(name) for name in tile_map]
     block_by_id = [name.split(":", 1)[0] in _BLOCK_TILES for name in tile_map]
 
-    # Precompute per-tile-id kind once — Phase 1 + Phase 4 BFSs touch ~10⁵ tiles, each function call would otherwise be repeated for the same id.
+    # Precompute per-tile-id kind once — the Phase 1 and Phase 4 fills touch every land tile, and each would otherwise call it again for the same id.
     kind_by_id = [tile_kind(name) for name in tile_map]
     grid = decode_tile_grid(save)
     if not grid:
         return [], _TileIslands(array("H"), 0, 0)
     height, width = len(grid), len(grid[0])
 
-    # Phase 1: split each 16×16 chunk into MapRegions (same-layer 8-conn components within the chunk, respecting `isDiagonalBlockedByCorners`).
+    # Phase 1: split each 16×16 chunk into MapRegions (8-conn components within the chunk, respecting `isDiagonalBlockedByCorners`) — of Ground alone:
+    # only it ever becomes an island, Block and Lava joining in Phase 4 by their own fill, so WB's ocean and rock regions would be filled for nothing.
     region_grid: list[list[int]] = [[-1] * width for _ in range(height)]
     regions: list[dict] = []
 
@@ -69,9 +72,8 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
             cy1, cx1 = min(cy0 + _CHUNK_SIZE, height), min(cx0 + _CHUNK_SIZE, width)
             for sy in range(cy0, cy1):
                 for sx in range(cx0, cx1):
-                    if region_grid[sy][sx] != -1:
+                    if region_grid[sy][sx] != -1 or layer_by_id[grid[sy][sx]] != "Ground":
                         continue
-                    layer = layer_by_id[grid[sy][sx]]
                     region_id = len(regions)
                     tiles: list[tuple[int, int]] = []
                     kinds: list[str] = []  # tallied in one C-level pass below, where `counter[k] += 1` per tile would cost a bytecode round-trip each
@@ -87,23 +89,23 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                             nx, ny = x + dx, y + dy
                             if not inner and not (cx0 <= nx < cx1 and cy0 <= ny < cy1):
                                 continue
-                            if region_grid[ny][nx] != -1 or layer_by_id[grid[ny][nx]] != layer:
+                            if region_grid[ny][nx] != -1 or layer_by_id[grid[ny][nx]] != "Ground":
                                 continue
                             # `isDiagonalBlockedByCorners`: blocked if either orthogonal corner is a `block` tile — never out of bounds, the chunk test pins both.
                             if dx and dy and (block_by_id[grid[y][x + dx]] or block_by_id[grid[y + dy][x]]):
                                 continue
                             region_grid[ny][nx] = region_id
                             queue.append((nx, ny))
-                    regions.append({"layer": layer, "tile_kinds": Counter(kinds), "tiles": tiles})
+                    regions.append({"tile_kinds": Counter(kinds), "tiles": tiles})
 
-    # Phase 2: merge regions into TileIslands. Regions only meet across chunk borders — inside one, same-layer 4-neighbours already share a region.
+    # Phase 2: merge regions into TileIslands. Regions only meet across chunk borders — inside one, Ground 4-neighbours already share a region.
     neighbours: list[set[int]] = [set() for _ in regions]
 
     for y in range(height):
         row = region_grid[y]
         for x in range(_CHUNK_SIZE, width, _CHUNK_SIZE):
             a, b = row[x - 1], row[x]
-            if regions[a]["layer"] == regions[b]["layer"]:
+            if a != -1 and b != -1:  # both filled means both Ground: no other layer has a region
                 neighbours[a].add(b)
                 neighbours[b].add(a)
 
@@ -111,7 +113,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
         row, above = region_grid[y], region_grid[y - 1]
         for x in range(width):
             a, b = above[x], row[x]
-            if regions[a]["layer"] == regions[b]["layer"]:
+            if a != -1 and b != -1:
                 neighbours[a].add(b)
                 neighbours[b].add(a)
 
@@ -138,7 +140,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
 
     for r_indices in component_regions:
         # Measured before anything is built: nine land masses in ten fall under the floor, and gathering their tiles and kinds first cost a fifth of the run.
-        if regions[r_indices[0]]["layer"] != "Ground" or sum(len(regions[i]["tiles"]) for i in r_indices) < _CITY_MIN_ISLAND_TILES:
+        if sum(len(regions[i]["tiles"]) for i in r_indices) < _CITY_MIN_ISLAND_TILES:
             continue
         tile_kinds = Counter()
         tiles = []
@@ -150,7 +152,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     islands = []
     island_tile_kinds: dict[int, Counter[str]] = {}
 
-    # Flat and row-major from the start: a `{(x, y): id}` dict would hash a tuple on each of the six hundred thousand writes, and again on every Phase 4 probe.
+    # Flat and row-major from the start: a `{(x, y): id}` dict would hash a tuple on every write, and again on every Phase 4 probe.
     id_grid = array("H", bytes(2 * width * height))
     seeds: deque[tuple[int, int]] = deque()
 

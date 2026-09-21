@@ -4,6 +4,7 @@
 
 import sys
 from collections import Counter, defaultdict
+from itertools import chain
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -29,12 +30,15 @@ from waters import waters_cached
 
 _ALL_SECTIONS = ("biomes", "burning", "entity_types", "frozen", "gear", "islands", "positions", "waters")
 _COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection → the helper that sites a record, WB's omitted zero read as 0. No kind sits in both.
+_DELTAS_8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))  # a patch holds together as WB's own regions do, corners included
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
+_PATCH_SHARE = 1  # percent of its land a biome must stay under to be sited, however few its tiles
+_PATCH_TILES = 50  # at most this many tiles of a biome on one land, it is a place rather than a landscape: each patch is sited, as a share alone could not find it
 
 
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
 def _build_biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v1", save_path, lambda: _compute_biomes(save, save_path))
+    return pickle_cached("biomes_v4", save_path, lambda: _compute_biomes(save, save_path))
 
 
 # Every kind the save holds, grouped as WB groups them — its `buildings` collection also holds the flowers and the ore, so only the `civ_*` keep that name here.
@@ -111,21 +115,73 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     biome_by_id = [tile_biome(name) for name in save.get("tileMap") or []]  # already merged: `soil_high:paradox_high` and its low twin both read `paradox`
     # The lands alone, as (island, tile id) pairs `Counter` tallies in C — and in first-seen order, so ties between biomes fall as the sweep met them.
     pairs = Counter((island_id, grid[y][x]) for x, y, island_id in island_of.land())
-    tallies: defaultdict[int, Counter] = defaultdict(Counter)
+    tallies: defaultdict[int | None, Counter] = defaultdict(Counter)
     sizes: Counter = Counter()
+    on_lands: Counter = Counter()
     for (island_id, tile), n in pairs.items():
         sizes[island_id] += n
+        on_lands[tile] += n
         if biome := biome_by_id[tile]:
             tallies[island_id][biome] += n
+    # What lies on no counted land, a rock too small to be one, is the map's whole tally less the lands': counted in C, where a sweep would ask each tile its island.
+    for tile, n in Counter(chain.from_iterable(grid)).items():
+        if (biome := biome_by_id[tile]) and (rest := n - on_lands[tile]):
+            tallies[None][biome] += rest
 
+    # A place rather than a landscape: few tiles, and few for its land too — on a small one, fifty tiles of desert are the landscape. Sited in one more sweep.
+    small = {
+        (island_id, biome)
+        for island_id, counts in tallies.items()
+        for biome, n in counts.items()
+        if n <= _PATCH_TILES and (island_id is None or n / sizes[island_id] * 100 < _PATCH_SHARE)
+    }
+    small_biomes = {biome for _, biome in small}
+    small_ids = {tile for tile, biome in enumerate(biome_by_id) if biome in small_biomes}
+    spots: defaultdict[tuple[int | None, str | None], list[tuple[int, int]]] = defaultdict(list)
+    for y, row in enumerate(grid) if small else ():
+        lands = island_of.row(y)
+        for x, tile in enumerate(row):
+            if tile in small_ids and (key := (lands[x] or None, biome_by_id[tile])) in small:
+                spots[key].append((x, y))
+
+    # No share where it rounds to nothing, nor off the counted lands (as `burning`, `frozen`): the tiles say it, and a lone `paradox` tile is still a subject.
     per_island = {
-        str(island_id): [{"biome": biome, "pct": pct, "tiles": n} for biome, n in counts.most_common() if (pct := round(n / sizes[island_id] * 100, 1)) > 0]
-        for island_id, counts in sorted(tallies.items())
+        "adrift" if island_id is None else str(island_id): [
+            {
+                "biome": biome,
+                "patches": _patches(spots[(island_id, biome)]) if (island_id, biome) in small else None,
+                "pct": None if island_id is None else round(n / sizes[island_id] * 100, 1) or None,
+                "tiles": n,
+            }
+            for biome, n in counts.most_common()
+        ]
+        for island_id, counts in sorted(tallies.items(), key=lambda kv: (kv[0] is None, kv[0] or 0))
     }
 
     # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
     named = {row["biome"] for rows in per_island.values() for row in rows}
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
+
+
+# A small biome's tiles split into the patches they form, each sited on its own tile nearest its middle — a mean alone could fall on another ground, or at sea.
+def _patches(tiles: list[tuple[int, int]]) -> list[dict]:
+    left, patches = set(tiles), []
+    while left:
+        stack, patch = [left.pop()], []
+        while stack:
+            x, y = stack.pop()
+            patch.append((x, y))
+            for dx, dy in _DELTAS_8:
+                if (near := (x + dx, y + dy)) in left:
+                    left.remove(near)
+                    stack.append(near)
+        mx, my = sum(x for x, _ in patch) / len(patch), sum(y for _, y in patch) / len(patch)
+        x, y = min(patch, key=lambda t: ((t[0] - mx) ** 2 + (t[1] - my) ** 2, t))
+        patches.append({"tiles": len(patch), "x": x, "y": y})
+    patches.sort(key=lambda p: (-p["tiles"], p["x"], p["y"]))
+    if len(patches) == 1:  # a lone patch is the whole biome on its land: the row already says its size
+        del patches[0]["tiles"]
+    return patches
 
 
 def main(argv: list[str]) -> int:
