@@ -43,7 +43,13 @@ def _compute_waters(save: dict, save_path: Path) -> dict:
     water = bytearray(stride) + b"".join(b"\x00" + row + b"\x00" for row in rows) + bytes(stride)
     coast = _coast(water, stride, island_of)
     pool_at, pools = _pool_map(water, stride)
-    return {"lakes": _lakes(pools, pool_at, coast, water, stride), "straits": _straits(water, stride, coast)}
+    # What the two lists leave out, said in the data so that an absence never reads as a count: the pools under the floor, the crossings no body could swim.
+    hidden = sum(1 for size, _, _, enclosed in pools if enclosed and size < _MIN_LAKE_TILES)
+    return {
+        "lakes": _lakes(pools, pool_at, coast, water, stride),
+        "straits": _straits(water, stride, coast),
+        "unlisted": {"lakes": {"count": hidden, "smaller_than": _MIN_LAKE_TILES}, "straits": {"wider_than": 2 * _FARTHEST_SWIM}},
+    }
 
 
 # An enclosed water is named by the shores that ring it, and holds as an islet any land no other water touches — the isles a chronicle reaches last, or never.
@@ -147,4 +153,4 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v4", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v5", save_path, lambda: _compute_waters(save, save_path))
