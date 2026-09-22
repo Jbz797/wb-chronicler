@@ -24,7 +24,7 @@ def _picked(save: dict, actor_id: int) -> dict | None:
         print(f"✗ no actor {actor_id} in the save — either the body is dead, or the id is wrong", file=sys.stderr)
         return None
     if not is_sapient(next((s for s in save.get("subspecies") or [] if s.get("id") == actor.get("subspecies")), None)):
-        print(f"✗ {actor.get('name')} ({actor.get('asset_id')}) is not sapient — a favorite must be able to hold a chronicle", file=sys.stderr)
+        print(f"✗ {actor.get('name') or 'unnamed'} ({actor.get('asset_id')}) is not sapient — a favorite must be able to hold a chronicle", file=sys.stderr)
         return None
     return actor
 
@@ -88,13 +88,13 @@ def main(argv: list[str]) -> int:
         print(f"✗ inconsistent write (favorites={marked}) — the save has been restored as it stood", file=sys.stderr)
         return 1
 
-    print(f"✓ {actor.get('name')} ({actor.get('asset_id')}, id {actor_id}) is the world's favorite")
+    print(f"✓ {actor.get('name') or 'unnamed'} ({actor.get('asset_id')}, id {actor_id}) is the world's favorite")  # an unnamed body carries no `name` in the save
 
     # The whole chapter goes, prose included: a world with a favorite is told in circles around that body. The hour has not moved, so only the words are lost.
     draft = chapter_dir / "chapter.md"
     had_prose = draft.exists() and any(line.strip() and not line.startswith("# ") for line in draft.read_text().splitlines())  # beyond the H1 `new.py` lays
     shutil.rmtree(chapter_dir)
-    print(f"  C{n} erased then rebuilt around the favorite")
+    print(f"  C{n} erased — new.py rebuilds it around the favorite, below")
     if had_prose:
         print(f"  → chronicler: its prose went with it — write C{n} afresh, from the favorite's eyes, in circles")
     print(flush=True)  # a blank line, flushed: the child writes next

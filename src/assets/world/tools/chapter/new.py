@@ -42,20 +42,22 @@ from shared import (
 _ACCOUNT = {  # the audit account's labels, in the tongue the chapter is written in — the player reads them beside it
     "en": {"facts": "Fact check: {} gaps fixed", "none": "not applicable", "reaudit": "Re-audit: {} gaps fixed", "story": "Story check: {} gaps fixed"},
     "fr": {
-        "facts": "Vérification des faits : {} écarts fix",
+        "facts": "Vérification des faits : {} écarts corrigés",
         "none": "non applicable",
-        "reaudit": "Réaudit : {} écarts fix",
-        "story": "Vérification du récit : {} écarts fix",
+        "reaudit": "Réaudit : {} écarts corrigés",
+        "story": "Vérification du récit : {} écarts corrigés",
     },
 }
 
-# What becomes of the auditors' reports — the chronicler's to follow between rounds, said where the audit is handed over.
+# What becomes of the auditors' reports, in the order it is done — the chronicler's to follow between rounds, said where the audit is handed over.
 _AFTER_REPORTS = (
     "every report in hand, never before: correct each confirmed gap — one raised by a single fact check is checked all the same, the tool settling a disagreement",
+    "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest;"
+    " and a figure a rewrite brings is read off a tool then, never carried over from the draft or from memory",
+    "correct where a correction suffices, rewrite only what it cannot mend",
+    "then look for the same value or word elsewhere: all of chapter.md, title and epigraph included, and your prose in chapter.json — descriptor, trait summaries",
     "the story check may propose as well as fault — a mend, a passage the chronicle lacks, an angle:"
     " it is yours to take or leave, and what you take, you write in your own hand",
-    "then look for the same value or word elsewhere: all of chapter.md, title and epigraph included, and your prose in chapter.json — descriptor, trait summaries",
-    "correct where a correction suffices, rewrite only what it cannot mend",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
     "what asserts anything new goes back to the same auditors — new ones if they no longer answer — its lines flagged as new, the only ones they reopen",
     "the last round settled: `tools/chapter/new.py --deliver`",
@@ -93,6 +95,8 @@ _BRIEFS = (  # the auditors' own briefs and how many of each: a sub-agent knows 
         "Recompute every checkable claim of {targets} — figure, date, span, comparison with the past, absolute, mechanism, cause… —"
         " with the tools of tools/tools.md, on the save it speaks of (`C<n>` for « N years ago »), giving each gap its command and the true value."
         " A mechanism neither the outputs nor chronicler.md give is checked on the wiki (chronicler.md § « Accès au wiki »), the output prevailing if they differ."
+        " The wiki's silence disproves nothing: a condition it neither states nor denies stays open, flagged so and not as false;"
+        " and a page given to the thing outranks a table that sums it up."
         " A sentence the text itself gives as uncertain asserts nothing: check what it leans on, not what it supposes."
         " Return only gaps — line, quote, true value — and write nothing.",
     ),
@@ -308,7 +312,6 @@ def _deliver() -> int:
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
         return 1
     print(f"✓ C{n} — delivery")
-    print("  ✓ step 5 still holds after the audit")
     labels = _ACCOUNT.get(settings.get("lang", ""), _ACCOUNT["en"])
     detail = "each line details its gaps" if settings.get("dev") else "no comment beside them"
     account = ", ".join(f"« {labels[key].format('N')} »" for key in ("facts", "story"))  # no line for the compliance audit: its verdict is the `§ N` one
@@ -316,9 +319,9 @@ def _deliver() -> int:
 
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and its account, nothing more.
     if settings.get("dev"):
-        # The fact checkers walk tools.md and the outputs claim by claim: their snags are the dev's to hear too, asked once the audit is settled.
+        # The auditors walk the docs and the outputs claim by claim: their snags are the dev's to hear too, asked once the audit is settled.
         print(
-            "  → mode: developer — ask the fact checkers whether anything got in their way, then you may close on a brief note of the frictions met,"
+            "  → mode: developer — ask the auditors whether anything got in their way, then you may close on a brief note of the frictions met,"
             " theirs and yours, crossed where they meet — none at all if there are none. What may go in it:"
         )
         for line in _DEV_NOTE:
@@ -327,8 +330,8 @@ def _deliver() -> int:
         print("  → mode: player — the chapter and that account, nothing else")
     # A world law's alert asks the player at the close, where the errand is due: raised at step 2, it would have to outlast the whole audit to be remembered.
     laws = [_ALERTS[code]["title"] for code in json.loads((SAVES_DIR / f"C{n}" / "chapter.json").read_text()).get("tags") or [] if code in _ALERTS]
-    off = f"to turn the {' and '.join(laws)} world law{'s' if len(laws) > 1 else ''} off, then " if laws else ""
-    print(f"  → then hand back: ask the player {off}to tell you once the save has moved on — without that, he cannot know the chapter is closed")
+    off = f"to turn the {' and '.join(laws)} world law{'s' if len(laws) > 1 else ''} off, and " if laws else ""
+    print(f"  → then hand back: tell the player the chapter is closed, and ask him {off}to say when the save has moved on")
     return 0
 
 
@@ -372,7 +375,7 @@ def _finalize() -> int:
     chapter_md, none = f"saves/C{n}/chapter.md", _ACCOUNT.get(lang, _ACCOUNT["en"])["none"]  # the story read takes the chapter alone: the chronicle is its ground
     targets = chapter_md + (f", and in saves/C{n}/chapter.json {', '.join(facts['audited'])}" if facts["audited"] else "")
     auditors = sum(copies for _, copies, _ in _BRIEFS)
-    print(f"  → then the audit: {auditors} new sub-agents at once, each handed its brief below as it stands — nothing of your analysis, nor of your notes")
+    print(f"  → the audit: {auditors} new sub-agents at once, each handed its brief below as it stands — nothing of your analysis, nor of your notes")
     for name, _, brief in _BRIEFS:
         print(f"    · {name}: « {brief.format(chapter=chapter_md, none=none, targets=targets)} »")
     for line in _AFTER_REPORTS:
@@ -446,10 +449,10 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     fav_id = ((favorite or {}).get("metadata") or {}).get("id")
     if n > 1:
         order = ", the favorite first, then circle by circle:" if fav_id else ","  # the chapter's own order, so the analysis lands already sorted by tier
-        print(f"    · the deltas since C{n - 1}{order} what moved as much as what held")
+        print(f"    · the deltas since C{n - 1}{order} what moved as much as what held — `world timeline C{n}` dates the world's, year by year")
     print("    · the thresholds just crossed: the first times, the levels reached")
     if fav_id:
-        print(f"    · who lives around the favorite: `actor {fav_id} C{n} surroundings`, each one followed by id — a name is shared; directions are in the output")
+        print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id, a name being shared — its direction and hours come with it")
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md` — its hooks are owed a follow-up, its form a change")
 
@@ -459,7 +462,7 @@ def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None,
     age_label = (_AGE_LABELS.get(f"age_{age_id}") or {}).get("name") or age_id  # recap line only, the chapter carrying the id alone
     year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
-    print(f"✓ C{n} — year {year}, {age_label} (world_time {world_time})")
+    print(f"✓ C{n} — year {year}, {age_label}")
     print(f"  favorite: {fav_name or 'none'}{f' — {regime}' if regime else ''}")
     print(_RECAP_RULE)
     if events := [code for code in tags if code in _EVENT_NEWS]:
@@ -501,7 +504,7 @@ def _print_step_five(n: int, facts: dict) -> None:
     if long := facts["long"]:
         print(f"  ✗ trait summaries, {', '.join(f'{tier} {size}' for tier, size in long.items())} characters of {_SUMMARY_CAP}")
     if sized:
-        print("  → every length above counts all in, and is a ceiling, not a target")
+        print("  → every length above counts spaces and markup too")
     if misplaced := facts["misplaced"]:
         for name, x, y, found, declared in misplaced:
             print(f"  ✗ places.json « {name} »: ({x},{y}) lies on {f'land {found}' if found else 'no counted land'}, its `island_id` saying {declared or 'none'}")
@@ -582,7 +585,7 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     print(f"  named: {stats['name'] or '—'}")
 
     # WB re-pauses the ages on any year-1 load, so no flag set here holds; and it is saved, hence the wheel before the re-save — else a still world is archived.
-    print("  → player, in this order: 1. reopen the save in WorldBox and press play on the age wheel — the reset leaves the ages paused, or the Era never turns")
+    print("  → player, in this order: 1. reopen the save in WorldBox and press play on the age wheel — the reset leaves the ages paused, or the age never turns")
     print("                           2. save again — only the game redraws preview.png, and the chapter then archives a world whose ages run")
     print("  → chronicler: once he has done both, `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
     return 0
