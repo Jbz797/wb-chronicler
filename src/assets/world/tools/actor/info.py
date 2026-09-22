@@ -57,7 +57,9 @@ _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a 
 _BOAT_REACH = 240  # chronicler.md « La mer ne coupe que… »: a transport boat carries the common reach this far across the sea
 _CIRCLES = (("intimate", 25), ("common", 120))  # chronicler.md's tiers by distance, in tiles — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
+_DAILY_TILES_PER_SPEED = 25.0  # chronicler.md § Échelle: `speed` 10 walks ~250 tiles a day, its halts counted — far short of 24 hours' worth
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
+_HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -334,7 +336,7 @@ def _build_to(actor: dict, goal: tuple[int, int], whom: str, ctx: dict) -> dict:
     (cx, cy), (gx, gy) = actor_xy(actor), goal
     to = {"dir": bearing(gx - cx, gy - cy), "tiles": round(walk_tiles(gx - cx, gy - cy))}
     if (gait := _gait(actor, ctx)) is None:  # its way is the straight line: said as a walk, so that no reader takes the silence for a sea it can't cross
-        return {**to, "walked": to["tiles"]}
+        return {**to, "walked": to["tiles"], **_walk_time(actor, to["tiles"], ctx)}
     walk_map, island_of = ctx["walk_map"](), ctx["island_lookup"]()
     goals, home = {gy * walk_map.width + gx}, island_of.get((cx, cy))
     # WB walks round the bays of his own land, and swims only toward another: an islet of his, small, is tried on foot before the water.
@@ -344,7 +346,7 @@ def _build_to(actor: dict, goal: tuple[int, int], whom: str, ctx: dict) -> dict:
         walked = walk_to(walk_map, gait, cx, cy, goals)
     if walked is None:
         raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["tiles"], ctx))
-    return {**to, "walked": round(walked)}
+    return {**to, "walked": round(walked), **_walk_time(actor, walked, ctx)}
 
 
 # What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
@@ -594,6 +596,15 @@ def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | None, list[st
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
 def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
+
+
+# The walk in the chronicler's hours, and days past a day's march, at the body's own pace — none aboard, where the hull sets it.
+def _walk_time(actor: dict, walked: float, ctx: dict) -> dict:
+    if is_aboard(actor):
+        return {}
+    speed = compute_actor_stats(actor, ctx).get("speed") or 1
+    days = walked / (_DAILY_TILES_PER_SPEED * speed)
+    return {"hours": round(walked / (_HOURLY_TILES_PER_SPEED * speed), 1), **({"days": round(days, 1)} if days >= 1 else {})}
 
 
 # How far on foot each tile lies, `None` for a body the ground never holds: round his land's bays, swum within reach toward another, each walk drawn once asked for.
