@@ -108,6 +108,7 @@ _BRIEFS = (  # the auditors' own briefs and how many of each: a sub-agent knows 
     ),
 )
 
+_CHAPTER_FLOOR = 5000  # chronicler.md § « Longueur » holds the same figure, measured past the audit, which cuts as much as it adds
 _DESCRIPTOR_CAP = 64
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
@@ -291,16 +292,18 @@ def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | 
     return tags + _fired_alerts(live, realm)
 
 
-# The close of the audit, once its last round is settled: step 5 checked again, the audit having maybe moved it, then the delivery and the hand-back.
+# The close of the audit, once its last round is settled: step 5 checked again and the chapter's floor, the audit having maybe moved both, then the hand-back.
 def _deliver() -> int:
     if not (n := latest_chapter()):
         print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
         return 1
     settings = _settings()
     facts = _step_five_facts(n, settings.get("lang", ""))
-    if not facts["done"]:
+    if (short := facts["length"] < _CHAPTER_FLOOR) or not facts["done"]:
         print(f"✗ C{n} — not yet deliverable")
         _print_step_five(n, facts)
+        if short:
+            print(f"  ✗ chapter.md, {facts['length']} characters of {_CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes to the audit as new")
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
         return 1
     print(f"✓ C{n} — delivery")
@@ -363,7 +366,7 @@ def _finalize() -> int:
     _print_step_five(n, facts)
     # The briefs name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
     if not facts["done"]:
-        print("  → once H1, descriptor and summaries all read ✓, run `tools/chapter/new.py --finalize` again: the audit's briefs come with them")
+        print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: the audit's briefs come with them")
         return 0
     chapter_md, none = f"saves/C{n}/chapter.md", _ACCOUNT.get(lang, _ACCOUNT["en"])["none"]  # the story read takes the chapter alone: the chronicle is its ground
     targets = chapter_md + (f", and in saves/C{n}/chapter.json {', '.join(facts['audited'])}" if facts["audited"] else "")
@@ -456,14 +459,14 @@ def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None,
         print(_RECAP_RULE)
 
 
-# Step 5's lines, one per errand: a task left (→), a check passed (✓) or failed (✗). A carried descriptor is quoted, as it tells a standing, which ages.
+# Step 5's lines, one per errand: a task left (→) or a check failed (✗), a length that holds going unsaid. A carried descriptor is quoted: its standing ages.
 def _print_step_five(n: int, facts: dict) -> None:
     carrying = facts["carried"] and not facts["h1"]  # keep or rewrite is the first pass's call: once the H1 is in, a carried descriptor reads as checked
     sized = not facts["h1"] or (facts["favorite"] and (not facts["descriptor"] or carrying)) or facts["owed"]  # any length still to write
-    if h1 := facts["h1"]:
-        print(f"  {'✓' if len(h1) <= _H1_CAP else '✗'} H1, {len(h1)} characters of {_H1_CAP}: « {h1} »")
-    else:
+    if not (h1 := facts["h1"]):
         print(f"  → the final H1, alone and in place of « # {facts['draft']} »: {_H1_CAP} characters at most")
+    elif len(h1) > _H1_CAP:
+        print(f"  ✗ H1, {len(h1)} characters of {_H1_CAP}")
     if facts["favorite"]:
         if not (text := facts["descriptor"]):
             print(f"  → `favorite.descriptor` in chapter.json, yet to be written: one line on where the favorite stands now — {_DESCRIPTOR_CAP} characters at most")
@@ -472,16 +475,14 @@ def _print_step_five(n: int, facts: dict) -> None:
                 f"  → `favorite.descriptor`, carried from C{n - 1}: « {text} » — nothing notable since, it may stand;"
                 f" else rewrite it, {_DESCRIPTOR_CAP} characters at most"
             )
-        else:
-            print(f"  {'✓' if len(text) <= _DESCRIPTOR_CAP else '✗'} descriptor, {len(text)} characters of {_DESCRIPTOR_CAP}: « {text} »")
+        elif len(text) > _DESCRIPTOR_CAP:
+            print(f"  ✗ descriptor, {len(text)} characters of {_DESCRIPTOR_CAP}")
     if owed := facts["owed"]:
         reads = ", ".join(f"`{'actor' if tier == 'favorite' else tier} {entity} traits C{n}`" for tier, entity in owed.items())
         print(f"  → trait summaries owed ({', '.join(owed)}): one string each under the block's own `traits` key, read off {reads}")
         print(f"    what those traits make of the body, {_SUMMARY_CAP} characters at most; never a list, a tally of the traits or a figure that ages")
-    if summaries := facts["summaries"]:  # written at this chapter, as the H1 and descriptor are: a carried one is no news
-        print(f"  ✓ trait summaries, characters of {_SUMMARY_CAP}: {', '.join(f'{tier} {size}' for tier, size in summaries.items())}")
     if long := facts["long"]:
-        print(f"  ✗ trait summaries over {_SUMMARY_CAP} characters: {', '.join(long)}")
+        print(f"  ✗ trait summaries, {', '.join(f'{tier} {size}' for tier, size in long.items())} characters of {_SUMMARY_CAP}")
     if sized:
         print("  → every length above counts all in, and is a ceiling, not a target")
 
@@ -628,23 +629,23 @@ def _stands_alone(sexes: list[int]) -> bool:
     return min(sexes) >= _MIN_PER_SEX
 
 
-# Step 5 read off the chapter's files: its H1, the favorite's descriptor and whether it was carried, the summaries owed or too long, and the prose new since C<n-1>.
+# Step 5 read off the chapter's files: its H1 and length, the favorite's descriptor and if carried, the summaries owed or too long, and the prose new since C<n-1>.
 def _step_five_facts(n: int, lang: str) -> dict:
     chapter_dir, prior_path = SAVES_DIR / f"C{n}", SAVES_DIR / f"C{n - 1}" / "chapter.json"
     chapter = json.loads((chapter_dir / "chapter.json").read_text())
     prior = json.loads(prior_path.read_text()) if prior_path.exists() else {}
-    headings = [line[2:] for line in (chapter_dir / "chapter.md").read_text().splitlines() if line.startswith("# ")]
+    prose = (chapter_dir / "chapter.md").read_text()
+    headings = [line[2:] for line in prose.splitlines() if line.startswith("# ")]
     draft = _DRAFT_HEADINGS.get(lang, "Draft")
     favorite, before = chapter.get("favorite") or {}, prior.get("favorite") or {}
     descriptor = favorite.get("descriptor")
     carried = bool(descriptor) and (before.get("metadata") or {}).get("id") == (favorite.get("metadata") or {}).get("id") and descriptor == before.get("descriptor")
-    written = {tier: text for tier in _TRAIT_SOURCES if isinstance(text := (chapter.get(tier) or {}).get("traits"), str)}
+    written = {tier: summary for tier in _TRAIT_SOURCES if isinstance(summary := (chapter.get(tier) or {}).get("traits"), str)}
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
-    long = sorted(tier for tier, text in written.items() if len(text) > _SUMMARY_CAP)
-    before_traits = {tier: (prior.get(tier) or {}).get("traits") for tier in _TRAIT_SOURCES}
+    long = {tier: len(summary) for tier, summary in sorted(written.items()) if len(summary) > _SUMMARY_CAP}
     # A summary or a descriptor carried word for word was audited when it was written — only what this chapter wrote, or still owes, goes to the audit.
-    fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != before_traits[tier]]
+    fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
     return {
         "audited": sorted(fresh + (["favorite.descriptor"] if favorite and not carried else [])),
         "carried": carried,
@@ -653,9 +654,9 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "draft": draft,
         "favorite": bool(favorite),
         "h1": h1,
+        "length": len(re.sub(r"\s+", " ", prose).strip()),  # blanks folded, as the docs' budget counts: a blank line or an indent is no prose
         "long": long,
         "owed": owed,
-        "summaries": {tier: len(text) for tier, text in written.items() if len(text) <= _SUMMARY_CAP and text != before_traits[tier]},
     }
 
 
