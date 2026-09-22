@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, frozen_tally, listed_tiles, tile_biome, tile_count, tile_frost, tile_kind, tile_layer, tile_mask
+from grid import LAND_LAYERS, LazyTileGrid, frozen_tally, listed_tiles, off_land, tile_biome, tile_count, tile_frost, tile_kind, tile_layer, tile_mask
 from islands import compute_islands_cached
 from shared import (
     actor_xy,
@@ -84,24 +84,21 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict
 
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
 def _build_biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v9", save_path, lambda: _compute_biomes(save, save_path))
+    return pickle_cached("biomes_v10", save_path, lambda: _compute_biomes(save, save_path))
 
 
-# A fire WB saves tile by tile, counted land by land and at sea under `adrift` — each tile by its biome, else by its ground as `islands` names it.
+# A fire WB saves tile by tile, counted land by land, then on the islets and on the water — each tile by its biome, else by its ground as `islands` names it.
 def _build_burning(save: dict, save_path: Path) -> dict:
     if not (positions := list(listed_tiles(save, "fire"))):  # nothing listed, nothing to site: the islands are never unpickled
         return {}
     _, island_of = compute_islands_cached(save, save_path)
     grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
-    by_island: defaultdict[int | None, Counter] = defaultdict(Counter)
+    by_land: defaultdict[str, Counter] = defaultdict(Counter)
     for x, y in positions:
         name = tile_map[grid[y][x]]
-        by_island[island_of.get((x, y))][tile_biome(name) or tile_kind(name)] += 1
+        by_land[_land_key(island_of.get((x, y)), name)][tile_biome(name) or tile_kind(name)] += 1
     # Counts, not the shares `islands` gives: a few dozen tiles read better whole than as percentages of themselves.
-    return {
-        "adrift" if island_id is None else str(island_id): " | ".join(f"{n} {ground}" for ground, n in counts.most_common())
-        for island_id, counts in sorted(by_island.items(), key=lambda kv: (kv[0] is None, kv[0] or 0))
-    }
+    return {key: " | ".join(f"{n} {ground}" for ground, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
 
 
 # Every kind the save holds, grouped as WB groups them — its `buildings` collection also holds the flowers and the ore, so only the `civ_*` keep that name here.
@@ -124,25 +121,35 @@ def _build_frozen(save: dict, save_path: Path) -> dict:
     if not (passing := save.get("frozen_tiles") or []) and not any(flags):
         return {}
     islands, island_of = compute_islands_cached(save, save_path)
-    sizes = {island["id"]: island["size"] for island in islands}
-    by_island: defaultdict[int | None, Counter] = defaultdict(Counter)
-    for island_id, n in Counter(island_of.listed_ids(passing)).items():
-        by_island[island_id or None]["frost"] += n
-    # Ice is water and lies on no land; a run of permafrost is ground, one land all along; only snow, rock at times, is sited tile by tile.
+    sizes = {str(island["id"]): island["size"] for island in islands}
+    by_land: defaultdict[str, Counter] = defaultdict(Counter)
+    frost = Counter(island_of.listed_ids(passing))
+    for island_id, n in frost.items():
+        if island_id:
+            by_land[str(island_id)]["frost"] += n
+    if frost[0]:  # a passing frost off every land may lie on a rock or on the water: only these few are sited tile by tile
+        grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
+        for x, y in listed_tiles(save, "frozen_tiles"):
+            if not island_of.get((x, y)):
+                by_land[_land_key(None, tile_map[grid[y][x]])]["frost"] += 1
+    # Ice is water and lies on no land; a run of permafrost is ground, one land all along; only snow, rock at times, is sited tile by tile — off a land, on a rock.
     for y, marks in enumerate(tile_mask(save, flags) if any(flags) else ()):
         if ice := marks.count(2):
-            by_island[None]["ice"] += ice
+            by_land["water"]["ice"] += ice
         lands, x = island_of.row(y), marks.find(1)
         while x != -1:
-            by_island[lands[x] or None]["snow"] += 1
+            by_land[str(lands[x] or "islets")]["snow"] += 1
             x = marks.find(1, x + 1)
         for match in _PERMAFROST_RUN.finditer(marks):
-            by_island[lands[match.start()] or None]["permafrost"] += match.end() - match.start()
-    # The share left out where it rounds to nothing, and on the islets, which have no size of their own to share.
+            by_land[str(lands[match.start()] or "islets")]["permafrost"] += match.end() - match.start()
+    if {"islets", "water"} & by_land.keys():  # off every land, the share is of all the islets or of all the water, as `totals` counts them
+        land, _, water = _surfaces(save)
+        sizes |= {"islets": land - sum(island["size"] for island in islands), "water": water}
+    # The share of what holds it, left out where it rounds to nothing.
     return {
-        "adrift" if island_id is None else str(island_id): (f"{pct:g}% · " if island_id and (pct := round(sum(counts.values()) / sizes[island_id] * 100, 1)) else "")
+        key: (f"{pct:g}% · " if key in sizes and (pct := round(sum(counts.values()) / sizes[key] * 100, 1)) else "")
         + " | ".join(f"{n} {kind}" for kind, n in counts.most_common())
-        for island_id, counts in sorted(by_island.items(), key=lambda kv: (kv[0] is None, kv[0] or 0))
+        for key, counts in sorted(by_land.items(), key=_land_order)
     }
 
 
@@ -150,24 +157,27 @@ def _build_frozen(save: dict, save_path: Path) -> dict:
 def _build_gear(save: dict, save_path: Path) -> dict:
     items = index_by_id(save.get("items") or [])
     _, island_of = compute_islands_cached(save, save_path)
-    by_island: defaultdict[int | None, list] = defaultdict(list)  # a factory, `setdefault` minting a list per bearer to drop it on all but the first
+    grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []  # rows decoded only for a bearer off every land, on a rock or in the water
+    by_land: defaultdict[str, list] = defaultdict(list)  # a factory, `setdefault` minting a list per bearer to drop it on all but the first
     for actor in save.get("actors_data") or []:
         if is_boat(actor) or not (worn := actor.get("saved_items")):
             continue
-        by_island[island_of.get(actor_xy(actor))].append(
+        x, y = actor_xy(actor)
+        key = str(island_id) if (island_id := island_of.get((x, y))) else _land_key(None, tile_map[grid[y][x]])
+        by_land[key].append(
             # An id the collection never resolves names nothing, so it is dropped rather than sorted against the rest as a `None`.
             {"id": actor["id"], "items": sorted(a for i in worn if (a := (items.get(i) or {}).get("asset_id"))), "name": actor.get("name")},
         )
     out = {}
-    for island_id, bearers in sorted(by_island.items(), key=lambda kv: (kv[0] is None, kv[0] or 0)):  # the landless last, and `None` never reaches a `<`
+    for key, bearers in sorted(by_land.items(), key=_land_order):
         block: dict = {"carriers": len(bearers), "items": sum(len(b["items"]) for b in bearers)}  # annotated: the roster below widens it past its two counts
         if len(bearers) < _MAX_NAMED_CARRIERS:  # no `light()` here: naming them is all this section could ever hand over, so there is no fuller form to call
             block["roster"] = sorted(bearers, key=lambda b: b["id"])
-        out["adrift" if island_id is None else str(island_id)] = block  # a bearer at sea or on a rock too small to count belongs to no land
+        out[key] = block
     return out
 
 
-# Where every instance of one kind stands. Its `id` opens its own script; `island_id` names the land mass, absent over water — a hull at sea, a dock on shallows.
+# Where every instance of one kind stands. Its `id` opens its own script; `island_id` names the land mass, else `islet` a rock too small to count, else water.
 def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
     out = []
     for collection, site in _COORDS.items():
@@ -180,19 +190,21 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
             break
     if out:  # the lookup costs 0.2 s cold, so a kind nobody built never pays for it
         _, island_of = compute_islands_cached(save, save_path)
+        grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
         for position in out:
-            position["island_id"] = island_of.get((position["x"], position["y"]))
+            x, y = position["x"], position["y"]
+            if (island_id := island_of.get((x, y))) is not None:
+                position["island_id"] = island_id
+            elif off_land(tile_map[grid[y][x]]) == "islet":  # silent in the water, as `island_id` is: a hull at sea, a dock on shallows
+                position["islet"] = True
     return sorted(out, key=lambda r: (r["y"], r["x"]))
 
 
 # The map's own sums, which no list adds up: its water, its land, and that land split between the counted lands and the islets too small to be one.
 def _build_totals(save: dict, save_path: Path) -> dict:
     islands, _ = compute_islands_cached(save, save_path)
-    layers = [tile_layer(name) for name in save.get("tileMap") or []]
     frozen, tiles = frozen_tally(save)
-    # Land and goo counted off the runs: the rest of the map is its water.
-    land, goo = tile_count(save, [layer in ("Block", "Ground", "Lava") for layer in layers]), tile_count(save, [layer == "Goo" for layer in layers])
-    water, counted, tiles = tiles - land - goo, sum(island["size"] for island in islands), tiles or 1
+    (land, goo, water), counted, tiles = _surfaces(save), sum(island["size"] for island in islands), tiles or 1
     # Each share of what holds it: the land, the water and the frozen of the map, the counted lands and the islets of the land. Goo, its own layer, where it spread.
     return {
         "frozen": {"pct": round(frozen / tiles * 100, 1), "tiles": frozen},
@@ -228,7 +240,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
 
     # No share where it rounds to nothing, nor off the counted lands (as `burning`, `frozen`): the tiles say it, and a lone `paradox` tile is still a subject.
     per_island = {
-        "adrift" if island_id is None else str(island_id): [
+        "islets" if island_id is None else str(island_id): [
             {
                 **_patch_fields(patches[(island_id, biome)], (island_id, biome) in small),
                 "biome": biome,
@@ -243,6 +255,17 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
     named = {row["biome"] for rows in per_island.values() for row in rows}
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
+
+
+# A counted land by its id; off every one, the place itself — `islets`, the rocks too small to count, or `water` — so that a bearer on a rock reads as no swimmer.
+def _land_key(island_id: int | None, tile_name: str) -> str:
+    return str(island_id) if island_id else "islets" if off_land(tile_name) == "islet" else "water"
+
+
+# The counted lands by id, then the islets, then the water: a land-by-land section always ends on what lies off every land.
+def _land_order(item: tuple[str, object]) -> tuple[bool, int, str]:
+    key = item[0]
+    return (not key.isdigit(), int(key) if key.isdigit() else 0, key)
 
 
 # The sections cut to one land: its row, biomes, frost, fire and gear, and the waters and ridges it borders — new dicts all, the cached ones left as they are.
@@ -288,6 +311,13 @@ def _site(mean_x: float, mean_y: float, runs: list[tuple[int, int, int]]) -> dic
         offers.append(((x - mean_x) ** 2 + (y - mean_y) ** 2, (x, y)))
     x, y = min(offers)[1]
     return {"x": x, "y": y}
+
+
+# The map's land and goo counted off the runs, its water the rest of a grid the header sizes — one count, that `totals` and `frozen` never disagree over.
+def _surfaces(save: dict) -> tuple[int, int, int]:
+    layers = [tile_layer(name) for name in save.get("tileMap") or []]
+    land, goo = tile_count(save, [layer in LAND_LAYERS for layer in layers]), tile_count(save, [layer == "Goo" for layer in layers])
+    return land, goo, len(save.get("tileArray") or []) * sum((save.get("tileAmounts") or [[]])[0]) - land - goo
 
 
 def main(argv: list[str]) -> int:

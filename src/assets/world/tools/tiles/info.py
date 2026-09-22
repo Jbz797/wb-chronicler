@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, listed_tiles, tile_biome, tile_block, tile_elevation, tile_frost, tile_kind, tile_layer
+from grid import LazyTileGrid, listed_tiles, off_land, tile_biome, tile_block, tile_elevation, tile_frost, tile_kind, tile_layer
 from islands import compute_islands_cached
 from shared import (
     DIAGONAL_EXTRA,
@@ -292,7 +292,7 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
         out[frost] = True
     if block := tile_block(name):
         out["block"] = block
-    if out["island_id"] is None and tile_layer(name) in ("Block", "Ground", "Lava"):
+    if out["island_id"] is None and off_land(name) == "islet":
         out["islet"] = True
     return out
 

@@ -3,6 +3,8 @@
 from collections.abc import Iterator
 from itertools import chain, compress, repeat
 
+LAND_LAYERS = frozenset({"Block", "Ground", "Lava"})  # what a foot stands on, and all `totals` counts as land: off it, the rare goo included, a tile is water
+
 # The tile types WB marks `block` (`TileLibrary`, `TopTileLibrary`): rock of the `Block` layer no body crosses on foot, from mountains to the walls a player paints.
 _BLOCKS = frozenset(
     {"mountains", "snow_block", "snow_summit", "summit", "wall_ancient", "wall_evil", "wall_green", "wall_iron", "wall_light", "wall_order", "wall_wild"}
@@ -91,6 +93,11 @@ def frozen_tally(save: dict) -> tuple[int, int]:
 def listed_tiles(save: dict, key: str) -> Iterator[tuple[int, int]]:
     width = sum(next(_tile_rows(save), ((), ()))[1])
     return ((i % width, i // width) for i in save.get(key) or [])
+
+
+# Off every counted land, where a tile lies: on an `islet` too small to count, or in the `water` — two places, never one bucket, a body on a rock being no swimmer.
+def off_land(tile_name: str) -> str:
+    return "islet" if tile_layer(tile_name) in LAND_LAYERS else "water"
 
 
 # Vegetation biome (jungle/savanna/swamp/…). `None` for terrain-only tiles, overlays (`*:road`, `*:field`) and snow or ice, whose `frozen_low` is none either.

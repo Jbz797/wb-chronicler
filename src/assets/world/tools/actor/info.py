@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, hatch_months, is_baby, is_egg
-from grid import LazyTileGrid
+from grid import LazyTileGrid, off_land
 from islands import compute_islands_cached
 from shared import (
     PROFESSION_KING,
@@ -589,6 +589,12 @@ def _named(body: dict) -> str:
     return f"{body.get('name') or body.get('asset_id')} ({body['id']})"
 
 
+# Where a body off every counted land stands, a rock or the water — the grid decoded for its row alone, and only for the lines that need it.
+def _off_land_at(body: dict, ctx: dict) -> str:
+    x, y = actor_xy(body)
+    return off_land(ctx["tile_map"][ctx["tile_grid"]()[y][x]])
+
+
 # Years the actor has held `role` = (holder field, collection, history). `None` unless the history's last entry still names them.
 def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, world_time: float) -> int | None:
     if role is None:
@@ -629,7 +635,7 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> 
     return plan
 
 
-# One line of `surroundings`: silent on his own land, off it the land's id — or `adrift` in water or on an uncounted rock, where a bare null would read as home.
+# One line of `surroundings`: silent on his own land, off it the land's id — or `water` or `islet` off every counted land, where a bare null would read as home.
 def _surroundings_row(other: dict, ctx: dict, distance: int, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
     row = {
         "asset_id": other.get("asset_id"),
@@ -647,7 +653,7 @@ def _surroundings_row(other: dict, ctx: dict, distance: int, dx: int, dy: int, h
     job = None if tie else _POSTS.get(other.get("profession", 0))  # WB omits `profession` at 0, its « nothing »
     mark = {"kin": tie} if tie else {"job": job} if job else {"role": "clan_chief"} if other["id"] in ctx["clan_chiefs"] else {}
     return {
-        **({} if land == home else {"adrift": True} if land is None else {"island_id": land}),
+        **({_off_land_at(other, ctx): True} if land is None else {} if land == home else {"island_id": land}),
         **row,
         # Silent at `adult`, the stage most bodies stand at, as a tally at nought: printed on every line it would push a named killer's past the inline width.
         **({} if (stage := life_stage(age, adult_age(other, ctx), lifespan, is_egg(other, ctx))) == "adult" else {"life_stage": stage}),
