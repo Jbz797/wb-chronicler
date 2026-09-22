@@ -114,7 +114,7 @@ _BRIEFS = (  # the auditors' own briefs and how many of each: a sub-agent knows 
     ),
 )
 
-_CHAPTER_FLOOR = 5000  # chronicler.md § « Longueur » holds the same figure, measured past the audit, which cuts as much as it adds
+_CHAPTER_FLOOR = 5000  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
 _DESCRIPTOR_CAP = 64
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
@@ -161,19 +161,9 @@ _EMPTIED = (
     "wars",
 )
 
-# The recap's gloss per event, a tag in `chapter.json` alone never reaching the chronicler; alerts wait for `--deliver`, and `NEW_FAVORITE` is his own pick.
-_EVENT_NEWS = {
-    "FAVORITE_ABOARD": "the favorite is aboard a hull, at sea right now",
-    "FAVORITE_FIRST_KINGDOM": "the favorite answers to a crown for the first time",
-    "FAVORITE_KINGDOM_NEW_WAR": "the favorite's crown has entered a war since the chapter before",
-    "FAVORITE_PLOTTING": "the favorite leads a plot right now",
-    "NAVIGATION": "the world's first hull is afloat: navigation is discovered",
-    "NEW_AGE": "the world has turned to a new age",
-}
-
 _FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked"})  # all `main` reads — others are refused as typos
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
-_H1_CAP = 68  # chronicler.md § « Titre » holds the same figure, and the compliance audit judges by it
+_H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit's briefs on it
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
@@ -435,7 +425,7 @@ def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | Non
     return misplaced
 
 
-# The recap's closing lines: the choice of a favorite before anything else, then step 3, the analysis, with the commands and chapters this one calls for.
+# The recap's closing lines: the choice of a favorite before anything else, then step 3 with the commands and chapters it calls for, and step 4's floor.
 def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
@@ -449,12 +439,13 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     fav_id = ((favorite or {}).get("metadata") or {}).get("id")
     if n > 1:
         order = ", the favorite first, then circle by circle:" if fav_id else ","  # the chapter's own order, so the analysis lands already sorted by tier
-        print(f"    · the deltas since C{n - 1}{order} what moved as much as what held — `world timeline C{n}` dates the world's, year by year")
+        print(f"    · the deltas since C{n - 1}{order} what moved as much as what held")
     print("    · the thresholds just crossed: the first times, the levels reached")
     if fav_id:
-        print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id, a name being shared — its direction and hours come with it")
+        print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id, a name being shared — its direction comes with it")
     if n > 1:
-        print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md` — its hooks are owed a follow-up, its form a change")
+        print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`")
+    print(f"  → step 4, the writing: {_CHAPTER_FLOOR} characters at least, blanks folded — counted at delivery, past the audit, which cuts as much as it adds")
 
 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.
@@ -465,10 +456,11 @@ def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None,
     print(f"✓ C{n} — year {year}, {age_label}")
     print(f"  favorite: {fav_name or 'none'}{f' — {regime}' if regime else ''}")
     print(_RECAP_RULE)
-    if events := [code for code in tags if code in _EVENT_NEWS]:
+    # A tag in `chapter.json` alone never reaches the chronicler. Alerts wait for `--deliver`, and `NEW_FAVORITE` is his own pick.
+    if events := [code for code in tags if code not in _ALERTS and code != "NEW_FAVORITE"]:
         for code in events:
-            print(f"  ⚑ {code} — {_EVENT_NEWS[code]}")
-        print("  → each ⚑ is an event this chapter owes its reader: tell it in the circle it belongs to")
+            print(f"  ⚑ {code}")
+        print("  → each ⚑ is an event this chapter owes its reader: tags.md says what it means")
         print(_RECAP_RULE)
     # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file. C1 has no « since »: the whole
     # past of a world taken up as it stood would pour out, and that is the s3db's to browse.
@@ -508,7 +500,7 @@ def _print_step_five(n: int, facts: dict) -> None:
     if misplaced := facts["misplaced"]:
         for name, x, y, found, declared in misplaced:
             print(f"  ✗ places.json « {name} »: ({x},{y}) lies on {f'land {found}' if found else 'no counted land'}, its `island_id` saying {declared or 'none'}")
-        print("  → set history/places.json right: the centroid on the place itself, and `island_id` the land beneath it — none at sea or on an islet")
+        print("  → set these right in history/places.json")
 
 
 # One scan of prior chapters for all they arbitrate: a first hull, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.

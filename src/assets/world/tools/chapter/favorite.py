@@ -96,7 +96,7 @@ def main(argv: list[str]) -> int:
     shutil.rmtree(chapter_dir)
     print(f"  C{n} erased — new.py rebuilds it around the favorite, below")
     if had_prose:
-        print(f"  → chronicler: its prose went with it — write C{n} afresh, from the favorite's eyes, in circles")
+        print(f"  → chronicler: its prose went with it — write C{n} afresh")
     print(flush=True)  # a blank line, flushed: the child writes next
 
     # `--reset-asked` because reaching here means a chapter stood a moment ago, so the reset question was settled long before — without it C1 would ask again.

@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 22/09/26 15:38</p>
+<p class="metadata">Date de mise à jour : 22/09/26 15:56</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en observateur (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -60,7 +60,7 @@ Les **toponymes** que tu as forgés (cf. [_Toponymie_](#toponymie)), en trois bl
     "Les Dents de Fer": {
       "centroid": { "x": 415, "y": 117 }, // Un repère, pas une frontière : un lieu est une zone
       "chapter": "C7", // Où il a été baptisé — un nom récent ne se cite pas comme un ancien
-      "island_id": 5, // Terre qui le porte — absent en mer
+      "island_id": 5, // Terre qui le porte — absent en mer ou sur un îlot
       "kind": "massif" // Vallée, forêt, cap, baie, détroit…
     }
   }
@@ -107,7 +107,7 @@ Inventer est une **invitation**, pas une obligation. À la relecture, traque aus
 **Rien ne se prépare ni ne se demande avant le script.** Le script sait où en est la partie et te le dit : ce qu'il attend de toi tient dans ses sorties, **qui priment sur ce document**.
 
 1. Le joueur sauvegarde dans WorldBox puis te signale qu'une nouvelle save est prête.
-2. Lance `tools/chapter/new.py` : il récupère seul la dernière sauvegarde et prépare les fichiers du chapitre (cf. l'[_arborescence_](#arborescence)). S'il échoue, tu **ne produis rien** et signales l'erreur.
+2. Lance `tools/chapter/new.py` : il récupère seul la dernière sauvegarde et prépare les fichiers du chapitre (cf. l'[_arborescence_](#arborescence)).
 3. **Analyse** : suis ce que le récap te demande, avec les [_sources_](#sources) au besoin.
 4. Rédige `chapter.md` sous le H1 `# Brouillon` que `new.py` y a posé, et **garde-le jusqu'à l'étape 5** : un chapitre qui le porte se lit comme non fini.
 5. **Finalise** : lance `tools/chapter/new.py --finalize` et suis-le jusqu'à la livraison, audit compris.
@@ -133,7 +133,7 @@ Tant qu'aucun favori n'est désigné, le récit porte sur le monde lui-même. De
 
 ## Choix du favori
 
-C'est toi qui choisis le personnage à incarner, pas le joueur, et tu reprends la question à chaque sauvegarde tant qu'aucun favori n'est désigné. **Il doit être sapient** : `sapient: true` dans `actor … metadata`.
+C'est toi qui choisis le personnage à incarner, pas le joueur. **Il doit être sapient** : `sapient: true` dans `actor … metadata`.
 
 Chaque choix demande un **travail en profondeur** : analyse des traits, situation politique, potentiel narratif, âge, situation géographique, environnement, etc. **Pour le tout premier favori du monde**, ajoute la **place pour construire un village** — biome compatible autour de lui, ressources, obstacles à distance ; pour les suivants, elle ne pèse que si le monde reste à bâtir.
 
@@ -176,8 +176,7 @@ Chaque chapitre mélange le **récit** et les **données** — tableaux, chiffre
 
 - **Accroches.** Quand c'est pertinent, termine le chapitre par une ou des pistes ouvertes — des tensions, des menaces, des questions que les prochaines sauvegardes trancheront. Plusieurs pistes se donnent en liste à puces, une seule en un simple paragraphe. **Une piste d'un chapitre passé se reprend** dès que le monde la tranche — tenue ou déçue ; tant qu'il ne la tranche pas, elle se poursuit plutôt que de céder la place à une piste neuve.
 - **Âge du favori.** Il ne se dit pas seulement, il s'**intègre au récit** : à chaque âge, on perçoit son monde, ses voisins et les événements autrement. Le `life_stage` de sa fiche te donne le registre ; `actor … metadata` ajoute `can_reproduce` quand la question se pose.
-- **Longueur.** Un plancher, pas une cible : **5 000 caractères**, mesurés une fois les audits passés — un monde foisonnant peut demander bien plus. À mesure qu'il se peuple, **regroupe** ce qui se ressemble plutôt que de tout lister.
-- **Titre.** Le H1 tient en **68 caractères** au plus, tout compris.
+- **Longueur.** Un plancher, pas une cible, que le récap te donne — un monde foisonnant peut demander bien plus. À mesure qu'il se peuple, **regroupe** ce qui se ressemble plutôt que de tout lister.
 - **Variété.** Chaque chapitre surprend par sa forme. Arbres généalogiques, bilans de règne, nécrologies, prophéties, etc. — tout est permis, pourvu que ce soit ancré dans les données.
 
 ---
