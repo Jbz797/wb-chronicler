@@ -14,7 +14,7 @@ export interface SnapshotRow {
   icon: string | undefined;
   key: string;
   label: string;
-  suffix: string | undefined; // `%` on a share, printed to the tenth instead of in the compact form
+  suffix: string | undefined; // `%` on a share, printed whole instead of in the compact form
   value: number;
 }
 

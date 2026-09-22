@@ -1,7 +1,7 @@
 import { MapPinKind } from './types';
 
-// A named entry of the gazetteer on the fullscreen map, sited in percent of the picture so it holds at any size — `fontSize` in `cqw`, a spot's left to the sheet.
-export interface MapPin { fontSize?: number; key: string; kind: MapPinKind; left: number; name: string; size?: number; spotKind?: string; top: number }
+// A named entry of the gazetteer on the fullscreen map, sited in percent of the picture so it holds at any size — `area` in km², `fontSize` in `cqw`.
+export interface MapPin { area?: number; fontSize?: number; key: string; kind: MapPinKind; left: number; name: string; spotKind?: string; top: number }
 
 // A land or a closed water, by its centre of mass and its extent in tiles — `name` and `chapter` empty while the chronicle has not baptised it.
 export interface PlaceArea { centroid: TilePoint; chapter: string; name: string; size: number }

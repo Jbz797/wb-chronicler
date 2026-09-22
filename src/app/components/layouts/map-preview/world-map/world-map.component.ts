@@ -4,15 +4,13 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
-import { TranslatePipe } from '@ngx-translate/core';
-
 import { PLACES_FILE } from '../../../../constants';
 import { MapPin, PlaceArea, Places, TileExtent, TilePoint } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
 
 @Component({
   selector: 'app-world-map',
-  imports: [DecimalPipe, NzTooltipModule, TranslatePipe],
+  imports: [DecimalPipe, NzTooltipModule],
   templateUrl: './world-map.component.html',
   styleUrl: './world-map.component.scss',
 })
@@ -54,7 +52,7 @@ export class WorldMapComponent {
       const named = Object.entries(book).filter(([, entry]) => isKnown(entry.chapter));
       const fontSize = this._sizer(kind, named.map(([, entry]) => entry.size));
       return named.map(([id, entry]) => ({
-        ...this._at(entry.centroid, extent), fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name, size: entry.size,
+        ...this._at(entry.centroid, extent), area: entry.size * this._tileKm2, fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name,
       }));
     };
 
@@ -66,6 +64,8 @@ export class WorldMapComponent {
         .map(([name, spot]): MapPin => ({ ...this._at(spot.centroid, extent), key: `spot-${name}`, kind: 'spot', name, spotKind: spot.kind })),
     ];
   });
+
+  private readonly _tileKm2 = 0.012; // the chronicler's scale, a tile ~110 m a side — `chronicler.md` § Échelle
 
   protected readonly measure = (event: Event): void => {
     const picture = event.target as HTMLImageElement;

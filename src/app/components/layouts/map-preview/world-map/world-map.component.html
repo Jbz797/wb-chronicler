@@ -25,6 +25,6 @@
   @if (pin.kind === 'spot') {
     {{ pin.spotKind }}
   } @else {
-    {{ 'ui_tiles_count' | translate: { count: pin.size | number } }}
+    {{ pin.area | number: '1.0-0' }}&nbsp;km²
   }
 </ng-template>

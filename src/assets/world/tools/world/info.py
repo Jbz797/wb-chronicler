@@ -227,7 +227,7 @@ def _build_snapshot(save: dict) -> dict:
         **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
         "armies": len(save.get("armies") or []),
         "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
-        "frozen_pct": round(frozen / (tiles or 1) * 100, 1),  # the map's frozen share — permafrost, snow, ice and the passing frost, as `geography … totals` has it
+        "frozen_pct": round(frozen / (tiles or 1) * 100),  # the map's frozen share, whole — permafrost, snow, ice and frost; `geography … totals` has the tenth
         "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
         **({"infected": infected} if infected else {}),
         "passengers": passengers,  # souls at sea this instant, WB's own word (`Boat.countPassengers`) — chronicler-only, `boats` counts the hulls

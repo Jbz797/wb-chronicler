@@ -9,7 +9,7 @@
       </ng-template>
       <nz-descriptions-item [nzTitle]="titleRef">
         @if (row.suffix) {
-          <span>{{ row.value | number: '1.0-1' }}{{ row.suffix }}</span>
+          <span>{{ row.value }}{{ row.suffix }}</span>
         } @else {
           <span nz-tooltip [nzTooltipTitle]="row.value | exact">{{ row.value | compact }}</span>
         }

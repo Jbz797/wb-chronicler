@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
@@ -17,7 +16,7 @@ import { WorldPlotsComponent } from './world-plots/world-plots.component';
 
 @Component({
   selector: 'app-world-stats',
-  imports: [CompactPipe, DecimalPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, NzTooltipModule, TranslatePipe, WorldPlotsComponent],
+  imports: [CompactPipe, DeltaComponent, ExactPipe, LeaderTableComponent, NzDescriptionsModule, NzTooltipModule, TranslatePipe, WorldPlotsComponent],
   templateUrl: './world-stats.component.html',
 })
 export class WorldStatsComponent {
@@ -58,8 +57,7 @@ export class WorldStatsComponent {
     // `infected` is omitted at 0 (outbreak-style), so an absent count reads as 0 on either side.
     const rows: SnapshotRow[] = this.snapshotStats.map(({ hideIfZero, icon, key, label, suffix }) => {
       const value = world.snapshot[key] ?? 0;
-      // To the tenth, as a share is written: a float subtraction would otherwise print its noise.
-      return { delta: before ? Math.round((value - (before.snapshot[key] ?? 0)) * 10) / 10 : undefined, hideIfZero, icon, key, label, suffix, value };
+      return { delta: before ? value - (before.snapshot[key] ?? 0) : undefined, hideIfZero, icon, key, label, suffix, value };
     });
     const boats = world.boats.total;
     rows.push({
