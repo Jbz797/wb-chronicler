@@ -32,6 +32,7 @@ from waters import waters_cached
 
 _ALL_SECTIONS = ("biomes", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
+_BY_LAND = ("biomes", "burning", "frozen", "gear", "islands", "ridges", "waters")  # the sections `-i` narrows: the rest speak for the whole world
 _COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection → the helper that sites a record, WB's omitted zero read as 0. No kind sits in both.
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PATCH_SHARE = 1  # percent of its land a biome must stay under to be sited, however few its tiles
@@ -244,6 +245,30 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
 
 
+# The sections cut to one land: its row, biomes, frost, fire and gear, and the waters and ridges it borders — new dicts all, the cached ones left as they are.
+def _narrowed(out: dict, land: int) -> dict:
+    key, narrowed = str(land), dict(out)
+    if "biomes" in out:
+        rows = out["biomes"]["islands"].get(key) or []
+        grown = {row["biome"] for row in rows}
+        narrowed["biomes"] = {"descriptions": {b: text for b, text in out["biomes"]["descriptions"].items() if b in grown}, "islands": {key: rows} if rows else {}}
+    for section in ("burning", "frozen", "gear"):
+        if section in out:
+            narrowed[section] = {key: out[section][key]} if key in out[section] else {}
+    if "islands" in out:
+        narrowed["islands"] = [row for row in out["islands"] if row["id"] == land]
+    if "ridges" in out:
+        narrowed["ridges"] = [ridge for ridge in out["ridges"] if land in ridge["between"]]
+    if "waters" in out:
+        waters = out["waters"]
+        narrowed["waters"] = {
+            **waters,
+            "lakes": [lake for lake in waters["lakes"] if land in lake["shores"]],
+            "straits": [strait for strait in waters["straits"] if land in strait["between"]],
+        }
+    return narrowed
+
+
 # A place lists every patch it makes; a landscape, how many it breaks into and its largest — a lone patch is the whole biome, whose size the row already says.
 def _patch_fields(found: list[list], small: bool) -> dict:
     top = max(size for size, *_ in found)
@@ -271,6 +296,7 @@ def main(argv: list[str]) -> int:
     parser = arg_parser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
     parser.add_argument("sections", help=f"Comma-separated sections. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--type", "-t", help="Asset id `positions` reports every instance of — e.g. `volcano`, `orc`. `entity_types` lists what the save holds.")
+    parser.add_argument("--island", "-i", type=int, metavar="id", help="One land alone in the sections that go land by land — the whole list without it.")
     args = parser.parse_args(argv)
 
     if args.sections == "full":  # No `full` here, unlike the other tools: these sections answer unrelated questions, and no reading wants them all.
@@ -286,7 +312,14 @@ def main(argv: list[str]) -> int:
         print("✗ positions needs --type <asset_id> — run `entity_types` for the roll", file=sys.stderr)
         return 2
 
+    if args.island is not None and not set(_BY_LAND) & set(sections):  # refused before the save is read
+        print(f"✗ `--island` narrows {', '.join(_BY_LAND)}: name one of them", file=sys.stderr)
+        return 2
+
     save = load_save(save_path)
+    if args.island is not None and args.island not in {land["id"] for land in compute_islands_cached(save, save_path)[0]}:
+        print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
+        return 2
     out: dict = {}
     if "biomes" in sections:
         out["biomes"] = _build_biomes(save, save_path)
@@ -310,7 +343,7 @@ def main(argv: list[str]) -> int:
     if "waters" in sections:
         out["waters"] = waters_cached(save, save_path)
 
-    emit(out)
+    emit(out if args.island is None else _narrowed(out, args.island))
     return 0
 
 
