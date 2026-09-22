@@ -1,3 +1,15 @@
 @if (currentChapter(); as c) {
-  <img class="map" [src]="c.previewUrl" />
+  <img class="map" [src]="c.previewUrl" (click)="zoomed.set(true)" />
+  <nz-modal
+    nzWidth="100vw"
+    nzWrapClassName="map-modal"
+    [nzFooter]="null"
+    [nzMaskStyle]="{ backgroundColor: 'rgb(0 0 0 / 85%)' }"
+    [nzVisible]="zoomed()"
+    (nzOnCancel)="zoomed.set(false)"
+  >
+    <div *nzModalContent class="map-stage" (click)="zoomed.set(false)">
+      <app-world-map [previewUrl]="c.previewUrl" />
+    </div>
+  </nz-modal>
 }

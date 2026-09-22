@@ -1,0 +1,30 @@
+<div class="frame" [style.aspect-ratio]="frame()?.ratio" [style.width]="frame()?.width">
+  <img class="picture" [src]="previewUrl()" (load)="measure($event)" />
+  @for (pin of pins(); track pin.key) {
+    <span
+      nz-tooltip
+      [class]="`pin pin-${pin.kind}`"
+      [nzTooltipTitle]="tip"
+      [nzTooltipTitleContext]="{ $implicit: pin }"
+      [style.font-size.cqw]="pin.fontSize"
+      [style.left.%]="pin.left"
+      [style.top.%]="pin.top"
+    >
+      {{ pin.name }}
+    </span>
+  }
+  @if (favorite(); as f) {
+    <span class="favorite" [style.left.%]="f.left" [style.top.%]="f.top">
+      <span class="favorite-name">{{ f.name }}</span>
+    </span>
+  }
+</div>
+
+<ng-template #tip let-pin>
+  {{ pin.name }} ·
+  @if (pin.kind === 'spot') {
+    {{ pin.spotKind }}
+  } @else {
+    {{ 'ui_tiles_count' | translate: { count: pin.size | number } }}
+  }
+</ng-template>

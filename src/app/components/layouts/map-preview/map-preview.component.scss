@@ -7,6 +7,7 @@
   .map {
     border: 1px solid rgba($primary, 0.3);
     border-radius: $radius;
+    cursor: zoom-in;
     image-rendering: auto;
     width: 100%;
   }

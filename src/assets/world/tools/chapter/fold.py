@@ -31,8 +31,6 @@ _AUDIT = {
             "tax_local",
             "tax_tribute",
             "traits",
-            "x",
-            "y",
         }
     ),
     "ranks": frozenset(
@@ -134,7 +132,7 @@ def _fold_boat_detail(boat: dict) -> None:
     for section in ("combat", "traits"):
         boat.pop(section, None)  # a hull's merits — `kingslayer`, `veteran` — narrate well and print nowhere
     metadata = boat.get("metadata") or {}
-    for key in ("kills", "level", "loot", "mass_kg", "renown", "speed"):  # `home`, `x` and `y` go with `_AUDIT`, which takes them from every `metadata`
+    for key in ("kills", "level", "loot", "mass_kg", "renown", "speed", "x", "y"):  # a hull is no pin on the map, where the favourite is; `home` goes with `_AUDIT`
         metadata.pop(key, None)
 
 

@@ -27,6 +27,8 @@ interface FavoriteMetadata {
   roles?: string[];
   sex: 'female' | 'male';
   tenure_years?: number;
+  x: number; // where the body stood as the chapter was written — the fullscreen map pins it there
+  y: number;
 }
 
 // The favorite's rank (1-3) per stat among its species peers — all optional: a stat is absent when the favorite isn't on its podium.

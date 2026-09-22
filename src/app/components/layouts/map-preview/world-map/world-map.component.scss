@@ -1,0 +1,78 @@
+@use 'variables' as *;
+
+// The picture's own box: the pins ride in percent of it, and their type in `cqw`, so both scale with the map whatever the screen.
+.frame {
+  container-type: inline-size;
+  position: relative;
+
+  .picture {
+    width: 100%;
+  }
+
+  .pin {
+    color: $paper;
+    cursor: help; // a pin tells what it is on hover, where the rest of the map only closes it
+    position: absolute;
+    text-shadow:
+      0 0 2px #000,
+      0 0 4px #000;
+    transform: translate(-50%, -50%);
+
+    &.pin-island {
+      font-family: $font-display;
+      letter-spacing: $letter-spacing-wide;
+    }
+
+    &.pin-lake {
+      color: #cfe3f2;
+      font-family: $font-body;
+      font-style: italic;
+    }
+
+    // A spot the chronicler named: a gilt point, its name hung beside it in small caps.
+    &.pin-spot {
+      font-family: $font-body;
+      font-size: 0.8cqw;
+      font-variant-caps: small-caps;
+
+      &::before {
+        background: $primary;
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px #000;
+        content: '';
+        display: inline-block;
+        height: 0.4cqw;
+        margin-right: 0.3cqw;
+        width: 0.4cqw;
+      }
+    }
+  }
+
+  // The favourite, where the chapter left them: a gilt ring the map's own hues never wear, the name hung above so the spot itself stays in view.
+  .favorite {
+    border: 0.18cqw solid $primary;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 0.08cqw #000,
+      0 0 0.6cqw rgba($primary, 0.8);
+    height: 1.1cqw;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 1.1cqw;
+
+    .favorite-name {
+      bottom: 120%;
+      color: $primary;
+      font-family: $font-display;
+      font-size: 0.95cqw;
+      font-weight: 700;
+      left: 50%;
+      position: absolute;
+      text-shadow:
+        0 0 2px #000,
+        0 0 4px #000;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+  }
+}

@@ -39,6 +39,7 @@ export type LanguageRegistry = Record<string, LanguageInfo>;
 export type LeaderGroup = 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons' | 'religions' | 'species' | 'subspecies';
 export type LeaderMeasure = 'diplomacy' | 'intelligence' | 'level' | 'population' | 'score' | 'stewardship' | 'warfare';
 export type LifeStage = 'adult' | 'baby' | 'child' | 'egg' | 'elder' | 'teen';
+export type MapPinKind = 'island' | 'lake' | 'spot'; // a land, a closed water, and a spot the chronicler named — the three books of `places.json`
 export type PeopleTierName = Exclude<ChapterTier, 'city' | 'favorite' | 'kingdom'>; // those `_resolvePeople` serves — the bodies that roster the living
 export type PersonRegistry = Record<string, PersonInfo>;
 export type PopulatedTier = Exclude<ChapterTier, 'favorite'>; // a « Composition » or a « Palmarès » needs a population, and the favourite is one soul

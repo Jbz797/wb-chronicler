@@ -15,6 +15,7 @@ export type * from './entities/war.interface';
 export type * from './entities/world.interface';
 export type * from './entity.interface';
 export type * from './marked.interface';
+export type * from './places.interface';
 export type * from './registry.interface';
 export type * from './settings.interface';
 export type * from './stats.interface';
