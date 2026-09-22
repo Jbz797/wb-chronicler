@@ -230,11 +230,6 @@ def _tagged_traits(tag: str) -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if tag in (spec.get("tags") or []))
 
 
-# A `world_time` as the chronicle dates it, both counts 1-based as WB displays them: `t = 1181` is the ninth month of year 20.
-def _world_date(world_time: float) -> dict:
-    return {"month": int(world_time % UNITS_PER_YEAR // UNITS_PER_MONTH) + 1, "year": int(world_time // UNITS_PER_YEAR) + 1}
-
-
 # Orphan slots go — a chapter's save never changes, where the live one mints a fresh key at every in-game save. `_CACHE_KEEP` then caps what survives, newest first.
 def _write_save_cache(cache_file: Path, save: dict) -> None:
     CACHE_DIR.mkdir(exist_ok=True)
@@ -760,9 +755,9 @@ def reigns(record: dict, actors_by_id: dict, requested: str | None) -> list[dict
     out = []
     for past in record.get("past_rulers") or []:
         live = actors_by_id.get(past.get("id"))
-        reign = {"from": _world_date(past.get("timestamp_ago") or 0), "id": past.get("id"), "name": (live or {}).get("name") or past.get("name")}
+        reign = {"from": world_date(past.get("timestamp_ago") or 0), "id": past.get("id"), "name": (live or {}).get("name") or past.get("name")}
         if (end := past.get("timestamp_end")) is not None:
-            reign["to"] = _world_date(end)
+            reign["to"] = world_date(end)
         out.append(reign)
     if requested not in (None, "full") or len(out) <= _MAX_REIGNS_SHOWN:
         return out
@@ -980,6 +975,11 @@ def wants_detail(requested: str | None, count: int) -> bool:
 @cache
 def weapon_assets() -> frozenset[str]:
     return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
+
+
+# A `world_time` as the chronicle dates it, both counts 1-based as WB displays them: `t = 1181` is the ninth month of year 20.
+def world_date(world_time: float) -> dict:
+    return {"month": int(world_time % UNITS_PER_YEAR // UNITS_PER_MONTH) + 1, "year": int(world_time // UNITS_PER_YEAR) + 1}
 
 
 # The world's laws by name, on or off — WB writes a law left untouched as a bare `{"name": …}`, so an absent `boolVal` reads as on.

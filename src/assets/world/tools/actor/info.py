@@ -47,6 +47,7 @@ from shared import (
     take_chapter,
     walk_tiles,
     wants_detail,
+    world_date,
 )
 from walking import Gait, WalkMap, walk_from, walk_to
 from waters import waters_cached
@@ -224,6 +225,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "asset_id": actor.get("asset_id"),
+        "born": world_date(actor.get("created_time") or 0),  # the month WB set it on the map, dated as the chronicle dates: who came first, and when
         # Chronicler-only, and only while it still bites: the age WB opens a body's own line at — `adult_age` lifts a bridling and lets it found a town, never bear.
         **({"breeding_age": round(age_breeding, 1)} if age < age_breeding else {}),
         "can_reproduce": can_reproduce,

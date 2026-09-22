@@ -10,6 +10,7 @@ _AUDIT = {
             "adult_age",
             "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
             "besieged_by",
+            "born",  # when WB set the soul on the map — for the chronicler's « who came first », no panel dates a body
             "breeding_age",
             "can_reproduce",
             "clan_chief_years",
