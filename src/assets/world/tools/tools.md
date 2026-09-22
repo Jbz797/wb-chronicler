@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 22/09/26 12:10</p>
+<p class="metadata">Date de mise à jour : 22/09/26 12:43</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -68,7 +68,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `to_islands` (`distances`) donne les 5 îles les plus proches, dans l'ordre, par leur **tuile la plus proche**.
 - `to_land` (`distances`) mesure le bras d'eau depuis **tout le rocher**, pas depuis la tuile.
 - `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
-- `walked` (`distances`, `to`) : la marche réelle, à côté du vol d'oiseau `tiles` — roche, lave et goo contournés, sans nage, au pas d'un corps sans adaptation : sable, marais, neige et, sous Entanglewood, arbres l'allongent. Absente sans terre qui les joigne.
+- `walked` (`distances`, `to`) : l'équivalent en tuiles de plaine du temps de marche, pas une distance (elle se lit sur `tiles`, à vol d'oiseau) — roche, lave et goo contournés, sans nage, au pas d'un corps sans adaptation : sable, marais, neige et, sous Entanglewood, arbres l'allongent. Absente sans terre qui les joigne.
 - `world … metadata` : `months_until_next_age` est **déjà en mois**, 12 par an — il ne repasse pas par le `/ 5` d'un `world_time`.
 - Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, un champ `info` le signale, et la clé qui porte le bloc nomme la section à demander.
 - Sous 4 membres, un corps ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`) : une seule âme y pèserait le quart ou plus.

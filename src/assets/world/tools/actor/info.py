@@ -294,7 +294,7 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     # A crown that ferries none reaches no shore: without a transport boat the sea stays the far-off, and no hull nor body past the common reach is measured.
     ferried = actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]
     reach, common = _BOAT_REACH if ferried else _CIRCLES[-1][1], _CIRCLES[-1][1]
-    walker = _walker(actor, ctx, common)
+    walker = _walker(actor, ctx, common + 0.5)  # the ring keeps a walk that rounds to its edge, as `--to` rounds the same walk
     offshore: list[tuple] = []
     kin: dict[int, str] = {}
     ties = _ties(actor)
