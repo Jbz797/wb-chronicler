@@ -224,7 +224,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "asset_id": actor.get("asset_id"),
-        # Chronicler-only, and only while it still bites: the age WB opens a body's own line at — `adult_age` lifts a bridling, it never grants the right to bear.
+        # Chronicler-only, and only while it still bites: the age WB opens a body's own line at — `adult_age` lifts a bridling and lets it found a town, never bear.
         **({"breeding_age": round(age_breeding, 1)} if age < age_breeding else {}),
         "can_reproduce": can_reproduce,
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
@@ -328,6 +328,9 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     plans = {name: _surroundings_plan(entries, ctx, kin) for name, entries in circles.items()}
     if detailed := wants_detail(requested, sum(map(len, plans.values()))):
         rings.update({name: _surroundings_rows(plan, ctx, home, kin) for name, plan in plans.items()})
+        # Each peopled ring's edge at his own pace, so none is told as a morning or a day it is not — an empty one needs none, and a hull sets a passenger's.
+        if not is_aboard(actor) and (hours := {name: _walk_time(actor, radius, ctx)["hours"] for name, radius in _CIRCLES if rings.get(name)}):
+            rings["hours"] = hours
     return rings if detailed else light(rings, withheld=True)  # `full` keeps the circle a chapter opens on, and says the wider ones wait to be named
 
 
@@ -349,10 +352,13 @@ def _build_to(actor: dict, goal: tuple[int, int], whom: str, ctx: dict) -> dict:
     return {**to, "walked": round(walked), **_walk_time(actor, walked, ctx)}
 
 
-# What the soul was born with, off WB's creature library — summarised to each trait and its rarity, its effect and flavour only when the section is named.
+# What the soul was born with, off WB's creature library — each trait and its rarity, then its effect and flavour once named, and whether this age lulls it.
 def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
     sworn, library = actor.get("saved_traits") or [], ctx["creature_traits"]
-    return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "rarity")})
+    if not detailed:
+        return light({"ids": build_trait_ids(sworn, library, "rarity")})
+    asleep = ctx["era_dormant_traits"]  # the verdict `stats` already heeds: a gift bound to an age this one is not lends none of its stats
+    return [{**trait, "dormant": True} if trait["id"] in asleep else trait for trait in build_trait_list(sworn, library)]
 
 
 # Built structures by their tile, so `metadata` can name the roof a soul stands under. Nature files under `buildings` too, and nobody steps « inside » a field.

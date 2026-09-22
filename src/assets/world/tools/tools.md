@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 22/09/26 11:22</p>
+<p class="metadata">Date de mise à jour : 22/09/26 12:10</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -52,12 +52,14 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 - `actor … metadata` : `can_reproduce` demande l'âge de reproduction et, chez qui mange, une `nutrition` d'au moins 50 ; `infertile` et `max_children` (enfants vivants) n'arrêtent que qui porte : un mâle engendre si sa compagne le peut. Un `false` après un `true` ne dit pas l'infertilité : une réserve entamée suffit. Ce qui ouvre ou ferme une naissance : `wiki:Reproduction`.
 - `actor … stats` rend des valeurs **déjà agrégées** — tout y est, du socle de l'espèce aux bonus de niveau (santé, mana et endurance seulement), jusqu'aux points de compétence gagnés à vivre — le niveau, lui, vient de l'expérience : n'ajoute rien par-dessus. Celles d'un mineur sont **bridées** : `damage_max` et `health_max` valent la moitié tant qu'`adult_age` n'est pas atteint, seuil que `subspecies … stats` donne pour toute la lignée, avec `breeding_age`. La valeur adulte ne s'en déduit pas pour autant : la base de la lignée n'est pas celle du corps.
-- `actor … surroundings` se compte comme `walked`, au pas du corps, qui ne nage que vers une autre terre : `intimate` ≤ 25 tuiles, `common` ≤ 120 ; `common_with_boat` ≤ 240 à vol d'oiseau, si son royaume a un bateau de transport ; `adrift` : dans l'eau ou sur un îlot non compté. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. `life_stage` se tait à `adult`, `sapient` devant `kin`, `job` ou `role`.
+- `actor … surroundings` se compte comme `walked`, au pas du corps, qui ne nage que vers une autre terre : `intimate` ≤ 25 tuiles, `common` ≤ 120, `hours` donnant leur bord à son pas ; `common_with_boat` ≤ 240 à vol d'oiseau, si son royaume a un bateau de transport ; `adrift` : dans l'eau ou sur un îlot non compté. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. `life_stage` se tait à `adult`, `sapient` devant `kin`, `job` ou `role`.
 - `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `diplomacy` et `stewardship` ne servent qu'aux rois et aux chefs, et `damage_*` dit la force d'un coup, `warfare` compris. Le reste : `wiki:Unit_Stats`.
+- `happiness` (`actor … stats`) : la barre du jeu en %, 50 au neutre — heureux dès 60, malheureux sous 30.
 
 ### Formes et mesures :
 
 - `city … rulers` et `kingdom … rulers` donnent la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain en place : `population.ruler_money`.
+- `description` et `flavor` d'un trait disent l'ambiance, jamais l'effet : il tient dans `stats`, que `dormant` dit endormies par l'ère, le reste dans `wiki:Creature_Traits` ou `wiki:Subspecies_Traits`.
 - `geography … frozen` donne, terre par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé pour toujours ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `houses` (cité, royaume) compte les chantiers, comme le jeu : `ground … metadata` les signale par `under_construction`.
 - `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule sert tout le royaume, quelle que soit sa cité.
@@ -65,8 +67,8 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `tiles … tile_info` : `block` nomme ce qui barre la marche, que personne ne franchit à pied ; `islet`, une terre trop petite pour compter — sans elle ni `island_id`, c'est l'eau ; `snow`, `ice` et `frozen` (le gel passager) comme dans `geography … frozen`.
 - `to_islands` (`distances`) donne les 5 îles les plus proches, dans l'ordre, par leur **tuile la plus proche**.
 - `to_land` (`distances`) mesure le bras d'eau depuis **tout le rocher**, pas depuis la tuile.
-- `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre : on touche une ville par son bord. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
-- `walked` (`distances`, `to`) : la marche réelle, à côté du vol d'oiseau `tiles` — roche, lave et goo contournés, sans nage, au pas d'un corps sans adaptation : sable, marais, neige et, sous Entanglewood, arbres l'allongent. En tuiles de plaine, elle se convertit en temps comme elles ; absente sans terre qui les joigne.
+- `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
+- `walked` (`distances`, `to`) : la marche réelle, à côté du vol d'oiseau `tiles` — roche, lave et goo contournés, sans nage, au pas d'un corps sans adaptation : sable, marais, neige et, sous Entanglewood, arbres l'allongent. Absente sans terre qui les joigne.
 - `world … metadata` : `months_until_next_age` est **déjà en mois**, 12 par an — il ne repasse pas par le `/ 5` d'un `world_time`.
 - Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, un champ `info` le signale, et la clé qui porte le bloc nomme la section à demander.
 - Sous 4 membres, un corps ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`) : une seule âme y pèserait le quart ou plus.

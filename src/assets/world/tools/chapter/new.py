@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 import registries
 from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_world
 from grid import tile_layer, tile_runs
+from islands import compute_islands_cached
 from shared import (
     SAVES_DIR,
     UNITS_PER_YEAR,
@@ -415,6 +416,22 @@ def _life_dna() -> int:
     return int(datetime.now(timezone.utc).strftime("%Y%m%d%H"))
 
 
+# The places this chapter baptised whose centroid stands off the land their `island_id` names — none named means off every counted land: the sea, or an islet.
+def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | None]]:
+    spots = (json.loads(_PLACES_JSON.read_text()).get("places") or {}) if _PLACES_JSON.exists() else {}
+    if not (fresh := [(name, spot) for name, spot in spots.items() if spot.get("chapter") == f"C{n}"]):
+        return []  # nothing baptised here, and so no save to open
+    save_path = SAVES_DIR / f"C{n}" / "map.wbox"
+    _, land_of = compute_islands_cached(load_save(save_path), save_path)
+    misplaced = []
+    for name, spot in fresh:
+        centroid = spot.get("centroid") or {}
+        x, y, declared = int(centroid.get("x") or 0), int(centroid.get("y") or 0), spot.get("island_id")
+        if (found := land_of.get((x, y))) != declared:
+            misplaced.append((name, x, y, found, declared))
+    return misplaced
+
+
 # The recap's closing lines: the choice of a favorite before anything else, then step 3, the analysis, with the commands and chapters this one calls for.
 def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
@@ -485,6 +502,10 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  ✗ trait summaries, {', '.join(f'{tier} {size}' for tier, size in long.items())} characters of {_SUMMARY_CAP}")
     if sized:
         print("  → every length above counts all in, and is a ceiling, not a target")
+    if misplaced := facts["misplaced"]:
+        for name, x, y, found, declared in misplaced:
+            print(f"  ✗ places.json « {name} »: ({x},{y}) lies on {f'land {found}' if found else 'no counted land'}, its `island_id` saying {declared or 'none'}")
+        print("  → set history/places.json right: the centroid on the place itself, and `island_id` the land beneath it — none at sea or on an islet")
 
 
 # One scan of prior chapters for all they arbitrate: a first hull, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.
@@ -629,7 +650,7 @@ def _stands_alone(sexes: list[int]) -> bool:
     return min(sexes) >= _MIN_PER_SEX
 
 
-# Step 5 read off the chapter's files: its H1 and length, the favorite's descriptor and if carried, the summaries owed or too long, and the prose new since C<n-1>.
+# Step 5 off the chapter's files: its H1 and length, the favorite's descriptor and if carried, the summaries owed or too long, places astray, prose new since C<n-1>.
 def _step_five_facts(n: int, lang: str) -> dict:
     chapter_dir, prior_path = SAVES_DIR / f"C{n}", SAVES_DIR / f"C{n - 1}" / "chapter.json"
     chapter = json.loads((chapter_dir / "chapter.json").read_text())
@@ -644,18 +665,20 @@ def _step_five_facts(n: int, lang: str) -> dict:
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: len(summary) for tier, summary in sorted(written.items()) if len(summary) > _SUMMARY_CAP}
+    misplaced = _misplaced_places(n)
     # A summary or a descriptor carried word for word was audited when it was written — only what this chapter wrote, or still owes, goes to the audit.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
     return {
         "audited": sorted(fresh + (["favorite.descriptor"] if favorite and not carried else [])),
         "carried": carried,
         "descriptor": descriptor,
-        "done": bool(h1) and len(h1) <= _H1_CAP and (not favorite or (bool(descriptor) and len(descriptor) <= _DESCRIPTOR_CAP)) and not owed and not long,
+        "done": 0 < len(h1 or "") <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (owed or long or misplaced),
         "draft": draft,
         "favorite": bool(favorite),
         "h1": h1,
         "length": len(re.sub(r"\s+", " ", prose).strip()),  # blanks folded, as the docs' budget counts: a blank line or an indent is no prose
         "long": long,
+        "misplaced": misplaced,
         "owed": owed,
     }
 
@@ -709,7 +732,7 @@ def main(argv: list[str]) -> int:
     if unknown := [a for a in argv if a.startswith("--") and a not in _FLAGS]:  # `--rest` would else read as « no reset asked » and put the question again
         print(f"✗ unknown flag {', '.join(unknown)} — new.py knows {', '.join(sorted(_FLAGS))}", file=sys.stderr)
         return 2
-    if "--finalize" in argv:  # step 5 of the chapter under way, off its own files: nothing is built and no save is read
+    if "--finalize" in argv:  # step 5 of the chapter under way, off its own files, its archived save among them: nothing is built, the live save never read
         return _finalize()
     if "--deliver" in argv:  # the close of the audit, off the same files
         return _deliver()
