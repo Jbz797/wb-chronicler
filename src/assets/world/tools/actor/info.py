@@ -93,6 +93,7 @@ _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health ev
 _GROUND_BASES = frozenset({"pit_close_ocean", "pit_deep_ocean", "pit_shallow_waters", "sand", "soil_high", "soil_low"})
 
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
+_ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -229,13 +230,21 @@ def _build_context(save: dict, save_path: Path) -> dict:
     }
 
 
-# Each carried item with provenance (`by`/`from`), wear, kill count and its aggregated stats — sorted by item id for stable output.
+# Each carried item — provenance, wear, kills, stats folded — by id; the weapon a body arrived with says `with_bearer`, WB backdating its age by ten years
 def _build_gear(actor: dict, ctx: dict) -> list:
     item_stats = ctx["equipment"]["items"]
     mod_stats = ctx["equipment"]["modifiers"]
-    world_time = ctx["world_time"]
-    items = (ctx["items_by_id"].get(iid) for iid in actor.get("saved_items") or [])
-    return sorted((equipment_entry(i, item_stats, mod_stats, world_time, described=True) for i in items if i is not None), key=lambda i: i["id"])
+    world_time, arrived = ctx["world_time"], float(actor.get("created_time") or 0)
+    gear = []
+    for iid in actor.get("saved_items") or []:
+        if (item := ctx["items_by_id"].get(iid)) is None:
+            continue
+        entry = equipment_entry(item, item_stats, mod_stats, world_time, described=True)
+        # Exactly its bearer's arrival less the backdate, the save's floats drifting in the sixth place: proof, where a mere `by` left blank is not.
+        if (created := item.get("created_time")) is not None and abs(float(created) + _ISSUE_BACKDATE - arrived) < 0.01:
+            entry["age"], entry["with_bearer"] = None, True
+        gear.append(entry)
+    return sorted(gear, key=lambda i: i["id"])
 
 
 # Resource bag → `{resource_id: amount}`, heaviest stack first then alphabetical — the raw save nests it as `inventory.dict.<id>.amount`.
