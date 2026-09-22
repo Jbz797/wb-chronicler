@@ -17,14 +17,13 @@ export const INLINE_MARKER = {
   War: 'w',
 } as const;
 
-// Text hue per sapient species — all of `initCivsClassic`, `initCivsNew` and the `initMobsOther` civs. The four classics take the darkest of their
-// canonical `preferred_colors` (WB's `initCivsClassic` IL, `colors_general`); the rest their icon's most saturated hue, darkened until it reads as text.
+// Text hue per sapient species (WB's classic, new and mob civs): a classic's own `preferred_colors`, else the icon's boldest hue darkened to read as text
 export const SPECIES_COLORS: Readonly<Record<string, string>> = {
   alien: '#5fc94a',
   angle: '#f5c63a',
   bandit: '#c14040',
   civ_acid_gentleman: '#70a040',
-  civ_alpaca: '#bfbfb0',
+  civ_alpaca: '#b0b0a1',
   civ_armadillo: '#604020',
   civ_bear: '#402010',
   civ_beetle: '#301c1c',
@@ -32,7 +31,7 @@ export const SPECIES_COLORS: Readonly<Record<string, string>> = {
   civ_candy_man: '#b08040',
   civ_capybara: '#b06020',
   civ_cat: '#f0b050',
-  civ_chicken: '#bfbfb0',
+  civ_chicken: '#b0b0a1',
   civ_cow: '#203030',
   civ_crab: '#e05050',
   civ_crocodile: '#204030',
@@ -41,14 +40,14 @@ export const SPECIES_COLORS: Readonly<Record<string, string>> = {
   civ_fox: '#a04020',
   civ_frog: '#60a030',
   civ_garlic_man: '#d0c090',
-  civ_goat: '#bfbfb0',
+  civ_goat: '#b0b0a1',
   civ_hyena: '#b06020',
   civ_lemon_man: '#caca35',
   civ_liliar: '#105040',
   civ_monkey: '#301c08',
   civ_penguin: '#301c1c',
   civ_piranha: '#507090',
-  civ_rabbit: '#bdbdaf',
+  civ_rabbit: '#aeaea0',
   civ_rat: '#30b020',
   civ_rhino: '#301c1c',
   civ_scorpion: '#b02030',
@@ -67,7 +66,7 @@ export const SPECIES_COLORS: Readonly<Record<string, string>> = {
   ghost: '#7a8a9c',
   human: '#00675C', // preferred blue/navy/teal/cyan
   necromancer: '#5a3a8e',
-  orc: '#262626', // preferred red/orange/brown/maroon/black
+  orc: '#C51540', // preferred red/orange/brown/maroon/black — WB's red (`colors.json` 0), its black #262626 reading as the prose's own ink
   plague_doctor: '#2c3a4a',
   snowman: '#5a90b8',
   white_mage: '#c9a04a',
