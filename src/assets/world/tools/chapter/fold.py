@@ -269,6 +269,7 @@ def fold_favorite_detail(favorite: dict) -> None:
 
 # The world block as its panels print it: the tallies and podiums folded, each scheme's type cut to its key.
 def fold_world(world: dict) -> None:
+    world.pop("timeline", None)  # the chronicler's dating tool: no panel reads the world year by year
     _fold_cumulative(world)
     _fold_world_leaders(world)
     _fold_total(world, "boats")  # counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand

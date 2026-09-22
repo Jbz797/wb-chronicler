@@ -6,6 +6,8 @@
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names kept verbatim for raw-save fields (e.g. `world_time`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
+import re
+import sqlite3
 import sys
 from collections import Counter
 from pathlib import Path
@@ -15,9 +17,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from actor_stats import build_actor_stats_context, compute_actor_stats
 from grid import frozen_tally
 from shared import (
+    HISTORY_S3DB,
     MIN_RANK_PEERS,
     MIN_SCORE_PEERS,
     SICK_TRAITS,
+    UNITS_PER_YEAR,
     city_score_dimensions,
     civic_building_ids,
     emit,
@@ -37,7 +41,7 @@ from shared import (
     wants_detail,
 )
 
-_ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "plots", "snapshot")
+_ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "plots", "snapshot", "timeline")
 
 # Chronicler key => WB `mapStats` counter — UI keys (`CUMULATIVE_STATS`) + churn a net snapshot hides; `_created` stored, `destroyed = created − snapshot.alive`.
 _CUMULATIVE_COUNTERS = {
@@ -86,6 +90,11 @@ _DEATH_CAUSES = {
     "weapon": "deaths_weapon",
 }
 
+# A `WorldYearly1` column that only rises, an event's tally — where a bare noun (`cities`, `grass`) is a state that moves every year and dates nothing.
+_EVENT_COLUMN = re.compile(r"_(born|built|burnt|conquered|created|destroyed|dissolved|extinct|forgotten|made|read|rebelled|started|succeeded|written)$")
+
+_EVENT_EXTRAS = ("evolutions", "metamorphosis")  # the two tallies WB names without a suffix
+
 # Actor field => the save collection it points into, feeding its `population` record — every actor counted, wildlife included, as each tier's medal counts its own.
 _GROUP_FIELDS = {
     "cityID": "cities",  # a townsman need answer to no crown — counted apart from the kingdom's roll
@@ -118,6 +127,11 @@ _SNAPSHOT_COLLECTIONS = {
     "religions": "religions",
     "subspecies": "subspecies",
 }
+
+# `_DEATH_CAUSES`' keys => their `WorldYearly1` column, where old age is WB's `deaths_natural`.
+_YEARLY_DEATHS = {**{cause: f"deaths_{cause}" for cause in _DEATH_CAUSES}, "old_age": "deaths_natural"}
+
+_YEARLY_RENAMED = {"houses_built": "buildings_built", "houses_destroyed": "buildings_destroyed"}  # `cumulative`'s names: WB's houses are all its buildings
 
 
 # The world's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
@@ -240,8 +254,41 @@ def _build_snapshot(save: dict) -> dict:
     }
 
 
+# Each year's gains: a blank cell carries, a missing year was quiet, and a ~20-year window past year 1 opens on a baseline — a count seen after it dates nothing.
+def _build_timeline(map_stats: dict) -> list[dict]:
+    year = int(float(map_stats.get("world_time") or 0) // UNITS_PER_YEAR) + 1
+    try:
+        with sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True) as conn:
+            conn.row_factory = sqlite3.Row
+            # WB writes a year's row as it closes, and the s3db is the latest save's: the years before this save's own, never one run on past it.
+            cursor = conn.execute("SELECT * FROM WorldYearly1 WHERE timestamp < ? ORDER BY timestamp", (year,))
+            rows, names = cursor.fetchall(), [column for column, *_ in cursor.description]
+    except sqlite3.Error:  # no copy yet, or a table WB has not written
+        return []
+    counters = {_YEARLY_RENAMED.get(column, column): column for column in names if _EVENT_COLUMN.search(column) or column in _EVENT_EXTRAS}
+    stats = {**{column: _camel(column) for column in counters.values()}, **{column: _DEATH_CAUSES[cause] for cause, column in _YEARLY_DEATHS.items()}}
+    held: dict[str, int | None] = dict.fromkeys(stats, 0 if not rows or rows[0]["timestamp"] == 1 else None)
+    timeline = []
+    for row in rows:
+        now = {column: held[column] if row[column] is None else int(row[column]) for column in stats}
+        timeline += _year_gains(row["timestamp"], held, now, counters)
+        held = now
+    # The year under way, which has no row yet: the save's own tallies over the last year closed, marked `so_far`.
+    return timeline + _year_gains(year, held, {column: int(map_stats.get(stat) or 0) for column, stat in stats.items()}, counters, so_far=True)
+
+
+# A `WorldYearly1` column's `mapStats` twin, the same tally in camelCase — the deaths, snake-cased there too, go through `_DEATH_CAUSES` instead.
+def _camel(column: str) -> str:
+    return re.sub(r"_(\w)", lambda m: m.group(1).upper(), column)
+
+
 def _count_leaders(counts: Counter, records: list[dict], min_peers: int) -> list[dict]:
     return [{"id": eid, "name": _name_of(records, eid), "value": n} for eid, n in first_place(counts, min_peers)]
+
+
+# A count's rise between two readings, 0 where the earlier one is unknown — a window opened past year 1 holds the total, never the year it grew in.
+def _gain(before: int | None, after: int | None) -> int:
+    return after - before if before is not None and after is not None else 0
 
 
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
@@ -258,6 +305,13 @@ def _sapient_subspecies(save: dict) -> frozenset:
 def _score_leaders(totals: Counter, records: list[dict]) -> list[dict]:
     field = {r["id"]: totals[r["id"]] for r in records}  # every town or crown a rival, the ones `score_totals` credits nothing included
     return [{"id": eid, "name": _name_of(records, eid)} for eid, _ in first_place(field, MIN_SCORE_PEERS)]
+
+
+# A year's entry, none where nothing moved: its gains under `cumulative`'s names, its deaths by cause — `so_far` on the one still under way.
+def _year_gains(year: int, held: dict, now: dict, counters: dict[str, str], so_far: bool = False) -> list[dict]:
+    gains = {key: gain for key, column in counters.items() if (gain := _gain(held[column], now[column]))}
+    deaths = {cause: gain for cause, column in _YEARLY_DEATHS.items() if (gain := _gain(held[column], now[column]))}
+    return [{"year": year, **gains, **({"deaths": deaths} if deaths else {}), **({"so_far": True} if so_far else {})}] if gains or deaths else []
 
 
 def main(argv: list[str]) -> int:
@@ -283,6 +337,8 @@ def main(argv: list[str]) -> int:
         out["plots"] = _build_plots(save)
     if "snapshot" in sections:
         out["snapshot"] = _build_snapshot(save)
+    if "timeline" in sections:
+        out["timeline"] = _build_timeline(map_stats)
 
     emit(out)
     return 0

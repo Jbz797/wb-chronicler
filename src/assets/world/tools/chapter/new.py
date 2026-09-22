@@ -22,6 +22,7 @@ from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_w
 from grid import tile_layer, tile_runs
 from islands import compute_islands_cached
 from shared import (
+    HISTORY_S3DB,
     SAVES_DIR,
     UNITS_PER_YEAR,
     index_by_id,
@@ -169,7 +170,6 @@ _EVENT_NEWS = {
 _FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked"})  # all `main` reads — others are refused as typos
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _H1_CAP = 68  # chronicler.md § « Titre » holds the same figure, and the compliance audit judges by it
-_HISTORY_S3DB = SAVES_DIR.parent / "history" / "map_stats.s3db"  # WB's cumulative SQLite, copied each chapter: the chronicler browses it, the recap prints its log
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
@@ -394,7 +394,7 @@ def _fired_alerts(save: dict, realm: int | None) -> list[str]:
 # WB's own log since `since`: crowns and favorites fallen with their killer, realms and towns raised or razed, wars, pacts. WB stamps a whole unit, hence `>=`.
 def _journal_since(since: float | None) -> list[tuple]:
     try:
-        with sqlite3.connect(f"file:{_HISTORY_S3DB}?mode=ro", uri=True) as conn:
+        with sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True) as conn:
             return conn.execute(
                 "SELECT timestamp, asset_id, special1, special2, special3, x, y FROM WorldLogMessage"
                 " WHERE timestamp >= ? AND asset_id != 'auto_tester' ORDER BY timestamp, rowid",
@@ -622,7 +622,7 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
         if (src := live_dir / name).exists():
             shutil.copy2(src, chapter_dir / name)
     if (s3db := live_dir / "map_stats.s3db").exists():
-        shutil.copy2(s3db, _HISTORY_S3DB)
+        shutil.copy2(s3db, HISTORY_S3DB)
     _write_world(live)
     if not _PLACES_JSON.exists():  # his toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge
         if (surveyed := _run("geography/info.py", "islands,waters", chapter)) is None:  # seeded once and never again: an empty survey would stay empty

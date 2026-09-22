@@ -28,6 +28,7 @@ EQUIPMENT_RACKS = {
     "weapons": "item_storage_weapons",
 }
 
+HISTORY_S3DB = Path(__file__).parents[2] / "history" / "map_stats.s3db"  # WB's SQLite history, copied each chapter: browsed, the recap's journal, `world … timeline`
 MIN_PER_CAPITA_UNITS = 4  # Below four souls a per-head ratio or a share measures the divisor, not the body — a lone survivor would top every podium.
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 MIN_SCORE_PEERS = 3  # The one exception, for a town and a crown: a world raises them by the handful, so three rivals already make a place worth naming.
