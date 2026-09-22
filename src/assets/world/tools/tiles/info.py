@@ -324,15 +324,16 @@ def main(argv: list[str]) -> int:
 
     parser = arg_parser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
     parser.add_argument("xy", type=_xy, metavar="x,y", help="Tile coords (WB UI, y grows north), comma-separated — e.g. `415,117`.")
-    parser.add_argument("sections", nargs="?", default="full", help=f"Comma-separated sections or `full`. Valid: {', '.join(_ALL_SECTIONS)}")
+    parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
     parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
-    parser.add_argument("--to", type=_xy, metavar="x,y", help="A second tile, read as the first is, and a `to` key: what a body walks from the first to it.")
+    parser.add_argument("--to", type=_xy, metavar="x,y", help="A second tile and a `to` key, the walk from the first to it — the tiles too once sections are named.")
     args = parser.parse_args(argv)
     cx, cy = args.xy
 
     try:
-        sections = set(parse_sections(args.sections, _ALL_SECTIONS))  # membership only, never walked in order — the emitting `if`s below name each one
+        # Membership only, never walked in order — the emitting `if`s below name each one. A `--to` alone answers alone, as `actor`'s does: the way, not the tiles.
+        sections = set(parse_sections(args.sections or "full", _ALL_SECTIONS)) if args.sections or not args.to else set()
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -341,7 +342,7 @@ def main(argv: list[str]) -> int:
         print("✗ `--to` reads two tiles and `--radius` a square around one: they don't combine", file=sys.stderr)
         return 2
     if args.island is not None and "distances" not in sections:
-        print("✗ `--island` answers in `distances`: name that section, or leave `full`", file=sys.stderr)
+        print("✗ `--island` answers in `distances`: name that section, or `full`", file=sys.stderr)
         return 2
 
     save = load_save(save_path)
@@ -367,7 +368,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     out: dict = {}
-    for x, y in coords:
+    for x, y in coords if sections else ():
         cell: dict = {}
         if "actors" in sections:
             cell["actors"] = _actors_at(x, y, ctx)

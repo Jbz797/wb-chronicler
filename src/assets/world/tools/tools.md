@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 22/09/26 12:43</p>
+<p class="metadata">Date de mise à jour : 22/09/26 12:50</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -38,7 +38,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 - `-i <id>` : une terre par son id, mesurée comme `to_islands` sous `to_island`, même hors des 5 plus proches — celle où l'on se tient vaut 0
 - `-r <n>` : rayon, de 0 à 2 — `distances` ne répond que pour la tuile demandée
-- `--to <x,y>` : une seconde tuile, lue comme la première, et une clé `to` : cap et deux mesures, de lieu à lieu (d'un corps : `actor`) ; pas avec `-r`
+- `--to <x,y>` : une clé `to`, cap et deux mesures de lieu à lieu (d'un corps : `actor`), seule sans section nommée — sinon les deux tuiles s'y joignent ; pas avec `-r`
 
 ---
 
