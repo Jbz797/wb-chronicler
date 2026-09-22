@@ -9,34 +9,43 @@
     "description": "Adapted to life in a cursed, corrupted biome",
     "flavor": "The corruption welcomes all. For a time",
     "group": "adaptations",
-    "name": "Corruption Adaptation"
+    "name": "Corruption Adaptation",
+    "tags": ["can_build_in_biome_corruption"]
   },
   "adaptation_desert": {
     "description": "Adapted to life in mysterious deserts",
     "flavor": "Born from dust, destined to fade into dust",
     "group": "adaptations",
     "name": "Arcane Desert Adaptation",
-    "tags": ["walk_adaptation_sand"]
+    "tags": ["can_build_in_biome_desert", "walk_adaptation_sand"]
   },
   "adaptation_infernal": {
     "description": "Adapted to living and building in the infernal biome",
     "flavor": "Hell is home, and home is warm",
     "group": "adaptations",
-    "name": "Infernal Adaptation"
+    "name": "Infernal Adaptation",
+    "tags": ["can_build_in_biome_infernal"]
   },
   "adaptation_permafrost": {
     "description": "Adapted to life in the permafrost biome",
     "flavor": "Cold? What cold?",
     "group": "adaptations",
     "name": "Permafrost Adaptation",
-    "tags": ["walk_adaptation_snow"]
+    "tags": ["can_build_in_biome_permafrost", "walk_adaptation_snow"]
   },
   "adaptation_swamp": {
     "description": "Adapted to living and building in swamps",
     "flavor": "Damp, dark, and full of smells. Just the way they like it",
     "group": "adaptations",
     "name": "Swamp Adaptation",
-    "tags": ["walk_adaptation_swamp"]
+    "tags": ["can_build_in_biome_swamp", "walk_adaptation_swamp"]
+  },
+  "adaptation_wasteland": {
+    "description": "Adapted to surviving in wastelands",
+    "flavor": "If it glows, it's home",
+    "group": "adaptations",
+    "name": "Wasteland Adaptation",
+    "tags": ["can_build_in_biome_wasteland"]
   },
   "advanced_hippocampus": {
     "description": "Enhanced memory capabilities allow this species to develop cultures and religions",

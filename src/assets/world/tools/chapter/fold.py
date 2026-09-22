@@ -13,6 +13,7 @@ _AUDIT = {
             "born",  # when WB set the soul on the map — for the chronicler's « who came first », no panel dates a body
             "breeding_age",
             "can_reproduce",
+            "can_settle",  # the chronicler's « why no town yet »: no panel says who could found one
             "clan_chief_years",
             "deaths_by_cause",
             "families",
