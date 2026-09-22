@@ -48,13 +48,15 @@
     }
   }
 
-  // The favourite, where the chapter left them: a gilt ring the map's own hues never wear, the name hung above so the spot itself stays in view.
+  // The favourite where the chapter left them: a ring in its species' hue, gilt if it has none, white-edged like the name hung above so the spot stays in view.
   .favorite {
-    border: 0.18cqw solid $primary;
+    --hue: var(--favorite, #{$primary});
+
+    border: 0.18cqw solid var(--hue);
     border-radius: 50%;
     box-shadow:
-      0 0 0 0.08cqw #000,
-      0 0 0.6cqw rgba($primary, 0.8);
+      0 0 0 0.08cqw #fff,
+      0 0 0.6cqw color-mix(in srgb, var(--hue) 80%, transparent);
     height: 1.1cqw;
     position: absolute;
     transform: translate(-50%, -50%);
@@ -62,15 +64,15 @@
 
     .favorite-name {
       bottom: 120%;
-      color: $primary;
+      color: var(--hue);
       font-family: $font-display;
       font-size: 0.95cqw;
       font-weight: 700;
       left: 50%;
       position: absolute;
       text-shadow:
-        0 0 2px #000,
-        0 0 4px #000;
+        0 0 2px #fff,
+        0 0 4px #fff;
       transform: translateX(-50%);
       white-space: nowrap;
     }

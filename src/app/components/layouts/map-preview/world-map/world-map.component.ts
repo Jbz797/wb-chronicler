@@ -4,9 +4,9 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
-import { PLACES_FILE } from '../../../../constants';
+import { PLACES_FILE, SPECIES_COLORS } from '../../../../constants';
 import { MapPin, PlaceArea, Places, TileExtent, TilePoint } from '../../../../interfaces';
-import { ChroniclerService } from '../../../../services';
+import { ChroniclerService, RegistryService } from '../../../../services';
 
 @Component({
   selector: 'app-world-map',
@@ -17,6 +17,7 @@ import { ChroniclerService } from '../../../../services';
 export class WorldMapComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _registry = inject(RegistryService);
 
   public readonly previewUrl = input.required<string>();
 
@@ -28,11 +29,13 @@ export class WorldMapComponent {
     top: ((extent.height - tile.y - 0.5) / extent.height) * 100,
   });
 
-  // Where the favourite stood as the chapter was written, sited as every pin is — none before a favourite is chosen.
+  // Where the favourite stood as the chapter was written, sited as every pin is and dyed as its species' tag in the prose — none before a favourite is chosen.
   protected readonly favorite = computed(() => {
     const extent = this._extent();
     const metadata = this._chronicler.currentChapter()?.meta.favorite?.metadata;
-    return extent && metadata && { ...this._at({ x: metadata.x, y: metadata.y }, extent), name: metadata.name };
+    if (!extent || !metadata) return null;
+    const color = SPECIES_COLORS[this._registry.persons()[String(metadata.id)]?.asset_id ?? ''];
+    return { ...this._at({ x: metadata.x, y: metadata.y }, extent), color, name: metadata.name };
   });
   // The picture's own box, as wide as the screen allows at its ratio — the pins sit in percent of it, so they hold wherever it lands.
   protected readonly frame = computed(() => {

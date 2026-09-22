@@ -14,7 +14,7 @@
     </span>
   }
   @if (favorite(); as f) {
-    <span class="favorite" [style.left.%]="f.left" [style.top.%]="f.top">
+    <span class="favorite" [style.--favorite]="f.color" [style.left.%]="f.left" [style.top.%]="f.top">
       <span class="favorite-name">{{ f.name }}</span>
     </span>
   }
