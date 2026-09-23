@@ -815,19 +815,19 @@ def _water_trait_ids() -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if "damaged_by_water" in (spec.get("tags") or []))
 
 
-# Why no walk joins the two, named: the rock of their one land, the water between two lands too wide for his reach, or no crossing short enough at all.
+# Why no walk joins the two, named: the rock of their one land, a water shut to the body, a strait no islet chain shortens enough, or no crossing short enough.
 def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, crow: int, ctx: dict) -> str:
     island_of = ctx["island_lookup"]()
     home, land, who = island_of.get(actor_xy(actor)), island_of.get(goal), _named(actor)
     head = f"✗ {who} can't reach {whom}, {crow} tiles away as the crow flies"
     if (home is not None and home == land) or gait.reach == inf:  # his own land, walked round its bays, or a sea he crosses at will: the ground is to blame
         return f"{head}: rock, lava or goo walls the way off"
-    swims = f"swims {round(gait.reach)} tiles at most" if gait.reach else "never takes to the water"
-    if home is not None and land is not None and (gap := ctx["strait_gaps"]().get(tuple(sorted((home, land))))) is not None and gap > gait.reach:
-        return f"{head}: lands {home} and {land} are {gap} tiles of water apart at their narrowest, and {who} {swims}"
     where = f"land {land}" if land is not None else "its spot, off any counted land"
-    if not gait.reach:
-        return f"{head}: {who} {swims}, and no walk on land reaches {where}"
+    if (reach := round(gait.reach)) < 1:  # a breath that crosses no whole tile: the water is shut to it, and a strait's width is beside the point
+        return f"{head}: {who} never takes to the water, and no walk on land reaches {where}"
+    swims = f"swims {reach} tile{'s' if reach > 1 else ''} at most"
+    if home is not None and land is not None and (gap := ctx["strait_gaps"]().get(tuple(sorted((home, land))))) is not None and gap > reach:
+        return f"{head}: lands {home} and {land} are {gap} tiles of water apart at their narrowest, and no islet chain shortens it enough for {who}, who {swims}"
     return f"{head}: no crossing short enough for {who}, who {swims}, reaches {where}"
 
 
