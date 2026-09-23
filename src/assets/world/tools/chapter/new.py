@@ -61,7 +61,8 @@ _AFTER_REPORTS = (
     " it is yours to take or leave, and what you take, you write in your own hand",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
     "what asserts anything new goes back to the same auditors, each resumed by message with the id its report came with, its memory intact — note each id, as a"
-    " compaction drops them; a fresh one only if that fails — its lines flagged as new, the only ones they reopen",
+    " compaction drops them; a fresh one only if that fails — its lines flagged as new, each read with its paragraph and whatever else speaks of the same,"
+    " the rest left closed",
     "the last round settled: `tools/chapter/new.py --deliver`",
 )
 
@@ -112,7 +113,7 @@ _BRIEFS = (  # the auditors' own briefs and how many of each: a sub-agent knows 
         " Say so plainly where the story holds. Where it does not, give each gap its chapter, its line and its quote, and you may add what would mend it —"
         " a correction, a passage the chronicle lacks, an angle it has never taken — as a direction, never as written prose."
         " Rank them, the most load-bearing first, and say of each whether this chapter can mend it or the chronicle carries it from further back."
-        " What it carries is said once: asked again, weigh only the lines handed to you. Write nothing.",
+        " What it carries is said once: asked again, weigh the lines handed to you with their paragraphs. Write nothing.",
     ),
 )
 
