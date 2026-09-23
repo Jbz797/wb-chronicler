@@ -24,7 +24,9 @@
                   "**/.cache/**",
                   "**/.ruff_cache/**",
                   "**/__pycache__/**",
+                  "world/docs/audit/**",
                   "world/history/map_stats.s3db",
+                  "world/history/watches.md",
                   "world/saves/*/map.wbox",
                   "world/tools/*/**",
                   "world/tools/ruff.toml"

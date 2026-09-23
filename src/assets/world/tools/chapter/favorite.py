@@ -94,9 +94,9 @@ def main(argv: list[str]) -> int:
     draft = chapter_dir / "chapter.md"
     had_prose = draft.exists() and any(line.strip() and not line.startswith("# ") for line in draft.read_text().splitlines())  # beyond the H1 `new.py` lays
     shutil.rmtree(chapter_dir)
-    print(f"  C{n} erased — new.py rebuilds it around the favorite, below")
+    print(f"  C{n} erased, rebuilt below around the favorite")
     if had_prose:
-        print(f"  → chronicler: its prose went with it — write C{n} afresh")
+        print(f"  → its prose went with it: write C{n} afresh")
     print(flush=True)  # a blank line, flushed: the child writes next
 
     # `--reset-asked` because reaching here means a chapter stood a moment ago, so the reset question was settled long before — without it C1 would ask again.

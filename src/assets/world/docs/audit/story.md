@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 23/09/26 22:47</p>
+<p class="metadata">Date de mise à jour : 23/09/26 23:39</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -13,11 +13,11 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut : à partir de `sav
 - un motif ou une cause qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - une âme ou un lieu qu'elle a lâchés là où la chronique l'attendait.
 
-Ouvre ton rapport sur le registre des veilles encore ouvertes et de celles que le chapitre ouvre : chacune par son chapitre et sa ligne, son sort au chapitre d'avant puis dans celui-ci — soldée, reconduite, détournée, muette. Deux veilles ne se lient que si le texte les lie lui-même.
+Pars de `history/watches.md` s'il existe, le registre des veilles encore ouvertes, et mets-le à jour à chaque passage : une puce par veille, dans l'ordre de leur ouverture, son chapitre d'ouverture, son sujet en une ligne et son dernier sort avec son chapitre — ouverte, reconduite, détournée —, sans numéro de ligne. Celles que le chapitre ouvre y entrent, une veille soldée en sort, une veille qu'il ne touche pas reste telle quelle. Au-delà de 10 veilles, abandonne celles qui ont le moins de chances de se refermer un jour, et dis-le au chroniqueur : une veille abandonnée sort, close, elle n'est plus un écart. Ouvre ton rapport sur ce qui y a changé. Deux veilles ne se lient que si le texte les lie lui-même.
 
 Dis-le franchement là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage qui manque à la chronique, un angle jamais pris), mais comme une direction, jamais comme de la prose écrite.
 
-Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peut le réparer, ou si la chronique le porte de plus loin. N'écris rien dans les fichiers.
+Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peut le réparer, ou si la chronique le porte de plus loin. N'écris dans aucun autre fichier.
 
 ## Au réaudit
 

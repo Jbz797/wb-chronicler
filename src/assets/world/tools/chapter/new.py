@@ -95,7 +95,7 @@ _CHAPTER_FLOOR = 7500  # in no doc: the recap gives it, delivery holds it — co
 _DESCRIPTOR_CAP = 64
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
-    "announce it to the player with `tools/map/show.py <x,y>`: among a thousand creatures, only the map finds it",
+    "announce it to the player with `tools/map/show.py <x,y>`: only the map finds it among a thousand",
     "his word given (you will embody it), have him close WorldBox: `tools/chapter/favorite.py <id>` rebuilds this chapter around it",
     "refused: another if one is worth it, never of the kind turned down — else the chapter goes without, the question returning next save",
 )
@@ -413,7 +413,7 @@ def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | Non
     return misplaced
 
 
-# The recap's closing lines: the choice of a favorite before anything else, then step 3 with the commands and chapters it calls for, and step 4's floor.
+# The recap's closing lines: the choice of a favorite before anything else, then step 3 with the commands and files it calls for, and step 4's bounds.
 def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
@@ -423,17 +423,17 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
             print(f"    · {line}")
         print("  → without one, step 3, the analysis, before the first word and not to be hurried:")
     else:
-        print("  → chronicler: chapter laid out — step 3, the analysis, before the first word and not to be hurried:")
+        print("  → chronicler: step 3, the analysis, before the first word and not to be hurried:")
     fav_id = ((favorite or {}).get("metadata") or {}).get("id")
     if n > 1:
         order = ", the favorite first, then circle by circle:" if fav_id else ","  # the chapter's own order, so the analysis lands already sorted by tier
         print(f"    · the deltas since C{n - 1}{order} what moved as much as what held — `geography bodies C{n}` shows a land newly peopled")
     print("    · the thresholds just crossed: the first times, the levels reached")
     if fav_id:
-        print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id, a name being shared")
+        print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id: names repeat")
     if n > 1:
-        print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`")
-    print(f"  → step 4, the writing: {_CHAPTER_FLOOR} to {_CHAPTER_CAP} characters, blanks folded — counted at delivery, past the audit, which cuts and adds")
+        print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `history/watches.md`")
+    print(f"  → step 4, the writing: {_CHAPTER_FLOOR} to {_CHAPTER_CAP} characters, blanks folded, counted at delivery, past the audit")
 
 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.

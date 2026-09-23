@@ -176,7 +176,9 @@ class WorldStore {
   // Empties `saves/` rather than removing it — angular.json declares it, `new.py` writes into it — then all of `history/`; what outlives a world sits elsewhere.
   async wipe() {
     const entries = await entriesIn(SAVES);
-    const history = [`${this.#history}/map_stats.s3db`, `${this.#history}/places.json`, `${this.#history}/world.json`, this.#settings];
+    const history = [
+      `${this.#history}/map_stats.s3db`, `${this.#history}/places.json`, `${this.#history}/watches.md`, `${this.#history}/world.json`, this.#settings,
+    ];
     const doomed = [...entries.map((entry) => `${SAVES}/${entry}`), ...history];
     await Promise.all(doomed.map((entry) => rm(entry, { force: true, recursive: true })));
     return entries.filter((entry) => /^C\d+$/.test(entry)).length; // `saves/` also holds the chapter index, which is swept along but was never a chapter

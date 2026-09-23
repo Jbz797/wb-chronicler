@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 23/09/26 22:27</p>
+<p class="metadata">Date de mise à jour : 23/09/26 23:11</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en observateur (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -20,6 +20,7 @@ Tu **lis `history/settings.json` avant de répondre, puis à chaque nouveau chap
 │   ├── map_stats.s3db
 │   ├── places.json
 │   ├── settings.json
+│   ├── watches.md # les veilles encore ouvertes, à jour après chaque audit
 │   └── world.json # nom, description et étendue du monde, en tuiles
 ├── i18n/<lang>/ # le nom des espèces et des ères, un fichier chacun
 ├── saves/
