@@ -59,16 +59,16 @@ _ACCOUNT = {
 
 # What becomes of the auditors' reports, in the order it is done — the chronicler's to follow between rounds, said where the audit is handed over.
 _AFTER_REPORTS = (
-    "every report in hand, never before, and chapter.md untouched while any auditor reads it — each report waits for the others, a message from the player"
-    " or the dev too: correct each confirmed gap — one raised by a single fact check is checked all the same, the tool settling a disagreement",
-    "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest;"
-    " and a figure a rewrite brings is read off a tool then, never carried over from the draft, a report or memory",
-    "correct where a correction suffices, rewrite only what it cannot mend",
-    "then look for the same value or word elsewhere: all of chapter.md, title and epigraph included, and your prose in chapter.json — descriptor, trait summaries",
-    "what the story check proposes is yours to take or leave, and what you take, you write in your own hand",
+    "every report in hand, and chapter.md untouched while any auditor reads — each report waits for the others, a message from the player or the dev too:"
+    " correct each confirmed gap, one raised by a single fact check checked all the same, a tool settling a disagreement",
+    "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest; correct where that suffices, rewrite"
+    " only what it cannot mend, and read off a tool any figure a rewrite brings, never from the draft, a report or memory",
+    "then seek the same value or word everywhere: chapter.md, title and epigraph included, and your prose in chapter.json",
+    "what the story check proposes is yours to take or leave, and in your own hand",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
-    "what asserts anything new goes back to the same auditors, the lines alone and never your reading of them, each resumed by message with the id its report"
-    " came with, its memory intact — note each id, as a compaction drops them; a fresh one only if the message itself fails — its lines flagged as new",
+    "what asserts anything new goes back to the same auditors, flagged as new, the lines alone and never your reading of them — each resumed by message"
+    " on its report's id, noted as a compaction drops them, a fresh one only if that fails; a cut goes back as the passage it took out, what leaned on it"
+    " theirs to find",
     "the last round settled: `tools/chapter/new.py --deliver`",
 )
 
@@ -95,9 +95,9 @@ _CHAPTER_FLOOR = 7500  # in no doc: the recap gives it, delivery holds it — co
 _DESCRIPTOR_CAP = 64
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
-    "announce it to the player, showing him where it stands (`tools/map/show.py <x,y>`): among a thousand creatures, only the map finds it",
-    "his word given — you are the one who will embody it — have him close WorldBox, then `tools/chapter/favorite.py <id>` rebuilds this chapter around it",
-    "refused: offer another if one is worth it, never of the kind just turned down — else the chapter goes without, and the question returns next save",
+    "announce it to the player with `tools/map/show.py <x,y>`: among a thousand creatures, only the map finds it",
+    "his word given (you will embody it), have him close WorldBox: `tools/chapter/favorite.py <id>` rebuilds this chapter around it",
+    "refused: another if one is worth it, never of the kind turned down — else the chapter goes without, the question returning next save",
 )
 
 _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never done by the chronicler's own hand
@@ -279,7 +279,7 @@ def _deliver() -> int:
         if short:
             print(f"  ✗ chapter.md, {length} characters of {_CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes to the audit as new")
         elif long:
-            print(f"  ✗ chapter.md, {length} characters of {_CHAPTER_CAP} at most, blanks folded — cut whole passages, the least-borne first")
+            print(f"  ✗ chapter.md, {length} characters of {_CHAPTER_CAP} at most, blanks folded — cut whole passages, the least-borne first, never a correction")
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
         return 1
     print(f"✓ C{n} — delivery")
@@ -418,10 +418,10 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
     if favorite is None and any(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a)):
-        print("  → chronicler: choose a favorite before a single word — docs/chronicler.md § « Choix du favori » says who; then, the one chosen:")
+        print("  → chronicler: choose a favorite before a single word (docs/chronicler.md § « Choix du favori »), then:")
         for line in _DESIGNATION:
             print(f"    · {line}")
-        print("  → chronicler: should the chapter go without, step 3, the analysis, before its first word and not to be hurried:")
+        print("  → without one, step 3, the analysis, before the first word and not to be hurried:")
     else:
         print("  → chronicler: chapter laid out — step 3, the analysis, before the first word and not to be hurried:")
     fav_id = ((favorite or {}).get("metadata") or {}).get("id")
@@ -448,7 +448,7 @@ def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None,
     if events := [code for code in tags if code not in _ALERTS and code != "NEW_FAVORITE"]:
         for code in events:
             print(f"  ⚑ {code}")
-        print("  → each ⚑ is an event this chapter owes its reader: docs/tags.md says what it means")
+        print("  → each ⚑ is an event the chapter owes its reader, glossed in docs/tags.md")
         print(_RECAP_RULE)
     # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file. C1 has no « since »: the whole
     # past of a world taken up as it stood would pour out, and that is the s3db's to browse.

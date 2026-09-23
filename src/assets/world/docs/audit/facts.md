@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 23/09/26 12:08</p>
+<p class="metadata">Date de mise à jour : 23/09/26 22:47</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail que toi, chacun de son côté.
 
@@ -16,4 +16,4 @@ Ne rends que les écarts, chacun avec sa ligne, sa citation et sa valeur vraie. 
 
 ## Au réaudit
 
-Le chroniqueur te renvoie les lignes qui ont bougé. Juge chacune avec son paragraphe, et avec tout ce qui ailleurs dit la même chose. Le reste est clos.
+Le chroniqueur te renvoie les lignes qui ont bougé et les passages coupés. Juge chaque ligne avec son paragraphe, et avec tout ce qui ailleurs dit la même chose ; d'une coupe, ce qui s'y appuyait. Le reste est clos.

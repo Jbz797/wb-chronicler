@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 23/09/26 20:24</p>
+<p class="metadata">Date de mise à jour : 23/09/26 22:47</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -21,4 +21,4 @@ Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peu
 
 ## Au réaudit
 
-Ce que la chronique porte de plus loin se dit une fois. Rappelé, pèse les lignes que le chroniqueur te renvoie, avec leurs paragraphes.
+Ce que la chronique porte de plus loin se dit une fois. Rappelé, pèse les lignes que le chroniqueur te renvoie, avec leurs paragraphes, et ce qui s'appuyait sur un passage coupé.
