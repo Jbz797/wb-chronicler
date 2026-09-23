@@ -67,7 +67,6 @@ _CITY_TAX_TRAITS = {
     "tax_rate_tribute_low": ("tax_tribute", "low"),
 }
 
-_CIV_BASE_CITIES = {"dwarf": 3, "elf": 3, "orc": 4}  # WB `ActorAsset.civ_base_cities`; every other civ keeps the `$civ_unit$` template's 5.
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
 _RANGED_ATTACKS = asset_set("ranged")  # WB `attack_type != 0`: every asset cloned from the `$range` template (`ItemLibrary`).
 _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  # `ActorTrait.same_trait_mod`/`opposite_trait_mod` — the kingdom reads it too.
@@ -497,7 +496,8 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
 
     # 11. Overreach: every holding past what the crown's species (and its king's `cities` stat) can govern costs the outlying towns 25.
     if not is_capital:
-        allowed = max(_CIV_BASE_CITIES.get(_kingdom_species(kingdom, ctx), 5) + int(_actor_stats(king, ctx).get("cities", 0)), 1)  # raw key, before the rename
+        base = (ctx["species_data"].get(_kingdom_species(kingdom, ctx)) or {}).get("civ_base_cities", 4)  # WB `ActorAsset` sets 4, its civ template 5
+        allowed = max(base + int(_actor_stats(king, ctx).get("cities", 0)), 1)  # raw key, before the rename
         held = len(realm["cities_by_kingdom"].get(kingdom["id"], []))
         if held > allowed:
             add("cities", (allowed - held) * 25)

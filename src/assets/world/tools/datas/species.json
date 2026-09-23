@@ -1,6 +1,8 @@
 {
   "UFO": {
+    "airborne": true,
     "attack": "base_attack",
+    "ignore_tile_speed_multiplier": true,
     "stats": { "armor": 5, "damage": 80, "health": 1000, "lifespan": 0, "mass": 5, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 20 }
   },
   "acid_blob": {
@@ -86,6 +88,8 @@
   },
   "ant_black": {
     "attack": "base_attack",
+    "force_ocean_creature": true,
+    "ignore_tile_speed_multiplier": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -104,6 +108,8 @@
   },
   "ant_blue": {
     "attack": "base_attack",
+    "force_ocean_creature": true,
+    "ignore_tile_speed_multiplier": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -122,6 +128,8 @@
   },
   "ant_green": {
     "attack": "base_attack",
+    "force_ocean_creature": true,
+    "ignore_tile_speed_multiplier": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -140,6 +148,8 @@
   },
   "ant_red": {
     "attack": "base_attack",
+    "force_ocean_creature": true,
+    "ignore_tile_speed_multiplier": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -298,426 +308,539 @@
     },
     "taxonomy": { "class": "myxogastria", "family": "blobidae", "genus": "blobus", "kingdom": "protista", "order": "physarales", "phylum": "amoebozoa" }
   },
-  "boat_fishing": { "attack": "base_attack", "stats": { "health": 100, "mass": 1000, "mass_2": 100, "scale": 0.25, "size": 1, "speed": 10 } },
+  "boat_fishing": {
+    "attack": "base_attack",
+    "force_ocean_creature": true,
+    "stats": { "health": 100, "mass": 1000, "mass_2": 100, "scale": 0.25, "size": 1, "speed": 10 }
+  },
   "boat_trading_acid_gentleman": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_alien": {
     "attack": "boat_plasma_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_alpaca": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_angle": {
     "attack": "boat_freeze_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_armadillo": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_bandit": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_bear": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_bee": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
-  "boat_trading_beetle": { "attack": "rocks", "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 } },
+  "boat_trading_beetle": {
+    "attack": "rocks",
+    "force_ocean_creature": true,
+    "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
+  },
   "boat_trading_buffalo": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_candy_man": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_capybara": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_cat": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_chicken": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_cold_one": {
     "attack": "boat_freeze_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_cow": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_crab": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_crocodile": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_crystal_golem": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_demon": {
     "attack": "boat_fireball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_dog": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_druid": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_dwarf": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_elf": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_evil_mage": {
     "attack": "boat_fireball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_fairy": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_fox": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_frog": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_garlic_man": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_ghost": {
     "attack": "boat_freeze_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_goat": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_greg": {
     "attack": "boat_plasma_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_human": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_hyena": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_lemon_man": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_liliar": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_monkey": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_necromancer": {
     "attack": "boat_necro_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_orc": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_penguin": {
     "attack": "boat_snowball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_piranha": {
     "attack": "boat_necro_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_rabbit": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_rat": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_rhino": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_scorpion": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_seal": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_sheep": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_snake": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_snowman": {
     "attack": "boat_snowball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_turtle": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_unicorn": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_white_mage": {
     "attack": "boat_freeze_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_trading_wolf": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.1, "health": 200, "mass": 1000, "mass_2": 3000, "scale": 0.25, "size": 1, "speed": 30 }
   },
   "boat_transport_acid_gentleman": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_alien": {
     "attack": "boat_plasma_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_alpaca": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_angle": {
     "attack": "boat_freeze_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_armadillo": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_bandit": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_bear": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_bee": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_beetle": {
     "attack": "rocks",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_buffalo": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_candy_man": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_capybara": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_cat": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_chicken": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_cold_one": {
     "attack": "boat_freeze_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_cow": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_crab": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_crocodile": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_crystal_golem": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_demon": {
     "attack": "boat_fireball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_dog": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_druid": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_dwarf": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_elf": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_evil_mage": {
     "attack": "boat_fireball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_fairy": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_fox": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_frog": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_garlic_man": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_ghost": {
     "attack": "boat_freeze_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_goat": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_greg": {
     "attack": "boat_plasma_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_human": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_hyena": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_lemon_man": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_liliar": {
     "attack": "boat_acid_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_monkey": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_necromancer": {
     "attack": "boat_necro_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_orc": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_penguin": {
     "attack": "boat_snowball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_piranha": {
     "attack": "boat_necro_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_rabbit": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_rat": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_rhino": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_scorpion": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_seal": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_sheep": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_snake": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_snowman": {
     "attack": "boat_snowball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_turtle": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_unicorn": {
     "attack": "boat_cannonball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_white_mage": {
     "attack": "boat_freeze_ball",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "boat_transport_wolf": {
     "attack": "boat_arrow",
+    "force_ocean_creature": true,
     "stats": { "attack_speed": 0.5, "health": 1000, "mass": 1000, "mass_2": 2000, "scale": 0.25, "size": 1, "speed": 25 }
   },
   "buffalo": {
@@ -825,6 +948,7 @@
   "civ_acid_gentleman": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "You'll be drawn in by their manners, only to be eaten away by their nature",
     "stats": {
       "accuracy": 1,
@@ -845,6 +969,7 @@
   "civ_alpaca": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Soft, fluffy, and always ready to charm their way out of trouble",
     "stats": {
       "accuracy": 1,
@@ -865,6 +990,7 @@
   "civ_armadillo": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Born to rock, built to roll",
     "stats": {
       "accuracy": 1,
@@ -885,6 +1011,7 @@
   "civ_bear": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Fierce on the battlefield, but soft enough to help their cubs bake cookies",
     "stats": {
       "accuracy": 1,
@@ -905,6 +1032,7 @@
   "civ_beetle": {
     "attack": "rocks",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Rolling to their future one ball at a time, always aiming for the top",
     "stats": {
       "accuracy": 1,
@@ -925,6 +1053,7 @@
   "civ_buffalo": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Horns may be for fighting, but those hooves? They're all about dancing the night away",
     "stats": {
       "accuracy": 1,
@@ -945,6 +1074,7 @@
   "civ_candy_man": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Behind those sugary smiles lies a hunger for blood and flesh",
     "stats": {
       "accuracy": 1,
@@ -965,6 +1095,7 @@
   "civ_capybara": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They make your mom laugh",
     "stats": {
       "accuracy": 1,
@@ -985,6 +1116,7 @@
   "civ_cat": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They may look adorable, but those claws say otherwise",
     "stats": {
       "accuracy": 1,
@@ -1005,6 +1137,7 @@
   "civ_chicken": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Top of the pecking order",
     "stats": {
       "accuracy": 1,
@@ -1025,6 +1158,7 @@
   "civ_cow": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They're calm, until someone looks at them wrong - then it's time to mooooove",
     "stats": {
       "accuracy": 1,
@@ -1045,6 +1179,7 @@
   "civ_crab": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They might walk funny, but when it comes to battle, they're deadly serious",
     "stats": {
       "accuracy": 1,
@@ -1065,6 +1200,7 @@
   "civ_crocodile": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They spend most of their time plotting domination, and the rest pretending they're not",
     "stats": {
       "accuracy": 1,
@@ -1085,6 +1221,7 @@
   "civ_crystal_golem": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They've got that cool, calm, ocean vibe - right until you upset them",
     "stats": {
       "accuracy": 1,
@@ -1105,6 +1242,7 @@
   "civ_dog": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Their loyalty is legendary, their bite is worse",
     "stats": {
       "accuracy": 1,
@@ -1125,6 +1263,7 @@
   "civ_fox": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "In the game of life, they never play fair - and that's why they always win",
     "stats": {
       "accuracy": 1,
@@ -1145,6 +1284,7 @@
   "civ_frog": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Quick as the wind, deadly as a lily pad to the face",
     "stats": {
       "accuracy": 1,
@@ -1165,6 +1305,7 @@
   "civ_garlic_man": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Smell that? That's the scent of victory",
     "stats": {
       "accuracy": 1,
@@ -1185,6 +1326,7 @@
   "civ_goat": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Stubborn as a rock, but just as reliable",
     "stats": {
       "accuracy": 1,
@@ -1205,6 +1347,7 @@
   "civ_hyena": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "The bigger the chaos, the louder they laugh",
     "stats": {
       "accuracy": 1,
@@ -1225,6 +1368,7 @@
   "civ_lemon_man": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Tough on the outside, sour on the inside",
     "stats": {
       "accuracy": 1,
@@ -1245,6 +1389,7 @@
   "civ_liliar": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Rain isn't enough for these flowers - they prefer to drink the tears of their defeated foes",
     "stats": {
       "accuracy": 1,
@@ -1265,6 +1410,7 @@
   "civ_monkey": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Silent as shadows, deadly as a well-placed banana peel",
     "stats": {
       "accuracy": 1,
@@ -1285,6 +1431,7 @@
   "civ_penguin": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They dream in warm hues, where they paint with the blood of their fallen foes",
     "stats": {
       "accuracy": 1,
@@ -1305,6 +1452,7 @@
   "civ_piranha": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "On land or sea, their hunger knows no bounds",
     "stats": {
       "accuracy": 1,
@@ -1332,6 +1480,7 @@
   "civ_rabbit": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "When in doubt, hop it out",
     "stats": {
       "accuracy": 1,
@@ -1352,6 +1501,7 @@
   "civ_rat": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They steal hearts... and a few other things",
     "stats": {
       "accuracy": 1,
@@ -1372,6 +1522,7 @@
   "civ_rhino": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They do not always hit, but when they do, they hit hard",
     "stats": {
       "accuracy": 1,
@@ -1392,6 +1543,7 @@
   "civ_scorpion": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "The guardians of the desert's deepest secrets",
     "stats": {
       "accuracy": 1,
@@ -1412,6 +1564,7 @@
   "civ_seal": {
     "attack": "jaws",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Most elite warriors of the sea, trained to fight in any conditions",
     "stats": {
       "accuracy": 1,
@@ -1431,6 +1584,7 @@
   "civ_sheep": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Where others see grass, they see potential profit",
     "stats": {
       "accuracy": 1,
@@ -1451,6 +1605,7 @@
   "civ_snake": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Their sarcasm's so sharp, it's basically venom - and it stings more than their bite ever could",
     "stats": {
       "accuracy": 1,
@@ -1471,6 +1626,7 @@
   "civ_turtle": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "They live long enough to see their enemies become dust",
     "stats": {
       "accuracy": 1,
@@ -1491,6 +1647,7 @@
   "civ_unicorn": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Even demons find them too loud",
     "stats": {
       "accuracy": 1,
@@ -1511,6 +1668,7 @@
   "civ_wolf": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "The howl isn't just a warning - it's a promise that blood will be spilled tonight",
     "stats": {
       "accuracy": 1,
@@ -1590,6 +1748,7 @@
   "crabzilla": {
     "attack": "base_attack",
     "description": "Become an enormous Crab, the destroyer of worlds",
+    "ignore_tile_speed_multiplier": true,
     "stats": { "damage": 10, "health": 10000, "mass_2": 99999, "scale": 0.25, "size": 8, "speed": 50 }
   },
   "crocodile": {
@@ -1674,8 +1833,10 @@
     "taxonomy": { "class": "mammalia", "family": "canidae", "genus": "canis", "kingdom": "animalia", "order": "carnivora", "phylum": "chordata" }
   },
   "dragon": {
+    "airborne": true,
     "attack": "base_attack",
     "description": "Scary flying lizard that brings destruction to your world. Fun!",
+    "ignore_tile_speed_multiplier": true,
     "stats": { "damage": 100, "health": 1000, "lifespan": 10000, "mass": 4, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 40, "targets": 20 }
   },
   "druid": {
@@ -1708,6 +1869,7 @@
   "dwarf": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 3,
     "description": "Master craftsmen who never forget a grudge",
     "stats": {
       "accuracy": 1,
@@ -1728,6 +1890,7 @@
   "elf": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 3,
     "description": "Mystical beings with a superiority complex and great hair",
     "stats": {
       "accuracy": 1,
@@ -2051,8 +2214,10 @@
     "taxonomy": { "class": "mammalia", "family": "bovidae", "genus": "capra", "kingdom": "animalia", "order": "artiodactyla", "phylum": "chordata" }
   },
   "god_finger": {
+    "airborne": true,
     "attack": "base_attack",
     "description": "Multiplayer Simulator",
+    "ignore_tile_speed_multiplier": true,
     "stats": { "armor": 5, "damage": 80, "health": 100, "lifespan": 10000, "mass": 5, "mass_2": 99999, "scale": 0.3, "size": 2, "speed": 50 }
   },
   "grasshopper": {
@@ -2098,6 +2263,7 @@
   "human": {
     "attack": "hands",
     "baby_form": true,
+    "civ_base_cities": 5,
     "description": "Masters of adaptation and bad decisions",
     "stats": {
       "accuracy": 1,
@@ -2450,6 +2616,8 @@
   "printer": {
     "attack": "base_attack",
     "description": "Use this printer-ant that will create a brand new landscape for you with zero effort",
+    "force_ocean_creature": true,
+    "ignore_tile_speed_multiplier": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2550,6 +2718,8 @@
   "sand_spider": {
     "attack": "base_attack",
     "description": "Creates sand and then dies",
+    "force_ocean_creature": true,
+    "ignore_tile_speed_multiplier": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2829,6 +2999,8 @@
   "worm": {
     "attack": "base_attack",
     "description": "Crawls underground and messes up the landscape",
+    "force_ocean_creature": true,
+    "ignore_tile_speed_multiplier": true,
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2846,7 +3018,9 @@
     }
   },
   "zombie_dragon": {
+    "airborne": true,
     "attack": "base_attack",
+    "ignore_tile_speed_multiplier": true,
     "stats": { "damage": 100, "health": 1000, "lifespan": 10000, "mass": 4, "mass_2": 2500, "scale": 0.3, "size": 2, "speed": 40, "targets": 20 }
   }
 }

@@ -52,9 +52,6 @@ _DROP = {"accuracy", "critical_damage_multiplier", "damage_range", "knockback", 
 
 _EGG_TRAIT = "reproduction_strategy_oviparity"  # WB `Subspecies.checkReproductionStrategy` raises `has_egg_form` off this one trait, and nothing else
 
-# WB `ActorTraitLibrary.addTraitsSpirit` gates these two on an era flag, and `Actor.updateStats` then skips the trait whole where the age lacks it.
-_ERA_TRAITS = {"moonchild": "flag_moon", "nightchild": "overlay_darkness"}
-
 # Gene index_id used to seed SystemRandom — order in `GeneLibrary` (`addSpecial` → `addBaseStats` → `addFightStats` → `addBonusStats` → `addAttributes`).
 _GENE_INDEX = {
     "empty": 1,
@@ -421,10 +418,10 @@ def _cleanup_stats(totals: dict, *, delta: bool = False) -> dict:
     return result
 
 
-# The age of the world puts to sleep a trait it does not carry the flag of — an era-gated one alone, so a world in the light lists both of them.
-def _dormant_traits(save: dict) -> frozenset[str]:
+# The age puts to sleep a trait whose `era_flag` it lacks (WB `addTraitsSpirit`), `updateStats` then skipping it whole — so a world in the light lists both.
+def _dormant_traits(save: dict, traits: dict) -> frozenset[str]:
     age = load_data("world-ages.json").get(save["mapStats"].get("world_age_id") or "") or {}
-    return frozenset(trait for trait, flag in _ERA_TRAITS.items() if not age.get(flag))
+    return frozenset(trait for trait, entry in traits.items() if (flag := entry.get("era_flag")) and not age.get(flag))
 
 
 # Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's colors only depend on (gene, life_dna), and life_dna is constant per run.
@@ -680,7 +677,7 @@ def build_actor_stats_context(save: dict) -> dict:
         "clans_by_id": index_by_id(save.get("clans", [])),
         "creature_traits": load_data("creature-traits.json"),
         "equipment": load_data("equipment.json"),
-        "era_dormant_traits": _dormant_traits(save),  # the age is the world's, so its verdict is read once here and never per body
+        "era_dormant_traits": _dormant_traits(save, load_data("creature-traits.json")),  # the age is the world's: read once here, never per body
         "group_trait_cache": {},  # `_add_group_stats`: a clan's traits and a tongue's, summed once for the group rather than once per member
         "incubation_memo": {},  # `is_egg`: the months a biology takes to hatch, summed once for it rather than once per body it laid
         "items_by_id": index_by_id(save["items"]),

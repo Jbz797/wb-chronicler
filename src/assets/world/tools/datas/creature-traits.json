@@ -219,6 +219,7 @@
   "desire_alien_mold": {
     "description": "Yearns for extraterrestrial growth",
     "flavor": "Space fungus is best fungus",
+    "forced_kingdom": "alien_mold",
     "group": "special",
     "name": "Alien Mold Desire",
     "rarity": "Epic",
@@ -227,6 +228,7 @@
   "desire_computer": {
     "description": "Seeks the forbidden machine that knows all",
     "flavor": "The allure of ultimate knowledge is impossible to resist",
+    "forced_kingdom": "computer",
     "group": "special",
     "name": "Evil Computer Desire",
     "rarity": "Epic",
@@ -235,6 +237,7 @@
   "desire_golden_egg": {
     "description": "Dreams of the perfect omelet",
     "flavor": "Worth more than its weight in gold",
+    "forced_kingdom": "golden_egg",
     "group": "special",
     "name": "Golden Egg Desire",
     "rarity": "Epic",
@@ -243,6 +246,7 @@
   "desire_harp": {
     "description": "Seeks the mystical instrument of the heavens",
     "flavor": "Music to die for",
+    "forced_kingdom": "harp",
     "group": "special",
     "name": "Ethereal Harp Desire",
     "rarity": "Epic",
@@ -495,6 +499,7 @@
   "madness": {
     "description": "Attacks everyone indiscriminately",
     "flavor": "Finds prophecies between the lines of reality",
+    "forced_kingdom": "mad",
     "group": "special",
     "name": "Madness",
     "rarity": "Epic",
@@ -546,6 +551,7 @@
   },
   "moonchild": {
     "description": "Grants unique bonuses during the Age of the Moon",
+    "era_flag": "flag_moon",
     "flavor": "Touched by the Moon",
     "group": "spirit",
     "name": "Moonchild",
@@ -563,6 +569,7 @@
   "mute": { "description": "Unable to speak or use religion spells", "flavor": "...", "group": "body", "name": "Mute", "rarity": "Rare" },
   "nightchild": {
     "description": "Grants unique bonuses during dark",
+    "era_flag": "overlay_darkness",
     "flavor": "The night reveals to them what the day obscures",
     "group": "spirit",
     "name": "Nightchild",
