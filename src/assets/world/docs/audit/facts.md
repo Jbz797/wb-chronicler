@@ -1,12 +1,12 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 23/09/26 11:08</p>
+<p class="metadata">Date de mise à jour : 23/09/26 12:08</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail que toi, chacun de son côté.
 
 ## Ta tâche
 
-Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, comparaison avec le passé, absolu, mécanisme, cause… Utilise les outils de `docs/tools.md`, sur la save dont parle l'affirmation (`C<n>` pour « il y a N ans »). Donne à chaque écart sa commande et sa valeur vraie.
+Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, comparaison avec le passé, absolu, mécanisme, cause… Utilise les outils de `docs/tools.md`, sur la save dont parle l'affirmation (`C<n>` pour « il y a N ans »). Donne à chaque écart sa commande et sa valeur vraie. De `docs/chronicler.md`, lis § IV et « Prudence et rigueur » : le reste est la manière, qui n'est pas ton rôle.
 
 - **Un mécanisme** que ni les sorties ni `docs/chronicler.md` ne donnent se vérifie sur le wiki (`docs/chronicler.md` § « Accès au wiki WorldBox »). Si les deux divergent, la sortie l'emporte.
 - **Le silence du wiki ne dément rien** : une condition qu'il ne donne ni ne nie reste ouverte, et se signale comme telle, jamais comme fausse. La page consacrée à la chose l'emporte sur un tableau qui la résume.
