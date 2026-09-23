@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 22/09/26 19:50</p>
+<p class="metadata">Date de mise à jour : 23/09/26 09:02</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -53,7 +53,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 - `actor … metadata` : `can_reproduce` demande l'âge de reproduction et, chez qui mange, une `nutrition` d'au moins 50 ; `infertile` et `max_children` (enfants vivants) n'arrêtent que qui porte : un mâle engendre si sa compagne le peut. Qu'il disparaisse après avoir paru ne dit pas l'infertilité : une réserve entamée suffit. Ce qui ouvre ou ferme une naissance : `wiki:Reproduction`. `can_settle` : il pourrait fonder un village là où il se tient. L'un et l'autre ne sortent que vrais.
 - `actor … stats` rend des valeurs **déjà agrégées** — tout y est, du socle de l'espèce aux bonus de niveau (santé, mana et endurance seulement), jusqu'aux points de compétence gagnés à vivre : n'ajoute rien par-dessus. Celles d'un mineur sont **bridées** : `damage_max` et `health_max` valent la moitié tant qu'`adult_age` n'est pas atteint, seuil que `subspecies … stats` donne pour toute la lignée, avec `breeding_age`. La valeur adulte ne se lit pas sur celle de la lignée.
-- `actor … surroundings` se compte comme `walked`, au pas du corps, qui ne nage que vers une autre terre : `intimate` ≤ 25 tuiles, `common` ≤ 120, `hours` donnant leur bord à son pas ; `common_with_boat` ≤ 240 à vol d'oiseau, si son royaume a un bateau de transport ; `water` : dans l'eau, `islet` : sur un îlot non compté. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. `life_stage` se tait à `adult`, `sapient` devant `kin`, `job` ou `role`.
+- `actor … surroundings` se compte comme `walked`, au pas du corps, qui ne nage que vers une autre terre : `intimate` ≤ 25 tuiles, `common` ≤ 120, `hours` donnant leur bord à son pas ; `common_with_boat` ≤ 240 à vol d'oiseau, si son royaume a un bateau de transport ; `water` et `islet` comme dans `tiles … tile_info`. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. `sapient` se tait devant `kin`, `job` ou `role`.
 - `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `diplomacy` et `stewardship` ne servent qu'aux rois et aux chefs, et `damage_*` dit la force d'un coup, `warfare` compris. Le reste : `wiki:Unit_Stats`.
 - `happiness` (`actor … stats`) : la barre du jeu en %, 50 au neutre — heureux dès 60, malheureux sous 30.
 
@@ -72,7 +72,6 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `walked` (`distances`, `to`) : l'équivalent en tuiles de plaine du temps de marche, pas une distance (elle se lit sur `tiles`) — roche, lave et goo contournés, sans nage, au pas d'un corps sans adaptation : sable, marais, neige et, sous Entanglewood, arbres l'allongent. Absente sans terre qui les joigne.
 - `world … metadata` : `months_until_next_age` est **déjà en mois**, 12 par an — il ne repasse pas par le `/ 5` d'un `world_time`.
 - `world … timeline` : ce que chaque année a vu naître, mourir ou s'éteindre, l'année en cours marquée `so_far` ; une année absente n'a rien vu bouger, et la fenêtre en tient une vingtaine.
-- Nommer une section, c'est la vouloir en profondeur : là où `full` la résume, un champ `info` le signale, et la clé qui porte le bloc nomme la section à demander.
 - Sous 4 membres, un corps ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 - Un écart entre deux `snapshot` est un solde, jamais un compte d'événements : ce qui est né et ce qui s'est éteint se lisent dans `cumulative`, où chaque compteur ne fait que monter.
 - Un préfixe `top_` ne tronque pas mais change de mesure : `top_drivers` ne garde que les deux extrêmes et ne somme à rien, quand la section rend le `drivers` complet, qui somme au `total`.

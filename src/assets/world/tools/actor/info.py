@@ -393,6 +393,9 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
         # Each peopled ring's edge at his own pace, so none is told as a morning or a day it is not — an empty one needs none, and a hull sets a passenger's.
         if not is_aboard(actor) and (hours := {name: _walk_time(actor, radius, ctx)["hours"] for name, radius in _CIRCLES if rings.get(name)}):
             rings["hours"] = hours
+    # An adult's line goes unmarked, most bodies standing there: said beside the rows, where a silence read alone passes for youth. A sexless hull has no stage.
+    if any("sex" in row and "life_stage" not in row for ring in rings.values() if isinstance(ring, list) for row in ring):
+        rings["life_stage_default"] = "adult"
     return rings if detailed else light(rings, withheld=True)  # `full` keeps the circle a chapter opens on, and says the wider ones wait to be named
 
 
