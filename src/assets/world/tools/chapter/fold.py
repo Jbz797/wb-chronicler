@@ -59,7 +59,7 @@ _AUDIT = {
     "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
     "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
     "snapshot": frozenset({"gear"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
-    "stats": frozenset({"birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities"}),
+    "stats": frozenset({"birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "swim"}),
 }
 
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.

@@ -173,10 +173,15 @@ class _Unreachable(Exception):
 
 # Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
 def _bears(actor: dict, ctx: dict) -> bool | None:
-    biology = (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
+    biology = _biology(actor, ctx)
     if "reproduction_sexual" in biology:
         return actor.get("sex") == 1
     return None if "reproduction_hermaphroditic" in biology else True  # a lone breeder bears its own
+
+
+# The traits a body's lineage carries — what its breeding, its gait and its swim are each read off.
+def _biology(actor: dict, ctx: dict) -> tuple | list:
+    return (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
 
 
 # The tags a body walks and swims by, off its biology's traits and its clan's: `walk_adaptation_*`, `fast_swimming`, `water_creature`.
@@ -573,9 +578,9 @@ def _equipment_power(actor: dict, ctx: dict) -> int:
 
 # How this body walks, or `None` for one the ground never holds — a flyer, a body born to the water, one aboard a hull: all keep the crow's line.
 def _gait(actor: dict, ctx: dict) -> Gait | None:
-    asset, biology = actor.get("asset_id"), (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
+    asset, biology = actor.get("asset_id"), _biology(actor, ctx)
     tags = _body_tags(actor, biology, ctx)
-    if asset in _AIRBORNE or asset in _SEA_BORN or "water_creature" in tags or is_aboard(actor):
+    if _water_free(asset, tags) or is_aboard(actor):
         return None
     # The cleaned stats, not the raw totals: a child walks and swims on the halved ceiling WB gives it.
     stats, aloft, swift = compute_actor_stats(actor, ctx), "hovering" in biology, "fast_swimming" in tags
@@ -689,6 +694,20 @@ def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, ki
     return rows
 
 
+# How far the body swims now, off the one `_swim_reach` its walks use: `breath` before its wind fails, `reach` once drowning has spent its health too.
+def _swim(actor: dict, stats: dict, ctx: dict) -> dict | str | None:
+    biology = _biology(actor, ctx)
+    tags = _body_tags(actor, biology, ctx)
+    if _water_free(actor.get("asset_id"), tags):
+        return "unlimited"
+    if _water_trait_ids().intersection(biology):
+        return "never"  # WB sends no such body into the water: it burns there rather than drowns
+    breath, reach = _swim_reach(actor, stats, biology, "hovering" in biology, "fast_swimming" in tags)
+    if reach == inf:
+        return "unlimited"
+    return {"breath": round(breath), "reach": round(reach)} if reach else None
+
+
 # How far this body swims from a shore, in tiles: its breath at full pace, then its whole reach, the drowning that follows slower and a point of health at a time.
 def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, swift: bool) -> tuple[float, float]:
     if _water_trait_ids().intersection(biology):  # WB routes no body the water burns through the sea (`ActorMove.goTo`): it walks, or it stays
@@ -746,6 +765,11 @@ def _walker(actor: dict, ctx: dict, limit: float) -> Callable[[int, int, int | N
         return cost
 
     return walk
+
+
+# A body the water never bars — aloft over it, born of it, or living in it: one rule, that no walk measures it and its `swim` says unlimited alike.
+def _water_free(asset: str | None, tags: frozenset[str]) -> bool:
+    return asset in _AIRBORNE or asset in _SEA_BORN or "water_creature" in tags
 
 
 # WB's `isDamagedByOcean`: `hydrophobia` and any other trait tagged `damaged_by_water` — such a body burns in the water rather than drowning in it.
@@ -829,7 +853,8 @@ def main(argv: list[str]) -> int:
     if "ranks_in_species" in sections:
         out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx)
     if "stats" in sections:
-        out["stats"] = _compute_stats(actor, ctx)
+        stats = _compute_stats(actor, ctx)
+        out["stats"] = {**stats, "swim": _swim(actor, stats, ctx)} if stats else stats
     if "surroundings" in sections:
         out["surroundings"] = _build_surroundings(actor, ctx, requested)
     if "traits" in sections:
