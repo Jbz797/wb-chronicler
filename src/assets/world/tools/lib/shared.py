@@ -267,6 +267,14 @@ def asset_set(name: str) -> frozenset[str]:
     return frozenset(load_data("asset-sets.json").get(name) or ())
 
 
+# Every record of one asset with its tile, off the one collection that holds its kind: bodies or buildings, WB's omitted zero read as 0, the unsited left out.
+def asset_sites(save: dict, asset_id: str) -> list[tuple[dict, tuple[int, int]]]:
+    for collection, site in (("actors_data", actor_xy), ("buildings", building_tile)):
+        if sites := [(record, tile) for record in save.get(collection) or [] if record.get("asset_id") == asset_id and (tile := site(record)) is not None]:
+            return sites  # what one collection holds, the other never does — no need to walk every building to find an orc
+    return []
+
+
 # The bearing as a compass point in WB's axes, y growing north: one wind or two, never a third, and none for a body on the very tile.
 def bearing(dx: int, dy: int) -> str | None:
     if not dx and not dy:

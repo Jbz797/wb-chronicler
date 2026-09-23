@@ -15,8 +15,8 @@ from islands import compute_islands_cached
 from shared import (
     actor_xy,
     arg_parser,
+    asset_sites,
     biome_lore,
-    building_tile,
     civic_building_ids,
     emit,
     index_by_id,
@@ -34,7 +34,6 @@ from waters import waters_cached
 _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "ridges", "waters")  # the sections `-i` narrows: the rest speak for the whole world
-_COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection → the helper that sites a record, WB's omitted zero read as 0. No kind sits in both.
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PATCH_SHARE = 1  # percent of its land a biome must stay under to be sited, however few its tiles
 _PATCH_TILES = 50  # at most this many tiles of a biome on one land, it is a place rather than a landscape: each patch is sited, as a share alone could not find it
@@ -201,15 +200,11 @@ def _build_gear(save: dict, save_path: Path) -> dict:
 
 # Where every instance of one kind stands. Its `id` opens its own script; `island_id` names the land mass, else `islet_tiles` one too small to count, else water.
 def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
-    out = []
-    for collection, site in _COORDS.items():
-        for record in save.get(collection) or []:
-            if record.get("asset_id") == asset_id and (tile := site(record)) is not None:
-                # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
-                asleep = "stop_spawn_drops" in (record.get("custom_data_flags") or ())
-                out.append({"dormant": asleep or None, "id": record.get("id"), "name": record.get("name"), "x": tile[0], "y": tile[1]})
-        if out:  # what one collection holds, the other never does — no need to walk 16k buildings to find an orc
-            break
+    # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
+    out = [
+        {"dormant": "stop_spawn_drops" in (record.get("custom_data_flags") or ()) or None, "id": record.get("id"), "name": record.get("name"), "x": x, "y": y}
+        for record, (x, y) in asset_sites(save, asset_id)
+    ]
     if out:  # the lookup costs 0.2 s cold, so a kind nobody built never pays for it
         _, island_of = compute_islands_cached(save, save_path)
         grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
