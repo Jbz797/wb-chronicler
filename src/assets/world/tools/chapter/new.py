@@ -90,7 +90,8 @@ _ALERTS = {
 }
 
 _AUDITORS = (("compliance", 1), ("facts", 2), ("story", 1))  # each by its sheet under `docs/audit/`, and how many of it the audit opens with
-_CHAPTER_FLOOR = 5000  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
+_CHAPTER_CAP = 15000  # a sitting's read, some 12 minutes: past it the chapter says more than its world has done — held with the floor, in no doc either
+_CHAPTER_FLOOR = 7500  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
 _DESCRIPTOR_CAP = 64
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
@@ -270,11 +271,15 @@ def _deliver() -> int:
         return 1
     settings = _settings()
     facts = _step_five_facts(n, settings.get("lang", ""))
-    if (short := facts["length"] < _CHAPTER_FLOOR) or not facts["done"]:
+    length = facts["length"]
+    short, long = length < _CHAPTER_FLOOR, length > _CHAPTER_CAP
+    if short or long or not facts["done"]:
         print(f"✗ C{n} — not yet deliverable")
         _print_step_five(n, facts)
         if short:
-            print(f"  ✗ chapter.md, {facts['length']} characters of {_CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes to the audit as new")
+            print(f"  ✗ chapter.md, {length} characters of {_CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes to the audit as new")
+        elif long:
+            print(f"  ✗ chapter.md, {length} characters of {_CHAPTER_CAP} at most, blanks folded — cut whole passages, the least-borne first")
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
         return 1
     print(f"✓ C{n} — delivery")
@@ -428,7 +433,7 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
         print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id, a name being shared")
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`")
-    print(f"  → step 4, the writing: {_CHAPTER_FLOOR} characters at least, blanks folded — counted at delivery, past the audit, which cuts as much as it adds")
+    print(f"  → step 4, the writing: {_CHAPTER_FLOOR} to {_CHAPTER_CAP} characters, blanks folded — counted at delivery, past the audit, which cuts and adds")
 
 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.
