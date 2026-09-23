@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# User-facing docs (usage, sections) live in `tools/tools.md`. A city is a kingdom's constituent settlement — its own culture/religion/language, leader and founder.
+# User-facing docs (usage, sections) live in `docs/tools.md`. A city is a kingdom's constituent settlement — its own culture/religion/language, leader and founder.
 # Notes below are for maintainers. Mirrors `kingdom/info.py` one tier down: per-city aggregates instead of per-kingdom; no diplomacy (relations/wars/alliance).
 
 import sys
@@ -702,7 +702,7 @@ def _years_since(timestamp: float, ctx: dict) -> int:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         city_id = int(argv[0])

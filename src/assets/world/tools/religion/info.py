@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One religion: the creed a founder preached, the rites its faithful keep and everyone who still holds to them. User-facing docs: `tools/tools.md`.
+# One religion: the creed a founder preached, the rites its faithful keep and everyone who still holds to them. User-facing docs: `docs/tools.md`.
 # A religion is preached, not inherited — WB converts a soul who hears it, where a culture is handed down at birth and a clan answers to a chief.
 
 import sys
@@ -149,7 +149,7 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         religion_id = int(argv[0])

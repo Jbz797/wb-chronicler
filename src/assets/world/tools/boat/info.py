@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# A single hull, reserved for the chronicler (not consumed by the UI). User-facing docs: `tools/tools.md`.
+# A single hull, reserved for the chronicler (not consumed by the UI). User-facing docs: `docs/tools.md`.
 # The handle is an actor id — WB models boats as actors, so a world's `boats` section and a realm's both print it beside the kind, leaving the hull itself here.
 
 import sys
@@ -144,7 +144,7 @@ def _trait_stats(boat: dict, ctx: dict) -> dict:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         boat_id = int(argv[0])

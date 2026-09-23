@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One language: the tongue a founder coined, the traits its script carries and everyone who still speaks it. User-facing docs: `tools/tools.md`.
+# One language: the tongue a founder coined, the traits its script carries and everyone who still speaks it. User-facing docs: `docs/tools.md`.
 # A language is caught, not inherited — WB converts a neighbour who hears it spoken, where a culture is handed down at birth and a clan is sworn to a chief.
 
 import sys
@@ -157,7 +157,7 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         language_id = int(argv[0])

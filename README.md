@@ -26,7 +26,7 @@ Claude Code turns your **WorldBox** save files into narrative chapters, rendered
 
 The player runs **WorldBox** in pure observation mode (zero intervention, sandbox laws). When a save is ready:
 
-1. **The Chronicler** — the Claude Code CLI, run from a terminal with `src/assets/world/` as its working directory, reads the rules in `chronicler.md`, questions the world through the `tools/` commands it is given — a script per subject (`world`, `actor`, `city`, `geography`…) that decodes the `map.wbox` save (zlib-compressed JSON) and answers in JSON — browses the `map_stats.s3db` SQLite itself, and writes the next narrative chapter in a Tolkien-inspired voice (no pastiche, every claim traced back to data) — in whichever tongue `history/settings.json` records.
+1. **The Chronicler** — the Claude Code CLI, run from a terminal with `src/assets/world/` as its working directory, reads the rules in `docs/chronicler.md`, questions the world through the `tools/` commands it is given — a script per subject (`world`, `actor`, `city`, `geography`…) that decodes the `map.wbox` save (zlib-compressed JSON) and answers in JSON — browses the `map_stats.s3db` SQLite itself, and writes the next narrative chapter in a Tolkien-inspired voice (no pastiche, every claim traced back to data) — in whichever tongue `history/settings.json` records.
 
 2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters — and, in developer mode, the rules documents — on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world's leaderboards, the favorite character, and every body it belongs to: village, kingdom, clan, family…
 
@@ -63,10 +63,10 @@ Vanilla clouds all rise on the west edge of the map, and they seed a young world
 To write the chronicle, open the chronicler in its own directory:
 
 ```sh
-cd src/assets/world && claude # works inside the chronicle, ruled by `chronicler.md` alone
+cd src/assets/world && claude # works inside the chronicle, ruled by `docs/chronicler.md` alone
 ```
 
-The session opens on a single order, _« Lis le chronicler.md »_ — the chronicler takes it from there.
+The session opens on a single order, _« Lis le docs/chronicler.md »_ — the chronicler takes it from there.
 
 To read it, start the reader — a separate process — on its production build:
 
@@ -79,12 +79,15 @@ On first run the reader opens its settings panel: pick the tongue the chronicle 
 
 ## Chronicle layout
 
-The chronicle lives under [src/assets/world/](src/assets/world/) — full structure and conventions are documented in `chronicler.md`:
+The chronicle lives under [src/assets/world/](src/assets/world/) — full structure and conventions are documented in `docs/chronicler.md`:
 
 ```
 src/assets/world/
-├── chronicler.md
-├── tags.md
+├── docs/
+│   ├── audit/
+│   ├── chronicler.md
+│   ├── tags.md
+│   └── tools.md
 ├── history/
 ├── i18n/
 ├── saves/

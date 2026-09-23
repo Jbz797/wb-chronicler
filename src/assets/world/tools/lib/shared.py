@@ -257,7 +257,7 @@ def actor_xy(actor: dict) -> tuple[int, int]:
 # argparse's refusals, marked as every other script's are: its bare `usage:` and `error:` pair would be the one refusal a chronicler reads unflagged.
 def arg_parser(prog: str, description: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=prog, description=description)
-    parser.error = lambda message: parser.exit(2, f"✗ {message} — see tools/tools.md\n")
+    parser.error = lambda message: parser.exit(2, f"✗ {message} — see docs/tools.md\n")
     return parser
 
 

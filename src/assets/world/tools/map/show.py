@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Rings a spot on the chapter's map, or blows up the ground around it, and hands back the path — no other way finds a tile by its numbers. Docs: `tools/tools.md`.
+# Rings a spot on the chapter's map, or blows up the ground around it, and hands back the path — no other way finds a tile by its numbers. Docs: `docs/tools.md`.
 
 import sys
 import tempfile

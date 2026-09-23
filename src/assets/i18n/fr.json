@@ -174,7 +174,7 @@
   "ui_books_read": "Livres lus",
   "ui_books_written": "Livres écrits",
   "ui_bootstrap_how": "C'est un {{terminal}} de terminal, ouvert depuis {{folder}}. Un seul mot d'ordre pour commencer :",
-  "ui_bootstrap_order": "« Lis le chronicler.md »",
+  "ui_bootstrap_order": "« Lis le docs/chronicler.md »",
   "ui_buildings": "Bâtiments",
   "ui_cancel": "Annuler",
   "ui_capital": "Capitale",

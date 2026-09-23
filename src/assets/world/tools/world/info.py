@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Emits the world sections from the save alone (`mapStats` = WB's period-accurate counters); the chapter's registries are built by
-# `chapter/registries.py` (the bootstrap), not here. User-facing docs — usage and sections — live in `tools/tools.md`.
+# `chapter/registries.py` (the bootstrap), not here. User-facing docs — usage and sections — live in `docs/tools.md`.
 #
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names kept verbatim for raw-save fields (e.g. `world_time`) — the tools' default, a rename having to earn its churn across py, UI and data.

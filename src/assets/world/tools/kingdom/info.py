@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# User-facing docs (usage, available sections) live in `tools/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
+# User-facing docs (usage, available sections) live in `docs/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
 import sys
 from collections import Counter, defaultdict
@@ -635,7 +635,7 @@ def _zone_halo(zones: list[tuple[int, int]]) -> set[tuple[int, int]]:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         kingdom_id = int(argv[0])

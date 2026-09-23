@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# User-facing docs (usage, available sections) live in `tools/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
+# User-facing docs (usage, available sections) live in `docs/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
 import sys
 from collections import Counter, defaultdict
@@ -808,7 +808,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     if not argv:
-        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         actor_id = int(argv[0])

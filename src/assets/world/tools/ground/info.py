@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# A single thing standing on a tile — a roof, a tree, a vein. Reserved for the chronicler (not consumed by the UI). User-facing docs: `tools/tools.md`.
+# A single thing standing on a tile — a roof, a tree, a vein. Reserved for the chronicler (not consumed by the UI). User-facing docs: `docs/tools.md`.
 # The handle is a building id — a roof (`actor/info.py` prints it as `metadata.home`) or a dock (`boat/info.py`). WB names none of them: the id is the handle.
 
 import sys
@@ -112,7 +112,7 @@ def _here(actor: dict, house: dict, civic: bool) -> dict:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         house_id = int(argv[0])

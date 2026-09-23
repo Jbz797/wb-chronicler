@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One family: its founding couple, its living members and where they scattered. User-facing docs: `tools/tools.md`.
+# One family: its founding couple, its living members and where they scattered. User-facing docs: `docs/tools.md`.
 # A WorldBox family is a bloodline, not a household — see `metadata.houses`, which counts the roofs its members sleep under.
 
 import sys
@@ -122,7 +122,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         family_id = int(argv[0])

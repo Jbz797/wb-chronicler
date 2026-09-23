@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One war: the two sides WB fields against each other, what each brings, and what the fighting has cost so far. Docs: `tools/tools.md`.
+# One war: the two sides WB fields against each other, what each brings, and what the fighting has cost so far. Docs: `docs/tools.md`.
 # A war is read from above rather than from a crown's side, so neither camp is `allies` or `opponents` here — they are `attackers` and `defenders`, as WB names them.
 # No breakdown and no demography: pooling both camps would say a war of dwarves against dwarves, and `<kingdom>/info.py <id> breakdown` answers for each side apart.
 
@@ -67,7 +67,7 @@ def _build_side(kingdoms: set[int], deaths: int, alliances: list[dict], ctx: dic
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         war_id = int(argv[0])

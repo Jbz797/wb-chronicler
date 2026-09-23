@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# A single volume, reserved for the chronicler (not consumed by the UI). User-facing docs: `tools/tools.md`.
+# A single volume, reserved for the chronicler (not consumed by the UI). User-facing docs: `docs/tools.md`.
 # The handle is a book id — a town's `books` and a culture's both print it beside the title, each listing refs alone and leaving the volume itself here.
 
 import sys
@@ -61,7 +61,7 @@ def _build_origin(book: dict) -> dict:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         book_id = int(argv[0])

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One clan: the band a founder gathered, its chiefs, its sworn traits and who still wears the name. User-facing docs: `tools/tools.md`.
+# One clan: the band a founder gathered, its chiefs, its sworn traits and who still wears the name. User-facing docs: `docs/tools.md`.
 # A clan is joined, not inherited — unlike a family, which is a bloodline. WB lets one actor hold both, so the two rosters overlap without matching.
 
 import sys
@@ -159,7 +159,7 @@ def _resolve_heir(clan: dict, members: list[dict], ctx: dict) -> dict | None:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         clan_id = int(argv[0])

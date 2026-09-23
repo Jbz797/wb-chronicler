@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One alliance: the pact a crown opened and others joined, its member realms, and everything their subjects amount to once pooled. Docs: `tools/tools.md`.
+# One alliance: the pact a crown opened and others joined, its member realms, and everything their subjects amount to once pooled. Docs: `docs/tools.md`.
 # WB holds a realm in at most one pact, and a pact outlives the crown that founded it — so its counters are its own, never the sum of its members'.
 
 import sys
@@ -116,7 +116,7 @@ def _rank_getters(pooled: dict, world_time: float) -> dict:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         alliance_id = int(argv[0])

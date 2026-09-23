@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One subspecies: the biology a lineage of actors was born into, its sworn traits and who still carries it. User-facing docs: `tools/tools.md`.
+# One subspecies: the biology a lineage of actors was born into, its sworn traits and who still carries it. User-facing docs: `docs/tools.md`.
 # WB mutates one out of another as a world ages, so a species holds many — and a subspecies outlives every crown and clan its bearers ever joined.
 
 import sys
@@ -181,7 +181,7 @@ def _species_totals(save: dict) -> dict[str, dict]:
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         subspecies_id = int(argv[0])

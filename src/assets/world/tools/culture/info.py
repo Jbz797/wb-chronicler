@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# One culture: the customs a founder set down, the traits its people swear by and everyone who still lives by them. User-facing docs: `tools/tools.md`.
+# One culture: the customs a founder set down, the traits its people swear by and everyone who still lives by them. User-facing docs: `docs/tools.md`.
 # A culture is inherited, not joined — WB hands it down at birth and a conquest converts a town whole, where a clan wins one soul at a time and answers to a chief.
 
 import sys
@@ -149,7 +149,7 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
 def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see tools/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         culture_id = int(argv[0])

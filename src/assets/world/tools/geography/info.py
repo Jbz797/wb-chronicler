@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Geographic stats reserved for the chronicler (not consumed by the UI). User-facing docs: `tools/tools.md`.
+# Geographic stats reserved for the chronicler (not consumed by the UI). User-facing docs: `docs/tools.md`.
 
 import math
 import re

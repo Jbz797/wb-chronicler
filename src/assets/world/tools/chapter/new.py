@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds its registries (`registries.py`) and `chapter.json` (`fold.py`).
-# The recap steers the chronicler's analysis; `--finalize` then lays out step 5 and the audit's briefs, `--deliver` the delivery. Docs: `tools.md`.
+# The recap steers the chronicler's analysis; `--finalize` then lays out step 5 and what each auditor is handed, `--deliver` the delivery. Docs: `docs/`.
 
 import json
 import random
@@ -39,11 +39,19 @@ from shared import (
     write_save,
 )
 
-_ACCOUNT = {  # the audit account's labels, in the tongue the chapter is written in — the player reads them beside it
-    "en": {"facts": "Fact check: {} gaps fixed", "none": "not applicable", "reaudit": "Re-audit: {} gaps fixed", "story": "Story check: {} gaps fixed"},
+# The chapter's own tongue, for what leaves the chronicler: the audit account the player reads beside it, and the one verb each auditor is handed with paths.
+_ACCOUNT = {
+    "en": {
+        "facts": "Fact check: {} gaps fixed",
+        "none": "not applicable",
+        "read": "Read",
+        "reaudit": "Re-audit: {} gaps fixed",
+        "story": "Story check: {} gaps fixed",
+    },
     "fr": {
         "facts": "Vérification des faits : {} écarts corrigés",
         "none": "non applicable",
+        "read": "Lis",
         "reaudit": "Réaudit : {} écarts corrigés",
         "story": "Vérification du récit : {} écarts corrigés",
     },
@@ -54,15 +62,13 @@ _AFTER_REPORTS = (
     "every report in hand, never before, and chapter.md untouched while any auditor reads it — each report waits for the others, a message from the player"
     " or the dev too: correct each confirmed gap — one raised by a single fact check is checked all the same, the tool settling a disagreement",
     "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest;"
-    " and a figure a rewrite brings is read off a tool then, never carried over from the draft or from memory",
+    " and a figure a rewrite brings is read off a tool then, never carried over from the draft, a report or memory",
     "correct where a correction suffices, rewrite only what it cannot mend",
     "then look for the same value or word elsewhere: all of chapter.md, title and epigraph included, and your prose in chapter.json — descriptor, trait summaries",
-    "the story check may propose as well as fault — a mend, a passage the chronicle lacks, an angle:"
-    " it is yours to take or leave, and what you take, you write in your own hand",
+    "what the story check proposes is yours to take or leave, and what you take, you write in your own hand",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
-    "what asserts anything new goes back to the same auditors, each resumed by message with the id its report came with, its memory intact — note each id, as a"
-    " compaction drops them; a fresh one only if that fails — its lines flagged as new, each read with its paragraph and whatever else speaks of the same,"
-    " the rest left closed",
+    "what asserts anything new goes back to the same auditors, the lines alone and never your reading of them, each resumed by message with the id its report"
+    " came with, its memory intact — note each id, as a compaction drops them; a fresh one only if that fails — its lines flagged as new",
     "the last round settled: `tools/chapter/new.py --deliver`",
 )
 
@@ -83,40 +89,7 @@ _ALERTS = {
     },
 }
 
-_BRIEFS = (  # the auditors' own briefs and how many of each: a sub-agent knows nothing but its brief, so nothing of its task may live elsewhere
-    (
-        "compliance",
-        1,
-        "Confront {targets} with chronicler.md, § I to § V, subsection by subsection,"
-        " and judge the manner, not the truth: what the text asserts is not yours to check."
-        " Return only gaps — line, quote, what you expected — and write nothing."
-        " Close on one line per section: `§ N : ` and its verdict, `{none}`, `✓` or `✓ (2 corrections)`.",
-    ),
-    (
-        "facts, twice, each on its own",
-        2,
-        "Recompute every checkable claim of {targets} — figure, date, span, comparison with the past, absolute, mechanism, cause… —"
-        " with the tools of tools/tools.md, on the save it speaks of (`C<n>` for « N years ago »), giving each gap its command and the true value."
-        " A mechanism neither the outputs nor chronicler.md give is checked on the wiki (chronicler.md § « Accès au wiki »), the output prevailing if they differ."
-        " The wiki's silence disproves nothing: a condition it neither states nor denies stays open, flagged so and not as false;"
-        " and a page given to the thing outranks a table that sums it up."
-        " A sentence the text itself gives as uncertain asserts nothing: check what it leans on, not what it supposes."
-        " Return only gaps — line, quote, true value — and write nothing.",
-    ),
-    (
-        "story",
-        1,
-        "Read `{chapter}`, then as much of the chronicle as you need — `saves/C1/chapter.md` onward, no chapter out of your reach."
-        " Judge whether the story it tells still holds, not its figures nor its manner:"
-        " a thread it opened and never closed, an epithet or a bond the chapters no longer bear out,"
-        " a motive or a cause it gave once and crosses now, a soul or a place it dropped where the chronicle was waiting for it."
-        " Say so plainly where the story holds. Where it does not, give each gap its chapter, its line and its quote, and you may add what would mend it —"
-        " a correction, a passage the chronicle lacks, an angle it has never taken — as a direction, never as written prose."
-        " Rank them, the most load-bearing first, and say of each whether this chapter can mend it or the chronicle carries it from further back."
-        " What it carries is said once: asked again, weigh the lines handed to you with their paragraphs. Write nothing.",
-    ),
-)
-
+_AUDITORS = (("compliance", 1), ("facts", 2), ("story", 1))  # each by its sheet under `docs/audit/`, and how many of it the audit opens with
 _CHAPTER_FLOOR = 5000  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
 _DESCRIPTOR_CAP = 64
 
@@ -127,12 +100,12 @@ _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no
 )
 
 _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never done by the chronicler's own hand
-    "doc adjustment: a passage of chronicler.md or tools.md unclear, contradictory, out of date, or a term to harmonise — flagged, never corrected by your hand",
+    "doc adjustment: a passage of docs/ unclear, contradictory, out of date, or a term to harmonise — flagged, never corrected by your hand",
     "script improvement spotted on the way: a bug, a field misread, a wrong formula, an awkward output — name the file; no code change of your own",
     "doc and recap at odds: the recap is right for now, but one of the two needs fixing — say which",
     "obscure field: one whose meaning stays uncertain, the wiki included",
     "costly reading: a step that ate the context — say what you read and what you sought — or a passage, an output section, costing without serving: say which",
-    "new tag: an important kind of event that no code in tags.md covers",
+    "new tag: an important kind of event that no code in docs/tags.md covers",
     "missing tool: a recurring analysis that deserves its own script",
     "and any other observation within your remit",
 )
@@ -166,7 +139,7 @@ _EMPTIED = (
 
 _FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked"})  # all `main` reads — others are refused as typos
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
-_H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit's briefs on it
+_H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
@@ -186,7 +159,7 @@ _RESET_PROMPT = (
     "  → no: `tools/chapter/new.py --reset-asked`",
     "  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries",
     '  → reset and naming: `tools/chapter/new.py --reset --name "…" --description "…"`',
-    "    the name is forged after a survey of its geography, the one thing the reset spares: Tolkien-flavoured without pastiche, on the ground,",
+    "    the name is forged after a survey of its geography, the one thing the reset spares: in the chronicle's own voice, on the ground,",
     "    the mood or whatever outlasts the ages, never the age itself. Yours alone to choose — his yes was the agreement.",
 )
 
@@ -307,8 +280,11 @@ def _deliver() -> int:
     print(f"✓ C{n} — delivery")
     labels = _ACCOUNT.get(settings.get("lang", ""), _ACCOUNT["en"])
     detail = "each line details its gaps" if settings.get("dev") else "no comment beside them"
-    account = ", ".join(f"« {labels[key].format('N')} »" for key in ("facts", "story"))  # no line for the compliance audit: its verdict is the `§ N` one
-    print(f"  → with the chapter, the audit's account: a line `§ N : …` per section, {account}, « {labels['reaudit'].format('N')} » if rerun — {detail}")
+    account = ", ".join(f"« {labels[key].format('N')} »" for key in ("facts", "story"))
+    # The compliance verdicts are the chronicler's own tally, as the counts are: only he knows what he corrected, round after round.
+    verdicts = f"a line per part of docs/chronicler.md, § I to § V: `§ N : ` then `✓`, `✓ (N corrections)` or « {labels['none']} »"
+    rounds = f"« {labels['reaudit'].format('N')} » for all later rounds, the rest counting the first"
+    print(f"  → with the chapter, the audit's account: {verdicts}, then {account}, {rounds} — {detail}")
 
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and its account, nothing more.
     if settings.get("dev"):
@@ -361,16 +337,20 @@ def _finalize() -> int:
     facts = _step_five_facts(n, lang)
     print(f"✓ C{n} — step 5")
     _print_step_five(n, facts)
-    # The briefs name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
+    # The patches name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
     if not facts["done"]:
-        print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: the audit's briefs come with them")
+        print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: the audit comes with them")
         return 0
-    chapter_md, none = f"saves/C{n}/chapter.md", _ACCOUNT.get(lang, _ACCOUNT["en"])["none"]  # the story read takes the chapter alone: the chronicle is its ground
-    targets = chapter_md + (f", and in saves/C{n}/chapter.json {', '.join(facts['audited'])}" if facts["audited"] else "")
-    auditors = sum(copies for _, copies, _ in _BRIEFS)
-    print(f"  → the audit: {auditors} sub-agents new to this chapter, at once, each handed its brief below as it stands — nothing of your analysis nor notes")
-    for name, _, brief in _BRIEFS:
-        print(f"    · {name}: « {brief.format(chapter=chapter_md, none=none, targets=targets)} »")
+    chapter_md, labels = f"saves/C{n}/chapter.md", _ACCOUNT.get(lang, _ACCOUNT["en"])
+    # Paths alone past the verb, so nothing but the verb need speak the chapter's tongue: each sheet says what follows its own name.
+    written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
+    auditors = sum(copies for _, copies in _AUDITORS)
+    print(f"  → the audit: {auditors} sub-agents new to this chapter, at once, each handed its line below as it stands — nothing of your analysis nor notes")
+    print("    docs/audit/ is theirs: you never read it, writing for your reader and not for the audit")
+    for sheet, copies in _AUDITORS:
+        many = f", {'twice' if copies == 2 else f'{copies} times'}, each on its own" if copies > 1 else ""
+        target = chapter_md if sheet == "story" else chapter_md + written  # the story read takes the chapter alone: the chronicle is its ground
+        print(f"    · {sheet}{many}: « {labels['read']} docs/audit/{sheet}.md — {target} »")
     for line in _AFTER_REPORTS:
         print(f"  → {line}")
     return 0
@@ -433,7 +413,7 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
     if favorite is None and any(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a)):
-        print("  → chronicler: choose a favorite before a single word — chronicler.md § « Choix du favori » says who; then, the one chosen:")
+        print("  → chronicler: choose a favorite before a single word — docs/chronicler.md § « Choix du favori » says who; then, the one chosen:")
         for line in _DESIGNATION:
             print(f"    · {line}")
         print("  → chronicler: should the chapter go without, step 3, the analysis, before its first word and not to be hurried:")
@@ -442,10 +422,10 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     fav_id = ((favorite or {}).get("metadata") or {}).get("id")
     if n > 1:
         order = ", the favorite first, then circle by circle:" if fav_id else ","  # the chapter's own order, so the analysis lands already sorted by tier
-        print(f"    · the deltas since C{n - 1}{order} what moved as much as what held")
+        print(f"    · the deltas since C{n - 1}{order} what moved as much as what held — `geography bodies C{n}` shows a land newly peopled")
     print("    · the thresholds just crossed: the first times, the levels reached")
     if fav_id:
-        print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id, a name being shared — its direction comes with it")
+        print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id, a name being shared")
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`")
     print(f"  → step 4, the writing: {_CHAPTER_FLOOR} characters at least, blanks folded — counted at delivery, past the audit, which cuts as much as it adds")
@@ -463,7 +443,7 @@ def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None,
     if events := [code for code in tags if code not in _ALERTS and code != "NEW_FAVORITE"]:
         for code in events:
             print(f"  ⚑ {code}")
-        print("  → each ⚑ is an event this chapter owes its reader: tags.md says what it means")
+        print("  → each ⚑ is an event this chapter owes its reader: docs/tags.md says what it means")
         print(_RECAP_RULE)
     # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file. C1 has no « since »: the whole
     # past of a world taken up as it stood would pour out, and that is the s3db's to browse.
@@ -545,7 +525,7 @@ def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -
     if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
         if fav_id is None:  # the pick itself is the closing block's, printed only while a thinking soul is left to pick
             return "the favorite has left the world"
-        return "successor to one who has left the world: open on that death before the tiers, then follow these eyes from here on"
+        return "successor to one who has left the world: open on that death before the tiers"
     return "yet to be designated" if fav_id is None else ""
 
 

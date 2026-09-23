@@ -174,7 +174,7 @@
   "ui_books_read": "Books Read",
   "ui_books_written": "Books written",
   "ui_bootstrap_how": "It is a terminal {{terminal}}, opened from {{folder}}. One order gets it going:",
-  "ui_bootstrap_order": "“Read chronicler.md”",
+  "ui_bootstrap_order": "“Read docs/chronicler.md”",
   "ui_buildings": "Buildings",
   "ui_cancel": "Cancel",
   "ui_capital": "Capital",
