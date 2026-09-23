@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 23/09/26 14:18</p>
+<p class="metadata">Date de mise à jour : 23/09/26 14:37</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -28,12 +28,12 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `actor` :
 
-- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche d'un type (`nearest`), et une clé `to`, marchée comme `surroundings`, en `hours` et, passé un jour, en `days` haltes comprises (rien à bord) — `swim_hours` ce qu'il en nage, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée ; l'eau qu'il ne passe pas rend une erreur chiffrée
+- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`), et une clé `to`, marchée comme `surroundings`, en `hours` et, passé un jour, en `days` haltes comprises (rien à bord) — `swim_hours` ce qu'il en nage, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée ; l'eau qu'il ne passe pas rend une erreur chiffrée
 
 ### `geography` :
 
 - `-i <id>` : une seule terre dans les sections rangées par terre
-- `-t <type>` (`positions`) : **un `asset_id` exact**, jamais une famille (`tree` rend `{}` sans rien dire) ; `entity_types` donne la liste
+- `-t <type>` (`positions`) : **un `asset_id` exact**, qu'`entity_types` liste ; une famille (`trees`…) se cherche par `actor … --to`
 
 ### `tiles` :
 

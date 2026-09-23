@@ -15,14 +15,13 @@ from islands import compute_islands_cached
 from shared import (
     actor_xy,
     arg_parser,
+    asset_families,
     asset_sites,
     biome_lore,
-    civic_building_ids,
     emit,
     index_by_id,
     is_boat,
     is_sapient,
-    load_data,
     load_save,
     parse_sections,
     pickle_cached,
@@ -124,17 +123,9 @@ def _build_burning(save: dict, save_path: Path) -> dict:
     return {key: " | ".join(f"{n} {ground}" for ground, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
 
 
-# Every kind the save holds, grouped as WB groups them — its `buildings` collection also holds the flowers and the ore, so only the `civ_*` keep that name here.
+# Every kind the save holds, counted by family: `shared.asset_families`, the very families `actor … --to` reads, so that a name listed here is one it takes.
 def _build_entity_types(save: dict) -> dict:
-    categories, civic = load_data("building-categories.json"), civic_building_ids()
-    seed = {"actors": Counter(a["asset_id"] for a in save.get("actors_data") or [] if a.get("asset_id"))}
-    groups: defaultdict[str, Counter] = defaultdict(Counter, seed)  # a factory, `setdefault` minting a `Counter` per building to keep the first
-    for building in save.get("buildings") or []:
-        if not (asset := building.get("asset_id")):
-            continue
-        group = "buildings" if asset in civic else categories.get(asset) or "other"  # `civic` knows the built kinds the manifest itself never declared
-        groups[group][asset] += 1
-    return {group: dict(counts) for group, counts in groups.items() if counts}
+    return {family: dict(counts) for family, counts in asset_families(save).items()}
 
 
 # A land's frost, share first — the `permafrost` WB keeps frozen for good (`isFrozen`), the map's `snow` and `ice`, the passing `frost` — no tile ever counted twice.
@@ -203,7 +194,7 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
     # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
     out = [
         {"dormant": "stop_spawn_drops" in (record.get("custom_data_flags") or ()) or None, "id": record.get("id"), "name": record.get("name"), "x": x, "y": y}
-        for record, (x, y) in asset_sites(save, asset_id)
+        for record, (x, y) in asset_sites(save, {asset_id})
     ]
     if out:  # the lookup costs 0.2 s cold, so a kind nobody built never pays for it
         _, island_of = compute_islands_cached(save, save_path)
@@ -384,7 +375,11 @@ def main(argv: list[str]) -> int:
         islands, _ = compute_islands_cached(save, save_path)
         out["islands"] = islands
     if "positions" in sections and wanted is not None:
-        out["positions"] = _build_positions(save, save_path, wanted)
+        if not (positions := _build_positions(save, save_path, wanted)):  # a word nothing answers to, never a silent `{}`
+            families = ", ".join(sorted(asset_families(save)))
+            print(f"✗ no {wanted} in this world — `entity_types` lists every kind; a family ({families}) goes to `actor … --to`", file=sys.stderr)
+            return 1
+        out["positions"] = positions
     if "ridges" in sections:
         out["ridges"] = compute_islands_cached(save, save_path)[1].ridges()
     if "totals" in sections:

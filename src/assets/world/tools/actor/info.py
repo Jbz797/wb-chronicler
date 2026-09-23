@@ -22,6 +22,7 @@ from shared import (
     ZONE_TILES,
     actor_age,
     actor_xy,
+    asset_families,
     asset_sites,
     bearing,
     build_trait_ids,
@@ -404,11 +405,11 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
 
 
 # The walk to a body, a tile or a land's shore, at his own gait within his swim — a flyer, water-born or passenger goes as the crow flies, landing nearest.
-def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, mark: str | None, ids: Mapping[tuple[int, int], int | None]) -> dict:
+def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, mark: str | None, about: Mapping[tuple[int, int], dict]) -> dict:
     cx, cy = actor_xy(actor)
     island_of = ctx["island_lookup"]()
     gx, gy = goal = min(aims, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2)
-    to = _heading(cx, cy, gx, gy, mark, ids)
+    to = _heading(cx, cy, gx, gy, mark, about)
     if (gait := _gait(actor, ctx)) is None:  # its way is the straight line: said as a walk, so that no reader takes the silence for a sea it can't cross
         return {**to, "walked": to["tiles"], **_walk_time(actor, to["tiles"], ctx)}
     walk_map = ctx["walk_map"]()
@@ -422,7 +423,7 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
         raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["tiles"], ctx))
     walked, water, widest, reached = way
     if mark:
-        to = _heading(cx, cy, reached % walk_map.width, reached // walk_map.width, mark, ids)
+        to = _heading(cx, cy, reached % walk_map.width, reached // walk_map.width, mark, about)
     # What was swum, in hours as the whole; the widest crossing where it outruns his breath, both weighed in whole tiles as they print, lest 6 stand beside 6
     swum = {"swim_hours": _walk_time(actor, water, ctx)["hours"]} if water else {}
     past = gait.breath < inf and round(widest) > round(gait.breath)  # a tireless swimmer never runs short, whatever it crosses
@@ -562,10 +563,10 @@ def _gait(actor: dict, ctx: dict) -> Gait | None:
     return ctx["walk_map"]().gait(stats.get("speed"), tags, aloft=aloft, blind=blind, swift=swift, breath=breath, reach=reach)
 
 
-# The bearing and the crow's tiles to a point — and, where the goal was many, which one: a land's `landing`, the `nearest` of a kind with its id.
-def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, ids: Mapping[tuple[int, int], int | None]) -> dict:
+# The bearing and the crow's tiles to a point — and, where the goal was many, which one: a land's `landing`, the `nearest` of some kinds with its kind and id.
+def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mapping[tuple[int, int], dict]) -> dict:
     to = {"dir": bearing(gx - cx, gy - cy), "tiles": round(walk_tiles(gx - cx, gy - cy))}
-    return {**to, mark: {"id": ids.get((gx, gy)), "x": gx, "y": gy}} if mark else to
+    return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
 
 
 # The actor's tie to another body, or `None`, off his `_ties`: WB keeps two parents and one mate each — a child names him, a sibling shares a parent.
@@ -760,10 +761,10 @@ def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | str | None, l
     at = argv.index("--to")
     try:
         value, rest = argv[at + 1], argv[:at] + argv[at + 2 :]
-        if not value.lstrip("-").isdigit() and "," not in value:  # a land (`i7`, the id `geography … islands` gives it) or a kind, by its asset id
-            return value, rest
         x, sep, y = value.partition(",")
-        return ((int(x), int(y)) if sep else int(value)), rest
+        if not (x.lstrip("-").isdigit() and (not sep or y.lstrip("-").isdigit())):  # a land (`i7`, as `geography … islands` ids it), or kinds and families
+            return value, rest
+        return ((int(x), int(y)) if sep else int(x)), rest
     except (IndexError, ValueError):
         raise ValueError("`--to` takes an actor id, a tile, a land or a kind, e.g. `--to 42`, `--to 415,117`, `--to i7` or `--to volcano`") from None
 
@@ -861,7 +862,7 @@ def main(argv: list[str]) -> int:
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
         return 1
-    aims, mark, ids, whom = [], None, {}, ""
+    aims, mark, about, whom = [], None, {}, ""
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
             print(f"✗ unknown actor: {target}", file=sys.stderr)
@@ -876,11 +877,15 @@ def main(argv: list[str]) -> int:
             print(f"✗ {_named(actor)} already stands on land {land}", file=sys.stderr)
             return 1
         aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land], "landing", f"land {land}"  # its shore
-    elif isinstance(target, str):  # every one of a kind, the body itself left out: the cheapest reached is the nearest
-        if not (sites := [(record, tile) for record, tile in asset_sites(save, target) if record is not actor]):
-            print(f"✗ no {target} in this world, {_named(actor)} aside — `geography … entity_types` lists what it holds", file=sys.stderr)
+    elif isinstance(target, str):  # kinds and families, comma-parted, the body itself left out: the cheapest reached is the nearest
+        families, kinds = asset_families(save), set()
+        for word in target.split(","):
+            kinds |= families[word].keys() if word in families else {word}
+        if not (sites := [(record, tile) for record, tile in asset_sites(save, kinds) if record is not actor]):
+            print(f"✗ no {target} in this world, {_named(actor)} aside — the families: {', '.join(sorted(families))}", file=sys.stderr)
             return 1
-        aims, mark, ids, whom = [tile for _, tile in sites], "nearest", {tile: record.get("id") for record, tile in sites}, f"the nearest {target}"
+        about = {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
+        aims, mark, whom = [tile for _, tile in sites], "nearest", f"the nearest {target}"
     elif target is not None:
         height, width = len(save.get("tileArray") or []), sum((save.get("tileAmounts") or [[]])[0])
         if not (0 <= target[0] < width and 0 <= target[1] < height):
@@ -911,7 +916,7 @@ def main(argv: list[str]) -> int:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
     if aims:
         try:
-            out["to"] = _build_to(actor, aims, whom, ctx, mark, ids)
+            out["to"] = _build_to(actor, aims, whom, ctx, mark, about)
         except _Unreachable as e:
             print(str(e), file=sys.stderr)
             return 1

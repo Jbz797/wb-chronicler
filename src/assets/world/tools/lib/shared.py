@@ -10,8 +10,8 @@ import subprocess
 import sys
 import zlib
 from bisect import bisect_right
-from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections import Counter, defaultdict
+from collections.abc import Collection, Mapping, Sequence
 from functools import cache
 from pathlib import Path
 
@@ -261,18 +261,30 @@ def arg_parser(prog: str, description: str) -> argparse.ArgumentParser:
     return parser
 
 
+# Every kind the save holds, by the family `entity_types` files it in: bodies apart, a building by `building-categories.json`, civic `buildings`, strays `other`.
+def asset_families(save: dict) -> dict[str, Counter]:
+    categories, civic = load_data("building-categories.json"), civic_building_ids()
+    families: defaultdict[str, Counter] = defaultdict(Counter, actors=Counter(a["asset_id"] for a in save.get("actors_data") or [] if a.get("asset_id")))
+    for building in save.get("buildings") or []:
+        if asset := building.get("asset_id"):  # `civic` knows the built kinds the manifest itself never declared
+            families["buildings" if asset in civic else categories.get(asset) or "other"][asset] += 1
+    return {family: counts for family, counts in families.items() if counts}
+
+
 # A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
 @cache
 def asset_set(name: str) -> frozenset[str]:
     return frozenset(load_data("asset-sets.json").get(name) or ())
 
 
-# Every record of one asset with its tile, off the one collection that holds its kind: bodies or buildings, WB's omitted zero read as 0, the unsited left out.
-def asset_sites(save: dict, asset_id: str) -> list[tuple[dict, tuple[int, int]]]:
-    for collection, site in (("actors_data", actor_xy), ("buildings", building_tile)):
-        if sites := [(record, tile) for record in save.get(collection) or [] if record.get("asset_id") == asset_id and (tile := site(record)) is not None]:
-            return sites  # what one collection holds, the other never does — no need to walk every building to find an orc
-    return []
+# Every record of the kinds asked, with its tile — bodies and buildings alike, WB's omitted zero read as 0, the unsited left out.
+def asset_sites(save: dict, kinds: Collection[str]) -> list[tuple[dict, tuple[int, int]]]:
+    return [
+        (record, tile)
+        for collection, site in (("actors_data", actor_xy), ("buildings", building_tile))
+        for record in save.get(collection) or []
+        if record.get("asset_id") in kinds and (tile := site(record)) is not None
+    ]
 
 
 # The bearing as a compass point in WB's axes, y growing north: one wind or two, never a third, and none for a body on the very tile.
