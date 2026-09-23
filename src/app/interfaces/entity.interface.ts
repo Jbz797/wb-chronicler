@@ -32,7 +32,7 @@ export interface MemberRoster { total: number }
 export interface PeopleTier {
   members?: MemberRoster; // every tier names its roster alike, a tongue's speakers included
   metadata: object; // each tier's own shape; the resolver reads it by key, so it casts rather than narrowing
-  population: TierPopulation;
+  population?: TierPopulation; // absent where no member lives in a town — Python omits an empty block
   ranks?: object; // read by key, as `metadata` is — naming one optional field would weak-type out any tier that happens not to rank on it
 }
 

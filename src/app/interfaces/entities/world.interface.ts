@@ -20,12 +20,12 @@ export interface SnapshotRow {
 
 // The world panel's four blocks: live snapshot, cumulative counters, « Records » leaders, and metadata.
 export interface World {
-  boats: HullCount;
+  boats?: HullCount; // absent where no hull sails — Python omits a count at 0
   cumulative?: WorldCumulative; // absent on a bare world — Python omits the block when every counter is 0
   leaders?: Partial<Record<LeaderGroup, Partial<Record<LeaderMeasure, Leader>>>>;
   metadata: WorldMetadata;
   plots?: WorldPlot[]; // absent where nobody schemes — Python omits the empty list
-  snapshot: WorldSnapshot;
+  snapshot?: WorldSnapshot; // absent on a world where every count is still 0
 }
 
 // `history/world.json` mirrors the identity the save carries, name and description alike — WorldBox shows the sentence in its own world list, no panel here does.
@@ -72,27 +72,27 @@ interface WorldCumulative {
 // The world's current age id — the panel title's age. Its `world_time` clock reaches the nav through `index.json`.
 interface WorldMetadata { age_id: string }
 
-// Live counts of every world entity at this chapter (thinking souls, buildings, cultures…); `infected`/`sick` are omitted when 0.
+// Live counts of every world entity at this chapter (thinking souls, buildings, cultures…) — each omitted at 0, so an absent count reads as nought.
 interface WorldSnapshot {
-  alliances: number;
-  armies: number;
-  books: number;
-  buildings: number;
-  cities: number;
-  clans: number;
-  cultures: number;
-  families: number;
-  frozen_pct: number;
-  houses: number;
+  alliances?: number;
+  armies?: number;
+  books?: number;
+  buildings?: number;
+  cities?: number;
+  clans?: number;
+  cultures?: number;
+  families?: number;
+  frozen_pct?: number;
+  houses?: number;
   infected?: number;
-  kingdoms: number;
-  languages: number;
-  religions: number;
-  sapient_population: number;
+  kingdoms?: number;
+  languages?: number;
+  religions?: number;
+  sapient_population?: number;
   sick?: number;
-  subspecies: number;
-  trees: number;
-  vegetation: number;
-  wars: number;
-  wild_creatures: number;
+  subspecies?: number;
+  trees?: number;
+  vegetation?: number;
+  wars?: number;
+  wild_creatures?: number;
 }

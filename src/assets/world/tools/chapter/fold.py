@@ -59,7 +59,7 @@ _AUDIT = {
     "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
     "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
     "snapshot": frozenset({"gear"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
-    "stats": frozenset({"birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "swim"}),
+    "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "swim"}),
 }
 
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
@@ -100,6 +100,8 @@ _DEMOGRAPHY = frozenset(
     {"adults", "babies", "children", "couples", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
 )
 
+_EMPTY = (None, [], {})  # a tier the favorite holds none of, a war-free crown, a biology no stock counts: said by the key's absence
+
 # The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
 _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
 
@@ -116,6 +118,8 @@ _TALLIES = {
 
 # The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
 _UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
+_UI_UNSHOWN_ZERO = frozenset({"critical_chance"})  # a floor the chronicler reads as a fact (`_KEEP_ZERO`), where the panel has nothing to show
+_UI_ZERO_FREE_BLOCKS = frozenset({"boats", "snapshot"})  # counts the panels read as nought when absent, so a 0 there is bytes and nothing else
 
 
 # The one name a panel prints per record: a shared first place travels as its first holder, bare of the count the chronicler reads off the script.
@@ -215,7 +219,7 @@ def _without(block: dict, cut: frozenset) -> dict:
     return {key: value for key, value in block.items() if key not in cut}
 
 
-# `_CHRONICLER_ONLY` cuts at every depth of the tree, `_AUDIT` from one named section alone — neither loses the chronicler a thing, `<tier>/info.py` replaying both.
+# `_CHRONICLER_ONLY` cuts at every depth, `_AUDIT` from one named section, and the noughts and empties no panel shows go too — `<tier>/info.py` still says all.
 def drop_chronicler_keys(node, parent: str = ""):
     if isinstance(node, dict):
         kept = {}
@@ -227,9 +231,14 @@ def drop_chronicler_keys(node, parent: str = ""):
                     value = _without(value, cut)
                 elif isinstance(value, list):
                     value = [_without(item, cut) if isinstance(item, dict) else item for item in value]
-            kept[key] = drop_chronicler_keys(value, key)
+            if key in _UI_ZERO_FREE_BLOCKS and isinstance(value, dict):
+                value = {count: n for count, n in value.items() if n != 0}
+            elif key == "stats" and isinstance(value, dict):
+                value = {stat: n for stat, n in value.items() if n or stat not in _UI_UNSHOWN_ZERO}
+            if (value := drop_chronicler_keys(value, key)) not in _EMPTY:  # absent, not empty: `render` keeps what `emit` strips, and the panels read it absent
+                kept[key] = value
         return kept
-    return [drop_chronicler_keys(value, parent) for value in node] if isinstance(node, list) else node
+    return [value for item in node if (value := drop_chronicler_keys(item, parent)) not in _EMPTY] if isinstance(node, list) else node
 
 
 # What every tier sheds alike, then what its own panel spares — and the hull's crew, counted rather than listed.

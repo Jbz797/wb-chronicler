@@ -27,7 +27,7 @@ export class WarCardComponent {
   // Per-stat delta on both camps against the same war a chapter ago — `null` where no chapter precedes, or where this war had not been declared yet.
   protected readonly deltas = computed(() => {
     const w = this.war();
-    const before = this._chronicler.previousChapter()?.meta.wars.find(x => x.metadata.id === w.metadata.id);
+    const before = this._chronicler.previousChapter()?.meta.wars?.find(x => x.metadata.id === w.metadata.id);
     if (!before) return null;
     const diff = (side: WarSideKey) => ({
       cities: w[side].cities - before[side].cities,
@@ -40,7 +40,7 @@ export class WarCardComponent {
   // A war the chapter before had not declared — its card opens with the same badge a new panel wears.
   protected readonly isNew = computed(() => {
     const previous = this._chronicler.previousChapter();
-    return !!previous && previous.meta.wars.every(x => x.metadata.id !== this.war().metadata.id);
+    return !!previous && (previous.meta.wars ?? []).every(x => x.metadata.id !== this.war().metadata.id);
   });
 
   // `.tier-full` on the side ahead, `.tier-low` on the one behind, nothing where they tie. `isInverted` for the counts a side would rather keep low.

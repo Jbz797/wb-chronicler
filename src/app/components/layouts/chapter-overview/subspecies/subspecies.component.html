@@ -5,7 +5,7 @@
         <app-ranked-stat source="subspecies" stat="age" suffix="ui_years" [hideDelta]="true" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item *appPresent="s.population.renown_total" [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appPresent="s.population?.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="subspecies" stat="renown_total" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="membersTitle">
@@ -29,13 +29,13 @@
     <nz-descriptions-item *appPlural="s.metadata.kingdoms" [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="subspecies" stat="kingdoms" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.population.housed_pct" [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appPresent="s.population?.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="subspecies" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.population.fed_pct" [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appPresent="s.population?.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="subspecies" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.population.money" [nzTitle]="moneyTitle">
+    <nz-descriptions-item *appPresent="s.population?.money" [nzTitle]="moneyTitle">
       <app-ranked-stat source="subspecies" stat="money" />
     </nz-descriptions-item>
   </nz-descriptions>

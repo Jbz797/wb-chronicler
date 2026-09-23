@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 23/09/26 11:55</p>
+<p class="metadata">Date de mise à jour : 23/09/26 19:27</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. On travaille ensemble sur un projet de narration : je joue en observateur (zéro intervention) et tu racontes l'histoire de mon monde à partir des sauvegardes du jeu.
 
@@ -73,9 +73,9 @@ Le chapitre vu du favori : sa fiche, et un bloc par corps dont il relève — sa
 
 ```json
 {
-  "<catégorie>": {}, // `tools/<catégorie>/info.py <id> full`, celle dont le favori relève ; `null` s'il n'en a aucune
-  "boat": {}, // `tools/boat/info.py <id> full` ; `null` s'il n'est pas en mer
-  "favorite": {}, // `tools/actor/info.py <id> full` ; `null` tant qu'aucun favori n'a été désigné
+  "<catégorie>": {}, // `tools/<catégorie>/info.py <id> full`, celle dont le favori relève ; absente s'il n'en a aucune
+  "boat": {}, // `tools/boat/info.py <id> full` ; absent s'il n'est pas en mer
+  "favorite": {}, // `tools/actor/info.py <id> full` ; absent tant qu'aucun favori n'a été désigné
   "tags": [], // Liste de codes événementiels (cf. `tags.md`)
   "wars": [], // `tools/war/info.py <id> full`, une entrée par guerre du royaume du favori
   "world": {} // `tools/world/info.py`

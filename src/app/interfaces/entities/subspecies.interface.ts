@@ -18,7 +18,7 @@ export interface Subspecies {
   leaders?: Leaders;
   members: MemberRoster;
   metadata: SubspeciesMetadata;
-  population: TierPopulation;
+  population?: TierPopulation; // absent where no stock of it lives in a town — Python omits an empty block
   ranks?: SubspeciesRanks;
   species: SpeciesStanding;
   traits: string; // the chronicler's summary of its biology and of what its newborns inherit — `subspecies/info.py <id> traits` keeps the two apart

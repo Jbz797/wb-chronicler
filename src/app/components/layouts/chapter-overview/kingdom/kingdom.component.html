@@ -85,7 +85,7 @@
     <nz-descriptions-item *appNonZero="k.metadata.territory" [nzTitle]="territoryTitle">
       <app-ranked-stat source="kingdom" stat="territory" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="k.boats.total" [nzTitle]="boatsTitle">
+    <nz-descriptions-item *appNonZero="k.boats?.total" [nzTitle]="boatsTitle">
       <app-ranked-stat source="kingdom" stat="boats" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="k.metadata.food" [nzTitle]="foodTitle">

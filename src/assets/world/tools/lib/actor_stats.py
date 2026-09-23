@@ -47,8 +47,8 @@ _CHILD_PERCENT = 0.5  # WB `Globals.KIDS_PERCENT`, truncated as C# truncates a c
 _COLOR_MAP = {"A": "green", "C": "blue", "G": "yellow", "T": "red"}  # in the order of the `"ACGT"` literal that indexes it
 _DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
-# Stats dropped from output, unread by the panels (`chapter.interface.ts`) — and `multiplier_supply_timer`, which WB declares no stat for at all. Add new ones here.
-_DROP = {"accuracy", "critical_damage_multiplier", "damage_range", "knockback", "loyalty_traits", "mass", "mass_2", "multiplier_supply_timer", "range", "targets"}
+# Stats neither a panel nor the chronicler reads, and `multiplier_supply_timer`, a stat WB never declares. One only he needs is cut in `fold.py` instead.
+_DROP = {"critical_damage_multiplier", "damage_range", "knockback", "loyalty_traits", "mass", "mass_2", "multiplier_supply_timer", "range", "targets"}
 
 _EGG_TRAIT = "reproduction_strategy_oviparity"  # WB `Subspecies.checkReproductionStrategy` raises `has_egg_form` off this one trait, and nothing else
 
@@ -158,7 +158,7 @@ _HUNGRY_RATIO = 0.5  # WB `SimGlobalAsset.nutrition_level_hungry`: `Actor.isHung
 _KEEP_DECIMAL = {"attack_speed"}  # One decimal kept: it lives under 1, flooring at 0.5, where an int would flatten it away
 
 # The rows WB's own unit panel always prints, where a nought is a fact and not an absence — a sterile body reads `max_children: 0`, a meek one `diplomacy: 0`.
-_KEEP_ZERO = {"armor", "diplomacy", "intelligence", "max_children", "stewardship", "warfare"}
+_KEEP_ZERO = {"armor", "critical_chance", "diplomacy", "intelligence", "max_children", "stewardship", "warfare"}
 
 _LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}  # Per `SimGlobalAsset.ctor` IL → static level_mod_bonus_* / _MANA_PER_INTELLIGENCE constants.
 _LEVEL_VETERAN_SKILL_BONUS = 0.1

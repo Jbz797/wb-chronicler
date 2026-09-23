@@ -19,20 +19,20 @@ export interface Chapter extends Page { previewUrl: string; tags: string[] }
 // One row of `saves/index.json`, written by `new.py`: enough to name and date a chapter, never enough to draw a panel.
 export interface ChapterIndexEntry { n: number; tags: string[]; world_time: number }
 
-// A parsed chapter.json: a block per overview panel — the world, the favorite and each body it belongs to. Its `tags` reach the nav through `index.json`.
-export interface ChapterMeta extends Record<ChapterTier, unknown> {
-  alliance: Alliance | null;
-  boat: Boat | null;
-  city: City | null;
-  clan: Clan | null;
-  culture: Culture | null;
-  family: Family | null;
-  favorite: Favorite | null;
-  kingdom: Kingdom | null;
-  language: Language | null;
-  religion: Religion | null;
-  subspecies: Subspecies | null;
-  wars: War[]; // the crown's own, each answering for itself — its `kingdom.wars` names them, this block fields them
+// A parsed chapter.json: a panel's block each — the world, the favorite and each body it belongs to, absent where none. `tags` reach the nav via `index.json`.
+export interface ChapterMeta extends Partial<Record<ChapterTier, unknown>> {
+  alliance?: Alliance;
+  boat?: Boat;
+  city?: City;
+  clan?: Clan;
+  culture?: Culture;
+  family?: Family;
+  favorite?: Favorite;
+  kingdom?: Kingdom;
+  language?: Language;
+  religion?: Religion;
+  subspecies?: Subspecies;
+  wars?: War[]; // the crown's own, each answering for itself — its `kingdom.wars` names them, this block fields them
   world: World;
 }
 

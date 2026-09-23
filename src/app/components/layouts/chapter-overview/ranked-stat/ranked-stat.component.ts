@@ -102,7 +102,7 @@ export class RankedStatComponent {
       const key = this.stat();
 
       if (key === 'score_rank') return this._snap(k.metadata.score_rank ?? 0, undefined); // the value IS the placement — no podium rank of its own
-      if (key === 'boats') return this._snap(k.boats.total, k.ranks?.boats); // its own block: the hulls ride alongside the total
+      if (key === 'boats') return this._snap(k.boats?.total ?? 0, k.ranks?.boats); // its own block: the hulls ride alongside the total
       if (key === 'gear') return this._snap(k.gear.total, k.ranks?.gear); // its own block: the racks ride alongside the total
       if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
 
@@ -158,11 +158,11 @@ export class RankedStatComponent {
     // Its own block, like a city's population, and named alike on every tier — a tongue's speakers answer to `members` as a clan's kin do.
     if (key === 'members') return this._snap(entity.members?.total ?? 0, ranks?.members);
     // The pact gathers rather than enrols, so its head-count sits in `population.total` as a town's and a crown's do, not under `members`.
-    if (key === 'population') return this._snap(entity.population.total ?? 0, ranks?.population);
+    if (key === 'population') return this._snap(entity.population?.total ?? 0, ranks?.population);
     const shelf = (entity as { books?: { total: number } }).books; // a custom and a tongue each carry one — its own block, as a town's library is
     if (shelf && key === 'books') return this._snap(shelf.total, ranks?.books);
     // Its living first, its body second. `metadata` also holds names and refs, so the count is what a number proves it to be — WB omits one it never wrote.
-    const { metadata, population } = entity;
+    const { metadata, population = {} } = entity;
     const held = Object.hasOwn(population, key) ? population[key as keyof typeof population] : metadata[key as keyof typeof metadata];
     return this._snap(typeof held === 'number' ? held : 0, ranks?.[key]);
   }
@@ -176,7 +176,7 @@ export class RankedStatComponent {
   ): NonNullable<ChapterMeta['city'] | ChapterMeta['favorite'] | ChapterMeta['kingdom']> | PeopleTier | SpeciesStanding | null {
     if (!meta) return null;
     // A section of the subspecies, where every other source is a chapter block.
-    return this.source() === 'species' ? (meta.subspecies?.species ?? null) : meta[this.source() as ChapterTier];
+    return this.source() === 'species' ? (meta.subspecies?.species ?? null) : (meta[this.source() as ChapterTier] ?? null);
   }
 
 }

@@ -56,12 +56,12 @@ export class WorldStatsComponent {
     const before = this._chronicler.previousChapter()?.meta.world;
     // `infected` is omitted at 0 (outbreak-style), so an absent count reads as 0 on either side.
     const rows: SnapshotRow[] = this.snapshotStats.map(({ hideIfZero, icon, key, label, suffix }) => {
-      const value = world.snapshot[key] ?? 0;
-      return { delta: before ? value - (before.snapshot[key] ?? 0) : undefined, hideIfZero, icon, key, label, suffix, value };
+      const value = world.snapshot?.[key] ?? 0;
+      return { delta: before ? value - (before.snapshot?.[key] ?? 0) : undefined, hideIfZero, icon, key, label, suffix, value };
     });
-    const boats = world.boats.total;
+    const boats = world.boats?.total ?? 0;
     rows.push({
-      delta: before ? boats - before.boats.total : undefined, hideIfZero: true, icon: undefined, key: 'boats', label: 'ui_boats', suffix: undefined, value: boats,
+      delta: before && boats - (before.boats?.total ?? 0), hideIfZero: true, icon: undefined, key: 'boats', label: 'ui_boats', suffix: undefined, value: boats,
     });
     return rows.filter(r => !r.hideIfZero || r.value > 0).map(({ delta, icon, key, label, suffix, value }) => ({ delta, icon, key, label, suffix, value }));
   });

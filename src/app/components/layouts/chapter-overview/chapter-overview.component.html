@@ -44,7 +44,7 @@
     <span>{{ 'ui_wars' | translate }}</span>
   </ng-template>
   <ng-template #warsChip>
-    <nz-tag>{{ c.meta.wars.length }}</nz-tag>
+    <nz-tag>{{ c.meta.wars?.length ?? 0 }}</nz-tag>
   </ng-template>
   <ng-template #religionHeader>
     <img class="panel-icon" src="assets/img/world/religions.png" />

@@ -2,7 +2,7 @@ import { EntityReference, EquipmentStock, HullCount, Leaders, PersonReference, P
 
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium, no neighbour or no ongoing war means no key at all.
 export interface Kingdom {
-  boats: HullCount;
+  boats?: HullCount; // absent where no hull sails — Python omits a count at 0
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   gear: EquipmentStock;
   identity: KingdomIdentity;
