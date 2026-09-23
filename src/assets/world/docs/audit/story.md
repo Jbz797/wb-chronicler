@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 23/09/26 11:08</p>
+<p class="metadata">Date de mise à jour : 23/09/26 20:24</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -12,6 +12,8 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut : à partir de `sav
 - une épithète ou un lien que les chapitres ne soutiennent plus ;
 - un motif ou une cause qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - une âme ou un lieu qu'elle a lâchés là où la chronique l'attendait.
+
+Ouvre ton rapport sur le registre des veilles encore ouvertes et de celles que le chapitre ouvre : chacune par son chapitre et sa ligne, son sort au chapitre d'avant puis dans celui-ci — soldée, reconduite, détournée, muette. Deux veilles ne se lient que si le texte les lie lui-même.
 
 Dis-le franchement là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage qui manque à la chronique, un angle jamais pris), mais comme une direction, jamais comme de la prose écrite.
 
