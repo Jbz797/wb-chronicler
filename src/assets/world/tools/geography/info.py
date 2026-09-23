@@ -21,6 +21,7 @@ from shared import (
     emit,
     index_by_id,
     is_boat,
+    is_sapient,
     load_data,
     load_save,
     parse_sections,
@@ -30,9 +31,9 @@ from shared import (
 )
 from waters import waters_cached
 
-_ALL_SECTIONS = ("biomes", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
+_ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
-_BY_LAND = ("biomes", "burning", "frozen", "gear", "islands", "ridges", "waters")  # the sections `-i` narrows: the rest speak for the whole world
+_BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "ridges", "waters")  # the sections `-i` narrows: the rest speak for the whole world
 _COORDS = {"actors_data": actor_xy, "buildings": building_tile}  # Collection → the helper that sites a record, WB's omitted zero read as 0. No kind sits in both.
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PATCH_SHARE = 1  # percent of its land a biome must stay under to be sited, however few its tiles
@@ -82,9 +83,32 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict
     return by_key
 
 
+# The land a body stands on, as every land-by-land section keys it — the grid decoded for a body off every land alone, whose row tells an islet from the water.
+def _body_key(actor: dict, island_of, grid: LazyTileGrid, tile_map: list) -> str:
+    x, y = actor_xy(actor)
+    return str(island_id) if (island_id := island_of.get((x, y))) else _land_key(None, tile_map[grid[y][x]])
+
+
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
 def _build_biomes(save: dict, save_path: Path) -> dict:
     return pickle_cached("biomes_v10", save_path, lambda: _compute_biomes(save, save_path))
+
+
+# Who lives where, land by land, then on the islets and in the water: the living bodies and how many of them think — a hull carries, it is no body.
+def _build_bodies(save: dict, save_path: Path) -> dict:
+    _, island_of = compute_islands_cached(save, save_path)
+    grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []  # rows decoded only for a body off every land, on an islet or in the water
+    thinking = index_by_id(save.get("subspecies") or [])
+    by_land: defaultdict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for actor in save.get("actors_data") or []:
+        if is_boat(actor):
+            continue
+        tally = by_land[_body_key(actor, island_of, grid, tile_map)]
+        tally[0] += 1
+        tally[1] += is_sapient(thinking.get(actor.get("subspecies")))
+    return {
+        key: f"{n} bod{'y' if n == 1 else 'ies'}" + (f" · {sapient} sapient" if sapient else "") for key, (n, sapient) in sorted(by_land.items(), key=_land_order)
+    }
 
 
 # A fire WB saves tile by tile, counted land by land, then on the islets and on the water — each tile by its biome, else by its ground as `islands` names it.
@@ -162,9 +186,7 @@ def _build_gear(save: dict, save_path: Path) -> dict:
     for actor in save.get("actors_data") or []:
         if is_boat(actor) or not (worn := actor.get("saved_items")):
             continue
-        x, y = actor_xy(actor)
-        key = str(island_id) if (island_id := island_of.get((x, y))) else _land_key(None, tile_map[grid[y][x]])
-        by_land[key].append(
+        by_land[_body_key(actor, island_of, grid, tile_map)].append(
             # An id the collection never resolves names nothing, so it is dropped rather than sorted against the rest as a `None`.
             {"id": actor["id"], "items": sorted(a for i in worn if (a := (items.get(i) or {}).get("asset_id"))), "name": actor.get("name")},
         )
@@ -177,7 +199,7 @@ def _build_gear(save: dict, save_path: Path) -> dict:
     return out
 
 
-# Where every instance of one kind stands. Its `id` opens its own script; `island_id` names the land mass, else `islet` a rock too small to count, else water.
+# Where every instance of one kind stands. Its `id` opens its own script; `island_id` names the land mass, else `islet_tiles` one too small to count, else water.
 def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
     out = []
     for collection, site in _COORDS.items():
@@ -196,7 +218,7 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
             if (island_id := island_of.get((x, y))) is not None:
                 position["island_id"] = island_id
             elif off_land(tile_map[grid[y][x]]) == "islet":  # silent in the water, as `island_id` is: a hull at sea, a dock on shallows
-                position["islet"] = True
+                position["islet_tiles"] = island_of.islet_size((x, y))
     return sorted(out, key=lambda r: (r["y"], r["x"]))
 
 
@@ -275,7 +297,7 @@ def _narrowed(out: dict, land: int) -> dict:
         rows = out["biomes"]["islands"].get(key) or []
         grown = {row["biome"] for row in rows}
         narrowed["biomes"] = {"descriptions": {b: text for b, text in out["biomes"]["descriptions"].items() if b in grown}, "islands": {key: rows} if rows else {}}
-    for section in ("burning", "frozen", "gear"):
+    for section in ("bodies", "burning", "frozen", "gear"):
         if section in out:
             narrowed[section] = {key: out[section][key]} if key in out[section] else {}
     if "islands" in out:
@@ -353,6 +375,8 @@ def main(argv: list[str]) -> int:
     out: dict = {}
     if "biomes" in sections:
         out["biomes"] = _build_biomes(save, save_path)
+    if "bodies" in sections:
+        out["bodies"] = _build_bodies(save, save_path)
     if "burning" in sections:
         out["burning"] = _build_burning(save, save_path)
     if "entity_types" in sections:

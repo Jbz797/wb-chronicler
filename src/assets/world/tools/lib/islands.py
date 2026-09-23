@@ -29,11 +29,11 @@ _SET = re.compile(rb"[^\x00]")  # a byte the mask kept
 
 # Tile → island id over a flat row-major grid, `0` for water (ids start at 1). The dict it replaces cost 32 ms to unpickle and 1.95 MB; this costs neither.
 class _TileIslands:
-    __slots__ = ("_edges", "_grid", "_height", "_width")
+    __slots__ = ("_edges", "_grid", "_height", "_islets", "_width")
 
-    # Wraps the grid the phases filled — handed over, not copied: it is already the shape this class reads from. `None` edges: every land tile stands in.
-    def __init__(self, id_grid: array, width: int, height: int, edges: array | None = None):
-        self._edges, self._grid, self._height, self._width = edges, id_grid, height, width
+    # Wraps what the phases filled — handed over, not copied: already the shape this class reads from. `None` edges: every land tile stands in.
+    def __init__(self, id_grid: array, width: int, height: int, edges: array | None = None, islets: dict[int, int] | None = None):
+        self._edges, self._grid, self._height, self._islets, self._width = edges, id_grid, height, islets, width
 
     # Every land tile and its island, a row at a time off the flat grid: what `edges` hands out where one byte could not hold the ids.
     def _land(self):
@@ -57,6 +57,11 @@ class _TileIslands:
         if 0 <= x < self._width and 0 <= y < self._height and (island_id := self._grid[y * self._width + x]):
             return island_id
         return default
+
+    # How much ground the islet under `pos` holds, lent to its rock as a land's is — `0` on a counted land, on water, or on rock that touches no ground.
+    def islet_size(self, pos: tuple[int, int]) -> int:
+        x, y = pos
+        return self._islets.get(y * self._width + x, 0) if self._islets is not None and 0 <= x < self._width and 0 <= y < self._height else 0
 
     # The island ids of tiles listed row-major, as WB lists `fire` and `frozen_tiles`, read in C where a `get` per tile tests its bounds; `0` off the lands.
     def listed_ids(self, indices: list[int]) -> Iterator[int]:
@@ -203,6 +208,23 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     for j, iid in lent.items():
         id_grid[j] = final[iid]
 
+    # Each ground mass too small to count stamps its size, lent to the rock no land took: an islet reads how much of it there is, where a bare flag read as a rock
+    islets: dict[int, int] = {}  # sparse, flat index → size: a grid of the map would pickle two bytes a tile for the few thousand an islet holds
+    islet_seeds: deque[tuple[int, int]] = deque()
+    for size, _, own_runs in masses.values():
+        if size < _CITY_MIN_ISLAND_TILES:
+            for y, a, b in own_runs:
+                islets.update(dict.fromkeys(range(y * width + a, y * width + b), int(size)))
+                islet_seeds.extend((i, size) for i in filter(beside_rock.__getitem__, range(y * width + a, y * width + b)))
+    while islet_seeds:
+        i, size = islet_seeds.popleft()
+        y, x = divmod(i, width)
+        for dx, dy in _DELTAS_4:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < width and 0 <= ny < height and rock[j := i + dy * width + dx] and j not in lent and j not in islets:
+                islets[j] = size
+                islet_seeds.append((j, size))
+
     # Phase 5: the islands, with their `tiles` field — the ground they are made of, Block/Lava tiles from Phase 4 included. What grows on it is `geography biomes`.
     islands = []
     for new_id, old_id in enumerate(order, start=1):
@@ -213,7 +235,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
         bounds = {"x": [west, east], "y": [south, north]}
         islands.append({"bounds": bounds, "centroid": {"x": sum_x // size, "y": sum_y // size}, "id": new_id, "size": size, "tiles": made_of})
 
-    return islands, _TileIslands(id_grid, width, height, _edge_tiles(id_grid, width))
+    return islands, _TileIslands(id_grid, width, height, _edge_tiles(id_grid, width), islets)
 
 
 # Edge tiles, flat, found in C: a byte per land id, the grid one integer, a tile kept where a neighbour differs, a wrapped shift keeping more. `None` past 255 lands.
@@ -235,7 +257,7 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _Ti
     key = save_cache_key(save_path)
     if key is None:
         return _compute_islands(save)
-    cache_file = CACHE_DIR / f"islands_v16_{key}.pkl"
+    cache_file = CACHE_DIR / f"islands_v17_{key}.pkl"
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:

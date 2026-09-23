@@ -280,7 +280,7 @@ def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
                 yield nx, ny
 
 
-# `block`, `burning`, `frozen` (passing frost), `islet` (land too small to count: without it and `island_id`, water) and `snow` or `ice` only where they hold.
+# `block`, `burning`, `frozen` (passing frost), `islet_tiles` (a land too small to count, by its ground), `snow`, `ice`: each only where it holds.
 def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
     out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}
@@ -293,7 +293,7 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     if block := tile_block(name):
         out["block"] = block
     if out["island_id"] is None and off_land(name) == "islet":
-        out["islet"] = True
+        out["islet_tiles"] = ctx["tile_to_island"].islet_size((x, y))
     return out
 
 
