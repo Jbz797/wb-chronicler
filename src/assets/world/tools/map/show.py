@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from PIL import Image, ImageDraw, ImageFont
 
-from shared import SAVES_DIR, arg_parser, latest_chapter, live_save
+from shared import arg_parser, take_chapter
 
 _INK = (255, 30, 30)  # a red no biome wears, so the ring never sinks into the ground it marks
 _RADIUS = 46  # wide enough to be seen on a map two thousand tiles across, tight enough to leave the spot itself readable
@@ -49,7 +49,8 @@ def _zoomed(image: Image.Image, px: int, py: int, span: int) -> Image.Image:
 
 
 def main(argv: list[str]) -> int:
-    parser = arg_parser(prog="map/show.py", description="Ring a tile on the chapter's map and hand back the path.")
+    save_path, argv, label = take_chapter(argv)
+    parser = arg_parser(prog="map/show.py", description="Ring a tile on a chapter's map (`C<n>`, the latest by default) and hand back the path.")
     parser.add_argument("position", help="`x,y` in save coordinates — an actor's, a building's, anything `tiles/info.py` reads")
     parser.add_argument("--zoom", type=int, metavar="n", help=f"only the {_ZOOM_MIN}..{_ZOOM_MAX} tiles each way around it, blown up to read a shore by")
     args = parser.parse_args(argv)
@@ -63,12 +64,9 @@ def main(argv: list[str]) -> int:
         print(f"✗ position reads `x,y`, not `{args.position}`", file=sys.stderr)
         return 2
 
-    chapter = f"C{latest_chapter()}"  # the chapter being written, the only one a map is ever asked about
-    preview = SAVES_DIR / chapter / "preview.png"
-    if not preview.exists():  # before the first chapter there is no archive, and the live save carries the only picture
-        preview = live_save().parent / "preview.png"
+    chapter, preview = label or "live", save_path.parent / "preview.png"  # a chapter's own map, as it stood: a land peopled at C3 lies bare at C1
     if not preview.exists():
-        print(f"✗ no map to show — neither {SAVES_DIR / chapter / 'preview.png'} nor the live save has one", file=sys.stderr)
+        print(f"✗ no map to show — {preview} is missing", file=sys.stderr)
         return 1
 
     image = Image.open(preview).convert("RGB")
