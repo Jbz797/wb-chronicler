@@ -6,7 +6,7 @@ import sys
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping
 from functools import cache
-from math import inf
+from math import ceil, inf
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -281,15 +281,15 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     island_lookup = ctx["island_lookup"]()
 
     return {
-        # Chronicler-only, and only while it still bites: the age WB gives the child its halved `damage_max`/`health_max` back at — a bridling, not an infirmity.
-        **({"adult_age": round(age_adult, 1)} if age < age_adult else {}),
+        # Chronicler-only, and only while it still bites: the date WB gives the child its halved `damage_max`/`health_max` back — a bridling, not an infirmity.
+        **({"adult_on": _crossed_on(actor, age_adult)} if age < age_adult else {}),
         "age": age,
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "asset_id": actor.get("asset_id"),
         "born": world_date(actor.get("created_time") or 0),  # the month WB set it on the map, dated as the chronicle dates: who came first, and when
-        # Chronicler-only, and only while it still bites: the age WB opens a body's own line at — `adult_age` lifts a bridling and lets it found a town, never bear.
-        **({"breeding_age": round(age_breeding, 1)} if age < age_breeding else {}),
+        # Chronicler-only, and only while it still bites: the date WB opens a body's own line — `adult_on` lifts a bridling and lets it found a town, never bear.
+        **({"breeds_on": _crossed_on(actor, age_breeding)} if age < age_breeding else {}),
         # Said only when they hold, as every flag the tools emit: a body that cannot is most of the world, beasts and children first.
         **({"can_reproduce": True} if can_reproduce else {}),
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
@@ -537,6 +537,12 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
         }
     )
     return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
+
+
+# The date a body crosses a biology's age: WB weighs it against the years begun, so 3.9 opens at 4, three full years past birth, and overgrowth brings it on.
+def _crossed_on(actor: dict, threshold: float) -> dict:
+    years = ceil(threshold) - 1 - int(actor.get("age_overgrowth") or 0)
+    return world_date(float(actor.get("created_time") or 0) + years * UNITS_PER_YEAR)
 
 
 # Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.

@@ -7,11 +7,11 @@ _AUDIT = {
     "identity": frozenset({"founding_city", "founding_clan", "founding_kingdom", "motto", "name_culture", "name_template_set", "worldview"}),
     "metadata": frozenset(
         {
-            "adult_age",
+            "adult_on",
             "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
             "besieged_by",
             "born",  # when WB set the soul on the map — for the chronicler's « who came first », no panel dates a body
-            "breeding_age",
+            "breeds_on",
             "can_reproduce",
             "clan_chief_years",
             "deaths_by_cause",
