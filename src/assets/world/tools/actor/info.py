@@ -727,7 +727,7 @@ def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, ki
     return rows
 
 
-# How far the body swims now, off the one `_swim_reach` its walks use: `breath` before its wind fails, `reach` once drowning has spent its health too.
+# How far the body swims now, off the `_swim_reach` its walks use — `breath` before its wind fails, `reach` drowning too — and `rested`, what full gauges change.
 def _swim(actor: dict, stats: dict, ctx: dict) -> dict | str | None:
     biology = _biology(actor, ctx)
     tags = _body_tags(actor, biology, ctx)
@@ -735,22 +735,28 @@ def _swim(actor: dict, stats: dict, ctx: dict) -> dict | str | None:
         return "unlimited"
     if _water_trait_ids().intersection(biology):
         return "never"  # WB sends no such body into the water: it burns there rather than drowns
-    breath, reach = _swim_reach(actor, stats, biology, "hovering" in biology, "fast_swimming" in tags)
+    aloft, swift = "hovering" in biology, "fast_swimming" in tags
+    breath, reach = _swim_reach(actor, stats, biology, aloft, swift)
     if reach == inf:
         return "unlimited"
-    return {"breath": round(breath), "reach": round(reach)} if reach else None
+    now = {"breath": round(breath), "reach": round(reach)}
+    # What comes back once it has rested, where it differs: the breath off a wind spent, the reach off either gauge — a gauge at its top changes nothing.
+    full = zip(("breath", "reach"), map(round, _swim_reach(actor, stats, biology, aloft, swift, rested=True)))
+    rested = {gauge: value for gauge, value in full if value != now[gauge]}
+    return {**now, **({"rested": rested} if rested else {})} if reach or rested else None
 
 
-# How far this body swims from a shore, in tiles: its breath at full pace, then its whole reach, the drowning that follows slower and a point of health at a time.
-def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, swift: bool) -> tuple[float, float]:
+# How far this body swims from a shore, in tiles: its breath at full pace, then its reach, drowning a point of health at a time — at its gauges' top if `rested`.
+def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, swift: bool, rested: bool = False) -> tuple[float, float]:
     if _water_trait_ids().intersection(biology):  # WB routes no body the water burns through the sea (`ActorMove.goTo`): it walks, or it stays
         return 0.0, 0.0
     if aloft or swift:  # neither spends breath in the water, hovering over it or `fast_swimming` through it: the sea is a road
         return inf, inf
     if not (speed := stats.get("speed")) or not (health_max := stats.get("health_max")):
         return 0.0, 0.0
-    pace, health = speed * _TILES_PER_SPEED, min(int(actor.get("health") or 0), health_max)
-    breath = pace * int(actor.get("stamina") or 0) / _STAMINA_PER_SECOND  # WB omits a zero, so a body without the field has no breath left
+    pace, health = speed * _TILES_PER_SPEED, health_max if rested else min(int(actor.get("health") or 0), health_max)
+    stamina = int(stats.get("stamina_max") or 0) if rested else int(actor.get("stamina") or 0)  # WB omits a zero, so a body without the field has no breath left
+    breath = pace * stamina / _STAMINA_PER_SECOND
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
