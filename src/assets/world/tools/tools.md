@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 23/09/26 09:11</p>
+<p class="metadata">Date de mise à jour : 23/09/26 09:54</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -28,7 +28,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `actor` :
 
-- `--to <id | x,y>` : un second corps ou une tuile, et une clé `to`, marchée comme `surroundings`, en `hours` et, passé un jour, en `days` haltes comprises (rien à bord) ; seule sans section nommée ; l'eau qu'il ne passe pas rend une erreur chiffrée
+- `--to <id | x,y>` : un second corps ou une tuile, et une clé `to`, marchée comme `surroundings`, en `hours` et, passé un jour, en `days` haltes comprises (rien à bord) — `swim_hours` ce qu'il en nage, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée ; l'eau qu'il ne passe pas rend une erreur chiffrée
 
 ### `geography` :
 

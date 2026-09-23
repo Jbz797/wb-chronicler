@@ -88,26 +88,36 @@ _WIDE_TREES = {
 }
 
 
-# Each tile yielded once, cheapest first; a step costs its length times its two tiles' mean pace, both ways alike — water reached with less swum is searched again.
-def _settle(walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, bound: float, aim: tuple[int, int, float] | None):
+# A lone goal steers the search, at the cheapest pace a step can take — open ground's, or a swift swimmer's in the water; several leave it unsteered.
+def _aim(walk_map: "WalkMap", gait: "Gait", goals: set[int]) -> tuple[int, int, float] | None:
+    if len(goals) != 1:
+        return None
+    ty, tx = divmod(next(iter(goals)), walk_map.width)
+    return tx, ty, min(gait._swim, 1.0)
+
+
+# Each tile yielded once, cheapest first, with what its way spent in the water and its widest crossing; a step costs its length times its two tiles' mean pace,
+# both ways alike — water reached with less swum is searched again.
+def _settle(walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, bound: float, aim: tuple[int, int, float] | None, told: bool = False):
     classes, trees, walled, width, height = walk_map._classes, walk_map._trees, walk_map._walled, walk_map.width, walk_map._height
-    land, tangled, swim, tired, breath, reach = gait._land, gait._tangled, gait._swim, gait._tired, gait._breath, gait.reach
+    land, tangled, swim, tired, breath, reach = gait._land, gait._tangled, gait._swim, gait._tired, gait.breath, gait.reach
     tireless = breath == inf  # nothing to keep of what was swum: every crossing is the same, and none is searched twice
     tx, ty, scale = aim or (0, 0, 0.0)
     start = y0 * width + x0
     best, swum_at, settled = {start: 0.0}, {start: 0.0}, set()
-    heap = [(0.0, 0.0, start, 0.0)]
+    heap = [(0.0, 0.0, start, 0.0, 0.0, 0.0)]
     while heap:
-        _, cost, tile, swum = heappop(heap)
+        _, cost, tile, swum, water, widest = heappop(heap)
         kind = classes[tile]
         if cost > best[tile] and (kind != _WATER or swum > swum_at[tile]):  # a stale entry, unless it swam less to get there
             continue
         if tile not in settled:
             settled.add(tile)
-            yield tile, cost
+            yield tile, cost, water, widest
         if kind == _BARRED and tile != start:  # where the walk stops: the rock a body stands against, never a road through it
             continue
         here = (swim if swum <= breath else tired) if kind == _WATER else (tangled if trees[tile] else land)[kind] if kind else 1.0
+        wet_here = here if told and kind == _WATER else 0.0  # a step's water share: the half of its cost each wet end carries
         y, x = divmod(tile, width)
         straight = tile in walled
         for dx in (-1, 0, 1):
@@ -150,7 +160,10 @@ def _settle(walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, b
                 if scale:  # the crow's line still to go, at the cheapest pace: it steers the search toward a lone goal without ever misleading it
                     far, near = abs(tx - nx), abs(ty - ny)
                     ahead = (far + DIAGONAL_EXTRA * near if far > near else near + DIAGONAL_EXTRA * far) * scale
-                heappush(heap, (total + ahead, total, step, wet))
+                if told:  # a ring's sweep leaves the water untold: it costs a tenth more, and no ring asks what was swum
+                    heappush(heap, (total + ahead, total, step, wet, water + length * (wet_here + (there if ground == _WATER else 0.0)) / 2, max(wet, widest)))
+                else:
+                    heappush(heap, (total + ahead, total, step, wet, 0.0, 0.0))
 
 
 # A tile's class, read on its top as WB does (`top_type ?? main_type`): rock, lava and goo barred, the sea and its ice swum, a ground that slows its own class.
@@ -192,10 +205,10 @@ def _walled_tiles(save: dict, names: list[str], width: int, height: int) -> froz
 
 # How a body goes, as a pace cost per tile class: what a step there costs over the same step on open ground — past its breath, the water costs more.
 class Gait:
-    __slots__ = ("_breath", "_land", "_swim", "_tangled", "_tired", "reach")
+    __slots__ = ("_land", "_swim", "_tangled", "_tired", "breath", "reach")
 
     def __init__(self, land: list[float], tangled: list[float], swim: float, tired: float, breath: float, reach: float):
-        self._breath, self._land, self._swim, self._tangled, self._tired, self.reach = breath, land, swim, tangled, tired, reach
+        self._land, self._swim, self._tangled, self._tired, self.breath, self.reach = land, swim, tangled, tired, breath, reach
 
     def ashore(self) -> "Gait":
         return Gait(self._land, self._tangled, self._swim, self._tired, 0.0, 0.0)
@@ -237,13 +250,15 @@ class WalkMap:
 
 # Every tile reached within `limit`, by its cost, a barring tile too as where the walk stops — never past `limit` tiles out, which a swift swimmer alone outruns.
 def walk_from(walk_map: WalkMap, gait: Gait, x: int, y: int, limit: float) -> dict[int, float]:
-    return dict(_settle(walk_map, gait, x, y, limit, limit if gait._swim < 1 else inf, None))
+    return {tile: cost for tile, cost, _, _ in _settle(walk_map, gait, x, y, limit, limit if gait._swim < 1 else inf, None)}
 
 
-# What a body walks from `(x, y)` to the nearest of `goals` (tile indices), or `None` where none is reached — a single goal steers the search toward it.
+# What a body walks from `(x, y)` to the nearest of `goals` (tile indices), or `None` where none is reached — its water left untold, as no distance asks it.
 def walk_to(walk_map: WalkMap, gait: Gait, x: int, y: int, goals: set[int], limit: float = inf) -> float | None:
-    aim = None
-    if len(goals) == 1:  # the cheapest pace a step can take: open ground's, or a swift swimmer's in the water
-        ty, tx = divmod(next(iter(goals)), walk_map.width)
-        aim = (tx, ty, min(gait._swim, 1.0))
-    return next((cost for tile, cost in _settle(walk_map, gait, x, y, limit, inf, aim) if tile in goals), None)
+    return next((cost for tile, cost, _, _ in _settle(walk_map, gait, x, y, limit, inf, _aim(walk_map, gait, goals)) if tile in goals), None)
+
+
+# `walk_to` with its water told: the cost, what of it was swum, and the widest crossing in tiles.
+def walk_way(walk_map: WalkMap, gait: Gait, x: int, y: int, goals: set[int], limit: float = inf) -> tuple[float, float, float] | None:
+    ways = _settle(walk_map, gait, x, y, limit, inf, _aim(walk_map, gait, goals), told=True)
+    return next(((cost, water, widest) for tile, cost, water, widest in ways if tile in goals), None)

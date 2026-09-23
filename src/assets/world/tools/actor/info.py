@@ -53,7 +53,7 @@ from shared import (
     world_laws,
     zone_xy,
 )
-from walking import Gait, WalkMap, walk_from, walk_to
+from walking import Gait, WalkMap, walk_from, walk_way
 from waters import waters_cached
 
 _AIRBORNE = frozenset({"UFO", "dragon", "god_finger"})  # WB `ActorAsset.flying` (the dragon taking wing at will): straight over any ground, no path sought
@@ -414,12 +414,16 @@ def _build_to(actor: dict, goal: tuple[int, int], whom: str, ctx: dict) -> dict:
     goals, home = {gy * walk_map.width + gx}, island_of.get((cx, cy))
     # WB walks round the bays of his own land, and swims only toward another: an islet of his, small, is tried on foot before the water.
     shore = not walk_map.wet(cx, cy) and (home is None or home == island_of.get(goal))
-    walked = walk_to(walk_map, gait.ashore(), cx, cy, goals) if shore else None
-    if walked is None and not (shore and home is not None):
-        walked = walk_to(walk_map, gait, cx, cy, goals)
-    if walked is None:
+    way = walk_way(walk_map, gait.ashore(), cx, cy, goals) if shore else None
+    if way is None and not (shore and home is not None):
+        way = walk_way(walk_map, gait, cx, cy, goals)
+    if way is None:
         raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["tiles"], ctx))
-    return {**to, "walked": round(walked), **_walk_time(actor, walked, ctx)}
+    walked, water, widest = way
+    # What was swum, in hours as the whole; the widest crossing where it outruns his breath, both weighed in whole tiles as they print, lest 6 stand beside 6
+    swum = {"swim_hours": _walk_time(actor, water, ctx)["hours"]} if water else {}
+    past = gait.breath < inf and round(widest) > round(gait.breath)  # a tireless swimmer never runs short, whatever it crosses
+    return {**to, **swum, **({"widest_crossing": round(widest)} if past else {}), "walked": round(walked), **_walk_time(actor, walked, ctx)}
 
 
 # What the soul was born with, off WB's creature library — each trait and its rarity, then its effect and flavour once named, and whether this age lulls it.

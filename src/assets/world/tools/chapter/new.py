@@ -59,7 +59,8 @@ _AFTER_REPORTS = (
     "the story check may propose as well as fault — a mend, a passage the chronicle lacks, an angle:"
     " it is yours to take or leave, and what you take, you write in your own hand",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
-    "what asserts anything new goes back to the same auditors — new ones if they no longer answer — its lines flagged as new, the only ones they reopen",
+    "what asserts anything new goes back to the same auditors, each resumed by message with the id its report came with, its memory intact — note each id, as a"
+    " compaction drops them; a fresh one only if that fails — its lines flagged as new, the only ones they reopen",
     "the last round settled: `tools/chapter/new.py --deliver`",
 )
 
@@ -365,7 +366,7 @@ def _finalize() -> int:
     chapter_md, none = f"saves/C{n}/chapter.md", _ACCOUNT.get(lang, _ACCOUNT["en"])["none"]  # the story read takes the chapter alone: the chronicle is its ground
     targets = chapter_md + (f", and in saves/C{n}/chapter.json {', '.join(facts['audited'])}" if facts["audited"] else "")
     auditors = sum(copies for _, copies, _ in _BRIEFS)
-    print(f"  → the audit: {auditors} new sub-agents at once, each handed its brief below as it stands — nothing of your analysis, nor of your notes")
+    print(f"  → the audit: {auditors} sub-agents new to this chapter, at once, each handed its brief below as it stands — nothing of your analysis nor notes")
     for name, _, brief in _BRIEFS:
         print(f"    · {name}: « {brief.format(chapter=chapter_md, none=none, targets=targets)} »")
     for line in _AFTER_REPORTS:
