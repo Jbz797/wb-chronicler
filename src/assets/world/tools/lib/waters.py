@@ -46,7 +46,7 @@ def _compute_waters(save: dict, save_path: Path) -> dict:
     }
 
 
-# An enclosed water is named by the shores that ring it, and holds as an islet any land no other water touches — the isles a chronicle reaches last, or never.
+# An enclosed water is named by the shores that ring it, and holds as its own any land no other water touches — the isles a chronicle reaches last, or never.
 def _lakes(pools: list[tuple[int, int, int, bool]], pool_at: list[int], coast: list[tuple[int, int]], water: bytearray, stride: int) -> list[dict]:
     # Numbered widest first, as WB numbers its islands: the id is what `places.json` keys a name on, so it must not shift from one chapter to the next.
     kept = [p for p in sorted((p for p, pool in enumerate(pools) if pool[3]), key=lambda p: -pools[p][0]) if pools[p][0] >= _MIN_LAKE_TILES]
@@ -58,8 +58,8 @@ def _lakes(pools: list[tuple[int, int, int, bool]], pool_at: list[int], coast: l
         for j in (i - stride, i + stride, i - 1, i + 1):
             if not water[j]:
                 continue
-            pool = pool_at[j] if pools[pool_at[j]][3] else _OPEN_SEA  # a shore on the open sea is nobody's islet, however many lakes it also touches
-            if pool != _OPEN_SEA and pool not in lakes:  # a puddle under the floor is no water at all here: it neither rings a land nor bars it from being an islet
+            pool = pool_at[j] if pools[pool_at[j]][3] else _OPEN_SEA  # a shore on the open sea is no lake's own, however many lakes it also touches
+            if pool != _OPEN_SEA and pool not in lakes:  # a puddle under the floor is no water at all here: it neither rings a land nor keeps it from a lake
                 continue
             pools_of_island[island_id].add(pool)
             if pool != _OPEN_SEA:
@@ -68,8 +68,8 @@ def _lakes(pools: list[tuple[int, int, int, bool]], pool_at: list[int], coast: l
     out = []
     for lake_id, index in enumerate(kept, start=1):
         size, cx, cy, _ = pools[index]
-        islets = sorted(i for i, seen in pools_of_island.items() if seen == {index})
-        out.append({"centroid": {"x": cx, "y": cy}, "id": lake_id, "islets": islets, "shores": sorted(shores[index] - set(islets)), "size": size})
+        islands = sorted(i for i, seen in pools_of_island.items() if seen == {index})
+        out.append({"centroid": {"x": cx, "y": cy}, "id": lake_id, "islands": islands, "shores": sorted(shores[index] - set(islands)), "size": size})
     return out
 
 
@@ -153,4 +153,4 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v10", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v11", save_path, lambda: _compute_waters(save, save_path))
