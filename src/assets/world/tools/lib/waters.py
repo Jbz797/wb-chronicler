@@ -2,6 +2,7 @@
 
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from heapq import heappop, heappush
 from pathlib import Path
 
@@ -31,7 +32,7 @@ def _coast(water: bytearray, stride: int, island_of) -> list[tuple[int, int]]:
 # The mask and its coast built once for both readings: the pools the land encloses make the lakes, the tides raised from every shore make the straits.
 def _compute_waters(save: dict, save_path: Path) -> dict:
     _, island_of = compute_islands_cached(save, save_path)
-    rows = tile_mask(save, [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []])
+    rows = _water_rows(save)
     # The sea as one flat mask ringed by a border of land: every neighbour of a map tile is a valid index, so no sweep below tests a bound or indexes a nested row.
     stride = len(rows[0]) + 2
     water = bytearray(stride) + b"".join(b"\x00" + row + b"\x00" for row in rows) + bytes(stride)
@@ -149,6 +150,35 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
         {"banks": [{"x": i % stride - 1, "y": i // stride - 1} for i in banks[pair]], "between": list(pair), "gap": round(span / _STEP)}
         for pair, span in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))
     ]
+
+
+# The map's water, a row of bytes each, read on the top as WB does: the one mask both the lakes of `waters_cached` and `water_bodies` must agree on.
+def _water_rows(save: dict) -> list[bytes]:
+    return tile_mask(save, [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []])
+
+
+# What water a tile lies in — `sea`, a listed `lake` by id, or `pond_tiles` for a pool under the lakes' floor — filled from the tile, never past the largest lake.
+def water_bodies(save: dict, save_path: Path) -> Callable[[int, int], dict]:
+    lakes = {(lake["size"], lake["centroid"]["x"], lake["centroid"]["y"]): lake["id"] for lake in waters_cached(save, save_path)["lakes"]}
+    rows = _water_rows(save)
+    width, height, cap = len(rows[0]), len(rows), max((size for size, _, _ in lakes), default=_MIN_LAKE_TILES)
+
+    def body(x: int, y: int) -> dict:
+        seen, todo, sum_x, sum_y = {(x, y)}, [(x, y)], 0, 0
+        while todo:
+            cx, cy = todo.pop()
+            if cx in (0, width - 1) or cy in (0, height - 1) or len(seen) > cap:  # the edge, or more than any lake holds: an open sea, as `_pool_map` has it
+                return {"sea": True}
+            sum_x, sum_y = sum_x + cx, sum_y + cy
+            for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
+                if (nx, ny) not in seen and rows[ny][nx]:
+                    seen.add((nx, ny))
+                    todo.append((nx, ny))
+        size = len(seen)
+        lake = lakes.get((size, sum_x // size, sum_y // size))  # sized and centred as `_pool_map` reckons them, which no two lakes share
+        return {"lake": lake} if lake is not None else {"pond_tiles": size}
+
+    return body
 
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.

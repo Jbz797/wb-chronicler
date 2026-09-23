@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 23/09/26 13:04</p>
+<p class="metadata">Date de mise à jour : 23/09/26 14:08</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste séparée par des virgules (`full` par défaut = toutes, sauf `geography` qui n'en a pas et exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -65,7 +65,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `houses` (cité, royaume) compte les chantiers, comme le jeu : `ground … metadata` les signale par `under_construction`.
 - `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule sert tout le royaume, quelle que soit sa cité.
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : une cité ne la prend que si son chef y croit, un royaume que si son roi la décrète.
-- `tiles … tile_info` : `block` nomme ce qui barre la marche, que personne ne franchit à pied ; `islet_tiles`, une terre trop petite pour compter, sous 300 tuiles de sol, et sa taille — sans elle ni `island_id`, c'est l'eau ; `snow`, `ice` et `frozen` (le gel passager) comme dans `geography … frozen`.
+- `tiles … tile_info` : `block` barre la marche, que nul ne franchit à pied ; `islet_tiles`, une terre sous 300 tuiles de sol, trop petite pour compter ; sur l'eau, `sea`, `lake` (son id) ou `pond_tiles`, une eau close sous 64 tuiles ; `snow`, `ice` et `frozen` (le gel passager) comme dans `geography … frozen`.
 - `to_islands` (`distances`) donne les 5 îles les plus proches, dans l'ordre, par leur **tuile la plus proche**.
 - `to_land` (`distances`) mesure le bras d'eau depuis **tout le rocher**, pas depuis la tuile.
 - `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.

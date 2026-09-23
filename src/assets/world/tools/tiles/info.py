@@ -37,6 +37,7 @@ from shared import (
     zone_xy,
 )
 from walking import WalkMap, walk_to
+from waters import water_bodies
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
@@ -105,6 +106,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     if "tile_info" in sections:
         ctx["burning_set"] = wanted.intersection(listed_tiles(save, "fire"))
         ctx["frozen_set"] = wanted.intersection(listed_tiles(save, "frozen_tiles"))
+        ctx["water_body"] = cache(lambda: water_bodies(save, save_path))  # called not stored: a tile on dry land never asks what water it lies in
 
     if "distances" in sections:
         ctx["layer_by_id"] = [tile_layer(name) for name in ctx["tile_map"]]
@@ -280,7 +282,7 @@ def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
                 yield nx, ny
 
 
-# `block`, `burning`, `frozen` (passing frost), `islet_tiles` (a land too small to count, by its ground), `snow`, `ice`: each only where it holds.
+# `block`, `burning`, `frozen` (passing frost), `islet_tiles` (a land too small to count), `snow`, `ice`, on water `sea`, `lake` or `pond_tiles`: where they hold.
 def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
     out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}
@@ -294,6 +296,8 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
         out["block"] = block
     if out["island_id"] is None and off_land(name) == "islet":
         out["islet_tiles"] = ctx["tile_to_island"].islet_size((x, y))
+    elif tile_layer(name) == "Ocean":
+        out |= ctx["water_body"]()(x, y)
     return out
 
 
