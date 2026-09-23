@@ -51,7 +51,8 @@ _ACCOUNT = {  # the audit account's labels, in the tongue the chapter is written
 
 # What becomes of the auditors' reports, in the order it is done — the chronicler's to follow between rounds, said where the audit is handed over.
 _AFTER_REPORTS = (
-    "every report in hand, never before: correct each confirmed gap — one raised by a single fact check is checked all the same, the tool settling a disagreement",
+    "every report in hand, never before, and chapter.md untouched while any auditor reads it — each report waits for the others, a message from the player"
+    " or the dev too: correct each confirmed gap — one raised by a single fact check is checked all the same, the tool settling a disagreement",
     "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest;"
     " and a figure a rewrite brings is read off a tool then, never carried over from the draft or from memory",
     "correct where a correction suffices, rewrite only what it cannot mend",
