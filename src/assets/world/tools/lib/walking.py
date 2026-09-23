@@ -88,21 +88,21 @@ _WIDE_TREES = {
 }
 
 
-# A lone goal steers the search, at the cheapest pace a step can take — open ground's, or a swift swimmer's in the water; several leave it unsteered.
-def _aim(walk_map: "WalkMap", gait: "Gait", goals: set[int]) -> tuple[int, int, float] | None:
-    if len(goals) != 1:
+# The goals' box steers the search at the cheapest pace a step takes; no goal lies nearer than its box, so a lone tile or a shore is still reached cheapest.
+def _aim(walk_map: "WalkMap", gait: "Gait", goals: set[int]) -> tuple[int, int, int, int, float] | None:
+    if not goals:
         return None
-    ty, tx = divmod(next(iter(goals)), walk_map.width)
-    return tx, ty, min(gait._swim, 1.0)
+    rows, cols = zip(*(divmod(goal, walk_map.width) for goal in goals))
+    return min(cols), min(rows), max(cols), max(rows), min(gait._swim, 1.0)
 
 
 # Each tile yielded once, cheapest first, with what its way spent in the water and its widest crossing; a step costs its length times its two tiles' mean pace,
 # both ways alike — water reached with less swum is searched again.
-def _settle(walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, bound: float, aim: tuple[int, int, float] | None, told: bool = False):
+def _settle(walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, bound: float, aim: tuple[int, int, int, int, float] | None, told: bool = False):
     classes, trees, walled, width, height = walk_map._classes, walk_map._trees, walk_map._walled, walk_map.width, walk_map._height
     land, tangled, swim, tired, breath, reach = gait._land, gait._tangled, gait._swim, gait._tired, gait.breath, gait.reach
     tireless = breath == inf  # nothing to keep of what was swum: every crossing is the same, and none is searched twice
-    tx, ty, scale = aim or (0, 0, 0.0)
+    left, top, right, bottom, scale = aim or (0, 0, 0, 0, 0.0)
     start = y0 * width + x0
     best, swum_at, settled = {start: 0.0}, {start: 0.0}, set()
     heap = [(0.0, 0.0, start, 0.0, 0.0, 0.0)]
@@ -157,8 +157,8 @@ def _settle(walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, b
                 if ground == _WATER:
                     swum_at[step] = min(wet, swum_at.get(step, inf))
                 ahead = 0.0
-                if scale:  # the crow's line still to go, at the cheapest pace: it steers the search toward a lone goal without ever misleading it
-                    far, near = abs(tx - nx), abs(ty - ny)
+                if scale:  # the crow's line still to go to the goals' box, at the cheapest pace
+                    far, near = max(left - nx, nx - right, 0), max(top - ny, ny - bottom, 0)
                     ahead = (far + DIAGONAL_EXTRA * near if far > near else near + DIAGONAL_EXTRA * far) * scale
                 if told:  # a ring's sweep leaves the water untold: it costs a tenth more, and no ring asks what was swum
                     heappush(heap, (total + ahead, total, step, wet, water + length * (wet_here + (there if ground == _WATER else 0.0)) / 2, max(wet, widest)))
@@ -258,7 +258,7 @@ def walk_to(walk_map: WalkMap, gait: Gait, x: int, y: int, goals: set[int], limi
     return next((cost for tile, cost, _, _ in _settle(walk_map, gait, x, y, limit, inf, _aim(walk_map, gait, goals)) if tile in goals), None)
 
 
-# `walk_to` with its water told: the cost, what of it was swum, and the widest crossing in tiles.
-def walk_way(walk_map: WalkMap, gait: Gait, x: int, y: int, goals: set[int], limit: float = inf) -> tuple[float, float, float] | None:
+# `walk_to` with its water told: the cost, what of it was swum, the widest crossing in tiles, and which goal it reached — the cheapest, of many.
+def walk_way(walk_map: WalkMap, gait: Gait, x: int, y: int, goals: set[int], limit: float = inf) -> tuple[float, float, float, int] | None:
     ways = _settle(walk_map, gait, x, y, limit, inf, _aim(walk_map, gait, goals), told=True)
-    return next(((cost, water, widest) for tile, cost, water, widest in ways if tile in goals), None)
+    return next(((cost, water, widest, tile) for tile, cost, water, widest in ways if tile in goals), None)

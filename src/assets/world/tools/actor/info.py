@@ -402,14 +402,16 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     return rings if detailed else light(rings, withheld=True)  # `full` keeps the circle a chapter opens on, and says the wider ones wait to be named
 
 
-# What the actor walks to a body or a tile, at his own gait and swimming within his reach — a flyer, a body of the water or a passenger goes as the crow flies.
-def _build_to(actor: dict, goal: tuple[int, int], whom: str, ctx: dict) -> dict:
-    (cx, cy), (gx, gy) = actor_xy(actor), goal
-    to = {"dir": bearing(gx - cx, gy - cy), "tiles": round(walk_tiles(gx - cx, gy - cy))}
+# The walk to a body, a tile or a land's shore, at his own gait within his swim — a flyer, water-born or passenger goes as the crow flies, landing nearest.
+def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, land: int | None = None) -> dict:
+    cx, cy = actor_xy(actor)
+    island_of = ctx["island_lookup"]()
+    gx, gy = goal = min(aims, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2)
+    to = _heading(cx, cy, gx, gy, land)
     if (gait := _gait(actor, ctx)) is None:  # its way is the straight line: said as a walk, so that no reader takes the silence for a sea it can't cross
         return {**to, "walked": to["tiles"], **_walk_time(actor, to["tiles"], ctx)}
-    walk_map, island_of = ctx["walk_map"](), ctx["island_lookup"]()
-    goals, home = {gy * walk_map.width + gx}, island_of.get((cx, cy))
+    walk_map = ctx["walk_map"]()
+    goals, home = {y * walk_map.width + x for x, y in aims}, island_of.get((cx, cy))
     # WB walks round the bays of his own land, and swims only toward another: an islet of his, small, is tried on foot before the water.
     shore = not walk_map.wet(cx, cy) and (home is None or home == island_of.get(goal))
     way = walk_way(walk_map, gait.ashore(), cx, cy, goals) if shore else None
@@ -417,7 +419,9 @@ def _build_to(actor: dict, goal: tuple[int, int], whom: str, ctx: dict) -> dict:
         way = walk_way(walk_map, gait, cx, cy, goals)
     if way is None:
         raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["tiles"], ctx))
-    walked, water, widest = way
+    walked, water, widest, reached = way
+    if land is not None:
+        to = _heading(cx, cy, reached % walk_map.width, reached // walk_map.width, land)
     # What was swum, in hours as the whole; the widest crossing where it outruns his breath, both weighed in whole tiles as they print, lest 6 stand beside 6
     swum = {"swim_hours": _walk_time(actor, water, ctx)["hours"]} if water else {}
     past = gait.breath < inf and round(widest) > round(gait.breath)  # a tireless swimmer never runs short, whatever it crosses
@@ -555,6 +559,12 @@ def _gait(actor: dict, ctx: dict) -> Gait | None:
     breath, reach = _swim_reach(actor, stats, biology, aloft, swift)
     blind = bool(_species(actor, ctx).get("ignore_tile_speed_multiplier"))  # WB `ActorAsset`: every ground at one pace
     return ctx["walk_map"]().gait(stats.get("speed"), tags, aloft=aloft, blind=blind, swift=swift, breath=breath, reach=reach)
+
+
+# The bearing and the crow's tiles to a point — and that point as its `landing`, where the goal is a whole land.
+def _heading(cx: int, cy: int, gx: int, gy: int, land: int | None) -> dict:
+    to = {"dir": bearing(gx - cx, gy - cy), "tiles": round(walk_tiles(gx - cx, gy - cy))}
+    return {**to, "landing": {"x": gx, "y": gy}} if land is not None else to
 
 
 # The actor's tie to another body, or `None`, off his `_ties`: WB keeps two parents and one mate each — a child names him, a sibling shares a parent.
@@ -743,16 +753,18 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
 
 
 # `--to` lifted off the command line: an actor id, or a tile as `x,y` — and the words left for the id and the sections.
-def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | None, list[str]]:
+def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | str | None, list[str]]:
     if "--to" not in argv:
         return None, argv
     at = argv.index("--to")
     try:
         value, rest = argv[at + 1], argv[:at] + argv[at + 2 :]
+        if value[:1] == "i" and value[1:].isdigit():  # a whole land, by the id `geography … islands` gives it
+            return value, rest
         x, sep, y = value.partition(",")
         return ((int(x), int(y)) if sep else int(value)), rest
     except (IndexError, ValueError):
-        raise ValueError("`--to` takes an actor id or a tile, e.g. `--to 42` or `--to 415,117`") from None
+        raise ValueError("`--to` takes an actor id, a tile or a land, e.g. `--to 42`, `--to 415,117` or `--to i7`") from None
 
 
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
@@ -825,7 +837,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     if not argv:
-        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>] [C<n>] — see docs/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>|i<land>] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         actor_id = int(argv[0])
@@ -848,18 +860,27 @@ def main(argv: list[str]) -> int:
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
         return 1
-    goal, whom = None, ""
+    aims, land, whom = [], None, ""
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
             print(f"✗ unknown actor: {target}", file=sys.stderr)
             return 1
-        goal, whom = actor_xy(other), _named(other)
+        aims, whom = [actor_xy(other)], _named(other)
+    elif isinstance(target, str):
+        land, sizes = int(target[1:]), ctx["island_sizes"]()
+        if land not in sizes:
+            print(f"✗ unknown land: {land} — the counted lands run 1 to {max(sizes, default=0)}", file=sys.stderr)
+            return 1
+        if ctx["island_lookup"]().get(actor_xy(actor)) == land:
+            print(f"✗ {_named(actor)} already stands on land {land}", file=sys.stderr)
+            return 1
+        aims, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land], f"land {land}"  # its shore
     elif target is not None:
         height, width = len(save.get("tileArray") or []), sum((save.get("tileAmounts") or [[]])[0])
         if not (0 <= target[0] < width and 0 <= target[1] < height):
             print(f"✗ coords {target} out of bounds — map is {width}×{height}", file=sys.stderr)
             return 2
-        goal, whom = target, f"{target[0]},{target[1]}"
+        aims, whom = [target], f"{target[0]},{target[1]}"
 
     out: dict = {}
     if "companions" in sections:  # both attachments as plain refs — `emit` drops whichever is unset or dead, and the section itself when the actor has neither
@@ -882,9 +903,9 @@ def main(argv: list[str]) -> int:
         out["surroundings"] = _build_surroundings(actor, ctx, requested)
     if "traits" in sections:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
-    if goal is not None:
+    if aims:
         try:
-            out["to"] = _build_to(actor, goal, whom, ctx)
+            out["to"] = _build_to(actor, aims, whom, ctx, land)
         except _Unreachable as e:
             print(str(e), file=sys.stderr)
             return 1
