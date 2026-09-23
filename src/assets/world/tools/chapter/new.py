@@ -68,7 +68,7 @@ _AFTER_REPORTS = (
     "what the story check proposes is yours to take or leave, and what you take, you write in your own hand",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
     "what asserts anything new goes back to the same auditors, the lines alone and never your reading of them, each resumed by message with the id its report"
-    " came with, its memory intact — note each id, as a compaction drops them; a fresh one only if that fails — its lines flagged as new",
+    " came with, its memory intact — note each id, as a compaction drops them; a fresh one only if the message itself fails — its lines flagged as new",
     "the last round settled: `tools/chapter/new.py --deliver`",
 )
 
