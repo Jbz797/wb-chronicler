@@ -271,7 +271,7 @@ def _deliver() -> int:
         print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
         return 1
     settings = _settings()
-    _tidy_chapter_json(n)
+    _tidy_cards(n)
     facts = _step_five_facts(n, settings.get("lang", ""))
     length = facts["length"]
     short, long = length < _CHAPTER_FLOOR, length > _CHAPTER_CAP
@@ -341,7 +341,7 @@ def _finalize() -> int:
         print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
         return 1
     lang = _settings().get("lang", "")
-    _tidy_chapter_json(n)
+    _tidy_cards(n)
     facts = _step_five_facts(n, lang)
     print(f"✓ C{n} — step 5")
     _print_step_five(n, facts)
@@ -674,16 +674,22 @@ def _step_five_facts(n: int, lang: str) -> dict:
     }
 
 
-# The chronicler writes his prose into `chapter.json` by hand, with whatever encoder comes to him: put back in the project's own layout, never a word of it moved.
-def _tidy_chapter_json(n: int) -> None:
-    card = SAVES_DIR / f"C{n}" / "chapter.json"
+# The chronicler writes into `chapter.json` and `places.json` by hand, with whatever encoder comes to him: each put back in the project's layout, no word moved.
+def _tidy(card: Path) -> None:
     raw = card.read_text()
     try:
-        chapter = json.loads(raw)
+        data = json.loads(raw)
     except json.JSONDecodeError as e:  # a hand edit gone astray: said where, rather than a traceback the chronicler has to read through
-        sys.exit(f"✗ saves/C{n}/chapter.json is no longer valid JSON — {e.msg}, line {e.lineno}: mend it, then run the command again")
-    if (tidy := render(chapter) + "\n") != raw:
+        sys.exit(f"✗ {card.relative_to(SAVES_DIR.parent)} is no longer valid JSON — {e.msg}, line {e.lineno}: mend it, then run the command again")
+    if (tidy := render(data) + "\n") != raw:
         card.write_text(tidy)
+
+
+# The two files the chronicler writes into by hand, tidied before step 5 reads them — `places.json` only once the first chapter has seeded it.
+def _tidy_cards(n: int) -> None:
+    for card in (SAVES_DIR / f"C{n}" / "chapter.json", _PLACES_JSON):
+        if card.exists():
+            _tidy(card)
 
 
 # An entity's traits as the save spells them, id included so a change of clan reads like a change of traits — both mean the summary must be written afresh.
