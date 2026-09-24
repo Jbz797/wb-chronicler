@@ -150,6 +150,9 @@ _SNAPSHOT_COLLECTIONS = {
     "subspecies": "subspecies",
 }
 
+_STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
+_UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
+
 # `_DEATH_CAUSES`' keys => their `WorldYearly1` column, where old age is WB's `deaths_natural`.
 _YEARLY_DEATHS = {**{cause: f"deaths_{cause}" for cause in _DEATH_CAUSES}, "old_age": "deaths_natural"}
 
@@ -233,7 +236,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
     # Traits and breeding are a lineage's, read once each: a kind's bodies share a handful of lineages, and every pair below asks of both.
     traits = {sub["id"]: frozenset(sub.get("saved_traits") or ()) for sub in save.get("subspecies") or []}
     mode, empty = {sid: breeding_mode(lineage) for sid, lineage in traits.items()}, frozenset()
-    carry = {sid: maturation_months(lineage, ctx) * UNITS_PER_MONTH for sid, lineage in traits.items()}  # in hours, the bearer's lineage setting a birth
+    carry = {sid: maturation_months(lineage, ctx) * UNITS_PER_MONTH if _carried(lineage) else 0 for sid, lineage in traits.items()}  # the bearer's sets it
     rows: list[tuple[float, dict]] = []
     now = ctx["world_time"]  # a conception is today's at the earliest, however long ago both came of age
     for kind, bodies in kinds.items():
@@ -400,6 +403,13 @@ def _build_timeline(map_stats: dict) -> list[dict]:
 # A `WorldYearly1` column's `mapStats` twin, the same tally in camelCase — the deaths, snake-cased there too, go through `_DEATH_CAUSES` instead.
 def _camel(column: str) -> str:
     return re.sub(r"_(\w)", lambda m: m.group(1).upper(), column)
+
+
+# Whether a birth waits `maturation`: a pair's or a virgin's only if viviparous (an egg is laid at once), buds and sprouts always, a fission or a spore never.
+def _carried(traits: frozenset[str]) -> bool:
+    if traits & _UNCARRIED:
+        return False
+    return "reproduction_strategy_viviparity" in traits if traits & _STRATEGIC else True
 
 
 def _count_leaders(counts: Counter, records: list[dict], min_peers: int) -> list[dict]:
