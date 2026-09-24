@@ -715,10 +715,14 @@ def compute_actor_stats(actor: dict, ctx: dict) -> dict:
     return cleaned
 
 
-# The date a body crosses a biology's age: WB weighs it against the years begun, so 3.9 opens at 4, three full years past birth, and overgrowth brings it on.
-def crossed_on(actor: dict, threshold: float) -> str:
+# The `world_time` a body crosses a biology's age: WB weighs it against the years begun, so 3.9 opens at 4, three full years past birth, and overgrowth brings it on.
+def crossed_at(actor: dict, threshold: float) -> float:
     years = math.ceil(threshold) - 1 - int(actor.get("age_overgrowth") or 0)
-    return world_date(float(actor.get("created_time") or 0) + years * UNITS_PER_YEAR)
+    return float(actor.get("created_time") or 0) + years * UNITS_PER_YEAR
+
+
+def crossed_on(actor: dict, threshold: float) -> str:
+    return world_date(crossed_at(actor, threshold))
 
 
 # What an egg has left before it cracks, in the months WB counts an incubation in. `None` where the body is no egg, so one call answers the delay and the state.

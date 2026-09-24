@@ -9,12 +9,13 @@
 import re
 import sqlite3
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
+from math import inf
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_on
+from actor_stats import adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_at, crossed_on
 from grid import frozen_tally
 from islands import compute_islands_cached
 from shared import (
@@ -29,6 +30,7 @@ from shared import (
     arg_parser,
     asset_families,
     asset_kinds,
+    breeding_mode,
     city_score_dimensions,
     civic_building_ids,
     emit,
@@ -47,8 +49,11 @@ from shared import (
     sex_label,
     take_chapter,
     take_since,
+    walk_tiles,
     wants_detail,
+    world_date,
 )
+from walking import WalkMap, walk_to
 
 _ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "plots", "snapshot", "timeline")
 
@@ -122,7 +127,9 @@ _MAX_ROSTER = 50  # past so many bodies a roll is read for its species, not its 
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
 _OFF_LAND = "off_land"  # where `roster` says a body stands, or stood, on no counted land — an islet or the water
-_ON_REQUEST = ("roster",)  # named only: `full` is what the bootstrap folds into a chapter, and a roll of every body is no chapter's to carry
+_ON_REQUEST = ("pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll of bodies is no chapter's to carry
+
+_SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
 
 # WB's four skills, the ones every `ranks_in_species` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
 _SKILLS = ("diplomacy", "intelligence", "stewardship", "warfare")
@@ -213,6 +220,57 @@ def _build_metadata(map_stats: dict) -> dict:
         "months_until_next_age": int(age_duration * (1 - age_progress) / 5) if age_duration > 0 else 0,
         "world_time": rounded_world_time(map_stats),
     }
+
+
+# Each kind's first couple by WB's `canFallInLoveWith`, dated by the later breeding age (`now` once both hold); today's gap, walked on one shared land only.
+def _build_pairings(save: dict, save_path: Path) -> list[dict]:
+    ctx, kinds = build_actor_stats_context(save), defaultdict(list)
+    for actor in save.get("actors_data") or []:
+        if not is_boat(actor):
+            kinds[actor.get("asset_id")].append(actor)
+    island_of, walk_map = compute_islands_cached(save, save_path)[1], None
+    # Traits and breeding are a lineage's, read once each: a kind's bodies share a handful of lineages, and every pair below asks of both.
+    traits = {sub["id"]: frozenset(sub.get("saved_traits") or ()) for sub in save.get("subspecies") or []}
+    mode, empty = {sid: breeding_mode(lineage) for sid, lineage in traits.items()}, frozenset()
+    rows: list[tuple[float, dict]] = []
+    for kind, bodies in kinds.items():
+        ready = {actor["id"]: crossed_at(actor, breeding_age(actor, ctx)) for actor in bodies}
+        where = {actor["id"]: actor_xy(actor) for actor in bodies}
+        mating = [actor for actor in bodies if mode.get(actor.get("subspecies")) == "mate"]
+        row: dict = {"asset_id": kind}
+        if lone := [ready[actor["id"]] for actor in bodies if mode.get(actor.get("subspecies")) == "alone"]:  # a lineage breeding alone needs no one
+            row["alone_on"] = min(lone)
+        sexed = {actor["id"]: _SEXED in traits.get(actor.get("subspecies"), empty) for actor in mating}
+        best = min(
+            (
+                (max(ready[a["id"]], ready[b["id"]]), walk_tiles(where[b["id"]][0] - where[a["id"]][0], where[b["id"]][1] - where[a["id"]][1]), a, b)
+                for i, a in enumerate(mating)
+                for b in mating[i + 1 :]
+                if _may_mate(a, b, sexed[a["id"]] or sexed[b["id"]])
+            ),
+            key=lambda pair: pair[:2],
+            default=None,
+        )
+        if best:
+            row["on"], crow, a, b = best
+            row |= {"pair": [a["id"], b["id"]], "tiles": round(crow)}
+            (ax, ay), (bx, by) = where[a["id"]], where[b["id"]]
+            if (land := island_of.get((ax, ay))) is not None and land == island_of.get((bx, by)):
+                walk_map = walk_map or WalkMap(save)
+                if (walked := walk_to(walk_map, walk_map.gait(None, frozenset()), ax, ay, {by * walk_map.width + bx})) is not None:
+                    row["walked"] = round(walked)
+        elif not mating and not lone:  # no lineage of the kind holds a breeding trait: it never breeds
+            row["missing"] = "reproduction"
+        elif mating:  # a partner wanted, none to be had: a sexed kind of one sex says which, else blood or pledges bar every pair
+            sexes = {sex_label(actor) for actor in mating}
+            row["missing"] = ({"female": "male", "male": "female"}[sexes.pop()]) if len(sexes) == 1 and all(sexed.values()) else "partner"
+        rows.append((min(row.get("on", inf), row.get("alone_on", inf)), row))
+    now = ctx["world_time"]
+    for _, row in rows:  # the hours dated only once sorted on: `now` for what already holds
+        for key in ("alone_on", "on"):
+            if key in row:
+                row[key] = "now" if row[key] <= now else world_date(row[key])
+    return [row for _, row in sorted(rows, key=lambda entry: (entry[0], entry[1]["asset_id"]))]
 
 
 # Every scheme afoot this instant, its schemer named — WB hangs a plot on one actor, so `actor/info.py <id> plot` spells out its target, its age and its progress.
@@ -350,6 +408,16 @@ def _lands_then(chapter: str) -> dict[int, int | None]:
     return {actor["id"]: island_of.get(actor_xy(actor)) for actor in then.get("actors_data") or [] if not is_boat(actor)}
 
 
+# WB `canFallInLoveWith` between two of a kind: neither pledged to a third, no blood — parent, child or a parent shared — and opposite sexes where sexed.
+def _may_mate(a: dict, b: dict, sexed: bool) -> bool:
+    if a.get("lover") not in (None, b["id"]) or b.get("lover") not in (None, a["id"]):
+        return False
+    parents_a, parents_b = {a.get("parent_id_1"), a.get("parent_id_2")} - {None}, {b.get("parent_id_1"), b.get("parent_id_2")} - {None}
+    if a["id"] in parents_b or b["id"] in parents_a or parents_a & parents_b:
+        return False
+    return not sexed or a.get("sex") != b.get("sex")
+
+
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
 def _name_of(records: list[dict], target_id) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
@@ -412,6 +480,8 @@ def main(argv: list[str]) -> int:
         out["leaders"] = _build_leaders(save)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)
+    if "pairings" in sections:
+        out["pairings"] = _build_pairings(save, save_path)
     if "plots" in sections:
         out["plots"] = _build_plots(save)
     if "roster" in sections:

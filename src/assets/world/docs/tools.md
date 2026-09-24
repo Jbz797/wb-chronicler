@@ -1,8 +1,8 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 24/09/26 16:06</p>
+<p class="metadata">Date de mise à jour : 24/09/26 18:08</p>
 
-Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography` et `world … roster`, à nommer) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
+Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
 | Commande          | Sections                                                                                                                         |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -22,7 +22,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 | `subspecies <id>` | `breakdown`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                   |
 | `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `tile_info`                                                                          |
 | `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                             |
-| `world`           | `boats`, `cumulative`, `leaders`, `metadata`, `plots`, `roster`, `snapshot`, `timeline`                                          |
+| `world`           | `boats`, `cumulative`, `leaders`, `metadata`, `pairings`, `plots`, `roster`, `snapshot`, `timeline`                              |
 
 ## Options :
 
@@ -44,6 +44,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `world` :
 
+- `pairings` : par espèce, le premier couple possible, sa date (`on`) et l'écart d'aujourd'hui
 - `roster` : chaque vivant, une ligne ; `-t` type ou famille, `--trait <id>`, `-i` une terre ; `--since C<n>` : les arrivés et les `was_on` ; passé 50 corps, un compte par espèce
 
 ---
@@ -74,12 +75,12 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `to_islands` (`distances`) donne les 5 îles les plus proches, dans l'ordre, par leur **tuile la plus proche**.
 - `to_land` (`distances`) mesure le bras d'eau depuis **tout le rocher**.
 - `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
+- `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; le `drivers` de la section, complet, somme au `total`.
 - `walked` (`distances`, `to`) : l'équivalent en tuiles de plaine du temps de marche, pas une distance (elle se lit sur `tiles`) — roche, lave et goo contournés, sans nage, au pas d'un corps sans adaptation : sable, marais, neige et, sous Entanglewood, arbres l'allongent. Absente sans terre qui les joigne.
 - `world … metadata` : `months_until_next_age` est **déjà en mois**, 12 par an — il ne repasse pas par le `/ 5` d'un `world_time`.
 - `world … timeline` : ce que chaque année a vu naître, mourir ou s'éteindre, l'année en cours marquée `so_far` ; une année absente n'a rien vu bouger, et la fenêtre en tient une vingtaine ; de quoi meurent les siens : `deaths_by_cause`, au `metadata` d'une cité, d'un royaume, d'un clan ou d'une sous-espèce.
 - Sous 4 membres, un corps ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 - Un écart entre deux `snapshot` est un solde, jamais un compte d'événements : ce qui est né et ce qui s'est éteint se lisent dans `cumulative`, où chaque compteur ne fait que monter.
-- Un préfixe `top_` ne tronque pas mais change de mesure : `top_drivers` ne garde que les deux extrêmes et ne somme à rien, quand la section rend le `drivers` complet, qui somme au `total`.
 
 ### Classements :
 

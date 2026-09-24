@@ -27,6 +27,7 @@ from shared import (
     asset_kinds,
     asset_sites,
     bearing,
+    breeding_mode,
     build_trait_ids,
     build_trait_list,
     building_tile,
@@ -271,9 +272,10 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     tile = actor_xy(actor)
     profession = resolve_profession(actor, save)
 
-    # WB `Actor.canBreed` asks every partner its age and reserve, a gut-less body fed by definition; `infertile` and the cap stop the one who must bear alone.
+    # A breeding trait first, WB granting none without; then `Actor.canBreed`'s age and reserve (a gut-less body fed), `infertile` and the cap on whoever bears.
     can_reproduce = (
-        age >= age_breeding
+        breeding_mode(_biology(actor, ctx)) is not None
+        and age >= age_breeding
         and (not needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) or int(actor.get("nutrition") or 0) >= _NEW_BABY_NUTRITION)
         and (
             _bears(actor, ctx) is not True

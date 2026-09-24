@@ -59,6 +59,7 @@ _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild 
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
+_MATE_BREEDINGS = frozenset({"reproduction_hermaphroditic", "reproduction_sexual"})  # the two WB asks a partner for, one of them by opposite sexes
 _MAX_REIGNS_SHOWN = 3  # a succession in `full`: the first reign and the two latest, a lighter cut than a roster's since its summary still names them
 
 _META_CONDITIONS = {  # WB `MetaTextReportLibrary`, one lambda per verdict, ported field for field — ratios are shares of the living, stocks raw amounts.
@@ -330,6 +331,12 @@ def books_held(save: dict) -> tuple[Counter, Counter, dict[int, int]]:
             by_kingdom[kid] += len(shelved)
     _books_memo[0], _books_memo[1] = save, (by_city, by_kingdom, city_of_book)
     return by_city, by_kingdom, city_of_book
+
+
+# How a lineage breeds: `mate`, `alone` (fission, spores…) or `None` — WB grants each breeding by its trait (`addReproduction`), so without one it never breeds.
+def breeding_mode(traits: Collection[str]) -> str | None:
+    modes = {trait for trait in traits if trait.startswith("reproduction_") and not trait.startswith("reproduction_strategy")}
+    return "mate" if modes & _MATE_BREEDINGS else "alone" if modes else None
 
 
 # Summarised, a trait keeps its id and the one field the caller weighs it on — a creature's carries both, sorted on its group where graded on its rarity.
