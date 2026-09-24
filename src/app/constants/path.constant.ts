@@ -8,7 +8,7 @@ export const SAVES_DIR = `${WORLD_DIR}/saves`;
 
 export const BOOT_SETTINGS = new InjectionToken<Settings>('boot settings'); // `settings.json` at boot, read once: the nav wants the mode on first paint.
 export const CHAPTER_INDEX = `${SAVES_DIR}/index.json`; // every chapter in one file, so the nav names them all without opening a single one
-export const DOCS_DIR = `${WORLD_DIR}/docs`; // the chronicler's rules, tools and tags, and the audit sheets beside them
+export const DOCS_DIR = `${WORLD_DIR}/docs`; // the chronicler's rules, tools, tags and audit run, and the audit sheets beside them
 export const HISTORY_DIR = `${WORLD_DIR}/history`;
 export const PLACES_FILE = `${HISTORY_DIR}/places.json`; // the lands, waters and spots the chronicle charts — each name dated by the chapter that gave it
 export const SERVICE_URL = 'http://127.0.0.1:4223'; // `scripts/watch-saves.mjs`, reaching the disk the browser cannot — and only under `yarn start`.
@@ -21,6 +21,7 @@ export const SETTINGS_ENDPOINT = `${SERVICE_URL}/settings`;
 // The workshop's pages, and its alone: outside dev mode the nav lists none and the reader resolves none, so a stale link renders blank, not the manual.
 export const PAGES: Page[] = [
   { label: 'Chronicler', mdUrl: `${DOCS_DIR}/chronicler.md`, slug: 'chronicler' },
+  { label: 'Review', mdUrl: `${DOCS_DIR}/review.md`, slug: 'review' },
   { label: 'Tags', mdUrl: `${DOCS_DIR}/tags.md`, slug: 'tags' },
   { label: 'Tools', mdUrl: `${DOCS_DIR}/tools.md`, slug: 'tools' },
 ];

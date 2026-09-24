@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds its registries (`registries.py`) and `chapter.json` (`fold.py`).
-# The recap steers the chronicler's analysis; `--finalize` then lays out step 5 and what each auditor is handed, `--deliver` the delivery. Docs: `docs/`.
+# The recap steers the chronicler's analysis; `--finalize` then lays out step 5 and hands the audit to `docs/review.md`, `--deliver` the delivery.
 
 import json
 import random
@@ -39,38 +39,21 @@ from shared import (
     write_save,
 )
 
-# The chapter's own tongue, for what leaves the chronicler: the audit account the player reads beside it, and the one verb each auditor is handed with paths.
+# The chapter's own tongue, for the audit account the player reads beside the chapter.
 _ACCOUNT = {
     "en": {
         "facts": "Fact check: {} gaps fixed",
         "none": "not applicable",
-        "read": "Read",
         "reaudit": "Re-audit: {} gaps fixed",
         "story": "Story check: {} gaps fixed",
     },
     "fr": {
         "facts": "Vérification des faits : {} écarts corrigés",
         "none": "non applicable",
-        "read": "Lis",
         "reaudit": "Réaudit : {} écarts corrigés",
         "story": "Vérification du récit : {} écarts corrigés",
     },
 }
-
-# What becomes of the auditors' reports, in the order it is done — the chronicler's to follow between rounds, said where the audit is handed over.
-_AFTER_REPORTS = (
-    "every report in hand, and chapter.md untouched while any auditor reads — each report waits for the others, a message from the player or the dev too:"
-    " correct each confirmed gap, one raised by a single fact check checked all the same, a tool settling a disagreement",
-    "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest; rewrite only what a correction"
-    " cannot mend, and read off a tool any figure a rewrite brings, never from the draft, a report or memory",
-    "then seek the same value or word everywhere: chapter.md with its title and epigraph, and your prose in chapter.json",
-    "the story check's proposals and compliance's better-possible are yours to take or leave, in your own hand",
-    "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
-    "what asserts anything new goes back to the same auditors, flagged as new, the lines alone, of your reading only what you could not measure — each"
-    " resumed by message on its report's id, noted as a compaction drops them, a fresh one only if that fails; a cut goes back as the passage it took"
-    " out, what leaned on it theirs to find",
-    "the last round settled: `tools/chapter/new.py --deliver`",
-)
 
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
@@ -89,7 +72,6 @@ _ALERTS = {
     },
 }
 
-_AUDITORS = (("compliance", 1), ("facts", 2), ("story", 1))  # each by its sheet under `docs/audit/`, and how many of it the audit opens with
 _CHAPTER_CAP = 14000  # a sitting's read, some 11 minutes: past it the chapter says more than its world has done — held with the floor, in no doc either
 _CHAPTER_FLOOR = 7000  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
 _DESCRIPTOR_CAP = 64
@@ -345,22 +327,13 @@ def _finalize() -> int:
     facts = _step_five_facts(n, lang)
     print(f"✓ C{n} — step 5")
     _print_step_five(n, facts)
-    # The patches name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
+    # The targets name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
     if not facts["done"]:
-        print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: the audit comes with them")
+        print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: it then hands the audit over")
         return 0
-    chapter_md, labels = f"saves/C{n}/chapter.md", _ACCOUNT.get(lang, _ACCOUNT["en"])
-    # Paths alone past the verb, so nothing but the verb need speak the chapter's tongue: each sheet says what follows its own name.
+    # The run of the audit is `docs/review.md`'s, kept from the auditors: only the targets, which change with each chapter, are said here.
     written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
-    auditors = sum(copies for _, copies in _AUDITORS)
-    print(f"  → the audit: {auditors} sub-agents new to this chapter, at once, each handed its line below as it stands — nothing of your analysis nor notes")
-    print("    docs/audit/ is theirs: never read it, you write for your reader, not the audit")
-    for sheet, copies in _AUDITORS:
-        many = f", {'twice' if copies == 2 else f'{copies} times'}, each on its own" if copies > 1 else ""
-        target = chapter_md if sheet == "story" else chapter_md + written  # the story read takes the chapter alone: the chronicle is its ground
-        print(f"    · {sheet}{many}: « {labels['read']} docs/audit/{sheet}.md — {target} »")
-    for line in _AFTER_REPORTS:
-        print(f"  → {line}")
+    print(f"  → the audit, until delivery: docs/review.md — its <cibles> are saves/C{n}/chapter.md{written}")
     return 0
 
 

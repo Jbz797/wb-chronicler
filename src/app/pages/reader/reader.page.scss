@@ -1,15 +1,5 @@
 @use 'variables' as *;
 
-// The drop cap undone. Two places need it: the empty chronicle, which the cap would pull off centre, and an opening too short to stand beside one.
-@mixin plain-first-letter {
-  color: inherit;
-  float: none;
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  margin: 0;
-}
-
 :host ::ng-deep .reader-page {
   background: $parchment-noise, radial-gradient(ellipse at center, $paper 0%, $paper-dim 100%);
   border-radius: $radius;
@@ -38,6 +28,11 @@
     text-align: justify;
   }
 
+  // EB Garamond's `◦` sits above the lowercase middle, and `::marker` takes no offset: a smaller glyph on the same baseline brings its centre down to it.
+  ul > li::marker {
+    font-size: 0.8em;
+  }
+
   // The empty chronicle. Centred on the parchment rather than set as prose: there is no text to read here, only the one order that starts the chronicler.
   .bootstrap {
     display: flex;
@@ -50,11 +45,6 @@
       color: $sienna-soft;
       margin: 0;
       text-align: center;
-    }
-
-    // The drop cap below would pull this block off centre. Its `:not(.metadata)` is carried over on purpose: without it the two tie, and the last declared wins.
-    h1 + p:not(.metadata)::first-letter {
-      @include plain-first-letter;
     }
 
     .order {
@@ -89,23 +79,6 @@
     // An opening set as an epigraph belongs to the title, so the typography's 0.5em gap closes and the two read as one heading.
     &:has(+ p.plain-opening) {
       margin-bottom: 0.2em;
-    }
-
-    // The drop cap, worn by whatever paragraph opens the page: straight after the title in a chapter, after the date stamp on a workshop page.
-    & + p:not(.metadata)::first-letter,
-    & + p.metadata + p::first-letter {
-      color: $sienna;
-      float: left;
-      font-family: $font-display;
-      font-size: 3.55em;
-      font-weight: 700;
-      line-height: 1; // the prose's own 1.75 would box a 62px letter in 109px, sinking it a line and spilling under the paragraph
-      margin: 0.08em 0.1em 0 0; // the glyph's own overshoot, nudged back so its bar sits on the first line's cap height rather than above it
-    }
-
-    // Set by `ReaderPage` on a chapter opening too short for the cap. Nested, so the parent still lends the weight a bare `p.plain-opening` would lack.
-    & + p.plain-opening::first-letter {
-      @include plain-first-letter;
     }
 
     // Left bare it would read as a stray body line under the title, so it takes the epigraph's part instead: the cap's own hue and face, centred as the `h1` is.
@@ -207,6 +180,17 @@
   // A tag `ReaderPage` flattened to its name where a plate would crowd the line — bold, its species' hue set inline.
   .plain-tag {
     font-weight: 700;
+  }
+
+  // The drop cap, a chapter's alone: its opening paragraph, unless `ReaderPage` found it too short to stand beside one. A workshop page is a manual, not a tale.
+  .chapter h1 + p:not(.plain-opening)::first-letter {
+    color: $sienna;
+    float: left;
+    font-family: $font-display;
+    font-size: 3.55em;
+    font-weight: 700;
+    line-height: 1; // the prose's own 1.75 would box a 62px letter in 109px, sinking it a line and spilling under the paragraph
+    margin: 0.08em 0.1em 0 0; // the glyph's own overshoot, nudged back so its bar sits on the first line's cap height rather than above it
   }
 
   // A chapter's last word, a hook taken up again past its fleuron: set apart from the prose it closes, as the epigraph is from the one it opens.
