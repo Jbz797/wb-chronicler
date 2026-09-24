@@ -290,9 +290,12 @@ def _build_plots(save: dict) -> list[dict]:
 # Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
 def _build_roster(save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | None, since: str | None) -> list[dict] | dict:
     was = _lands_then(since) if since else None
+    # A trait is a body's own or its lineage's: `gift_of_thunder` is born with a whole line, `fire_blood` with one body — `--trait` finds either.
+    bearing = {sub["id"] for sub in save.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
     bodies = []
     for actor in save.get("actors_data") or []:
-        if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or (trait and trait not in (actor.get("saved_traits") or ())):
+        borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
+        if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or not borne:
             continue
         here = island_of.get(actor_xy(actor))
         change: dict = {}
@@ -451,7 +454,7 @@ def main(argv: list[str]) -> int:
     parser = arg_parser(prog="world/info.py", description="World-wide sections, from the save alone.")
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="`roster`: the bodies standing on one land")
-    parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, by its id")
+    parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster`: one kind, a family (`actors`) or a comma list")
     args = parser.parse_args(argv)
     requested = args.sections
@@ -490,8 +493,8 @@ def main(argv: list[str]) -> int:
         if args.island is not None and args.island not in {land["id"] for land in lands}:
             print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
             return 2
-        if args.trait and args.trait not in load_data("creature-traits.json"):
-            print(f"✗ no trait {args.trait} — `actor <id> traits` gives the ids", file=sys.stderr)
+        if args.trait and args.trait not in load_data("creature-traits.json") and args.trait not in load_data("subspecies-traits.json"):
+            print(f"✗ no trait {args.trait}, of a body or of a lineage — `actor <id> traits` and `subspecies <id> traits` give the ids", file=sys.stderr)
             return 2
         if not (roster := _build_roster(save, island_of, kinds, args.trait, args.island, since)):  # a filter nothing answers, never a silent `{}`
             why = f"bears {args.trait}" if args.trait else "matches — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds"
