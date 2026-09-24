@@ -469,7 +469,10 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  ✗ H1, {len(h1)} characters of {_H1_CAP}")
     if facts["favorite"]:
         if not (text := facts["descriptor"]):
-            print(f"  → `favorite.descriptor` in chapter.json, yet to be written: one line on where the favorite stands now — {_DESCRIPTOR_CAP} characters at most")
+            print(
+                "  → `favorite.descriptor` in chapter.json, yet to be written: one line on where the favorite stands now, made of what the chapter already says"
+                f" — {_DESCRIPTOR_CAP} characters at most"
+            )
         elif carrying:
             print(
                 f"  → `favorite.descriptor`, carried from C{n - 1}: « {text} » — nothing notable since, it may stand;"
