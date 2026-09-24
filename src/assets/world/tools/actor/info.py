@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_on, hatch_months, is_baby, is_egg
-from grid import LazyTileGrid, off_land
+from grid import LazyTileGrid, off_land, tile_kind
 from islands import compute_islands_cached
 from shared import (
     PROFESSION_KING,
@@ -659,11 +659,15 @@ def _settle(actor: dict, ctx: dict) -> bool | list[str] | None:
         shut.append("town_near")
     tags = frozenset(tag for trait in _biology(actor, ctx) for tag in (ctx["subspecies_traits"].get(trait) or {}).get("tags") or ())
     names, grid = ctx["tile_map"], ctx["tile_grid"]()
-    ground = soil = fit = unfit = 0
+    ground = soil = fit = 0
+    barred, wanted = Counter(), Counter()  # what each shut gate is made of: the ground a zone lacks, the adaptations its unfit biomes ask for
     for row in range(zy * ZONE_TILES, (zy + 1) * ZONE_TILES):
         for tile in grid[row][zx * ZONE_TILES : (zx + 1) * ZONE_TILES]:
             base, _, top = names[tile].partition(":")
-            ground += base in _GROUND_BASES
+            if base in _GROUND_BASES:
+                ground += 1
+            else:
+                barred[tile_kind(base)] += 1
             for kind in (base, top):  # a zone weighs both layers of a tile, WB filing each under its own type
                 if kind in _SETTLE_SOIL:
                     soil += 1
@@ -671,12 +675,16 @@ def _settle(actor: dict, ctx: dict) -> bool | list[str] | None:
                     if (need := _SETTLE_BIOMES[kind]) is None or need in tags:
                         fit += 1
                     else:
-                        unfit += 1
-    if ground < ZONE_TILES * ZONE_TILES:  # a zone is 8 × 8, and every tile of it must be ground
-        shut.append(f"ground {ground}/{ZONE_TILES * ZONE_TILES}")
+                        wanted[need] += 1
+    if ground < ZONE_TILES * ZONE_TILES:  # a zone is 8 × 8, and every tile of it must be ground: said with what stands in for the rest
+        shut.append(f"ground {ground}/{ZONE_TILES * ZONE_TILES}: " + ", ".join(f"{n} {kind}" for kind, n in barred.most_common()))
+    unfit = sum(wanted.values())
     soil -= fit + unfit  # WB `checkCanSettleInThisBiomes`: the bare soil left once every grown tile is offset
-    if not (soil > unfit or unfit <= fit):
-        shut.append("biomes")
+    if not (soil > unfit or unfit <= fit):  # named by the lineage trait that would lift it, off the adaptation granting the missing tag
+        cures = sorted({trait for need in wanted for trait, entry in ctx["subspecies_traits"].items() if need in (entry.get("tags") or ())})
+        bare = f", {soil} bare for {unfit} unfit" if soil > 0 else ""  # the other way through, told only where some bare soil stands at all
+        # WB's first way is half the grown tiles fit: a share said floored, so 49.9 never reads as the 50 that would pass
+        shut.append(f"biomes {fit * 100 // (fit + unfit)}% fit{bare}" + (f" — {', '.join(cures)}" if cures else ""))
     return shut or True
 
 
