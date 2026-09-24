@@ -90,8 +90,8 @@ _ALERTS = {
 }
 
 _AUDITORS = (("compliance", 1), ("facts", 2), ("story", 1))  # each by its sheet under `docs/audit/`, and how many of it the audit opens with
-_CHAPTER_CAP = 15000  # a sitting's read, some 12 minutes: past it the chapter says more than its world has done — held with the floor, in no doc either
-_CHAPTER_FLOOR = 7500  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
+_CHAPTER_CAP = 14000  # a sitting's read, some 11 minutes: past it the chapter says more than its world has done — held with the floor, in no doc either
+_CHAPTER_FLOOR = 7000  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
 _DESCRIPTOR_CAP = 64
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
