@@ -61,14 +61,14 @@ _ACCOUNT = {
 _AFTER_REPORTS = (
     "every report in hand, and chapter.md untouched while any auditor reads — each report waits for the others, a message from the player or the dev too:"
     " correct each confirmed gap, one raised by a single fact check checked all the same, a tool settling a disagreement",
-    "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest; correct where that suffices, rewrite"
-    " only what it cannot mend, and read off a tool any figure a rewrite brings, never from the draft, a report or memory",
+    "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest; rewrite only what a correction"
+    " cannot mend, and read off a tool any figure a rewrite brings, never from the draft, a report or memory",
     "then seek the same value or word everywhere: chapter.md with its title and epigraph, and your prose in chapter.json",
     "the story check's proposals and compliance's better-possible are yours to take or leave, in your own hand",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
-    "what asserts anything new goes back to the same auditors, flagged as new, the lines alone and never your reading of them — each resumed by message"
-    " on its report's id, noted as a compaction drops them, a fresh one only if that fails; a cut goes back as the passage it took out, what leaned on it"
-    " theirs to find",
+    "what asserts anything new goes back to the same auditors, flagged as new, the lines alone, of your reading only what you could not measure — each"
+    " resumed by message on its report's id, noted as a compaction drops them, a fresh one only if that fails; a cut goes back as the passage it took"
+    " out, what leaned on it theirs to find",
     "the last round settled: `tools/chapter/new.py --deliver`",
 )
 
