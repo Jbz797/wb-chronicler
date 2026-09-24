@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input, signal } from '@angular/core';
 
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { PLACES_FILE, SPECIES_COLORS } from '../../../../constants';
@@ -10,7 +11,7 @@ import { ChroniclerService, RegistryService } from '../../../../services';
 
 @Component({
   selector: 'app-world-map',
-  imports: [DecimalPipe, NzTooltipModule],
+  imports: [DecimalPipe, NzTagModule, NzTooltipModule],
   templateUrl: './world-map.component.html',
   styleUrl: './world-map.component.scss',
 })

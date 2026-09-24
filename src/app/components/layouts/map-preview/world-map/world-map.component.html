@@ -1,7 +1,7 @@
 <div class="frame" [style.aspect-ratio]="frame()?.ratio" [style.width]="frame()?.width">
   <img class="picture" [src]="previewUrl()" (load)="measure($event)" />
   @for (pin of pins(); track pin.key) {
-    <span
+    <nz-tag
       nz-tooltip
       [class]="`pin pin-${pin.kind}`"
       [nzTooltipTitle]="tip"
@@ -11,11 +11,11 @@
       [style.top.%]="pin.top"
     >
       {{ pin.name }}
-    </span>
+    </nz-tag>
   }
   @if (favorite(); as f) {
     <span class="favorite" [style.--favorite]="f.color" [style.left.%]="f.left" [style.top.%]="f.top">
-      <span class="favorite-name">{{ f.name }}</span>
+      <nz-tag class="favorite-name">{{ f.name }}</nz-tag>
     </span>
   }
 </div>

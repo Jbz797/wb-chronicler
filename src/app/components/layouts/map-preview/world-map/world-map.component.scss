@@ -9,13 +9,19 @@
     width: 100%;
   }
 
+  // Every name a `nz-tag` the land shows through: its size in `cqw` like the map's, where ng-zorro sets pixels, its margin gone so it centres on its point.
+  .pin,
+  .favorite-name {
+    background: color-mix(in srgb, #000 45%, transparent);
+    border-color: color-mix(in srgb, #fff 25%, transparent);
+    padding: 0.25em 0.4em;
+    text-box: trim-both cap alphabetic; // trimmed to caps and baseline: each font's line box would sit its text higher or lower
+  }
+
   .pin {
     color: $paper;
     cursor: help; // a pin tells what it is on hover, where the rest of the map only closes it
     position: absolute;
-    text-shadow:
-      0 0 2px #000,
-      0 0 4px #000;
     transform: translate(-50%, -50%);
 
     &.pin-island {
@@ -62,19 +68,18 @@
     transform: translate(-50%, -50%);
     width: 1.1cqw;
 
+    // Its hue the tag's own ground rather than the text's, which the dark glass of the other names would swallow.
     .favorite-name {
-      bottom: 120%;
-      color: var(--hue);
+      background: color-mix(in srgb, var(--hue) 70%, transparent);
+      border-color: var(--hue);
+      bottom: 132%;
+      color: #fff;
       font-family: $font-display;
       font-size: 0.95cqw;
       font-weight: 700;
       left: 50%;
       position: absolute;
-      text-shadow:
-        0 0 2px #fff,
-        0 0 4px #fff;
       transform: translateX(-50%);
-      white-space: nowrap;
     }
   }
 }
