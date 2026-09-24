@@ -204,6 +204,24 @@
     top: 2px;
   }
 
+  // A chapter's last word, a hook taken up again past its fleuron: set apart from the prose it closes, as the epigraph is from the one it opens.
+  .chapter hr + p:last-child {
+    color: $sienna;
+    font-size: 1.05em;
+    font-style: italic;
+    margin: 0 8%;
+    text-align: center;
+
+    &::after {
+      color: $gold;
+      content: '❧';
+      display: block;
+      font-size: 1.4em;
+      font-style: normal;
+      margin-top: 0.4em;
+    }
+  }
+
   hr {
     border: 0;
     height: 2em;
@@ -211,7 +229,7 @@
     text-align: center;
 
     &::before {
-      color: $gold;
+      color: var(--fleuron, #{$gold}); // the favourite's species hue, set by `ReaderPage`; the gold before a favourite and on a workshop page
       content: '❦';
       font-size: 1.8em;
       line-height: 1;

@@ -1,6 +1,6 @@
 <div class="reader-page">
   <ng-scrollbar class="reader-scroll">
-    <article class="ant-typography">
+    <article class="ant-typography" [class.chapter]="isChapter()" [style.--fleuron]="favoriteHue()">
       @if (src(); as s) {
         <markdown [disableSanitizer]="true" [src]="s" (ready)="onReady()" />
       } @else if (awaitsChronicler()) {

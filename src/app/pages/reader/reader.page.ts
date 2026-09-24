@@ -7,7 +7,7 @@ import { MarkdownComponent } from 'ngx-markdown';
 import { NgScrollbar, NgScrollbarModule } from 'ngx-scrollbar';
 import { map } from 'rxjs';
 
-import { BOOT_SETTINGS, PAGES } from '../../constants';
+import { BOOT_SETTINGS, PAGES, SPECIES_COLORS } from '../../constants';
 import {
   ActorSpriteHelpers, AllianceSpriteHelpers, BookSpriteHelpers, ClanSpriteHelpers, CultureSpriteHelpers, KingdomSpriteHelpers, LanguageSpriteHelpers,
   ReligionSpriteHelpers, SubspeciesSpriteHelpers,
@@ -32,6 +32,13 @@ export class ReaderPage {
 
   // Nothing to read and nothing coming: the world is set up but no chapter written yet, so the page says how to open the one who writes them.
   protected readonly awaitsChronicler = computed(() => this._chronicler.probed() && this._chronicler.chapters().length === 0);
+  // The favourite's species hue, dyeing the chapter's fleurons as its tag is dyed in the prose — none before a favourite, the gold standing in.
+  protected readonly favoriteHue = computed(() => {
+    const id = this._chronicler.currentChapter()?.meta.favorite?.metadata.id;
+    return id === undefined ? null : (SPECIES_COLORS[this._registry.persons()[String(id)]?.asset_id ?? ''] ?? null);
+  });
+  // A chapter, not a workshop page: only a chapter closes on a hook taken up again, which its last paragraph is styled as.
+  protected readonly isChapter = computed(() => this._chronicler.chapters().some(c => c.slug === this._slug()));
   // `undefined` while a chapter slug is still being discovered — avoids flashing/locking onto the Chronicler fallback on refresh.
   protected readonly src = computed(() => {
     const slug = this._slug();
