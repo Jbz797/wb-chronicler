@@ -17,6 +17,7 @@ from shared import (
     actor_xy,
     arg_parser,
     asset_families,
+    asset_kinds,
     asset_sites,
     bearing,
     biome_lore,
@@ -34,8 +35,9 @@ from waters import waters_cached
 
 _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
-_BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "ridges", "waters")  # the sections `-i` narrows: the rest speak for the whole world
+_BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
+_MAX_LISTED = 10  # past so many, `positions` counts land by land: a roll that long is read for where they stand, not for which is which
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
 
@@ -82,12 +84,6 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict
     return by_key
 
 
-# The land a body stands on, as every land-by-land section keys it — the grid decoded for a body off every land alone, whose row tells an islet from the water.
-def _body_key(actor: dict, island_of, grid: LazyTileGrid, tile_map: list) -> str:
-    x, y = actor_xy(actor)
-    return str(island_id) if (island_id := island_of.get((x, y))) else _land_key(None, tile_map[grid[y][x]])
-
-
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
 def _build_biomes(save: dict, save_path: Path) -> dict:
     return pickle_cached("biomes_v13", save_path, lambda: _compute_biomes(save, save_path))
@@ -102,7 +98,7 @@ def _build_bodies(save: dict, save_path: Path) -> dict:
     for actor in save.get("actors_data") or []:
         if is_boat(actor):
             continue
-        tally = by_land[_body_key(actor, island_of, grid, tile_map)]
+        tally = by_land[_site_key(actor_xy(actor), island_of, grid, tile_map)]
         tally[0] += 1
         tally[1] += is_sapient(thinking.get(actor.get("subspecies")))
     return {
@@ -124,7 +120,7 @@ def _build_burning(save: dict, save_path: Path) -> dict:
     return {key: " | ".join(f"{n} {ground}" for ground, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
 
 
-# Every kind the save holds, counted by family: `shared.asset_families`, the very families `actor … --to` reads, so that a name listed here is one it takes.
+# Every kind the save holds, by family: `shared.asset_families`, which `actor … --to` and `positions -t` read, so that a name listed here is one they take.
 def _build_entity_types(save: dict) -> dict:
     return {family: dict(counts) for family, counts in asset_families(save).items()}
 
@@ -177,7 +173,7 @@ def _build_gear(save: dict, save_path: Path) -> dict:
     for actor in save.get("actors_data") or []:
         if is_boat(actor) or not (worn := actor.get("saved_items")):
             continue
-        by_land[_body_key(actor, island_of, grid, tile_map)].append(
+        by_land[_site_key(actor_xy(actor), island_of, grid, tile_map)].append(
             # An id the collection never resolves names nothing, so it is dropped rather than sorted against the rest as a `None`.
             {"id": actor["id"], "items": sorted(a for i in worn if (a := (items.get(i) or {}).get("asset_id"))), "name": actor.get("name")},
         )
@@ -190,22 +186,39 @@ def _build_gear(save: dict, save_path: Path) -> dict:
     return out
 
 
-# Where every instance of one kind stands. Its `id` opens its own script; `island_id` names the land mass, else `islet_tiles` one too small to count, else water.
-def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
+# Up to `_MAX_LISTED`, or all on the `-i` land, each instance by `id`, `island_id` else `islet_tiles` else water, `asset_id` if kinds mix; past it, a tally by land.
+def _build_positions(save: dict, save_path: Path, kinds: set[str], land: int | None) -> list[dict] | dict[str, str] | None:
+    if not (sites := asset_sites(save, kinds)):  # the lookup costs 0.2 s cold, so a kind nobody built never pays for it
+        return None
+    _, island_of = compute_islands_cached(save, save_path)
+    grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
+    if land is not None:
+        sites = [(record, tile) for record, tile in sites if island_of.get(tile) == land]
+    elif len(sites) > _MAX_LISTED:
+        by_land: defaultdict[str, Counter] = defaultdict(Counter)
+        for record, tile in sites:
+            by_land[_site_key(tile, island_of, grid, tile_map)][record.get("asset_id")] += 1
+        tally = {key: " | ".join(f"{n} {kind}" for kind, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
+        return {**tally, "info": f"{len(sites)} in all — `-i <id>` lists one land's one by one"}
     # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
+    mixed = len(kinds) > 1
     out = [
-        {"dormant": "stop_spawn_drops" in (record.get("custom_data_flags") or ()) or None, "id": record.get("id"), "name": record.get("name"), "x": x, "y": y}
-        for record, (x, y) in asset_sites(save, {asset_id})
+        {
+            "asset_id": record.get("asset_id") if mixed else None,
+            "dormant": "stop_spawn_drops" in (record.get("custom_data_flags") or ()) or None,
+            "id": record.get("id"),
+            "name": record.get("name"),
+            "x": x,
+            "y": y,
+        }
+        for record, (x, y) in sites
     ]
-    if out:  # the lookup costs 0.2 s cold, so a kind nobody built never pays for it
-        _, island_of = compute_islands_cached(save, save_path)
-        grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
-        for position in out:
-            x, y = position["x"], position["y"]
-            if (island_id := island_of.get((x, y))) is not None:
-                position["island_id"] = island_id
-            elif off_land(tile_map[grid[y][x]]) == "islet":  # silent in the water, as `island_id` is: a hull at sea, a dock on shallows
-                position["islet_tiles"] = island_of.islet_size((x, y))
+    for position in out:
+        x, y = position["x"], position["y"]
+        if (island_id := island_of.get((x, y))) is not None:
+            position["island_id"] = island_id
+        elif off_land(tile_map[grid[y][x]]) == "islet":  # silent in the water, as `island_id` is: a hull at sea, a dock on shallows
+            position["islet_tiles"] = island_of.islet_size((x, y))
     return sorted(out, key=lambda r: (r["y"], r["x"]))
 
 
@@ -333,6 +346,12 @@ def _site(mean_x: float, mean_y: float, runs: list[tuple[int, int, int]]) -> dic
     return {"x": x, "y": y}
 
 
+# The land a tile lies on, as every land-by-land section keys it — the grid decoded for a tile off every land alone, whose row tells an islet from the water.
+def _site_key(tile: tuple[int, int], island_of, grid: LazyTileGrid, tile_map: list) -> str:
+    x, y = tile
+    return str(island_id) if (island_id := island_of.get((x, y))) else _land_key(None, tile_map[grid[y][x]])
+
+
 # The map's land and goo counted off the runs, its water the rest of a grid the header sizes — one count, that `totals` and `frozen` never disagree over.
 def _surfaces(save: dict) -> tuple[int, int, int]:
     layers = [tile_layer(name) for name in save.get("tileMap") or []]
@@ -345,7 +364,7 @@ def main(argv: list[str]) -> int:
 
     parser = arg_parser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
     parser.add_argument("sections", help=f"Comma-separated sections. Valid: {', '.join(_ALL_SECTIONS)}")
-    parser.add_argument("--type", "-t", help="Asset id `positions` reports every instance of — e.g. `volcano`, `orc`. `entity_types` lists what the save holds.")
+    parser.add_argument("--type", "-t", help="What `positions` sites: an asset id, a family (`trees`) or a comma list — each one up to 10, past it a count by land.")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="One land alone in the sections that go land by land — the whole list without it.")
     args = parser.parse_args(argv)
 
@@ -387,9 +406,12 @@ def main(argv: list[str]) -> int:
         islands, _ = compute_islands_cached(save, save_path)
         out["islands"] = islands
     if "positions" in sections and wanted is not None:
-        if not (positions := _build_positions(save, save_path, wanted)):  # a word nothing answers to, never a silent `{}`
-            families = ", ".join(sorted(asset_families(save)))
-            print(f"✗ no {wanted} in this world — `entity_types` lists every kind; a family ({families}) goes to `actor … --to`", file=sys.stderr)
+        families = asset_families(save)
+        if (positions := _build_positions(save, save_path, asset_kinds(families, wanted), args.island)) is None:  # a word nothing answers to, never a silent `{}`
+            print(f"✗ no {wanted} in this world — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
+            return 1
+        if not positions:
+            print(f"✗ no {wanted} on land {args.island} — without `-i`, `positions` says which lands hold one", file=sys.stderr)
             return 1
         out["positions"] = positions
     if "ridges" in sections:

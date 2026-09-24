@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 24/09/26 08:35</p>
+<p class="metadata">Date de mise à jour : 24/09/26 13:10</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, qui exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -34,7 +34,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### `geography` :
 
 - `-i <id>` : une seule terre dans les sections rangées par terre
-- `-t <type>` (`positions`) : **un `asset_id` exact**, qu'`entity_types` liste ; une famille (`trees`…) se cherche par `actor … --to`
+- `-t <type>` (`positions`) : un `asset_id`, une famille (`trees`…) ou une liste à virgules ; au-delà de 10, un compte par terre, que `-i` détaille
 
 ### `tiles` :
 

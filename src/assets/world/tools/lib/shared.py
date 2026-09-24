@@ -271,6 +271,11 @@ def asset_families(save: dict) -> dict[str, Counter]:
     return {family: counts for family, counts in families.items() if counts}
 
 
+# The asset ids a comma list of kinds and families stands for — a family, only the kinds this save carries.
+def asset_kinds(families: dict[str, Counter], words: str) -> set[str]:
+    return {kind for word in words.split(",") for kind in (families[word].keys() if word in families else {word})}
+
+
 # A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
 @cache
 def asset_set(name: str) -> frozenset[str]:

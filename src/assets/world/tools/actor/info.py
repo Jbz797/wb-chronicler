@@ -24,6 +24,7 @@ from shared import (
     actor_age,
     actor_xy,
     asset_families,
+    asset_kinds,
     asset_sites,
     bearing,
     build_trait_ids,
@@ -939,10 +940,8 @@ def main(argv: list[str]) -> int:
             return 1
         aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land], "landing", f"land {land}"  # its shore
     elif isinstance(target, str):  # kinds and families, comma-parted, the body itself left out: the cheapest reached is the nearest
-        families, kinds = asset_families(save), set()
-        for word in target.split(","):
-            kinds |= families[word].keys() if word in families else {word}
-        if not (sites := [(record, tile) for record, tile in asset_sites(save, kinds) if record is not actor]):
+        families = asset_families(save)
+        if not (sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, target)) if record is not actor]):
             print(f"✗ no {target} in this world, {_named(actor)} aside — the families: {', '.join(sorted(families))}", file=sys.stderr)
             return 1
         about = {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
