@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 23/09/26 23:39</p>
+<p class="metadata">Date de mise à jour : 24/09/26 13:44</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -12,6 +12,8 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut : à partir de `sav
 - une épithète ou un lien que les chapitres ne soutiennent plus ;
 - un motif ou une cause qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - une âme ou un lieu qu'elle a lâchés là où la chronique l'attendait.
+
+Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille : signale-le comme un point à mesurer.
 
 Pars de `history/watches.md` s'il existe, le registre des veilles encore ouvertes, et mets-le à jour à chaque passage : une puce par veille, dans l'ordre de leur ouverture, son chapitre d'ouverture, son sujet en une ligne et son dernier sort avec son chapitre — ouverte, reconduite, détournée —, sans numéro de ligne. Celles que le chapitre ouvre y entrent, une veille soldée en sort, une veille qu'il ne touche pas reste telle quelle. Au-delà de 10 veilles, abandonne celles qui ont le moins de chances de se refermer un jour, et dis-le au chroniqueur : une veille abandonnée sort, close, elle n'est plus un écart. Ouvre ton rapport sur ce qui y a changé. Deux veilles ne se lient que si le texte les lie lui-même.
 
