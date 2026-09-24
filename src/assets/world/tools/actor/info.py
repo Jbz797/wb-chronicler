@@ -152,7 +152,6 @@ _SETTLE_BIOMES = {
     "sand": None,
 }
 
-_SETTLE_ISLAND = 300  # WB `CityPlaceFinder.prepareBasicZones`: the fewest tiles a land needs before a zone of it may found a town
 _SETTLE_SOIL = frozenset({"soil_high", "soil_low"})  # bare soil, which the weighing counts apart and then offsets by everything grown over it
 _SPENT_BREATH_PACE = 0.4  # WB's own multiplier for a body out of breath: it still swims, at two fifths of its pace
 _STAMINA_PER_SECOND = 10.0  # `spendStaminaWithCooldown` takes 1 to 5 points every 0.3s — `Randy.randomInt` leaves its top out, so three on average
@@ -655,8 +654,9 @@ def _settle(actor: dict, ctx: dict) -> bool | list[str] | None:
     x, y = actor_xy(actor)
     zx, zy = x // ZONE_TILES, y // ZONE_TILES
     land = ctx["island_lookup"]().get((zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2))  # WB reads the zone's centre tile
-    if land is None or ctx["island_sizes"]().get(land, 0) < _SETTLE_ISLAND:
-        shut.append("small_land")
+    # Water or a rock at the zone's middle: no land for WB to weigh. Every counted land clears WB's own 300-tile floor, so this is the whole of that gate.
+    if land is None:
+        shut.append("centre_off_land")
     elif any(town == land and abs(tx - zx) + abs(ty - zy) <= _CITY_WAVE for tx, ty, town in ctx["city_zones"]()):
         shut.append("town_near")
     tags = frozenset(tag for trait in _biology(actor, ctx) for tag in (ctx["subspecies_traits"].get(trait) or {}).get("tags") or ())
