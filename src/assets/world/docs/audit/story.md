@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 24/09/26 19:19</p>
+<p class="metadata">Date de mise à jour : 24/09/26 22:38</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -15,7 +15,7 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut : à partir de `sav
 
 Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : signale-le comme un point à mesurer.
 
-Pars de `history/watches.md` s'il existe, le registre des veilles encore ouvertes, et mets-le à jour à chaque passage : une puce par veille, dans l'ordre de leur ouverture, son chapitre d'ouverture, son échéance si elle en a une (`y7 m10`, que les outils datent), son sujet en une ligne et son dernier sort avec son chapitre — ouverte, reconduite, détournée —, sans numéro de ligne. Celles que le chapitre ouvre y entrent, une veille soldée en sort, une veille qu'il ne touche pas reste telle quelle. Au-delà de 10 veilles, abandonne celles qui ont le moins de chances de se refermer un jour, et dis-le au chroniqueur : une veille abandonnée sort, close, elle n'est plus un écart. Ouvre ton rapport sur ce qui y a changé. Deux veilles ne se lient que si le texte les lie lui-même.
+Pars de `history/watches.md` s'il existe, le registre des veilles encore ouvertes. Mets-le à jour à la passe que le chroniqueur t'annonce comme la dernière ; aux autres, n'y écris rien et signale dans ton rapport ce qui y changerait : une puce par veille, dans l'ordre de leur ouverture, son chapitre d'ouverture, son échéance si elle en a une (`y7 m10`, que les outils datent), son sujet en une ligne et son dernier sort avec son chapitre — ouverte, reconduite, détournée —, sans numéro de ligne. Celles que le chapitre ouvre y entrent, une veille soldée en sort, une veille qu'il ne touche pas reste telle quelle. Au-delà de 10 veilles, abandonne celles qui ont le moins de chances de se refermer un jour, et dis-le au chroniqueur : une veille abandonnée sort, close, elle n'est plus un écart. Ouvre ton rapport sur ce qui y a changé. Deux veilles ne se lient que si le texte les lie lui-même.
 
 Dis-le franchement là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage qui manque à la chronique, un angle jamais pris), mais comme une direction, jamais comme de la prose écrite.
 
