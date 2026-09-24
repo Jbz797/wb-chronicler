@@ -14,14 +14,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats
+from actor_stats import adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_on
 from grid import frozen_tally
+from islands import compute_islands_cached
 from shared import (
     HISTORY_S3DB,
     MIN_RANK_PEERS,
     MIN_SCORE_PEERS,
+    SAVES_DIR,
     SICK_TRAITS,
     UNITS_PER_YEAR,
+    actor_age,
+    actor_xy,
+    arg_parser,
+    asset_families,
+    asset_kinds,
     city_score_dimensions,
     civic_building_ids,
     emit,
@@ -37,7 +44,9 @@ from shared import (
     parse_sections,
     rounded_world_time,
     score_totals,
+    sex_label,
     take_chapter,
+    take_since,
     wants_detail,
 )
 
@@ -107,8 +116,13 @@ _GROUP_FIELDS = {
     "subspecies": "subspecies",
 }
 
+_MAX_ROSTER = 50  # past so many bodies a roll is read for its species, not its names: filters narrow it back to a list
+
 # The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
+
+_OFF_LAND = "off_land"  # where `roster` says a body stands, or stood, on no counted land — an islet or the water
+_ON_REQUEST = ("roster",)  # named only: `full` is what the bootstrap folds into a chapter, and a roll of every body is no chapter's to carry
 
 # WB's four skills, the ones every `ranks_in_species` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
 _SKILLS = ("diplomacy", "intelligence", "stewardship", "warfare")
@@ -215,6 +229,43 @@ def _build_plots(save: dict) -> list[dict]:
     ]
 
 
+# Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
+def _build_roster(save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | None, since: str | None) -> list[dict] | dict:
+    was = _lands_then(since) if since else None
+    bodies = []
+    for actor in save.get("actors_data") or []:
+        if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or (trait and trait not in (actor.get("saved_traits") or ())):
+            continue
+        here = island_of.get(actor_xy(actor))
+        change: dict = {}
+        if was is not None and actor["id"] in was:  # one unseen then was born or set down since, and says so by standing in the roll at all
+            if (then := was[actor["id"]]) == here:
+                continue  # stood still: nothing for `since` to say
+            change = {"was_on": then if then is not None else _OFF_LAND}
+        if land is None or land in (here, change.get("was_on")):
+            bodies.append((actor, here, change))
+    if len(bodies) > _MAX_ROSTER:
+        counts = Counter(actor.get("asset_id") for actor, _, _ in bodies)
+        return {"by_species": dict(counts.most_common()), "info": f"{len(bodies)} bodies — narrow them with -t, --trait or -i"}
+    ctx = build_actor_stats_context(save)
+    rows = []
+    for actor, here, change in sorted(bodies, key=lambda body: (body[1] is None, body[1] or 0, body[0]["id"])):  # land by land, off every land last
+        age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
+        rows.append(
+            {
+                "adult_on": crossed_on(actor, adult) if age < adult else None,
+                "asset_id": actor.get("asset_id"),
+                "breeds_on": crossed_on(actor, breeding) if age < breeding else None,
+                "id": actor["id"],
+                "island_id": here if here is not None else _OFF_LAND,  # said outright, as `was_on` is: a missing one read as still on the land left
+                "name": actor.get("name"),
+                "sex": sex_label(actor),
+                **change,
+            }
+        )
+    return rows
+
+
 # Actors split three ways: hulls (`boats`), thinking souls (`sapient_population`) and the beasts (`wild_creatures`). `infected` = WB's `current_infected`.
 def _build_snapshot(save: dict) -> dict:
     actors = save.get("actors_data") or []
@@ -291,6 +342,14 @@ def _gain(before: int | None, after: int | None) -> int:
     return after - before if before is not None and after is not None else 0
 
 
+# The land each body stood on in an earlier chapter's save, for `--since`: the one fact the roster weighs against it.
+def _lands_then(chapter: str) -> dict[int, int | None]:
+    then_path = SAVES_DIR / chapter / "map.wbox"
+    then = load_save(then_path)
+    island_of = compute_islands_cached(then, then_path)[1]
+    return {actor["id"]: island_of.get(actor_xy(actor)) for actor in then.get("actors_data") or [] if not is_boat(actor)}
+
+
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
 def _name_of(records: list[dict], target_id) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
@@ -315,12 +374,32 @@ def _year_gains(year: int, held: dict, now: dict, counters: dict[str, str], so_f
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
-    requested = argv[0] if argv else None
     try:
-        sections = parse_sections(requested, _ALL_SECTIONS)
+        since, argv = take_since(argv)
+    except ValueError as e:
+        print(f"✗ {e}", file=sys.stderr)
+        return 2
+    save_path, argv, _ = take_chapter(argv)
+    parser = arg_parser(prog="world/info.py", description="World-wide sections, from the save alone.")
+    parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
+    parser.add_argument("--island", "-i", type=int, metavar="id", help="`roster`: the bodies standing on one land")
+    parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, by its id")
+    parser.add_argument("--type", "-t", help="`roster`: one kind, a family (`actors`) or a comma list")
+    args = parser.parse_args(argv)
+    requested = args.sections
+    try:
+        sections = parse_sections(requested, (*_ALL_SECTIONS, *_ON_REQUEST))
     except ValueError as e:
         print(str(e), file=sys.stderr)
+        return 2
+    if not requested or requested == "full":
+        sections = _ALL_SECTIONS
+    narrowing = args.type or args.trait or args.island is not None or since
+    if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
+        print("✗ -t, --trait, -i and --since narrow `roster`: name it", file=sys.stderr)
+        return 2
+    if since and not (SAVES_DIR / since / "map.wbox").exists():
+        print(f"✗ no save for {since}", file=sys.stderr)
         return 2
     save = load_save(save_path)
     map_stats = save.get("mapStats") or {}  # WB's own counters, period-accurate.
@@ -335,6 +414,20 @@ def main(argv: list[str]) -> int:
         out["metadata"] = _build_metadata(map_stats)
     if "plots" in sections:
         out["plots"] = _build_plots(save)
+    if "roster" in sections:
+        kinds = asset_kinds(asset_families(save), args.type) if args.type else None
+        lands, island_of = compute_islands_cached(save, save_path)  # loaded once: the land `-i` names is checked against the lookup the roll then reads
+        if args.island is not None and args.island not in {land["id"] for land in lands}:
+            print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
+            return 2
+        if args.trait and args.trait not in load_data("creature-traits.json"):
+            print(f"✗ no trait {args.trait} — `actor <id> traits` gives the ids", file=sys.stderr)
+            return 2
+        if not (roster := _build_roster(save, island_of, kinds, args.trait, args.island, since)):  # a filter nothing answers, never a silent `{}`
+            why = f"bears {args.trait}" if args.trait else "matches — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds"
+            print(f"✗ no living body {why}", file=sys.stderr)
+            return 1
+        out["roster"] = roster
     if "snapshot" in sections:
         out["snapshot"] = _build_snapshot(save)
     if "timeline" in sections:

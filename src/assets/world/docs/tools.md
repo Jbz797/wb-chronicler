@@ -1,8 +1,8 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 24/09/26 13:10</p>
+<p class="metadata">Date de mise à jour : 24/09/26 16:06</p>
 
-Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, qui exige une section nommée) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
+Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography` et `world … roster`, à nommer) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
 | Commande          | Sections                                                                                                                         |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -22,25 +22,29 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 | `subspecies <id>` | `breakdown`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                   |
 | `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `tile_info`                                                                          |
 | `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                             |
-| `world`           | `boats`, `cumulative`, `leaders`, `metadata`, `plots`, `snapshot`, `timeline`                                                    |
+| `world`           | `boats`, `cumulative`, `leaders`, `metadata`, `plots`, `roster`, `snapshot`, `timeline`                                          |
 
 ## Options :
 
 ### `actor` :
 
-- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`), et une clé `to`, marchée comme `surroundings`, en `hours` et, passé un jour, en `days` haltes comprises (rien à bord) — `swim_hours` ce qu'il en nage, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée ; l'eau qu'il ne passe pas rend une erreur chiffrée
+- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`), et une clé `to`, marchée comme `surroundings`, en `hours` et, passé un jour, en `days` haltes comprises (rien à bord) — `swim_hours` ce qu'il en nage, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée
 - `--since C<n>` : ce qui a bougé depuis, dans `since` — `moved` est le trajet fait, quand `--to` ne donne qu'un gisement
 
 ### `geography` :
 
 - `-i <id>` : une seule terre dans les sections rangées par terre
-- `-t <type>` (`positions`) : un `asset_id`, une famille (`trees`…) ou une liste à virgules ; au-delà de 10, un compte par terre, que `-i` détaille
+- `-t <type>` (`positions`) : un `asset_id`, une famille (`trees`…) ou une liste à virgules, hors corps
 
 ### `tiles` :
 
 - `-i <id>` : une terre par son id, mesurée comme `to_islands` sous `to_island`, même hors des 5 plus proches — celle où l'on se tient vaut 0
 - `-r <n>` : rayon, de 0 à 2 — `distances` ne répond que pour la tuile demandée
 - `--to <x,y>` : une clé `to`, cap et deux mesures de lieu à lieu (d'un corps : `actor`), seule sans section nommée — sinon les deux tuiles s'y joignent ; pas avec `-r`
+
+### `world` :
+
+- `roster` : chaque vivant, une ligne ; `-t` type ou famille, `--trait <id>`, `-i` une terre ; `--since C<n>` : les arrivés et les `was_on` ; passé 50 corps, un compte par espèce
 
 ---
 
@@ -52,7 +56,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### Acteurs :
 
-- `actor … metadata` : `can_reproduce` demande l'âge de reproduction et, chez qui mange, une `nutrition` d'au moins 50 ; `infertile` et `max_children` (enfants vivants) n'arrêtent que qui porte : un mâle engendre si sa compagne le peut. Qu'il disparaisse après avoir paru ne dit pas l'infertilité : une réserve entamée suffit. Ce qui ouvre ou ferme une naissance : `wiki:Reproduction`. `can_reproduce` ne sort que vrai, `breeds_on` datant l'âge qui l'ouvrira, `adult_on` la majorité. `settle`, chez un pensant : `true` s'il pourrait fonder un village là où il se tient, sinon ce qui l'en empêche (`child`, `ground 52/64`…).
+- `actor … metadata` : `can_reproduce` demande l'âge de reproduction et, chez qui mange, une `nutrition` d'au moins 50 ; `infertile` et `max_children` (enfants vivants) n'arrêtent que qui porte : un mâle engendre si sa compagne le peut. Ce qui ouvre ou ferme une naissance : `wiki:Reproduction`. `can_reproduce` ne sort que vrai, `breeds_on` datant l'âge qui l'ouvrira, `adult_on` la majorité. `settle`, chez un pensant : `true` s'il pourrait fonder un village là où il se tient, sinon ce qui l'en empêche (`child`, `ground 52/64`…).
 - `actor … stats` rend des valeurs **déjà agrégées** — tout y est, du socle de l'espèce aux bonus de niveau (santé, mana et endurance seulement), jusqu'aux points de compétence gagnés à vivre : n'ajoute rien par-dessus. Celles d'un mineur sont **bridées** : `damage_max` et `health_max` valent la moitié jusqu'à `adult_on`. La valeur adulte ne se lit pas sur celle de la lignée. `swim` : `breath` tant que dure le souffle, `reach` noyade comprise, sur l'endurance et la santé de l'instant, et `rested` ce qui en change reposé ; `never` pour qui brûle dans l'eau, `unlimited` pour qui n'y peine pas.
 - `actor … surroundings` se compte comme `walked`, au pas du corps, qui ne nage que vers une autre terre : `intimate` ≤ 25 tuiles, `common` ≤ 120, `hours` donnant leur bord à son pas ; `common_with_boat` ≤ 240 à vol d'oiseau, si son royaume a un bateau de transport ; `water` et `islet_tiles` comme dans `tiles … tile_info`. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. `sapient` se tait devant `kin`, `job` ou `role`.
 - `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `diplomacy` et `stewardship` ne servent qu'aux rois et aux chefs, et `damage_*` dit la force d'un coup, `warfare` compris. Le reste : `wiki:Unit_Stats`.

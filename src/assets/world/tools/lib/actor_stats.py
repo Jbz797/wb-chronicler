@@ -28,6 +28,7 @@ from shared import (
     PROFESSION_WARRIOR,
     SICK_TRAITS,
     UNITS_PER_MONTH,
+    UNITS_PER_YEAR,
     actor_age,
     has_emotions,
     head_money,
@@ -38,6 +39,7 @@ from shared import (
     needs_food,
     sex_label,
     weapon_assets,
+    world_date,
 )
 
 _BROKEN_ITEM_RATIO = 0.5  # WB `Actor.updateStats`: a worn-out piece stays worn and still counts, at half of all it grants.
@@ -711,6 +713,12 @@ def compute_actor_stats(actor: dict, ctx: dict) -> dict:
     if (cap := _nutrition_max(actor, ctx)) is not None:  # a cap like the others, read off `base_stats_meta` — and none on a body with no gut
         cleaned["nutrition_max"] = cap
     return cleaned
+
+
+# The date a body crosses a biology's age: WB weighs it against the years begun, so 3.9 opens at 4, three full years past birth, and overgrowth brings it on.
+def crossed_on(actor: dict, threshold: float) -> str:
+    years = math.ceil(threshold) - 1 - int(actor.get("age_overgrowth") or 0)
+    return world_date(float(actor.get("created_time") or 0) + years * UNITS_PER_YEAR)
 
 
 # What an egg has left before it cracks, in the months WB counts an incubation in. `None` where the body is no egg, so one call answers the delay and the state.

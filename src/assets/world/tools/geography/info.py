@@ -364,7 +364,7 @@ def main(argv: list[str]) -> int:
 
     parser = arg_parser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
     parser.add_argument("sections", help=f"Comma-separated sections. Valid: {', '.join(_ALL_SECTIONS)}")
-    parser.add_argument("--type", "-t", help="What `positions` sites: an asset id, a family (`trees`) or a comma list — each one up to 10, past it a count by land.")
+    parser.add_argument("--type", "-t", help="What `positions` sites, bodies aside: an asset id, a family (`trees`) or a comma list; past 10, a count by land.")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="One land alone in the sections that go land by land — the whole list without it.")
     args = parser.parse_args(argv)
 
@@ -407,7 +407,11 @@ def main(argv: list[str]) -> int:
         out["islands"] = islands
     if "positions" in sections and wanted is not None:
         families = asset_families(save)
-        if (positions := _build_positions(save, save_path, asset_kinds(families, wanted), args.island)) is None:  # a word nothing answers to, never a silent `{}`
+        kinds, bodies = asset_kinds(families, wanted), {a.get("asset_id") for a in save.get("actors_data") or [] if not is_boat(a)}  # hulls stay sited here
+        if said := [word for word in wanted.split(",") if asset_kinds(families, word) & bodies]:  # a body's roll is `roster`'s, with its sex and dates
+            print(f"✗ {', '.join(said)}: bodies are listed by `world … roster -t`, `positions` sites the rest", file=sys.stderr)
+            return 2
+        if (positions := _build_positions(save, save_path, kinds, args.island)) is None:  # a word nothing answers to, never a silent `{}`
             print(f"✗ no {wanted} in this world — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
             return 1
         if not positions:

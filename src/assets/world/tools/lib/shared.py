@@ -977,6 +977,17 @@ def take_chapter(argv: list[str]) -> tuple[Path, list[str], str | None]:
     return live, argv, None
 
 
+# `--since C<n>`, pulled before the chapter to read is: `take_chapter` would take the first `C<n>` on the line for the save to open.
+def take_since(argv: list[str]) -> tuple[str | None, list[str]]:
+    if "--since" not in argv:
+        return None, argv
+    at = argv.index("--since")
+    value = argv[at + 1] if at + 1 < len(argv) else ""
+    if not (value[:1] == "C" and value[1:].isdigit()):
+        raise ValueError("`--since` takes a chapter, e.g. `--since C2`")
+    return value, argv[:at] + argv[at + 2 :]
+
+
 # The node a union-find set is known by, each one passed pointed a step nearer it so a map's unions stay shallow: `islands` and `waters` join their runs by it.
 def union_root(parent: list[int], node: int) -> int:
     while (up := parent[node]) != node:
@@ -1003,9 +1014,9 @@ def weapon_assets() -> frozenset[str]:
     return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
 
 
-# A `world_time` as the chronicle dates it, both counts 1-based as WB displays them: `t = 1181` is the ninth month of year 20.
-def world_date(world_time: float) -> dict:
-    return {"month": int(world_time % UNITS_PER_YEAR // UNITS_PER_MONTH) + 1, "year": int(world_time // UNITS_PER_YEAR) + 1}
+# A `world_time` as the chronicle dates it, both counts 1-based as WB displays them: `t = 1181` is `y20 m9`. A string, not a pair: a roll's line stays on one line.
+def world_date(world_time: float) -> str:
+    return f"y{int(world_time // UNITS_PER_YEAR) + 1} m{int(world_time % UNITS_PER_YEAR // UNITS_PER_MONTH) + 1}"
 
 
 # The world's laws by name, on or off — WB writes a law left untouched as a bare `{"name": …}`, so an absent `boolVal` reads as on.

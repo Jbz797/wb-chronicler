@@ -6,12 +6,12 @@ import sys
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping
 from functools import cache
-from math import ceil, inf
+from math import inf
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, hatch_months, is_baby, is_egg
+from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_on, hatch_months, is_baby, is_egg
 from grid import LazyTileGrid, off_land
 from islands import compute_islands_cached
 from shared import (
@@ -51,6 +51,7 @@ from shared import (
     resolve_profession,
     sex_label,
     take_chapter,
+    take_since,
     walk_tiles,
     wants_detail,
     world_date,
@@ -284,14 +285,14 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
 
     return {
         # Chronicler-only, and only while it still bites: the date WB gives the child its halved `damage_max`/`health_max` back — a bridling, not an infirmity.
-        **({"adult_on": _crossed_on(actor, age_adult)} if age < age_adult else {}),
+        **({"adult_on": crossed_on(actor, age_adult)} if age < age_adult else {}),
         "age": age,
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "asset_id": actor.get("asset_id"),
         "born": world_date(actor.get("created_time") or 0),  # the month WB set it on the map, dated as the chronicle dates: who came first, and when
         # Chronicler-only, and only while it still bites: the date WB opens a body's own line — `adult_on` lifts a bridling and lets it found a town, never bear.
-        **({"breeds_on": _crossed_on(actor, age_breeding)} if age < age_breeding else {}),
+        **({"breeds_on": crossed_on(actor, age_breeding)} if age < age_breeding else {}),
         # Said only when they hold, as every flag the tools emit: a body that cannot is most of the world, beasts and children first.
         **({"can_reproduce": True} if can_reproduce else {}),
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
@@ -560,12 +561,6 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
     return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
 
 
-# The date a body crosses a biology's age: WB weighs it against the years begun, so 3.9 opens at 4, three full years past birth, and overgrowth brings it on.
-def _crossed_on(actor: dict, threshold: float) -> dict:
-    years = ceil(threshold) - 1 - int(actor.get("age_overgrowth") or 0)
-    return world_date(float(actor.get("created_time") or 0) + years * UNITS_PER_YEAR)
-
-
 # Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
 def _equipment_power(actor: dict, ctx: dict) -> int:
     items = ctx["items_by_id"]
@@ -788,17 +783,6 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
-# `--since C<n>`, pulled before the chapter to read is: `take_chapter` would take the first `C<n>` on the line for the save to open.
-def _take_since(argv: list[str]) -> tuple[str | None, list[str]]:
-    if "--since" not in argv:
-        return None, argv
-    at = argv.index("--since")
-    value = argv[at + 1] if at + 1 < len(argv) else ""
-    if not (value[:1] == "C" and value[1:].isdigit()):
-        raise ValueError("`--since` takes a chapter, e.g. `--since C2`")
-    return value, argv[:at] + argv[at + 2 :]
-
-
 # `--to` lifted off the command line: an actor id, or a tile as `x,y` — and the words left for the id and the sections.
 def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | str | None, list[str]]:
     if "--to" not in argv:
@@ -878,7 +862,7 @@ def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, 
 
 def main(argv: list[str]) -> int:
     try:
-        since, argv = _take_since(argv)
+        since, argv = take_since(argv)
     except ValueError as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
