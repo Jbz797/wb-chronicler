@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 24/09/26 14:10</p>
+<p class="metadata">Date de mise à jour : 24/09/26 14:26</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail que toi, chacun de son côté.
 
@@ -10,7 +10,7 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 
 - **Le silence du wiki ne dément rien** : une condition qu'il ne donne ni ne nie reste ouverte, et se signale comme telle, jamais comme fausse. La page consacrée à la chose l'emporte sur un tableau qui la résume.
 - **Un mécanisme** que ni les sorties ni `docs/chronicler.md` ne donnent se vérifie sur le wiki (`docs/chronicler.md` § « Accès au wiki WorldBox »). Si les deux divergent, la sortie l'emporte.
-- **Une absence** (une mort, une extinction, « il n'en est plus question ») se vérifie sur le roster du monde, `geography … entity_types` ou `positions -t`, jamais sur ce que le texte nomme.
+- **Une affirmation sur tout le monde** (« seul », « aucun », « ce monde n'a que », une mort, « il n'en est plus question ») se vérifie sur le roster du monde entier, `geography … entity_types` ou `positions -t`, jamais sur ce que le texte nomme.
 - **Une phrase que le texte donne lui-même pour incertaine n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.
 
 Ne rends que les écarts, et ce qu'on te demande : chacun avec sa ligne, sa citation et sa valeur vraie. N'écris rien dans les fichiers.
