@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_at, crossed_on
+from actor_stats import adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_at, crossed_on, maturation_months
 from grid import frozen_tally
 from islands import compute_islands_cached
 from shared import (
@@ -24,6 +24,7 @@ from shared import (
     MIN_SCORE_PEERS,
     SAVES_DIR,
     SICK_TRAITS,
+    UNITS_PER_MONTH,
     UNITS_PER_YEAR,
     actor_age,
     actor_xy,
@@ -232,14 +233,18 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
     # Traits and breeding are a lineage's, read once each: a kind's bodies share a handful of lineages, and every pair below asks of both.
     traits = {sub["id"]: frozenset(sub.get("saved_traits") or ()) for sub in save.get("subspecies") or []}
     mode, empty = {sid: breeding_mode(lineage) for sid, lineage in traits.items()}, frozenset()
+    carry = {sid: maturation_months(lineage, ctx) * UNITS_PER_MONTH for sid, lineage in traits.items()}  # in hours, the bearer's lineage setting a birth
     rows: list[tuple[float, dict]] = []
+    now = ctx["world_time"]  # a conception is today's at the earliest, however long ago both came of age
     for kind, bodies in kinds.items():
         ready = {actor["id"]: crossed_at(actor, breeding_age(actor, ctx)) for actor in bodies}
         where = {actor["id"]: actor_xy(actor) for actor in bodies}
         mating = [actor for actor in bodies if mode.get(actor.get("subspecies")) == "mate"]
         row: dict = {"asset_id": kind}
-        if lone := [ready[actor["id"]] for actor in bodies if mode.get(actor.get("subspecies")) == "alone"]:  # a lineage breeding alone needs no one
-            row["alone_on"] = min(lone)
+        births = []
+        if lone := [actor for actor in bodies if mode.get(actor.get("subspecies")) == "alone"]:  # a lineage breeding alone needs no one
+            row["alone_on"] = min(ready[actor["id"]] for actor in lone)
+            births += [max(ready[actor["id"]], now) + carry.get(actor.get("subspecies"), 0) for actor in lone]
         sexed = {actor["id"]: _SEXED in traits.get(actor.get("subspecies"), empty) for actor in mating}
         best = min(
             (
@@ -254,6 +259,8 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         if best:
             row["on"], crow, a, b = best
             row |= {"pair": [a["id"], b["id"]], "tiles": round(crow)}
+            bearer = b if sexed[a["id"]] and b.get("sex") == 1 else a  # a sexed pair's mother carries; a hermaphrodite pair, either — WB draws it
+            births.append(max(row["on"], now) + carry.get(bearer.get("subspecies"), 0))
             (ax, ay), (bx, by) = where[a["id"]], where[b["id"]]
             if (land := island_of.get((ax, ay))) is not None and land == island_of.get((bx, by)):
                 walk_map = walk_map or WalkMap(save)
@@ -264,10 +271,11 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         elif mating:  # a partner wanted, none to be had: a sexed kind of one sex says which, else blood or pledges bar every pair
             sexes = {sex_label(actor) for actor in mating}
             row["missing"] = ({"female": "male", "male": "female"}[sexes.pop()]) if len(sexes) == 1 and all(sexed.values()) else "partner"
-        rows.append((min(row.get("on", inf), row.get("alone_on", inf)), row))
-    now = ctx["world_time"]
+        if births:
+            row["birth_on"] = min(births)
+        rows.append((row.get("birth_on", inf), row))  # the first birth leads: what the chronicle asks is when a body is born, not when two come of age
     for _, row in rows:  # the hours dated only once sorted on: `now` for what already holds
-        for key in ("alone_on", "on"):
+        for key in ("alone_on", "birth_on", "on"):
             if key in row:
                 row[key] = "now" if row[key] <= now else world_date(row[key])
     return [row for _, row in sorted(rows, key=lambda entry: (entry[0], entry[1]["asset_id"]))]

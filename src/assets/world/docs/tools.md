@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 24/09/26 18:08</p>
+<p class="metadata">Date de mise à jour : 24/09/26 18:49</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -44,8 +44,8 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `world` :
 
-- `pairings` : par espèce, le premier couple possible, sa date (`on`) et l'écart d'aujourd'hui
-- `roster` : chaque vivant, une ligne ; `-t` type ou famille, `--trait <id>`, `-i` une terre ; `--since C<n>` : les arrivés et les `was_on` ; passé 50 corps, un compte par espèce
+- `pairings` : par espèce, la 1ʳᵉ naissance possible (`birth_on`) et l'écart d'aujourd'hui du couple
+- `roster` : chaque vivant, une ligne ; `-t` type ou famille, `--trait <id>`, `-i` une terre ; `--since C<n>` : les arrivés et les `was_on` ; passé 50, un compte par espèce
 
 ---
 

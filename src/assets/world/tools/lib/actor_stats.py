@@ -18,6 +18,7 @@
 
 import math
 from collections import Counter
+from collections.abc import Collection
 from functools import cache
 from math import inf
 
@@ -166,7 +167,7 @@ _LEVEL_MOD = {"health": 0.05, "mana": 0.02, "stamina": 0.02}  # Per `SimGlobalAs
 _LEVEL_VETERAN_SKILL_BONUS = 0.1
 _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
-_MATURATION = "maturation"  # the months an egg takes to hatch, `base_stats_meta` summing it over the biology's traits as WB does
+_MATURATION = "maturation"  # the months a lineage carries, conception to birth or to hatching — WB `getMaturationTimeMonths`, off `base_stats_meta`
 _META_RATIOS = ("children", "happy", "homeless", "unhappy")  # WB `IMetaObject`'s four, named as its getters are — every one of them a share of the living.
 
 # WB `BaseStatsLibrary.init` declares each target on its own asset (`main_stat_to_multiply`), two off the name: `crit` raises `critical_chance`, `mass` the `mass_2`.
@@ -730,9 +731,8 @@ def hatch_months(actor: dict, ctx: dict) -> float | None:
     memo, sub_id = ctx["incubation_memo"], actor.get("subspecies")
     if sub_id not in memo:
         traits = (ctx["subspecies_by_id"].get(sub_id) or {}).get("saved_traits") or []
-        library = ctx["subspecies_traits"]
         # Nought for a biology that lays nothing, and the trait is asked for on its own: an `egg_*` shell carries months too, and shells outlive the laying.
-        months = sum((library.get(t) or {}).get("meta_stats", {}).get(_MATURATION, 0) for t in traits) if _EGG_TRAIT in traits else 0
+        months = maturation_months(traits, ctx) if _EGG_TRAIT in traits else 0
         memo[sub_id] = months
     if not (months := memo[sub_id]):
         return None
@@ -750,6 +750,11 @@ def is_baby(actor: dict, ctx: dict) -> bool:
 # WB `Actor.checkShouldBeEgg`: a biology that lays, a body under its majority, an incubation still running — that majority ungated, an egg needs no baby form.
 def is_egg(actor: dict, ctx: dict) -> bool:
     return hatch_months(actor, ctx) is not None
+
+
+# The months a lineage carries before a birth or a hatching: WB sums its traits' `maturation` into `base_stats_meta`.
+def maturation_months(traits: Collection[str], ctx: dict) -> float:
+    return sum(((ctx["subspecies_traits"].get(trait) or {}).get("meta_stats") or {}).get(_MATURATION, 0) for trait in traits)
 
 
 # WB `IMetaObject`'s four ratios, the input its self-report reads. Happiness only answers for a biology bearing an `amygdala`, WB's own `has_emotions` tag.
@@ -876,6 +881,8 @@ def subspecies_stats(subspecies: dict, ctx: dict) -> dict:
     if mutagenic := _mutation_rate(subspecies):  # a biology's own reading: WB keeps it off `base_stats`, so no `Actor` is ever handed it
         base["mutation"] = mutagenic
     out = {"base": _cleanup_stats(base)}
+    if (months := out["base"].pop(_MATURATION, None)) is not None:  # WB counts it in months, conception to birth or to hatching: the unit rides on the key
+        out["base"]["maturation_months"] = months
     # The ages the lineage hands every body it bears, whole as WB weighs them against the years begun — none for a stock `adult_age()` finds grown from birth.
     adult, breeding = _age_thresholds(int(base.get("lifespan") or 0), is_sapient(subspecies))
     if adult and (ctx["species_data"].get(subspecies.get("species_id")) or {}).get("baby_form"):
