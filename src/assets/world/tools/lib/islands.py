@@ -7,6 +7,7 @@
 # 4. A land mass is an island once it could hold a city: WB `Globals.CITY_MIN_ISLAND_TILES`. Its own `countLandIslands` counts regions instead, which
 #    lets a compact islet straddling four chunks pass while a wider one inside two fails — a tally the game shows nowhere and no chronicle can use.
 
+import math
 import re
 import sys
 from array import array
@@ -28,11 +29,20 @@ _SET = re.compile(rb"[^\x00]")  # a byte the mask kept
 
 # Tile → island id over a flat row-major grid, `0` for water (ids start at 1). The dict it replaces cost 32 ms to unpickle and 1.95 MB; this costs neither.
 class _TileIslands:
-    __slots__ = ("_edges", "_grid", "_height", "_islets", "_width")
+    __slots__ = ("_edges", "_grid", "_height", "_islet_sites", "_islets", "_width")
 
     # Wraps what the phases filled — handed over, not copied: already the shape this class reads from. `None` edges: every land tile stands in.
-    def __init__(self, id_grid: array, width: int, height: int, edges: array | None = None, islets: dict[int, int] | None = None):
+    def __init__(
+        self,
+        id_grid: array,
+        width: int,
+        height: int,
+        edges: array | None = None,
+        islets: dict[int, int] | None = None,
+        sites: list[tuple[int, int, int]] | None = None,
+    ):
         self._edges, self._grid, self._height, self._islets, self._width = edges, id_grid, height, islets, width
+        self._islet_sites = sites or []
 
     # Every land tile and its island, a row at a time off the flat grid: what `edges` hands out where one byte could not hold the ids.
     def _land(self):
@@ -61,6 +71,10 @@ class _TileIslands:
     def islet_size(self, pos: tuple[int, int]) -> int:
         x, y = pos
         return self._islets.get(y * self._width + x, 0) if self._islets is not None and 0 <= x < self._width and 0 <= y < self._height else 0
+
+    # Every islet as `(size, x, y)`, its own tile nearest its middle: what `geography … totals` sums, so no reader need sweep the map for a tally of rocks.
+    def islets(self) -> list[tuple[int, int, int]]:
+        return self._islet_sites
 
     # The island ids of tiles listed row-major, as WB lists `fire` and `frozen_tiles`, read in C where a `get` per tile tests its bounds; `0` off the lands.
     def listed_ids(self, indices: list[int]) -> Iterator[int]:
@@ -210,8 +224,10 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
     # Each ground mass too small to count stamps its size, lent to the rock no land took: an islet reads how much of it there is, where a bare flag read as a rock
     islets: dict[int, int] = {}  # sparse, flat index → size: a grid of the map would pickle two bytes a tile for the few thousand an islet holds
     islet_seeds: deque[tuple[int, int]] = deque()
+    islet_sites: list[tuple[int, int, int]] = []
     for size, _, own_runs in masses.values():
         if size < _CITY_MIN_ISLAND_TILES:
+            islet_sites.append((int(size), *_middle_tile(own_runs, size)))
             for y, a, b in own_runs:
                 islets.update(dict.fromkeys(range(y * width + a, y * width + b), int(size)))
                 islet_seeds.extend((i, size) for i in filter(beside_rock.__getitem__, range(y * width + a, y * width + b)))
@@ -234,7 +250,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
         bounds = {"x": [west, east], "y": [south, north]}
         islands.append({"bounds": bounds, "centroid": {"x": sum_x // size, "y": sum_y // size}, "id": new_id, "size": size, "tiles": made_of})
 
-    return islands, _TileIslands(id_grid, width, height, _edge_tiles(id_grid, width), islets)
+    return islands, _TileIslands(id_grid, width, height, _edge_tiles(id_grid, width), islets, islet_sites)
 
 
 # Edge tiles, flat, found in C: a byte per land id, the grid one integer, a tile kept where a neighbour differs, a wrapped shift keeping more. `None` past 255 lands.
@@ -251,6 +267,18 @@ def _edge_tiles(id_grid: array, width: int) -> array | None:
     return array("I", (match.start() for match in _SET.finditer(kept)))
 
 
+# A mass's own tile nearest its middle, ties to the lower `(x, y)` — a mean alone could fall at sea, off a crescent of rock. Each run offers its nearest column.
+def _middle_tile(runs: list[tuple[int, int, int]], size: int) -> tuple[int, int]:
+    mean_x = sum((a + b - 1) * (b - a) for _, a, b in runs) / (2 * size)
+    mean_y = sum(y * (b - a) for y, a, b in runs) / size
+    column, offers = math.ceil(mean_x - 0.5), []  # the column nearest the mean, a tie going west as `(x, y)` orders it
+    for y, a, b in runs:
+        x = min(max(column, a), b - 1)
+        offers.append(((x - mean_x) ** 2 + (y - mean_y) ** 2, x, y))
+    _, x, y = min(offers)
+    return x, y
+
+
 # Disk-cached `_compute_islands`, one slot per save like every sweep of the map: `actor … --since` weighs two saves, which a single slot would evict in turn.
 def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _TileIslands]:
-    return pickle_cached("islands_v17", save_path, lambda: _compute_islands(save))
+    return pickle_cached("islands_v18", save_path, lambda: _compute_islands(save))

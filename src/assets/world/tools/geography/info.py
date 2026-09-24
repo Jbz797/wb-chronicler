@@ -4,6 +4,7 @@
 
 import math
 import re
+import statistics
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -17,6 +18,7 @@ from shared import (
     arg_parser,
     asset_families,
     asset_sites,
+    bearing,
     biome_lore,
     emit,
     index_by_id,
@@ -33,9 +35,8 @@ from waters import waters_cached
 _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "ridges", "waters")  # the sections `-i` narrows: the rest speak for the whole world
+_CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
-_PATCH_SHARE = 1  # percent of its land a biome must stay under to be sited, however few its tiles
-_PATCH_TILES = 50  # at most this many tiles of a biome on one land, it is a place rather than a landscape: each patch is sited, as a share alone could not find it
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
 
 
@@ -89,7 +90,7 @@ def _body_key(actor: dict, island_of, grid: LazyTileGrid, tile_map: list) -> str
 
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
 def _build_biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v10", save_path, lambda: _compute_biomes(save, save_path))
+    return pickle_cached("biomes_v13", save_path, lambda: _compute_biomes(save, save_path))
 
 
 # Who lives where, land by land, then on the islets and in the water: the living bodies and how many of them think — a hull carries, it is no body.
@@ -210,7 +211,9 @@ def _build_positions(save: dict, save_path: Path, asset_id: str) -> list[dict]:
 
 # The map's own sums, which no list adds up: its water, its land, and that land split between the counted lands and the islets too small to be one.
 def _build_totals(save: dict, save_path: Path) -> dict:
-    islands, _ = compute_islands_cached(save, save_path)
+    islands, island_of = compute_islands_cached(save, save_path)
+    # `(size, x, y)` each, the largest first and ties to the lower `(x, y)`: counted here so that no reader sweeps the map for a tally of rocks.
+    rocks = sorted(island_of.islets(), key=lambda rock: (-rock[0], rock[1], rock[2]))
     frozen, tiles = frozen_tally(save)
     (land, goo, water), counted, tiles = _surfaces(save), sum(island["size"] for island in islands), tiles or 1
     # Each share of what holds it: the land, the water and the frozen of the map, the counted lands and the islets of the land. Goo, its own layer, where it spread.
@@ -218,7 +221,13 @@ def _build_totals(save: dict, save_path: Path) -> dict:
         "frozen": {"pct": round(frozen / tiles * 100, 1), "tiles": frozen},
         "goo": {"pct": round(goo / tiles * 100, 1), "tiles": goo} if goo else None,
         "land": {
-            "islets": {"pct": round((land - counted) / (land or 1) * 100, 1), "tiles": land - counted},
+            "islets": {
+                "count": len(rocks),
+                "largest": {"tiles": rocks[0][0], "x": rocks[0][1], "y": rocks[0][2]} if rocks else None,
+                "median": statistics.median(size for size, *_ in rocks) if rocks else None,
+                "pct": round((land - counted) / (land or 1) * 100, 1),
+                "tiles": land - counted,
+            },
             "lands": {"count": len(islands), "pct": round(counted / (land or 1) * 100, 1), "tiles": counted},
             "pct": round(land / tiles * 100, 1),
             "tiles": land,
@@ -236,23 +245,18 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     tallies: defaultdict[int | None, Counter] = defaultdict(Counter)
     for (island_id, biome), found in patches.items():
         tallies[island_id][biome] = sum(size for size, *_ in found)
-    sizes = {island["id"]: island["size"] for island in islands}
+    sizes: dict[int | None, int] = {island["id"]: island["size"] for island in islands}
+    if None in tallies:  # off every land, the share is of all the islets, as `totals`, `burning` and `frozen` count them
+        sizes[None] = _surfaces(save)[0] - sum(sizes.values())
+    frames = {island["id"]: island for island in islands}  # each land's centroid and bounds, that a biome's largest patch be placed on it
 
-    # A place rather than a landscape: few tiles, and few for its land too — on a small one, fifty tiles of desert are the landscape. Each patch of it sited.
-    small = {
-        (island_id, biome)
-        for island_id, counts in tallies.items()
-        for biome, n in counts.items()
-        if n <= _PATCH_TILES and (island_id is None or n / sizes[island_id] * 100 < _PATCH_SHARE)
-    }
-
-    # No share where it rounds to nothing, nor off the counted lands (as `burning`, `frozen`): the tiles say it, and a lone `paradox` tile is still a subject.
+    # No share where it rounds to nothing: the tiles say it, and a lone `paradox` tile is still a subject.
     per_island = {
         "islets" if island_id is None else str(island_id): [
             {
-                **_patch_fields(patches[(island_id, biome)], (island_id, biome) in small),
+                **_patch_fields(patches[(island_id, biome)], frames.get(island_id)),
                 "biome": biome,
-                "pct": None if island_id is None else round(n / sizes[island_id] * 100, 1) or None,
+                "pct": round(n / sizes[island_id] * 100, 1) or None,
                 "tiles": n,
             }
             for biome, n in counts.most_common()
@@ -300,15 +304,23 @@ def _narrowed(out: dict, land: int) -> dict:
     return narrowed
 
 
-# A place lists every patch it makes; a landscape, how many it breaks into and its largest — a lone patch is the whole biome, whose size the row already says.
-def _patch_fields(found: list[list], small: bool) -> dict:
+# How many patches a biome breaks into, and its largest placed on its land — a count, never the list: a lone patch is the whole biome, whose size the row says.
+def _patch_fields(found: list[list], land: dict | None) -> dict:
     top = max(size for size, *_ in found)
-    # Sited only where shown — every patch of a place, a landscape's largest alone — then sorted, ties in size to the lower `(x, y)`.
-    shown = [{**_site(sum_x / size, sum_y / size, runs), "tiles": size} for size, sum_x, sum_y, runs in found if small or size == top]
-    shown.sort(key=lambda p: (-p["tiles"], p["x"], p["y"]))
-    if len(found) == 1:
-        del shown[0]["tiles"]
-    return {"patches": shown} if small else {"largest": shown[0], "patches": len(found)}
+    # Only the largest sited, ties in size to the lower `(x, y)`.
+    largest = min((_site(sum_x / size, sum_y / size, runs) for size, sum_x, sum_y, runs in found if size == top), key=lambda p: (p["x"], p["y"]))
+    if len(found) > 1:
+        largest["tiles"] = top
+    return {"largest": {**largest, **_side(largest, land)} if land else largest, "patches": len(found)}
+
+
+# Where a patch lies on its land (« the desert covers its north-east »): its heading from the land's centroid, `centre` within a quarter of each half-span
+def _side(patch: dict, land: dict) -> dict:
+    (west, east), (south, north), middle = land["bounds"]["x"], land["bounds"]["y"], land["centroid"]
+    dx, dy = patch["x"] - middle["x"], patch["y"] - middle["y"]
+    if math.hypot(dx / max((east - west) / 2, 1), dy / max((north - south) / 2, 1)) < _CENTRE_SHARE:
+        return {"dir": "centre"}
+    return {"dir": bearing(dx, dy)}
 
 
 # A patch's own tile nearest its middle, ties to the lower `(x, y)` — a mean alone could fall on another ground, or at sea. Each run offers its nearest column.
