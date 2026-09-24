@@ -36,12 +36,12 @@
     "start:prod": "concurrently --kill-others --names \"ng,watch\" -c \"green,cyan\" \"ng serve --configuration production\" \"node scripts/watch-saves.mjs\""
   },
   "dependencies": {
-    "@angular/common": "22.1.7",
-    "@angular/compiler": "22.1.7",
-    "@angular/core": "22.1.7",
-    "@angular/forms": "22.1.7",
-    "@angular/platform-browser": "22.1.7",
-    "@angular/router": "22.1.7",
+    "@angular/common": "22.2.0",
+    "@angular/compiler": "22.2.0",
+    "@angular/core": "22.2.0",
+    "@angular/forms": "22.2.0",
+    "@angular/platform-browser": "22.2.0",
+    "@angular/router": "22.2.0",
     "@ngx-translate/core": "18.0.0",
     "marked": "18.0.14",
     "marked-gfm-heading-id": "4.1.4",
@@ -54,10 +54,10 @@
     "zone.js": "0.16.3"
   },
   "devDependencies": {
-    "@angular/build": "^22.1.8",
-    "@angular/cli": "^22.1.8",
-    "@angular/compiler-cli": "22.1.7",
-    "@angular/language-service": "22.1.7",
+    "@angular/build": "^22.2.0",
+    "@angular/cli": "^22.2.0",
+    "@angular/compiler-cli": "22.2.0",
+    "@angular/language-service": "22.2.0",
     "chokidar": "5.0.0",
     "concurrently": "10.0.5",
     "eslint-config-angular-strict": "22.3.7",
