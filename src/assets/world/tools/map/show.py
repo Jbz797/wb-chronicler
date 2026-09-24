@@ -13,6 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 from shared import arg_parser, take_chapter
 
 _INK = (255, 30, 30)  # a red no biome wears, so the ring never sinks into the ground it marks
+_NORTH_UP = "north up (y grows upward)"  # both maps say it where they are read: a picture's rows count down, the world's y counts up
 _RADIUS = 46  # wide enough to be seen on a map two thousand tiles across, tight enough to leave the spot itself readable
 _STROKE = 6  # thick enough to survive the shrinking a viewer applies to a map this wide
 _TICK_INNER = 60  # where each arm starts, clear of the ring, so the marked tile stays in the open
@@ -79,7 +80,7 @@ def main(argv: list[str]) -> int:
     if args.zoom is not None:
         out = Path(tempfile.gettempdir()) / f"{chapter}_{x}_{y}_zoom{args.zoom}.png"
         _zoomed(image, px, py, args.zoom).save(out)
-        print(f"✓ {chapter} — ({x},{y}) and {args.zoom} tiles each way, north up, the white bar {_ZOOM_BAR} tiles\n  {out}")
+        print(f"✓ {chapter} — ({x},{y}) and {args.zoom} tiles each way, {_NORTH_UP}, the white bar {_ZOOM_BAR} tiles\n  {out}")
         print("  → chronicler: this one is yours to read, for the lie of the ground — open it for the player only if he is to see it")
         return 0
     draw = ImageDraw.Draw(image)
@@ -90,7 +91,7 @@ def main(argv: list[str]) -> int:
 
     out = Path(tempfile.gettempdir()) / f"{chapter}_{x}_{y}.png"  # chapter and tile name it whole: two maps of the same spot are the same picture
     image.save(out)
-    print(f"✓ {chapter} — ({x},{y}) ringed on a map of {width}×{height}\n  {out}")
+    print(f"✓ {chapter} — ({x},{y}) ringed on a map of {width}×{height}, {_NORTH_UP}\n  {out}")
     # Said here rather than in the manual: the picture is for the player's screen, and a chronicler who only reads it has done half the errand.
     print("  → chronicler: open it on the player's screen — looking at it yourself shows him nothing")
     return 0
