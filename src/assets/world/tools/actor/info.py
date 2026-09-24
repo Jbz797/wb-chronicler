@@ -94,7 +94,7 @@ _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a ro
 _DAILY_TILES_PER_SPEED = 25.0  # chronicler.md § Échelle: `speed` 10 walks ~250 tiles a day, its halts counted — far short of 24 hours' worth
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 
-# WB `TileLibrary`: the base tiles a zone counts as ground, all 64 of which `canStartCityHere` wants — the hill left out, ground though it is, as it bars the zone.
+# WB ground, all 64 of a zone's tiles for `canStartCityHere`: the hill left out, ground though it bars; a pit a dry hole (`liquid` 0) till the sea fills it.
 _GROUND_BASES = frozenset({"pit_close_ocean", "pit_deep_ocean", "pit_shallow_waters", "sand", "soil_high", "soil_low"})
 
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
