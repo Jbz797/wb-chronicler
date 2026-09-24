@@ -7,7 +7,6 @@
 # 4. A land mass is an island once it could hold a city: WB `Globals.CITY_MIN_ISLAND_TILES`. Its own `countLandIslands` counts regions instead, which
 #    lets a compact islet straddling four chunks pass while a wider one inside two fails — a tally the game shows nowhere and no chronicle can use.
 
-import pickle
 import re
 import sys
 from array import array
@@ -16,7 +15,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from grid import decode_tile_grid, tile_block, tile_kind, tile_layer
-from shared import CACHE_DIR, save_cache_key, union_root
+from shared import pickle_cached, union_root
 
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
 _CITY_MIN_ISLAND_TILES = 300  # WB `Globals.CITY_MIN_ISLAND_TILES`: under it no city is ever founded, so the land bears no history worth a name.
@@ -252,23 +251,6 @@ def _edge_tiles(id_grid: array, width: int) -> array | None:
     return array("I", (match.start() for match in _SET.finditer(kept)))
 
 
-# Disk-cached `_compute_islands` — key = save `mtime+size`, pickle format, stale entries dropped on write (single-file cache).
+# Disk-cached `_compute_islands`, one slot per save like every sweep of the map: `actor … --since` weighs two saves, which a single slot would evict in turn.
 def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _TileIslands]:
-    key = save_cache_key(save_path)
-    if key is None:
-        return _compute_islands(save)
-    cache_file = CACHE_DIR / f"islands_v17_{key}.pkl"
-    if cache_file.exists():
-        try:
-            with cache_file.open("rb") as f:
-                return pickle.load(f)
-        except Exception:  # noqa: BLE001 — corrupt cache, fall through to recompute.
-            cache_file.unlink(missing_ok=True)
-    result = _compute_islands(save)
-    CACHE_DIR.mkdir(exist_ok=True)
-    for old in CACHE_DIR.glob("islands_*.pkl"):
-        if old.name != cache_file.name:
-            old.unlink(missing_ok=True)
-    with cache_file.open("wb") as f:
-        pickle.dump(result, f)
-    return result
+    return pickle_cached("islands_v17", save_path, lambda: _compute_islands(save))

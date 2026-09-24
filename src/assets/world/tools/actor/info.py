@@ -17,6 +17,7 @@ from islands import compute_islands_cached
 from shared import (
     PROFESSION_KING,
     PROFESSION_LEADER,
+    SAVES_DIR,
     UNITS_PER_MONTH,
     UNITS_PER_YEAR,
     ZONE_TILES,
@@ -96,6 +97,7 @@ _GROUND_BASES = frozenset({"pit_close_ocean", "pit_deep_ocean", "pit_shallow_wat
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
+_PLACE_KEYS = frozenset({"island_id", "x", "y"})  # what `since` says as a path, `moved`, rather than as three fields changed apiece
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
@@ -350,6 +352,25 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
         # The scheme's kind, as a book carries its genre: WB's English for the chronicler, the id for the panel — the save's own `name` is that label localised.
         "type": {"description": kind.get("description"), "id": type_id, "name": kind.get("name")},
     }
+
+
+# A body between two chapters: its path as a heading and a length — never the bearing it lies at from anyone — then each `metadata` field that moved.
+def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, then_ctx: dict, then_save: dict) -> dict:
+    if then is None:
+        return {"new": True}  # born or set down since, with nothing then to weigh it against
+    was = actor_xy(then)
+    was_land = then_ctx["island_lookup"]().get(was)
+    if actor is None:  # WB drops the dead from the save: a body gone is a body dead, its last place all that is left of it
+        return {"asset_id": then.get("asset_id"), "gone": True, "last_seen": {"island_id": was_land, "x": was[0], "y": was[1]}, "name": then.get("name")}
+    out: dict = {}
+    if (now := actor_xy(actor)) != was:
+        dx, dy = now[0] - was[0], now[1] - was[1]
+        out["moved"] = {"dir": bearing(dx, dy), "tiles": round(walk_tiles(dx, dy))}
+        if (land := ctx["island_lookup"]().get(now)) != was_land:
+            out["moved"]["land"] = [was_land, land]
+    before, after = _build_metadata(then, then_ctx, then_save), _build_metadata(actor, ctx, save)
+    changed = {key: [before.get(key), after.get(key)] for key in sorted((before.keys() | after.keys()) - _PLACE_KEYS) if before.get(key) != after.get(key)}
+    return {**out, **({"changed": changed} if changed else {})}
 
 
 # Every living body within the common reach, nearest first, walked at its own gait — a line is built only for a printed circle: `full` never makes the common one.
@@ -766,6 +787,17 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
+# `--since C<n>`, pulled before the chapter to read is: `take_chapter` would take the first `C<n>` on the line for the save to open.
+def _take_since(argv: list[str]) -> tuple[str | None, list[str]]:
+    if "--since" not in argv:
+        return None, argv
+    at = argv.index("--since")
+    value = argv[at + 1] if at + 1 < len(argv) else ""
+    if not (value[:1] == "C" and value[1:].isdigit()):
+        raise ValueError("`--since` takes a chapter, e.g. `--since C2`")
+    return value, argv[:at] + argv[at + 2 :]
+
+
 # `--to` lifted off the command line: an actor id, or a tile as `x,y` — and the words left for the id and the sections.
 def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | str | None, list[str]]:
     if "--to" not in argv:
@@ -844,14 +876,19 @@ def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, 
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    try:
+        since, argv = _take_since(argv)
+    except ValueError as e:
+        print(f"✗ {e}", file=sys.stderr)
+        return 2
+    save_path, argv, chapter = take_chapter(argv)
     try:
         target, argv = _take_target(argv)
     except ValueError as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     if not argv:
-        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>|i<land>|<kind>] [C<n>] — see docs/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>|i<land>|<kind>] [--since C<n>] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         actor_id = int(argv[0])
@@ -861,13 +898,25 @@ def main(argv: list[str]) -> int:
 
     requested = argv[1] if len(argv) > 1 else None
     try:
-        sections = parse_sections(requested, _ALL_SECTIONS) if requested or target is None else ()  # a `--to` alone answers alone
+        sections = parse_sections(requested, _ALL_SECTIONS) if requested or (target is None and since is None) else ()  # `--to` or `--since` alone answers alone
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
     save = load_save(save_path)
     ctx = _build_context(save, save_path)
     actor = ctx["actors_by_id"].get(actor_id)
+    then_save, then_ctx, then = {}, {}, None
+    if since:
+        then_path = SAVES_DIR / since / "map.wbox"
+        if (late := chapter is not None and int(since[1:]) >= int(chapter[1:])) or not then_path.exists():
+            print(f"✗ `--since {since}`: {f'not before {chapter}, the chapter read' if late else 'no such chapter'} — name an earlier one", file=sys.stderr)
+            return 2
+        then_save = load_save(then_path)
+        then_ctx = _build_context(then_save, then_path)
+        then = then_ctx["actors_by_id"].get(actor_id)
+    if actor is None and then is not None and not sections and target is None:  # a body gone is still an answer to `--since`, and to it alone
+        emit({"since": _build_since(None, then, ctx, save, then_ctx, then_save)})
+        return 0
     if actor is None:
         print(f"✗ unknown actor: {actor_id}", file=sys.stderr)
         return 1
@@ -926,6 +975,8 @@ def main(argv: list[str]) -> int:
         out["surroundings"] = _build_surroundings(actor, ctx, requested)
     if "traits" in sections:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
+    if since:
+        out["since"] = _build_since(actor, then, ctx, save, then_ctx, then_save)
     if aims:
         try:
             out["to"] = _build_to(actor, aims, whom, ctx, mark, about)

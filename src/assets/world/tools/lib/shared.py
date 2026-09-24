@@ -11,11 +11,11 @@ import sys
 import zlib
 from bisect import bisect_right
 from collections import Counter, defaultdict
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from functools import cache
 from pathlib import Path
 
-CACHE_DIR = Path(__file__).parent.parent / ".cache"  # holds the save and islands pickles alike; gitignored via the root `.gitignore`
+CACHE_DIR = Path(__file__).parent.parent / ".cache"  # the save pickles and every sweep of the map, a slot per save each; gitignored via the root `.gitignore`
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
@@ -719,7 +719,7 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: b
 
 
 # A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.
-def pickle_cached(name: str, save_path: Path, compute) -> dict:
+def pickle_cached[T](name: str, save_path: Path, compute: Callable[[], T]) -> T:
     key = save_cache_key(save_path)
     cache_file = CACHE_DIR / f"{name}_{key}.pkl" if key else None
     if cache_file and cache_file.exists():
