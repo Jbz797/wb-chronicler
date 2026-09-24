@@ -86,6 +86,7 @@ export class ReaderPage {
   // Fills the canvas placeholders `marked` left in the prose — subjects and heraldry alike — now that the rendered chapter sits in the DOM.
   protected onReady(): void {
     const root = this._element.nativeElement;
+    this._plainTags([...root.querySelectorAll(':scope h1, :scope h2'), ...root.querySelectorAll(':scope .chapter hr + p:last-child')]); // before the paint
     ActorSpriteHelpers.paintAll(root, this._registry.persons());
     BookSpriteHelpers.paintAll(root, this._registry.books());
     KingdomSpriteHelpers.paintAll(root, this._registry.kingdoms());
@@ -133,9 +134,22 @@ export class ReaderPage {
     const line = Number.parseFloat(getComputedStyle(opening).lineHeight);
     opening.classList.toggle('plain-opening', opening.getBoundingClientRect().height < line * 2);
     if (!opening.classList.contains('plain-opening')) return;
+    this._plainTags([opening]);
     await this._loadFaces(opening);
     // The tags too, not the paragraph alone: a fit and a late sprite can cancel out within one frame, leaving the height the observer last saw unchanged.
     for (const element of [opening, ...opening.querySelectorAll<HTMLElement>('.entity-tag')]) this._openingObserver.observe(element);
+  }
+
+  // Tags read as plain words where a plate would crowd the line — a title, the epigraph, the closing hook: the name in bold, in its species' hue.
+  private _plainTags(elements: Element[]): void {
+    const tags = elements.flatMap(element => [...element.querySelectorAll(':scope .entity-tag, :scope .icon-wrap')]);
+    for (const tag of tags) {
+      const plain = document.createElement('span');
+      plain.classList.add('plain-tag');
+      plain.textContent = tag.querySelector(':scope .entity-name')?.textContent ?? tag.textContent;
+      plain.style.color = SPECIES_COLORS[this._speciesOf(tag)] ?? ''; // none for a resource, or a species without a hue: the line's own ink then
+      tag.replaceWith(plain);
+    }
   }
 
   // One frame after the prose lands, which is when the viewport has its full height — the canvas sprites are sized in CSS and never move it afterwards.
@@ -144,6 +158,13 @@ export class ReaderPage {
     if (target <= 0) return;
     const viewport = this._scroller().adapter.viewportElement;
     requestAnimationFrame(() => (viewport.scrollTop = target));
+  }
+
+  // The species a tag stands for: a soul's off the registry, where its portrait shows it; any other plate's, or a `[s]` marker's, off its species glyph.
+  private _speciesOf(tag: Element): string {
+    const person = tag.querySelector<HTMLElement>(':scope canvas[data-person]')?.dataset.person;
+    const glyph = tag.querySelector(':scope img[src*="/species/"]')?.getAttribute('src') ?? '';
+    return person ? (this._registry.persons()[person]?.asset_id ?? '') : (/\/species\/([^/.]+)\.png$/.exec(glyph)?.[1] ?? '');
   }
 
 }

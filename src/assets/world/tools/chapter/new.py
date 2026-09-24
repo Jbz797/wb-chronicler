@@ -168,6 +168,7 @@ _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # the reader's 
 _SHORT_AGES = frozenset({"age_despair", "age_ice"})
 _SHORT_AGE_YEARS = (30, 40)
 _SUMMARY_CAP = 400
+_TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
 _TOOLS = Path(__file__).parent.parent
 
@@ -463,10 +464,10 @@ def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None,
 def _print_step_five(n: int, facts: dict) -> None:
     carrying = facts["carried"] and not facts["h1"]  # keep or rewrite is the first pass's call: once the H1 is in, a carried descriptor reads as checked
     sized = not facts["h1"] or (facts["favorite"] and (not facts["descriptor"] or carrying)) or facts["owed"]  # any length still to write
-    if not (h1 := facts["h1"]):
+    if not facts["h1"]:
         print(f"  → the final H1, alone and in place of « # {facts['draft']} »: {_H1_CAP} characters at most")
-    elif len(h1) > _H1_CAP:
-        print(f"  ✗ H1, {len(h1)} characters of {_H1_CAP}")
+    elif facts["h1_length"] > _H1_CAP:
+        print(f"  ✗ H1, {facts['h1_length']} characters of {_H1_CAP}")
     if facts["favorite"]:
         if not (text := facts["descriptor"]):
             print(
@@ -649,6 +650,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
     carried = bool(descriptor) and (before.get("metadata") or {}).get("id") == (favorite.get("metadata") or {}).get("id") and descriptor == before.get("descriptor")
     written = {tier: summary for tier in _TRAIT_SOURCES if isinstance(summary := (chapter.get(tier) or {}).get("traits"), str)}
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
+    h1_length = len(_TAG.sub(lambda m: m[1] or "", h1 or ""))  # as read: a tag in the title shows its name alone, never its markup
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: len(summary) for tier, summary in sorted(written.items()) if len(summary) > _SUMMARY_CAP}
     misplaced = _misplaced_places(n)
@@ -658,10 +660,11 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "audited": sorted(fresh + (["favorite.descriptor"] if favorite and not carried else [])),
         "carried": carried,
         "descriptor": descriptor,
-        "done": 0 < len(h1 or "") <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (owed or long or misplaced),
+        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (owed or long or misplaced),
         "draft": draft,
         "favorite": bool(favorite),
         "h1": h1,
+        "h1_length": h1_length,
         "length": len(re.sub(r"\s+", " ", prose).strip()),  # blanks folded, as the docs' budget counts: a blank line or an indent is no prose
         "long": long,
         "misplaced": misplaced,
