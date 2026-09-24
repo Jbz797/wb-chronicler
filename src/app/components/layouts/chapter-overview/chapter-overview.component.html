@@ -84,7 +84,12 @@
   <ng-template #subspeciesChip><app-panel-extra panel="subspecies" /></ng-template>
 
   <nz-collapse *appFresh="c" nzAccordion nzSize="small">
-    <nz-collapse-panel [nzActive]="activePanel() === 'world-stats'" [nzHeader]="worldStatsHeader" (nzActiveChange)="onPanelToggle('world-stats', $event)">
+    <nz-collapse-panel
+      [nzActive]="isOpen('world-stats', worldHasContent())"
+      [nzCollapsible]="collapsible(worldHasContent())"
+      [nzHeader]="worldStatsHeader"
+      (nzActiveChange)="onPanelToggle('world-stats', $event)"
+    >
       <ng-scrollbar class="panel-scroll">
         <app-world-stats />
       </ng-scrollbar>

@@ -117,17 +117,17 @@ export const SKILL_STATS: StatConfig[] = [
   { key: 'intelligence', label: 'ui_intelligence' },
 ];
 
-// Snapshot world stats — display order: demography → environment → society → conflict → culture → activity. `hideIfZero` hides outbreak-style rows when idle.
+// Snapshot world stats — display order: demography → environment → society → conflict → culture → activity. A row at 0 hides itself.
 // `icon` names the sprite in `assets/img/world/`, filed by concept: `population.png` draws a crowd, whichever crowd the key happens to count. `suffix`: a share.
-export const SNAPSHOT_STATS: { hideIfZero?: boolean; icon?: string; key: SnapshotStat; label: string; suffix?: string }[] = [
+export const SNAPSHOT_STATS: { icon?: string; key: SnapshotStat; label: string; suffix?: string }[] = [
   { icon: 'population', key: 'sapient_population', label: 'ui_sapient_population' },
-  { hideIfZero: true, key: 'sick', label: 'ui_sick' },
-  { hideIfZero: true, key: 'infected', label: 'ui_infected' },
+  { key: 'sick', label: 'ui_sick' },
+  { key: 'infected', label: 'ui_infected' },
   { key: 'wild_creatures', label: 'ui_creatures' },
   { key: 'subspecies', label: 'ui_subspecies_count' },
   { key: 'trees', label: 'ui_trees' },
   { key: 'vegetation', label: 'ui_other_vegetation' },
-  { hideIfZero: true, icon: 'frozen_tiles', key: 'frozen_pct', label: 'ui_frozen_surface', suffix: '%' },
+  { icon: 'frozen_tiles', key: 'frozen_pct', label: 'ui_frozen_surface', suffix: '%' },
   { key: 'kingdoms', label: 'ui_kingdoms' },
   { key: 'cities', label: 'ui_cities' },
   { key: 'buildings', label: 'ui_buildings' },
@@ -135,7 +135,7 @@ export const SNAPSHOT_STATS: { hideIfZero?: boolean; icon?: string; key: Snapsho
   { key: 'families', label: 'ui_families' },
   { key: 'clans', label: 'ui_clans' },
   { key: 'alliances', label: 'ui_alliances' },
-  { hideIfZero: true, key: 'wars', label: 'ui_wars' },
+  { key: 'wars', label: 'ui_wars' },
   { key: 'armies', label: 'ui_armies' },
   { key: 'languages', label: 'ui_languages' },
   { key: 'cultures', label: 'ui_cultures' },

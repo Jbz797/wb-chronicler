@@ -10,7 +10,8 @@ export interface PlaceArea { centroid: TilePoint; chapter: string; name: string;
 export interface Places { islands: Record<string, PlaceArea>; lakes: Record<string, PlaceArea>; places: Record<string, PlaceSpot> }
 
 // A spot the chronicler named — its key is the name — sited by one tile and filed by what it is, in the chronicle's own word (`lisière`, `îlot`…).
-export interface PlaceSpot { centroid: TilePoint; chapter: string; island_id?: number; kind: string }
+// Its `island_id` stays in the file for `new.py`, which checks the tile against it: no panel reads it.
+export interface PlaceSpot { centroid: TilePoint; chapter: string; kind: string }
 
 // The map's extent in tiles — the preview's own size, WB drawing one pixel a tile.
 export interface TileExtent { height: number; width: number }

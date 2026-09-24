@@ -6,8 +6,9 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { DeltaComponent } from '..';
-import { CUMULATIVE_STATS, DEATH_CAUSES, LEADER_GROUPS, LEADER_MEASURES, SNAPSHOT_STATS } from '../../../../constants';
-import { LeaderGroup, LeaderMeasure, LeaderRow, SnapshotRow } from '../../../../interfaces';
+import { DEATH_CAUSES, LEADER_GROUPS, LEADER_MEASURES } from '../../../../constants';
+import { WorldHelpers } from '../../../../helpers';
+import { LeaderGroup, LeaderMeasure, LeaderRow } from '../../../../interfaces';
 import { CompactPipe, ExactPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 
@@ -24,46 +25,26 @@ export class WorldStatsComponent {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _translate = inject(TranslateService);
 
-  protected readonly cumulativeStats = CUMULATIVE_STATS;
   protected readonly deathCauses = DEATH_CAUSES;
-  protected readonly snapshotStats = SNAPSHOT_STATS;
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  // « Activité récente » rows: cumulative deltas, kept above zero — the schemes afoot have their own list below.
-  protected readonly activityRows = computed<{ icon: string; label: string; value: number }[]>(() => {
-    const current = this.currentChapter()?.meta.world;
-    if (!current) return [];
-    const previous = this._chronicler.previousChapter()?.meta.world.cumulative;
-    const rows: { icon: string; label: string; value: number }[] = this.cumulativeStats
-      .map(({ key, label }) => ({ icon: key, label, value: (current.cumulative?.[key] ?? 0) - (previous?.[key] ?? 0) }))
-      .filter(r => r.value > 0);
-    return rows;
+  // « Activité récente » rows, off the same reading the overview weighs to show the panel at all.
+  protected readonly activityRows = computed(() => {
+    const world = this.currentChapter()?.meta.world;
+    return world ? WorldHelpers.activityRows(world, this._chronicler.previousChapter()?.meta.world) : [];
   });
-  // Per-cause death delta vs previous chapter — Python omits 0-counts, so missing keys default to 0.
+  // Per-cause death delta vs the previous chapter — `null` on a world that never counted a death.
   protected readonly deathsSincePrevious = computed(() => {
-    const current = this.currentChapter()?.meta.world.cumulative?.deaths;
-    if (!current) return null;
-    const previous = this._chronicler.previousChapter()?.meta.world.cumulative?.deaths;
-    return Object.fromEntries(this.deathCauses.map(({ key }) => [key, (current[key] ?? 0) - (previous?.[key] ?? 0)]));
+    const world = this.currentChapter()?.meta.world;
+    return world ? WorldHelpers.deathsSince(world, this._chronicler.previousChapter()?.meta.world) : null;
   });
   // One « Records » table per group, flattened for the template — a table whose records all went unclaimed hides itself.
   protected readonly leaderTables = computed(() => LEADER_GROUPS.map(({ group, label, measures }) => ({ group, label, rows: this._leaderRows(group, measures) })));
-  // Rows resolved here rather than in the template: every count sits under `snapshot`, except the hulls, which own a block so the chronicler can list them.
-  protected readonly snapshotRows = computed<Omit<SnapshotRow, 'hideIfZero'>[]>(() => {
+  // The world's counts, a zero left out unless it just fell there.
+  protected readonly snapshotRows = computed(() => {
     const world = this.currentChapter()?.meta.world;
-    if (!world) return [];
-    const before = this._chronicler.previousChapter()?.meta.world;
-    // `infected` is omitted at 0 (outbreak-style), so an absent count reads as 0 on either side.
-    const rows: SnapshotRow[] = this.snapshotStats.map(({ hideIfZero, icon, key, label, suffix }) => {
-      const value = world.snapshot?.[key] ?? 0;
-      return { delta: before ? value - (before.snapshot?.[key] ?? 0) : undefined, hideIfZero, icon, key, label, suffix, value };
-    });
-    const boats = world.boats?.total ?? 0;
-    rows.push({
-      delta: before && boats - (before.boats?.total ?? 0), hideIfZero: true, icon: undefined, key: 'boats', label: 'ui_boats', suffix: undefined, value: boats,
-    });
-    return rows.filter(r => !r.hideIfZero || r.value > 0).map(({ delta, icon, key, label, suffix, value }) => ({ delta, icon, key, label, suffix, value }));
+    return world ? WorldHelpers.snapshotRows(world, this._chronicler.previousChapter()?.meta.world) : [];
   });
   // Causes with > 0 deaths this chapter, sorted by count desc — 0-rows are hidden (16 categories incl. peste/poison/etc. that stay idle most chapters).
   protected readonly sortedDeathCauses = computed(() => {

@@ -12,6 +12,7 @@ import { NgScrollbarModule } from 'ngx-scrollbar';
 
 import { CITY_SIZE_TERMS, HISTORY_DIR, KINGDOM_SIZE_TERMS } from '../../../constants';
 import { FreshDirective } from '../../../directives';
+import { WorldHelpers } from '../../../helpers';
 import { ChapterOverviewPanel, ChapterTier, WorldInfo } from '../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../services';
 
@@ -87,6 +88,11 @@ export class ChapterOverviewComponent {
     return this._translate.instant((kingdom ? KINGDOM_SIZE_TERMS[rung] : undefined) ?? 'ui_kingdom') as string;
   });
   protected readonly world = toSignal(this._http.get<WorldInfo>(`${HISTORY_DIR}/world.json`));
+  // A bare world with nothing to count, no death, no scheme and no record leaves « Monde » without a line: its panel is disabled, as an empty tier's is.
+  protected readonly worldHasContent = computed(() => {
+    const world = this.currentChapter()?.meta.world;
+    return !!world && WorldHelpers.hasContent(world, this._chronicler.previousChapter()?.meta.world);
+  });
 
   // ng-zorro 22 dropped `nzDisabled` for `nzCollapsible`, whose union has no "default" member — `undefined` restores it (cast for `exactOptionalPropertyTypes`).
   protected collapsible = (enabled: unknown): 'disabled' | 'header' | 'icon' => (enabled ? undefined : 'disabled') as 'disabled';

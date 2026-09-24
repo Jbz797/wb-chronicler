@@ -12,3 +12,4 @@ export * from './sprites/language-sprite.helpers';
 export * from './sprites/religion-sprite.helpers';
 export * from './sprites/sprite.helpers';
 export * from './sprites/subspecies-sprite.helpers';
+export * from './world.helpers';
