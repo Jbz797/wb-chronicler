@@ -240,15 +240,15 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
                 islets[j] = size
                 islet_seeds.append((j, size))
 
-    # Phase 5: the islands, with their `tiles` field — the ground they are made of, Block/Lava tiles from Phase 4 included. What grows on it is `geography biomes`.
+    # Phase 5: the islands and the ground they are made of, Block/Lava tiles from Phase 4 included. What grows on it is `geography biomes`.
     islands = []
     for new_id, old_id in enumerate(order, start=1):
         size, sum_x, sum_y, west, east, south, north = frames[old_id]
         counter = island_tile_kinds[old_id]
-        made_of = " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / size * 100)) > 0)
+        ground = " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / size * 100)) > 0)
         # `size` against the box says how ragged a land is: both of the whole land, mountains in, as the centroid is.
         bounds = {"x": [west, east], "y": [south, north]}
-        islands.append({"bounds": bounds, "centroid": {"x": sum_x // size, "y": sum_y // size}, "id": new_id, "size": size, "tiles": made_of})
+        islands.append({"bounds": bounds, "centroid": {"x": sum_x // size, "y": sum_y // size}, "ground": ground, "id": new_id, "size": size})
 
     return islands, _TileIslands(id_grid, width, height, _edge_tiles(id_grid, width), islets, islet_sites)
 
@@ -281,4 +281,4 @@ def _middle_tile(runs: list[tuple[int, int, int]], size: int) -> tuple[int, int]
 
 # Disk-cached `_compute_islands`, one slot per save like every sweep of the map: `actor … --since` weighs two saves, which a single slot would evict in turn.
 def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _TileIslands]:
-    return pickle_cached("islands_v18", save_path, lambda: _compute_islands(save))
+    return pickle_cached("islands_v19", save_path, lambda: _compute_islands(save))
