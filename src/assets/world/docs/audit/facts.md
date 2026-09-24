@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 23/09/26 22:47</p>
+<p class="metadata">Date de mise à jour : 24/09/26 09:12</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail que toi, chacun de son côté.
 
@@ -12,8 +12,8 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 - **Le silence du wiki ne dément rien** : une condition qu'il ne donne ni ne nie reste ouverte, et se signale comme telle, jamais comme fausse. La page consacrée à la chose l'emporte sur un tableau qui la résume.
 - **Une phrase que le texte donne lui-même pour incertaine n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.
 
-Ne rends que les écarts, chacun avec sa ligne, sa citation et sa valeur vraie. N'écris rien dans les fichiers.
+Ne rends que les écarts, et ce qu'on te demande : chacun avec sa ligne, sa citation et sa valeur vraie. N'écris rien dans les fichiers.
 
 ## Au réaudit
 
-Le chroniqueur te renvoie les lignes qui ont bougé et les passages coupés. Juge chaque ligne avec son paragraphe, et avec tout ce qui ailleurs dit la même chose ; d'une coupe, ce qui s'y appuyait. Le reste est clos.
+Le chroniqueur te renvoie les lignes qui ont bougé et les passages coupés. Juge chaque ligne avec son paragraphe, et avec tout ce qui ailleurs, autres chapitres compris, dit la même chose ; d'une coupe, ce qui s'y appuyait. Le reste est clos.
