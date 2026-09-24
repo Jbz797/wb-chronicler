@@ -63,8 +63,8 @@ _AFTER_REPORTS = (
     " correct each confirmed gap, one raised by a single fact check checked all the same, a tool settling a disagreement",
     "mend first what a section stands on — its closing thread, a superlative, a date — since its fall rewrites the rest; correct where that suffices, rewrite"
     " only what it cannot mend, and read off a tool any figure a rewrite brings, never from the draft, a report or memory",
-    "then seek the same value or word everywhere: chapter.md, title and epigraph included, and your prose in chapter.json",
-    "what the story check proposes is yours to take or leave, and in your own hand",
+    "then seek the same value or word everywhere: chapter.md with its title and epigraph, and your prose in chapter.json",
+    "the story check's proposals and compliance's better-possible are yours to take or leave, in your own hand",
     "a touch of manner varies or cuts, never swaps a word wherever it recurs, and goes back to no one",
     "what asserts anything new goes back to the same auditors, flagged as new, the lines alone and never your reading of them — each resumed by message"
     " on its report's id, noted as a compaction drops them, a fresh one only if that fails; a cut goes back as the passage it took out, what leaned on it"
@@ -351,7 +351,7 @@ def _finalize() -> int:
     written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
     auditors = sum(copies for _, copies in _AUDITORS)
     print(f"  → the audit: {auditors} sub-agents new to this chapter, at once, each handed its line below as it stands — nothing of your analysis nor notes")
-    print("    docs/audit/ is theirs: you never read it, writing for your reader and not for the audit")
+    print("    docs/audit/ is theirs: never read it, you write for your reader, not the audit")
     for sheet, copies in _AUDITORS:
         many = f", {'twice' if copies == 2 else f'{copies} times'}, each on its own" if copies > 1 else ""
         target = chapter_md if sheet == "story" else chapter_md + written  # the story read takes the chapter alone: the chronicle is its ground
