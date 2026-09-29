@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 29/09/26 12:36</p>
+<p class="metadata">Date de mise à jour : 29/09/26 12:39</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -29,7 +29,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `actor` :
 
-- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`) ; il rend son `circle` (comme `surroundings`), chaque part en tuiles et en temps — `walk_` à pied, `swim_` à la nage, `sail_` à bord, `total_` le tout dès qu'il y en a deux —, le temps en `…_minutes` sous l'heure, puis `…_hours`, que `march_days` remplace passé un jour de marche ; en coque, il ne compte que la marche, la coque voguant jour et nuit, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée. `with_boat` est une autre façon d'y aller : rien ne s'additionne à la main
+- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`) ; il rend son `circle` (comme `surroundings`), chaque part en tuiles et en temps — `walk_` à pied, `swim_` à la nage, `sail_` à bord, `total_` le tout dès qu'il y en a deux —, le temps en `…_minutes` sous l'heure, puis `…_hours`, que `march_days` remplace pour le tout passé un jour de marche ; en coque, il ne compte que la marche, la coque voguant jour et nuit, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée. `with_boat` est une autre façon d'y aller : rien ne s'additionne à la main
 - `--since C<n>` : ce qui a bougé depuis — `moved` est le trajet fait, quand `--to` ne donne qu'un gisement
 
 ### `geography` :
