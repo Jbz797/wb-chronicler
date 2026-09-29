@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_at, crossed_on, maturation_months
+from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_at, crossed_on, is_egg, maturation_months
 from grid import frozen_tally
 from islands import compute_islands_cached
 from shared import (
@@ -37,6 +37,7 @@ from shared import (
     is_boat,
     is_sapient,
     kingdom_score_dimensions,
+    life_stage,
     light,
     load_data,
     load_save,
@@ -312,6 +313,8 @@ def _build_roster(save: dict, island_of, kinds: set[str] | None, trait: str | No
     rows = []
     for actor, here, change in sorted(bodies, key=lambda body: (body[1] is None, body[1] or 0, body[0]["id"])):  # land by land, off every land last
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
+        lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))  # the raw span alone, as `surroundings` reads a stage
+        stage = life_stage(age, adult, lifespan, is_egg(actor, ctx))
         rows.append(
             {
                 "adult_on": crossed_on(actor, adult) if age < adult else None,
@@ -319,6 +322,7 @@ def _build_roster(save: dict, island_of, kinds: set[str] | None, trait: str | No
                 "breeds_on": crossed_on(actor, breeding) if age < breeding else None,
                 "id": actor["id"],
                 "island_id": here if here is not None else _OFF_LAND,  # said outright, as `was_on` is: a missing one read as still on the land left
+                "life_stage": None if stage == "adult" else stage,  # silent at `adult`, as in `surroundings`: on every line it would push the longest past inline
                 "name": actor.get("name"),
                 "sex": sex_label(actor),
                 **change,
