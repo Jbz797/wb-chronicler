@@ -16,6 +16,7 @@ from grid import LAND_LAYERS, LazyTileGrid, frozen_tally, listed_tiles, off_land
 from islands import compute_islands_cached
 from shared import (
     MAX_LISTED,
+    SAVES_DIR,
     actor_xy,
     arg_parser,
     asset_families,
@@ -31,6 +32,7 @@ from shared import (
     parse_sections,
     pickle_cached,
     take_chapter,
+    take_since,
     union_root,
 )
 from waters import waters_cached
@@ -40,6 +42,7 @@ _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one
 _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
+_IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `--since` weighs a land, a site or a biome against itself
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
 
@@ -252,6 +255,34 @@ def _build_totals(save: dict, save_path: Path) -> dict:
     }
 
 
+# Every section asked of one save, as `main` prints it — `positions` left `None` where nothing answers, for `main` to refuse or `--since` to read as none.
+def _collect(save: dict, save_path: Path, sections: tuple[str, ...], kinds: set[str] | None, island: int | str | None) -> dict:
+    out: dict = {}
+    if "biomes" in sections:
+        out["biomes"] = _build_biomes(save, save_path)
+    if "bodies" in sections:
+        out["bodies"] = _build_bodies(save, save_path)
+    if "burning" in sections:
+        out["burning"] = _build_burning(save, save_path)
+    if "entity_types" in sections:
+        out["entity_types"] = _build_entity_types(save)
+    if "frozen" in sections:
+        out["frozen"] = _build_frozen(save, save_path)
+    if "gear" in sections:
+        out["gear"] = _build_gear(save, save_path)
+    if "islands" in sections:
+        out["islands"] = compute_islands_cached(save, save_path)[0]
+    if "positions" in sections and kinds is not None:
+        out["positions"] = _build_positions(save, save_path, kinds, island)
+    if "ridges" in sections:
+        out["ridges"] = compute_islands_cached(save, save_path)[1].ridges()
+    if "totals" in sections:
+        out["totals"] = _build_totals(save, save_path)
+    if "waters" in sections:
+        out["waters"] = waters_cached(save, save_path)
+    return out
+
+
 # The sweep itself, run once per save: every land tile of the map asked its biome, which is why `_build_biomes` keeps the answer on disk.
 def _compute_biomes(save: dict, save_path: Path) -> dict:
     islands, island_of = compute_islands_cached(save, save_path)
@@ -283,6 +314,24 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
     named = {row["biome"] for rows in per_island.values() for row in rows}
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
+
+
+# What moved between two readings, `[then, now]` at each leaf that differs — rows matched by `_IDENTITIES`, `new` or `gone` said whole; `None` if nothing did.
+def _diff(then, now):
+    # A tally said as text, `38 bodies · 23 sapient`, weighed part by part — only the count that moved comes out, and a count not there is 0, not a row gone
+    if isinstance(then, str | None) and isinstance(now, str | None):
+        before, after = _tally(then or ""), _tally(now or "")
+        if before is not None and after is not None:
+            then, now = ({kind: tally.get(kind, 0) for kind in {**before, **after}} for tally in (before, after))
+    if isinstance(then, list) and isinstance(now, list) and (key := _row_identity([*then, *now])):
+        then, now = ({str(row[key]): {k: v for k, v in row.items() if k != key} for row in rows} for rows in (then, now))  # the key says it once
+    if isinstance(then, dict) and isinstance(now, dict):
+        keys = [k for k in [*now, *(k for k in then if k not in now)] if k != "info"]  # `info` hints at a flag, it is no reading of the world
+        moved = {k: d for k in keys if (d := _diff(then.get(k), now.get(k))) is not None}
+        return moved or None
+    if then == now:
+        return None
+    return {"new": now} if then is None else {"gone": then} if now is None else [then, now]  # a bare `None` would drop out of a pair, and hide which it was
 
 
 # `-i` as a land's id, or the islets or the water that the bucketed sections count beside the lands.
@@ -339,6 +388,11 @@ def _patch_fields(found: list[list], land: dict | None) -> dict:
     return {"largest": {**largest, **_side(largest, land)} if land else largest, "patches": len(found)}
 
 
+# The field a list of rows is matched by across two chapters, if every row carries one: an island's or a site's `id`, a biome's name. `None`: compared whole.
+def _row_identity(rows: list) -> str | None:
+    return next((key for key in _IDENTITIES if rows and all(isinstance(row, dict) and key in row for row in rows)), None)
+
+
 # Where a patch lies on its land (« the desert covers its north-east »): its heading from the land's centroid, `centre` within a quarter of each half-span
 def _side(patch: dict, land: dict) -> dict:
     (west, east), (south, north), middle = land["bounds"]["x"], land["bounds"]["y"], land["centroid"]
@@ -371,7 +425,24 @@ def _surfaces(save: dict) -> tuple[int, int, int]:
     return land, goo, len(save.get("tileArray") or []) * sum((save.get("tileAmounts") or [[]])[0]) - land - goo
 
 
+# A tally line cut into its counts, `{kind: n}` — `2 mushroom_white | 1 mushroom_green`, `7.5% · 19320 permafrost` (share: `pct`); `None` if a part is no count.
+def _tally(text: str) -> dict[str, float] | None:
+    parts = {}
+    for part in re.split(r" \| | · ", text) if text else ():  # no line at all: nothing counted there
+        value, _, kind = part.partition(" ")
+        try:
+            parts[{"body": "bodies"}.get(kind, kind) or "pct"] = float(value.removesuffix("%"))  # `1 body` and `2 bodies` one count
+        except ValueError:
+            return None
+    return {kind: int(n) if n.is_integer() else n for kind, n in parts.items()}
+
+
 def main(argv: list[str]) -> int:
+    try:
+        since, argv = take_since(argv)
+    except ValueError as e:
+        print(f"✗ {e}", file=sys.stderr)
+        return 2
     save_path, argv, _ = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
     parser = arg_parser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
@@ -402,46 +473,40 @@ def main(argv: list[str]) -> int:
         print(f"✗ {', '.join(unbucketed)}: no {args.island} to narrow to — `-i {args.island}` narrows {', '.join(_BUCKETED)}", file=sys.stderr)
         return 2
 
+    then_path = SAVES_DIR / since / "map.wbox" if since else None
+    if then_path and not then_path.exists():
+        print(f"✗ no save for {since}", file=sys.stderr)
+        return 2
     save = load_save(save_path)
     if isinstance(args.island, int) and args.island not in {land["id"] for land in compute_islands_cached(save, save_path)[0]}:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
         return 2
-    out: dict = {}
-    if "biomes" in sections:
-        out["biomes"] = _build_biomes(save, save_path)
-    if "bodies" in sections:
-        out["bodies"] = _build_bodies(save, save_path)
-    if "burning" in sections:
-        out["burning"] = _build_burning(save, save_path)
-    if "entity_types" in sections:
-        out["entity_types"] = _build_entity_types(save)
-    if "frozen" in sections:
-        out["frozen"] = _build_frozen(save, save_path)
-    if "gear" in sections:
-        out["gear"] = _build_gear(save, save_path)
-    if "islands" in sections:
-        islands, _ = compute_islands_cached(save, save_path)
-        out["islands"] = islands
+    kinds, families = None, asset_families(save) if "positions" in sections else {}
     if "positions" in sections and wanted is not None:
-        families = asset_families(save)
         kinds, bodies = asset_kinds(families, wanted), {a.get("asset_id") for a in save.get("actors_data") or [] if not is_boat(a)}  # hulls stay sited here
         if said := [word for word in wanted.split(",") if asset_kinds(families, word) & bodies]:  # a body's roll is `roster`'s, with its sex and dates
             print(f"✗ {', '.join(said)}: bodies are listed by `world … roster -t`, `positions` sites the rest", file=sys.stderr)
             return 2
-        if (positions := _build_positions(save, save_path, kinds, args.island)) is None:  # a word nothing answers to, never a silent `{}`
-            print(f"✗ no {wanted} in this world — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
+    out = _collect(save, save_path, sections, kinds, args.island)
+    if then_path:  # both chapters read alike, then only what moved between them: a section that holds still says so, never a silent `{}`
+        then = _collect(load_save(then_path), then_path, sections, kinds, args.island)
+        for reading in (out, then):  # a kind one chapter lacks reads as none there, not as a question left unanswered
+            if "positions" in reading and reading["positions"] is None:
+                reading["positions"] = []
+        if args.island is not None:
+            out, then = _narrowed(out, args.island), _narrowed(then, args.island)
+        if not isinstance(moved := _diff(then, out), dict):  # both readings are dicts, so what moved is one, or nothing
+            print(f"✗ nothing moved in {', '.join(sections)} since {since}", file=sys.stderr)
             return 1
-        if not positions:
-            where = f"land {args.island}" if isinstance(args.island, int) else f"the {args.island}"
-            print(f"✗ no {wanted} on {where} — without `-i`, `positions` says which lands hold one", file=sys.stderr)
-            return 1
-        out["positions"] = positions
-    if "ridges" in sections:
-        out["ridges"] = compute_islands_cached(save, save_path)[1].ridges()
-    if "totals" in sections:
-        out["totals"] = _build_totals(save, save_path)
-    if "waters" in sections:
-        out["waters"] = waters_cached(save, save_path)
+        emit(moved)
+        return 0
+    if "positions" in out and out["positions"] is None:  # a word nothing answers to, never a silent `{}`
+        print(f"✗ no {wanted} in this world — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
+        return 1
+    if "positions" in out and not out["positions"]:
+        where = f"land {args.island}" if isinstance(args.island, int) else f"the {args.island}"
+        print(f"✗ no {wanted} on {where} — without `-i`, `positions` says which lands hold one", file=sys.stderr)
+        return 1
 
     emit(out if args.island is None else _narrowed(out, args.island))
     return 0
