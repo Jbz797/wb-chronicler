@@ -260,6 +260,9 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         elif mating:  # a partner wanted, none to be had: a sexed kind of one sex says which, else blood or pledges bar every pair
             sexes = {sex_label(actor) for actor in mating}
             row["missing"] = ({"female": "male", "male": "female"}[sexes.pop()]) if len(sexes) == 1 and all(sexed.values()) else "partner"
+        # A barren lineage beside fertile ones, its bodies by lineage: WB wants `needs_mate` of both lovers, so none of them ever pairs, not even across lineages.
+        if (mating or lone) and (barren := Counter(sid for actor in bodies if (sid := actor.get("subspecies")) is not None and mode.get(sid) is None)):
+            row["barren"] = {str(sid): count for sid, count in sorted(barren.items())}  # ids as JSON keys, in their numeric order
         if births:
             row["birth_on"] = min(births)
         rows.append((row.get("birth_on", inf), row))  # the first birth leads: what the chronicle asks is when a body is born, not when two come of age
