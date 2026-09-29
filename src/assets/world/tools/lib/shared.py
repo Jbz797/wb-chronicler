@@ -955,11 +955,20 @@ def score_totals(ids: list[int], dimensions: dict[str, dict]) -> Counter:
     return totals
 
 
-# Who stands out among a body's own — its leading families and its most singular souls, each measure's first place. Shared by every tier that rosters people.
-def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of, world_time: float) -> dict:
-    if len(actors) < MIN_RANK_PEERS:  # the bar a rank clears too: under four, a first place tells the body's size and not who holds it
-        return {}
-    return {"families": _family_leaders(actors, families_by_id, world_time), "persons": _person_leaders(actors, children, stat_of, world_time)}
+# A body's leading families and singular souls, each measure's first place, for every tier that rosters people; no families where one would win every row
+def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of, world_time: float, families: bool = True) -> dict:
+    peers = {"persons": len(actors)}
+    if families:
+        peers["families"] = len({actor.get("family") for actor in actors} & families_by_id.keys())
+    out: dict = {}
+    # The bar a rank clears too: under four, a first place tells the body's size and not who holds it — nor is a block weighed that could name no one
+    if peers["persons"] >= MIN_RANK_PEERS:
+        out["persons"] = _person_leaders(actors, children, stat_of, world_time)
+    if peers.get("families", 0) >= MIN_RANK_PEERS:
+        out["families"] = _family_leaders(actors, families_by_id, world_time)
+    if short := unranked({block: (count, MIN_RANK_PEERS) for block, count in peers.items()}):
+        out["unranked"] = short
+    return out
 
 
 # The rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.
@@ -1080,6 +1089,11 @@ def union_root(parent: list[int], node: int) -> int:
     while (up := parent[node]) != node:
         parent[node] = node = parent[up]
     return node
+
+
+# Blocks too thin to rank, with their field and missed floor — unlike `{}`, a first place nobody holds; an empty block stays out, having nothing to rank
+def unranked(pools: Mapping[str, tuple[int, int]]) -> dict:
+    return {block: {"needs": needs, "peers": peers} for block, (peers, needs) in pools.items() if 0 < peers < needs}
 
 
 # What a body actually walks between two points: WB paths in eight directions but spends its speed on each step's length, which is the octile distance.

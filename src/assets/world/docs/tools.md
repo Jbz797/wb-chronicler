@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 29/09/26 19:44</p>
+<p class="metadata">Date de mise à jour : 29/09/26 19:59</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -96,7 +96,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### Classements :
 
-Toute section `leaders` nomme la première place, ex æquo compris : personne quand plus de 3 la partagent ou qu'ils passent la moitié du vivier, ni dans un groupe de moins de 4 concurrents — 3 pour les cités et les royaumes. Dans `world … leaders`, seul `persons` ne pèse que les êtres pensants.
+Toute section `leaders` nomme la première place, ex æquo compris : personne quand plus de 3 la partagent ou qu'ils passent la moitié du vivier, ni dans un groupe de moins de 4 concurrents (3 cités ou royaumes), compté sous `unranked`. Dans `world … leaders`, seul `persons` ne pèse que les êtres pensants.
 
 - Chaque titulaire porte sa `value`, un `score` excepté : ses points grimpent avec le nombre de rivaux. Seul `hungriest` se lit à l'envers : la part du ventre encore pleine, en %, dont le titulaire a le moins.
 - Un `rank` est un rang de compétition (1, 2, 2, 4), ex æquo compris. Aucun pour un niveau 1, une seule cité, un seul royaume, ni une valeur que partage plus de la moitié du vivier.

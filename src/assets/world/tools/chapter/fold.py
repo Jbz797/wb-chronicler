@@ -176,6 +176,7 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
 # A tier's podium cut to the six rows its panel names, each to its first holder — the ones it never prints outweighing the ones it does.
 def _fold_leaders(entity: dict) -> None:
     podium = entity.get("leaders") or {}
+    podium.pop("unranked", None)  # why a block stayed empty: the chronicler's, no panel's
     for block, kept in _LEADER_ROWS.items():
         if isinstance(rows := podium.get(block), dict):
             podium[block] = {key: _first_holder(refs) for key, refs in rows.items() if key in kept}
@@ -213,6 +214,7 @@ def _fold_total(entity: dict, *keys: str) -> None:
 # Every record of the world's « Palmarès », each to its first holder — `world/info.py <chapter> leaders` naming them all.
 def _fold_world_leaders(world: dict) -> None:
     if isinstance(block := world.get("leaders"), dict):
+        block.pop("unranked", None)  # why a group stayed empty: the chronicler's, no panel's
         world["leaders"] = {group: {row: _first_holder(holders) for row, holders in rows.items()} for group, rows in block.items()}
 
 

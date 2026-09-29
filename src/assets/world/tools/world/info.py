@@ -62,6 +62,7 @@ from shared import (
     sex_label,
     take_chapter,
     take_since,
+    unranked,
     walk_tiles,
     wants_detail,
     world_date,
@@ -190,7 +191,7 @@ def _build_cumulative(map_stats: dict) -> dict:
     return out
 
 
-# The world's standouts, shaped as every tier's `leaders`: group, then measure, then its first place — `persons` weighing thinking souls alone.
+# The world's standouts, shaped as every tier's `leaders`: group, then measure, then its first place — `persons` weighing thinking souls alone, `unranked` the thin.
 def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
     ctx = build_actor_stats_context(save)
@@ -223,6 +224,9 @@ def _build_leaders(save: dict) -> dict:
     for coll, dimensions in (("cities", city_score_dimensions), ("kingdoms", kingdom_score_dimensions)):
         records = save.get(coll) or []
         out[coll]["score"] = _score_leaders(score_totals([r["id"] for r in records], dimensions(save)), records)
+    pools = {coll: (len(tally), _MIN_PEERS.get(coll, MIN_RANK_PEERS)) for coll, tally in members.items()}
+    if short := unranked({**pools, "persons": (len(persons["level"]), MIN_RANK_PEERS), "species": (len(species), MIN_RANK_PEERS)}):
+        out["unranked"] = short
     return out
 
 
