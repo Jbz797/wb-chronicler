@@ -110,7 +110,9 @@ def _build_log(save: dict, since: str | None, actor: int | None, event: str | No
         return {"by_event": dict(sorted(counts.items())), "info": f"{len(entries)} entries — `-t <event>` or `--actor <id>` lists them"}
     persons, crowns = _registry("persons"), _registry("kingdoms")
     for entry in entries:
-        if (unit := entry.pop("actor_id")) is not None:
+        if event:  # the one `-t` asked for, so no entry repeats it — nor the body `--actor` named
+            entry.pop("event")
+        if (unit := entry.pop("actor_id")) is not None and actor is None:
             entry["actor"] = entity_ref(unit, persons) or {"id": unit}
         if (crown := entry.pop("kingdom_id")) is not None:
             entry["kingdom"] = entity_ref(crown, crowns) or {"id": crown}

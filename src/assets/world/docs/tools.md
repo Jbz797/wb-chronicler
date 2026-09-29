@@ -1,8 +1,8 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 29/09/26 22:54</p>
+<p class="metadata">Date de mise à jour : 29/09/26 23:21</p>
 
-Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
+Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
 | Commande          | Sections                                                                                                                         |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,7 +52,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### `world` :
 
 - `pairings` : par espèce, la 1ʳᵉ naissance possible (`birth_on`) et l'écart du couple ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `lovers`, des amants, choisis d'abord ; `barred`, ce qui l'arrête (`hungry`, `water`, `tiny_islet`, la loi WB) ; règles : `wiki:Reproduction`
-- `roster` : chaque vivant, une ligne, `life_stage` hors adultes ; `-t` type ou famille, `--trait <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`), `-i` une terre ; `--since C<n>` : les arrivés et les `was_on` ; passé 50, un compte par espèce et par stade
+- `roster` : chaque vivant, une ligne, `life_stage` hors adultes ; `-t` type ou famille, `--trait <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`), `-i` une terre, `islets` ou `water` ; `--since C<n>` : les arrivés et les `was_on` ; passé 50, un compte par espèce et par stade
 
 ---
 
@@ -85,7 +85,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### Lieux et trajets :
 
-- `crow_tiles` (`to`, `distances`) : la ligne droite, une longueur (une diagonale compte 1,41), jamais un compte de pas ; un chemin droit rend autant en `walk_tiles`.
+- `crow_tiles` (`to`, `distances`) : la ligne droite, une longueur (une diagonale compte 1,41), jamais un compte de pas.
 - `geography … frozen` donne, terre par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé pour toujours ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `patches` (`biomes`) : une parcelle se joint par les coins ; une terre comme WB (un coin dans un seul chunk) ; une eau, côte à côte.
 - `ridges` (`geography`) : là où deux terres se touchent sans eau, une crête de roche infranchissable à pied — `between` les deux terres, `length` en tuiles, `at` sa tuile du milieu.
@@ -94,7 +94,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `to_islands` (`distances`) : les 5 îles les plus proches, dans l'ordre, à vol d'oiseau jusqu'à leur **tuile la plus proche**, les autres comptées sous `unlisted` ; un bras d'eau se lit à `strait_to_land`.
 - `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
 - `unlisted` (`waters`) : ce que la sortie écarte, les mares sous 64 tuiles (comptées) et les bras de plus de 1 024, qu'aucun corps ne franchira.
-- `walk_tiles` (`distances`, `to`) : les tuiles faites à pied, roche, lave et goo contournés ; sable, marais, neige et arbres sous Entanglewood n'allongent que le temps. Hors d'`actor`, rien ne se nage, le temps suit un `speed` 10 : absente sans terre qui les joigne.
+- `walk_tiles` (`distances`, `to`) : les tuiles faites à pied, roche, lave et goo contournés ; sable, marais, neige et arbres sous Entanglewood n'allongent que le temps. Hors d'`actor`, rien ne se nage, au `speed` 10 : absente sans terre qui les joigne.
 
 ### Classements :
 

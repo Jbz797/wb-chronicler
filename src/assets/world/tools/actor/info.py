@@ -281,8 +281,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
         **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"]().get(tile)) else {}),
-        # Chronicler-only: its land (geography/info.py), else `water` afloat or `off_land` on an islet too small to count, as `roster` says it.
-        "island_id": island_lookup.get(tile) or ("water" if "water" in _off_land_at(actor, ctx) else "off_land"),
+        # Chronicler-only: its land (geography/info.py), else `water` afloat or `islet` on an islet too small to count, as `roster` says it.
+        "island_id": island_lookup.get(tile) or ("water" if "water" in _off_land_at(actor, ctx) else "islet"),
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in

@@ -2,7 +2,6 @@
 
 # Geographic stats reserved for the chronicler (not consumed by the UI). User-facing docs: `docs/tools.md`.
 
-import argparse
 import math
 import re
 import statistics
@@ -28,6 +27,7 @@ from shared import (
     index_by_id,
     is_boat,
     is_sapient,
+    land_arg,
     load_save,
     parse_sections,
     pickle_cached,
@@ -222,7 +222,7 @@ def _build_positions(save: dict, save_path: Path, kinds: set[str], land: int | s
     for position in out:
         x, y = position["x"], position["y"]
         if (island_id := island_of.get((x, y))) is not None:
-            position["island_id"] = island_id
+            position["island_id"] = island_id if land is None else None  # a land `-i` named goes unsaid on each of its sites
         elif off_land(tile_map[grid[y][x]]) == "islet":  # silent in the water, as `island_id` is: a hull at sea, a dock on shallows
             position["islet_tiles"] = island_of.islet_size((x, y))
     return sorted(out, key=lambda r: (r["y"], r["x"]))
@@ -334,15 +334,6 @@ def _diff(then, now):
     return {"new": now} if then is None else {"gone": then} if now is None else [then, now]  # a bare `None` would drop out of a pair, and hide which it was
 
 
-# `-i` as a land's id, or the islets or the water that the bucketed sections count beside the lands.
-def _land_arg(value: str) -> int | str:
-    if value in ("islets", "water"):
-        return value
-    if not value.isdigit():
-        raise argparse.ArgumentTypeError(f"{value!r} is no land — a land's id, `islets` or `water`")
-    return int(value)
-
-
 # A counted land by its id; off every one, the place itself — `islets`, the rocks too small to count, or `water` — so that a bearer on a rock reads as no swimmer.
 def _land_key(island_id: int | None, tile_name: str) -> str:
     return str(island_id) if island_id else "islets" if off_land(tile_name) == "islet" else "water"
@@ -450,7 +441,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--type", "-t", help=f"What `positions` sites, bodies aside: an asset id, a family (`trees`) or a comma list; past {MAX_LISTED}, a count by land."
     )
-    parser.add_argument("--island", "-i", type=_land_arg, metavar="id", help="One land alone in the sections that go land by land, or `islets` or `water`.")
+    parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="One land alone in the sections that go land by land, or `islets` or `water`.")
     args = parser.parse_args(argv)
 
     if args.sections == "full":  # No `full` here, unlike the other tools: these sections answer unrelated questions, and no reading wants them all.

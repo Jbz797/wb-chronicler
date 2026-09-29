@@ -52,6 +52,7 @@ from shared import (
     is_boat,
     is_sapient,
     kingdom_score_dimensions,
+    land_arg,
     life_stage,
     light,
     load_data,
@@ -134,10 +135,11 @@ _GROUP_FIELDS = {
     "subspecies": "subspecies",
 }
 
+_ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too small to count — `_WATER` where it floats
+
 # The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
-_OFF_LAND = "off_land"  # where `roster` says a body stands, or stood, on an islet too small to count — `_WATER` where it floats
 _ON_REQUEST = ("pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll of bodies is no chapter's to carry
 
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
@@ -162,7 +164,7 @@ _SNAPSHOT_COLLECTIONS = {
 
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
-_WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_OFF_LAND` is, but in the sea or a lake
+_WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_ISLET` is, but in the sea or a lake
 
 
 # What keeps a body of age from breeding, WB weighing each partner: a belly short of a baby or at half its cap, a footing it must first leave (water, tiny islet).
@@ -172,7 +174,7 @@ def _breeding_bars(actor: dict, ctx: dict, island_of, grid: LazyTileGrid, names:
         bars.add("hungry")
     if (here := _standing(actor, island_of, grid, names)) == _WATER:
         bars.add(_WATER)
-    elif here == _OFF_LAND and island_of.islet_size(actor_xy(actor)) <= _GOOD_ISLET:
+    elif here == _ISLET and island_of.islet_size(actor_xy(actor)) <= _GOOD_ISLET:
         bars.add("tiny_islet")
     return bars
 
@@ -339,10 +341,11 @@ def _build_plots(save: dict) -> list[dict]:
 
 # Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
 def _build_roster(
-    save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | None, since: str | None, sapient: bool, settle: bool
+    save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | str | None, since: str | None, sapient: bool, settle: bool
 ) -> list[dict] | dict:
     was, thinking = _lands_then(since) if since else None, _sapient_subspecies(save) if sapient else None
     grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
+    asked = _ISLET if land == "islets" else land  # `-i islets` names the islets as a body stands on one, `islet`
     ctx = build_actor_stats_context(save)
     if settle:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
         ctx |= {
@@ -367,23 +370,24 @@ def _build_roster(
             if (then := was[actor["id"]]) == here:
                 continue  # stood still: nothing for `since` to say
             change = {"was_on": then}
-        if land is None or land in (here, change.get("was_on")):
+        if land is None or asked in (here, change.get("was_on")):
             bodies.append((actor, here, change))
     if len(bodies) > MAX_LISTED:  # a census past the list: how many of each kind, and of each stage, the adults counted too
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
         stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
         return {"by_species": dict(species), "by_stage": dict(stages), "info": f"{len(bodies)} bodies — narrow them with -t, --trait, --sapient, --settle or -i"}
-    rows = []
+    rows, one_kind = [], kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
     for actor, here, change in sorted(bodies, key=lambda body: (isinstance(body[1], str), body[1], body[0]["id"])):  # land by land, off every land last
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
         stage = _stage(actor, ctx, age, adult)
         rows.append(
             {
                 "adult_on": crossed_on(actor, adult) if age < adult else None,
-                "asset_id": actor.get("asset_id"),
+                "asset_id": None if one_kind else actor.get("asset_id"),
                 "breeds_on": crossed_on(actor, breeding) if age < breeding else None,
                 "id": actor["id"],
-                "island_id": here,  # said outright, as `was_on` is: a missing one read as still on the land left
+                # Said outright beside a `was_on`, a missing one reading as still on the land left; silent where `-i` already named it
+                "island_id": None if here == asked and not change else here,
                 "life_stage": None if stage == "adult" else stage,  # silent at `adult`, as in `surroundings`: on every line it would push the longest past inline
                 "name": actor.get("name"),
                 "sex": sex_label(actor),
@@ -471,7 +475,7 @@ def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
     said = [
         f"bearing {args.trait}" if args.trait else None,
         "that could found a town where it stands" if args.settle else None,
-        f"on land {args.island}" if args.island is not None else None,
+        (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
         f"arrived or moved since {since}" if since else None,
     ]
     thinking = "thinking " if args.sapient or args.settle else ""
@@ -497,12 +501,12 @@ def _stage(actor: dict, ctx: dict, age: int, adult: float) -> str:
     return life_stage(age, adult, lifespan, is_egg(actor, ctx))
 
 
-# Where a body stands as `roster` tells it: its land, else `water` where it floats and `off_land` on an islet too small to count, as `surroundings` splits them.
+# Where a body stands as `roster` tells it: its land, else `water` where it floats and `islet` on an islet too small to count, as `surroundings` splits them.
 def _standing(actor: dict, island_of, grid: LazyTileGrid, names: list[str]) -> int | str:
     x, y = actor_xy(actor)
     if (land := island_of.get((x, y))) is not None:
         return land
-    return _WATER if off_land(names[grid[y][x]]) == "water" else _OFF_LAND
+    return _WATER if off_land(names[grid[y][x]]) == "water" else _ISLET
 
 
 def main(argv: list[str]) -> int:
@@ -514,7 +518,7 @@ def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     parser = arg_parser(prog="world/info.py", description="World-wide sections, from the save alone.")
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
-    parser.add_argument("--island", "-i", type=int, metavar="id", help="`roster`: the bodies standing on one land")
+    parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
     parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
     parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
@@ -553,7 +557,7 @@ def main(argv: list[str]) -> int:
     if "roster" in sections:
         kinds = asset_kinds(asset_families(save), args.type) if args.type else None
         lands, island_of = compute_islands_cached(save, save_path)  # loaded once: the land `-i` names is checked against the lookup the roll then reads
-        if args.island is not None and args.island not in {land["id"] for land in lands}:
+        if isinstance(args.island, int) and args.island not in {land["id"] for land in lands}:
             print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
             return 2
         if args.trait and args.trait not in load_data("creature-traits.json") and args.trait not in load_data("subspecies-traits.json"):

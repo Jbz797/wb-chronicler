@@ -690,6 +690,15 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     }
 
 
+# `-i` as a land's id, or `islets` or `water`: what lies off every counted land, which `geography` buckets and `roster` stands a body on.
+def land_arg(value: str) -> int | str:
+    if value in ("islets", "water"):
+        return value
+    if not value.isdigit():
+        raise argparse.ArgumentTypeError(f"{value!r} is no land — a land's id, `islets` or `water`")
+    return int(value)
+
+
 # The last chapter standing, 0 where none does yet. Three callers glob these dirs, and a chapter is `C<n>` on disk and nowhere else.
 def latest_chapter() -> int:
     return max((int(p.name[1:]) for p in SAVES_DIR.glob("C*") if p.is_dir() and p.name[1:].isdigit()), default=0)
