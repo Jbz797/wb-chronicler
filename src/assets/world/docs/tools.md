@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 29/09/26 11:24</p>
+<p class="metadata">Date de mise à jour : 29/09/26 11:30</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe optionnel **`C<n>`** lit `saves/C<n>/map.wbox` ; sans lui, le dernier chapitre.
 
@@ -86,6 +86,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 - `crow_tiles` (`to`, `distances`) : la ligne droite, une longueur (une diagonale compte 1,41), jamais un compte de pas ; un chemin droit rend autant en `walk_tiles`.
 - `geography … frozen` donne, terre par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé pour toujours ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
+- `ridges` (`geography`) : là où deux terres se touchent sans eau, une crête de roche que nul ne franchit à pied — `between` les deux terres, `length` sa longueur en tuiles, `at` sa tuile du milieu.
 - `strait_to_land` (`distances`) mesure en `swim_tiles` le bras d'eau depuis **tout le rocher**.
 - `tiles … tile_info` : `block` barre la marche, que nul ne franchit à pied ; `islet_tiles`, une terre sous 300 tuiles de sol, trop petite pour compter, et sa taille ; sur l'eau, `sea`, `lake` (son id) ou `pond_tiles`, une eau close sous 64 tuiles ; `snow`, `ice` et `frozen` (le gel passager) comme dans `geography … frozen`.
 - `to_islands` (`distances`) : les 5 îles les plus proches, dans l'ordre, à vol d'oiseau jusqu'à leur **tuile la plus proche**, depuis la tuile, terre comprise : un bras d'eau se lit à `strait_to_land`.
