@@ -30,6 +30,7 @@ from founding import city_zones, settle_gates
 from grid import LazyTileGrid, frozen_tally, off_land
 from islands import compute_islands_cached
 from shared import (
+    MAX_LISTED,
     MIN_RANK_PEERS,
     MIN_SCORE_PEERS,
     NEW_BABY_NUTRITION,
@@ -132,8 +133,6 @@ _GROUP_FIELDS = {
     "religion": "religions",
     "subspecies": "subspecies",
 }
-
-_MAX_ROSTER = 50  # past so many bodies a roll is read for its species, not its names: filters narrow it back to a list
 
 # The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
@@ -370,7 +369,7 @@ def _build_roster(
             change = {"was_on": then}
         if land is None or land in (here, change.get("was_on")):
             bodies.append((actor, here, change))
-    if len(bodies) > _MAX_ROSTER:  # a census past the list: how many of each kind, and of each stage, the adults counted too
+    if len(bodies) > MAX_LISTED:  # a census past the list: how many of each kind, and of each stage, the adults counted too
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
         stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
         return {"by_species": dict(species), "by_stage": dict(stages), "info": f"{len(bodies)} bodies — narrow them with -t, --trait, --sapient, --settle or -i"}

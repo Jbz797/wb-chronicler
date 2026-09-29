@@ -2,6 +2,7 @@
 
 # Geographic stats reserved for the chronicler (not consumed by the UI). User-facing docs: `docs/tools.md`.
 
+import argparse
 import math
 import re
 import statistics
@@ -14,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from grid import LAND_LAYERS, LazyTileGrid, frozen_tally, listed_tiles, off_land, tile_biome, tile_count, tile_frost, tile_kind, tile_layer, tile_mask
 from islands import compute_islands_cached
 from shared import (
+    MAX_LISTED,
     actor_xy,
     arg_parser,
     asset_families,
@@ -35,9 +37,9 @@ from waters import waters_cached
 
 _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
+_BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
-_MAX_LISTED = 10  # past so many, `positions` counts land by land: a roll that long is read for where they stand, not for which is which
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
 
@@ -186,20 +188,21 @@ def _build_gear(save: dict, save_path: Path) -> dict:
     return out
 
 
-# Up to `_MAX_LISTED`, or all on the `-i` land, each instance by `id`, `island_id` else `islet_tiles` else water, `asset_id` if kinds mix; past it, a tally by land.
-def _build_positions(save: dict, save_path: Path, kinds: set[str], land: int | None) -> list[dict] | dict[str, str] | None:
+# Up to `MAX_LISTED`, or all on the `-i` land, each instance by `id`, `island_id` else `islet_tiles` else water, `asset_id` if kinds mix; past it, a tally by land.
+def _build_positions(save: dict, save_path: Path, kinds: set[str], land: int | str | None) -> list[dict] | dict[str, str] | None:
     if not (sites := asset_sites(save, kinds)):  # the lookup costs 0.2 s cold, so a kind nobody built never pays for it
         return None
     _, island_of = compute_islands_cached(save, save_path)
     grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
     if land is not None:
-        sites = [(record, tile) for record, tile in sites if island_of.get(tile) == land]
-    elif len(sites) > _MAX_LISTED:
+        # A land by the lookup alone; only `islets` or `water` read the tile, which a sweep over the lands would otherwise decode for every site off them
+        sites = [(r, tile) for r, tile in sites if (island_of.get(tile) == land if isinstance(land, int) else _site_key(tile, island_of, grid, tile_map) == land)]
+    elif len(sites) > MAX_LISTED:
         by_land: defaultdict[str, Counter] = defaultdict(Counter)
         for record, tile in sites:
             by_land[_site_key(tile, island_of, grid, tile_map)][record.get("asset_id")] += 1
         tally = {key: " | ".join(f"{n} {kind}" for kind, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
-        return {**tally, "info": f"{len(sites)} in all — `-i <id>` lists one land's one by one"}
+        return {**tally, "info": f"{len(sites)} in all — `-i` lists one land's, the `islets`' or the `water`'s one by one"}
     # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
     mixed = len(kinds) > 1
     out = [
@@ -282,6 +285,15 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
 
 
+# `-i` as a land's id, or the islets or the water that the bucketed sections count beside the lands.
+def _land_arg(value: str) -> int | str:
+    if value in ("islets", "water"):
+        return value
+    if not value.isdigit():
+        raise argparse.ArgumentTypeError(f"{value!r} is no land — a land's id, `islets` or `water`")
+    return int(value)
+
+
 # A counted land by its id; off every one, the place itself — `islets`, the rocks too small to count, or `water` — so that a bearer on a rock reads as no swimmer.
 def _land_key(island_id: int | None, tile_name: str) -> str:
     return str(island_id) if island_id else "islets" if off_land(tile_name) == "islet" else "water"
@@ -294,7 +306,7 @@ def _land_order(item: tuple[str, object]) -> tuple[bool, int, str]:
 
 
 # The sections cut to one land: its row, biomes, frost, fire and gear, and the waters and ridges it borders — new dicts all, the cached ones left as they are.
-def _narrowed(out: dict, land: int) -> dict:
+def _narrowed(out: dict, land: int | str) -> dict:
     key, narrowed = str(land), dict(out)
     if "biomes" in out:
         rows = out["biomes"]["islands"].get(key) or []
@@ -364,8 +376,10 @@ def main(argv: list[str]) -> int:
 
     parser = arg_parser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
     parser.add_argument("sections", help=f"Comma-separated sections. Valid: {', '.join(_ALL_SECTIONS)}")
-    parser.add_argument("--type", "-t", help="What `positions` sites, bodies aside: an asset id, a family (`trees`) or a comma list; past 10, a count by land.")
-    parser.add_argument("--island", "-i", type=int, metavar="id", help="One land alone in the sections that go land by land — the whole list without it.")
+    parser.add_argument(
+        "--type", "-t", help=f"What `positions` sites, bodies aside: an asset id, a family (`trees`) or a comma list; past {MAX_LISTED}, a count by land."
+    )
+    parser.add_argument("--island", "-i", type=_land_arg, metavar="id", help="One land alone in the sections that go land by land, or `islets` or `water`.")
     args = parser.parse_args(argv)
 
     if args.sections == "full":  # No `full` here, unlike the other tools: these sections answer unrelated questions, and no reading wants them all.
@@ -384,9 +398,12 @@ def main(argv: list[str]) -> int:
     if args.island is not None and not set(_BY_LAND) & set(sections):  # refused before the save is read
         print(f"✗ `--island` narrows {', '.join(_BY_LAND)}: name one of them", file=sys.stderr)
         return 2
+    if isinstance(args.island, str) and (unbucketed := sorted(set(sections) & set(_BY_LAND) - set(_BUCKETED))):
+        print(f"✗ {', '.join(unbucketed)}: no {args.island} to narrow to — `-i {args.island}` narrows {', '.join(_BUCKETED)}", file=sys.stderr)
+        return 2
 
     save = load_save(save_path)
-    if args.island is not None and args.island not in {land["id"] for land in compute_islands_cached(save, save_path)[0]}:
+    if isinstance(args.island, int) and args.island not in {land["id"] for land in compute_islands_cached(save, save_path)[0]}:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
         return 2
     out: dict = {}
@@ -415,7 +432,8 @@ def main(argv: list[str]) -> int:
             print(f"✗ no {wanted} in this world — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
             return 1
         if not positions:
-            print(f"✗ no {wanted} on land {args.island} — without `-i`, `positions` says which lands hold one", file=sys.stderr)
+            where = f"land {args.island}" if isinstance(args.island, int) else f"the {args.island}"
+            print(f"✗ no {wanted} on {where} — without `-i`, `positions` says which lands hold one", file=sys.stderr)
             return 1
         out["positions"] = positions
     if "ridges" in sections:
