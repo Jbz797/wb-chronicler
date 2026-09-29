@@ -9,12 +9,11 @@ export interface PlaceArea { centroid: TilePoint; chapter: string; name: string;
 // `history/places.json`, the chronicler's gazetteer: one file for the whole world, lands and waters keyed by their id, spots by their own name.
 export interface Places { islands: Record<string, PlaceArea>; lakes: Record<string, PlaceArea>; places: Record<string, PlaceSpot> }
 
-// A spot the chronicler named — its key is the name — sited by one tile and filed by what it is, in the chronicle's own word (`lisière`, `îlot`…).
-// Its `island_id` stays in the file for `new.py`, which checks the tile against it: no panel reads it.
-export interface PlaceSpot { centroid: TilePoint; chapter: string; kind: string }
-
 // The map's extent in tiles — the preview's own size, WB drawing one pixel a tile.
 export interface TileExtent { height: number; width: number }
 
 // A tile in save coordinates: `y` grows north, where the picture's rows grow south.
 export interface TilePoint { x: number; y: number }
+
+// A spot the chronicler named (its key), sited by one tile and filed in his own word (`lisière`, `îlot`…) — its `island_id` is `new.py`'s alone, no panel's.
+interface PlaceSpot { centroid: TilePoint; chapter: string; kind: string }

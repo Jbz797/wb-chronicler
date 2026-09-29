@@ -47,10 +47,11 @@ export class FavoriteComponent {
 
   protected currentChapter = this._chronicler.currentChapter;
 
-  // Age suffix « ans (<stage>) » — appends the life-stage label to the ranked age value.
+  // Age suffix « ans (<stage>) » — appends the life-stage label to the ranked age value, the unit translated as the other panels' `ui_years`.
   protected readonly ageSuffix = computed(() => {
     const meta = this.currentChapter()?.meta.favorite?.metadata;
-    return meta?.life_stage ? ` ans (${LabelHelpers.gendered(this._translate, `life_stage_${meta.life_stage}`, meta.sex)})` : ' ans';
+    const years: string = this._translate.instant('ui_years');
+    return meta?.life_stage ? `${years} (${LabelHelpers.gendered(this._translate, `life_stage_${meta.life_stage}`, meta.sex)})` : years;
   });
   // Tags: personality + active roles. Each one carries `isNew` (true if absent from the previous chapter).
   protected readonly roleTags = computed(() => {

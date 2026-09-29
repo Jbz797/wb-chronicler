@@ -21,6 +21,7 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
+    absent_entity,
     actor_age,
     actor_xy,
     asset_set,
@@ -700,7 +701,7 @@ def _years_since(timestamp: float, ctx: dict) -> int:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -719,7 +720,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     city = index_by_id(save.get("cities") or []).get(city_id)
     if city is None:
-        print(f"✗ unknown city: {city_id}", file=sys.stderr)
+        print(absent_entity("city", "cities", city_id, chapter), file=sys.stderr)
         return 1
     ctx = _build_context(save, save_path)
 

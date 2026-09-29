@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     UNITS_PER_YEAR,
+    absent_entity,
     books_held,
     emit,
     entity_age,
@@ -59,7 +60,7 @@ def _build_origin(book: dict) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -78,7 +79,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     book = next((b for b in save.get("books") or [] if b.get("id") == book_id), None)  # one lookup, and a world holds a few dozen volumes at most
     if book is None:
-        print(f"✗ unknown book: {book_id}", file=sys.stderr)
+        print(absent_entity("book", "books", book_id, chapter), file=sys.stderr)
         return 1
 
     ctx = {

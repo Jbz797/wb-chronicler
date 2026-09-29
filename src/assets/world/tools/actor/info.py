@@ -15,12 +15,14 @@ from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_
 from grid import LazyTileGrid, off_land, tile_kind
 from islands import compute_islands_cached
 from shared import (
+    HOURLY_TILES_PER_SPEED,
     PROFESSION_KING,
     PROFESSION_LEADER,
     SAVES_DIR,
     UNITS_PER_MONTH,
     UNITS_PER_YEAR,
     ZONE_TILES,
+    absent_entity,
     actor_age,
     actor_xy,
     asset_families,
@@ -33,6 +35,7 @@ from shared import (
     building_tile,
     civic_building_ids,
     competition_ranks,
+    duration,
     emit,
     entity_ref,
     equipment_entry,
@@ -53,6 +56,7 @@ from shared import (
     sex_label,
     take_chapter,
     take_since,
+    trip_time,
     walk_tiles,
     wants_detail,
     world_date,
@@ -64,7 +68,6 @@ from waters import waters_cached
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
-_BOAT_REACH = 240  # chronicler.md « La mer ne coupe que… »: a transport boat carries the common reach this far across the sea
 
 # WB `TopTileLibrary`: the biomes any lineage may found on, and those only a meta tag opens — `corrupted` alone spelt apart from its tag.
 _BUILD_FREE = (
@@ -88,16 +91,14 @@ _BUILD_FREE = (
 )
 
 _BUILD_TAGS = {"corrupted": "corruption", "desert": "desert", "infernal": "infernal", "permafrost": "permafrost", "swamp": "swamp", "wasteland": "wasteland"}
-_CIRCLES = (("intimate", 25), ("common", 120))  # chronicler.md's tiers by distance, in tiles — past the last lies the far-off, which no roster could hold
+_CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CITY_WAVE = 3  # WB `CityPlaceFinder.startWave`: the zones a town keeps founders off, counted from its edge across its own land
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
-_DAILY_TILES_PER_SPEED = 25.0  # chronicler.md § Échelle: `speed` 10 walks ~250 tiles a day, its halts counted — far short of 24 hours' worth
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 
 # WB ground, all 64 of a zone's tiles for `canStartCityHere`: the hill left out, ground though it bars; a pit a dry hole (`liquid` 0) till the sea fills it.
 _GROUND_BASES = frozenset({"pit_close_ocean", "pit_deep_ocean", "pit_shallow_waters", "sand", "soil_high", "soil_low"})
 
-_HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 _PLACE_KEYS = frozenset({"island_id", "x", "y"})  # what `since` says as a path, `moved`, rather than as three fields changed apiece
@@ -187,6 +188,13 @@ def _biology(actor: dict, ctx: dict) -> tuple | list:
     return (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
 
 
+# Tiles a hull sails in an hour, off its trade's `speed` in `boat-assets.json` — a transport's when none is named, the one kind that ferries.
+def _boat_per_hour(hull: dict | None = None) -> float:
+    kinds = load_data("boat-assets.json").get("kinds") or {}
+    kind = ((hull or {}).get("asset_id") or "").removeprefix("boat_").partition("_")[0]
+    return HOURLY_TILES_PER_SPEED * (kinds.get(kind) or kinds["transport"])["speed"]
+
+
 # The tags a body walks and swims by, off its biology's traits and its clan's: `walk_adaptation_*`, `fast_swimming`, `water_creature`.
 def _body_tags(actor: dict, biology: tuple | list, ctx: dict) -> frozenset[str]:
     sources = ((biology, ctx["subspecies_traits"]), ((ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits") or (), ctx["clan_traits"]))
@@ -230,7 +238,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
         "religions_by_id": index_by_id(save.get("religions") or []),
         # Called not stored: only a `--to` the water bars asks, to say how wide it is, and the sweep of the water costs a second on a save not yet cached.
-        "strait_gaps": cache(lambda: {tuple(s["between"]): s["gap"] for s in waters_cached(save, save_path)["straits"]}),
+        "strait_gaps": cache(lambda: {tuple(s["between"]): s["swim_tiles"] for s in waters_cached(save, save_path)["straits"]}),
         "tile_grid": cache(lambda: LazyTileGrid(save)),  # rows decoded as read: `settle` reads a zone's eight
         "tile_map": save["tileMap"],
         "walk_map": cache(lambda: WalkMap(save)),  # called not stored: `surroundings` and `--to` alone walk
@@ -368,7 +376,7 @@ def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, t
     out: dict = {}
     if (now := actor_xy(actor)) != was:
         dx, dy = now[0] - was[0], now[1] - was[1]
-        out["moved"] = {"dir": bearing(dx, dy), "tiles": round(walk_tiles(dx, dy))}
+        out["moved"] = {"crow_tiles": round(walk_tiles(dx, dy)), "dir": bearing(dx, dy)}
         if (land := ctx["island_lookup"]().get(now)) != was_land:
             out["moved"]["land"] = [was_land, land]
     before, after = _build_metadata(then, then_ctx, then_save), _build_metadata(actor, ctx, save)
@@ -384,44 +392,51 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     home = island_of.get((cx, cy))
     # A crown that ferries none reaches no shore: without a transport boat the sea stays the far-off, and no hull nor body past the common reach is measured.
     ferried = actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]
-    reach, common = _BOAT_REACH if ferried else _CIRCLES[-1][1], _CIRCLES[-1][1]
-    walker = _walker(actor, ctx, common + 0.5)  # the ring keeps a walk that rounds to its edge, as `--to` rounds the same walk
-    offshore: list[tuple] = []
+    per_hour, gait, walk_map = _per_hour(actor, ctx), _gait(actor, ctx), ctx["walk_map"]()
+    limit = _ring_bound(_CIRCLES[-1][1]) * per_hour  # the costliest way still told within the common edge, as `--to` tells the same way
+    sail = per_hour / _boat_per_hour()
+    reach = limit / min(gait.cheapest, sail if ferried else 1.0) if gait else limit  # the farthest tile the cheapest pace brings within it
     kin: dict[int, str] = {}
     ties = _ties(actor)
+    within: list[tuple] = []
     for other in ctx["actors_by_id"].values():
         if other is actor:
             continue
-        if boat := is_boat(other):
-            if not ferried:
-                continue
-        elif ctx["subspecies_by_id"].get(other.get("subspecies")) is None:
+        if not (boat := is_boat(other)) and ctx["subspecies_by_id"].get(other.get("subspecies")) is None:
             continue
         ox, oy = actor_xy(other)
-        dx, dy = ox - cx, oy - cy
-        # The crow's line first, on whole tiles: no walk is shorter, and a swift swimmer's circles stop at their radius all the same.
-        if (crow := round(walk_tiles(dx, dy))) > reach:
+        # The crow's line first: no walk is shorter, and a swift swimmer's circles stop at their edge all the same.
+        if (crow := walk_tiles(ox - cx, oy - cy)) > reach:
             continue
         # His parents, children, siblings and mate stand in full wherever they live: a count by town would drop where they are, which no roster of theirs says.
         if not boat and (tie := _kin_tie(ties, other)):
             kin[other["id"]] = tie
-        land = island_of.get((ox, oy))
-        distance = None if boat else crow if walker is None else walker(ox, oy, land)
-        if distance is not None and (distance := round(distance)) <= common:
-            circles[next(name for name, radius in _CIRCLES if distance <= radius)].append((distance, other["id"], dx, dy, land))
-        elif ferried and (boat or land != home):  # what only a hull brings in reach, as the crow flies: every boat, and every body off his land no walk reaches
-            offshore.append((crow, other["id"], dx, dy, land))
+        within.append((other["id"], boat, crow, ox, oy, island_of.get((ox, oy))))
+    # Each walk stops at the last body it may be asked for, rather than sweeping its whole limit: every one within reach is known before any walk is drawn.
+    walker = _walker(actor, gait, ctx, limit, [(ox, oy, land) for *_, ox, oy, land in within])
+    # A crown's hull carries him on: walked to a shore, sailed at the transport's pace, walked on — the whole trip timed against the same edge.
+    offshore_tiles = {oy * walk_map.width + ox for _, boat, _, ox, oy, land in within if boat or land != home}
+    sailed = cache(lambda: walk_from(walk_map, gait.sailing(sail), cx, cy, limit, offshore_tiles)) if ferried and gait else None
+    offshore: list[tuple] = []
+    for i, boat, crow, ox, oy, land in within:
+        dx, dy = ox - cx, oy - cy
+        # Filed by the time as told, as `--to` files it: a row that says « 2 h » stands in the common circle. A hull too, walked and swum to like any body.
+        if (cost := crow if walker is None else walker(ox, oy, land)) is not None and (ring := _ring(cost / per_hour)):
+            circles[ring].append((cost, i, dx, dy, land))
+        elif sailed and (boat or land != home) and (cost := sailed().get(oy * walk_map.width + ox)) is not None and _ring(cost / per_hour):
+            offshore.append((cost, i, dx, dy, land))  # what only a hull brings in reach: every boat, every body off his land
     if ferried:
         circles["common_with_boat"] = offshore
+    if not any(circles.values()):  # none within his circles: the nearest body still said, lest an empty section read as a silence
+        return {"nearest": _nearest_body(actor, ctx)}
     by_id = ctx["actors_by_id"]
     near = sorted(circles.pop("intimate"))
-    rings: dict = {"intimate": [_surroundings_row(by_id[i], ctx, distance, dx, dy, home, land, kin.get(i)) for distance, i, dx, dy, land in near]}
-    plans = {name: _surroundings_plan(entries, ctx, kin) for name, entries in circles.items()}
+    rings: dict = {
+        "intimate": [_surroundings_row(by_id[i], ctx, duration(cost / per_hour, "total_"), dx, dy, home, land, kin.get(i)) for cost, i, dx, dy, land in near]
+    }
+    plans = {name: _surroundings_plan(entries, ctx, kin, per_hour) for name, entries in circles.items()}
     if detailed := wants_detail(requested, sum(map(len, plans.values()))):
-        rings.update({name: _surroundings_rows(plan, ctx, home, kin) for name, plan in plans.items()})
-        # Each peopled ring's edge at his own pace, so none is told as a morning or a day it is not — an empty one needs none, and a hull sets a passenger's.
-        if not is_aboard(actor) and (hours := {name: _walk_time(actor, radius, ctx)["hours"] for name, radius in _CIRCLES if rings.get(name)}):
-            rings["hours"] = hours
+        rings.update({name: _surroundings_rows(plan, ctx, home, kin, per_hour) for name, plan in plans.items()})
     # An adult's line goes unmarked, most bodies standing there: said beside the rows, where a silence read alone passes for youth. A sexless hull has no stage.
     if any("sex" in row and "life_stage" not in row for ring in rings.values() if isinstance(ring, list) for row in ring):
         rings["life_stage_default"] = "adult"
@@ -434,24 +449,39 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
     island_of = ctx["island_lookup"]()
     gx, gy = goal = min(aims, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2)
     to = _heading(cx, cy, gx, gy, mark, about)
-    if (gait := _gait(actor, ctx)) is None:  # its way is the straight line: said as a walk, so that no reader takes the silence for a sea it can't cross
-        return {**to, "walked": to["tiles"], **_walk_time(actor, to["tiles"], ctx)}
+    home, per_hour = island_of.get((cx, cy)), _per_hour(actor, ctx)
+    if (gait := _gait(actor, ctx)) is None:  # its way is the straight line, flown, swum or sailed: no walk to tell, only its time
+        crow = to["crow_tiles"]
+        return {**to, "circle": _circle(actor, ctx, crow / per_hour, home != island_of.get(goal), lambda: None), **trip_time(per_hour, crow)}
     walk_map = ctx["walk_map"]()
-    goals, home = {y * walk_map.width + x for x, y in aims}, island_of.get((cx, cy))
+    goals = {y * walk_map.width + x for x, y in aims}
     # WB walks round the bays of his own land, and swims only toward another: an islet of his, small, is tried on foot before the water.
     shore = not walk_map.wet(cx, cy) and (home is None or home == island_of.get(goal))
     way = walk_way(walk_map, gait.ashore(), cx, cy, goals) if shore else None
     if way is None and not (shore and home is not None):
         way = walk_way(walk_map, gait, cx, cy, goals)
-    if way is None:
-        raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["tiles"], ctx))
-    walked, water, widest, reached = way
+
+    @cache
+    def sailed() -> tuple | None:  # the trip by a crown's hull, walks to and fro counted — asked only once the walk falls past the common circle
+        return walk_way(walk_map, gait.sailing(per_hour / _boat_per_hour()), cx, cy, goals, _ring_bound(_CIRCLES[-1][1]) * per_hour)
+
+    def sailed_hours() -> float | None:
+        return trip[0] / per_hour if (trip := sailed()) else None
+
+    if way is None:  # no walk nor swim gets there, but a crown's hull may: its trip told in place of a walk that has none
+        if _circle(actor, ctx, None, island_of.get(goal) != home, sailed_hours) == "common_with_boat":
+            return {**to, "circle": "common_with_boat", "with_boat": _way_parts(sailed(), per_hour, "sail")}
+        raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["crow_tiles"], ctx))
+    walked, _, _, _, widest, reached = way
     if mark:
         to = _heading(cx, cy, reached % walk_map.width, reached // walk_map.width, mark, about)
-    # What was swum, in hours as the whole; the widest crossing where it outruns his breath, both weighed in whole tiles as they print, lest 6 stand beside 6
-    swum = {"swim_hours": _walk_time(actor, water, ctx)["hours"]} if water else {}
-    past = gait.breath < inf and round(widest) > round(gait.breath)  # a tireless swimmer never runs short, whatever it crosses
-    return {**to, **swum, **({"widest_crossing": round(widest)} if past else {}), "walked": round(walked), **_walk_time(actor, walked, ctx)}
+    part = "sail" if is_aboard(actor) else "swim"  # a passenger's water is sailed, never swum
+    past = {"widest_crossing": round(widest)} if gait.breath < inf and round(widest) > round(gait.breath) else {}  # a tireless swimmer never runs short
+    # `walked` is the way's cost, terrain and swim weighed: it times the goal, which files it in a circle, and only its trodden length is printed.
+    circle = _circle(actor, ctx, walked / per_hour, island_of.get((reached % walk_map.width, reached // walk_map.width)) != home, sailed_hours)
+    boat = {"with_boat": _way_parts(sailed(), per_hour, "sail")} if circle == "common_with_boat" else {}  # the trip that files it there, beside the walk
+
+    return {**to, **boat, **_way_parts(way, per_hour, part), **past, "circle": circle}
 
 
 # What the soul was born with, off WB's creature library — each trait and its rarity, then its effect and flavour once named, and whether this age lulls it.
@@ -467,6 +497,14 @@ def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
 def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
     civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
+
+
+# The circle a goal falls in, filed as `surroundings` files a body: by the walk's time as told, then off his land by a crown's hull, the walks to and fro counted.
+def _circle(actor: dict, ctx: dict, hours: float | None, offshore: bool, sailed: Callable[[], float | None]) -> str:
+    if hours is not None and (ring := _ring(hours)):  # `None`: no walk gets there at all
+        return ring
+    ferried = actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]
+    return "common_with_boat" if ferried and offshore and (trip := sailed()) is not None and _ring(trip) else "far"
 
 
 # Every zone a town holds, with the land its first tile stands on — the one WB spreads its founders' wave across.
@@ -578,18 +616,21 @@ def _equipment_power(actor: dict, ctx: dict) -> int:
 def _gait(actor: dict, ctx: dict) -> Gait | None:
     biology = _biology(actor, ctx)
     tags = _body_tags(actor, biology, ctx)
-    if _water_free(actor, tags, ctx) or is_aboard(actor):
+    if _water_free(actor, tags, ctx):
         return None
     # The cleaned stats, not the raw totals: a child walks and swims on the halved ceiling WB gives it.
     stats, aloft, swift = compute_actor_stats(actor, ctx), "hovering" in biology, "fast_swimming" in tags
     breath, reach = _swim_reach(actor, stats, biology, aloft, swift)
     blind = bool(_species(actor, ctx).get("ignore_tile_speed_multiplier"))  # WB `ActorAsset`: every ground at one pace
-    return ctx["walk_map"]().gait(stats.get("speed"), tags, aloft=aloft, blind=blind, swift=swift, breath=breath, reach=reach)
+    gait = ctx["walk_map"]().gait(stats.get("speed"), tags, aloft=aloft, blind=blind, swift=swift, breath=breath, reach=reach)
+    if is_aboard(actor):  # a passenger: his hull sails him by water, and he walks on from the shore it lands him on
+        return gait.sailing(_per_hour(actor, ctx) / _boat_per_hour(ctx["actors_by_id"].get(actor.get("transportID"))))
+    return gait
 
 
 # The bearing and the crow's tiles to a point — and, where the goal was many, which one: a land's `landing`, the `nearest` of some kinds with its kind and id.
 def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mapping[tuple[int, int], dict]) -> dict:
-    to = {"dir": bearing(gx - cx, gy - cy), "tiles": round(walk_tiles(gx - cx, gy - cy))}
+    to = {"crow_tiles": round(walk_tiles(gx - cx, gy - cy)), "dir": bearing(gx - cx, gy - cy)}
     return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
 
 
@@ -611,12 +652,34 @@ def _named(body: dict) -> str:
     return f"{body.get('name') or body.get('asset_id')} ({body['id']})"
 
 
+# The body nearest him as the crow flies, wherever it stands — for one whose circles hold nobody. No hull: a boat is no neighbour.
+def _nearest_body(actor: dict, ctx: dict) -> dict | None:
+    cx, cy = actor_xy(actor)
+    best: tuple[float, dict, int, int] | None = None
+    for other in ctx["actors_by_id"].values():
+        if other is actor or is_boat(other) or ctx["subspecies_by_id"].get(other.get("subspecies")) is None:
+            continue
+        ox, oy = actor_xy(other)
+        crow = walk_tiles(ox - cx, oy - cy)
+        if best is None or crow < best[0]:
+            best = (crow, other, ox - cx, oy - cy)
+    if best is None:
+        return None
+    crow, other, dx, dy = best
+    return {"asset_id": other.get("asset_id"), "crow_tiles": round(crow), "dir": bearing(dx, dy), "id": other["id"], "name": other.get("name")}
+
+
 # Where a body off every counted land stands, an islet told by its ground or the water — the grid decoded for its row alone, for the lines that need it.
 def _off_land_at(body: dict, ctx: dict) -> dict:
     x, y = actor_xy(body)
     if off_land(ctx["tile_map"][ctx["tile_grid"]()[y][x]]) == "water":
         return {"water": True}
     return {"islet_tiles": ctx["island_lookup"]().islet_size((x, y))}
+
+
+# Tiles walked in an hour at the body's own pace — a passenger's too, the unit his hull's sailing is counted in (`_gait`).
+def _per_hour(actor: dict, ctx: dict) -> float:
+    return HOURLY_TILES_PER_SPEED * (compute_actor_stats(actor, ctx).get("speed") or 1)
 
 
 # Years the actor has held `role` = (holder field, collection, history). `None` unless the history's last entry still names them.
@@ -632,6 +695,17 @@ def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, 
         if entries and entries[-1].get("id") == actor_id:
             return int((world_time - float(entries[-1].get("timestamp_ago") or 0)) / UNITS_PER_YEAR)
     return None
+
+
+# The circle a time falls in, read as `duration` tells it, so a row printed « 2 h » stands in the common circle though its walk ran to 2.04 — `None` past them.
+def _ring(hours: float) -> str | None:
+    told = minutes if (minutes := round(hours * 60)) < 60 else round(hours, 1) * 60
+    return next((name for name, limit in _CIRCLES if told <= limit), None)
+
+
+# The longest time still told within `minutes`, as `_ring` files by the rounded time: the bound a sweep of the circles walks to.
+def _ring_bound(minutes: int) -> float:
+    return (minutes + 0.5) / 60 if minutes < 60 else minutes / 60 + 0.05
 
 
 # WB `try_to_start_new_civilization` for a thinker: `True` where every gate opens, else each that shuts it — the zone weighed for a child too, who founds once grown.
@@ -694,12 +768,12 @@ def _species(actor: dict, ctx: dict) -> dict:
 
 
 # A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
-def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> list[tuple | dict]:
+def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str], per_hour: float) -> list[tuple | dict]:
     by_id, chiefs = ctx["actors_by_id"], ctx["clan_chiefs"]
     groups: dict[tuple, dict] = {}
     plan: list[tuple | dict] = []  # the entries come sorted, so a group stands where its nearest member was met, and nothing is re-sorted
     for entry in sorted(entries):
-        distance, i, dx, dy, _ = entry
+        measure, i, dx, dy, _ = entry
         other = by_id[i]
         sapient = not is_boat(other) and is_sapient(ctx["subspecies_by_id"][other["subspecies"]])
         city = other.get("cityID") if sapient else None
@@ -710,7 +784,7 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> 
         key = ("city", city) if sapient else ("asset_id", other.get("asset_id"))
         if (group := groups.get(key)) is None:
             head = {"city": entity_ref(city, ctx["cities_by_id"]), "species": Counter()} if sapient else {"asset_id": key[1]}
-            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"dir": bearing(dx, dy), "distance": distance}}
+            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"dir": bearing(dx, dy), **duration(measure / per_hour, "total_")}}
             plan.append(group)
         group["count"] += 1
         if sapient:
@@ -719,11 +793,11 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> 
 
 
 # One line of `surroundings`: silent on his own land, off it the land's id — or `water` or `islet_tiles` off every counted land, where a bare null reads as home.
-def _surroundings_row(other: dict, ctx: dict, distance: int, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
+def _surroundings_row(other: dict, ctx: dict, span: dict, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
     row = {
+        **span,
         "asset_id": other.get("asset_id"),
         "dir": bearing(dx, dy),
-        "distance": distance,
         "id": other["id"],
         **({"kills": n} if (n := int(other.get("kills") or 0)) else {}),
         "name": other.get("name"),
@@ -748,15 +822,15 @@ def _surroundings_row(other: dict, ctx: dict, distance: int, dx: int, dy: int, h
 
 
 # A plan written out: a group of one is no group, so its body stands in full. No `kills` summed on the rest — whoever has killed already stands in full.
-def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, kin: dict[int, str]) -> list[dict]:
+def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, kin: dict[int, str], per_hour: float) -> list[dict]:
     rows = []
     for item in plan:
         entry = item.pop("first") if isinstance(item, dict) else item
         if isinstance(item, dict) and item["count"] > 1:
             rows.append(item)
             continue
-        distance, i, dx, dy, land = entry
-        rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, distance, dx, dy, home, land, kin.get(i)))
+        measure, i, dx, dy, land = entry
+        rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, duration(measure / per_hour, "total_"), dx, dy, home, land, kin.get(i)))
     return rows
 
 
@@ -813,22 +887,15 @@ def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
 
 
-# The walk in the chronicler's hours, and days past a day's march, at the body's own pace — none aboard, where the hull sets it.
-def _walk_time(actor: dict, walked: float, ctx: dict) -> dict:
-    if is_aboard(actor):
-        return {}
-    speed = compute_actor_stats(actor, ctx).get("speed") or 1
-    days = walked / (_DAILY_TILES_PER_SPEED * speed)
-    return {"hours": round(walked / (_HOURLY_TILES_PER_SPEED * speed), 1), **({"days": round(days, 1)} if days >= 1 else {})}
-
-
-# How far on foot each tile lies, `None` for a body the ground never holds: round his land's bays, swum within reach toward another, each walk drawn once asked for.
-def _walker(actor: dict, ctx: dict, limit: float) -> Callable[[int, int, int | None], float | None] | None:
-    if (gait := _gait(actor, ctx)) is None:
+# How far on foot each of `spots` lies, `None` for a body the ground never holds: round his land's bays, swum within reach toward another, each walk drawn if asked.
+def _walker(actor: dict, gait: Gait | None, ctx: dict, limit: float, spots: list[tuple]) -> Callable[[int, int, int | None], float | None] | None:
+    if gait is None:
         return None
     (cx, cy), walk_map = actor_xy(actor), ctx["walk_map"]()
-    home, afloat = ctx["island_lookup"]().get((cx, cy)), cache(lambda: walk_from(walk_map, gait, cx, cy, limit))
-    ashore = afloat if walk_map.wet(cx, cy) else cache(lambda: walk_from(walk_map, gait.ashore(), cx, cy, limit))
+    home, wet = ctx["island_lookup"]().get((cx, cy)), walk_map.wet(cx, cy)
+    lands = {y * walk_map.width + x: land for x, y, land in spots}  # each walk aims at the tiles `walk` may ask it for, his land's or the others'
+    afloat = cache(lambda: walk_from(walk_map, gait, cx, cy, limit, {t for t, land in lands.items() if wet or home is None or land != home}))
+    ashore = afloat if wet else cache(lambda: walk_from(walk_map, gait.ashore(), cx, cy, limit, {t for t, land in lands.items() if home is None or land == home}))
 
     def walk(x: int, y: int, land: int | None) -> float | None:
         tile = y * walk_map.width + x
@@ -852,6 +919,15 @@ def _water_free(actor: dict, tags: frozenset[str], ctx: dict) -> bool:
 @cache
 def _water_trait_ids() -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if "damaged_by_water" in (spec.get("tags") or []))
+
+
+# A way told by parts, lengths and times: `walk_`, the water's `part` (`swim_` or `sail_`, 1 tile at least), `total_` once two, rounded whole, never summed by hand.
+def _way_parts(way: tuple | None, per_hour: float, part: str) -> dict:
+    if way is None:
+        return {}
+    cost, water, swam, trod, _, _ = way
+    wet = {f"{part}_tiles": max(round(swam), 1), "total_tiles": round(trod)} if water else {}
+    return {**wet, "walk_tiles": round(trod - swam), **trip_time(per_hour, cost, cost - water, (part, water) if water else None)}
 
 
 # Why no walk joins the two, named: the rock of their one land, a water shut to the body, a strait no islet chain shortens enough, or no crossing short enough.
@@ -913,7 +989,7 @@ def main(argv: list[str]) -> int:
         emit({"since": _build_since(None, then, ctx, save, then_ctx, then_save)})
         return 0
     if actor is None:
-        print(f"✗ unknown actor: {actor_id}", file=sys.stderr)
+        print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
         return 1
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
@@ -921,7 +997,7 @@ def main(argv: list[str]) -> int:
     aims, mark, about, whom = [], None, {}, ""
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
-            print(f"✗ unknown actor: {target}", file=sys.stderr)
+            print(absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a)), file=sys.stderr)
             return 1
         aims, whom = [actor_xy(other)], _named(other)
     elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():

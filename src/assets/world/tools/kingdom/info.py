@@ -20,6 +20,7 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
+    absent_entity,
     asset_set,
     books_held,
     building_tile,
@@ -633,7 +634,7 @@ def _zone_halo(zones: list[tuple[int, int]]) -> set[tuple[int, int]]:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -652,7 +653,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     kingdom = index_by_id(save.get("kingdoms", [])).get(kingdom_id)
     if kingdom is None:
-        print(f"✗ unknown kingdom: {kingdom_id}", file=sys.stderr)
+        print(absent_entity("kingdom", "kingdoms", kingdom_id, chapter), file=sys.stderr)
         return 1
     ctx = _build_context(save, save_path)
 

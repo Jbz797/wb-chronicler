@@ -14,6 +14,7 @@ from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     ZONE_TILES,
+    absent_entity,
     building_tile,
     children_by_id,
     civic_building_ids,
@@ -114,7 +115,7 @@ def _rank_getters(pooled: dict, world_time: float) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -134,7 +135,7 @@ def main(argv: list[str]) -> int:
     alliances_by_id = index_by_id(save.get("alliances") or [])
     alliance = alliances_by_id.get(alliance_id)
     if alliance is None:
-        print(f"✗ unknown alliance: {alliance_id}", file=sys.stderr)
+        print(absent_entity("alliance", "alliances", alliance_id, chapter), file=sys.stderr)
         return 1
 
     # A realm sits in one pact at most, so a single map carries every membership — and one actor pass then gathers every pact's subjects.

@@ -6,6 +6,7 @@ import json
 import os
 import pickle
 import re
+import sqlite3
 import subprocess
 import sys
 import zlib
@@ -15,7 +16,6 @@ from collections.abc import Callable, Collection, Mapping, Sequence
 from functools import cache
 from pathlib import Path
 
-CACHE_DIR = Path(__file__).parent.parent / ".cache"  # the save pickles and every sweep of the map, a slot per save each; gitignored via the root `.gitignore`
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
@@ -28,7 +28,8 @@ EQUIPMENT_RACKS = {
     "weapons": "item_storage_weapons",
 }
 
-HISTORY_S3DB = Path(__file__).parents[2] / "history" / "map_stats.s3db"  # WB's SQLite history, copied each chapter: browsed, the recap's journal, `world … timeline`
+HISTORY_S3DB = Path(__file__).parents[2] / "history" / "map_stats.s3db"  # WB's SQLite history, copied each chapter: `history/info.py` and the recap read it
+HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 MIN_PER_CAPITA_UNITS = 4  # Below four souls a per-head ratio or a share measures the divisor, not the body — a lone survivor would top every podium.
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 MIN_SCORE_PEERS = 3  # The one exception, for a town and a crown: a world raises them by the handful, so three rivals already make a place worth naming.
@@ -45,12 +46,14 @@ ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divi
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # One lore under two WB spellings: its tiles say one, its biome sheet the other.
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
+_CACHE_DIR = Path(__file__).parent.parent / ".cache"  # the save pickles and every sweep of the map, a slot per save each; gitignored via the root `.gitignore`
 _CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
 _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "stone_none", "gold_none", "metal_none")
 
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
+_DAILY_TILES_PER_SPEED = 24.0  # chronicler.md § Échelle: `speed` 10 walks 240 tiles a day, 6 hours of road, its halts counted — far short of 24 hours' worth
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _DOMINANT_AXIS = 0.4  # an axis under this share of the other drops out of the bearing: a heading mostly north reads N, not NE
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
@@ -59,6 +62,10 @@ _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild 
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
+
+# What WB's `special1..3` hold, message by message — a crown's name skipped, the entry's `kingdom_id` already naming it.
+_LOG_ROLES = {"favorite_killed": ("favorite", "killer"), "king_killed": (None, "king", "killer")}
+
 _MATE_BREEDINGS = frozenset({"reproduction_hermaphroditic", "reproduction_sexual"})  # the two WB asks a partner for, one of them by opposite sexes
 _MAX_REIGNS_SHOWN = 3  # a succession in `full`: the first reign and the two latest, a lighter cut than a roster's since its summary still names them
 
@@ -214,8 +221,17 @@ def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of
     return refs
 
 
+# A save's cache slot, keyed on `mtime+size`: a chapter's `map.wbox` never moves, so its slot holds for the world's life. `None` where the file is gone.
+def _save_cache_key(path: Path | str) -> str | None:
+    try:
+        stat = Path(path).stat()
+    except OSError:
+        return None
+    return f"{int(stat.st_mtime)}_{stat.st_size}"
+
+
 def _save_cache_name(path: Path) -> str:
-    return f"save_v1_{save_cache_key(path)}.pkl"
+    return f"save_v1_{_save_cache_key(path)}.pkl"
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
@@ -234,15 +250,39 @@ def _tagged_traits(tag: str) -> frozenset[str]:
 
 # Orphan slots go — a chapter's save never changes, where the live one mints a fresh key at every in-game save. `_CACHE_KEEP` then caps what survives, newest first.
 def _write_save_cache(cache_file: Path, save: dict) -> None:
-    CACHE_DIR.mkdir(exist_ok=True)
+    _CACHE_DIR.mkdir(exist_ok=True)
     with cache_file.open("wb") as f:
         pickle.dump(save, f, protocol=5)
     live = _current_save()
     claimed = {_save_cache_name(p) for p in ([live] if live else []) + list(SAVES_DIR.glob("C*/map.wbox"))}
-    cached = list(CACHE_DIR.glob("save_v1_*.pkl"))
+    cached = list(_CACHE_DIR.glob("save_v1_*.pkl"))
     kept = sorted((f for f in cached if f.name in claimed), key=lambda f: f.stat().st_mtime, reverse=True)
     for doomed in [f for f in cached if f.name not in claimed] + kept[_CACHE_KEEP:]:
         doomed.unlink(missing_ok=True)
+
+
+# Why no record answers an id in this chapter, off the others: gone since the last one it stood in, not born yet, or never — so a refusal says where to read it.
+def absent_entity(tool: str, collection: str, entity_id: int, chapter: str | None, match: Callable[[dict], bool] | None = None, noun: str = "") -> str:
+    last = latest_chapter()
+    here = int(chapter[1:]) if chapter else last + 1
+
+    # Whether the id stood in chapter `n`'s save, as `match` narrows it — a body, not a hull.
+    def stood(n: int) -> bool:
+        path = SAVES_DIR / f"C{n}" / "map.wbox"
+        return path.exists() and any(e.get("id") == entity_id and (match is None or match(e)) for e in load_save(path).get(collection) or [])
+
+    seen = [n for n in range(1, last + 1) if n != here and stood(n)]
+    where, noun = f"C{here}" if chapter else "the live save", noun or tool
+    if before := [n for n in seen if n < here]:
+        return f"✗ {noun} {entity_id} is gone by {where} — last seen in C{before[-1]}: `{tool}/info.py {entity_id} C{before[-1]}`"
+    if seen:
+        return f"✗ {noun} {entity_id} is not there yet in {where} — first seen in C{seen[0]}: `{tool}/info.py {entity_id} C{seen[0]}`"
+    # In no chapter's save, yet a body the registry met — it keeps every one a chapter named, a family's founders among them, the dead too; no hull, hence `match`.
+    persons = SAVES_DIR / f"C{last}" / "persons.json"
+    known = json.loads(persons.read_text()).get(str(entity_id)) if collection == "actors_data" and persons.exists() else None
+    if known and known.get("dead") and (match is None or match(known)):
+        return f"✗ {noun} {entity_id} died before any chapter saw it alive — the registry keeps its kind, {known.get('asset_id')}, and no more"
+    return f"✗ unknown {noun}: {entity_id}"
 
 
 # The age a body reads in-game, and the one every threshold is judged on: the year it is in, so a 15-year-old in its 16th shows 16, plus its `age_overgrowth`.
@@ -468,13 +508,25 @@ def competition_ranks(entity, peers: list, getters: dict) -> dict:
     return ranks
 
 
-# Deaths by cause as WB keeps them: a `deaths_<cause>` field each, none at nought, old age under `natural` — on clans, subspecies, towns and crowns alone.
+# Deaths by cause as WB keeps them, a `deaths_<cause>` field each, none at nought — WB's `natural` told `old_age`, as `world` and `history` tell it.
 def death_causes(record: dict) -> dict[str, int]:
-    return {k.removeprefix("deaths_"): v for k, v in record.items() if k.startswith("deaths_") and v}
+    return {"old_age" if (cause := k.removeprefix("deaths_")) == "natural" else cause: v for k, v in record.items() if k.startswith("deaths_") and v}
 
 
+# A time as the chronicler reads it: whole minutes under the hour, where a tenth of an hour would round a few tiles to nought, else hours to the tenth.
+def duration(hours: float, prefix: str = "") -> dict:
+    if (minutes := round(hours * 60)) >= 60:
+        return {f"{prefix}hours": round(hours, 1)}
+    return {f"{prefix}minutes": max(minutes, 1) if hours else 0}  # a trip, however short, takes a minute: 0 is for the tile he stands on
+
+
+# One block the command named (a section, `--to`, a tile) comes bare, its key only repeating the question; several named stay keyed, even one left empty.
 def emit(out: dict) -> None:
-    print(render(_strip_none(out)))
+    asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}
+    value, alone = _strip_none(out), sum(key in asked for key in out) == 1
+    while alone and isinstance(value, dict) and len(value) == 1 and next(iter(value)) in asked:
+        value = next(iter(value.values()))
+    print(render(value))
 
 
 # Years a record has behind it — a city, a crown, a clan, a family, a roof. Only a body counts the year it is in, and `actor_age` adds that one.
@@ -684,17 +736,40 @@ def load_save(path: Path | str) -> dict:
     if not path.exists():
         print(f"✗ no save found at {path}", file=sys.stderr)
         sys.exit(2)
-    cache_file = CACHE_DIR / _save_cache_name(path)
+    cache_file = _CACHE_DIR / _save_cache_name(path)
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:
                 return pickle.load(f)
-        except Exception:  # noqa: BLE001 — corrupt cache, fall through and reparse.
+        except Exception:  # a corrupt cache: fall through and reparse
             cache_file.unlink(missing_ok=True)
     with path.open("rb") as f:
         save = json.loads(zlib.decompress(f.read()))
     _write_save_cache(cache_file, save)
     return save
+
+
+# WB's own log from `start` to `end` (world times): each entry dated, its names told by role where `special1..3` shift meaning, its body and crown by id.
+def log_entries(start: float, end: float = float("inf"), actor: int | None = None, event: str | None = None) -> list[dict]:
+    sql = "SELECT timestamp, asset_id, special1, special2, special3, unit_id, kingdom_id, x, y FROM WorldLogMessage WHERE asset_id != 'auto_tester'"
+    sql += " AND timestamp >= ? AND timestamp <= ?" + (" AND unit_id = ?" if actor is not None else "") + (" AND asset_id = ?" if event else "")
+    try:
+        with sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True) as conn:  # WB stamps a whole unit, hence `>=`
+            rows = conn.execute(sql + " ORDER BY timestamp, rowid", [start, end, *([actor] if actor is not None else []), *([event] if event else [])]).fetchall()
+    except sqlite3.Error:  # no copy yet, the live save having come without one
+        return []
+    return [
+        {
+            "actor_id": unit if unit is not None and unit >= 0 else None,  # WB's -1: no one
+            "date": world_date(ts),
+            "event": asset,
+            **({role: n for role, n in zip(_LOG_ROLES[asset], names) if role} if asset in _LOG_ROLES else {"names": [n for n in names if n] or None}),
+            "kingdom_id": crown if crown is not None and crown >= 0 else None,
+            "x": x,
+            "y": y,
+        }
+        for ts, asset, *names, unit, crown, x, y in rows
+    ]
 
 
 # WB `City.getMainSubspecies` / `Kingdom.getMainSubspecies` — the office-holder's biology, or its first member's while the seat is empty; `None` with neither.
@@ -732,22 +807,22 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: b
 
 # A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.
 def pickle_cached[T](name: str, save_path: Path, compute: Callable[[], T]) -> T:
-    key = save_cache_key(save_path)
-    cache_file = CACHE_DIR / f"{name}_{key}.pkl" if key else None
+    key = _save_cache_key(save_path)
+    cache_file = _CACHE_DIR / f"{name}_{key}.pkl" if key else None
     if cache_file and cache_file.exists():
         try:
             with cache_file.open("rb") as f:
                 return pickle.load(f)
-        except Exception:  # noqa: BLE001 — corrupt cache, fall through and recompute.
+        except Exception:  # a corrupt cache: fall through and recompute
             cache_file.unlink(missing_ok=True)
     out = compute()
     if cache_file:
-        CACHE_DIR.mkdir(exist_ok=True)
+        _CACHE_DIR.mkdir(exist_ok=True)
         with cache_file.open("wb") as f:
             pickle.dump(out, f)
         # One slot per save, capped like the saves themselves: a reading that weighs C<n-1> against C<n> would otherwise sweep the map again at every switch.
-        current = sorted(CACHE_DIR.glob(f"{name}_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)
-        outdated = [f for f in CACHE_DIR.glob(f"{name.rsplit('_', 1)[0]}_*.pkl") if not f.name.startswith(f"{name}_")]  # an older version of the sweep
+        current = sorted(_CACHE_DIR.glob(f"{name}_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)
+        outdated = [f for f in _CACHE_DIR.glob(f"{name.rsplit('_', 1)[0]}_*.pkl") if not f.name.startswith(f"{name}_")]  # an older version of the sweep
         for doomed in outdated + current[_CACHE_KEEP:]:
             doomed.unlink(missing_ok=True)
     return out
@@ -854,15 +929,6 @@ def resolve_profession(actor: dict, save: dict) -> str | None:
 # The save's hour to the hundredth, as `world/info.py` writes it into a chapter and `new.py`/`favorite.py` hold the live save against it: one rounding, one digit.
 def rounded_world_time(map_stats: dict) -> float:
     return round(float(map_stats.get("world_time", 0)), 2)
-
-
-# A save's cache slot, keyed on `mtime+size`: a chapter's `map.wbox` never moves, so its slot holds for the world's life. `None` where the file is gone.
-def save_cache_key(path: Path | str) -> str | None:
-    try:
-        stat = Path(path).stat()
-    except OSError:
-        return None
-    return f"{int(stat.st_mtime)}_{stat.st_size}"
 
 
 # `score_totals` as competition places `{id: place}` (1, 2, 2, 4), 1 = strongest — none below `MIN_SCORE_PEERS`: a town's and a crown's `score_rank`.
@@ -993,6 +1059,21 @@ def take_since(argv: list[str]) -> tuple[str | None, list[str]]:
     if not (value[:1] == "C" and value[1:].isdigit()):
         raise ValueError("`--since` takes a chapter, e.g. `--since C2`")
     return value, argv[:at] + argv[at + 2 :]
+
+
+# A trip's time by parts, as its lengths: `walk_`, `swim_` or `sail_`, `total_` once two (`foot` None: unwalked); past a day `march_days`, a hull's `total_days`.
+def trip_time(per_hour: float, total: float, foot: float | None = None, water: tuple[str, float] | None = None) -> dict:
+    day = _DAILY_TILES_PER_SPEED / HOURLY_TILES_PER_SPEED * per_hour  # a day's march, in the cost's own tiles
+    told = duration(water[1] / per_hour, f"{water[0]}_") if water else {}
+    if water and water[0] == "sail" and foot is not None:
+        marched = foot / day
+        told |= {"march_days": round(marched, 1)} if marched >= 1 else duration(foot / per_hour, "walk_")
+        whole = marched + water[1] / per_hour / 24
+        return told | ({"total_days": round(whole, 1)} if whole >= 1 else duration(total / per_hour, "total_"))
+    if water and foot is not None:  # a swimmer's feet apart, the whole trip marched, halts and all
+        told |= duration(foot / per_hour, "walk_")
+    key = "walk_" if foot is not None and not water else "total_"
+    return told | ({"march_days": round(total / day, 1)} if total >= day else duration(total / per_hour, key))
 
 
 # The node a union-find set is known by, each one passed pointed a step nearer it so a map's unions stay shallow: `islands` and `waters` join their runs by it.

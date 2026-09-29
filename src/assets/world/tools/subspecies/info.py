@@ -16,6 +16,7 @@ from islands import compute_islands_cached
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
+    absent_entity,
     actor_age,
     actor_xy,
     biome_lore,
@@ -179,7 +180,7 @@ def _species_totals(save: dict) -> dict[str, dict]:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -199,7 +200,7 @@ def main(argv: list[str]) -> int:
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
     subspecies = subspecies_by_id.get(subspecies_id)
     if subspecies is None:
-        print(f"✗ unknown subspecies: {subspecies_id}", file=sys.stderr)
+        print(absent_entity("subspecies", "subspecies", subspecies_id, chapter), file=sys.stderr)
         return 1
 
     # One pass groups the living by the biology they carry: WB points the actor at its subspecies, never the reverse. Skipped whole where no section asked.

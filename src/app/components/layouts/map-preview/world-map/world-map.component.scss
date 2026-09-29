@@ -9,7 +9,7 @@
     width: 100%;
   }
 
-  // Every name a `nz-tag` the land shows through: its size in `cqw` like the map's, where ng-zorro sets pixels, its margin gone so it centres on its point.
+  // Every name a `nz-tag` the land shows through: its size in `cqw` like the map's, where ng-zorro sets pixels — its end margin moot under `left` and `translate`.
   .pin,
   .favorite-name {
     background: color-mix(in srgb, #000 45%, transparent);

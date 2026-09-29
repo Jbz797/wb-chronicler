@@ -35,6 +35,7 @@ interface ClanMetadata {
 interface ClanRanks {
   age?: number;
   books_written?: number;
+  cities?: number;
   deaths?: number;
   kills?: number;
   kingdoms?: number;
@@ -42,4 +43,5 @@ interface ClanRanks {
   money?: number;
   renown?: number;
   renown_total?: number;
+  warriors?: number;
 }

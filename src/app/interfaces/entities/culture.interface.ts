@@ -34,10 +34,12 @@ interface CultureRanks {
   books?: number;
   cities?: number;
   deaths?: number;
+  housed_pct?: number;
   kills?: number;
   kingdoms?: number;
   members?: number;
   money?: number;
   renown?: number;
   renown_total?: number;
+  warriors?: number;
 }

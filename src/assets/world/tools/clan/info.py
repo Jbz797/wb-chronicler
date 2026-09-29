@@ -15,6 +15,7 @@ from islands import compute_islands_cached
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
+    absent_entity,
     actor_age,
     actor_xy,
     build_trait_ids,
@@ -157,7 +158,7 @@ def _resolve_heir(clan: dict, members: list[dict], ctx: dict) -> dict | None:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -177,7 +178,7 @@ def main(argv: list[str]) -> int:
     clans_by_id = index_by_id(save.get("clans") or [])
     clan = clans_by_id.get(clan_id)
     if clan is None:
-        print(f"✗ unknown clan: {clan_id}", file=sys.stderr)
+        print(absent_entity("clan", "clans", clan_id, chapter), file=sys.stderr)
         return 1
 
     tallies: dict = {"members": defaultdict(list), "money": Counter(), "renown_total": Counter(), "warriors": Counter()}

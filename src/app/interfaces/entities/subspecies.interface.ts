@@ -40,9 +40,13 @@ interface SubspeciesMetadata {
 // Podium-only, like every other tier: absent where the biology places outside the top 3 among the world's subspecies.
 interface SubspeciesRanks {
   age?: number;
+  cities?: number;
   deaths?: number;
+  housed_pct?: number;
   kills?: number;
+  kingdoms?: number;
   members?: number;
   money?: number;
   renown_total?: number;
+  warriors?: number;
 }

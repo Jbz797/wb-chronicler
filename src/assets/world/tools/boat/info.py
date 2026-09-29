@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
+    absent_entity,
     actor_xy,
     build_trait_ids,
     build_trait_list,
@@ -142,7 +143,7 @@ def _trait_stats(boat: dict, ctx: dict) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -161,7 +162,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     boat = next((a for a in save.get("actors_data") or [] if a.get("id") == boat_id and is_boat(a)), None)
     if boat is None:
-        print(f"✗ unknown boat: {boat_id}", file=sys.stderr)
+        print(absent_entity("boat", "actors_data", boat_id, chapter, is_boat), file=sys.stderr)
         return 1
 
     ctx = {

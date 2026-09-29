@@ -32,6 +32,7 @@ from shared import (
     live_save,
     load_data,
     load_save,
+    log_entries,
     render,
     rounded_world_time,
     world_laws,
@@ -348,19 +349,6 @@ def _fired_alerts(save: dict, realm: int | None) -> list[str]:
     return [code for code, spec in standing.items() if spec["condition"](pops, quota, own)]
 
 
-# WB's own log since `since`: crowns and favorites fallen with their killer, realms and towns raised or razed, wars, pacts. WB stamps a whole unit, hence `>=`.
-def _journal_since(since: float | None) -> list[tuple]:
-    try:
-        with sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True) as conn:
-            return conn.execute(
-                "SELECT timestamp, asset_id, special1, special2, special3, x, y FROM WorldLogMessage"
-                " WHERE timestamp >= ? AND asset_id != 'auto_tester' ORDER BY timestamp, rowid",
-                (int(since or 0),),
-            ).fetchall()
-    except sqlite3.Error:  # no copy yet, the live save having come without one: the recap goes on, a journal short
-        return []
-
-
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
 def _kingdom_quota(save: dict) -> int:
     sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
@@ -426,11 +414,11 @@ def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None,
             print(f"  ⚑ {code}")
         print("  → each ⚑ is an event the chapter owes its reader, glossed in docs/tags.md")
         print(_RECAP_RULE)
-    # The one source that names a killer, printed so a king's fall need not wait on the chronicler thinking to open the file. C1 has no « since »: the whole
-    # past of a world taken up as it stood would pour out, and that is the s3db's to browse.
-    journal = _journal_since(prev_world.get("world_time")) if n > 1 else []
-    for timestamp, asset_id, *names, x, y in journal:
-        print(f"  ✎ {' · '.join((f'year {timestamp // UNITS_PER_YEAR + 1}', asset_id, *filter(None, names)))} ({x},{y})")  # a meteorite names no one
+    # The one source naming a killer, printed so a king's fall needn't wait on the file; none at C1, whose whole past would pour out: `history log`'s to give.
+    journal = log_entries(float(prev_world.get("world_time") or 0)) if n > 1 else []
+    for entry in journal:  # the killer named as such, `special1..3` shifting meaning from one message to the next — a meteorite names no one
+        told = [f"{role} {entry[role]}" for role in ("favorite", "king", "killer") if entry.get(role)] or (entry.get("names") or [])
+        print(f"  ✎ {' · '.join((entry['date'], entry['event'], *told))} ({entry['x']},{entry['y']})")
     if journal:
         print(_RECAP_RULE)
 

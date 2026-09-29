@@ -13,6 +13,7 @@ from actor_stats import build_actor_stats_context, compute_actor_stats, meta_rat
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
+    absent_entity,
     actor_age,
     children_by_id,
     competition_ranks,
@@ -120,7 +121,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -140,7 +141,7 @@ def main(argv: list[str]) -> int:
     families_by_id = index_by_id(save.get("families") or [])  # built once: `ctx` hands the same index to every `entity_ref` below
     family = families_by_id.get(family_id)
     if family is None:
-        print(f"✗ unknown family: {family_id}", file=sys.stderr)
+        print(absent_entity("family", "families", family_id, chapter), file=sys.stderr)
         return 1
 
     tallies: dict = {"houses": {}, "members": defaultdict(list), "money": Counter(), "renown_total": Counter(), "warriors": Counter()}

@@ -107,7 +107,7 @@ def _pool_map(water: bytearray, stride: int) -> tuple[list[int], list[tuple[int,
     return pool_at, [(size, sum_x // size - 1, sum_y // size - 1, not open_sea) for size, sum_x, sum_y, open_sea in sums]
 
 
-# The narrowest water between each pair of lands, in tiles swum: every coast floods the sea at once, and where two tides meet their depths add up to the crossing.
+# The narrowest water between two lands in `swim_tiles`: every coast floods at once, its first step weighing half, and two meeting tides add up to the crossing.
 def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> list[dict]:
     # The straight neighbours and the slanted ones, each at its own cost: the depth a step reaches is reckoned once for four neighbours, not once for each.
     moves = ((-stride, stride, -1, 1), _STEP), ((-stride - 1, -stride + 1, stride - 1, stride + 1), _STEP_SLANT)
@@ -115,7 +115,7 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
     depth, nearest, source = [_UNREACHED] * len(water), [0] * len(water), [0] * len(water)
     for i, island_id in coast:
         depth[i], nearest[i], source[i] = 0, island_id, i
-    # Two costs only, so few depths are ever reached: a heap of them, each with its tiles, walks them in order — a count through every depth idles a million times.
+    # Four costs only, two steps and their halves off a shore, so few depths are ever reached: a heap of them, each with its tiles, walks them in order.
     at_depth, pending = {0: [i for i, _ in coast]}, [0]
     farthest = _FARTHEST_SWIM * _STEP  # a tide reaching nobody is not worth raising: what it would still close, no body could swim
 
@@ -129,7 +129,7 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
                 continue
             own, origin = nearest[i], source[i]
             for steps, cost in moves:
-                swum = here + cost
+                swum = here + (cost if here else cost // 2)  # both costs even, so the half stays whole
                 bucket = at_depth.get(swum)
                 for step in steps:
                     j = i + step
@@ -147,7 +147,7 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
                             gaps[pair] = span
                             banks[pair] = (origin, source[j]) if own < rival else (source[j], origin)
     return [
-        {"banks": [{"x": i % stride - 1, "y": i // stride - 1} for i in banks[pair]], "between": list(pair), "gap": round(span / _STEP)}
+        {"banks": [{"x": i % stride - 1, "y": i // stride - 1} for i in banks[pair]], "between": list(pair), "swim_tiles": round(span / _STEP)}
         for pair, span in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))
     ]
 
@@ -183,4 +183,4 @@ def water_bodies(save: dict, save_path: Path) -> Callable[[int, int], dict]:
 
 # Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v11", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v13", save_path, lambda: _compute_waters(save, save_path))

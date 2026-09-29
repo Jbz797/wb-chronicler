@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from islands import compute_islands_cached
 from shared import (
+    absent_entity,
     actor_age,
     actor_xy,
     building_tile,
@@ -110,7 +111,7 @@ def _here(actor: dict, house: dict, civic: bool) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -129,7 +130,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     house = next((b for b in save.get("buildings") or [] if b.get("id") == house_id), None)  # one lookup, so a scan beats indexing every building to read one
     if house is None:
-        print(f"✗ unknown building: {house_id}", file=sys.stderr)
+        print(absent_entity("ground", "buildings", house_id, chapter, noun="building"), file=sys.stderr)
         return 1
 
     tile = building_tile(house)

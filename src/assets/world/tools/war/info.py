@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     PROFESSION_WARRIOR,
+    absent_entity,
     emit,
     entity_age,
     index_by_id,
@@ -65,7 +66,7 @@ def _build_side(kingdoms: set[int], deaths: int, alliances: list[dict], ctx: dic
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -84,7 +85,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     war = index_by_id(save.get("wars") or []).get(war_id)
     if war is None:
-        print(f"✗ unknown war: {war_id}", file=sys.stderr)
+        print(absent_entity("war", "wars", war_id, chapter), file=sys.stderr)
         return 1
 
     attackers = ({war.get("main_attacker")} | set(war.get("list_attackers") or [])) - {None}

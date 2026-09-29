@@ -46,7 +46,7 @@
     "marked": "18.0.14",
     "marked-gfm-heading-id": "4.1.4",
     "ng-zorro-antd": "22.1.1",
-    "ngx-markdown": "22.0.2",
+    "ngx-markdown": "22.1.0",
     "ngx-scrollbar": "^19.1.5",
     "prism-themes": "1.9.0",
     "prismjs": "1.30.0",
@@ -60,7 +60,7 @@
     "@angular/language-service": "22.2.0",
     "chokidar": "5.0.0",
     "concurrently": "10.0.5",
-    "eslint-config-angular-strict": "22.3.7",
+    "eslint-config-angular-strict": "22.3.9",
     "less": "4.9.1",
     "prettier": "3.9.9",
     "stylelint": "17.15.0",
@@ -68,5 +68,5 @@
     "stylelint-prettier": "5.0.3",
     "typescript": "6.0.3"
   },
-  "packageManager": "yarn@4.18.0+sha512.fcb8716fe7cd0eece141ffc18b92193a9df9204c1ba83189c288835223fc0bbe64af473bab0d5e9927a7daeb5caf2bb07eb2787cc9338ca040ea125f2a1f2f7e"
+  "packageManager": "yarn@4.18.1+sha512.b2e1e7524f654f2749d32b4ebcb4622473cb5bcbc485df2007e12a154e50162a4d795526768bc5f5b8f81717bfd79deb2472813d86fb5ae2eb551fa9c872b08f"
 }

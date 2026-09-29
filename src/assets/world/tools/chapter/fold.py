@@ -57,9 +57,9 @@ _AUDIT = {
         }
     ),
     "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
-    "relations": frozenset({"age_years", "borders"}),  # how long the tie has held and whether the two touch — the panel prints the standing and its drivers
+    "relations": frozenset({"age_years", "borders", "years_since_last_war"}),  # the tie's age, its border, its last war: the panel prints the standing, its drivers
     "snapshot": frozenset({"gear"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
-    "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "swim"}),
+    "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "projectiles", "recoil", "swim", "throwing_range"}),
 }
 
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
@@ -71,7 +71,8 @@ _AUDIT_TIERS = {
     "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
     "attackers.kingdoms": {"population"},  # a camp's realms as tags, the side's pooled `population` printed beside them
     "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
-    "city.metadata": {"births", "capital", "kingdom"},  # no row counts its births, and its crown and seat are the kingdom panel's to name
+    # No row counts its births, its crown and seat are the kingdom panel's to name, and its centre and years under the banner only the chronicler reads.
+    "city.metadata": {"births", "capital", "kingdom", "x", "y", "years_in_kingdom"},
     "city.population": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
     "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
@@ -279,7 +280,6 @@ def fold_favorite_detail(favorite: dict) -> None:
 
 # The world block as its panels print it: the tallies and podiums folded, each scheme's type cut to its key.
 def fold_world(world: dict) -> None:
-    world.pop("timeline", None)  # the chronicler's dating tool: no panel reads the world year by year
     _fold_cumulative(world)
     _fold_world_leaders(world)
     _fold_total(world, "boats")  # counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand

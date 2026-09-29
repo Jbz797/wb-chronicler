@@ -31,7 +31,7 @@ export interface World {
 export interface WorldInfo { name: string }
 
 // Every scheme afoot, its schemer named — WB hangs one on a single actor, and `actor/info.py <id> plot` tells the chronicler the rest.
-export interface WorldPlot { actor: EntityReference; type: { id: string; name: string } }
+export interface WorldPlot { actor: EntityReference; type: { id: string } }
 
 // Per-cause death counts since world start — Python omits 0-counts, so UI must treat absent keys as 0.
 interface DeathBreakdown {

@@ -15,6 +15,7 @@ from islands import compute_islands_cached
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
+    absent_entity,
     actor_age,
     actor_xy,
     build_trait_ids,
@@ -147,7 +148,7 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     if not argv:
         print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
@@ -167,7 +168,7 @@ def main(argv: list[str]) -> int:
     religions_by_id = index_by_id(save.get("religions") or [])
     religion = religions_by_id.get(religion_id)
     if religion is None:
-        print(f"✗ unknown religion: {religion_id}", file=sys.stderr)
+        print(absent_entity("religion", "religions", religion_id, chapter), file=sys.stderr)
         return 1
 
     # Towns and crowns answer off their own records, counted whatever the call asked: two short collections cost less to tally than the branch that would skip them.

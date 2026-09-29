@@ -26,6 +26,7 @@ interface AllianceMetadata {
   kills?: number;
   name: string; // read by the panel's header chip, not by any row — the tag beside the title carries it
   renown?: number;
+  territory?: number;
 }
 
 interface AllianceRanks {

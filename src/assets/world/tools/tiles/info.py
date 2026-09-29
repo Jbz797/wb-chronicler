@@ -19,6 +19,7 @@ from grid import LazyTileGrid, listed_tiles, off_land, tile_biome, tile_block, t
 from islands import compute_islands_cached
 from shared import (
     DIAGONAL_EXTRA,
+    HOURLY_TILES_PER_SPEED,
     ZONE_TILES,
     actor_xy,
     arg_parser,
@@ -33,18 +34,20 @@ from shared import (
     load_save,
     parse_sections,
     take_chapter,
+    trip_time,
     walk_tiles,
     zone_xy,
 )
-from walking import WalkMap, walk_to
+from walking import WalkMap, walk_way
 from waters import water_bodies
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
-_LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `to_land` gives the reach, not a number
+_LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
-# The eight steps a tide takes, each with what it costs — a slanted one being longer than a straight one, the cheapest water is not the nearest in rings.
+_REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its walks are timed at the pace the scale is told in
+# The eight steps a tide takes, each with its length — a slanted one being longer than a straight one, the least water is not the nearest in rings.
 _WEIGHTED_DELTAS = tuple(((dx, dy), 1.0 if dx == 0 or dy == 0 else 1 + DIAGONAL_EXTRA) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)
 
 
@@ -134,7 +137,7 @@ def _context_at(x: int, y: int, ctx: dict) -> dict:
 def _distances_at(x: int, y: int, ctx: dict) -> dict:
     out: dict = {"to_water": _water_distance(x, y, ctx["grid"], ctx["layer_by_id"])}
     if (land := _land_distance(x, y, ctx)) is not None:
-        out["to_land"] = land
+        out["strait_to_land"] = land
     city = _city_at(x, y, ctx)
     if city is None:
         if quarters := ctx["city_quarters"]:  # a quarter lies whole on the map, WB sizing a world in blocks its zones divide
@@ -152,7 +155,7 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     return out
 
 
-# A town is its fabric, not its centre, as `to_land` takes a shore: at the edge of a sprawling town a body stands at the gate, not a centre away.
+# A town is its fabric, not its centre, as `to_islands` takes a land's nearest tile: at the edge of a sprawling town a body stands at the gate, not a centre away.
 def _fabric_distance(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
     return round(min(walk_tiles(max(qx - x, x - qx - ZONE_TILES + 1, 0), max(qy - y, y - qy - ZONE_TILES + 1, 0)) for qx, qy in quarters))
 
@@ -187,7 +190,7 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
             ctx["capital_pos_by_kingdom"][kingdom["id"]] = seat
 
 
-# Every land by its nearest tile, walked as `to_land` measures — read at a queried tile alone.
+# Every land by its nearest tile, as the crow flies — read at a queried tile alone.
 def _island_distances(cx: int, cy: int, ctx: dict) -> dict[int, float]:
     own = ctx["tile_to_island"].get((cx, cy))
     nearest: dict[int, float] = {}
@@ -204,36 +207,25 @@ def _island_distances(cx: int, cy: int, ctx: dict) -> dict[int, float]:
     return nearest
 
 
-# How far the tile's rock lies from a land a city could hold, and which one — measured whole, a castaway being isolated by his island's strait, not his footing.
+# The water cutting the tile's rock off a land a city could hold, and which: from the whole rock, swum as `swim_tiles` counts it, dry rock on the way free.
 def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
     island_at, grid, layer = ctx["tile_to_island"].get, ctx["grid"], ctx["layer_by_id"]
     height, width = grid.height, grid.width
     if island_at((x, y)) is not None:
         return None
 
-    # Afloat the source is the tile alone, so the search grows by square rings — whose tiles cost `r` to `r√2`, hence the sweep carried past the first land seen.
-    if layer[grid[y][x]] == "Ocean":
-        found: tuple[float, int] | None = None
-        for r in range(_LAND_REACH + 1):
-            if found is not None and r >= found[0]:
-                break
-            for nx, ny in _ring_tiles(x, y, r, width, height):
-                if (island := island_at((nx, ny))) is not None and (swum := walk_tiles(nx - x, ny - y)) < (found[0] if found else swum + 1):
-                    found = (swum, island)
-        return {"island_id": found[1], "tiles": round(found[0])} if found else {"farther_than": _LAND_REACH}
+    def wet(px: int, py: int) -> bool:
+        return layer[grid[py][px]] == "Ocean"
 
-    def dry(px: int, py: int) -> bool:  # the uncounted rock and nothing else — take the sea in and the fill would run to the map's end
-        return layer[grid[py][px]] != "Ocean" and island_at((px, py)) is None
-
-    seen, stack = {(x, y)}, [(x, y)]  # a rock carries the wave whole: its far shore may reach a land its near one never would
+    # Afloat the tile alone; on a rock the rock whole, whose far shore may reach a land its near one never would.
+    seen, stack = {(x, y)}, [] if wet(x, y) else [(x, y)]
     while stack:
         cx, cy = stack.pop()
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             nx, ny = cx + dx, cy + dy
-            if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in seen and dry(nx, ny):
+            if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in seen and not wet(nx, ny) and island_at((nx, ny)) is None:
                 seen.add((nx, ny))
                 stack.append((nx, ny))
-    # One tide off the whole rock rather than a ring per tile, and the cheapest water always taken first: a slanted stretch costs more than a straight one.
     swum = dict.fromkeys(seen, 0.0)
     tide = [(0.0, tile) for tile in seen]
     heapify(tide)
@@ -244,25 +236,29 @@ def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
         if here > swum[tile]:
             continue
         if (island := island_at(tile)) is not None:
-            return {"island_id": island, "tiles": round(here)}
+            return {"island_id": island, "swim_tiles": max(round(here), 1)}  # afloat by a shore, the half step off his own tile still swum
         cx, cy = tile
-        for (dx, dy), cost in _WEIGHTED_DELTAS:
+        here_wet = wet(cx, cy)
+        for (dx, dy), length in _WEIGHTED_DELTAS:
             nx, ny = cx + dx, cy + dy
-            if 0 <= nx < width and 0 <= ny < height and (reached := here + cost) < swum.get((nx, ny), reached + 1):
-                swum[(nx, ny)] = reached
-                heappush(tide, (reached, (nx, ny)))
+            if 0 <= nx < width and 0 <= ny < height:
+                reached = here + length * (here_wet + wet(nx, ny)) / 2
+                if reached < swum.get((nx, ny), reached + 1):
+                    swum[(nx, ny)] = reached
+                    heappush(tide, (reached, (nx, ny)))
     return {"farther_than": _LAND_REACH}
 
 
-# The crow's line beside the walk, left out where no land joins them — `goals` are tile indices, read from a land alone and sifted to it: WB walks none off its own.
+# The crow's line beside the walk and its time at the reference pace, left out where no land joins them — `goals` are tile indices, read from a land alone.
 def _measure(x: int, y: int, tiles: int, goals: Iterable[int], ctx: dict) -> dict:
     island_of = ctx["tile_to_island"]
     if (land := island_of.get((x, y))) is None or not (ends := set(compress(goals := list(goals), map(land.__eq__, island_of.listed_ids(goals))))):
-        return {"tiles": tiles}
+        return {"crow_tiles": tiles}
     walk_map = ctx["walk_map"]()
-    # A body no ground is home to, and that never swims: which body would, no tile says.
-    walked = walk_to(walk_map, walk_map.gait(None, frozenset()), x, y, ends)
-    return {"tiles": tiles} if walked is None else {"tiles": tiles, "walked": round(walked)}
+    # A body no ground is home to, and that never swims: which body would, no tile says. Its pace is a `speed` 10's, the sand slowing it as any.
+    if (way := walk_way(walk_map, walk_map.gait(_REFERENCE_SPEED, frozenset()), x, y, ends)) is None:
+        return {"crow_tiles": tiles}
+    return {"crow_tiles": tiles, "walk_tiles": round(way[3]), **trip_time(HOURLY_TILES_PER_SPEED * _REFERENCE_SPEED, way[0], way[0])}
 
 
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
