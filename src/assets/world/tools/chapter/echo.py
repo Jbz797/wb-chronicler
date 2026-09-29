@@ -19,16 +19,17 @@ from shared import SAVES_DIR, emit, latest_chapter
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
+_LONG_RUN = 7  # words from which a run is a turn of phrase with a single word of its own: `et ce qui verdit au ras du sol`, `à l'entrée de l'an 5`
 _MARKS = re.compile(r"[*_#>|`]")  # emphasis, headings, quotes and table rules: markup, which no reader hears
 _MIN_RUN = 4  # words a shared run must hold: three are the language's own (« il n'y a »), four start to be a turn of phrase
 _OVERUSE = 1.3  # how far past the chronicle's own highest rate a family must climb to be named: a wobble is not a tic
 _RARE = 3  # uses across the whole chronicle under which a word shared with the two chapters before is an image borrowed, not the language
-_REFRAIN = 3  # Chapters a run of words must be said in to be the chronicle's own refrain — `par la taille`, `n'obéissent à rien` — told apart, never dropped.
+_REFRAIN = 3  # chapters a run of words must be said in to be the chronicle's own refrain — `par la taille`, `n'obéissent à rien` — told apart, never dropped
 _SCARCE = 8  # uses across the whole chronicle under which a word can carry a chute: `monde` or `terre` would join any two sentences
 _SECTION = re.compile(r"^(##\s|---\s*$)")  # a heading or a separator: where a section, and so its chute, ends
 _SENTENCE = re.compile(r"(?<=[.!?…])\s+")  # where a sentence ends inside a line
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # `[p 28 Voxzen]` read as its text, as `new.py` reads a title: a bare marker says nothing
-_WORD = re.compile(r"\b[^\W\d_]{1,2}['’]|[\w-]+(?:['’][\w-]+)*")  # an elision splits, `qu'il` as `qu'` and `il`; `aujourd'hui` and `jusqu'à` hold
+_WORD = re.compile(r"\b[^\W\d_]{1,2}['’]|\w[\w-]*(?:['’]\w[\w-]*)*")  # an elision splits, `qu'il` as `qu'` and `il`; `aujourd'hui` holds, `---` is none
 
 
 class _Token(NamedTuple):
@@ -258,9 +259,9 @@ def _species_roots() -> frozenset[str]:
     return frozenset(word[:4].lower() for name in names for word in re.findall(r"[\wÀ-ÿ-]+", name) if len(word) >= 4)
 
 
-# The words a run must carry to be a turn of phrase rather than the language: two that say something of their own.
+# The words a run must carry to be a turn of phrase rather than the language: two that say something of their own, one past `_LONG_RUN` words.
 def _telling(run: list[_Token]) -> bool:
-    return sum(token.content for token in run) >= 2
+    return sum(token.content for token in run) >= (1 if len(run) >= _LONG_RUN else 2)
 
 
 # A stretch of prose as tokens: markup gone, a tag's text kept and marked as a name, an elision split from the word it leans on.
