@@ -1,16 +1,17 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 29/09/26 11:14</p>
+<p class="metadata">Date de mise à jour : 29/09/26 11:37</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
 ## Ta tâche
 
-Lis le chapitre, puis autant de la chronique qu'il t'en faut : à partir de `saves/C1/chapter.md`, aucun chapitre n'est hors de ta portée. Juge si l'histoire qu'elle raconte tient toujours, ni ses chiffres ni sa manière :
+Lis le chapitre, puis autant de la chronique qu'il t'en faut : à partir de `saves/C1/chapter.md`, aucun chapitre n'est hors de ta portée. Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
 
 - un fil qu'elle a ouvert et jamais refermé ;
 - une épithète ou un lien que les chapitres ne soutiennent plus ;
-- un motif ou une cause qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
+- un mot qu'elle a défini une fois (un terme forgé, « sol », « îlot ») et qu'elle emploie aujourd'hui dans un autre sens ;
+- un motif, une cause ou un chiffre qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - une âme ou un lieu qu'elle a lâchés là où la chronique l'attendait.
 
 Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : signale-le comme un point à mesurer.
