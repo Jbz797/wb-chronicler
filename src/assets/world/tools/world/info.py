@@ -467,6 +467,20 @@ def _name_of(records: list[dict], target_id) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
 
 
+# Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.
+def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
+    said = [
+        f"bearing {args.trait}" if args.trait else None,
+        "that could found a town where it stands" if args.settle else None,
+        f"on land {args.island}" if args.island is not None else None,
+        f"arrived or moved since {since}" if since else None,
+    ]
+    thinking = "thinking " if args.sapient or args.settle else ""
+    unborn = kinds is not None and not any(a.get("asset_id") in kinds for a in save.get("actors_data") or [] if not is_boat(a))
+    hint = " — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds" if unborn else ""
+    return f"✗ no living {thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
+
+
 # The subspecies WB hangs `has_sapience` on, as a set of ids — an allegiance is not a mind, and a world can think long before it crowns anyone.
 def _sapient_subspecies(save: dict) -> frozenset:
     return frozenset(sid for sid, sub in index_by_id(save.get("subspecies") or []).items() if is_sapient(sub))
@@ -548,9 +562,7 @@ def main(argv: list[str]) -> int:
             return 2
         roster = _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle)
         if not roster:  # a filter nothing answers, never a silent `{}`
-            hint = "" if args.trait or args.sapient or args.settle else " — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds"
-            why = f"bears {args.trait}" if args.trait else "could found a town where it stands" if args.settle else "matches"
-            print(f"✗ no living {'thinking ' if args.sapient or args.settle else ''}body {why}{hint}", file=sys.stderr)
+            print(_nobody(args, kinds, save, since), file=sys.stderr)
             return 1
         out["roster"] = roster
     if "snapshot" in sections:
