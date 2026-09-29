@@ -6,6 +6,7 @@
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names kept verbatim for raw-save fields (e.g. `world_time`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
+import re
 import sys
 from collections import Counter, defaultdict
 from functools import cache
@@ -124,6 +125,7 @@ _DEATH_CAUSES = {
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
 
 # Actor field => the save collection it points into, feeding its `population` record — every actor counted, wildlife included, as each tier's medal counts its own.
+_GROUND_GATE = re.compile(r"ground (\d+)/(\d+)")  # `settle`'s ground gate, `ground 63/64: …` — the tiles a zone has, and those it needs
 _GROUP_FIELDS = {
     "cityID": "cities",  # a townsman need answer to no crown — counted apart from the kingdom's roll
     "civ_kingdom_id": "kingdoms",  # the crown's own roll, which many a thinking soul is not on — a people can stand before any banner is raised
@@ -341,13 +343,13 @@ def _build_plots(save: dict) -> list[dict]:
 
 # Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
 def _build_roster(
-    save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | str | None, since: str | None, sapient: bool, settle: bool
+    save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | str | None, since: str | None, sapient: bool, settle: bool, barred: bool
 ) -> list[dict] | dict:
     was, thinking = _lands_then(since) if since else None, _sapient_subspecies(save) if sapient else None
     grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
     asked = _ISLET if land == "islets" else land  # `-i islets` names the islets as a body stands on one, `islet`
     ctx = build_actor_stats_context(save)
-    if settle:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
+    if settle or barred:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
         ctx |= {
             "city_zones": cache(lambda: city_zones(save, island_of)),
             "island_lookup": lambda: island_of,
@@ -362,7 +364,10 @@ def _build_roster(
         borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
         if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or not borne or (thinking is not None and actor.get("subspecies") not in thinking):
             continue
-        if settle and settle_gates(actor, ctx) not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
+        gates = settle_gates(actor, ctx) if settle or barred else None
+        if settle and gates not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
+            continue
+        if barred and (gates is None or gates in (True, ["child"])):  # a thinker something besides its youth keeps from founding
             continue
         here = _standing(actor, island_of, grid, save["tileMap"])
         change: dict = {}
@@ -371,26 +376,41 @@ def _build_roster(
                 continue  # stood still: nothing for `since` to say
             change = {"was_on": then}
         if land is None or asked in (here, change.get("was_on")):
-            bodies.append((actor, here, change))
+            bodies.append((actor, here, change | ({"settle": [g for g in gates if g != "child"]} if barred and isinstance(gates, list) else {})))
     if len(bodies) > MAX_LISTED:  # a census past the list: how many of each kind, and of each stage, the adults counted too
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
         stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
-        return {"by_species": dict(species), "by_stage": dict(stages), "info": f"{len(bodies)} bodies — narrow them with -t, --trait, --sapient, --settle or -i"}
+        return {
+            "by_species": dict(species),
+            "by_stage": dict(stages),
+            "info": f"{len(bodies)} bodies — narrow them with -t, --trait, --sapient, --settle, --barred or -i",
+        }
     rows, one_kind = [], kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
-    for actor, here, change in sorted(bodies, key=lambda body: (isinstance(body[1], str), body[1], body[0]["id"])):  # land by land, off every land last
+
+    # Land by land, off every land last — the founders by who founds first, the barred by who comes nearest
+    def order(body: tuple[dict, int | str, dict]) -> tuple:
+        if barred:
+            return _nearest_founder(body)
+        if settle:  # the grown first, whose youth is past, then by the date each comes of age
+            return crossed_at(body[0], adult_age(body[0], ctx)), body[0]["id"]
+        return isinstance(body[1], str), body[1], body[0]["id"]
+
+    for actor, here, change in sorted(bodies, key=order):
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
         stage = _stage(actor, ctx, age, adult)
         rows.append(
             {
                 "adult_on": crossed_on(actor, adult) if age < adult else None,
                 "asset_id": None if one_kind else actor.get("asset_id"),
-                "breeds_on": crossed_on(actor, breeding) if age < breeding else None,
+                # Under `--barred`, what founding weighs alone: no mate nor sex, and `adult_on` says the youth — its gates keep each line inline
+                "breeds_on": crossed_on(actor, breeding) if age < breeding and not barred else None,
                 "id": actor["id"],
                 # Said outright beside a `was_on`, a missing one reading as still on the land left; silent where `-i` already named it
-                "island_id": None if here == asked and not change else here,
-                "life_stage": None if stage == "adult" else stage,  # silent at `adult`, as in `surroundings`: on every line it would push the longest past inline
+                "island_id": None if here == asked and "was_on" not in change else here,
+                # Silent at `adult`, as in `surroundings`, and under `--barred`: on every line it would push the longest past inline
+                "life_stage": None if stage == "adult" or barred else stage,
                 "name": actor.get("name"),
-                "sex": sex_label(actor),
+                "sex": None if barred else sex_label(actor),
                 **change,
             }
         )
@@ -470,15 +490,22 @@ def _name_of(records: list[dict], target_id) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
 
 
+# The barred who come nearest to founding first: the fewest tiles of ground short, then those the zone's ground does not bar at all — a biome, a centre off land.
+def _nearest_founder(body: tuple[dict, int | str, dict]) -> tuple[float, int]:
+    ground = next((m for gate in body[2].get("settle", ()) if (m := _GROUND_GATE.match(gate))), None)
+    return (int(ground[2]) - int(ground[1]) if ground else inf), body[0]["id"]
+
+
 # Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.
 def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
     said = [
         f"bearing {args.trait}" if args.trait else None,
         "that could found a town where it stands" if args.settle else None,
+        "kept from founding by more than its age" if args.barred else None,
         (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
         f"arrived or moved since {since}" if since else None,
     ]
-    thinking = "thinking " if args.sapient or args.settle else ""
+    thinking = "thinking " if args.sapient or args.settle or args.barred else ""
     unborn = kinds is not None and not any(a.get("asset_id") in kinds for a in save.get("actors_data") or [] if not is_boat(a))
     hint = " — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds" if unborn else ""
     return f"✗ no living {thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
@@ -518,6 +545,7 @@ def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)
     parser = arg_parser(prog="world/info.py", description="World-wide sections, from the save alone.")
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
+    parser.add_argument("--barred", action="store_true", help="`roster`: the thinkers something besides their age keeps from founding, and what")
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
     parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
     parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
@@ -532,9 +560,12 @@ def main(argv: list[str]) -> int:
         return 2
     if not requested or requested == "full":
         sections = _ALL_SECTIONS
-    narrowing = args.type or args.trait or args.sapient or args.settle or args.island is not None or since
+    narrowing = args.type or args.trait or args.sapient or args.settle or args.barred or args.island is not None or since
+    if args.settle and args.barred:  # the two halves of the thinkers: together they name no one
+        print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
+        return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        print("✗ -t, --trait, --sapient, --settle, -i and --since narrow `roster`: name it", file=sys.stderr)
+        print("✗ -t, --trait, --sapient, --settle, --barred, -i and --since narrow `roster`: name it", file=sys.stderr)
         return 2
     if since and not (SAVES_DIR / since / "map.wbox").exists():
         print(f"✗ no save for {since}", file=sys.stderr)
@@ -563,7 +594,7 @@ def main(argv: list[str]) -> int:
         if args.trait and args.trait not in load_data("creature-traits.json") and args.trait not in load_data("subspecies-traits.json"):
             print(f"✗ no trait {args.trait}, of a body or of a lineage — `actor <id> traits` and `subspecies <id> traits` give the ids", file=sys.stderr)
             return 2
-        roster = _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle)
+        roster = _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred)
         if not roster:  # a filter nothing answers, never a silent `{}`
             print(_nobody(args, kinds, save, since), file=sys.stderr)
             return 1

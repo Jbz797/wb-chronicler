@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 29/09/26 23:28</p>
+<p class="metadata">Date de mise à jour : 29/09/26 23:41</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -52,7 +52,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### `world` :
 
 - `pairings` : par espèce, la 1ʳᵉ naissance possible (`birth_on`) et l'écart du couple ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `lovers`, des amants, choisis d'abord ; `barred`, ce qui l'arrête (`hungry`, `water`, `tiny_islet`, la loi WB) ; règles : `wiki:Reproduction`
-- `roster` : chaque vivant, une ligne, `life_stage` hors adultes ; `-t` type ou famille, `--trait <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`), `-i` une terre, `islets` ou `water` ; `--since C<n>` : les arrivés et les `was_on` ; passé 50, un compte par espèce et par stade
+- `roster` : chaque vivant, une ligne, `life_stage` hors adultes ; `-t` type ou famille, `--trait <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water` ; `--since C<n>` : les arrivés et les `was_on` ; passé 50, un compte par espèce et par stade
 
 ---
 
