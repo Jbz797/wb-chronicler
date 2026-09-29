@@ -8,13 +8,15 @@
 
 import sys
 from collections import Counter, defaultdict
+from functools import cache
 from math import inf
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_at, crossed_on, is_egg, maturation_months
-from grid import frozen_tally
+from founding import city_zones, settle_gates
+from grid import LazyTileGrid, frozen_tally
 from islands import compute_islands_cached
 from shared import (
     MIN_RANK_PEERS,
@@ -50,6 +52,7 @@ from shared import (
     walk_tiles,
     wants_detail,
     world_date,
+    world_laws,
 )
 from walking import WalkMap, walk_way
 
@@ -289,14 +292,27 @@ def _build_plots(save: dict) -> list[dict]:
 
 
 # Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
-def _build_roster(save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | None, since: str | None, sapient: bool) -> list[dict] | dict:
+def _build_roster(
+    save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | None, since: str | None, sapient: bool, settle: bool
+) -> list[dict] | dict:
     was, thinking = _lands_then(since) if since else None, _sapient_subspecies(save) if sapient else None
+    ctx = build_actor_stats_context(save)
+    if settle:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
+        ctx |= {
+            "city_zones": cache(lambda: city_zones(save, island_of)),
+            "island_lookup": lambda: island_of,
+            "tile_grid": cache(lambda: LazyTileGrid(save)),
+            "tile_map": save["tileMap"],
+            "world_laws": world_laws(save),
+        }
     # A trait is a body's own or its lineage's: `gift_of_thunder` is born with a whole line, `fire_blood` with one body — `--trait` finds either.
     bearing = {sub["id"] for sub in save.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
     bodies = []
     for actor in save.get("actors_data") or []:
         borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
         if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or not borne or (thinking is not None and actor.get("subspecies") not in thinking):
+            continue
+        if settle and settle_gates(actor, ctx) not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
             continue
         here = island_of.get(actor_xy(actor))
         change: dict = {}
@@ -306,11 +322,10 @@ def _build_roster(save: dict, island_of, kinds: set[str] | None, trait: str | No
             change = {"was_on": then if then is not None else _OFF_LAND}
         if land is None or land in (here, change.get("was_on")):
             bodies.append((actor, here, change))
-    ctx = build_actor_stats_context(save)
     if len(bodies) > _MAX_ROSTER:  # a census past the list: how many of each kind, and of each stage, the adults counted too
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
         stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
-        return {"by_species": dict(species), "by_stage": dict(stages), "info": f"{len(bodies)} bodies — narrow them with -t, --trait, --sapient or -i"}
+        return {"by_species": dict(species), "by_stage": dict(stages), "info": f"{len(bodies)} bodies — narrow them with -t, --trait, --sapient, --settle or -i"}
     rows = []
     for actor, here, change in sorted(bodies, key=lambda body: (body[1] is None, body[1] or 0, body[0]["id"])):  # land by land, off every land last
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
@@ -432,6 +447,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="`roster`: the bodies standing on one land")
     parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
+    parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster`: one kind, a family (`actors`) or a comma list")
     args = parser.parse_args(argv)
@@ -443,9 +459,9 @@ def main(argv: list[str]) -> int:
         return 2
     if not requested or requested == "full":
         sections = _ALL_SECTIONS
-    narrowing = args.type or args.trait or args.sapient or args.island is not None or since
+    narrowing = args.type or args.trait or args.sapient or args.settle or args.island is not None or since
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        print("✗ -t, --trait, --sapient, -i and --since narrow `roster`: name it", file=sys.stderr)
+        print("✗ -t, --trait, --sapient, --settle, -i and --since narrow `roster`: name it", file=sys.stderr)
         return 2
     if since and not (SAVES_DIR / since / "map.wbox").exists():
         print(f"✗ no save for {since}", file=sys.stderr)
@@ -474,9 +490,11 @@ def main(argv: list[str]) -> int:
         if args.trait and args.trait not in load_data("creature-traits.json") and args.trait not in load_data("subspecies-traits.json"):
             print(f"✗ no trait {args.trait}, of a body or of a lineage — `actor <id> traits` and `subspecies <id> traits` give the ids", file=sys.stderr)
             return 2
-        if not (roster := _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient)):  # a filter nothing answers, never a silent `{}`
-            hint = "" if args.trait or args.sapient else " — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds"
-            print(f"✗ no living {'thinking ' if args.sapient else ''}body {f'bears {args.trait}' if args.trait else 'matches'}{hint}", file=sys.stderr)
+        roster = _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle)
+        if not roster:  # a filter nothing answers, never a silent `{}`
+            hint = "" if args.trait or args.sapient or args.settle else " — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds"
+            why = f"bears {args.trait}" if args.trait else "could found a town where it stands" if args.settle else "matches"
+            print(f"✗ no living {'thinking ' if args.sapient or args.settle else ''}body {why}{hint}", file=sys.stderr)
             return 1
         out["roster"] = roster
     if "snapshot" in sections:

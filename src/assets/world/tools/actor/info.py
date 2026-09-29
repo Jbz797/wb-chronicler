@@ -12,7 +12,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_on, hatch_months, is_baby, is_egg
-from grid import LazyTileGrid, off_land, tile_kind
+from founding import city_zones, settle_gates
+from grid import LazyTileGrid, off_land
 from islands import compute_islands_cached
 from shared import (
     HOURLY_TILES_PER_SPEED,
@@ -21,7 +22,6 @@ from shared import (
     SAVES_DIR,
     UNITS_PER_MONTH,
     UNITS_PER_YEAR,
-    ZONE_TILES,
     absent_entity,
     actor_age,
     actor_xy,
@@ -61,44 +61,15 @@ from shared import (
     wants_detail,
     world_date,
     world_laws,
-    zone_xy,
 )
 from walking import Gait, WalkMap, walk_from, walk_way
 from waters import waters_cached
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
-
-# WB `TopTileLibrary`: the biomes any lineage may found on, and those only a meta tag opens — `corrupted` alone spelt apart from its tag.
-_BUILD_FREE = (
-    "birch",
-    "candy",
-    "celestial",
-    "clover",
-    "crystal",
-    "enchanted",
-    "flower",
-    "garlic",
-    "grass",
-    "jungle",
-    "lemon",
-    "maple",
-    "mushroom",
-    "paradox",
-    "rocklands",
-    "savanna",
-    "singularity",
-)
-
-_BUILD_TAGS = {"corrupted": "corruption", "desert": "desert", "infernal": "infernal", "permafrost": "permafrost", "swamp": "swamp", "wasteland": "wasteland"}
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
-_CITY_WAVE = 3  # WB `CityPlaceFinder.startWave`: the zones a town keeps founders off, counted from its edge across its own land
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
-
-# WB ground, all 64 of a zone's tiles for `canStartCityHere`: the hill left out, ground though it bars; a pit a dry hole (`liquid` 0) till the sea fills it.
-_GROUND_BASES = frozenset({"pit_close_ocean", "pit_deep_ocean", "pit_shallow_waters", "sand", "soil_high", "soil_low"})
-
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 _PLACE_KEYS = frozenset({"island_id", "x", "y"})  # what `since` says as a path, `moved`, rather than as three fields changed apiece
@@ -147,16 +118,6 @@ _ROLE_ORDER = (
 )
 
 _SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
-
-# WB `TopTileLibrary`: the tiles `checkCanSettleInThisBiomes` weighs, each with the meta tag a lineage must bear to build there — `None` where any may.
-_SETTLE_BIOMES = {
-    **dict.fromkeys(f"{biome}_{height}" for biome in _BUILD_FREE for height in ("high", "low")),
-    **{f"{biome}_{height}": f"can_build_in_biome_{tag}" for biome, tag in _BUILD_TAGS.items() for height in ("high", "low")},
-    **dict.fromkeys(("ice", "snow_block", "snow_hills", "snow_sand", "snow_summit"), "can_build_in_biome_permafrost"),  # permafrost's frosts, cloned off it
-    "sand": None,
-}
-
-_SETTLE_SOIL = frozenset({"soil_high", "soil_low"})  # bare soil, which the weighing counts apart and then offsets by everything grown over it
 _SPENT_BREATH_PACE = 0.4  # WB's own multiplier for a body out of breath: it still swims, at two fifths of its pace
 _STAMINA_PER_SECOND = 10.0  # `spendStaminaWithCooldown` takes 1 to 5 points every 0.3s — `Randy.randomInt` leaves its top out, so three on average
 
@@ -231,7 +192,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
         "ferrying_kingdoms": ferrying,  # the crowns a transport boat serves: only their people reach, and are measured, past the common circle
-        "city_zones": cache(lambda: _city_zones(save, islands()[1])),  # called not stored: `settle` alone asks, and only of a thinking soul
+        "city_zones": cache(lambda: city_zones(save, islands()[1])),  # called not stored: `settle` alone asks, and only of a thinking soul
         "island_lookup": cache(lambda: islands()[1]),  # tile → island id, called not stored: `metadata` and `surroundings` alone ask
         "island_sizes": cache(lambda: {land["id"]: land["size"] for land in islands()[0]}),
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
@@ -332,7 +293,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "roles": _compute_roles(actor, save),
         "sapient": is_sapient(ctx["subspecies_by_id"].get(actor.get("subspecies"))),  # tells a builder of cities from a beast, and gates his person tag
         # Chronicler-only, a thinker's alone: whether a town could rise where it stands, else what bars it — the zone weighed even for a child.
-        **({"settle": settle} if (settle := _settle(actor, ctx)) is not None else {}),
+        **({"settle": settle} if (settle := settle_gates(actor, ctx)) is not None else {}),
         "sex": sex_label(actor),
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
@@ -505,17 +466,6 @@ def _circle(actor: dict, ctx: dict, hours: float | None, offshore: bool, sailed:
         return ring
     ferried = actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]
     return "common_with_boat" if ferried and offshore and (trip := sailed()) is not None and _ring(trip) else "far"
-
-
-# Every zone a town holds, with the land its first tile stands on — the one WB spreads its founders' wave across.
-def _city_zones(save: dict, island_of) -> list[tuple[int, int, int | None]]:
-    zones = []
-    for city in save.get("cities") or []:
-        if held := city.get("zones") or []:
-            fx, fy = zone_xy(held[0])
-            land = island_of.get((fx * ZONE_TILES + ZONE_TILES // 2, fy * ZONE_TILES + ZONE_TILES // 2))
-            zones += [(*zone_xy(zone), land) for zone in held]
-    return zones
 
 
 # `Actor.getMassKG`: (`scale` / 0.1) × `mass_2`, cut to two fifths on a child. Both stats ride off the pipeline, where the traits and multipliers have had their say.
@@ -706,60 +656,6 @@ def _ring(hours: float) -> str | None:
 # The longest time still told within `minutes`, as `_ring` files by the rounded time: the bound a sweep of the circles walks to.
 def _ring_bound(minutes: int) -> float:
     return (minutes + 0.5) / 60 if minutes < 60 else minutes / 60 + 0.05
-
-
-# WB `try_to_start_new_civilization` for a thinker: `True` where every gate opens, else each that shuts it — the zone weighed for a child too, who founds once grown.
-def _settle(actor: dict, ctx: dict) -> bool | list[str] | None:
-    subspecies = ctx["subspecies_by_id"].get(actor.get("subspecies"))
-    if not is_sapient(subspecies):
-        return None
-    gates = (
-        ("child", is_baby(actor, ctx)),
-        # A trait that binds its bearer to a crown of its own (WB `is_forced_by_trait`), which `canStartNewCityCivilizationHere` turns away.
-        ("forced_kingdom", any((ctx["creature_traits"].get(trait) or {}).get("forced_kingdom") for trait in actor.get("saved_traits") or ())),
-        ("has_city", actor.get("cityID")),
-        ("king", actor.get("profession") == PROFESSION_KING),
-    )
-    shut = [gate for gate, holds in gates if holds]
-    if not ctx["world_laws"].get("world_law_kingdom_expansion", True):
-        shut.append("law_off")
-    x, y = actor_xy(actor)
-    zx, zy = x // ZONE_TILES, y // ZONE_TILES
-    land = ctx["island_lookup"]().get((zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2))  # WB reads the zone's centre tile
-    # Water or a rock at the zone's middle: no land for WB to weigh. Every counted land clears WB's own 300-tile floor, so this is the whole of that gate.
-    if land is None:
-        shut.append("centre_off_land")
-    elif any(town == land and abs(tx - zx) + abs(ty - zy) <= _CITY_WAVE for tx, ty, town in ctx["city_zones"]()):
-        shut.append("town_near")
-    tags = frozenset(tag for trait in _biology(actor, ctx) for tag in (ctx["subspecies_traits"].get(trait) or {}).get("tags") or ())
-    names, grid = ctx["tile_map"], ctx["tile_grid"]()
-    ground = soil = fit = 0
-    barred, wanted = Counter(), Counter()  # what each shut gate is made of: the ground a zone lacks, the adaptations its unfit biomes ask for
-    for row in range(zy * ZONE_TILES, (zy + 1) * ZONE_TILES):
-        for tile in grid[row][zx * ZONE_TILES : (zx + 1) * ZONE_TILES]:
-            base, _, top = names[tile].partition(":")
-            if base in _GROUND_BASES:
-                ground += 1
-            else:
-                barred[tile_kind(base)] += 1
-            for kind in (base, top):  # a zone weighs both layers of a tile, WB filing each under its own type
-                if kind in _SETTLE_SOIL:
-                    soil += 1
-                elif kind in _SETTLE_BIOMES:
-                    if (need := _SETTLE_BIOMES[kind]) is None or need in tags:
-                        fit += 1
-                    else:
-                        wanted[need] += 1
-    if ground < ZONE_TILES * ZONE_TILES:  # a zone is 8 × 8, and every tile of it must be ground: said with what stands in for the rest
-        shut.append(f"ground {ground}/{ZONE_TILES * ZONE_TILES}: " + ", ".join(f"{n} {kind}" for kind, n in barred.most_common()))
-    unfit = sum(wanted.values())
-    soil -= fit + unfit  # WB `checkCanSettleInThisBiomes`: the bare soil left once every grown tile is offset
-    if not (soil > unfit or unfit <= fit):  # named by the lineage trait that would lift it, off the adaptation granting the missing tag
-        cures = sorted({trait for need in wanted for trait, entry in ctx["subspecies_traits"].items() if need in (entry.get("tags") or ())})
-        bare = f", {soil} bare for {unfit} unfit" if soil > 0 else ""  # the other way through, told only where some bare soil stands at all
-        # WB's first way is half the grown tiles fit: a share said floored, so 49.9 never reads as the 50 that would pass
-        shut.append(f"biomes {fit * 100 // (fit + unfit)}% fit{bare}" + (f" — {', '.join(cures)}" if cures else ""))
-    return shut or True
 
 
 # The body's own species record in `species.json` — WB's `ActorAsset` flags that no save carries.
