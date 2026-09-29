@@ -17,6 +17,7 @@ from grid import LazyTileGrid, off_land
 from islands import compute_islands_cached
 from shared import (
     HOURLY_TILES_PER_SPEED,
+    NEW_BABY_NUTRITION,
     PROFESSION_KING,
     PROFESSION_LEADER,
     SAVES_DIR,
@@ -71,7 +72,6 @@ _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minu
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
-_NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth.
 _PLACE_KEYS = frozenset({"island_id", "x", "y"})  # what `since` says as a path, `moved`, rather than as three fields changed apiece
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -245,7 +245,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     can_reproduce = (
         breeding_mode(_biology(actor, ctx)) is not None
         and age >= age_breeding
-        and (not needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) or int(actor.get("nutrition") or 0) >= _NEW_BABY_NUTRITION)
+        and (not needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) or int(actor.get("nutrition") or 0) >= NEW_BABY_NUTRITION)
         and (
             _bears(actor, ctx) is not True
             or ("infertile" not in (actor.get("saved_traits") or []) and ctx["children_by_parent"].get(actor.get("id"), 0) < int(snap.get("max_children") or 0))
@@ -281,7 +281,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
         **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"]().get(tile)) else {}),
-        "island_id": island_lookup.get(tile),  # Chronicler-only: land mass (geography/info.py).
+        # Chronicler-only: its land (geography/info.py), else `water` afloat or `off_land` on an islet too small to count, as `roster` says it.
+        "island_id": island_lookup.get(tile) or ("water" if "water" in _off_land_at(actor, ctx) else "off_land"),
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in

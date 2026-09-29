@@ -14,13 +14,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, adult_age, breeding_age, build_actor_stats_context, compute_actor_stats, crossed_at, crossed_on, is_egg, maturation_months
+from actor_stats import (
+    actor_stat_totals,
+    adult_age,
+    breeding_age,
+    build_actor_stats_context,
+    compute_actor_stats,
+    crossed_at,
+    crossed_on,
+    is_egg,
+    is_hungry,
+    maturation_months,
+)
 from founding import city_zones, settle_gates
-from grid import LazyTileGrid, frozen_tally
+from grid import LazyTileGrid, frozen_tally, off_land
 from islands import compute_islands_cached
 from shared import (
     MIN_RANK_PEERS,
     MIN_SCORE_PEERS,
+    NEW_BABY_NUTRITION,
     SAVES_DIR,
     SICK_TRAITS,
     UNITS_PER_MONTH,
@@ -43,6 +55,7 @@ from shared import (
     light,
     load_data,
     load_save,
+    needs_food,
     parse_sections,
     rounded_world_time,
     score_totals,
@@ -105,6 +118,8 @@ _DEATH_CAUSES = {
     "weapon": "deaths_weapon",
 }
 
+_GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
+
 # Actor field => the save collection it points into, feeding its `population` record — every actor counted, wildlife included, as each tier's medal counts its own.
 _GROUP_FIELDS = {
     "cityID": "cities",  # a townsman need answer to no crown — counted apart from the kingdom's roll
@@ -122,7 +137,7 @@ _MAX_ROSTER = 50  # past so many bodies a roll is read for its species, not its 
 # The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
-_OFF_LAND = "off_land"  # where `roster` says a body stands, or stood, on no counted land — an islet or the water
+_OFF_LAND = "off_land"  # where `roster` says a body stands, or stood, on an islet too small to count — `_WATER` where it floats
 _ON_REQUEST = ("pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll of bodies is no chapter's to carry
 
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
@@ -147,6 +162,17 @@ _SNAPSHOT_COLLECTIONS = {
 
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
+_WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_OFF_LAND` is, but in the sea or a lake
+
+
+# What keeps a body of age from breeding, WB weighing each partner: a belly short of a baby or at half its cap, a footing it must first leave (water, tiny islet).
+def _breeding_bars(actor: dict, ctx: dict, island_of, grid: LazyTileGrid, names: list[str]) -> set[str]:
+    bars = set()
+    if needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) and (int(actor.get("nutrition") or 0) < NEW_BABY_NUTRITION or is_hungry(actor, ctx)):
+        bars.add("hungry")
+    if (here := _standing(actor, island_of, grid, names)) == _WATER or (here == _OFF_LAND and island_of.islet_size(actor_xy(actor)) <= _GOOD_ISLET):
+        bars.add("unstable")
+    return bars
 
 
 # The world's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
@@ -223,6 +249,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         if not is_boat(actor):
             kinds[actor.get("asset_id")].append(actor)
     island_of, walk_map = compute_islands_cached(save, save_path)[1], None
+    grid, laws = LazyTileGrid(save), world_laws(save)
     # Traits and breeding are a lineage's, read once each: a kind's bodies share a handful of lineages, and every pair below asks of both.
     traits = {sub["id"]: frozenset(sub.get("saved_traits") or ()) for sub in save.get("subspecies") or []}
     mode, empty = {sid: breeding_mode(lineage) for sid, lineage in traits.items()}, frozenset()
@@ -239,19 +266,32 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
             row["alone_on"] = min(ready[actor["id"]] for actor in lone)
             births += [max(ready[actor["id"]], now) + carry.get(actor.get("subspecies"), 0) for actor in lone]
         sexed = {actor["id"]: _SEXED in traits.get(actor.get("subspecies"), empty) for actor in mating}
+        bars = {actor["id"]: _breeding_bars(actor, ctx, island_of, grid, save["tileMap"]) for actor in mating}
+        # WB's law on babies, a beast's or a thinker's, read off the kind's first lineage that mates — every one of a kind thinks or none does.
+        law = "world_law_civ_babies" if mating and is_sapient(ctx["subspecies_by_id"].get(mating[0].get("subspecies"))) else "world_law_animals_babies"
+        barred_by_law = {"law"} if not laws.get(law, True) else set()
+        # Lovers first, WB never parting them for another; then a pair nothing bars; then the earliest, the nearest — its bars said, never hidden.
         best = min(
             (
-                (max(ready[a["id"]], ready[b["id"]]), walk_tiles(where[b["id"]][0] - where[a["id"]][0], where[b["id"]][1] - where[a["id"]][1]), a, b)
+                (
+                    a.get("lover") != b["id"],
+                    bool(barred := sorted(bars[a["id"]] | bars[b["id"]] | barred_by_law)),
+                    max(ready[a["id"]], ready[b["id"]]),
+                    walk_tiles(where[b["id"]][0] - where[a["id"]][0], where[b["id"]][1] - where[a["id"]][1]),
+                    a,
+                    b,
+                    barred,
+                )
                 for i, a in enumerate(mating)
                 for b in mating[i + 1 :]
                 if _may_mate(a, b, sexed[a["id"]] or sexed[b["id"]])
             ),
-            key=lambda pair: pair[:2],
+            key=lambda pair: pair[:4],
             default=None,
         )
         if best:
-            row["on"], crow, a, b = best
-            row |= {"crow_tiles": round(crow), "pair": [a["id"], b["id"]]}
+            apart, _, row["on"], crow, a, b, barred = best
+            row |= {"barred": barred or None, "crow_tiles": round(crow), "lovers": True if not apart else None, "pair": [a["id"], b["id"]]}
             bearer = b if sexed[a["id"]] and b.get("sex") == 1 else a  # a sexed pair's mother carries; a hermaphrodite pair, either — WB draws it
             births.append(max(row["on"], now) + carry.get(bearer.get("subspecies"), 0))
             (ax, ay), (bx, by) = where[a["id"]], where[b["id"]]
@@ -296,12 +336,13 @@ def _build_roster(
     save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | None, since: str | None, sapient: bool, settle: bool
 ) -> list[dict] | dict:
     was, thinking = _lands_then(since) if since else None, _sapient_subspecies(save) if sapient else None
+    grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
     ctx = build_actor_stats_context(save)
     if settle:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
         ctx |= {
             "city_zones": cache(lambda: city_zones(save, island_of)),
             "island_lookup": lambda: island_of,
-            "tile_grid": cache(lambda: LazyTileGrid(save)),
+            "tile_grid": lambda: grid,
             "tile_map": save["tileMap"],
             "world_laws": world_laws(save),
         }
@@ -314,12 +355,12 @@ def _build_roster(
             continue
         if settle and settle_gates(actor, ctx) not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
             continue
-        here = island_of.get(actor_xy(actor))
+        here = _standing(actor, island_of, grid, save["tileMap"])
         change: dict = {}
         if was is not None and actor["id"] in was:  # one unseen then was born or set down since, and says so by standing in the roll at all
             if (then := was[actor["id"]]) == here:
                 continue  # stood still: nothing for `since` to say
-            change = {"was_on": then if then is not None else _OFF_LAND}
+            change = {"was_on": then}
         if land is None or land in (here, change.get("was_on")):
             bodies.append((actor, here, change))
     if len(bodies) > _MAX_ROSTER:  # a census past the list: how many of each kind, and of each stage, the adults counted too
@@ -327,7 +368,7 @@ def _build_roster(
         stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
         return {"by_species": dict(species), "by_stage": dict(stages), "info": f"{len(bodies)} bodies — narrow them with -t, --trait, --sapient, --settle or -i"}
     rows = []
-    for actor, here, change in sorted(bodies, key=lambda body: (body[1] is None, body[1] or 0, body[0]["id"])):  # land by land, off every land last
+    for actor, here, change in sorted(bodies, key=lambda body: (isinstance(body[1], str), body[1], body[0]["id"])):  # land by land, off every land last
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
         stage = _stage(actor, ctx, age, adult)
         rows.append(
@@ -336,7 +377,7 @@ def _build_roster(
                 "asset_id": actor.get("asset_id"),
                 "breeds_on": crossed_on(actor, breeding) if age < breeding else None,
                 "id": actor["id"],
-                "island_id": here if here is not None else _OFF_LAND,  # said outright, as `was_on` is: a missing one read as still on the land left
+                "island_id": here,  # said outright, as `was_on` is: a missing one read as still on the land left
                 "life_stage": None if stage == "adult" else stage,  # silent at `adult`, as in `surroundings`: on every line it would push the longest past inline
                 "name": actor.get("name"),
                 "sex": sex_label(actor),
@@ -397,11 +438,11 @@ def _count_leaders(counts: Counter, records: list[dict], min_peers: int) -> list
 
 
 # The land each body stood on in an earlier chapter's save, for `--since`: the one fact the roster weighs against it.
-def _lands_then(chapter: str) -> dict[int, int | None]:
+def _lands_then(chapter: str) -> dict[int, int | str]:
     then_path = SAVES_DIR / chapter / "map.wbox"
     then = load_save(then_path)
-    island_of = compute_islands_cached(then, then_path)[1]
-    return {actor["id"]: island_of.get(actor_xy(actor)) for actor in then.get("actors_data") or [] if not is_boat(actor)}
+    island_of, grid = compute_islands_cached(then, then_path)[1], LazyTileGrid(then)
+    return {actor["id"]: _standing(actor, island_of, grid, then["tileMap"]) for actor in then.get("actors_data") or [] if not is_boat(actor)}
 
 
 # WB `canFallInLoveWith` between two of a kind: neither pledged to a third, no blood — parent, child or a parent shared — and opposite sexes where sexed.
@@ -434,6 +475,14 @@ def _score_leaders(totals: Counter, records: list[dict]) -> list[dict]:
 def _stage(actor: dict, ctx: dict, age: int, adult: float) -> str:
     lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))
     return life_stage(age, adult, lifespan, is_egg(actor, ctx))
+
+
+# Where a body stands as `roster` tells it: its land, else `water` where it floats and `off_land` on an islet too small to count, as `surroundings` splits them.
+def _standing(actor: dict, island_of, grid: LazyTileGrid, names: list[str]) -> int | str:
+    x, y = actor_xy(actor)
+    if (land := island_of.get((x, y))) is not None:
+        return land
+    return _WATER if off_land(names[grid[y][x]]) == "water" else _OFF_LAND
 
 
 def main(argv: list[str]) -> int:

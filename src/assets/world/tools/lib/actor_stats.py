@@ -752,6 +752,11 @@ def is_egg(actor: dict, ctx: dict) -> bool:
     return hatch_months(actor, ctx) is not None
 
 
+# WB `Actor.isHungry`: at half its cap or under — a body with no gut never is.
+def is_hungry(actor: dict, ctx: dict) -> bool:
+    return (cap := _nutrition_max(actor, ctx)) is not None and int(actor.get("nutrition") or 0) <= cap * _HUNGRY_RATIO
+
+
 # The months a lineage carries before a birth or a hatching: WB sums its traits' `maturation` into `base_stats_meta`.
 def maturation_months(traits: Collection[str], ctx: dict) -> float:
     return sum(((ctx["subspecies_traits"].get(trait) or {}).get("meta_stats") or {}).get(_MATURATION, 0) for trait in traits)
@@ -795,9 +800,9 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
         counts["homeless"] += not a.get("homeBuildingID")
         counts["familyless"] += not a.get("family")
         counts["happy"] += int(a.get("happiness") or 0) >= _HAPPY_MIN_HAPPINESS and has_emotions(a, ctx["subspecies_by_id"])
-        if (cap := _nutrition_max(a, ctx)) is not None:  # WB `Actor.needsFood` reads the biology's gut: a snowman never weighs on the hunger share
+        if _nutrition_max(a, ctx) is not None:  # WB `Actor.needsFood` reads the biology's gut: a snowman never weighs on the hunger share
             counts["eaters"] += 1
-            counts["fed"] += int(a.get("nutrition") or 0) > cap * _HUNGRY_RATIO
+            counts["fed"] += not is_hungry(a, ctx)
         traits = a.get("saved_traits") or []
         counts["immortals"] += "immortal" in traits
         if not SICK_TRAITS.isdisjoint(traits):  # `infected` ⊂ `SICK_TRAITS`: the narrow test rides inside, one walk of the traits
