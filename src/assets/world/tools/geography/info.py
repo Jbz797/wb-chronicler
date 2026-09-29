@@ -29,6 +29,7 @@ from shared import (
     is_sapient,
     land_arg,
     load_save,
+    moved_between,
     parse_sections,
     pickle_cached,
     take_chapter,
@@ -42,7 +43,6 @@ _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one
 _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
-_IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `--since` weighs a land, a site or a biome against itself
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
 
@@ -316,24 +316,6 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
 
 
-# What moved between two readings, `[then, now]` at each leaf that differs — rows matched by `_IDENTITIES`, `new` or `gone` said whole; `None` if nothing did.
-def _diff(then, now):
-    # A tally said as text, `38 bodies · 23 sapient`, weighed part by part — only the count that moved comes out, and a count not there is 0, not a row gone
-    if isinstance(then, str | None) and isinstance(now, str | None):
-        before, after = _tally(then or ""), _tally(now or "")
-        if before is not None and after is not None:
-            then, now = ({kind: tally.get(kind, 0) for kind in {**before, **after}} for tally in (before, after))
-    if isinstance(then, list) and isinstance(now, list) and (key := _row_identity([*then, *now])):
-        then, now = ({str(row[key]): {k: v for k, v in row.items() if k != key} for row in rows} for rows in (then, now))  # the key says it once
-    if isinstance(then, dict) and isinstance(now, dict):
-        keys = [k for k in [*now, *(k for k in then if k not in now)] if k != "info"]  # `info` hints at a flag, it is no reading of the world
-        moved = {k: d for k in keys if (d := _diff(then.get(k), now.get(k))) is not None}
-        return moved or None
-    if then == now:
-        return None
-    return {"new": now} if then is None else {"gone": then} if now is None else [then, now]  # a bare `None` would drop out of a pair, and hide which it was
-
-
 # A counted land by its id; off every one, the place itself — `islets`, the rocks too small to count, or `water` — so that a bearer on a rock reads as no swimmer.
 def _land_key(island_id: int | None, tile_name: str) -> str:
     return str(island_id) if island_id else "islets" if off_land(tile_name) == "islet" else "water"
@@ -379,11 +361,6 @@ def _patch_fields(found: list[list], land: dict | None) -> dict:
     return {"largest": {**largest, **_side(largest, land)} if land else largest, "patches": len(found)}
 
 
-# The field a list of rows is matched by across two chapters, if every row carries one: an island's or a site's `id`, a biome's name. `None`: compared whole.
-def _row_identity(rows: list) -> str | None:
-    return next((key for key in _IDENTITIES if rows and all(isinstance(row, dict) and key in row for row in rows)), None)
-
-
 # Where a patch lies on its land (« the desert covers its north-east »): its heading from the land's centroid, `centre` within a quarter of each half-span
 def _side(patch: dict, land: dict) -> dict:
     (west, east), (south, north), middle = land["bounds"]["x"], land["bounds"]["y"], land["centroid"]
@@ -414,18 +391,6 @@ def _surfaces(save: dict) -> tuple[int, int, int]:
     layers = [tile_layer(name) for name in save.get("tileMap") or []]
     land, goo = tile_count(save, [layer in LAND_LAYERS for layer in layers]), tile_count(save, [layer == "Goo" for layer in layers])
     return land, goo, len(save.get("tileArray") or []) * sum((save.get("tileAmounts") or [[]])[0]) - land - goo
-
-
-# A tally line cut into its counts, `{kind: n}` — `2 mushroom_white | 1 mushroom_green`, `7.5% · 19320 permafrost` (share: `pct`); `None` if a part is no count.
-def _tally(text: str) -> dict[str, float] | None:
-    parts = {}
-    for part in re.split(r" \| | · ", text) if text else ():  # no line at all: nothing counted there
-        value, _, kind = part.partition(" ")
-        try:
-            parts[{"body": "bodies"}.get(kind, kind) or "pct"] = float(value.removesuffix("%"))  # `1 body` and `2 bodies` one count
-        except ValueError:
-            return None
-    return {kind: int(n) if n.is_integer() else n for kind, n in parts.items()}
 
 
 def main(argv: list[str]) -> int:
@@ -486,7 +451,7 @@ def main(argv: list[str]) -> int:
                 reading["positions"] = []
         if args.island is not None:
             out, then = _narrowed(out, args.island), _narrowed(then, args.island)
-        if not isinstance(moved := _diff(then, out), dict):  # both readings are dicts, so what moved is one, or nothing
+        if not isinstance(moved := moved_between(then, out), dict):  # both readings are dicts, so what moved is one, or nothing
             print(f"✗ nothing moved in {', '.join(sections)} since {since}", file=sys.stderr)
             return 1
         emit(moved)

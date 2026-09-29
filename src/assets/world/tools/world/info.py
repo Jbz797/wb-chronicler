@@ -58,6 +58,7 @@ from shared import (
     light,
     load_data,
     load_save,
+    moved_between,
     needs_food,
     parse_sections,
     rounded_world_time,
@@ -123,9 +124,9 @@ _DEATH_CAUSES = {
 }
 
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
+_GROUND_GATE = re.compile(r"ground (\d+)/(\d+)")  # `settle`'s ground gate, `ground 63/64: …` — the tiles a zone has, and those it needs
 
 # Actor field => the save collection it points into, feeding its `population` record — every actor counted, wildlife included, as each tier's medal counts its own.
-_GROUND_GATE = re.compile(r"ground (\d+)/(\d+)")  # `settle`'s ground gate, `ground 63/64: …` — the tiles a zone has, and those it needs
 _GROUP_FIELDS = {
     "cityID": "cities",  # a townsman need answer to no crown — counted apart from the kingdom's roll
     "civ_kingdom_id": "kingdoms",  # the crown's own roll, which many a thinking soul is not on — a people can stand before any banner is raised
@@ -143,8 +144,8 @@ _ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
 _ON_REQUEST = ("pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll of bodies is no chapter's to carry
-
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
+_SINCE_SECTIONS = ("cumulative", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll, and two counts weighed chapter against chapter
 
 # WB's four skills, the ones every `ranks_in_species` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
 _SKILLS = ("diplomacy", "intelligence", "stewardship", "warfare")
@@ -560,12 +561,16 @@ def main(argv: list[str]) -> int:
         return 2
     if not requested or requested == "full":
         sections = _ALL_SECTIONS
-    narrowing = args.type or args.trait or args.sapient or args.settle or args.barred or args.island is not None or since
+    narrowing = args.type or args.trait or args.sapient or args.settle or args.barred or args.island is not None
     if args.settle and args.barred:  # the two halves of the thinkers: together they name no one
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        print("✗ -t, --trait, --sapient, --settle, --barred, -i and --since narrow `roster`: name it", file=sys.stderr)
+        print("✗ -t, --trait, --sapient, --settle, --barred and -i narrow `roster`: name it", file=sys.stderr)
+        return 2
+    # `--since` narrows a roll and weighs two counts: any other section would say a chapter's state as if it were a change
+    if since and (unweighed := [section for section in sections if section not in _SINCE_SECTIONS]):
+        print(f"✗ {', '.join(unweighed)}: `--since` takes {', '.join(_SINCE_SECTIONS)} alone — name them", file=sys.stderr)
         return 2
     if since and not (SAVES_DIR / since / "map.wbox").exists():
         print(f"✗ no save for {since}", file=sys.stderr)
@@ -601,6 +606,16 @@ def main(argv: list[str]) -> int:
         out["roster"] = roster
     if "snapshot" in sections:
         out["snapshot"] = _build_snapshot(save)
+    readings = {"cumulative": lambda then: _build_cumulative(then.get("mapStats") or {}), "snapshot": _build_snapshot}  # each read again off the save before
+    if since and (counted := [section for section in readings if section in out]):
+        then = load_save(SAVES_DIR / since / "map.wbox")
+        # A count by count difference, `[then, now]` and 0 where a counter was not: a section that holds still drops out, and none moving says so
+        for section in counted:
+            if isinstance(moved := moved_between(readings[section](then), out.pop(section)), dict):
+                out[section] = moved
+        if not out:
+            print(f"✗ nothing moved in {', '.join(counted)} since {since}", file=sys.stderr)
+            return 1
 
     emit(out)
     return 0

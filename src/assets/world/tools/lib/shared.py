@@ -62,6 +62,7 @@ _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
+_IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `--since` weighs a land, a site or a biome against itself
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 
@@ -110,6 +111,7 @@ _ORDER_ROWS = frozenset({"hungriest", "oldest", "youngest"})
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 _RANK_FLOORS = {"cities": 1, "kingdoms": 1, "level": 1}  # where every body starts, so a place held there ranks nobody — other stats floor at the skipped 0
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
+_TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower | 1 herb` or `38 bodies · 23 sapient`, cut once at import
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy", "to_islands"})  # shapes whose key order carries meaning: stores heaviest-first, lands nearest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
@@ -223,6 +225,11 @@ def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of
     return refs
 
 
+# The field a list of rows is matched by across two chapters, if every row carries one: an island's or a site's `id`, a biome's name. `None`: compared whole.
+def _row_identity(rows: list) -> str | None:
+    return next((key for key in _IDENTITIES if rows and all(isinstance(row, dict) and key in row for row in rows)), None)
+
+
 # A save's cache slot, keyed on `mtime+size`: a chapter's `map.wbox` never moves, so its slot holds for the world's life. `None` where the file is gone.
 def _save_cache_key(path: Path | str) -> str | None:
     try:
@@ -248,6 +255,18 @@ def _strip_none(value):
 @cache
 def _tagged_traits(tag: str) -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if tag in (spec.get("tags") or []))
+
+
+# A tally line cut into its counts, `{kind: n}` — `2 mushroom_white | 1 mushroom_green`, `7.5% · 19320 permafrost` (share: `pct`); `None` if a part is no count.
+def _tally(text: str) -> dict[str, float] | None:
+    parts = {}
+    for part in _TALLY_PARTS.split(text) if text else ():  # no line at all: nothing counted there
+        value, _, kind = part.partition(" ")
+        try:
+            parts[{"body": "bodies"}.get(kind, kind) or "pct"] = float(value.removesuffix("%"))  # `1 body` and `2 bodies` one count
+        except ValueError:
+            return None
+    return {kind: int(n) if n.is_integer() else n for kind, n in parts.items()}
 
 
 # Orphan slots go — a chapter's save never changes, where the live one mints a fresh key at every in-game save. `_CACHE_KEEP` then caps what survives, newest first.
@@ -801,6 +820,26 @@ def meta_report(kind: str, state: dict) -> str | None:
     phrases = load_data("meta-reports.json")  # one of five phrasings per verdict, drawn as WB draws it — the wording never reaches a chapter, so it need not settle
     said = [random.choice(wordings) for report in _META_REPORTS[kind] if _META_CONDITIONS[report](state) and (wordings := phrases.get(report))]
     return " ".join(said) or None
+
+
+# What moved between two readings, `[then, now]` at each leaf that differs — rows matched by `_IDENTITIES`, `new` or `gone` said whole; `None` if nothing did.
+def moved_between(then, now):
+    # A tally said as text, `38 bodies · 23 sapient`, weighed part by part — only the count that moved comes out, and a count not there is 0, not a row gone
+    if isinstance(then, str | None) and isinstance(now, str | None):
+        before, after = _tally(then or ""), _tally(now or "")
+        if before is not None and after is not None:
+            then, now = ({kind: tally.get(kind, 0) for kind in {**before, **after}} for tally in (before, after))
+    if isinstance(then, list) and isinstance(now, list) and (key := _row_identity([*then, *now])):
+        then, now = ({str(row[key]): {k: v for k, v in row.items() if k != key} for row in rows} for rows in (then, now))  # the key says it once
+    if isinstance(then, dict) and isinstance(now, dict):
+        keys = [k for k in [*now, *(k for k in then if k not in now)] if k != "info"]  # `info` hints at a flag, it is no reading of the world
+        moved = {k: d for k in keys if (d := moved_between(then.get(k), now.get(k))) is not None}
+        return moved or None
+    if then == now:
+        return None
+    if isinstance(then, int | float) and now is None or isinstance(now, int | float) and then is None:
+        return [then or 0, now or 0]  # a counter WB dropped at 0, or not yet kept: a count, never a row come or gone
+    return {"new": now} if then is None else {"gone": then} if now is None else [then, now]  # a bare `None` would drop out of a pair, and hide which it was
 
 
 # WB `Subspecies.needs_food`, cached off the `needs_food` meta-tag in `cacheTags` — carried by the one `stomach` trait, so a body without a gut never hungers.
