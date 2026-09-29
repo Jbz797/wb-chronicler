@@ -233,6 +233,11 @@ def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | 
     if "NAVIGATION" not in already and any(is_boat(a) for a in live.get("actors_data") or []):
         tags.append("NAVIGATION")
 
+    # The world's first body born, an egg as soon as laid, and its first town — WB's own counters leaving 0, which it omits from the save. Once in a chronicle.
+    for tag, counter in (("FIRST_BIRTH", "creaturesBorn"), ("FIRST_CITY", "citiesCreated")):
+        if tag not in already and live["mapStats"].get(counter):
+            tags.append(tag)
+
     realm = _entity_id(blocks.get("kingdom") or {})  # read twice below: the war tag for what the favorite's crown enters, the migrants alert for what it holds
 
     # A war the favorite's crown found itself in since the chapter before, whoever declared it — the first chapter having no before, it owes none.

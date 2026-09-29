@@ -1,6 +1,6 @@
 # 📌 Vocabulaire des tags
 
-<p class="metadata">Date de mise à jour : 16/09/26 10:00</p>
+<p class="metadata">Date de mise à jour : 29/09/26 11:57</p>
 
 | Tag                         | Signification                                                                                                                                        |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -10,6 +10,8 @@
 | `FAVORITE_FIRST_KINGDOM`    | Le favori rejoint **son premier royaume** — une fois par favori, jamais pour un successeur déjà sujet d'une couronne.                                |
 | `FAVORITE_KINGDOM_NEW_WAR`  | Le royaume du favori entre dans **une guerre nouvelle** depuis le chapitre précédent, qu'il l'ait déclarée ou subie.                                 |
 | `FAVORITE_PLOTTING`         | Le favori **mène un complot** au moment de la sauvegarde.                                                                                            |
+| `FIRST_BIRTH`               | Le **premier corps** du monde vient au jour, par un couple ou seul — l'œuf compte dès la ponte. Une fois dans la chronique.                          |
+| `FIRST_CITY`                | La **première cité** du monde est fondée. Une fois dans la chronique.                                                                                |
 | `NAVIGATION`                | Le premier bateau du monde prend la mer — **la navigation est découverte**.                                                                          |
 | `NEW_AGE`                   | Le monde bascule dans un **nouvel âge** (l'`age_id` change vs le chapitre précédent).                                                                |
 | `NEW_FAVORITE`              | Un nouveau **favori** est désigné dans ce chapitre.                                                                                                  |
