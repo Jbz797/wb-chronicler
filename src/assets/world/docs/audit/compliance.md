@@ -1,12 +1,12 @@
 # 📐 Audit de conformité
 
-<p class="metadata">Date de mise à jour : 29/09/26 18:24</p>
+<p class="metadata">Date de mise à jour : 29/09/26 19:07</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits.
 
 ## Ta tâche
 
-Confronte tes cibles aux parties § I à § V de `docs/chronicler.md`, sous-section par sous-section. **Juge la manière, pas la vérité** : ce que le texte affirme ne relève pas de toi. Un jugement qui s'appuierait sur un fait, pour valider comme pour réfuter, ne se tranche pas à l'œil : signale ce fait comme un point à mesurer. Ce qui ne relève d'aucune entité du favori se classe au `circle` d'`actor <favori> --to`, jamais en reconvertissant les heures de la prose : c'est la seule mesure que tu lances toi-même.
+Confronte tes cibles aux parties § I à § V de `docs/chronicler.md`, sous-section par sous-section. **Juge la manière, pas la vérité** : ce que le texte affirme ne relève pas de toi. Un jugement qui s'appuierait sur un fait, pour valider comme pour réfuter, ne se tranche pas à l'œil : signale ce fait comme un point à mesurer. Ce qui ne relève d'aucune entité du favori se classe au `circle` d'`actor <favori> --to`, jamais en reconvertissant les heures de la prose : c'est la seule mesure que tu lances toi-même. Pour les redites, `python3 tools/chapter/echo.py C<n>` te montre les passages repris des 2 chapitres précédents, ceux que le chapitre dit deux fois et les familles qui débordent : juge ce qu'il signale, sans relire les chapitres entiers.
 
 Ne rends que les écarts, et ce qu'on te demande : chacun avec sa partie, sa ligne, sa citation et ce que tu attendais — ce qui enfreint une règle à corriger, le reste en mieux possible. N'écris rien dans les fichiers.
 

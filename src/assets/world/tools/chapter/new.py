@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
+from echo import echoes
 from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_world
 from grid import tile_layer, tile_runs
 from islands import compute_islands_cached
@@ -333,6 +334,10 @@ def _finalize() -> int:
     facts = _step_five_facts(n, lang)
     print(f"✓ C{n} — step 5")
     _print_step_five(n, facts)
+    # Counted before the audit reads the chapter, so the chronicler weighs his own repeats first.
+    if counts := {key: len(rows) for key, rows in (echoes(n) or {}).items() if rows}:
+        said = ", ".join(f"{count} {key}" for key, count in counts.items())
+        print(f"  → said again: {said} — `tools/chapter/echo.py C{n}` points, you judge each: only a repeat goes, the language and a refrain meant stay")
     # The targets name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
     if not facts["done"]:
         print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: it then hands the audit over")
