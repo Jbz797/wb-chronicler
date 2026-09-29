@@ -734,7 +734,9 @@ def load_data(name: str) -> dict:
 def load_save(path: Path | str) -> dict:
     path = Path(path)
     if not path.exists():
-        print(f"✗ no save found at {path}", file=sys.stderr)
+        # A bare `C<n>` is a hand scripting past the tools, sent back to them.
+        tools = f" — a chapter is read through the tools (`<tool>/info.py … {path}`): the raw save holds fields no output has converted"
+        print(f"✗ no save found at {path}" + (tools if re.fullmatch(r"C\d+", str(path)) else ""), file=sys.stderr)
         sys.exit(2)
     cache_file = _CACHE_DIR / _save_cache_name(path)
     if cache_file.exists():
