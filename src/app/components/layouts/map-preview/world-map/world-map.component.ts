@@ -45,6 +45,15 @@ export class WorldMapComponent {
   });
   // Read at each opening, the chronicler baptising between two chapters: what the picture shows is the gazetteer as it stands.
   protected readonly places = httpResource<Places>(() => PLACES_FILE);
+
+  // A name grows with the root of its extent — the width a land spans, not its area —, from the smallest named land or water to the largest, in `cqw`.
+  private readonly _sizer = (sizes: number[]): (size: number) => number => {
+    const [low, high] = [0.7, 0.7 * 3];
+    const roots = sizes.map(size => Math.sqrt(size));
+    const [least, most] = [Math.min(...roots), Math.max(...roots)];
+    return size => most === least ? high : low + ((Math.sqrt(size) - least) / (most - least)) * (high - low);
+  };
+
   // The gazetteer's named entries alone, each as a chapter up to the one read has named it — a later baptism is not yet known here.
   protected readonly pins = computed((): MapPin[] => {
     const extent = this._extent();
@@ -52,36 +61,27 @@ export class WorldMapComponent {
     if (!extent || !places) return [];
     const chapter = Number(this._chronicler.currentChapter()?.slug.slice(1) ?? 0);
     const isKnown = (given: string): boolean => given !== '' && Number(given.slice(1)) <= chapter;
-    const areas = (kind: 'island' | 'lake', book: Record<string, PlaceArea>): MapPin[] => {
-      const named = Object.entries(book).filter(([, entry]) => isKnown(entry.chapter));
-      const fontSize = this._sizer(kind, named.map(([, entry]) => entry.size));
-      return named.map(([id, entry]) => ({
-        ...this._at(entry.centroid, extent), area: entry.size * this._tileKm2, fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name,
-      }));
-    };
+    const named = (book: Record<string, PlaceArea>): [string, PlaceArea][] => Object.entries(book).filter(([, entry]) => isKnown(entry.chapter));
+    const [islands, lakes] = [named(places.islands), named(places.lakes)];
+    const fontSize = this._sizer([...islands, ...lakes].map(([, entry]) => entry.size)); // lands and waters on one scale: a lake never outgrows a wider land
+    const areas = (kind: 'island' | 'lake', entries: [string, PlaceArea][]): MapPin[] => entries.map(([id, entry]) => ({
+      ...this._at(entry.centroid, extent), area: entry.size * this._tileKm2, fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name,
+    }));
 
     return [
-      ...areas('island', places.islands),
-      ...areas('lake', places.lakes),
+      ...areas('island', islands),
+      ...areas('lake', lakes),
       ...Object.entries(places.places)
         .filter(([, spot]) => isKnown(spot.chapter))
         .map(([name, spot]): MapPin => ({ ...this._at(spot.centroid, extent), key: `spot-${name}`, kind: 'spot', name, spotKind: spot.kind })),
     ];
   });
 
-  private readonly _tileKm2 = 0.012; // the chronicler's scale, a tile ~110 m a side — `chronicler.md` § Échelle
+  private readonly _tileKm2 = 0.01; // the chronicler's scale, a tile 100 m a side — `chronicler.md` § Échelle
 
   protected readonly measure = (event: Event): void => {
     const picture = event.target as HTMLImageElement;
     this._extent.set({ height: picture.naturalHeight, width: picture.naturalWidth });
-  };
-
-  // A name grows with the root of its extent — the width a land spans, not its area —, from the smallest named of its kind to the largest, in `cqw`.
-  private readonly _sizer = (kind: 'island' | 'lake', sizes: number[]): (size: number) => number => {
-    const [low, high] = kind === 'island' ? [0.8, 1.6] : [0.7, 1];
-    const roots = sizes.map(size => Math.sqrt(size));
-    const [least, most] = [Math.min(...roots), Math.max(...roots)];
-    return size => most === least ? high : low + ((Math.sqrt(size) - least) / (most - least)) * (high - low);
   };
 
 }

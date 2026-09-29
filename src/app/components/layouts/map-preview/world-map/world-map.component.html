@@ -25,6 +25,10 @@
   @if (pin.kind === 'spot') {
     {{ pin.spotKind }}
   } @else {
-    {{ pin.area | number: '1.0-0' }}&nbsp;km²
+    @if (pin.area >= 1000) {
+      {{ pin.area / 1000 | number: '1.0-1' }}K&nbsp;km²
+    } @else {
+      {{ pin.area | number: '1.0-0' }}&nbsp;km²
+    }
   }
 </ng-template>
