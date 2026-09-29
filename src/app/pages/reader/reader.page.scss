@@ -190,7 +190,7 @@
     font-size: 3.55em;
     font-weight: 700;
     line-height: 1; // the prose's own 1.75 would box a 62px letter in 109px, sinking it a line and spilling under the paragraph
-    margin: 0.08em 0.1em 0 0; // the glyph's own overshoot, nudged back so its bar sits on the first line's cap height rather than above it
+    margin: 0.16em 0.1em 0 0; // the glyph's own overshoot, nudged back so its bar sits on the first line's cap height rather than above it
   }
 
   // A chapter's last word, a hook taken up again past its fleuron: set apart from the prose it closes, as the epigraph is from the one it opens.
