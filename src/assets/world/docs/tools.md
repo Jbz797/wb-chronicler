@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 29/09/26 21:38</p>
+<p class="metadata">Date de mise à jour : 29/09/26 22:14</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -57,7 +57,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ## Carte :
 
-`map/show.py <x,y> [C<n>]` — cerne la tuile sur la carte du chapitre et rend le chemin de l'image ; **à toi de l'ouvrir pour le joueur**. `--zoom <n>` : les n tuiles alentour, agrandies, nord en haut — **à lire toi-même** pour la forme d'une côte.
+`map/show.py <x,y> [C<n>]` — cerne la tuile sur la carte du chapitre et rend le chemin de l'image ; **à toi de l'ouvrir pour le joueur**. `--zoom <n>` : les n tuiles alentour, agrandies, nord en haut — **à lire toi-même** pour la forme d'une côte, ses parts d'eau, de sol et de roche en dessous.
 
 ## Lire les sorties :
 

@@ -4,17 +4,21 @@
 
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from PIL import Image, ImageDraw, ImageFont
 
-from shared import arg_parser, take_chapter
+from grid import LazyTileGrid, tile_layer
+from islands import compute_islands_cached
+from shared import arg_parser, load_save, take_chapter
 
 _INK = (255, 30, 30)  # a red no biome wears, so the ring never sinks into the ground it marks
 _NORTH_UP = "north up (y grows upward)"  # both maps say it where they are read: a picture's rows count down, the world's y counts up
 _RADIUS = 46  # wide enough to be seen on a map two thousand tiles across, tight enough to leave the spot itself readable
+_SHARE_OF_LAYER = {"Block": "rock", "Ground": "ground", "Lava": "lava"}  # how `--zoom` names a layer in its shares, any other being water
 _STROKE = 6  # thick enough to survive the shrinking a viewer applies to a map this wide
 _TICK_INNER = 60  # where each arm starts, clear of the ring, so the marked tile stays in the open
 _TICK_OUTER = 110  # and where it ends, far enough out to catch the eye scanning the whole map
@@ -27,6 +31,22 @@ _ZOOM_SIDE = 720  # pixels the zoomed square is blown up to, whatever its span: 
 # The map is drawn north-up while the save counts y northward, so the two run against each other — the one conversion this script exists to get right.
 def _pixel(y: int, height: int) -> int:
     return height - 1 - y
+
+
+# What the zoomed square is made of, by share of its tiles on the map — the numbers beside the picture, the square the same: water, ground, rock, lava, islets.
+def _shares(save_path: Path, x: int, y: int, span: int) -> str:
+    save = load_save(save_path)
+    grid, island_of = LazyTileGrid(save), compute_islands_cached(save, save_path)[1]
+    kind = [_SHARE_OF_LAYER.get(tile_layer(name), "water") for name in save.get("tileMap") or []]
+    counts: Counter[str] = Counter()
+    for row in range(max(y - span, 0), min(y + span, grid.height - 1) + 1):
+        for col in range(max(x - span, 0), min(x + span, grid.width - 1) + 1):
+            if (what := kind[grid[row][col]]) == "ground" and island_of.get((col, row)) is None:
+                what = "islets"  # ground too small to count as a land, as `geography` buckets it; rock and lava belong to no land either way
+            counts[what] += 1
+    total = sum(counts.values())
+    shown = " · ".join(f"{what} {round(n * 100 / total) or '<1'}%" for what, n in counts.most_common())  # `<1%` where a few tiles stand: never read as none
+    return shown + f" — of the {total:,} tiles shown".replace(",", " ")
 
 
 # A square of `span` tiles each way around the spot, blown up by whole pixels so each tile stays a crisp block: the tile ringed, north and the scale marked.
@@ -81,6 +101,7 @@ def main(argv: list[str]) -> int:
         out = Path(tempfile.gettempdir()) / f"{chapter}_{x}_{y}_zoom{args.zoom}.png"
         _zoomed(image, px, py, args.zoom).save(out)
         print(f"✓ {chapter} — ({x},{y}) and {args.zoom} tiles each way, {_NORTH_UP}, the white bar {_ZOOM_BAR} tiles\n  {out}")
+        print(f"  {_shares(save_path, x, y, args.zoom)}")
         print("  → chronicler: this one is yours to read, for the lie of the ground — open it for the player only if he is to see it")
         return 0
     draw = ImageDraw.Draw(image)
