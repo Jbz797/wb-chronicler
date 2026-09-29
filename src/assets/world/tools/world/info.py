@@ -171,8 +171,10 @@ def _breeding_bars(actor: dict, ctx: dict, island_of, grid: LazyTileGrid, names:
     bars = set()
     if needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) and (int(actor.get("nutrition") or 0) < NEW_BABY_NUTRITION or is_hungry(actor, ctx)):
         bars.add("hungry")
-    if (here := _standing(actor, island_of, grid, names)) == _WATER or (here == _OFF_LAND and island_of.islet_size(actor_xy(actor)) <= _GOOD_ISLET):
-        bars.add("unstable")
+    if (here := _standing(actor, island_of, grid, names)) == _WATER:
+        bars.add(_WATER)
+    elif here == _OFF_LAND and island_of.islet_size(actor_xy(actor)) <= _GOOD_ISLET:
+        bars.add("tiny_islet")
     return bars
 
 
@@ -273,7 +275,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         bars = {actor["id"]: _breeding_bars(actor, ctx, island_of, grid, save["tileMap"]) for actor in mating}
         # WB's law on babies, a beast's or a thinker's, read off the kind's first lineage that mates — every one of a kind thinks or none does.
         law = "world_law_civ_babies" if mating and is_sapient(ctx["subspecies_by_id"].get(mating[0].get("subspecies"))) else "world_law_animals_babies"
-        barred_by_law = {"law"} if not laws.get(law, True) else set()
+        barred_by_law = {law} if not laws.get(law, True) else set()
         # Lovers first, WB never parting them for another; then a pair nothing bars; then the earliest, the nearest — its bars said, never hidden.
         best = min(
             (
