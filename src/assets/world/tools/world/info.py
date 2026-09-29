@@ -232,19 +232,20 @@ def _build_leaders(save: dict) -> dict:
     return out
 
 
-# WB's own clock and its age of the world; `months_until_next_age` is derived here because the save states progress as a ratio, never as a countdown.
+# WB's own clock and its age of the world; `next_age_on` is derived here because the save states progress as a ratio, never as a countdown.
 def _build_metadata(map_stats: dict) -> dict:
     age_duration = float(map_stats.get("current_world_ages_duration") or 0)
     age_id = map_stats.get("world_age_id") or ""
     age_progress = float(map_stats.get("current_age_progress") or 0)
     age = load_data("world-ages.json").get(age_id) or {}
+    world_time = rounded_world_time(map_stats)
     return {
         "age_description": age.get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
         "age_id": age_id.removeprefix("age_"),  # `WorldAgeLibrary` key without WB's prefix — `hope`, as the panel keys its French and its icon
         "age_name": age.get("name"),  # Chronicler-only: WB's own English title, the id above being what the panel translates
-        # Chronicler-only narrative hint, matches WB's UI counter « Lunes jusqu'au prochain âge ». `0` where no age runs: WB then stores no span to count down.
-        "months_until_next_age": int(age_duration * (1 - age_progress) / 5) if age_duration > 0 else 0,
-        "world_time": rounded_world_time(map_stats),
+        # Chronicler-only: a date as `born` is, where WB's UI counts « Lunes jusqu'au prochain âge ». Absent where no age runs: WB then stores no span.
+        "next_age_on": world_date(world_time + age_duration * (1 - age_progress)) if age_duration > 0 else None,
+        "world_time": world_time,
     }
 
 

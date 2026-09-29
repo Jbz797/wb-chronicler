@@ -26,8 +26,8 @@ _AUDIT = {
             "island_id",
             "islands",
             "mass",
-            "months_until_next_age",
             "motto",
+            "next_age_on",
             "peace_time",
             "settle",  # the chronicler's « why no town yet »: no panel says who could found one
             "tax_local",

@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 29/09/26 21:20</p>
+<p class="metadata">Date de mise à jour : 29/09/26 21:27</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -50,7 +50,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `world` :
 
-- `pairings` : par espèce, la 1ʳᵉ naissance possible (`birth_on`) et l'écart du couple ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `lovers`, des amants, choisis d'abord ; `barred`, ce qui l'arrête (`hungry`, `water`, `tiny_islet`, la loi WB)
+- `pairings` : par espèce, la 1ʳᵉ naissance possible (`birth_on`) et l'écart du couple ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `lovers`, des amants, choisis d'abord ; `barred`, ce qui l'arrête (`hungry`, `water`, `tiny_islet`, la loi WB) ; règles : `wiki:Reproduction`
 - `roster` : chaque vivant, une ligne, `life_stage` hors adultes ; `-t` type ou famille, `--trait <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`), `-i` une terre ; `--since C<n>` : les arrivés et les `was_on` ; passé 50, un compte par espèce et par stade
 
 ---
@@ -79,7 +79,6 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule sert tout le royaume, quelle que soit sa cité.
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : une cité ne la prend que si son chef y croit, un royaume que si son roi la décrète.
 - `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; le `drivers` de la section, complet, somme au `total`.
-- `world … metadata` : `months_until_next_age` est **déjà en mois**, 12 par an — il ne repasse pas par le `/ 5` d'un `world_time`.
 - Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 - Un écart entre deux `snapshot` est un solde, jamais un compte d'événements : ce qui est né et ce qui s'est éteint se lisent dans `cumulative`, où chaque compteur ne fait que monter.
 
