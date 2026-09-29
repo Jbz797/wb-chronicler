@@ -148,8 +148,11 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
         # A seat is a point, where a town is a fabric — the throne, not the capital's last house.
         out["to_capital"] = _measure(x, y, round(walk_tiles(x - seat[0], y - seat[1])), (seat[1] * ctx["width"] + seat[0],), ctx)
     lands = _island_distances(x, y, ctx)
-    if ranked := sorted(lands.items(), key=lambda item: (item[1], item[0]))[:_NEAR_ISLANDS]:
-        out["to_islands"] = {str(island): round(tiles) for island, tiles in ranked}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
+    ranked = sorted(lands.items(), key=lambda item: (item[1], item[0]))
+    if near := ranked[:_NEAR_ISLANDS]:
+        out["to_islands"] = {str(island): round(tiles) for island, tiles in near}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
+    if far := ranked[_NEAR_ISLANDS:]:  # the cut said with its size, as `waters` tells the lakes it leaves out
+        out["unlisted"] = {"islands": {"count": len(far), "nearest": round(far[0][1])}}
     if (wanted := ctx["island"]) is not None:  # a named land, however far down the list: the tile's own reads 0, it stands on it
         out["to_island"] = {str(wanted): round(lands.get(wanted, 0))}
     return out
