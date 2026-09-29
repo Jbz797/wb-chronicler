@@ -3,7 +3,7 @@
 from collections import Counter
 
 from actor_stats import is_baby
-from grid import tile_kind
+from grid import LAND_LAYERS, tile_kind, tile_layer
 from shared import PROFESSION_KING, ZONE_TILES, actor_xy, is_sapient, zone_xy
 
 # WB `TopTileLibrary`: the biomes any lineage may found on, and those only a meta tag opens — `corrupted` alone spelt apart from its tag.
@@ -48,13 +48,13 @@ def _zone_centre(zx: int, zy: int) -> tuple[int, int]:
     return zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2
 
 
-# Every zone a town holds, with the land its first tile stands on — the one WB spreads its founders' wave across.
-def city_zones(save: dict, island_of) -> list[tuple[int, int, int | None]]:
+# Every zone a town holds, with the land its first tile stands on — the one WB spreads its founders' wave across — and the town's name, to say which bars.
+def city_zones(save: dict, island_of) -> list[tuple[int, int, int | None, str]]:
     zones = []
     for city in save.get("cities") or []:
         if held := city.get("zones") or []:
-            land = island_of.get(_zone_centre(*zone_xy(held[0])))
-            zones += [(*zone_xy(zone), land) for zone in held]
+            land, name = island_of.get(_zone_centre(*zone_xy(held[0]))), city.get("name") or f"town {city.get('id')}"
+            zones += [(*zone_xy(zone), land, name) for zone in held]
     return zones
 
 
@@ -64,26 +64,30 @@ def settle_gates(actor: dict, ctx: dict) -> bool | list[str] | None:
     subspecies = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     if not is_sapient(subspecies):
         return None
+    # A trait that binds its bearer to a crown of its own (WB `is_forced_by_trait`), which `canStartNewCityCivilizationHere` turns away — named, as each gate is.
+    binding = next((t for t in actor.get("saved_traits") or () if (ctx["creature_traits"].get(t) or {}).get("forced_kingdom")), None)
     gates = (
         ("child", is_baby(actor, ctx)),
-        # A trait that binds its bearer to a crown of its own (WB `is_forced_by_trait`), which `canStartNewCityCivilizationHere` turns away.
-        ("forced_kingdom", any((ctx["creature_traits"].get(trait) or {}).get("forced_kingdom") for trait in actor.get("saved_traits") or ())),
+        (f"trait {binding} binds to a crown", binding),
         ("has_city", actor.get("cityID")),
         ("king", actor.get("profession") == PROFESSION_KING),
     )
     shut = [gate for gate, holds in gates if holds]
     if not ctx["world_laws"].get("world_law_kingdom_expansion", True):
-        shut.append("law_off")
+        shut.append("world_law_kingdom_expansion off")
     x, y = actor_xy(actor)
     zx, zy = x // ZONE_TILES, y // ZONE_TILES
-    land = ctx["island_lookup"]().get(_zone_centre(zx, zy))  # WB reads the zone's centre tile
+    cx, cy = _zone_centre(zx, zy)
+    land = ctx["island_lookup"]().get((cx, cy))  # WB reads the zone's centre tile
+    names, grid = ctx["tile_map"], ctx["tile_grid"]()
     # Water or a rock at the zone's middle: no land for WB to weigh. Every counted land clears WB's own 300-tile floor, so this is the whole of that gate.
     if land is None:
-        shut.append("centre_off_land")
-    elif any(town == land and abs(tx - zx) + abs(ty - zy) <= _CITY_WAVE for tx, ty, town in ctx["city_zones"]()):
-        shut.append("town_near")
+        layer = tile_layer(names[grid[cy][cx]])
+        shut.append(f"zone centre on {'water' if layer not in LAND_LAYERS else {'Block': 'rock', 'Lava': 'lava'}.get(layer, 'an islet')}")
+    elif near := [(d, town) for tx, ty, on, town in ctx["city_zones"]() if on == land and (d := abs(tx - zx) + abs(ty - zy)) <= _CITY_WAVE]:
+        zones, town = min(near)
+        shut.append(f"town {zones} zone{'s' if zones != 1 else ''} away: {town}")
     tags = frozenset(tag for trait in subspecies.get("saved_traits") or () for tag in (ctx["subspecies_traits"].get(trait) or {}).get("tags") or ())
-    names, grid = ctx["tile_map"], ctx["tile_grid"]()
     ground = soil = fit = 0
     barred, wanted = Counter(), Counter()  # what each shut gate is made of: the ground a zone lacks, the adaptations its unfit biomes ask for
     for row in range(zy * ZONE_TILES, (zy + 1) * ZONE_TILES):
