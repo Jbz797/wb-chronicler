@@ -1063,19 +1063,15 @@ def take_since(argv: list[str]) -> tuple[str | None, list[str]]:
     return value, argv[:at] + argv[at + 2 :]
 
 
-# A trip's time by parts, as its lengths: `walk_`, `swim_` or `sail_`, `total_` once two (`foot` None: unwalked); past a day `march_days`, a hull's `total_days`.
+# A trip's time by parts: `walk_`, `swim_` or `sail_`, `total_` once two (`foot` None: unwalked); past a day `march_days`, a crossing's `total_days`.
 def trip_time(per_hour: float, total: float, foot: float | None = None, water: tuple[str, float] | None = None) -> dict:
     day = _DAILY_TILES_PER_SPEED / HOURLY_TILES_PER_SPEED * per_hour  # a day's march, in the cost's own tiles
-    told = duration(water[1] / per_hour, f"{water[0]}_") if water else {}
-    if water and water[0] == "sail" and foot is not None:
-        marched = foot / day
-        told |= {"march_days": round(marched, 1)} if marched >= 1 else duration(foot / per_hour, "walk_")
-        whole = marched + water[1] / per_hour / 24
+    if water and foot is not None:  # water is crossed in one go, swum or sailed: the march alone keeps its halts, and the whole day by day
+        (part, wet), marched = water, foot / day
+        told = duration(wet / per_hour, f"{part}_") | ({"march_days": round(marched, 1)} if marched >= 1 else duration(foot / per_hour, "walk_"))
+        whole = marched + wet / per_hour / 24
         return told | ({"total_days": round(whole, 1)} if whole >= 1 else duration(total / per_hour, "total_"))
-    if water and foot is not None:  # a swimmer's feet apart, the whole trip marched, halts and all
-        told |= duration(foot / per_hour, "walk_")
-    key = "walk_" if foot is not None and not water else "total_"
-    return told | ({"march_days": round(total / day, 1)} if total >= day else duration(total / per_hour, key))
+    return {"march_days": round(total / day, 1)} if total >= day else duration(total / per_hour, "walk_" if foot is not None else "total_")
 
 
 # The node a union-find set is known by, each one passed pointed a step nearer it so a map's unions stay shallow: `islands` and `waters` join their runs by it.
