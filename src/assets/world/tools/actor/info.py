@@ -360,6 +360,7 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     circles: dict[str, list[tuple]] = {name: [] for name, _ in _CIRCLES}
     island_of = ctx["island_lookup"]()
     home = island_of.get((cx, cy))
+    ctx["home_islet"] = frozenset(island_of.islet_tiles((cx, cy))) if home is None else frozenset()  # his own islet, as silent in the rows as his land
     # A crown that ferries none reaches no shore: without a transport boat the sea stays the far-off, and no hull nor body past the common reach is measured.
     ferried = actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]
     per_hour, gait, walk_map = _per_hour(actor, ctx), _gait(actor, ctx), ctx["walk_map"]()
@@ -707,7 +708,7 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str], per
     return plan
 
 
-# One line of `surroundings`: silent on his own land, off it the land's id — or `water` or `islet_tiles` off every counted land, where a bare null reads as home.
+# One line of `surroundings`: silent on his own land or islet, off it the land's id — or `water` or `islet_tiles` off every land, a bare null reading as home.
 def _surroundings_row(other: dict, ctx: dict, span: dict, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
     row = {
         **span,
@@ -724,8 +725,9 @@ def _surroundings_row(other: dict, ctx: dict, span: dict, dx: int, dy: int, home
     # Why a line stands in full, where the reason tells a story: the tie before the post, a crown before a clan. Each marks a thinker, so `sapient` falls silent.
     job = None if tie else _POSTS.get(other.get("profession", 0))  # WB omits `profession` at 0, its « nothing »
     mark = {"kin": tie} if tie else {"job": job} if job else {"role": "clan_chief"} if other["id"] in ctx["clan_chiefs"] else {}
+    beside = land == home if land is not None else actor_xy(other) in ctx["home_islet"]  # `home_islet` is empty unless he stands on one
     return {
-        **(_off_land_at(other, ctx) if land is None else {} if land == home else {"island_id": land}),
+        **({} if beside else _off_land_at(other, ctx) if land is None else {"island_id": land}),
         **row,
         # Silent at `adult`, the stage most bodies stand at, as a tally at nought: printed on every line it would push a named killer's past the inline width.
         **({} if (stage := life_stage(age, adult_age(other, ctx), lifespan, is_egg(other, ctx))) == "adult" else {"life_stage": stage}),
