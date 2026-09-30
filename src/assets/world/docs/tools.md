@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 30/09/26 10:29</p>
+<p class="metadata">Date de mise à jour : 30/09/26 10:53</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -21,7 +21,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 | `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
 | `religion <id>`   | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                              |
 | `subspecies <id>` | `breakdown`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                   |
-| `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `tile_info`                                                                          |
+| `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `islet`, `tile_info`                                                                 |
 | `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                             |
 | `world`           | `boats`, `cumulative`, `leaders`, `metadata`, `pairings`, `plots`, `roster`, `snapshot`                                          |
 
@@ -90,8 +90,8 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `patches` (`biomes`) : une parcelle se joint par les coins ; une terre comme WB (un coin dans un seul chunk) ; une eau, côte à côte.
 - `ridges` (`geography`) : là où deux terres se touchent sans eau, une crête de roche infranchissable à pied — `between` les deux terres, `length` en tuiles, `at` sa tuile du milieu.
 - `strait_to_land` (`distances`) mesure en `swim_tiles` le bras d'eau depuis **tout le rocher**.
-- `tiles … tile_info` : `block` barre la marche ; `islet_tiles`, la taille d'un îlot, sous 300 tuiles de sol ; sur l'eau, `sea`, `lake` (son id) ou `pond_tiles`, une eau close sous 64 tuiles ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.
-- `to_islands` (`distances`) : les 5 îles les plus proches, dans l'ordre, à vol d'oiseau jusqu'à leur **tuile la plus proche**, les autres comptées sous `unlisted` ; un bras d'eau se lit à `strait_to_land`.
+- `tiles … tile_info` : `block` barre la marche ; `islet_tiles`, la taille d'un îlot, sous 300 tuiles de sol, que `islet` décrit entier, roche et îlots accolés compris, `to_islands` depuis tout l'îlot ; sur l'eau, `sea`, `lake` (son id) ou `pond_tiles`, une eau close sous 64 tuiles ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.
+- `to_islands` (`distances`) : les 5 îles les plus proches, en ordre, à vol d'oiseau jusqu'à leur **tuile la plus proche**, les autres comptées sous `unlisted`.
 - `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
 - `unlisted` (`waters`) : ce que la sortie écarte, les mares sous 64 tuiles (comptées) et les bras de plus de 1 024.
 - `walk_tiles` (`distances`, `to`) : les tuiles faites à pied, roche, lave et goo contournés ; sable, marais, neige et arbres sous Entanglewood n'allongent que le temps. Hors d'`actor`, rien ne se nage, au `speed` 10 : absente sans terre qui les joigne.

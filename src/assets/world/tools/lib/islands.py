@@ -21,6 +21,7 @@ from shared import pickle_cached, union_root
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
 _CITY_MIN_ISLAND_TILES = 300  # WB `Globals.CITY_MIN_ISLAND_TILES`: under it no city is ever founded, so the land bears no history worth a name.
 _DELTAS_4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
+_DELTAS_8 = tuple((dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)
 _LAND = bytes([0] + [255] * 255)  # a land id, one byte, read as a full byte and water as none: the mask the edges are cut to
 _ROCK = bytes.maketrans(b"\x01\x02", b"\x00\x01")  # the tile codes read for rock alone, ground cleared
 _RUN = re.compile(rb"\x01+")  # a run of ground, sought between a row's own bounds so that it never runs on into the next
@@ -71,6 +72,20 @@ class _TileIslands:
     def islet_size(self, pos: tuple[int, int]) -> int:
         x, y = pos
         return self._islets.get(y * self._width + x, 0) if self._islets is not None and 0 <= x < self._width and 0 <= y < self._height else 0
+
+    # Every tile of the rock under `pos`: its islet, lent rock and any islet touching it by rock or corner — `[]` off every islet. A few hundred at most.
+    def islet_tiles(self, pos: tuple[int, int]) -> list[tuple[int, int]]:
+        if (islets := self._islets) is None or not self.islet_size(pos):
+            return []
+        width, height = self._width, self._height
+        seen, stack = {pos}, [pos]
+        while stack:
+            x, y = stack.pop()
+            for dx, dy in _DELTAS_8:
+                if 0 <= (nx := x + dx) < width and 0 <= (ny := y + dy) < height and (nx, ny) not in seen and ny * width + nx in islets:
+                    seen.add((nx, ny))
+                    stack.append((nx, ny))
+        return sorted(seen)
 
     # Every islet as `(size, x, y)`, its own tile nearest its middle: what `geography … totals` sums, so no reader need sweep the map for a tally of rocks.
     def islets(self) -> list[tuple[int, int, int]]:

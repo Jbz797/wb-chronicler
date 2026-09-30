@@ -5,8 +5,9 @@
 # Coordinate convention: WB UI / actor coords; `grid[y][x]` (no inversion — y grows north and so does the row index).
 
 import argparse
+import math
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from functools import cache
 from heapq import heapify, heappop, heappush
@@ -41,9 +42,11 @@ from shared import (
 from walking import WalkMap, walk_way
 from waters import water_bodies
 
-_ALL_SECTIONS = ("actors", "context", "distances", "ground", "tile_info")
+_ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info")
+_AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
+_LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
 _REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its walks are timed at the pace the scale is told in
@@ -96,13 +99,14 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
         ctx["kingdoms_by_id"] = index_by_id(save.get("kingdoms") or [])
 
-    if {"distances", "tile_info"} & sections:
+    if {"distances", "islet", "tile_info"} & sections:
         ctx["grid"] = LazyTileGrid(save)
 
     if {"context", "distances"} & sections:
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
 
-    if walks or "tile_info" in sections:  # `distances` needs it too, to say how far a rock lies from a land a city could hold, and a walk what land it keeps to
+    # `distances` needs it too, to say how far a rock lies from a land a city could hold, and a walk what land it keeps to
+    if walks or {"islet", "tile_info"} & sections:
         islands, ctx["tile_to_island"] = compute_islands_cached(save, save_path)
         ctx["island"], ctx["island_ids"] = island, {land["id"] for land in islands}
 
@@ -148,11 +152,7 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
         # A seat is a point, where a town is a fabric — the throne, not the capital's last house.
         out["to_capital"] = _measure(x, y, round(walk_tiles(x - seat[0], y - seat[1])), (seat[1] * ctx["width"] + seat[0],), ctx)
     lands = _island_distances(x, y, ctx)
-    ranked = sorted(lands.items(), key=lambda item: (item[1], item[0]))
-    if near := ranked[:_NEAR_ISLANDS]:
-        out["to_islands"] = {str(island): round(tiles) for island, tiles in near}  # nearest first, an order `render` keeps by way of `_VALUE_ORDERED`
-    if far := ranked[_NEAR_ISLANDS:]:  # the cut said with its size, as `waters` tells the lakes it leaves out
-        out["unlisted"] = {"islands": {"count": len(far), "nearest": round(far[0][1])}}
+    out |= _nearest_lands(lands)
     if (wanted := ctx["island"]) is not None:  # a named land, however far down the list: the tile's own reads 0, it stands on it
         out["to_island"] = {str(wanted): round(lands.get(wanted, 0))}
     return out
@@ -210,6 +210,36 @@ def _island_distances(cx: int, cy: int, ctx: dict) -> dict[int, float]:
     return nearest
 
 
+# The islet whole, told as `geography … islands` tells a land, plus biomes, lie and lands from its nearest shore — a far one may stand a kilometre nearer.
+def _islet_at(x: int, y: int, ctx: dict) -> dict:
+    if not (tiles := ctx["tile_to_island"].islet_tiles((x, y))):
+        return {}
+    grid, tile_map, own = ctx["grid"], ctx["tile_map"], set(tiles)
+    names = [tile_map[grid[ty][tx]] for tx, ty in tiles]
+    kinds, biomes = Counter(map(tile_kind, names)), Counter(filter(None, map(tile_biome, names)))
+    xs, ys = [tx for tx, _ in tiles], [ty for _, ty in tiles]
+    mean_x, mean_y = sum(xs) / len(tiles), sum(ys) / len(tiles)
+    cx, cy = min(tiles, key=lambda t: ((t[0] - mean_x) ** 2 + (t[1] - mean_y) ** 2, t))  # its own tile nearest its middle: a mean could fall at sea
+    out = {
+        "biomes": _shares(biomes, sum(biomes.values())),
+        "bounds": {"x": [min(xs), max(xs)], "y": [min(ys), max(ys)]},
+        "centroid": {"x": cx, "y": cy},
+        "ground": _shares(kinds, len(tiles)),
+        "size": len(tiles),  # the rock whole, as a land's counts its own — the islets it touches in, where `islet_tiles` weighs one mass's ground
+        **_lie(tiles, mean_x, mean_y),
+    }
+    shore = [(tx, ty) for tx, ty in tiles if any((tx + dx, ty + dy) not in own for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+    west, east, south, north = out["bounds"]["x"] + out["bounds"]["y"]
+    nearest: dict[int, float] = {}
+    for ex, ey, island in ctx["tile_to_island"].edges():
+        # The islet's box never lies farther than the islet, so a land tile the box already sets past the standing best is dropped before the shore is walked.
+        if walk_tiles(max(west - ex, ex - east, 0), max(south - ey, ey - north, 0)) >= nearest.get(island, _FARTHER):
+            continue
+        if (tiles_to := min(walk_tiles(ex - sx, ey - sy) for sx, sy in shore)) < nearest.get(island, _FARTHER):
+            nearest[island] = tiles_to
+    return out | _nearest_lands(nearest)
+
+
 # The water cutting the tile's rock off a land a city could hold, and which: from the whole rock, swum as `swim_tiles` counts it, dry rock on the way free.
 def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
     island_at, grid, layer = ctx["tile_to_island"].get, ctx["grid"], ctx["layer_by_id"]
@@ -252,6 +282,22 @@ def _land_distance(x: int, y: int, ctx: dict) -> dict | None:
     return {"farther_than": _LAND_REACH}
 
 
+# The line a shape lies along and its length by breadth, off its tiles' spread: `lie` said only past `_LONG_SHAPE`, a round rock lying along none.
+def _lie(tiles: list[tuple[int, int]], mean_x: float, mean_y: float) -> dict:
+    sxx = sum((tx - mean_x) ** 2 for tx, _ in tiles)
+    syy = sum((ty - mean_y) ** 2 for _, ty in tiles)
+    sxy = sum((tx - mean_x) * (ty - mean_y) for tx, ty in tiles)
+    angle = 0.5 * math.atan2(2 * sxy, sxx - syy)
+    cos, sin = math.cos(angle), math.sin(angle)
+    along = [(tx - mean_x) * cos + (ty - mean_y) * sin for tx, ty in tiles]
+    across = [(ty - mean_y) * cos - (tx - mean_x) * sin for tx, ty in tiles]
+    long, wide = round(max(along) - min(along)) + 1, round(max(across) - min(across)) + 1
+    out: dict = {"span_tiles": [long, wide]}
+    if long >= _LONG_SHAPE * wide:
+        out["lie"] = _AXES[round(math.degrees(angle) / 45) % 4]
+    return out
+
+
 # The crow's line beside the walk and its time at the reference pace, left out where no land joins them — `goals` are tile indices, read from a land alone.
 def _measure(x: int, y: int, tiles: int, goals: Iterable[int], ctx: dict) -> dict:
     island_of = ctx["tile_to_island"]
@@ -262,6 +308,17 @@ def _measure(x: int, y: int, tiles: int, goals: Iterable[int], ctx: dict) -> dic
     if (way := walk_way(walk_map, walk_map.gait(_REFERENCE_SPEED, frozenset()), x, y, ends)) is None:
         return {"crow_tiles": tiles}
     return {"crow_tiles": tiles, "walk_tiles": round(way[3]), **trip_time(HOURLY_TILES_PER_SPEED * _REFERENCE_SPEED, way[0], way[0])}
+
+
+# The lands nearest first, `_NEAR_ISLANDS` of them named — an order `render` keeps by way of `_VALUE_ORDERED` — and the cut said with its size, as `waters`
+# tells the lakes it leaves out.
+def _nearest_lands(nearest: dict[int, float]) -> dict:
+    ranked, out = sorted(nearest.items(), key=lambda item: (item[1], item[0])), {}
+    if near := ranked[:_NEAR_ISLANDS]:
+        out["to_islands"] = {str(island): round(tiles) for island, tiles in near}
+    if far := ranked[_NEAR_ISLANDS:]:
+        out["unlisted"] = {"islands": {"count": len(far), "nearest": round(far[0][1])}}
+    return out
 
 
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
@@ -279,6 +336,11 @@ def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
         for nx in {x0, x1}:
             if 0 <= nx < width:
                 yield nx, ny
+
+
+# A tally as `geography … islands` writes a land's ground: the three largest, in whole percents, a share rounding to nought left out — `None` for none.
+def _shares(counter: Counter, total: int) -> str | None:
+    return " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / total * 100)) > 0) or None
 
 
 # `block`, `burning`, `frozen` (passing frost), `islet_tiles` (a land too small to count), `snow`, `ice`, on water `sea`, `lake` or `pond_tiles`: where they hold.
@@ -369,6 +431,10 @@ def main(argv: list[str]) -> int:
     if args.island is not None and args.island not in ctx["island_ids"]:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
         return 2
+    if sections == {"islet"} and not ctx["tile_to_island"].islet_size((cx, cy)):  # asked alone, an empty block would read as an islet with nothing on it
+        land = ctx["tile_to_island"].get((cx, cy))
+        print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands -i {land}`' if land else 'water'}", file=sys.stderr)
+        return 2
 
     out: dict = {}
     for x, y in coords if sections else ():
@@ -381,6 +447,8 @@ def main(argv: list[str]) -> int:
             cell["distances"] = _distances_at(x, y, ctx)
         if "ground" in sections:
             cell["ground"] = _ground_at(x, y, ctx)
+        if "islet" in sections and (x, y) in queried:  # the islet whole, said once for the tile asked about as `distances` is
+            cell["islet"] = _islet_at(x, y, ctx)
         if "tile_info" in sections:
             cell["tile_info"] = _tile_info_at(x, y, ctx)
         out[f"{x},{y}"] = cell
