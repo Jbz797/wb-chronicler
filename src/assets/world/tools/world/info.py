@@ -266,7 +266,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
     mode, empty = {sid: breeding_mode(lineage) for sid, lineage in traits.items()}, frozenset()
     carry = {sid: maturation_months(lineage, ctx) * UNITS_PER_MONTH if _carried(lineage) else 0 for sid, lineage in traits.items()}  # the bearer's sets it
     rows: list[tuple[float, dict]] = []
-    now = ctx["world_time"]  # a conception is today's at the earliest, however long ago both came of age
+    now = ctx["world_time"]  # a birth is today's at the earliest — and may be, WB saving no status: a `pregnant` begun before the save shows nowhere
     for kind, bodies in kinds.items():
         ready = {actor["id"]: crossed_at(actor, breeding_age(actor, ctx)) for actor in bodies}
         where = {actor["id"]: actor_xy(actor) for actor in bodies}
@@ -275,7 +275,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         births = []
         if lone := [actor for actor in bodies if mode.get(actor.get("subspecies")) == "alone"]:  # a lineage breeding alone needs no one
             row["alone_on"] = min(ready[actor["id"]] for actor in lone)
-            births += [max(ready[actor["id"]], now) + carry.get(actor.get("subspecies"), 0) for actor in lone]
+            births += [max(ready[actor["id"]] + carry.get(actor.get("subspecies"), 0), now) for actor in lone]
         sexed = {actor["id"]: _SEXED in traits.get(actor.get("subspecies"), empty) for actor in mating}
         bars = {actor["id"]: _breeding_bars(actor, ctx, island_of, grid, save["tileMap"]) for actor in mating}
         # WB's law on babies, a beast's or a thinker's, read off the kind's first lineage that mates — every one of a kind thinks or none does.
@@ -304,7 +304,8 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
             apart, _, row["on"], crow, a, b, barred = best
             row |= {"barred": barred or None, "crow_tiles": round(crow), "lovers": True if not apart else None, "pair": [a["id"], b["id"]]}
             bearer = b if sexed[a["id"]] and b.get("sex") == 1 else a  # a sexed pair's mother carries; a hermaphrodite pair, either — WB draws it
-            births.append(max(row["on"], now) + carry.get(bearer.get("subspecies"), 0))
+            conceived = max(row["on"], now) if apart else row["on"]  # lovers may carry already, unseen; any other pair must first become them
+            births.append(max(conceived + carry.get(bearer.get("subspecies"), 0), now))
             (ax, ay), (bx, by) = where[a["id"]], where[b["id"]]
             if (land := island_of.get((ax, ay))) is not None and land == island_of.get((bx, by)):
                 walk_map = walk_map or WalkMap(save)
