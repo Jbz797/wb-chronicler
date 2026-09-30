@@ -297,3 +297,11 @@ def _middle_tile(runs: list[tuple[int, int, int]], size: int) -> tuple[int, int]
 # Disk-cached `_compute_islands`, one slot per save like every sweep of the map: `actor … --since` weighs two saves, which a single slot would evict in turn.
 def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _TileIslands]:
     return pickle_cached("islands_v19", save_path, lambda: _compute_islands(save))
+
+
+# An islet's own tile nearest the mean of all its tiles — a mean alone could fall at sea, off a crescent of rock: its mark from a chapter to the next.
+def islet_centre(tiles: list[tuple[int, int]]) -> tuple[int, int] | None:
+    if not tiles:
+        return None
+    mean_x, mean_y = sum(x for x, _ in tiles) / len(tiles), sum(y for _, y in tiles) / len(tiles)
+    return min(tiles, key=lambda t: ((t[0] - mean_x) ** 2 + (t[1] - mean_y) ** 2, t))

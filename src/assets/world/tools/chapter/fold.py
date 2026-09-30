@@ -25,6 +25,7 @@ _AUDIT = {
             "in_building",
             "island_id",
             "islands",
+            "islet",
             "mass",
             "motto",
             "next_age_on",

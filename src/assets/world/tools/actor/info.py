@@ -24,7 +24,7 @@ from actor_stats import (
 )
 from founding import city_zones, settle_gates
 from grid import LazyTileGrid, off_land
-from islands import compute_islands_cached
+from islands import compute_islands_cached, islet_centre
 from shared import (
     HOURLY_TILES_PER_SPEED,
     NEW_BABY_NUTRITION,
@@ -272,6 +272,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         )
     )
 
+    land = _land_of(actor, ctx)
     return {
         # Chronicler-only, and only while it still bites: the date WB gives the child its halved `damage_max`/`health_max` back — a bridling, not an infirmity.
         **({"adult_on": crossed_on(actor, age_adult)} if age < age_adult else {}),
@@ -298,7 +299,9 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
         **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"]().get(tile)) else {}),
-        "island_id": _land_of(actor, ctx),  # Chronicler-only: its land (geography/info.py), else `water` or `islet`
+        "island_id": land,  # Chronicler-only: its land (geography/info.py), else `water` or `islet`
+        # Chronicler-only: which islet, by its centre as `tiles … islet` gives it — the same from a chapter to the next while the rock holds its shape
+        **({"islet": {"x": at[0], "y": at[1]}} if land == "islet" and (at := islet_centre(ctx["island_lookup"]().islet_tiles(tile))) else {}),
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in

@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import LazyTileGrid, listed_tiles, off_land, tile_biome, tile_block, tile_elevation, tile_frost, tile_kind, tile_layer
-from islands import compute_islands_cached
+from islands import compute_islands_cached, islet_centre
 from shared import (
     DIAGONAL_EXTRA,
     HOURLY_TILES_PER_SPEED,
@@ -219,7 +219,7 @@ def _islet_at(x: int, y: int, ctx: dict) -> dict:
     kinds, biomes = Counter(map(tile_kind, names)), Counter(filter(None, map(tile_biome, names)))
     xs, ys = [tx for tx, _ in tiles], [ty for _, ty in tiles]
     mean_x, mean_y = sum(xs) / len(tiles), sum(ys) / len(tiles)
-    cx, cy = min(tiles, key=lambda t: ((t[0] - mean_x) ** 2 + (t[1] - mean_y) ** 2, t))  # its own tile nearest its middle: a mean could fall at sea
+    cx, cy = islet_centre(tiles) or (x, y)
     out = {
         "biomes": _shares(biomes, sum(biomes.values())),
         "bounds": {"x": [min(xs), max(xs)], "y": [min(ys), max(ys)]},
