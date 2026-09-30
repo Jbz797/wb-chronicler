@@ -435,6 +435,10 @@ def main(argv: list[str]) -> int:
         land = ctx["tile_to_island"].get((cx, cy))
         print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands -i {land}`' if land else 'water'}", file=sys.stderr)
         return 2
+    # Asked alone, a sweep with no town in it would read as a failure rather than open ground — every tile weighed, a neighbour's town counting.
+    if sections == {"context"} and not any(_context_at(x, y, ctx) for x, y in coords):
+        print(f"✗ ({cx}, {cy}){' and the tiles around lie' if args.radius else ' lies'} in no town", file=sys.stderr)
+        return 2
 
     out: dict = {}
     for x, y in coords if sections else ():

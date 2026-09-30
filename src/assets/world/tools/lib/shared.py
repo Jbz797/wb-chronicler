@@ -551,6 +551,7 @@ def duration(hours: float, prefix: str = "") -> dict:
 # One block the command named (a section, `--to`, a tile) comes bare, its key only repeating the question; several named stay keyed, even one left empty.
 def emit(out: dict) -> None:
     asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}
+    asked |= {"islets"} if "islet" in asked else set()  # `land_arg`'s singular names the block its plural keys
     value, alone = _strip_none(out), sum(key in asked for key in out) == 1
     while alone and isinstance(value, dict) and len(value) == 1 and next(iter(value)) in asked:
         value = next(iter(value.values()))
@@ -718,6 +719,8 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
 
 # `-i` as a land's id, or `islets` or `water`: what lies off every counted land, which `geography` buckets and `roster` stands a body on.
 def land_arg(value: str) -> int | str:
+    if value == "islet":  # the singular, as outputs spell a body's footing, taken for the plural
+        return "islets"
     if value in ("islets", "water"):
         return value
     if not value.isdigit():
