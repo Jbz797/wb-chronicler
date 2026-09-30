@@ -347,7 +347,8 @@ def _build_plots(save: dict) -> list[dict]:
 def _build_roster(
     save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | str | None, since: str | None, sapient: bool, settle: bool, barred: bool
 ) -> list[dict] | dict:
-    was, thinking = _lands_then(since) if since else None, _sapient_subspecies(save) if sapient else None
+    earlier, was = _then(since) if since else (None, None)
+    thinking = _sapient_subspecies(save) if sapient else None
     grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
     asked = _ISLET if land == "islets" else land  # `-i islets` names the islets as a body stands on one, `islet`
     ctx = build_actor_stats_context(save)
@@ -379,13 +380,17 @@ def _build_roster(
             change = {"was_on": then}
         if land is None or asked in (here, change.get("was_on")):
             bodies.append((actor, here, change | ({"settle": [g for g in gates if g != "child"]} if barred and isinstance(gates, list) else {})))
-    if len(bodies) > MAX_LISTED:  # a census past the list: how many of each kind, and of each stage, the adults counted too
+    gone = []
+    if earlier is not None and was is not None and not (settle or barred):  # the dead found nothing
+        gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient)
+    if len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many of each kind, and of each stage, the adults counted too
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
         stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
         return {
             "by_species": dict(species),
             "by_stage": dict(stages),
-            "info": f"{len(bodies)} bodies — narrow them with -t, --trait, --sapient, --settle, --barred or -i",
+            "gone_by_species": dict(Counter(row["asset_id"] for row in gone)) or None,
+            "info": f"{len(bodies) + len(gone)} bodies — narrow them with -t, --trait, --sapient, --settle, --barred or -i",
         }
     rows, one_kind = [], kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
 
@@ -416,7 +421,7 @@ def _build_roster(
                 **change,
             }
         )
-    return rows
+    return rows + [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
 
 
 # Actors split three ways: hulls (`boats`), thinking souls (`sapient_population`) and the beasts (`wild_creatures`). `infected` = WB's `current_infected`.
@@ -469,12 +474,22 @@ def _count_leaders(counts: Counter, records: list[dict], min_peers: int) -> list
     return [{"id": eid, "name": _name_of(records, eid), "value": n} for eid, n in first_place(counts, min_peers)]
 
 
-# The land each body stood on in an earlier chapter's save, for `--since`: the one fact the roster weighs against it.
-def _lands_then(chapter: str) -> dict[int, int | str]:
-    then_path = SAVES_DIR / chapter / "map.wbox"
-    then = load_save(then_path)
-    island_of, grid = compute_islands_cached(then, then_path)[1], LazyTileGrid(then)
-    return {actor["id"]: _standing(actor, island_of, grid, then["tileMap"]) for actor in then.get("actors_data") or [] if not is_boat(actor)}
+# The dead since an earlier chapter, as it knew them — WB keeps no dead, so a body gone from the save is one gone from the world: filtered as the living are.
+def _gone_since(save: dict, then: dict, was: dict[int, int | str], kinds: set[str] | None, trait: str | None, asked, sapient: bool) -> list[dict]:
+    alive = {actor["id"] for actor in save.get("actors_data") or []}
+    thinking = _sapient_subspecies(then) if sapient else None
+    bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
+    rows = []
+    for actor in then.get("actors_data") or []:
+        if actor["id"] in alive or actor["id"] not in was or (kinds and actor.get("asset_id") not in kinds):
+            continue
+        if trait and trait not in (actor.get("saved_traits") or ()) and actor.get("subspecies") not in bearing:
+            continue
+        if (thinking is not None and actor.get("subspecies") not in thinking) or (asked is not None and was[actor["id"]] != asked):
+            continue
+        # Silent under `-i`, which names the land it held
+        rows.append({"asset_id": actor.get("asset_id"), "gone": True, "id": actor["id"], "name": actor.get("name"), "was_on": None if asked else was[actor["id"]]})
+    return sorted(rows, key=lambda row: row["id"])
 
 
 # WB `canFallInLoveWith` between two of a kind: neither pledged to a third, no blood — parent, child or a parent shared — and opposite sexes where sexed.
@@ -505,7 +520,7 @@ def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
         "that could found a town where it stands" if args.settle else None,
         "kept from founding by more than its age" if args.barred else None,
         (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
-        f"arrived or moved since {since}" if since else None,
+        f"arrived, moved or died since {since}" if since else None,
     ]
     thinking = "thinking " if args.sapient or args.settle or args.barred else ""
     unborn = kinds is not None and not any(a.get("asset_id") in kinds for a in save.get("actors_data") or [] if not is_boat(a))
@@ -536,6 +551,14 @@ def _standing(actor: dict, island_of, grid: LazyTileGrid, names: list[str]) -> i
     if (land := island_of.get((x, y))) is not None:
         return land
     return _WATER if off_land(names[grid[y][x]]) == "water" else _ISLET
+
+
+# An earlier chapter's save for `--since`, and the land each body stood on in it: what the roster weighs against it, the dead read off it alone.
+def _then(chapter: str) -> tuple[dict, dict[int, int | str]]:
+    then_path = SAVES_DIR / chapter / "map.wbox"
+    then = load_save(then_path)
+    island_of, grid = compute_islands_cached(then, then_path)[1], LazyTileGrid(then)
+    return then, {actor["id"]: _standing(actor, island_of, grid, then["tileMap"]) for actor in then.get("actors_data") or [] if not is_boat(actor)}
 
 
 def main(argv: list[str]) -> int:
