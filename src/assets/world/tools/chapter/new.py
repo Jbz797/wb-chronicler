@@ -76,6 +76,11 @@ _ALERTS = {
 
 _CHAPTER_CAP = 14000  # a sitting's read, some 11 minutes: past it the chapter says more than its world has done — held with the floor, in no doc either
 _CHAPTER_FLOOR = 7000  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
+_CHOICE = (  # what a pick weighs, said where the pick is made: needed at a world's start and at a favorite's death alone, in no doc
+    "a thinking body only: `sapient: true` in `actor … metadata`",
+    "weighed in depth: traits, political standing, narrative promise, age, where it stands, what surrounds it…",
+    "the world's first favorite also needs room for a village — a fitting biome around it, resources, obstacles at a distance; later ones, while nothing is built",
+)
 _DESCRIPTOR_CAP = 64
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
@@ -166,6 +171,10 @@ _TRAIT_SOURCES = {
     "subspecies": ("subspecies", ("saved_actor_birth_traits", "saved_traits")),
 }
 
+_WORLD_ONLY = (  # the chapter while no favorite stands: the world itself, in two parts — in no doc either, a world having one most of its life
+    "the world's news: its lands, beasts and plants, the thinking kinds' first steps and meetings, deaths, births…",
+    "the thinking kinds: the most promising if they are many, and why none carries the chronicle yet",
+)
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity and span, off the save each chapter — the reader shows the name, the chronicler the rest
 
 
@@ -289,8 +298,7 @@ def _deliver() -> int:
             "  → mode: developer — ask the auditors whether anything got in their way, then you may close on a brief note of the frictions met,"
             " theirs and yours, crossed where they meet — none at all if there are none. What may go in it:"
         )
-        for line in _DEV_NOTE:
-            print(f"    · {line}")
+        _print_bullets(_DEV_NOTE)
     else:
         print("  → mode: player — the chapter and that account, nothing else")
     # A world law's alert asks the player at the close, where the errand is due: raised at step 2, it would have to outlast the whole audit to be remembered.
@@ -387,14 +395,19 @@ def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | Non
     return misplaced
 
 
-# The recap's closing lines: the choice of a favorite before anything else, then step 3 with the commands and files it calls for, and step 4's bounds.
+def _print_bullets(lines: tuple[str, ...]) -> None:
+    print("\n".join(f"    · {line}" for line in lines))
+
+
+# The recap's closing lines: a favorite's choice first, then step 3's commands and files, and step 4's bounds — with its shape while no favorite stands.
 def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
     if favorite is None and any(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a)):
-        print("  → chronicler: choose a favorite before a single word (docs/chronicler.md § « Choix du favori »), then:")
-        for line in _DESIGNATION:
-            print(f"    · {line}")
+        print("  → chronicler: choose a favorite before a single word — your pick, not the player's:")
+        _print_bullets(_CHOICE)
+        print("  → then put it to the player:")
+        _print_bullets(_DESIGNATION)
         print("  → without one, step 3, the analysis, before the first word and not to be hurried:")
     else:
         print("  → chronicler: step 3, the analysis, before the first word and not to be hurried:")
@@ -407,7 +420,10 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
         print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id: names repeat")
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `history/watches.md`")
-    print(f"  → step 4, the writing: {_CHAPTER_FLOOR} to {_CHAPTER_CAP} characters, blanks folded, counted at delivery, past the audit")
+    told = "" if fav_id else " — no favorite, so the world itself, in two parts:"
+    print(f"  → step 4, the writing: {_CHAPTER_FLOOR} to {_CHAPTER_CAP} characters, blanks folded, counted at delivery, past the audit{told}")
+    if not fav_id:
+        _print_bullets(_WORLD_ONLY)
 
 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.

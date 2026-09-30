@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 # Marks an actor as the world's favorite in the live WorldBox save, then rebuilds the current chapter around the pick. Spares the player the in-game marking and
-# the re-save: the chronicler names a pick, the player agrees, and the chapter is born with its favorite. Who to pick: `chronicler.md` § « Choix du favori »;
-# how to put it to the player: the recap of `new.py`.
+# the re-save: the chronicler names a pick, the player agrees, and the chapter is born with its favorite. Who to pick, and how to ask: `new.py`'s recap.
 
 import json
 import re
