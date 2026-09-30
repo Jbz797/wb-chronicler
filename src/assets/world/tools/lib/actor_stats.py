@@ -444,6 +444,15 @@ def _half(value: float) -> float:
     return math.floor(value * 0.5) if float(value).is_integer() else value * 0.5
 
 
+# A lineage's months in the shell, summed once. Nought unless it lays — the trait asked alone, an `egg_*` shell carrying months that outlive the laying.
+def _incubation_months(actor: dict, ctx: dict) -> float:
+    memo, sub_id = ctx["incubation_memo"], actor.get("subspecies")
+    if sub_id not in memo:
+        traits = (ctx["subspecies_by_id"].get(sub_id) or {}).get("saved_traits") or []
+        memo[sub_id] = maturation_months(traits, ctx) if _EGG_TRAIT in traits else 0
+    return memo[sub_id]
+
+
 # WB `GeneAsset.isBad`: a gene flanked by `bad_gene` on any side pays half. The check stops at the first one — one bad neighbour is as bad as four.
 def _is_bad(loci: list[str], idx: int) -> bool:
     rows = len(loci) // _GRID_COLS
@@ -682,7 +691,7 @@ def build_actor_stats_context(save: dict) -> dict:
         "equipment": load_data("equipment.json"),
         "era_dormant_traits": _dormant_traits(save, load_data("creature-traits.json")),  # the age is the world's: read once here, never per body
         "group_trait_cache": {},  # `_add_group_stats`: a clan's traits and a tongue's, summed once for the group rather than once per member
-        "incubation_memo": {},  # `is_egg`: the months a biology takes to hatch, summed once for it rather than once per body it laid
+        "incubation_memo": {},  # `_incubation_months`: the months a biology takes to hatch, summed once for it rather than once per body it laid
         "items_by_id": index_by_id(save["items"]),
         "language_traits": load_data("language-traits.json"),
         "languages_by_id": index_by_id(save.get("languages", [])),
@@ -726,20 +735,10 @@ def crossed_on(actor: dict, threshold: float) -> str:
     return world_date(crossed_at(actor, threshold))
 
 
-# What an egg has left before it cracks, in the months WB counts an incubation in. `None` where the body is no egg, so one call answers the delay and the state.
-def hatch_months(actor: dict, ctx: dict) -> float | None:
-    memo, sub_id = ctx["incubation_memo"], actor.get("subspecies")
-    if sub_id not in memo:
-        traits = (ctx["subspecies_by_id"].get(sub_id) or {}).get("saved_traits") or []
-        # Nought for a biology that lays nothing, and the trait is asked for on its own: an `egg_*` shell carries months too, and shells outlive the laying.
-        months = maturation_months(traits, ctx) if _EGG_TRAIT in traits else 0
-        memo[sub_id] = months
-    if not (months := memo[sub_id]):
-        return None
-    if actor_age(actor, ctx["world_time"]) >= _subspecies_ages(actor, ctx)[0]:
-        return None
-    left = months - (ctx["world_time"] - float(actor.get("created_time") or 0)) / UNITS_PER_MONTH
-    return left if left > 0 else None
+# The month a body leaves its shell, gone by or to come — `born` being the laying. `None` for a biology that lays nothing.
+def hatch_on(actor: dict, ctx: dict) -> str | None:
+    months = _incubation_months(actor, ctx)
+    return world_date(float(actor.get("created_time") or 0) + months * UNITS_PER_MONTH) if months else None
 
 
 # WB `Actor.calcAgeStates` flags `_state_baby` down two roads, an egg and a body under its majority — and every rule reads that one flag, so an egg is a child.
@@ -749,7 +748,9 @@ def is_baby(actor: dict, ctx: dict) -> bool:
 
 # WB `Actor.checkShouldBeEgg`: a biology that lays, a body under its majority, an incubation still running — that majority ungated, an egg needs no baby form.
 def is_egg(actor: dict, ctx: dict) -> bool:
-    return hatch_months(actor, ctx) is not None
+    if not (months := _incubation_months(actor, ctx)) or (ctx["world_time"] - float(actor.get("created_time") or 0)) / UNITS_PER_MONTH >= months:
+        return False
+    return actor_age(actor, ctx["world_time"]) < _subspecies_ages(actor, ctx)[0]
 
 
 # WB `Actor.isHungry`: at half its cap or under — a body with no gut never is.
