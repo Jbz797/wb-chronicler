@@ -1,8 +1,8 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 30/09/26 13:28</p>
+<p class="metadata">Date de mise à jour : 30/09/26 14:27</p>
 
-Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
+Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
 | Commande          | Sections                                                                                                                         |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -74,7 +74,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### Entités et comptes :
 
 - `city … rulers` et `kingdom … rulers` donnent la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain en place : `population.ruler_money`.
-- `description` et `flavor` d'un trait disent l'ambiance, jamais l'effet : il tient dans `stats`, que `dormant` dit endormies par l'ère, le reste dans `wiki:Creature_Traits` ou `wiki:Subspecies_Traits`. Un don se pèse contre sa lignée (`subspecies … stats`), jamais contre un autre corps.
+- `description` et `flavor` d'un trait disent l'ambiance, jamais l'effet : il tient dans `stats`, que `dormant` dit endormies par l'ère et `absorbed` bues par une borne, le reste dans `wiki:Creature_Traits` ou `wiki:Subspecies_Traits`. Un don se pèse contre sa lignée (`subspecies … stats`), jamais contre un autre corps.
 - `history` lit l'historique de WB : `world`, ce que chaque année a vu naître, mourir ou s'éteindre, l'année en cours `so_far`, une année absente sans rien de neuf, les ~20 dernières seules ; `entity`, les états d'une entité (noms nus : `population`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`), l'avant de la fenêtre approché (`around_year`) ; `log` le journal ; `dead_kingdoms` les couronnes tombées. Seuls les vivants y ont leurs années. De quoi meurent les siens : `deaths_by_cause`, au `metadata` d'une cité, d'un royaume, d'un clan ou d'une sous-espèce ; ceux du monde, sur `world … cumulative` ou `history world`, jamais en additionnant les lignées, les éteintes n'ayant plus de `metadata`.
 - `houses` (cité, royaume) compte les chantiers, comme le jeu : `ground … metadata` les signale par `under_construction`.
 - `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule sert tout le royaume.

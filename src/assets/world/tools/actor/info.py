@@ -148,6 +148,14 @@ class _Unreachable(Exception):
     pass
 
 
+# The stats a trait moves that a WB bound swallows on this body: its total the same without it, as a `-5` accuracy on a floor of 1 — `None` where none is.
+def _absorbed(actor: dict, trait: dict, ctx: dict, totals: dict) -> list[str] | None:
+    if not (moved := trait.get("stats")):
+        return None
+    without = actor_stat_totals({**actor, "saved_traits": [t for t in actor.get("saved_traits") or () if t != trait["id"]]}, ctx)
+    return sorted(stat for stat in moved if round(totals.get(stat, 0), 6) == round(without.get(stat, 0), 6)) or None
+
+
 # Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
 def _bears(actor: dict, ctx: dict) -> bool | None:
     biology = _biology(actor, ctx)
@@ -460,8 +468,11 @@ def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
     sworn, library = actor.get("saved_traits") or [], ctx["creature_traits"]
     if not detailed:
         return light({"ids": build_trait_ids(sworn, library, "rarity")})
-    asleep = ctx["era_dormant_traits"]  # the verdict `stats` already heeds: a gift bound to an age this one is not lends none of its stats
-    return [{**trait, "dormant": True} if trait["id"] in asleep else trait for trait in build_trait_list(sworn, library)]
+    asleep, totals = ctx["era_dormant_traits"], actor_stat_totals(actor, ctx)  # `asleep`: the verdict `stats` already heeds, an age's gift lulled by another
+    return [
+        {**trait, "dormant": True} if trait["id"] in asleep else {**trait, "absorbed": _absorbed(actor, trait, ctx, totals)}
+        for trait in build_trait_list(sworn, library)
+    ]
 
 
 # Built structures by their tile, so `metadata` can name the roof a soul stands under. Nature files under `buildings` too, and nobody steps « inside » a field.
