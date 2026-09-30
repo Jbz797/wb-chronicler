@@ -468,7 +468,7 @@ def _print_step_five(n: int, facts: dict) -> None:
             )
         elif carrying:
             print(
-                f"  → `favorite.descriptor`, carried from C{n - 1}: « {text} » — nothing notable since, it may stand;"
+                f"  → `favorite.descriptor`, carried from C{n - 1}: « {text} » — it may stand while every fact in it still holds, an age never does;"
                 f" else rewrite it, {_DESCRIPTOR_CAP} characters at most"
             )
         elif len(text) > _DESCRIPTOR_CAP:
@@ -646,10 +646,10 @@ def _step_five_facts(n: int, lang: str) -> dict:
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: len(summary) for tier, summary in sorted(written.items()) if len(summary) > _SUMMARY_CAP}
     misplaced = _misplaced_places(n)
-    # A summary or a descriptor carried word for word was audited when it was written — only what this chapter wrote, or still owes, goes to the audit.
+    # A summary carried word for word was audited when written, so only a new one goes; the descriptor always, an age in it stale by the next chapter.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
     return {
-        "audited": sorted(fresh + (["favorite.descriptor"] if favorite and not carried else [])),
+        "audited": sorted(fresh + (["favorite.descriptor"] if favorite else [])),
         "carried": carried,
         "descriptor": descriptor,
         "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (owed or long or misplaced),
