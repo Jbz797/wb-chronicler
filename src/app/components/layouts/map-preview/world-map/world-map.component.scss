@@ -35,21 +35,15 @@
       font-style: italic;
     }
 
-    // A spot the chronicler named: a gilt point, its name hung beside it in small caps.
+    // A spot the chronicler named: his emoji, its name hung beside it in small caps.
     &.pin-spot {
       font-family: $font-body;
-      font-size: 0.8cqw;
+      font-size: 0.7cqw;
       font-variant-caps: small-caps;
 
-      &::before {
-        background: $primary;
-        border-radius: 50%;
-        box-shadow: 0 0 0 1px #000;
-        content: '';
-        display: inline-block;
-        height: 0.4cqw;
-        margin-right: 0.3cqw;
-        width: 0.4cqw;
+      .emoji {
+        position: relative;
+        top: 1px;
       }
     }
   }

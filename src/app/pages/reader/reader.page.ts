@@ -19,7 +19,6 @@ import { ChroniclerService, RegistryService } from '../../services';
   imports: [MarkdownComponent, NgScrollbarModule, TranslatePipe],
   templateUrl: './reader.page.html',
   styleUrl: './reader.page.scss',
-  host: { '(click)': 'onClick($event)' },
 })
 export class ReaderPage {
 
@@ -68,19 +67,6 @@ export class ReaderPage {
     });
 
     inject(DestroyRef).onDestroy(() => this._openingObserver.disconnect());
-  }
-
-  // Scroll to internal anchors programmatically (bypasses <base href> redirect; suffix match handles invisible-char prefixes like emoji VS-16).
-  protected onClick(event: MouseEvent): void {
-    const link = (event.target as HTMLElement).closest('a');
-
-    const href = link?.getAttribute('href');
-    if (!href?.startsWith('#')) return;
-
-    event.preventDefault();
-
-    const slug = decodeURIComponent(href.slice(1));
-    document.querySelector(`[id$="${CSS.escape(slug)}"]`)?.scrollIntoView({ behavior: 'smooth' });
   }
 
   // Fills the canvas placeholders `marked` left in the prose — subjects and heraldry alike — now that the rendered chapter sits in the DOM.

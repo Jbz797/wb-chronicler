@@ -1,5 +1,4 @@
 import { marked, TokenizerAndRendererExtension, Tokens } from 'marked';
-import { gfmHeadingId } from 'marked-gfm-heading-id';
 
 import {
   ALLIANCE_REGISTRY, BOOK_REGISTRY, CITY_REGISTRY, CLAN_REGISTRY, CULTURE_REGISTRY, FAMILY_REGISTRY, INLINE_MARKER, KINGDOM_REGISTRY, LANGUAGE_REGISTRY,
@@ -32,7 +31,6 @@ export class MarkedHelpers {
 
   // Inline icon codes — each one a `[<letter> <id> <name>]` marker handled by its own renderer.
   public static configure(): void {
-    marked.use(gfmHeadingId());
     marked.use({
       extensions: [
         this._extension(INLINE_MARKER.Alliance, 'alliances', false, this._renderAlliance), // `[i <id> <name>]` = alliance (banner + name, in its own hue).
