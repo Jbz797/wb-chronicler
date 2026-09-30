@@ -50,6 +50,7 @@ The model's **1M-token context window** lets that single thread run a long way b
 ## Requirements
 
 - **Claude Code**, with a Claude subscription — Pro or higher is recommended, the chronicler reading, cross-checking and writing a multi-section chapter on every save
+- **Opus 5.5** at **high** effort for the chronicler, recommended — the depth a chapter's cross-checks need, without the cost of `xhigh` or `max`
 - **Node** 22+ and **Yarn** for the reader
 - **Python 3** for the `tools/` extractors — the standard library, plus **Pillow** for `map/show.py` (`pip install pillow`)
 - **WorldBox** (Steam) and a save to follow
@@ -63,7 +64,7 @@ Vanilla clouds all rise on the west edge of the map, and they seed a young world
 To write the chronicle, open the chronicler in its own directory:
 
 ```sh
-cd src/assets/world && claude # works inside the chronicle, ruled by `docs/chronicler.md` alone
+cd src/assets/world && claude --model claude-opus-5-5 --effort high # works inside the chronicle, ruled by `docs/chronicler.md` alone
 ```
 
 The session opens on a single order, _« Lis le docs/chronicler.md »_ — the chronicler takes it from there.
