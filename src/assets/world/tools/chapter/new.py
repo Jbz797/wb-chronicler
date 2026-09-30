@@ -418,6 +418,8 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
         print(f"    · the deltas since C{n - 1}{order} what moved as much as what held — `geography bodies C{n}` shows a land newly peopled")
     print("    · the thresholds just crossed: the first times, the levels reached")
     if fav_id:
+        if n > 1:
+            print(f"    · what changed on the favorite: `actor {fav_id} --since C{n - 1} C{n}` — its walk and its gates, read before a word of it")
         print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id: names repeat")
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `history/watches.md`")
