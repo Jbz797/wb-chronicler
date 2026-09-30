@@ -3,6 +3,8 @@
     <article class="ant-typography" [class.chapter]="isChapter()" [style.--fleuron]="favoriteHue()">
       @if (src(); as s) {
         <markdown [disableSanitizer]="true" [src]="s" (ready)="onReady()" />
+      } @else if (merged.hasValue()) {
+        <markdown [data]="merged.value()" [disableSanitizer]="true" (ready)="onReady()" />
       } @else if (awaitsChronicler()) {
         <div class="bootstrap">
           <h1>{{ 'ui_chronicler_pending' | translate }}</h1>

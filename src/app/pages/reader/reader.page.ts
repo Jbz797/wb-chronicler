@@ -1,11 +1,12 @@
-import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, viewChild } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, resource, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { TranslatePipe } from '@ngx-translate/core';
 import { MarkdownComponent } from 'ngx-markdown';
 import { NgScrollbar, NgScrollbarModule } from 'ngx-scrollbar';
-import { map } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 
 import { BOOT_SETTINGS, PAGES, SPECIES_COLORS } from '../../constants';
 import {
@@ -25,6 +26,7 @@ export class ReaderPage {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _dev = inject(BOOT_SETTINGS).dev;
   private readonly _element = inject(ElementRef<HTMLElement>);
+  private readonly _http = inject(HttpClient);
   private readonly _registry = inject(RegistryService);
   private readonly _router = inject(Router);
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });
@@ -38,11 +40,28 @@ export class ReaderPage {
   });
   // A chapter, not a workshop page: only a chapter closes on a hook taken up again, which its last paragraph is styled as.
   protected readonly isChapter = computed(() => this._chronicler.chapters().some(c => c.slug === this._slug()));
+  // A page of several files, fetched together and read as one, in the order its list gives them — idle for a page of one.
+  protected readonly merged = resource({
+    loader: async ({ params }) => {
+      const parts = await Promise.all(params.map(async url => firstValueFrom(this._http.get(url, { responseType: 'text' }))));
+      return parts.join('\n\n---\n\n'); // a rule between two files, as the chronicle rules its circles
+    },
+    params: () => {
+      const url = this._mdUrl();
+      return Array.isArray(url) ? url : undefined;
+    },
+  });
+
   // `undefined` while a chapter slug is still being discovered — avoids flashing/locking onto the Chronicler fallback on refresh.
-  protected readonly src = computed(() => {
+  private readonly _mdUrl = computed(() => {
     const slug = this._slug();
     const page = (this._dev ? PAGES : []).find(p => p.slug === slug) ?? this._chronicler.chapters().find(c => c.slug === slug);
     return page?.mdUrl;
+  });
+  // A page of one file, handed to `markdown` by its URL — a list goes through `merged`.
+  protected readonly src = computed(() => {
+    const url = this._mdUrl();
+    return typeof url === 'string' ? url : undefined;
   });
 
   // Refits the epigraph whenever it or a tag in it resizes: a sprite paints in once its images load, a tag's own face swaps in late, the window narrows.
