@@ -1,5 +1,5 @@
 // Three services `ng serve` cannot provide on its own, all local to development:
-//  · watches src/assets/world/saves/ and touches src/main.ts so a newly-added chapter file or folder is re-globbed (edits of existing files it handles itself);
+//  · watches src/assets/world/saves/ and touches what `ng serve` would miss there: src/main.ts for a chapter file or folder added, a file replaced whole itself;
 //  · answers the reader's "new game" button, which needs a hand on the filesystem the browser will never have;
 //  · finds and records where WorldBox keeps its live save — the one path the whole toolchain hangs on, and the only thing that ever tied it to one OS.
 
@@ -39,6 +39,13 @@ const readJson = async (file) => {
   } catch {
     return {};
   }
+};
+
+// A fresh mtime is what `ng serve` answers: a rebuild, then a reload.
+const touch = async (file, note) => {
+  const now = new Date();
+  await utimes(file, now, now);
+  console.log(`[watch] ${note}`);
 };
 
 // The reader's own side, on loopback and from a page served here: these routes erase a world and repoint the toolchain, so no other origin gets to ask.
@@ -106,20 +113,37 @@ class LocalService {
 // chokidar fires once per file, and a new chapter folder lands as a dozen of them — one rebuild answers them all.
 class RebuildTrigger {
   #debounceMs = 1000;
+  #inodes = new Map();
+  #ready = false;
   #timer;
   #trigger = 'src/main.ts';
 
   start() {
-    watch(SAVES, { ignoreInitial: true }).on('add', () => this.#schedule()).on('addDir', () => this.#schedule());
+    watch(SAVES, { alwaysStat: true })
+      .on('add', (file, stats) => this.#added(file, stats))
+      .on('addDir', () => this.#ready && this.#schedule())
+      .on('change', (file, stats) => this.#changed(file, stats))
+      .on('ready', () => {
+        this.#ready = true;
+      });
+  }
+
+  // The first scan only learns each file's inode; a file that appears after it is a new one for `ng serve` to glob.
+  #added(file, stats) {
+    this.#inodes.set(file, stats?.ino);
+    if (this.#ready) this.#schedule();
+  }
+
+  // A file replaced whole (`sed -i`, atomic save) `ng serve` misses, its new inode the only tell: touched a second later, sooner being lost with the swap.
+  #changed(file, stats) {
+    if (!stats || this.#inodes.get(file) === stats.ino) return;
+    this.#inodes.set(file, stats.ino);
+    setTimeout(() => touch(file, `${file} replaced whole — touched for a reload`), this.#debounceMs);
   }
 
   #schedule() {
     clearTimeout(this.#timer);
-    this.#timer = setTimeout(async () => {
-      const now = new Date();
-      await utimes(this.#trigger, now, now);
-      console.log('[watch] new file/folder in saves — triggered rebuild');
-    }, this.#debounceMs);
+    this.#timer = setTimeout(() => touch(this.#trigger, 'new file/folder in saves — triggered rebuild'), this.#debounceMs);
   }
 }
 
