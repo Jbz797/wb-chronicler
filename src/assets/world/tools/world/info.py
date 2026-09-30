@@ -170,7 +170,7 @@ _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB ma
 _WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_ISLET` is, but in the sea or a lake
 
 
-# What keeps a body of age from breeding, WB weighing each partner: a belly short of a baby or at half its cap, a footing it must first leave (water, tiny islet).
+# What keeps a body of age from breeding, WB weighing each partner: a belly short of a baby or half-full, a footing to leave first — tagged `tiny_islet 40`.
 def _breeding_bars(actor: dict, ctx: dict, island_of, grid: LazyTileGrid, names: list[str]) -> set[str]:
     bars = set()
     if needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) and (int(actor.get("nutrition") or 0) < NEW_BABY_NUTRITION or is_hungry(actor, ctx)):
@@ -179,7 +179,7 @@ def _breeding_bars(actor: dict, ctx: dict, island_of, grid: LazyTileGrid, names:
         bars.add(_WATER)
     elif here == _ISLET and island_of.islet_size(actor_xy(actor)) <= _GOOD_ISLET:
         bars.add("tiny_islet")
-    return bars
+    return {f"{bar} {actor['id']}" for bar in bars}
 
 
 # The world's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
