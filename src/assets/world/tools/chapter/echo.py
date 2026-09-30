@@ -20,6 +20,7 @@ _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one t
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
 _LONG_RUN = 7  # words from which a run is a turn of phrase with a single word of its own: `et ce qui verdit au ras du sol`, `à l'entrée de l'an 5`
+_LONG_RUN_WITHIN = 6  # the same, within one chapter, where a formula said again ten lines on is heard: `jamais encore on n'avait vu`
 _MARKS = re.compile(r"[*_#>|`]")  # emphasis, headings, quotes and table rules: markup, which no reader hears
 _MIN_RUN = 4  # words a shared run must hold: three are the language's own (« il n'y a »), four start to be a turn of phrase
 _OVERUSE = 1.3  # how far past the chronicle's own highest rate a family must climb to be named: a wobble is not a tic
@@ -202,6 +203,7 @@ def _refrains() -> frozenset[tuple[str, ...]]:
 # Widened runs of `_MIN_RUN`+ words shared with `earlier`, keyed (line, line said first); against itself, a run counts only where an earlier line said it
 def _runs(words: list[_Token], earlier: list[_Token]) -> dict[tuple[int, int], list[str]]:
     within = earlier is words
+    long_run = _LONG_RUN_WITHIN if within else _LONG_RUN
     seen: dict[tuple[str, ...], int] = {}
     for i in range(len(earlier) - _MIN_RUN + 1):
         if earlier[i].line == earlier[i + _MIN_RUN - 1].line:
@@ -222,7 +224,7 @@ def _runs(words: list[_Token], earlier: list[_Token]) -> dict[tuple[int, int], l
         end = i + _MIN_RUN
         while end < len(words) and said_at(end - _MIN_RUN + 1) is not None:
             end += 1
-        if _telling(run := words[i:end]):
+        if _telling(run := words[i:end], long_run):
             runs.setdefault((run[0].line, at), []).append("".join(t.surface + ("" if t.surface[-1] in "'’" else " ") for t in run).strip())
         i = end
     return runs
@@ -259,9 +261,9 @@ def _species_roots() -> frozenset[str]:
     return frozenset(word[:4].lower() for name in names for word in re.findall(r"[\wÀ-ÿ-]+", name) if len(word) >= 4)
 
 
-# The words a run must carry to be a turn of phrase rather than the language: two that say something of their own, one past `_LONG_RUN` words.
-def _telling(run: list[_Token]) -> bool:
-    return sum(token.content for token in run) >= (1 if len(run) >= _LONG_RUN else 2)
+# The words a run must carry to be a turn of phrase rather than the language: two that say something of their own, one from `long_run` words.
+def _telling(run: list[_Token], long_run: int = _LONG_RUN) -> bool:
+    return sum(token.content for token in run) >= (1 if len(run) >= long_run else 2)
 
 
 # A stretch of prose as tokens: markup gone, a tag's text kept and marked as a name, an elision split from the word it leans on.
