@@ -23,9 +23,12 @@ from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_w
 from grid import tile_layer, tile_runs
 from islands import compute_islands_cached
 from shared import (
+    CHAPTER_CAP,
+    CHAPTER_FLOOR,
     HISTORY_S3DB,
     SAVES_DIR,
     UNITS_PER_YEAR,
+    chapter_length,
     index_by_id,
     is_boat,
     is_sapient,
@@ -74,8 +77,6 @@ _ALERTS = {
     },
 }
 
-_CHAPTER_CAP = 14000  # a sitting's read, some 11 minutes: past it the chapter says more than its world has done — held with the floor, in no doc either
-_CHAPTER_FLOOR = 7000  # in no doc: the recap gives it, delivery holds it — counted past the audit, which cuts as much as it adds
 _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a world's start and at a favorite's death alone, in no doc
     "a thinking body only: `sapient: true` in `actor … metadata`",
     "weighed in depth: traits, political standing, narrative promise, age, where it stands, what surrounds it…",
@@ -272,14 +273,14 @@ def _deliver() -> int:
     _tidy_cards(n)
     facts = _step_five_facts(n, settings.get("lang", ""))
     length = facts["length"]
-    short, long = length < _CHAPTER_FLOOR, length > _CHAPTER_CAP
+    short, long = length < CHAPTER_FLOOR, length > CHAPTER_CAP
     if short or long or not facts["done"]:
         print(f"✗ C{n} — not yet deliverable")
         _print_step_five(n, facts)
         if short:
-            print(f"  ✗ chapter.md, {length} characters of {_CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes to the audit as new")
+            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes to the audit as new")
         elif long:
-            print(f"  ✗ chapter.md, {length} characters of {_CHAPTER_CAP} at most, blanks folded — cut whole passages, the least-borne first, never a correction")
+            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_CAP} at most, blanks folded — cut whole passages, the least-borne first, never a correction")
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
         return 1
     print(f"✓ C{n} — delivery")
@@ -421,7 +422,7 @@ def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `history/watches.md`")
     told = "" if fav_id else " — no favorite, so the world itself, in two parts:"
-    print(f"  → step 4, the writing: {_CHAPTER_FLOOR} to {_CHAPTER_CAP} characters, blanks folded, counted at delivery, past the audit{told}")
+    print(f"  → step 4, the writing: {CHAPTER_FLOOR} to {CHAPTER_CAP} characters, blanks folded, counted at delivery, past the audit{told}")
     if not fav_id:
         _print_bullets(_WORLD_ONLY)
 
@@ -654,7 +655,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "favorite": bool(favorite),
         "h1": h1,
         "h1_length": h1_length,
-        "length": len(re.sub(r"\s+", " ", prose).strip()),  # blanks folded, as the docs' budget counts: a blank line or an indent is no prose
+        "length": chapter_length(prose),
         "long": long,
         "misplaced": misplaced,
         "owed": owed,

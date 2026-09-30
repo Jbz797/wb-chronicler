@@ -14,7 +14,7 @@ from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import SAVES_DIR, emit, latest_chapter
+from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, emit, latest_chapter
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
@@ -51,6 +51,12 @@ def _borrowed(words: list[_Token], before: int) -> list[tuple[int, int, str]]:
         if token.key in rare and not token.name and (at := framed.get((token.key, _frame(words, i)))) is not None:
             taken.setdefault(token.key, (token.line, at))
     return [(line, at, word) for word, (line, at) in taken.items()]
+
+
+# Chapter `n` as written, read once for its length and its lines alike — `None` where it has none yet.
+@cache
+def _chapter(n: int) -> str | None:
+    return path.read_text() if (path := SAVES_DIR / f"C{n}" / "chapter.md").exists() else None
 
 
 # The chapter's sentence pairs sharing scarce words with a section's last sentence in chapter `before`: `s'ils dormaient` answered by `[…]. Ils dormaient.`
@@ -102,8 +108,7 @@ def _keys(text: str) -> set[str]:
 # Chapter `n` read once, line by line: its number, whether it is a section's edge (a heading, a separator), and its sentences as tokens.
 @cache
 def _lines(n: int) -> list[tuple[int, bool, list[list[_Token]]]]:
-    path = SAVES_DIR / f"C{n}" / "chapter.md"
-    lines = enumerate(path.read_text().splitlines(), 1) if path.exists() else ()
+    lines = enumerate(text.splitlines(), 1) if (text := _chapter(n)) is not None else ()
     return [(number, bool(_SECTION.match(line)), [tokens for part in _SENTENCE.split(line) if (tokens := _tokens(part, number))]) for number, line in lines]
 
 
@@ -308,6 +313,9 @@ def echoes(n: int) -> dict | None:
 def main(argv: list[str]) -> int:
     chapter = next((arg for arg in argv if arg[:1] == "C" and arg[1:].isdigit()), None)
     n = int(chapter[1:]) if chapter else latest_chapter()
+    # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
+    if (text := _chapter(n)) is not None and not CHAPTER_FLOOR <= (length := chapter_length(text)) <= CHAPTER_CAP:
+        print(f"✗ chapter.md, {length} characters, blanks folded — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
     if (found := echoes(n)) is None:
         print(f"✗ no chapter.md for C{n}" if n > 1 else "✗ C1 has no chapter before it to take back from", file=sys.stderr)
         return 1

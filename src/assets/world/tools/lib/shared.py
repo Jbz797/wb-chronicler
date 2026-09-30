@@ -16,6 +16,8 @@ from collections.abc import Callable, Collection, Mapping, Sequence
 from functools import cache
 from pathlib import Path
 
+CHAPTER_CAP = 14000  # a sitting's read, some 11 minutes: past it the chapter says more than its world has done
+CHAPTER_FLOOR = 7000  # both in no doc: `new.py`'s recap gives them, delivery and `echo.py` hold them — counted past the audit, which cuts as much as it adds
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
@@ -424,6 +426,11 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
 def building_tile(building: dict) -> tuple[int, int] | None:
     x, y = building.get("mainX"), building.get("mainY")
     return None if x is None and y is None else (x or 0, y or 0)  # WB writes both as ints, so no `int()` to pay on every building of the world
+
+
+# A chapter's length as its bounds count it, blanks folded as the docs' budget folds them: a blank line or an indent is no prose.
+def chapter_length(text: str) -> int:
+    return len(re.sub(r"\s+", " ", text).strip())
 
 
 # Living children per parent, counted off `parent_id_1`/`parent_id_2`. World-wide on purpose — a parent's brood is theirs wherever it settled.
