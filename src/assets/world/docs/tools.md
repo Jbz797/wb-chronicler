@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 30/09/26 10:53</p>
+<p class="metadata">Date de mise à jour : 30/09/26 10:57</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON — la colonne _Commande_ en donne le `<nom> [arg]`, et une sortie se cite ici en abrégé, `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -77,7 +77,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `description` et `flavor` d'un trait disent l'ambiance, jamais l'effet : il tient dans `stats`, que `dormant` dit endormies par l'ère, le reste dans `wiki:Creature_Traits` ou `wiki:Subspecies_Traits`. Un don se pèse contre sa lignée (`subspecies … stats`), jamais contre un autre corps.
 - `history` lit l'historique de WB : `world`, ce que chaque année a vu naître, mourir ou s'éteindre, l'année en cours `so_far`, une année absente sans rien de neuf, les ~20 dernières seules ; `entity`, les états d'une entité (noms nus : `population`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`), l'avant de la fenêtre approché (`around_year`) ; `log` le journal ; `dead_kingdoms` les couronnes tombées. Seuls les vivants y ont leurs années. De quoi meurent les siens : `deaths_by_cause`, au `metadata` d'une cité, d'un royaume, d'un clan ou d'une sous-espèce ; ceux du monde, sur `world … cumulative` ou `history world`, jamais en additionnant les lignées, les éteintes n'ayant plus de `metadata`.
 - `houses` (cité, royaume) compte les chantiers, comme le jeu : `ground … metadata` les signale par `under_construction`.
-- `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule sert tout le royaume, quelle que soit sa cité.
+- `kingdom … metadata` porte `ferries` quand la couronne tient une coque de transport : une seule sert tout le royaume.
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : une cité ne la prend que si son chef y croit, un royaume que si son roi la décrète.
 - `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; le `drivers` de la section, complet, somme au `total`.
 - `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : ce qui est né et ce qui s'est éteint se lisent dans `cumulative`, où chaque compteur ne fait que monter.
@@ -89,9 +89,9 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `geography … frozen` donne, terre par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé pour toujours ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `patches` (`biomes`) : une parcelle se joint par les coins ; une terre comme WB (un coin dans un seul chunk) ; une eau, côte à côte.
 - `ridges` (`geography`) : là où deux terres se touchent sans eau, une crête de roche infranchissable à pied — `between` les deux terres, `length` en tuiles, `at` sa tuile du milieu.
-- `strait_to_land` (`distances`) mesure en `swim_tiles` le bras d'eau depuis **tout le rocher**.
-- `tiles … tile_info` : `block` barre la marche ; `islet_tiles`, la taille d'un îlot, sous 300 tuiles de sol, que `islet` décrit entier, roche et îlots accolés compris, `to_islands` depuis tout l'îlot ; sur l'eau, `sea`, `lake` (son id) ou `pond_tiles`, une eau close sous 64 tuiles ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.
-- `to_islands` (`distances`) : les 5 îles les plus proches, en ordre, à vol d'oiseau jusqu'à leur **tuile la plus proche**, les autres comptées sous `unlisted`.
+- `strait_to_land` (`distances`) : l'eau à nager (`swim_tiles`) depuis **tout le rocher**, écueils à sec gratuits ; de rive à rive, `islet … to_islands`.
+- `tiles … tile_info` : `block` barre la marche ; `islet_tiles`, la taille d'un îlot, sous 300 tuiles de sol, que `islet` décrit entier, roche et îlots accolés compris ; sur l'eau, `sea`, `lake` (son id) ou `pond_tiles`, une eau close sous 64 tuiles ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.
+- `to_islands` (`distances`) : les 5 îles les plus proches, à vol d'oiseau jusqu'à leur **tuile la plus proche**, les autres comptées sous `unlisted`.
 - `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
 - `unlisted` (`waters`) : ce que la sortie écarte, les mares sous 64 tuiles (comptées) et les bras de plus de 1 024.
 - `walk_tiles` (`distances`, `to`) : les tuiles faites à pied, roche, lave et goo contournés ; sable, marais, neige et arbres sous Entanglewood n'allongent que le temps. Hors d'`actor`, rien ne se nage, au `speed` 10 : absente sans terre qui les joigne.
