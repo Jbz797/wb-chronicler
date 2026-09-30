@@ -61,6 +61,7 @@ from shared import (
     light,
     load_data,
     load_save,
+    moved_between,
     needs_food,
     parse_sections,
     resolve_profession,
@@ -81,6 +82,7 @@ _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a 
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
+_GOAL_ONLY = frozenset({"circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # `--to`'s words for a goal: `moved` keeps its own heading and length
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _PLACE_KEYS = frozenset({"island_id", "x", "y"})  # what `since` says as a path, `moved`, rather than as three fields changed apiece
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
@@ -262,8 +264,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         )
     )
 
-    island_lookup = ctx["island_lookup"]()
-
     return {
         # Chronicler-only, and only while it still bites: the date WB gives the child its halved `damage_max`/`health_max` back — a bridling, not an infirmity.
         **({"adult_on": crossed_on(actor, age_adult)} if age < age_adult else {}),
@@ -290,8 +290,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
         **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"]().get(tile)) else {}),
-        # Chronicler-only: its land (geography/info.py), else `water` afloat or `islet` on an islet too small to count, as `roster` says it.
-        "island_id": island_lookup.get(tile) or ("water" if "water" in _off_land_at(actor, ctx) else "islet"),
+        "island_id": _land_of(actor, ctx),  # Chronicler-only: its land (geography/info.py), else `water` or `islet`
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in
@@ -341,17 +340,17 @@ def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, t
     if then is None:
         return {"new": True}  # born or set down since, with nothing then to weigh it against
     was = actor_xy(then)
-    was_land = then_ctx["island_lookup"]().get(was)
+    was_land = _land_of(then, then_ctx)
     if actor is None:  # WB drops the dead from the save: a body gone is a body dead, its last place all that is left of it
         return {"asset_id": then.get("asset_id"), "gone": True, "last_seen": {"island_id": was_land, "x": was[0], "y": was[1]}, "name": then.get("name")}
     out: dict = {}
     if (now := actor_xy(actor)) != was:
         dx, dy = now[0] - was[0], now[1] - was[1]
-        out["moved"] = {"crow_tiles": round(walk_tiles(dx, dy)), "dir": bearing(dx, dy)}
-        if (land := ctx["island_lookup"]().get(now)) != was_land:
+        out["moved"] = {"crow_tiles": round(walk_tiles(dx, dy)), "dir": bearing(dx, dy), **_trip_back(actor, was, ctx)}
+        if (land := _land_of(actor, ctx)) != was_land:
             out["moved"]["land"] = [was_land, land]
     before, after = _build_metadata(then, then_ctx, then_save), _build_metadata(actor, ctx, save)
-    changed = {key: [before.get(key), after.get(key)] for key in sorted((before.keys() | after.keys()) - _PLACE_KEYS) if before.get(key) != after.get(key)}
+    changed = {key: _change(before.get(key), after.get(key)) for key in sorted((before.keys() | after.keys()) - _PLACE_KEYS) if before.get(key) != after.get(key)}
     return {**out, **({"changed": changed} if changed else {})}
 
 
@@ -468,6 +467,11 @@ def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
 def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
     civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
+
+
+# A field as it moved: a list by what came and went — `settle` keeps its `child` unsaid while it holds —, anything else as the pair it was and is.
+def _change(before, after):
+    return moved_between(before, after) if isinstance(before, list) and isinstance(after, list) else [before, after]
 
 
 # The circle a goal falls in, filed as `surroundings` files a body: by the walk's time as told, then off his land by a crown's hull, the walks to and fro counted.
@@ -605,6 +609,11 @@ def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str |
     if other["id"] == lover or other.get("lover") == aid:
         return "lover"
     return "sibling" if not parents.isdisjoint(lineage) else None
+
+
+# Its land's id, else `water` afloat or `islet` on an islet too small to count — as `roster` says it.
+def _land_of(body: dict, ctx: dict) -> int | str:
+    return ctx["island_lookup"]().get(actor_xy(body)) or ("water" if "water" in _off_land_at(body, ctx) else "islet")
 
 
 # How a body is named in a refusal: its name, or its kind where it has none, and its id either way.
@@ -791,6 +800,15 @@ def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | str | None, l
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
 def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
+
+
+# How long the shortest way between two places takes at the body's pace, walked back from where it stands — the way it truly took, no save keeps.
+def _trip_back(actor: dict, was: tuple[int, int], ctx: dict) -> dict:
+    try:
+        trip = _build_to(actor, [was], f"{was[0]},{was[1]}", ctx, None, {})
+    except _Unreachable:
+        return {}
+    return {key: value for key, value in trip.items() if key not in _GOAL_ONLY}
 
 
 # How far on foot each of `spots` lies, `None` for a body the ground never holds: round his land's bays, swum within reach toward another, each walk drawn if asked.
