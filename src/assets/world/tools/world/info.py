@@ -387,10 +387,13 @@ def _build_roster(
     gone = []
     if earlier is not None and was is not None and not (settle or barred):  # the dead found nothing
         gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient)
-    if len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many of each kind, and of each stage, the adults counted too
+    if len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many on each land, of each kind and of each stage, the adults counted too
+        lands = Counter(here for _, here, _ in bodies)
+        by_land = {str(land): lands[land] for land in sorted(lands, key=lambda land: (isinstance(land, str), land))}
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
         stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
         return {
+            "by_land": None if asked is not None else by_land,  # silent under `-i`, which names the land
             "by_species": dict(species),
             "by_stage": dict(stages),
             "gone_by_species": dict(Counter(row["asset_id"] for row in gone)) or None,
