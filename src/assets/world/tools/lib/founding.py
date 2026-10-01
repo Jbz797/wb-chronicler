@@ -32,7 +32,7 @@ _BUILD_TAGS = {"corrupted": "corruption", "desert": "desert", "infernal": "infer
 _CITY_WAVE = 3  # WB `CityPlaceFinder.startWave`: the zones a town keeps founders off, counted from its edge across its own land
 
 # A gate's first word, in the order `settle_gates` ranks them.
-_GATE_KINDS = ("trait", "biomes", "world_law_kingdom_expansion", "zone", "town", "ground", "has_city", "king", "child")
+_GATE_KINDS = ("world_law_kingdom_expansion", "king", "has_city", "trait", "biomes", "zone", "town", "ground", "child")
 
 # WB ground, all 64 of a zone's tiles for `canStartCityHere`: the hill left out, ground though it bars; a pit a dry hole (`liquid` 0) till the sea fills it.
 _GROUND_BASES = frozenset({"pit_close_ocean", "pit_deep_ocean", "pit_shallow_waters", "sand", "soil_high", "soil_low"})
@@ -62,17 +62,21 @@ def city_zones(save: dict, island_of) -> list[tuple[int, int, int | None, str]]:
     return zones
 
 
-# WB `try_to_start_new_civilization`: `True`, else each shut gate, most lasting first, a child's zone weighed too — `ctx` is `actor_stats`' own, widened by callers.
+# WB `try_to_start_new_civilization`: `True`, else each shut gate, the steadiest first, a child's zone weighed too — `ctx` is `actor_stats`' own, widened by callers.
 def settle_gates(actor: dict, ctx: dict) -> bool | list[str] | None:
     subspecies = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     if not is_sapient(subspecies):
         return None
     # A trait that binds its bearer to a crown of its own (WB `is_forced_by_trait`), which `canStartNewCityCivilizationHere` turns away — named, as each gate is.
     binding = next((t for t in actor.get("saved_traits") or () if (ctx["creature_traits"].get(t) or {}).get("forced_kingdom")), None)
-    lasting = [f"trait {binding} binds to a crown"] if binding else []
-    law = [] if ctx["world_laws"].get("world_law_kingdom_expansion", True) else ["world_law_kingdom_expansion off"]
-    passing = (("has_city", actor.get("cityID")), ("king", actor.get("profession") == PROFESSION_KING), ("child", is_baby(actor, ctx)))
-    place: list[str] = []
+    # What holds wherever the body walks comes first, the law that bars all before a crown, a town, a trait: the gate told must not change with every step.
+    own = (
+        ("world_law_kingdom_expansion off", not ctx["world_laws"].get("world_law_kingdom_expansion", True)),
+        ("king", actor.get("profession") == PROFESSION_KING),
+        ("has_city", actor.get("cityID")),
+        (f"trait {binding} binds to a crown", binding),
+    )
+    place: list[str] = []  # where it stands: the biome, weighed last, told ahead of the ground
     x, y = actor_xy(actor)
     zx, zy = x // ZONE_TILES, y // ZONE_TILES
     cx, cy = _zone_centre(zx, zy)
@@ -111,17 +115,17 @@ def settle_gates(actor: dict, ctx: dict) -> bool | list[str] | None:
         cures = sorted({trait for need in wanted for trait, entry in ctx["subspecies_traits"].items() if need in (entry.get("tags") or ())})
         bare = f", or {soil} bare tiles past {unfit} unfit" if soil > 0 else ""  # the other way through, told only where some bare soil stands at all
         # WB's first way is half the grown tiles fit: a share said floored, so 49.9 never reads as the 50 that would pass
-        lasting.append(f"biomes {fit * 100 // (fit + unfit)}% fit < 50{bare}" + (f", no {', '.join(cures)}" if cures else ""))
-    return [*lasting, *law, *place, *(gate for gate, holds in passing if holds)] or True
+        place.insert(0, f"biomes {fit * 100 // (fit + unfit)}% fit < 50{bare}" + (f", no {', '.join(cures)}" if cures else ""))
+    return [*(gate for gate, holds in own if holds), *place, *(["child"] if is_baby(actor, ctx) else [])] or True
 
 
-# Where a told gate falls in a roll: its kind, the most lasting first, then how far short it leaves the body — points of fit, tiles of ground.
+# Where a told gate falls in a roll: its kind, the steadiest first, then how far short it leaves the body — points of fit, tiles of ground.
 def settle_rank(gate: str) -> tuple[int, int]:
     figures = [int(n) for n in re.findall(r"\d+", gate)[:2]]
     return _GATE_KINDS.index(gate.split(" ", 1)[0]), abs(figures[0] - figures[-1]) if figures else 0
 
 
-# One gate told, the most lasting, and how many more it hides — youth never counted there, which a body's own date already tells.
+# One gate told, the steadiest, and how many more it hides — youth never counted there, which a body's own date already tells.
 def settle_told(gates: bool | list[str] | None) -> dict:
     if not isinstance(gates, list):
         return {} if gates is None else {"settle": True}

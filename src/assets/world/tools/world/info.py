@@ -401,7 +401,7 @@ def _build_roster(
 
     # Land by land, off every land last — the founders by who founds first, the barred by the gate told
     def order(body: tuple[dict, int | str, dict]) -> tuple:
-        if barred:  # the most lasting kind first, then who comes nearest to passing it
+        if barred:  # the steadiest kind first, then who comes nearest to passing it
             return settle_rank(body[2]["settle"]), body[0]["id"]
         if settle:  # the grown first, whose youth is past, then by the date each comes of age
             return crossed_at(body[0], adult_age(body[0], ctx)), body[0]["id"]
