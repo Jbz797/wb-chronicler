@@ -194,6 +194,9 @@ def _build_boats(save: dict, requested: str | None) -> dict:
 def _build_cumulative(map_stats: dict) -> dict:
     out: dict = {k: v for k, src in _CUMULATIVE_COUNTERS.items() if (v := int(map_stats.get(src) or 0)) > 0}
     out["deaths"] = {k: v for k, src in _DEATH_CAUSES.items() if (v := int(map_stats.get(src) or 0)) > 0}
+    # WB `Actor.countDeath` raises the total at every death but files some attack types under no cause: what the causes leave of it, so they sum to it.
+    if (unknown := int(map_stats.get("deaths") or 0) - sum(out["deaths"].values())) > 0:
+        out["deaths"]["unknown"] = unknown
     return out
 
 
@@ -561,6 +564,17 @@ def _then(chapter: str) -> tuple[dict, dict[int, int | str]]:
     return then, {actor["id"]: _standing(actor, island_of, grid, then["tileMap"]) for actor in then.get("actors_data") or [] if not is_boat(actor)}
 
 
+# Why the deaths WB counted between two saves and the bodies gone between them differ, `None` where they agree — WB keeps no dead, so none is named.
+def _unseen_deaths(save: dict, then: dict, since: str) -> str | None:
+    now_ids = {actor["id"] for actor in save.get("actors_data") or []}
+    gone = sum(actor["id"] not in now_ids for actor in then.get("actors_data") or [])
+    died = int((save.get("mapStats") or {}).get("deaths") or 0) - int((then.get("mapStats") or {}).get("deaths") or 0)
+    if gone == died:
+        return None
+    dying, unborn = f"dying as {since} was saved, counted before it yet still in its save", "born and dead between the two saves, in neither"
+    return f"{gone} bodies gone since {since} for {died} deaths counted: {abs(gone - died)} {dying if gone > died else unborn}"
+
+
 def main(argv: list[str]) -> int:
     try:
         since, argv = take_since(argv)
@@ -637,6 +651,8 @@ def main(argv: list[str]) -> int:
         for section in counted:
             if isinstance(moved := moved_between(readings[section](then), out.pop(section)), dict):
                 out[section] = moved
+        if "cumulative" in out:
+            out["cumulative"]["info"] = _unseen_deaths(save, then, since)
         if not out:
             print(f"✗ nothing moved in {', '.join(counted)} since {since}", file=sys.stderr)
             return 1

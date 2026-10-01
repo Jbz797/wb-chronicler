@@ -28,6 +28,7 @@ from shared import (
     world_date,
 )
 
+_DEATHS_TOTAL = "deaths_total"  # WB's yearly total, which the causes fall short of where a death was filed under none
 _DEATH_CAUSE = re.compile(r"^deaths_(?!attackers$|defenders$|total$)(\w+)$")  # a death's cause, where `natural` is WB's old age — a war's two sides are no cause
 
 # Tool kind => (WB table stem, save collection): the collection finds the living, whom alone WB keeps the years of.
@@ -54,6 +55,7 @@ _FINE_STEP = 1  # WB's yearly table: a row a year, the only one whose `timestamp
 _MAX_LOG = 50  # past so many entries the journal is read by its kinds of event, not line by line: `-t` or `--actor` narrow it back
 _SECTIONS = ("dead_kingdoms", "entity", "log", "world")
 _SKIPPED = frozenset({"auto", "id", "timestamp"})  # WB's row bookkeeping: `auto` flags a row it wrote itself, and says nothing of the world
+_STAT_KEYS = {"deaths_natural": "deaths_age", _DEATHS_TOTAL: "deaths"}  # the yearly columns `mapStats` names otherwise: old age, and the bare total
 _STEPS = (1, 5, 10, 50, 100, 500, 1000, 5000, 10000)  # WB's table suffixes, each keeping a window of the last rows at that step
 _WORLD_RENAMED = {"houses_built": "buildings_built", "houses_destroyed": "buildings_destroyed"}  # `world … cumulative`'s names: WB's houses are all its buildings
 
@@ -124,17 +126,19 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     map_stats = save.get("mapStats") or {}
     year, _ = _chapter_clock(save)
     columns, _, rows = _series(conn, "World", None, year)
-    events = [c for c in columns if _EVENT_COLUMN.search(c) and c != "deaths_total"]
-    before: dict = dict.fromkeys(events, 0) if not rows or rows[0]["timestamp"] == 1 else {}
+    events = [c for c in columns if _EVENT_COLUMN.search(c) and c != _DEATHS_TOTAL]
+    tracked = [*events, _DEATHS_TOTAL] if _DEATHS_TOTAL in columns else events
+    before: dict = dict.fromkeys(tracked, 0) if not rows or rows[0]["timestamp"] == 1 else {}
     timeline = []
     for row in rows:
-        now = {c: row[c] for c in events}
-        if gains := _gains(before, now, events):
+        now = {c: row[c] for c in tracked}
+        if gains := _with_unknown(_gains(before, now, events), before, now):
             timeline.append({"year": row["timestamp"], **gains})
         before = now
-    # WB's `mapStats` holds the same tallies in camelCase, the deaths snake-cased as `deaths_age` for old age.
-    now = {c: map_stats.get("deaths_age" if c == "deaths_natural" else c if c.startswith("deaths_") else _camel(c)) for c in events}
-    if gains := _gains(before, {c: int(v) if v is not None else None for c, v in now.items()}, events):
+    # WB's `mapStats` holds the same tallies in camelCase, the deaths snake-cased — two of them under names of their own.
+    keys = {c: _STAT_KEYS.get(c) or (c if c.startswith("deaths_") else _camel(c)) for c in tracked}
+    now = {c: int(v) if (v := map_stats.get(key)) is not None else None for c, key in keys.items()}
+    if gains := _with_unknown(_gains(before, now, events), before, now):
         timeline.append({"year": year, **gains, "so_far": True})
     return timeline
 
@@ -191,6 +195,15 @@ def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: in
                 row[column] = carried.get(column)
             carried[column] = row[column]
     return columns, coarse, rows
+
+
+# A year's deaths WB counted in its total and filed under no cause, as `world … cumulative` says them: the causes then sum to the total.
+def _with_unknown(gains: dict, before: dict, now: dict) -> dict:
+    if before.get(_DEATHS_TOTAL) is None or now.get(_DEATHS_TOTAL) is None:
+        return gains
+    if (unknown := now[_DEATHS_TOTAL] - before[_DEATHS_TOTAL] - sum((gains.get("deaths") or {}).values())) > 0:
+        gains.setdefault("deaths", {})["unknown"] = unknown
+    return gains
 
 
 def main(argv: list[str]) -> int:

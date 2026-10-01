@@ -49,6 +49,7 @@ interface DeathBreakdown {
   plague?: number;
   poison?: number;
   tumor?: number;
+  unknown?: number;
   water?: number;
   weapon?: number;
 }
