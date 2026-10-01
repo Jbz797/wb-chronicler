@@ -847,7 +847,7 @@ def moved_between(then, now):
         return moved or None
     if then == now:
         return None
-    if isinstance(then, list) and isinstance(now, list):  # a set of words, `settle`'s gates: what came and what went, never what held
+    if isinstance(then, list) and isinstance(now, list):  # a set of words, a body's `roles`: what came and what went, never what held
         came, went = [item for item in now if item not in then], [item for item in then if item not in now]
         return {**({"new": came} if came else {}), **({"gone": went} if went else {})} or None
     if isinstance(then, int | float) and now is None or isinstance(now, int | float) and then is None:

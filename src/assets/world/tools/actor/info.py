@@ -22,7 +22,7 @@ from actor_stats import (
     is_baby,
     is_egg,
 )
-from founding import city_zones, settle_gates
+from founding import city_zones, settle_gates, settle_told
 from grid import LazyTileGrid, off_land
 from islands import compute_islands_cached, islet_centre
 from shared import (
@@ -313,7 +313,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "roles": _compute_roles(actor, save),
         "sapient": is_sapient(ctx["subspecies_by_id"].get(actor.get("subspecies"))),  # tells a builder of cities from a beast, and gates his person tag
         # Chronicler-only, a thinker's alone: whether a town could rise where it stands, else what bars it — the zone weighed even for a child.
-        **({"settle": settle} if (settle := settle_gates(actor, ctx)) is not None else {}),
+        **settle_told(settle_gates(actor, ctx)),
         "sex": sex_label(actor),
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
@@ -484,7 +484,7 @@ def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
 
 
-# A field as it moved: a list by what came and went — `settle` keeps its `child` unsaid while it holds —, anything else as the pair it was and is.
+# A field as it moved: a list, `roles`, by what came and went, anything else as the pair it was and is.
 def _change(before, after):
     return moved_between(before, after) if isinstance(before, list) and isinstance(after, list) else [before, after]
 

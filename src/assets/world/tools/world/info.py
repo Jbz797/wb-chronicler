@@ -6,7 +6,6 @@
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names kept verbatim for raw-save fields (e.g. `world_time`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
-import re
 import sys
 from collections import Counter, defaultdict
 from functools import cache
@@ -27,7 +26,7 @@ from actor_stats import (
     is_hungry,
     maturation_months,
 )
-from founding import city_zones, settle_gates
+from founding import city_zones, settle_gates, settle_rank, settle_told
 from grid import LazyTileGrid, frozen_tally, off_land
 from islands import compute_islands_cached
 from shared import (
@@ -125,7 +124,6 @@ _DEATH_CAUSES = {
 }
 
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
-_GROUND_GATE = re.compile(r"ground (\d+)/(\d+)")  # `settle`'s ground gate, `ground 63/64: …` — the tiles a zone has, and those it needs
 
 # Actor field => the save collection it points into, feeding its `population` record — every actor counted, wildlife included, as each tier's medal counts its own.
 _GROUP_FIELDS = {
@@ -383,7 +381,7 @@ def _build_roster(
                 continue  # stood still: nothing for `since` to say
             change = {"was_on": then}
         if land is None or asked in (here, change.get("was_on")):
-            bodies.append((actor, here, change | ({"settle": [g for g in gates if g != "child"]} if barred and isinstance(gates, list) else {})))
+            bodies.append((actor, here, change | (settle_told(gates) if barred else {})))
     gone = []
     if earlier is not None and was is not None and not (settle or barred):  # the dead found nothing
         gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient)
@@ -401,10 +399,10 @@ def _build_roster(
         }
     rows, one_kind = [], kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
 
-    # Land by land, off every land last — the founders by who founds first, the barred by who comes nearest
+    # Land by land, off every land last — the founders by who founds first, the barred by the gate told
     def order(body: tuple[dict, int | str, dict]) -> tuple:
-        if barred:
-            return _nearest_founder(body)
+        if barred:  # the most lasting kind first, then who comes nearest to passing it
+            return settle_rank(body[2]["settle"]), body[0]["id"]
         if settle:  # the grown first, whose youth is past, then by the date each comes of age
             return crossed_at(body[0], adult_age(body[0], ctx)), body[0]["id"]
         return isinstance(body[1], str), body[1], body[0]["id"]
@@ -514,12 +512,6 @@ def _may_mate(a: dict, b: dict, sexed: bool) -> bool:
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
 def _name_of(records: list[dict], target_id) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
-
-
-# The barred who come nearest to founding first: the fewest tiles of ground short, then those the zone's ground does not bar at all — a biome, a centre off land.
-def _nearest_founder(body: tuple[dict, int | str, dict]) -> tuple[float, int]:
-    ground = next((m for gate in body[2].get("settle", ()) if (m := _GROUND_GATE.match(gate))), None)
-    return (int(ground[2]) - int(ground[1]) if ground else inf), body[0]["id"]
 
 
 # Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.

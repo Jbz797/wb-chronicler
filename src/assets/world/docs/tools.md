@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 01/10/26 13:49</p>
+<p class="metadata">Date de mise à jour : 01/10/26 14:27</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -29,7 +29,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `actor` :
 
-- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`) ; il rend son `circle`, chaque part en tuiles et en temps — `walk_`, `swim_`, `sail_` à bord, `total_` dès qu'il y en a deux —, le temps en `…_minutes` sous l'heure, puis `…_hours` ou `march_days` ; sur l'eau, il ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre, s'il diffère ; seule sans section nommée.
+- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`) ; il rend son `circle`, chaque part en tuiles et en temps — `walk_` à pied, `swim_` à la nage, `sail_` à bord, `total_` le tout dès qu'il y en a deux —, le temps en `…_minutes` sous l'heure, puis `…_hours` ou `march_days` ; sur l'eau, il ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre, s'il diffère ; seule sans section nommée.
 - `--since C<n>` : ce qui a bougé depuis — `moved` est le trajet fait, et son temps au plus court, au pas du corps, quand `--to` ne donne qu'un gisement ; `gone` : mort ; `last_seen` sa dernière place
 
 ### `geography` :
@@ -46,12 +46,12 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### `tiles` :
 
 - `-i <id>` : une terre par son id, mesurée comme `to_islands` sous `to_island`, même hors des 5 plus proches — celle où l'on se tient vaut 0
-- `-r <n>` : rayon, de 0 à 2 — `distances` ne répond que pour la tuile demandée
-- `--to <x,y>` : cap et mesures de lieu à lieu (d'un corps : `actor`), sous `to` si une section la rejoint ; pas avec `-r`
+- `-r <n>` : rayon, de 0 à 2 — `distances` : la tuile demandée seule
+- `--to <x,y>` : cap et mesures entre lieux (d'un corps : `actor`), sous `to` si une section la rejoint ; pas avec `-r`
 
 ### `world` :
 
-- `pairings` : par espèce, la 1ʳᵉ naissance possible (`birth_on`, `now` chez des amants : une gestation ne s'enregistre pas) et l'écart du couple ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `lovers`, des amants, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, suivi du corps en cause (`hungry`, `water`, `tiny_islet` : îlot de 5 tuiles ou moins), ou la loi WB pour le couple ; règles : `wiki:Reproduction`
+- `pairings` : par espèce, la 1ʳᵉ naissance possible (`birth_on`, `now` chez des amants : une gestation ne s'enregistre pas) et l'écart du couple ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `lovers`, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, suivi du corps en cause (`hungry`, `water`, `tiny_islet` : îlot de 5 tuiles ou moins), ou la loi WB pour le couple ; règles : `wiki:Reproduction`
 - `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water` ; `--since C<n>` : les arrivés, les `was_on` et les morts (`gone`, `old_from` : la vieillesse exclue avant) ; passé 50, un compte par terre, espèce et stade
 
 ---
@@ -65,7 +65,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### Acteurs :
 
 - `actor … companions` : seul `lover` fait un couple ; `best_friend` est une amitié, rien à en attendre.
-- `actor … metadata` : `can_reproduce` demande l'âge de reproduction et, chez qui mange, une `nutrition` d'au moins 50 ; `infertile` et `max_children` (enfants vivants) n'arrêtent que qui porte : un mâle engendre si sa compagne le peut. `breeds_on` date l'âge qui l'ouvrira, `adult_on` la majorité ; `islet`, le centre de son îlot : s'il change, c'en est un autre. `settle`, chez un pensant : `true` s'il fonderait un village sur place, sinon ce qui l'en empêche.
+- `actor … metadata` : `can_reproduce` demande l'âge de reproduction et, chez qui mange, une `nutrition` d'au moins 50 ; `infertile` et `max_children` (enfants vivants) n'arrêtent que qui porte : un mâle engendre si sa compagne le peut. `breeds_on` date l'âge qui l'ouvrira, `adult_on` la majorité ; `islet`, le centre de son îlot : s'il change, c'en est un autre. `settle`, chez un pensant : `true` s'il fonderait sur place, `child` si l'âge seul l'arrête, ou l'obstacle le plus durable (`settle_more` : les autres).
 - `actor … stats` rend des valeurs **déjà agrégées** — tout y est, du socle de l'espèce aux bonus de niveau (santé, mana et endurance seulement), jusqu'aux points de compétence gagnés à vivre : n'ajoute rien par-dessus. Celles d'un mineur sont **bridées** : `damage_max` et `health_max` valent la moitié jusqu'à `adult_on`. La valeur adulte ne se lit pas sur celle de la lignée. `swim` : `breath` tant que dure le souffle, `reach` noyade comprise, sur l'endurance et la santé de l'instant, et `rested` ce qui en change reposé ; `never` pour qui brûle dans l'eau, `unlimited` pour qui n'y peine pas.
 - `actor … surroundings` se compte en temps à son pas, `total_…` sur chaque ligne, terrain pesé, nageant vers une autre terre seulement ; une coque qu'il rejoint y paraît (`boat_…`), sans être un corps : `intimate` ≤ 30 min, `common` ≤ 2 h ; `common_with_boat`, hors de sa terre, ≤ 2 h en bateau, marches comprises, si son royaume a un transport ; à bord, par l'eau puis à pied ; `water` et `islet_tiles` comme dans `tiles … tile_info`, tus sur sa propre terre ou son îlot. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. Seul, il donne son `nearest` à vol d'oiseau. `sapient` se tait devant `kin`, `job` ou `role`.
 - `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `diplomacy` et `stewardship` ne servent qu'aux rois et aux chefs, et `damage_*` dit la force d'un coup, `warfare` compris. Le reste : `wiki:Unit_Stats`.
@@ -85,7 +85,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### Lieux et trajets :
 
-- `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions (une diagonale compte 1,41), à citer tel quel, jamais refait à la règle.
+- `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions (une diagonale compte 1,41), à citer tel quel, jamais refait à la règle ; pas un compte de pas.
 - `geography … frozen` : par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé pour toujours ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `patches` (`biomes`) : une parcelle se joint par les coins ; une terre comme WB (un coin dans un seul chunk) ; une eau, côte à côte.
 - `ridges` (`geography`) : là où deux terres se touchent sans eau, une crête de roche infranchissable à pied — `between` les deux terres, `length` en tuiles, `at` sa tuile du milieu.
