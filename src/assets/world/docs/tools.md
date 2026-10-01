@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 01/10/26 12:31</p>
+<p class="metadata">Date de mise à jour : 01/10/26 13:49</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -29,7 +29,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `actor` :
 
-- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`) ; il rend son `circle` (comme `surroundings`), chaque part en tuiles et en temps — `walk_` à pied, `swim_` à la nage, `sail_` à bord, `total_` le tout dès qu'il y en a deux —, le temps en `…_minutes` sous l'heure, puis `…_hours` ou `march_days` ; sur l'eau, il ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, une autre voie, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée.
+- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`) ; il rend son `circle`, chaque part en tuiles et en temps — `walk_`, `swim_`, `sail_` à bord, `total_` dès qu'il y en a deux —, le temps en `…_minutes` sous l'heure, puis `…_hours` ou `march_days` ; sur l'eau, il ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre, s'il diffère ; seule sans section nommée.
 - `--since C<n>` : ce qui a bougé depuis — `moved` est le trajet fait, et son temps au plus court, au pas du corps, quand `--to` ne donne qu'un gisement ; `gone` : mort ; `last_seen` sa dernière place
 
 ### `geography` :

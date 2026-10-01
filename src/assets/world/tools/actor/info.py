@@ -591,6 +591,15 @@ def _equipment_power(actor: dict, ctx: dict) -> int:
     return total
 
 
+# The same trip made by the body aimed at, which no shared figure tells: its own pace, its own swim — only what differs, and nothing where both agree.
+def _from_them(other: dict, actor: dict, to: dict, ctx: dict) -> dict | None:
+    try:
+        back = _build_to(other, [actor_xy(actor)], _named(actor), ctx, None, {})
+    except _Unreachable:
+        return {"unreachable": True}
+    return {key: value for key, value in back.items() if key != "dir" and to.get(key) != value} or None
+
+
 # How this body walks, or `None` for one the ground never holds — a flyer, a body born to the water, one aboard a hull: all keep the crow's line.
 def _gait(actor: dict, ctx: dict) -> Gait | None:
     biology = _biology(actor, ctx)
@@ -989,6 +998,8 @@ def main(argv: list[str]) -> int:
     if aims:
         try:
             out["to"] = _build_to(actor, aims, whom, ctx, mark, about)
+            if isinstance(target, int):
+                out["to"]["from_them"] = _from_them(ctx["actors_by_id"][target], actor, out["to"], ctx)
         except _Unreachable as e:
             print(str(e), file=sys.stderr)
             return 1
