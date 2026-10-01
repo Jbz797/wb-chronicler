@@ -113,6 +113,8 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     if "tile_info" in sections:
         ctx["burning_set"] = wanted.intersection(listed_tiles(save, "fire"))
         ctx["frozen_set"] = wanted.intersection(listed_tiles(save, "frozen_tiles"))
+
+    if {"distances", "tile_info"} & sections:
         ctx["water_body"] = cache(lambda: water_bodies(save, save_path))  # called not stored: a tile on dry land never asks what water it lies in
 
     if "distances" in sections:
@@ -139,7 +141,7 @@ def _context_at(x: int, y: int, ctx: dict) -> dict:
 
 # Every reading counts steps, WB walking its eight directions — and the whole section answers for the queried tile, a neighbour two steps over reading the same.
 def _distances_at(x: int, y: int, ctx: dict) -> dict:
-    out: dict = {"to_water": _water_distance(x, y, ctx["grid"], ctx["layer_by_id"])}
+    out: dict = {"to_water": _nearest_water(x, y, ctx)}
     if (land := _land_distance(x, y, ctx)) is not None:
         out["strait_to_land"] = land
     city = _city_at(x, y, ctx)
@@ -321,6 +323,22 @@ def _nearest_lands(nearest: dict[int, float]) -> dict:
     return out
 
 
+# Rings widen until the sea is met, every cell walkable — a coastal tile ends in two or three, where a BFS would carry a front. Nothing where no water is found.
+def _nearest_water(x: int, y: int, ctx: dict) -> dict | None:
+    grid, layer_by_id = ctx["grid"], ctx["layer_by_id"]
+    height, width, best, at = grid.height, grid.width, None, (x, y)
+    # A ring holds tiles worth `r` walked to `r * √2`, so the first water met may still be beaten one ring out — the search stops once no ring left can.
+    for r in range(max(width, height)):
+        if best is not None and r >= best:
+            break
+        for nx, ny in _ring_tiles(x, y, r, width, height):
+            if layer_by_id[grid[ny][nx]] == "Ocean" and (walked := walk_tiles(nx - x, ny - y)) < (best if best is not None else walked + 1):
+                best, at = walked, (nx, ny)
+    if best is None:
+        return None
+    return {**ctx["water_body"]()(*at), "crow_tiles": round(best), "dir": bearing(at[0] - x, at[1] - y)}  # which water, by the id `geography waters` lists it under
+
+
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
@@ -360,19 +378,6 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     elif tile_layer(name) == "Ocean":
         out |= ctx["water_body"]()(x, y)
     return out
-
-
-# Rings widen until the sea is met, every cell walkable — a coastal tile ends in two or three, where a BFS would carry a front. `-1` where no water is found.
-def _water_distance(x: int, y: int, grid: LazyTileGrid, layer_by_id: list[str]) -> int:
-    height, width, best = grid.height, grid.width, None
-    # A ring holds tiles worth `r` walked to `r * √2`, so the first water met may still be beaten one ring out — the search stops once no ring left can.
-    for r in range(max(width, height)):
-        if best is not None and r >= best:
-            break
-        for nx, ny in _ring_tiles(x, y, r, width, height):
-            if layer_by_id[grid[ny][nx]] == "Ocean" and (walked := walk_tiles(nx - x, ny - y)) < (best if best is not None else walked + 1):
-                best = walked
-    return round(best) if best is not None else -1
 
 
 # argparse type converter — raising `ArgumentTypeError` is what makes it print the usage line rather than a traceback.
