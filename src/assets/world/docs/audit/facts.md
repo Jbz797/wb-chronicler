@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 29/09/26 22:58</p>
+<p class="metadata">Date de mise à jour : 01/10/26 15:42</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail, chacun de son côté.
 
@@ -15,6 +15,7 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 - **Un test d'existence ne se tronque jamais** : compte ou imprime entier ; une sortie coupée qui confirme n'a rien prouvé.
 - **Une affirmation sur tout le monde** (« seul », « aucun », « ce monde n'a que », une mort, « il n'en est plus question ») se vérifie sur le monde entier, `world … roster` pour les corps, `geography … positions -t` pour le reste, jamais sur ce que le texte nomme.
 - **Une phrase que le texte donne lui-même pour incertaine n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.
+- **Une somme se vérifie aussi contre ses termes** : un total et ses parts, un tableau et la phrase qui le reprend, un solde et ce qui est venu et parti. Des termes justes un à un qui ne font pas le total sont un écart : dis lequel la commande dément.
 
 Ne rends que les écarts, et chaque absolu validé avec l'ensemble sur lequel tu l'as vérifié (« les 28 grandes eaux closes, pas les 762 du monde »), et ce qu'on te demande : chacun avec sa ligne, sa citation et sa valeur vraie. N'écris rien dans les fichiers.
 
