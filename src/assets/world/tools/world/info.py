@@ -38,6 +38,7 @@ from shared import (
     SAVES_DIR,
     SICK_TRAITS,
     UNITS_PER_MONTH,
+    UNITS_PER_YEAR,
     actor_age,
     actor_xy,
     arg_parser,
@@ -482,6 +483,7 @@ def _gone_since(save: dict, then: dict, was: dict[int, int | str], kinds: set[st
     alive = {actor["id"] for actor in save.get("actors_data") or []}
     thinking = _sapient_subspecies(then) if sapient else None
     bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
+    ctx = build_actor_stats_context(then)
     rows = []
     for actor in then.get("actors_data") or []:
         if actor["id"] in alive or actor["id"] not in was or (kinds and actor.get("asset_id") not in kinds):
@@ -490,8 +492,9 @@ def _gone_since(save: dict, then: dict, was: dict[int, int | str], kinds: set[st
             continue
         if (thinking is not None and actor.get("subspecies") not in thinking) or (asked is not None and was[actor["id"]] != asked):
             continue
-        # Silent under `-i`, which names the land it held
-        rows.append({"asset_id": actor.get("asset_id"), "gone": True, "id": actor["id"], "name": actor.get("name"), "was_on": None if asked else was[actor["id"]]})
+        # `was_on` silent under `-i`, which names the land it held
+        row = {"asset_id": actor.get("asset_id"), "gone": True, "id": actor["id"], "name": actor.get("name"), "old_from": _old_from(actor, ctx)}
+        rows.append({**row, "was_on": None if asked else was[actor["id"]]})
     return sorted(rows, key=lambda row: row["id"])
 
 
@@ -529,6 +532,14 @@ def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
     unborn = kinds is not None and not any(a.get("asset_id") in kinds for a in save.get("actors_data") or [] if not is_boat(a))
     hint = " — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds" if unborn else ""
     return f"✗ no living {thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
+
+
+# WB `checkNaturalDeath`: old age takes no body before its age passes its span, and never an immortal — the date that bars it as a cause, or opens it.
+def _old_from(actor: dict, ctx: dict) -> str | None:
+    lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))
+    if not lifespan or "immortal" in (actor.get("saved_traits") or ()):
+        return None
+    return world_date(float(actor.get("created_time") or 0) + max(lifespan - (actor.get("age_overgrowth") or 0), 0) * UNITS_PER_YEAR)
 
 
 # The subspecies WB hangs `has_sapience` on, as a set of ids — an allegiance is not a mind, and a world can think long before it crowns anyone.

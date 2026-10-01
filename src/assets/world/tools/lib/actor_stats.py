@@ -43,6 +43,7 @@ from shared import (
     world_date,
 )
 
+_BASE_FLOOR = ("damage", "health", "lifespan", "speed")  # WB `Subspecies.recalcBaseStats`: what no biology goes without, an insect's single year included
 _BROKEN_ITEM_RATIO = 0.5  # WB `Actor.updateStats`: a worn-out piece stays worn and still counts, at half of all it grants.
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}  # the stats a `bad` gene rounds UP rather than down
 _CHILD_HALVED = ("damage_max", "health_max")  # WB `Actor.updateStats` halves these two on a child, and only these two — the rest it leaves at their grown size
@@ -427,6 +428,12 @@ def _dormant_traits(save: dict, traits: dict) -> frozenset[str]:
     return frozenset(trait for trait, entry in traits.items() if (flag := entry.get("era_flag")) and not age.get(flag))
 
 
+# WB `Subspecies.recalcBaseStats` closes a biology's base on a floor of 1, once species, chromosomes and its own traits are in.
+def _floor_base(base: dict) -> None:
+    for stat in _BASE_FLOOR:
+        base[stat] = max(base.get(stat, 0), 1)
+
+
 # Returns {left, up, down, right} colors for a gene's DNA strand. Memoized: each gene's colors only depend on (gene, life_dna), and life_dna is constant per run.
 @cache
 def _gene_colors(gene: str, life_dna: int) -> dict:
@@ -637,6 +644,7 @@ def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) ->
         _add_species_stats(base, actor.get("asset_id", ""), ctx["species_data"])
         sex_bonus = _add_chromosome_stats(base, sub, ctx["life_dna"])
         _add_trait_stats(base, sub.get("saved_traits") or [], ctx["subspecies_traits"])
+        _floor_base(base)
         cached = subspecies_base_cache[sub_id] = (base, sex_bonus)
     base, sex_bonus = cached
     totals = dict(base)
@@ -645,8 +653,6 @@ def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) ->
     _add_trait_stats(totals, _waking_traits(actor.get("saved_traits") or [], ctx), ctx["creature_traits"])
     _add_group_stats(totals, actor, ctx)
     if lifespan_only:  # Nothing below writes `lifespan`: `_normalize` and `_apply_multipliers`, narrowed to it, answer the same and cost half.
-        if "lifespan" not in totals:  # `_normalize` skips an absent stat, and a caller reading `.get("lifespan", 0)` must see the same nothing
-            return {}
         low, high = _NORMALIZE["lifespan"]
         span = min(max(totals["lifespan"], low), high)
         return {"lifespan": span * (1 + totals["multiplier_lifespan"]) if "multiplier_lifespan" in totals else span}
@@ -875,6 +881,7 @@ def subspecies_stats(subspecies: dict, ctx: dict) -> dict:
     _add_species_stats(base, subspecies.get("species_id") or "", ctx["species_data"])
     sex_bonus = _add_chromosome_stats(base, subspecies, ctx["life_dna"])
     _add_trait_stats(base, subspecies.get("saved_traits") or [], ctx["subspecies_traits"])
+    _floor_base(base)
     _normalize(base)
     _apply_derived_stats(base)  # for `mana` alone, which the panel prints off intelligence
     _apply_multipliers(base)
@@ -890,11 +897,10 @@ def subspecies_stats(subspecies: dict, ctx: dict) -> dict:
     if (months := out["base"].pop(_MATURATION, None)) is not None:  # WB counts it in months, conception to birth or to hatching: the unit rides on the key
         out["base"]["maturation_months"] = months
     # The ages the lineage hands every body it bears, whole as WB weighs them against the years begun — none for a stock `adult_age()` finds grown from birth.
-    adult, breeding = _age_thresholds(int(base.get("lifespan") or 0), is_sapient(subspecies))
-    if adult and (ctx["species_data"].get(subspecies.get("species_id")) or {}).get("baby_form"):
+    adult, breeding = _age_thresholds(int(base["lifespan"]), is_sapient(subspecies))
+    if (ctx["species_data"].get(subspecies.get("species_id")) or {}).get("baby_form"):
         out["base"]["adult_age"] = math.ceil(adult)
-    if breeding:  # a stock WB gave no lifespan answers 0 to both, and a threshold of nought says nothing a body's first day does not
-        out["base"]["breeding_age"] = math.ceil(breeding)
+    out["base"]["breeding_age"] = math.ceil(breeding)
     for sex in ("female", "male"):  # a chromosome may hold a bonus locus of each, so both blocks can stand — the one nobody pays into simply drops
         if cleaned := _cleanup_stats(sex_bonus[sex], delta=True):
             out[sex] = cleaned

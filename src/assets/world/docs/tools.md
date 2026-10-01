@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 30/09/26 14:36</p>
+<p class="metadata">Date de mise à jour : 01/10/26 12:11</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -30,7 +30,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### `actor` :
 
 - `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`) ; il rend son `circle` (comme `surroundings`), chaque part en tuiles et en temps — `walk_` à pied, `swim_` à la nage, `sail_` à bord, `total_` le tout dès qu'il y en a deux —, le temps en `…_minutes` sous l'heure, puis `…_hours` ou `march_days` ; sur l'eau, il ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, une autre voie, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; seule sans section nommée.
-- `--since C<n>` : ce qui a bougé depuis — `moved` est le trajet fait, et son temps au plus court, au pas du corps, quand `--to` ne donne qu'un gisement ; `gone` : mort, le jeu ne gardant aucun mort ; `last_seen` sa dernière place
+- `--since C<n>` : ce qui a bougé depuis — `moved` est le trajet fait, et son temps au plus court, au pas du corps, quand `--to` ne donne qu'un gisement ; `gone` : mort ; `last_seen` sa dernière place
 
 ### `geography` :
 
@@ -52,7 +52,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 ### `world` :
 
 - `pairings` : par espèce, la 1ʳᵉ naissance possible (`birth_on`, `now` chez des amants : une gestation ne s'enregistre pas) et l'écart du couple ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `lovers`, des amants, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, suivi du corps en cause (`hungry`, `water`, `tiny_islet` : îlot de 5 tuiles ou moins), ou la loi WB pour le couple ; règles : `wiki:Reproduction`
-- `roster` : chaque vivant, une ligne, `life_stage` hors adultes ; `-t` type ou famille, `--trait <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water` ; `--since C<n>` : les arrivés, les `was_on` et les morts (`gone`) ; passé 50, un compte par espèce et par stade
+- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water` ; `--since C<n>` : les arrivés, les `was_on` et les morts (`gone`, `old_from` : la vieillesse exclue avant) ; passé 50, un compte par espèce et par stade
 
 ---
 
