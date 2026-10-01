@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 # What a chapter says again, for `chronicler.md` § V « Ne te répète pas »: each passage it takes back from the two chapters before — a run of words, a
-# rare word framed alike, a chute —, the runs it says twice itself, and the families it leans on past anything the chronicle did before. It points, the
-# eye judges: an angle taken again slips past it, a refrain meant as one is caught all the same.
+# rare word framed alike, a chute —, the runs it says twice itself, the families it leans on past anything the chronicle did before, and the cast it
+# is poured in again: a title, a heading, a section begun alike. It points, the eye judges: an angle taken again slips past it, a refrain meant is caught.
 
 import json
 import re
@@ -19,10 +19,12 @@ from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, emit, 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
+_HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
 _LONG_RUN = 7  # words from which a run is a turn of phrase with a single word of its own: `et ce qui verdit au ras du sol`, `à l'entrée de l'an 5`
 _LONG_RUN_WITHIN = 6  # the same, within one chapter, where a formula said again ten lines on is heard: `jamais encore on n'avait vu`
 _MARKS = re.compile(r"[*_#>|`]")  # emphasis, headings, quotes and table rules: markup, which no reader hears
 _MIN_RUN = 4  # words a shared run must hold: three are the language's own (« il n'y a »), four start to be a turn of phrase
+_OPENING_START = 4  # words a section's first sentence is known by, a figure read as any other: `Voxzen est dans sa` 11ᵉ, then 13ᵉ année
 _OVERUSE = 1.3  # how far past the chronicle's own highest rate a family must climb to be named: a wobble is not a tic
 _RARE = 3  # uses across the whole chronicle under which a word shared with the two chapters before is an image borrowed, not the language
 _REFRAIN = 3  # chapters a run of words must be said in to be the chronicle's own refrain — `par la taille`, `n'obéissent à rien` — told apart, never dropped
@@ -259,6 +261,44 @@ def _sentences(n: int) -> list[tuple[int, list[_Token] | None]]:
     return [pair for number, edge, sentences in _lines(n) for pair in ([(number, None)] if edge else [(number, tokens) for tokens in sentences])]
 
 
+# What chapter `n` is cast in: its title's start, each heading's, each section's first words — the intro's and the closing's too — and its sections circle by circle.
+@cache
+def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], tuple[int, ...]]:
+    marks: dict[tuple[str, tuple[str, ...]], tuple[int, str]] = {}
+    circles, opening = [0], False
+
+    def mark(what: str, line: str, number: int, size: int) -> None:
+        start = _tokens(line, number)[:size]
+        marks.setdefault((what, tuple(re.sub(r"\d+", "N", token.key) for token in start)), (number, " ".join(token.surface for token in start)))
+
+    for number, line in enumerate((_chapter(n) or "").splitlines(), 1):
+        if line.startswith(("# ", "## ")):
+            mark("heading" if line[1] == "#" else "title", line, number, _HEADING_START)
+            circles[-1] += line[1] == "#"
+            opening = True
+        elif line.strip() == "---":
+            circles.append(0)
+            opening = True
+        elif opening and line.strip() and line[0] not in "|<":  # a table or a tag line opens nothing: the first prose does
+            mark("opening", _SENTENCE.split(line)[0], number, _OPENING_START)  # its first sentence alone: `Crabanvier, an 15.` whatever follows
+            opening = False
+    return marks, tuple(circles)
+
+
+# The cast chapter `n` takes back from the two before, which no run of words shows: a title, a heading or a section begun alike, the same cut three times over.
+def _shaped(n: int) -> list[dict]:
+    marks, circles = _shape(n)
+    before = [k for k in (n - 2, n - 1) if k >= 1 and _chapter(k) is not None]
+    rows = [
+        {"chapters": said, "line": line, "text": text, "what": what}
+        for (what, key), (line, text) in marks.items()
+        if key and (said := [f"C{k}" for k in before if (what, key) in _shape(k)[0]])
+    ]
+    if len(before) == 2 and all(_shape(k)[1] == circles for k in before):  # twice may be chance, three times is a mould
+        rows.append({"chapters": [f"C{k}" for k in before], "text": " | ".join(str(count) for count in circles), "what": "sections per circle"})
+    return sorted(rows, key=lambda row: row.get("line", 0))
+
+
 # The species as the chronicle names them in its own language, by their first four letters — `loup` catches `loups`, `mouc` catches `mouches`.
 @cache
 def _species_roots() -> frozenset[str]:
@@ -307,7 +347,7 @@ def echoes(n: int) -> dict | None:
     for (line, at), texts in sorted(_runs(words, words).items()):
         again[line] += [{"from": at, "text": text} for text in texts]
     internal = [{"line": line, "matches": matches} for line, matches in again.items()]
-    return {"internal": internal, "overused": _overused(words, n), "passages": _passages(words, n)}
+    return {"internal": internal, "overused": _overused(words, n), "passages": _passages(words, n), "shape": _shaped(n)}
 
 
 def main(argv: list[str]) -> int:
