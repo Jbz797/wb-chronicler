@@ -22,6 +22,7 @@
                 "ignore": [
                   "**/.DS_Store",
                   "**/.cache/**",
+                  "**/.claude/**",
                   "**/.ruff_cache/**",
                   "**/__pycache__/**",
                   "world/history/map_stats.s3db",

@@ -21,6 +21,7 @@ from actor_stats import (
     hatch_on,
     is_baby,
     is_egg,
+    kept_statuses,
 )
 from founding import city_zones, settle_gates, settle_told
 from grid import LazyTileGrid, off_land
@@ -84,7 +85,6 @@ _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a ro
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 _GOAL_ONLY = frozenset({"circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # `--to`'s words for a goal: `moved` keeps its own heading and length
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
-_PLACE_KEYS = frozenset({"island_id", "x", "y"})  # what `since` says as a path, `moved`, rather than as three fields changed apiece
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
@@ -141,6 +141,7 @@ _TENURE_ROLES = {
 }
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
+_UNCOMPARED = frozenset({"island_id", "statuses", "x", "y"})  # what `since` leaves out of `changed`: a place is told as a path, `moved`, a status is an instant
 
 
 # A `--to` no walk answers: its message says what bars the way, the water's width against the body's reach where the sea is to blame.
@@ -315,6 +316,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # Chronicler-only, a thinker's alone: whether a town could rise where it stands, else what bars it — the zone weighed even for a child.
         **settle_told(settle_gates(actor, ctx)),
         "sex": sex_label(actor),
+        "statuses": kept_statuses(actor),  # Chronicler-only: what the body is in the middle of — asleep, with young —, where the save keeps it
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
         # WB `isInsideSomething`: a save keeps the boat half, never the building. A plain ref, souls boarding transports alone — `boat/info.py <id>` spells it out.
@@ -361,7 +363,7 @@ def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, t
         if (land := _land_of(actor, ctx)) != was_land:
             out["moved"]["land"] = [was_land, land]
     before, after = _build_metadata(then, then_ctx, then_save), _build_metadata(actor, ctx, save)
-    changed = {key: _change(before.get(key), after.get(key)) for key in sorted((before.keys() | after.keys()) - _PLACE_KEYS) if before.get(key) != after.get(key)}
+    changed = {key: _change(before.get(key), after.get(key)) for key in sorted((before.keys() | after.keys()) - _UNCOMPARED) if before.get(key) != after.get(key)}
     return {**out, **({"changed": changed} if changed else {})}
 
 

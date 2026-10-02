@@ -13,6 +13,7 @@ import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from math import inf
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -139,6 +140,11 @@ _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
 _MIN_PER_SEX = 2  # `DISABLE_HANDSOME_MIGRANTS`: a crown stands on its own with two of each sex — four bodies of one sex are a hamlet with a banner, and a dead end
+
+# The two mods of `mods/`, each by the key it stamps a save with: the world's time as it wrote it, in the world's own custom data.
+_MODS = {"Faithful Saves": "faithful_saved_at", "Wandering Clouds": "wandering_clouds_saved_at"}
+
+_MODS_DIR = "../../../mods"  # from the chronicler's own directory, where he runs this script
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
 
@@ -157,6 +163,7 @@ _RESET_PROMPT = (
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # the reader's settings, where the player's workshop switch sits beside the live save's path
 _SHORT_AGES = frozenset({"age_despair", "age_ice"})
 _SHORT_AGE_YEARS = (30, 40)
+_STAMP_SLACK = 1  # seconds a mod's stamp may stray from the save's own time: WB stores it less finely, a save from before lies years off
 _SUMMARY_CAP = 400
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
@@ -300,6 +307,11 @@ def _deliver() -> int:
             " theirs and yours, crossed where they meet — none at all if there are none. What may go in it:"
         )
         _print_bullets(_DEV_NOTE)
+        # Asked at every delivery, not once for all: a wrong only one fact auditor saw is what a lone one would have published.
+        print(
+            "  → then your verdict, with its figures: are two fact auditors still worth it? The wrongs only one of the two saw, counted apart"
+            " — on a line you had flagged as unmeasured, on any other line —, then your call"
+        )
     else:
         print("  → mode: player — the chapter and that account, nothing else")
     # A world law's alert asks the player at the close, where the errand is due: raised at step 2, it would have to outlast the whole audit to be remembered.
@@ -396,6 +408,13 @@ def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | Non
     return misplaced
 
 
+# The mods this save was written without: its stamp missing, or left by an older save — the time it holds is then not this save's.
+def _mods_off(save: dict) -> list[str]:
+    stats = save.get("mapStats") or {}
+    stamps = (stats.get("custom_data") or {}).get("custom_data_float") or {}
+    return [name for name, key in _MODS.items() if abs(float(stamps.get(key, -inf)) - float(stats.get("world_time") or 0)) > _STAMP_SLACK]
+
+
 def _print_bullets(lines: tuple[str, ...]) -> None:
     print("\n".join(f"    · {line}" for line in lines))
 
@@ -404,6 +423,8 @@ def _print_bullets(lines: tuple[str, ...]) -> None:
 def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
+    if n > 1:  # each sub-agent kept alive weighs on the session, and a delivered chapter owes its auditors nothing more
+        print(f"  → chronicler: first, close the audit sub-agents of C{n - 1} and forget their ids — a later retouch of a delivered chapter takes fresh ones")
     if favorite is None and any(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a)):
         print("  → chronicler: choose a favorite before a single word — your pick, not the player's:")
         _print_bullets(_CHOICE)
@@ -760,6 +781,14 @@ def main(argv: list[str]) -> int:
         return 0
 
     live = load_save(live_wbox)
+    # A world the mods do not run on is not the one the chronicle follows: clouds seed it elsewhere, and every load unmakes what its bodies were at.
+    if off := _mods_off(live):
+        print(f"✗ the save was written without {' and '.join(off)} — no chapter is written on such a save", file=sys.stderr)
+        print("  → player: its README tells how to install it — or the chronicler can install it for you, just ask", file=sys.stderr)
+        print("  → player: then restart the game (a mod only loads when it starts), load the world and save again", file=sys.stderr)
+        readmes = ", ".join(f"`{_MODS_DIR}/{name.replace(' ', '')}/README.md`" for name in off)
+        print(f"  → chronicler: {readmes}", file=sys.stderr)
+        return 1
     actors = live.get("actors_data") or []
     world_time = rounded_world_time(live["mapStats"])
     fav_id = next((a["id"] for a in actors if a.get("favorite") is True), None)

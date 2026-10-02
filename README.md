@@ -24,9 +24,9 @@ Claude Code turns your **WorldBox** save files into narrative chapters, rendered
 
 ## How it works
 
-The player runs **WorldBox** in pure observation mode (zero intervention, sandbox laws). When a save is ready:
+The game runs with zero intervention, under sandbox laws. When a save is ready:
 
-1. **The Chronicler** — the Claude Code CLI, run from a terminal with `src/assets/world/` as its working directory, reads the rules in `docs/chronicler.md`, questions the world through the `tools/` commands it is given — a script per subject (`world`, `actor`, `city`, `geography`…) that decodes the `map.wbox` save (zlib-compressed JSON) and answers in JSON — browses the `map_stats.s3db` SQLite itself, and writes the next narrative chapter in a Tolkien-inspired voice (no pastiche, every claim traced back to data) — in whichever tongue `history/settings.json` records.
+1. **The Chronicler** — the Claude Code CLI, run from a terminal with `src/assets/world/` as its working directory, reads the rules in `docs/chronicler.md`, questions the world through the `tools/` commands it is given — a script per subject (`world`, `actor`, `city`, `geography`…) that decodes the `map.wbox` save (zlib-compressed JSON) and answers in JSON, the `map_stats.s3db` history included — and writes the next narrative chapter in a Tolkien-inspired voice (no pastiche, every claim traced back to data) — in whichever tongue `history/settings.json` records.
 
 2. **The Reader** — an Angular SPA with NG-ZORRO and ngx-markdown displays the chapters — and, in developer mode, the rules documents — on a parchment-themed reader, with a left side nav for navigation and a right pane surfacing each chapter's stats — the world's leaderboards, the favorite character, and every body it belongs to: village, kingdom, clan, family…
 
@@ -52,19 +52,24 @@ The model's **1M-token context window** lets that single thread run a long way b
 - **Claude Code**, with a Claude subscription — Pro or higher is recommended, the chronicler reading, cross-checking and writing a multi-section chapter on every save
 - **Opus 5.5** at **high** effort for the chronicler, recommended — the depth a chapter's cross-checks need, without the cost of `xhigh` or `max`
 - **Node** 22+ and **Yarn** for the reader
-- **Python 3** for the `tools/` extractors — the standard library, plus **Pillow** for `map/show.py` (`pip install pillow`)
+- **Python** 3.12+ for the `tools/` extractors — the standard library, plus **Pillow** for `map/show.py` (`pip install pillow`)
 - **WorldBox** (Steam) and a save to follow
 
-## Recommended mod: Wandering Clouds
+## Mods
 
-Vanilla clouds all rise on the west edge of the map, and they seed a young world's thinking peoples: its first civilizations start out crowded in the west. [Wandering Clouds](mod/), kept in this repository, lets clouds rise anywhere and drift either way, so peoples arise all over the map. Install it **before creating the world**.
+The chronicle runs on two [NeoModLoader](https://steamcommunity.com/sharedfiles/filedetails/?id=3080294469) mods, kept in this repository under [mods/](mods/). **Both are required**: each stamps the saves it writes, and the chronicler refuses to open a chapter on a save that lacks either stamp.
+
+- [Wandering Clouds](mods/WanderingClouds/) — vanilla clouds all rise on the west edge of the map, and they seed a young world's thinking peoples: its first civilizations start out crowded in the west. This mod lets clouds rise anywhere and drift either way, so peoples arise all over the map. Install it **before creating the world**.
+- [Faithful Saves](mods/FaithfulSaves/) — vanilla saves keep no status, so every load ends the pregnancies under way, hatches every egg, wakes every sleeper and redraws how long each creature waits before its next sleep. This mod writes them into the save and hands them back on load.
+
+Each mod's page tells how to link its folder into the game's `Mods` folder, so that a `git pull` keeps it up to date.
 
 ## Getting started
 
 To write the chronicle, open the chronicler in its own directory:
 
 ```sh
-cd src/assets/world && claude --model claude-opus-5-5 --effort high # works inside the chronicle, ruled by `docs/chronicler.md` alone
+cd src/assets/world && claude --model claude-opus-5-5 --effort high
 ```
 
 The session opens on a single order, _« Lis le docs/chronicler.md »_ — the chronicler takes it from there.
@@ -112,5 +117,4 @@ yarn lint:fix # ESLint, Stylelint and Prettier, auto-fixed
 - **NG-ZORRO** (dark layout, custom gold/parchment palette)
 - **ngx-markdown** + Marked + Prism.js (gruvbox-dark)
 - **ngx-translate** (French and English, off WorldBox's own locale files where the game names a thing)
-- **Python** for the `tools/` extractors — zlib and JSON off the save, SQLite for the history, Pillow for the map
 - **TypeScript**, ESLint, Stylelint, Prettier

@@ -1,0 +1,12 @@
+{
+    "name": "Faithful Saves",
+    "author": "Jbz797",
+    "version": "1.0.0",
+    "description": "A save keeps what every creature was in the middle of: a pregnancy, an egg, a sleep, a fire, a mood, and the wait before its next sleep. Loading no longer wipes them.",
+    "GUID": "Jbz797.faithfulsaves",
+    "iconPath": "icon.png",
+    "RepoUrl": "https://github.com/Jbz797/wb-chronicler/tree/master/mods/FaithfulSaves",
+    "Dependencies": [],
+    "OptionalDependencies": [],
+    "IncompatibleWith": []
+}

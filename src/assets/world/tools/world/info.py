@@ -24,7 +24,9 @@ from actor_stats import (
     crossed_on,
     is_egg,
     is_hungry,
+    kept_statuses,
     maturation_months,
+    status_left,
 )
 from founding import city_zones, settle_gates, settle_rank, settle_told
 from grid import LazyTileGrid, frozen_tally, off_land
@@ -77,6 +79,7 @@ from walking import WalkMap, walk_way
 _ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "plots", "snapshot")
 
 # Chronicler key => WB `mapStats` counter — UI keys (`CUMULATIVE_STATS`) + churn a net snapshot hides; `_created` stored, `destroyed = created − snapshot.alive`.
+_CARRYING = ("pregnant", "pregnant_parthenogenesis")  # WB's two statuses that end on a birth
 _CUMULATIVE_COUNTERS = {
     "alliances_made": "alliancesMade",
     "armies_created": "armiesCreated",
@@ -306,7 +309,9 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
             apart, _, row["on"], crow, a, b, barred = best
             row |= {"barred": barred or None, "crow_tiles": round(crow), "lovers": True if not apart else None, "pair": [a["id"], b["id"]]}
             bearer = b if sexed[a["id"]] and b.get("sex") == 1 else a  # a sexed pair's mother carries; a hermaphrodite pair, either — WB draws it
-            conceived = max(row["on"], now) if apart else row["on"]  # lovers may carry already, unseen; any other pair must first become them
+            # Lovers may carry already, unseen, where the save keeps no status; where it does, they wait out the afterglow of their last kiss.
+            glow = max(status_left(a, "afterglow") or 0, status_left(b, "afterglow") or 0)
+            conceived = max(row["on"], now + glow) if apart or status_left(bearer, "pregnant") is not None else row["on"]
             births.append(max(conceived + carry.get(bearer.get("subspecies"), 0), now))
             (ax, ay), (bx, by) = where[a["id"]], where[b["id"]]
             if (land := island_of.get((ax, ay))) is not None and land == island_of.get((bx, by)):
@@ -321,6 +326,10 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         # A barren lineage beside fertile ones, its bodies by lineage: WB wants `needs_mate` of both lovers, so none of them ever pairs, not even across lineages.
         if (mating or lone) and (barren := Counter(sid for actor in bodies if (sid := actor.get("subspecies")) is not None and mode.get(sid) is None)):
             row["barren"] = {str(sid): count for sid, count in sorted(barren.items())}  # ids as JSON keys, in their numeric order
+        # A birth under way, as the save keeps it: its date is the game's own, and it leads whatever a pair could still conceive.
+        if carrying := {actor["id"]: left for actor in bodies if (left := max(status_left(actor, status) or 0 for status in _CARRYING))}:
+            row["pregnant"] = sorted(carrying)
+            births += [now + left for left in carrying.values()]
         if births:
             row["birth_on"] = min(births)
         rows.append((row.get("birth_on", inf), row))  # the first birth leads: what the chronicle asks is when a body is born, not when two come of age
@@ -438,11 +447,12 @@ def _build_snapshot(save: dict) -> dict:
 
     # `infected` ⊂ `sick` — a plague never shows up in the first, hence both; each drops at 0, outbreaks leaving them idle most chapters.
     boats = infected = passengers = sapients = sick = 0
-    sapient = _sapient_subspecies(save)
+    sapient, statuses = _sapient_subspecies(save), Counter()
     for a in actors:
         if is_boat(a):  # hulls are actors too, but neither thinking population nor wildlife — they get their own tally
             boats += 1
             continue
+        statuses.update(kept_statuses(a) or ())
         passengers += is_aboard(a)
         sapients += a.get("subspecies") in sapient
         traits = a.get("saved_traits") or []
@@ -461,6 +471,7 @@ def _build_snapshot(save: dict) -> dict:
         "passengers": passengers,  # souls at sea this instant, WB's own word (`Boat.countPassengers`) — chronicler-only, `boats` counts the hulls
         "sapient_population": sapients,  # named apart from every tier's `population`, which counts members: this one weighs minds, and no crown gathers them
         **({"sick": sick} if sick else {}),
+        "statuses": dict(sorted(statuses.items())) or None,  # Chronicler-only: how many bodies each status holds this instant, as the Faithful Saves mod kept them
         "trees": sum(n for aid, n in asset_counts.items() if categories.get(aid) == "trees"),
         "vegetation": sum(n for aid, n in asset_counts.items() if categories.get(aid) == "vegetation"),  # `trees` counts apart — WB files the two as it pleases
         "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.

@@ -22,7 +22,7 @@ Everything else stays vanilla: cloud types, speeds, heights, what they drop, and
 
 ## Installation
 
-The mod isn't on the Steam Workshop yet, so it installs by hand, in two steps.
+The mod installs by hand, in two steps.
 
 ### 1. Install NeoModLoader (once)
 
@@ -38,19 +38,23 @@ Subscribing alone isn't enough the first time; afterwards, the subscription keep
 
 ### 2. Install Wandering Clouds
 
-1. Copy this folder's files (`mod.json`, `icon.png` and the two `.cs` files) into a folder of their own inside the `Mods` folder NML created, with `mod.json` directly in it:
-   - **Windows**: `<Steam>\steamapps\common\worldbox\Mods\WanderingClouds\`
-   - **macOS**: `~/Library/Application Support/Steam/steamapps/common/worldbox/Mods/WanderingClouds/`
+1. Link this folder into the `Mods` folder NML created, under the name `WanderingClouds`. A link keeps the mod in step with the repository: a `git pull` updates it, with nothing to copy again.
+   - **macOS**: `ln -s "$PWD/mods/WanderingClouds" ~/"Library/Application Support/Steam/steamapps/common/worldbox/Mods/WanderingClouds"`
+   - **Linux**: the same command, with your own Steam path (often `~/.steam/steam/steamapps/common/worldbox/Mods/WanderingClouds`)
+   - **Windows** (a terminal run as administrator): `mklink /D "<Steam>\steamapps\common\worldbox\Mods\WanderingClouds" "%CD%\mods\WanderingClouds"`
+
+   Run it from the root of this repository. Without a clone, copy the folder's files there instead (`mod.json`, `icon.png` and the `.cs` files), with `mod.json` directly in `Mods/WanderingClouds/`.
 2. Launch WorldBox. NML compiles the mod as the game starts: it shows up in the _Mods_ window, and the game log reads `[Wandering Clouds]: clouds now rise anywhere and drift either way`.
 
-**To uninstall**, disable the mod in NML's _Mods_ window, or delete its folder.
+**To uninstall**, disable the mod in NML's _Mods_ window, or delete its link (or its folder) from `Mods`.
 
 ## Notes
 
-- **Compatibility:** the mod only adds two Harmony postfixes, on `Cloud.spawn` and `Cloud.update`, and replaces no game code. It works with other mods unless they also move natural clouds.
-- **Safe to remove:** nothing is written into your saves.
+- **Compatibility:** the mod only adds two Harmony postfixes, on `Cloud.spawn` and `Cloud.update`, and a prefix on the save, and replaces no game code. It works with other mods unless they also move natural clouds.
+- **What it writes into your saves:** one number, `wandering_clouds_saved_at`, in the world's own `custom_data`: the world's time at the save. It lets the chronicle this repository builds tell a save the mod ran on from one it did not. Vanilla ignores it, so the mod is safe to remove.
 
 ## For modders
 
 - `CloudPatches.AfterSpawn`, postfix on `Cloud.spawn(WorldTile pTile, string pType)`: when `pTile` is `null` (a natural cloud), it moves the cloud to `x = Randy.randomFloat(0, MapBox.width)` and flips the sign of its `speed` half the time. `Cloud.update` moves a cloud by `speed`, so a negative speed sends it west.
 - `CloudPatches.AfterUpdate`, postfix on `Cloud.update`: vanilla only kills a cloud once `x > MapBox.width`. This postfix calls `startToDie()` on a live west-bound cloud once `x < 0`.
+- `SaveStamp.BeforeWorldSave`, prefix on `SaveManager.currentWorldToSavedMap()`: it writes `World.world.getCurWorldTime()` under `wandering_clouds_saved_at` in `MapStats.custom_data`. A time rather than a flag: a flag would stay in the save once the mod is off.

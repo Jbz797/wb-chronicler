@@ -171,6 +171,11 @@ _MANA_PER_INTELLIGENCE = 10
 _MATURATION = "maturation"  # the months a lineage carries, conception to birth or to hatching — WB `getMaturationTimeMonths`, off `base_stats_meta`
 _META_RATIOS = ("children", "happy", "homeless", "unhappy")  # WB `IMetaObject`'s four, named as its getters are — every one of them a share of the living.
 
+_MOD_KEY = "faithful_"  # the Faithful Saves mod keeps a status's time left beside WB's own bonuses, in the same custom data: no stat
+_MOD_MARK = "faithful_waits"  # set on every body the mod wrote: a status with no key is then over, where a save without the mod says nothing of it
+_MOD_STATUS = "faithful_status_"
+_MOD_UNTOLD = "recovery_"  # WB's own cooldowns worn as statuses — after a fight, a spell, a meeting, a plot: the game's clockwork, no state of a body
+
 # WB `BaseStatsLibrary.init` declares each target on its own asset (`main_stat_to_multiply`), two off the name: `crit` raises `critical_chance`, `mass` the `mass_2`.
 _MULTIPLIER_TARGETS = {
     "multiplier_attack_speed": "attack_speed",
@@ -268,7 +273,8 @@ def _add_chromosome_stats(totals: dict, sub: dict, life_dna: int) -> dict:
 # Civil progression (`actor.custom_data_float`) — a point of diplomacy, warfare, stewardship or intelligence per conversation or ageing tick, kept for life.
 def _add_custom_data_float(totals: dict, custom: dict | None) -> None:
     for k, v in (custom or {}).items():
-        totals[k] = totals.get(k, 0) + v
+        if not k.startswith(_MOD_KEY):
+            totals[k] = totals.get(k, 0) + v
 
 
 def _add_equipment_stats(totals: dict, item_ids: list[int], items_by_id: dict, item_stats: dict, mod_stats: dict) -> None:
@@ -743,6 +749,8 @@ def crossed_on(actor: dict, threshold: float) -> str:
 
 # The month a body leaves its shell, gone by or to come — `born` being the laying. `None` for a biology that lays nothing.
 def hatch_on(actor: dict, ctx: dict) -> str | None:
+    if left := status_left(actor, "egg"):  # an egg under way, as the save keeps it
+        return world_date(ctx["world_time"] + left)
     months = _incubation_months(actor, ctx)
     return world_date(float(actor.get("created_time") or 0) + months * UNITS_PER_MONTH) if months else None
 
@@ -754,6 +762,8 @@ def is_baby(actor: dict, ctx: dict) -> bool:
 
 # WB `Actor.checkShouldBeEgg`: a biology that lays, a body under its majority, an incubation still running — that majority ungated, an egg needs no baby form.
 def is_egg(actor: dict, ctx: dict) -> bool:
+    if (left := status_left(actor, "egg")) is not None:  # the save tells it outright: WB hatches an egg on load, so its age alone would lie after one
+        return left > 0
     if not (months := _incubation_months(actor, ctx)) or (ctx["world_time"] - float(actor.get("created_time") or 0)) / UNITS_PER_MONTH >= months:
         return False
     return actor_age(actor, ctx["world_time"]) < _subspecies_ages(actor, ctx)[0]
@@ -762,6 +772,13 @@ def is_egg(actor: dict, ctx: dict) -> bool:
 # WB `Actor.isHungry`: at half its cap or under — a body with no gut never is.
 def is_hungry(actor: dict, ctx: dict) -> bool:
     return (cap := _nutrition_max(actor, ctx)) is not None and int(actor.get("nutrition") or 0) <= cap * _HUNGRY_RATIO
+
+
+# The statuses the Faithful Saves mod kept of a body, named and no more: a chronicle that read how long each still runs would tell what has not happened yet.
+def kept_statuses(actor: dict) -> list[str] | None:
+    custom = actor.get("custom_data_float") or {}
+    told = (key[len(_MOD_STATUS) :] for key, left in custom.items() if key.startswith(_MOD_STATUS) and left > 0)
+    return sorted(status for status in told if not status.startswith(_MOD_UNTOLD)) or None
 
 
 # The months a lineage carries before a birth or a hatching: WB sums its traits' `maturation` into `base_stats_meta`.
@@ -873,6 +890,12 @@ def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
             }.items()
         )
     )
+
+
+# The seconds a status has left on a body, 0 for one it has not — `None` where the save was written without the mod, and so says nothing either way.
+def status_left(actor: dict, status: str) -> float | None:
+    custom = actor.get("custom_data_float") or {}
+    return float(custom.get(_MOD_STATUS + status) or 0) if _MOD_MARK in custom else None
 
 
 # WB's own subspecies panel: the neutral block every bearer starts from, then what a `bonus_*` locus adds to that sex — `meta_stats` in the base, as WB prints them.

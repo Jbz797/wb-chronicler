@@ -32,6 +32,7 @@ _AUDIT = {
             "peace_time",
             "settle",  # the chronicler's « why no town yet »: no panel says who could found one
             "settle_more",
+            "statuses",
             "tax_local",
             "tax_tribute",
             "traits",
@@ -60,7 +61,7 @@ _AUDIT = {
     ),
     "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
     "relations": frozenset({"age_years", "borders", "years_since_last_war"}),  # the tie's age, its border, its last war: the panel prints the standing, its drivers
-    "snapshot": frozenset({"gear"}),  # the world's stock of items — the panel counts souls, roofs and trees, never a blade
+    "snapshot": frozenset({"gear", "statuses"}),  # the world's stock of items and what its bodies are in the middle of — the panel counts souls, roofs and trees
     "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "projectiles", "recoil", "swim", "throwing_range"}),
 }
 
