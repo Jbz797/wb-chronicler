@@ -16,15 +16,18 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from datetime import datetime, timezone
+from functools import cache
 from math import inf
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
+from actor_stats import adult_age, build_actor_stats_context, is_egg
 from echo import echoes
 from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_world
-from grid import tile_layer, tile_runs
+from founding import city_zones, settle_gates
+from grid import LazyTileGrid, tile_layer, tile_runs
 from islands import compute_islands_cached
 from shared import (
     CHAPTER_CAP,
@@ -32,12 +35,14 @@ from shared import (
     HISTORY_S3DB,
     SAVES_DIR,
     UNITS_PER_YEAR,
+    actor_age,
     chapter_length,
     chapter_world_time,
     index_by_id,
     is_boat,
     is_sapient,
     latest_chapter,
+    life_stage,
     live_save,
     load_data,
     load_save,
@@ -68,17 +73,7 @@ _ACCOUNT = {
 _AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
 
-# World-law alerts, a state while the law stays on: sapient crowns weighed against dry ground, and no settlers cut off while the favorite's own crown stands short
-_ALERTS = {
-    "DISABLE_DROP_OF_THOUGHTS": {
-        "condition": lambda pops, quota, _own: len(pops) >= quota,
-        "law": "world_law_drop_of_thoughts",
-    },
-    "DISABLE_HANDSOME_MIGRANTS": {
-        "condition": lambda pops, quota, own: _stands_alone(own) and sum(1 for sexes in pops if _stands_alone(sexes)) >= quota,
-        "law": "world_law_civ_migrants",
-    },
-}
+_ALERTS = {"DISABLE_DROP_OF_THOUGHTS": "world_law_drop_of_thoughts"}  # each alert by the law it asks the player to cut — a state while that law stays on
 
 _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a world's start and at a favorite's death alone, in no doc
     "a thinking body only: `sapient: true` in `actor … metadata`",
@@ -136,6 +131,7 @@ _EMPTIED = (
 
 _FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked"})  # all `main` reads — others are refused as typos
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
+_GROWN = frozenset({"adult", "teen"})  # the stages a kind may be counted on: past childhood, an elder read as the adult it is — its span is not asked
 _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
@@ -144,7 +140,6 @@ _LAW_NAMES = load_data("world-laws.json")  # WB's own English title of each law,
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
-_MIN_PER_SEX = 2  # `DISABLE_HANDSOME_MIGRANTS`: a crown stands on its own with two of each sex — four bodies of one sex are a hamlet with a banner, and a dead end
 
 # The two mods of `mods/`, each by the key it stamps a save with: the world's time as it wrote it, in the world's own custom data.
 _MODS = {"Faithful Saves": "faithful_saved_at", "Wandering Clouds": "wandering_clouds_saved_at"}
@@ -246,7 +241,7 @@ def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> None:
 
 
 # The chapter's event codes, `chapter.json.tags` their only log. The order is a priority, the nav badging the first three: the rarest first, the alerts last.
-def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | None, just_designated: bool, prior: tuple, age_id: str) -> list[str]:
+def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favorite: dict | None, just_designated: bool, prior: tuple, age_id: str) -> list[str]:
     already, _prev_favorite, prev_world, sworn = prior
     tags = ["NEW_FAVORITE"] if just_designated else []
 
@@ -266,10 +261,8 @@ def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | 
         if tag not in already and live["mapStats"].get(counter):
             tags.append(tag)
 
-    realm = _entity_id(blocks.get("kingdom") or {})  # read twice below: the war tag for what the favorite's crown enters, the migrants alert for what it holds
-
     # A war the favorite's crown found itself in since the chapter before, whoever declared it — the first chapter having no before, it owes none.
-    if realm is not None and (since := prev_world.get("world_time")) is not None and _entered_war(live, realm, since):
+    if (realm := _entity_id(blocks.get("kingdom") or {})) is not None and (since := prev_world.get("world_time")) is not None and _entered_war(live, realm, since):
         tags.append("FAVORITE_KINGDOM_NEW_WAR")
 
     if boat:  # a chapter caught at sea — the favorite is aboard right now, which the panel badges and the chronicler owes a scene
@@ -278,7 +271,7 @@ def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | 
     # A scheme afoot under the favorite's own hand. Read after the fold, which leaves the type's key behind: a plot ripens in months, so it may be gone next chapter.
     if (favorite or {}).get("plot"):
         tags.append("FAVORITE_PLOTTING")
-    return tags + _fired_alerts(live, realm)
+    return tags + _fired_alerts(live, path)
 
 
 # A seeded land or water the chronicler has just named takes this chapter for its own → the names dated: his to give, the date the map shows them from ours.
@@ -336,7 +329,7 @@ def _deliver() -> int:
     else:
         print("  → mode: player — the chapter and that account, nothing else")
     # A world law's alert asks the player at the close, where the errand is due: raised at step 2, it would have to outlast the whole audit to be remembered.
-    laws = [_LAW_NAMES[_ALERTS[code]["law"]] for code in json.loads((SAVES_DIR / f"C{n}" / "chapter.json").read_text()).get("tags") or [] if code in _ALERTS]
+    laws = [_LAW_NAMES[_ALERTS[code]] for code in json.loads((SAVES_DIR / f"C{n}" / "chapter.json").read_text()).get("tags") or [] if code in _ALERTS]
     off = f"to turn the {' and '.join(laws)} world law{'s' if len(laws) > 1 else ''} off, and " if laws else ""
     print(f"  → then hand back: tell the player the chapter is closed, and ask him {off}to say when the save has moved on")
     return 0
@@ -396,15 +389,11 @@ def _finalize() -> int:
     return 0
 
 
-# The alerts whose law is on and whose condition holds.
-def _fired_alerts(save: dict, realm: int | None) -> list[str]:
+# The alerts whose law is on and whose condition holds: thinking kinds able to raise a crown, as many as the dry ground can bear — no more need fall from the clouds.
+def _fired_alerts(save: dict, save_path: Path) -> list[str]:
     laws = world_laws(save)
-    standing = {code: spec for code, spec in _ALERTS.items() if laws.get(spec["law"], True)}  # the laws first: once both are off, neither world is walked at all
-    if not standing:
-        return []
-    crowns, quota = _sapient_kingdoms(save), _kingdom_quota(save)
-    pops, own = crowns.values(), (crowns.get(realm) if realm else None) or [0, 0]  # hoisted, and a view: no condition asks more than a length and a walk
-    return [code for code, spec in standing.items() if spec["condition"](pops, quota, own)]
+    standing = [code for code, law in _ALERTS.items() if laws.get(law, True)]  # the laws first: once they are off, the world is not walked at all
+    return standing if standing and _founding_kinds(save, save_path) >= _kingdom_quota(save) else []
 
 
 # Deletes the transcripts of the sub-agents this session spawned → how many: Claude Code dismisses none, and one stays wakeable while its transcript stands.
@@ -423,6 +412,26 @@ def _forget_subagents() -> int:
                 transcript.with_name(f"{transcript.stem}.meta.json").unlink(missing_ok=True)
                 gone += 1
     return gone
+
+
+# The thinking kinds that hold a founder: a body past childhood that could found a town where it stands, its youth set aside — or one that has a town already.
+def _founding_kinds(save: dict, save_path: Path) -> int:
+    island_of, grid = compute_islands_cached(save, save_path)[1], LazyTileGrid(save)
+    ctx = build_actor_stats_context(save) | {
+        "city_zones": cache(lambda: city_zones(save, island_of)),
+        "island_lookup": lambda: island_of,
+        "tile_grid": lambda: grid,
+        "tile_map": save["tileMap"],
+        "world_laws": world_laws(save),
+    }
+    kinds: set[str] = set()
+    for actor in save.get("actors_data") or []:  # a kind once counted is asked no more: the ground is weighed for its first founder alone
+        if (kind := actor.get("asset_id")) in kinds or is_boat(actor) or not is_sapient(ctx["subspecies_by_id"].get(actor.get("subspecies"))):
+            continue
+        grown = life_stage(actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), 0, is_egg(actor, ctx)) in _GROWN
+        if grown and (actor.get("cityID") or settle_gates(actor, ctx) in (True, ["child"])):
+            kinds.add(kind)
+    return len(kinds)
 
 
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
@@ -682,16 +691,6 @@ def _run_together(*calls: tuple | None) -> list:
     return [job.result() if job else None for job in jobs]
 
 
-# The headcount of each crown a thinking people answers to — a beast bows to none, a hull is no subject, and a soul under no banner raises no crown of its own.
-def _sapient_kingdoms(save: dict) -> dict[int, list[int]]:
-    subspecies_by_id = index_by_id(save.get("subspecies") or [])
-    pops: dict[int, list[int]] = {}
-    for actor in save.get("actors_data") or []:  # the crown first, being both the cheapest test and the one that turns most of a wild world away
-        if (kid := actor.get("civ_kingdom_id")) and not is_boat(actor) and is_sapient(subspecies_by_id.get(actor.get("subspecies"))):
-            pops.setdefault(kid, [0, 0])[actor.get("sex") or 0] += 1  # WB writes ♀ as `sex: 1` and omits ♂, so the field indexes its own tally
-    return pops
-
-
 # The chapter's folder and what surrounds it: the save, the history the chronicler browses, the world card, the C1 toponyms, the registries → a failed command.
 def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> str | None:
     live_dir = live_wbox.parent
@@ -720,10 +719,6 @@ def _settings() -> dict:
         return json.loads(_SETTINGS_JSON.read_text())
     except (OSError, ValueError):
         return {}
-
-
-def _stands_alone(sexes: list[int]) -> bool:
-    return min(sexes) >= _MIN_PER_SEX
 
 
 # Step 5 off the chapter's files: its H1 and length, the favorite's descriptor and if carried, the summaries owed or too long, places astray, prose new since C<n-1>.
@@ -928,7 +923,7 @@ def main(argv: list[str]) -> int:
         _carry_trait_summaries(n, summaries, live)
         fold_world(world)
         age_id = (live["mapStats"].get("world_age_id") or "").removeprefix("age_")  # short form, as `world/info.py` emits it — `prev_world` carries that one
-        tags = _chapter_tags(live, blocks, boat, favorite, just_designated, prior, age_id)
+        tags = _chapter_tags(live, chapter_dir / "map.wbox", blocks, boat, favorite, just_designated, prior, age_id)
 
         # No `age_label`: the panel translates `world.metadata.age_id`. No `title` either: the H1 of `chapter.md` is the title, and nothing reads a copy of it.
         chapter_json = {

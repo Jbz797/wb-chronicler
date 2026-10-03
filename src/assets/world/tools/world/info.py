@@ -108,7 +108,7 @@ _CUMULATIVE_COUNTERS = {
     "wars_started": "warsStarted",
 }
 
-# Chronicler key => WB save field: the 16 rows of WB's « Deaths » panel, and the Grin Reaper's, which it leaves out; `water` is hydrophobic damage, not `drowning`.
+# Chronicler key => WB save field: its « Deaths » rows less « Other », never written, plus the Grin Reaper's it omits; `water` is hydrophobic damage, not `drowning`.
 _DEATH_CAUSES = {
     "acid": "deaths_acid",
     "divine": "deaths_divine",
@@ -121,7 +121,6 @@ _DEATH_CAUSES = {
     "hunger": "deaths_hunger",
     "infection": "deaths_infection",
     "old_age": "deaths_age",
-    "other": "deaths_other",
     "plague": "deaths_plague",
     "poison": "deaths_poison",
     "tumor": "deaths_tumor",

@@ -102,7 +102,6 @@ export const DEATH_CAUSES: { key: DeathCause; label: string }[] = [
   { key: 'hunger', label: 'ui_hunger' },
   { key: 'infection', label: 'ui_infection' },
   { key: 'old_age', label: 'ui_old_age' },
-  { key: 'other', label: 'ui_others' },
   { key: 'plague', label: 'ui_plague' },
   { key: 'poison', label: 'ui_poison' },
   { key: 'tumor', label: 'ui_tumor' },
