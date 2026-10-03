@@ -40,6 +40,7 @@ Each chapter is a self-contained folder under `saves/C<n>/` carrying its own nar
 > - **French or English.** One setting, `lang` in `history/settings.json`, governs both sides: the chronicler answers and writes its chapters in it, the reader's panels follow. Pick it from the settings panel, which will not save without one.
 > - **Developer mode.** A second setting, `dev`, says who the reader is for. Left off — the ordinary case — the Précepte pages stay out of the nav and the chronicler delivers the chapter and nothing beside it. Turned on, the manual, the tag list and the tooling docs are there to read, and the chronicler may close on what it would see improved in the scripts or the docs.
 > - **macOS, Windows and Linux.** The reader finds the WorldBox saves this machine holds, a Proton prefix on Linux included.
+> - **Audit sub-agents are deleted.** When a new chapter opens, the chronicler's script removes the transcripts of the sub-agents its own session spawned (under `~/.claude/projects/`), so that an auditor of a past chapter is never woken again. Nothing else there is touched.
 
 ## State lives on disk, not in context
 

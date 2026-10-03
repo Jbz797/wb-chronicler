@@ -4,14 +4,17 @@
 # The recap steers the chronicler's analysis; `--finalize` then lays out step 5 and hands the audit to `docs/review.md`, `--deliver` the delivery.
 
 import json
+import os
 import random
 import re
 import shutil
 import sqlite3
 import subprocess
 import sys
+import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
 from datetime import datetime, timezone
 from math import inf
 from pathlib import Path
@@ -133,7 +136,6 @@ _FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--res
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
-_KEPT_STATS = frozenset({"custom_data", "is_world_ages_paused"})  # a dict and a player preference, both of which a numeric sweep would flatten
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
 _LAND_PER_KINGDOM = 52_044  # a quarter of what a map carries once grown — measured at ~12k land tiles per crown on two worlds
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
@@ -164,6 +166,7 @@ _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # the reader's 
 _SHORT_AGES = frozenset({"age_despair", "age_ice"})
 _SHORT_AGE_YEARS = (30, 40)
 _STAMP_SLACK = 1  # seconds a mod's stamp may stray from the save's own time: WB stores it less finely, a save from before lies years off
+_SUBAGENT_GRACE = 120  # seconds: a transcript written this lately may be a sub-agent still at work, not to be pulled from under it
 _SUMMARY_CAP = 400
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
@@ -208,6 +211,7 @@ def _bare_world(save: dict, name: str, description: str) -> None:
         save[key] = []
 
     stats = save["mapStats"]
+    stats.pop("is_world_ages_paused", None)  # WB's own « running »: the player's wheel alone writes it, so a pause carried over would still the new world's ages
     _reset_counters(stats)
     stats["current_world_ages_duration"] = _age_duration(_AGE_SLOTS[0])
     stats["description"] = description or stats.get("description") or ""
@@ -380,6 +384,24 @@ def _fired_alerts(save: dict, realm: int | None) -> list[str]:
     return [code for code, spec in standing.items() if spec["condition"](pops, quota, own)]
 
 
+# Deletes the transcripts of the sub-agents this session spawned → how many: Claude Code dismisses none, and one stays wakeable while its transcript stands.
+def _forget_subagents() -> int:
+    session = os.environ.get("CLAUDE_CODE_SESSION_ID")
+    home = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+    # Claude Code files a session under its launch directory, every character but letters and digits dashed: a session opened elsewhere keeps its own.
+    folder = home / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(SAVES_DIR.parent.resolve())) / (session or "") / "subagents"
+    if not session or not folder.is_dir():
+        return 0
+    now, gone = time.time(), 0
+    for transcript in folder.glob("agent-*.jsonl"):
+        with suppress(OSError):  # one that will not go is left there: this runs inside the build, where a fault would tear the chapter down
+            if now - transcript.stat().st_mtime > _SUBAGENT_GRACE:
+                transcript.unlink()
+                transcript.with_name(f"{transcript.stem}.meta.json").unlink(missing_ok=True)
+                gone += 1
+    return gone
+
+
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
 def _kingdom_quota(save: dict) -> int:
     sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
@@ -420,11 +442,11 @@ def _print_bullets(lines: tuple[str, ...]) -> None:
 
 
 # The recap's closing lines: a favorite's choice first, then step 3's commands and files, and step 4's bounds — with its shape while no favorite stands.
-def _print_next_step(n: int, live: dict, favorite: dict | None) -> None:
+def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
-    if n > 1:  # each sub-agent kept alive weighs on the session, and a delivered chapter owes its auditors nothing more
-        print(f"  → chronicler: first, close the audit sub-agents of C{n - 1} and forget their ids — a later retouch of a delivered chapter takes fresh ones")
+    if forgotten:
+        print(f"  → chronicler: {forgotten} sub-agents of earlier work deleted — forget their ids")
     if favorite is None and any(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a)):
         print("  → chronicler: choose a favorite before a single word — your pick, not the player's:")
         _print_bullets(_CHOICE)
@@ -573,7 +595,7 @@ def _rename_world(live_wbox: Path, name: str, description: str) -> int:
 # Zeroed by type rather than by name: WB adds counters between versions, and a hardcoded list would leave the new ones running. `id_*` restarts at 1, the rest at 0.
 def _reset_counters(stats: dict) -> None:
     for key, value in stats.items():
-        if key in _KEPT_STATS or isinstance(value, bool):  # `bool` subclasses `int`, so it has to be spared before the number test, not after
+        if isinstance(value, bool):  # `bool` subclasses `int`, so it has to be spared before the number test, not after
             continue
         if isinstance(value, int):
             stats[key] = 1 if key.startswith("id_") else 0
@@ -601,12 +623,11 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     print(f"  named: {stats['name'] or '—'}")
     if name or description:  # his own words, written before any audit stood and read by none after: checked here, the game still closed for the mending
         print("  → chronicler, first, the game still closed: a fresh sub-agent checks them — `Lis docs/audit/facts.md — history/world.json (description, name)`")
-        print('    a gap is mended with `tools/chapter/new.py --name "…" --description "…"`, either alone leaving the other; settled, close that sub-agent')
+        print('    a gap is fixed with `tools/chapter/new.py --name "…" --description "…"`, either alone leaving the other; the first chapter deletes the sub-agent')
 
-    # WB may re-pause the ages on a year-1 load, so no flag set here holds, and it alone redraws preview.png: the wheel first, then the re-save the chapter archives.
-    print("  → player, in this order: 1. reopen the save in WorldBox and press play on the age wheel if paused — the reset may pause it, and the age never turns")
-    print("                           2. save again — the chapter then archives the world as it now stands")
-    print("  → chronicler: once he has done both, `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
+    # The game alone redraws preview.png and has the mods stamp the save: hence the re-save, which is the one the chapter archives.
+    print("  → player: reopen the save in WorldBox and save again — the chapter then archives the world as it now stands")
+    print("  → chronicler: once he has, `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
     return 0
 
 
@@ -807,6 +828,9 @@ def main(argv: list[str]) -> int:
     live = load_save(live_wbox)
     # A world the mods do not run on is not the one the chronicle follows: clouds seed it elsewhere, and every load unmakes what its bodies were at.
     if off := _mods_off(live):
+        if not live["mapStats"].get("world_time"):  # a reset zeroes the clock and leaves the old stamps: no game has written this save since
+            print("✗ the world has not been saved since its reset — player: reopen it in WorldBox and save again", file=sys.stderr)
+            return 1
         print(f"✗ the save was written without {' and '.join(off)} — no chapter is written on such a save", file=sys.stderr)
         print("  → player: its README tells how to install it — or the chronicler can install it for you, just ask", file=sys.stderr)
         print("  → player: then restart the game (a mod only loads when it starts), load the world and save again", file=sys.stderr)
@@ -893,7 +917,7 @@ def main(argv: list[str]) -> int:
         _write_index()
 
         _print_report(n, world_time, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, prev_world)
-        _print_next_step(n, live, favorite)
+        _print_next_step(n, live, favorite, _forget_subagents())
         return 0
     except BaseException as fault:  # a crash or a Ctrl-C halfway, which `_abandon` never sees: the half-built folder goes the same way, the fault still surfacing
         shutil.rmtree(chapter_dir, ignore_errors=True)
