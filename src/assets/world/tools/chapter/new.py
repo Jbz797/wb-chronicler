@@ -162,6 +162,7 @@ _RESET_PROMPT = (
     "    the mood or whatever outlasts the ages, never the age itself. Yours alone to choose — his yes was the agreement.",
 )
 
+_SEEDED = ("islands", "lakes", "rivers", "seas")  # the gazetteer's books the survey seeds by id, `places` being the chronicler's own
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # the reader's settings, where the player's workshop switch sits beside the live save's path
 _SHORT_AGES = frozenset({"age_despair", "age_ice"})
 _SHORT_AGE_YEARS = (30, 40)
@@ -275,6 +276,17 @@ def _chapter_tags(live: dict, blocks: dict, boat: dict | None, favorite: dict | 
     return tags + _fired_alerts(live, realm)
 
 
+# A seeded land or water the chronicler has just named takes this chapter for its own → the names dated: his to give, the date the map shows them from ours.
+def _dated_places(n: int) -> list[str]:
+    places = json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
+    fresh = [entry for book in _SEEDED for entry in (places.get(book) or {}).values() if entry.get("name") and not entry.get("chapter")]
+    for entry in fresh:
+        entry["chapter"] = f"C{n}"
+    if fresh:
+        _PLACES_JSON.write_text(render(places) + "\n")
+    return [entry["name"] for entry in fresh]
+
+
 # The close of the audit, once its last round is settled: step 5 checked again and the chapter's floor, the audit having maybe moved both, then the hand-back.
 def _deliver() -> int:
     if not (n := latest_chapter()):
@@ -356,8 +368,11 @@ def _finalize() -> int:
         return 1
     lang = _settings().get("lang", "")
     _tidy_cards(n)
+    dated = _dated_places(n)  # once the gazetteer is known to parse
     facts = _step_five_facts(n, lang)
     print(f"✓ C{n} — step 5")
+    if dated:
+        print(f"  ✓ places.json: {', '.join(dated)} dated C{n}")
     _print_step_five(n, facts)
     # Counted before the audit reads the chapter, so the chronicler weighs his own repeats first.
     if counts := {key: len(rows) for key, rows in (echoes(n) or {}).items() if rows}:
@@ -669,7 +684,7 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
     _write_world(live)
     # His toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge. A book an older gazetteer lacks joins it.
     places = json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
-    if missing := [book for book in ("islands", "lakes", "rivers", "seas") if book not in places]:
+    if missing := [book for book in _SEEDED if book not in places]:
         if (surveyed := _run("geography/info.py", "islands,waters", chapter)) is None:  # seeded once and never again: an empty survey would stay empty
             return "geography/info.py islands,waters"
         found = {**(surveyed.get("waters") or {}), "islands": surveyed.get("islands")}
