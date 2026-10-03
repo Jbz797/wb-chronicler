@@ -86,6 +86,9 @@ _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a worl
     "weighed in depth: traits, political standing, narrative promise, age, where it stands, what surrounds it…",
     "the world's first favorite also needs room for a village — a fitting biome around it, resources, obstacles at a distance; later ones, while nothing is built",
 )
+# What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
+_DEATH = "the death section opens the chapter: how he died, pieced together as far as the data allow (§ Déduction des meurtres), what he leaves, the handover"
+
 _DESCRIPTOR_CAP = 64
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
@@ -183,10 +186,12 @@ _TRAIT_SOURCES = {
     "subspecies": ("subspecies", ("saved_actor_birth_traits", "saved_traits")),
 }
 
-_WORLD_ONLY = (  # the chapter while no favorite stands: the world itself, in two parts — in no doc either, a world having one most of its life
+_WORLD_ONLY = (  # the chapter while no favorite stands — in no doc, a world having one most of its life: the recap says it, the targets hand it to the audit
     "the world's news: its lands, beasts and plants, the thinking kinds' first steps and meetings, deaths, births…",
     "the thinking kinds: the most promising if they are many, and why none carries the chronicle yet",
+    "no circles: a single `---`, before the closing paragraph",
 )
+
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity and span, off the save each chapter — the reader shows the name, the chronicler the rest
 
 
@@ -384,7 +389,10 @@ def _finalize() -> int:
         return 0
     # The run of the audit is `docs/review.md`'s, kept from the auditors: only the targets, which change with each chapter, are said here.
     written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
-    print(f"  → the audit, until delivery: docs/review.md — its <cibles> are saves/C{n}/chapter.md{written}")
+    # What the recap asked of this chapter alone goes with its target: the auditors never see the recap.
+    asked = ([] if facts["favorite"] else [f"no favorite: {' / '.join(_WORLD_ONLY)}"]) + ([f"favorite dead: {_DEATH}"] if facts["mourned"] else [])
+    shape = f" [{' — '.join(asked)}]" if asked else ""
+    print(f"  → the audit, until delivery: docs/review.md — its <cibles> are saves/C{n}/chapter.md{shape}{written}")
     return 0
 
 
@@ -456,7 +464,7 @@ def _print_bullets(lines: tuple[str, ...]) -> None:
     print("\n".join(f"    · {line}" for line in lines))
 
 
-# The recap's closing lines: a favorite's choice first, then step 3's commands and files, and step 4's bounds — with its shape while no favorite stands.
+# The recap's closing lines: a favorite's choice first, then step 3's commands and files, step 4's bounds — its shape while no favorite stands — and step 5.
 def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) -> None:
     # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     thinking = index_by_id(live.get("subspecies") or [])
@@ -481,10 +489,13 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
         print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id: names repeat")
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `history/watches.md`")
-    told = "" if fav_id else " — no favorite, so the world itself, in two parts:"
+    told = "" if fav_id else " — no favorite, so the world itself, in two parts and no circle:"
     print(f"  → step 4, the writing: {CHAPTER_FLOOR} to {CHAPTER_CAP} characters, blanks folded, counted at delivery, past the audit{told}")
     if not fav_id:
         _print_bullets(_WORLD_ONLY)
+    # In no doc: the cycle is the script's to tell, step by step. A chapter still under its draft title reads as unfinished, to the reader and to `--finalize`.
+    draft = _DRAFT_HEADINGS.get(_settings().get("lang", ""), "Draft")
+    print(f"  → step 5, once written under the H1 `# {draft}`, kept till then: `tools/chapter/new.py --finalize`, followed to delivery")
 
 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.
@@ -582,9 +593,8 @@ def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -
     if n == 1:
         return "first chapter"
     if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
-        if fav_id is None:  # the pick itself is the closing block's, printed only while a thinking soul is left to pick
-            return "the favorite has left the world"
-        return "successor to one who has left the world: open on that death before the tiers"
+        # The pick itself is the closing block's, printed only while a thinking soul is left to pick.
+        return f"{'the favorite has' if fav_id is None else 'successor to one who has'} left the world — {_DEATH}"
     return "yet to be designated" if fav_id is None else ""
 
 
@@ -717,7 +727,8 @@ def _step_five_facts(n: int, lang: str) -> dict:
     draft = _DRAFT_HEADINGS.get(lang, "Draft")
     favorite, before = chapter.get("favorite") or {}, prior.get("favorite") or {}
     descriptor = favorite.get("descriptor")
-    carried = bool(descriptor) and (before.get("metadata") or {}).get("id") == (favorite.get("metadata") or {}).get("id") and descriptor == before.get("descriptor")
+    same = (before.get("metadata") or {}).get("id") == (favorite.get("metadata") or {}).get("id")  # a favorite stays so until death: another, or none, mourns him
+    carried = bool(descriptor) and same and descriptor == before.get("descriptor")
     written = {tier: summary for tier in _TRAIT_SOURCES if isinstance(summary := (chapter.get(tier) or {}).get("traits"), str)}
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
     h1_length = len(_TAG.sub(lambda m: m[1] or "", h1 or ""))  # as read: a tag in the title shows its name alone, never its markup
@@ -738,6 +749,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "length": chapter_length(prose),
         "long": long,
         "misplaced": misplaced,
+        "mourned": bool(before) and not same,
         "owed": owed,
     }
 
