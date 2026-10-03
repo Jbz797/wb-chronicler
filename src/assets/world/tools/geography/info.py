@@ -118,7 +118,7 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict
 
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject — then the ground none grows on: the shares add up to the land.
 def _build_biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v14", save_path, lambda: _compute_biomes(save, save_path))
+    return pickle_cached("biomes_v15", save_path, lambda: _compute_biomes(save, save_path))
 
 
 # Who lives where, land by land, then on the islets and in the water: the living bodies and how many of them think — a hull carries, it is no body.

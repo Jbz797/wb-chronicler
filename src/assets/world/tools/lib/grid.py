@@ -31,7 +31,7 @@ _FROST_BY_TOP = {
     "snow_summit": "snow",
 }
 
-# Base tile names whose `tile_kind` doesn't follow a prefix rule (`soil_*` → plain, `lava*` → lava) or a suffix rule (`*:road`, `*:field`).
+# Base tile names whose `tile_kind` doesn't follow a prefix rule (`soil_*` → plain, `lava*` → lava, `pit_*` → pit) or a suffix rule (`*:road`, `*:field`).
 _KIND_BY_BASE = {
     "close_ocean": "water",
     "deep_ocean": "water",
@@ -163,6 +163,8 @@ def tile_kind(tile_name: str) -> str:
         return suffix
     if base.startswith("lava"):
         return "lava"
+    if base.startswith("pit_"):  # WB's dry hole at a seabed's depth: ground till the sea fills it, whatever the depth its id names
+        return "pit"
     if base.startswith("soil_"):
         return "plain"
     return _KIND_BY_BASE.get(base, base)
