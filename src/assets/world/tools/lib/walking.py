@@ -18,6 +18,7 @@ from shared import DIAGONAL_EXTRA, building_tile, world_laws
 _BARRED, _WATER, _OPEN = 0, 1, 2  # a tile's class: `_OPEN` and above walk, each slow ground past it holding its own
 _CHUNK = 16  # WB's `CHUNK_SIZE`: its regions never span two chunks, and neither do the corners they join by
 _DIAGONAL = 1 + DIAGONAL_EXTRA
+_DRY_FIRST = 1e-6  # what a stroke costs over a step: of two ways of one cost the drier wins, whatever goals the search was aimed at
 _OUT_OF_BREATH = 0.4  # WB's pace for a swimmer whose stamina has run out
 
 _SLOW_GROUNDS = {
@@ -251,7 +252,7 @@ class WalkMap:
         land = [inf, inf, pace(1.0), *map(pace, grounds)]
         tangle = _TANGLE if self._tangling and not aloft else 1.0
         tangled = [inf, inf, pace(tangle), *(pace(factor * tangle) for factor in grounds)]
-        swim = pace(_SWIFT_SWIM if swift else 1.0)
+        swim = pace(_SWIFT_SWIM if swift else 1.0) * (1 + _DRY_FIRST)
         return Gait(land, tangled, swim, swim if swift or aloft else pace(_OUT_OF_BREATH), breath, reach)
 
     def wet(self, x: int, y: int) -> bool:

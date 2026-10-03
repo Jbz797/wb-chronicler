@@ -439,11 +439,17 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
         return {**to, "circle": _circle(actor, ctx, crow / per_hour, home != island_of.get(goal), lambda: None), **trip_time(per_hour, crow)}
     walk_map = ctx["walk_map"]()
     goals = {y * walk_map.width + x for x, y in aims}
-    # WB walks round the bays of his own land, and swims only toward another: an islet of his, small, is tried on foot before the water.
-    shore = not walk_map.wet(cx, cy) and (home is None or home == island_of.get(goal))
-    way = walk_way(walk_map, gait.ashore(), cx, cy, goals) if shore else None
-    if way is None and not (shore and home is not None):
+    # WB walks round the bays of his own land, and swims only toward another — each aim by its own land, as `_walker` does: of many, the cheapest reached wins.
+    if walk_map.wet(cx, cy):
         way = walk_way(walk_map, gait, cx, cy, goals)
+    elif home is None:  # an islet of his, small, is tried on foot before the water
+        way = walk_way(walk_map, gait.ashore(), cx, cy, goals) or walk_way(walk_map, gait, cx, cy, goals)
+    else:
+        own = {y * walk_map.width + x for x, y in aims if island_of.get((x, y)) == home}
+        # On foot first, the cheap search: the swim toward the other lands, far dearer to draw, then goes no farther than the walk it must beat.
+        way = walk_way(walk_map, gait.ashore(), cx, cy, own) if own else None
+        if (abroad := goals - own) and (swum := walk_way(walk_map, gait, cx, cy, abroad, way[0] if way else inf)) and (way is None or swum < way):
+            way = swum
 
     @cache
     def sailed() -> tuple | None:  # the trip by a crown's hull, walks to and fro counted — asked only once the walk falls past the common circle
