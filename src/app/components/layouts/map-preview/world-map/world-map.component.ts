@@ -97,7 +97,7 @@ export class WorldMapComponent {
     // A name's box settles only once its font is in, and a display face lands after the first draw: each resize of a name asks for the placing again.
     afterRenderEffect((onCleanup) => {
       const observer = new ResizeObserver(() => this._resized.update(count => count + 1));
-      for (const tag of this._tags()) observer.observe(tag.nativeElement);
+      for (const tag of [...this._tags(), this._favoriteTag()]) if (tag) observer.observe(tag.nativeElement); // the favourite's too: the others step off it
       onCleanup(() => observer.disconnect());
     });
 

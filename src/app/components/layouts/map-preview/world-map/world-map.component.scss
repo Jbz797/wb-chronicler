@@ -16,6 +16,7 @@
     border-color: color-mix(in srgb, #fff 25%, transparent);
     padding: 0.25em 0.4em;
     text-box: trim-both cap alphabetic; // trimmed to caps and baseline: each font's line box would sit its text higher or lower
+    transition: none; // ng-zorro eases every property of a tag: a name measured mid-ease is placed on a box it no longer has, and its step off lags behind
   }
 
   .pin {
