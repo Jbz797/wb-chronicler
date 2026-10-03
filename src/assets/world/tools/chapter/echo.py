@@ -142,7 +142,7 @@ def _overused(words: list[_Token], n: int) -> list[dict]:
 # Each line's take from the 2 chapters before, one entry per chapter, each match with its line and signs; a chapter a stronger one covers is dropped
 def _passages(words: list[_Token], n: int) -> list[dict]:
     found: defaultdict[tuple[int, int], list[dict]] = defaultdict(list)
-    for before in range(n - 2 or 1, n):
+    for before in range(max(n - 2, 1), n):
         for (line, at), texts in _runs(words, _words(before)).items():
             found[line, before] += [{"by": {"echo", *(("refrain",) if _refrain(text) else ())}, "from": at, "text": text} for text in texts]
         for line, at, word in _borrowed(words, before):
@@ -339,9 +339,9 @@ def _words(n: int) -> list[_Token]:
     return [token for _, _, sentences in _lines(n) for tokens in sentences for token in tokens]
 
 
-# What chapter `n` says again, `None` where there is no chapter or none before it — `new.py --finalize` counts it before the audit reads the chapter.
+# What chapter `n` says again, `None` where it is not written — the first has only itself to repeat. `new.py --finalize` counts it before the audit reads it.
 def echoes(n: int) -> dict | None:
-    if n < 2 or not (words := _words(n)):
+    if not (words := _words(n)):
         return None
     again: defaultdict[int, list[dict]] = defaultdict(list)  # `line` the one saying it again, `from` the line that said it first
     for (line, at), texts in sorted(_runs(words, words).items()):
@@ -357,7 +357,7 @@ def main(argv: list[str]) -> int:
     if (text := _chapter(n)) is not None and not CHAPTER_FLOOR <= (length := chapter_length(text)) <= CHAPTER_CAP:
         print(f"✗ chapter.md, {length} characters, blanks folded — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
     if (found := echoes(n)) is None:
-        print(f"✗ no chapter.md for C{n}" if n > 1 else "✗ C1 has no chapter before it to take back from", file=sys.stderr)
+        print(f"✗ no chapter.md for C{n}", file=sys.stderr)
         return 1
     emit(found)
     return 0
