@@ -40,10 +40,10 @@
       font-family: $font-body;
       font-size: 0.7cqw;
       font-variant-caps: small-caps;
+      padding-block: 0.4em; // an emoji stands taller than the capitals: room for a full-box one to clear both edges
 
       .emoji {
-        position: relative;
-        top: 1px;
+        position: relative; // stepped by `lifts`, each drawing sitting at its own height in the glyph's box
       }
     }
   }

@@ -13,7 +13,7 @@
       [style.translate]="nudge(pin.key)"
     >
       @if (pin.emoji) {
-        <span class="emoji">{{ pin.emoji }}</span>
+        <span class="emoji" [style.top.em]="lifts()[pin.emoji]">{{ pin.emoji }}</span>
       }
       {{ pin.name }}
     </nz-tag>

@@ -43,6 +43,8 @@ export class WorldMapComponent {
     const extent = this._extent();
     return extent && { ratio: `${extent.width} / ${extent.height}`, width: `min(100vw, ${(100 * extent.width) / extent.height}vh)` };
   });
+  // How far each emoji steps down for its drawing to sit on the middle of the capitals beside it, in `em` — measured, no two being drawn at the same height.
+  protected readonly lifts = signal<Record<string, number>>({});
   // How far each name steps off its point so that none sits on another, in `cqw` — measured once the names are drawn, their size set by their font.
   protected readonly nudges = signal<Record<string, { dx: number; dy: number }>>({});
   // Read at each opening, the chronicler baptising between two chapters: what the picture shows is the gazetteer as it stands.
@@ -96,6 +98,7 @@ export class WorldMapComponent {
       onCleanup(() => observer.disconnect());
     });
 
+    // Placed again as a name resizes: each box is read off the page in `cqw`, then stepped clear of the names it would sit on.
     afterRenderEffect(() => {
       this._resized();
       const [frame, extent, pins, tags] = [this._stage()?.nativeElement, this._extent(), this.pins(), this._tags()];
@@ -113,6 +116,17 @@ export class WorldMapComponent {
         boxes.push({ fixed: true, h: favorite.height / unit, key: 'favorite', w: favorite.width / unit, x, y });
       }
       this.nudges.set(this._placeLabels(boxes));
+    });
+
+    // Measured again as a name resizes: the capitals' height is the font's, which lands after the first draw.
+    afterRenderEffect(() => {
+      this._resized();
+      const spot = this._tags().find(tag => tag.nativeElement.classList.contains('pin-spot'))?.nativeElement;
+      if (!spot) return;
+      const family = getComputedStyle(spot).fontFamily;
+      const capitals = this._inkMiddle('H', family);
+      const emojis = [...new Set(this.pins().flatMap(pin => pin.emoji ?? []))];
+      this.lifts.set(Object.fromEntries(emojis.map(emoji => [emoji, this._inkMiddle(emoji, family) - capitals])));
     });
   }
 
@@ -135,6 +149,20 @@ export class WorldMapComponent {
       return [[0, up], [0, down], [left, 0], [right, 0]];
     })
     .toSorted((a, b) => Math.hypot(...a) - Math.hypot(...b));
+
+  // The middle of a glyph's drawing above its baseline, in `em` — read off a canvas, a font giving every emoji the same box whatever its art.
+  private _inkMiddle(text: string, family: string): number {
+    const [size, side] = [64, 128];
+    const context = Object.assign(document.createElement('canvas'), { height: side, width: side }).getContext('2d', { willReadFrequently: true });
+    if (!context) return 0;
+    context.font = `${size}px ${family}`;
+    context.fillText(text, size / 2, size * 1.5);
+    const { data } = context.getImageData(0, 0, side, side);
+    const isInked = (row: number): boolean => data.subarray(row * side * 4, (row + 1) * side * 4).some((value, index) => index % 4 === 3 && value > 40);
+    const inked = Array.from({ length: side }, (_, row) => row).filter(row => isInked(row));
+    const [top, bottom] = [inked.at(0), inked.at(-1)];
+    return top === undefined || bottom === undefined ? 0 : (size * 1.5 - (top + bottom) / 2) / size;
+  }
 
   private readonly _overlaps = (a: LabelBox, b: LabelBox): boolean => Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2;
 
