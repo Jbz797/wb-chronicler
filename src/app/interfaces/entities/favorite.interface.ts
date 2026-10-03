@@ -75,7 +75,7 @@ interface FavoriteStats {
   mana_max?: number;
   max_children?: number; // absent on a sexed species' male: WB weighs the cap on the one who bears alone, so a sire at his count still fathers
   money?: number;
-  nutrition: number;
+  nutrition?: number; // absent with its cap, on a body with no gut: it never hungers, and the figure WB keeps for it says nothing
   nutrition_max?: number; // WB `Actor.getMaxNutrition`: 100, which `big_stomach` doubles — absent on a body with no gut, which never eats
   renown?: number;
   speed: number;

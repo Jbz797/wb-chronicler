@@ -41,7 +41,6 @@ from shared import (
     asset_kinds,
     asset_sites,
     bearing,
-    breeding_mode,
     build_trait_ids,
     build_trait_list,
     building_tile,
@@ -52,6 +51,7 @@ from shared import (
     entity_ref,
     equipment_entry,
     equipment_rarity,
+    fertile,
     has_emotions,
     index_by_id,
     is_aboard,
@@ -262,11 +262,13 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     tile = actor_xy(actor)
     profession = resolve_profession(actor, save)
 
-    # A breeding trait first, WB granting none without; then `Actor.canBreed`'s age and reserve (a gut-less body fed), `infertile` and the cap on whoever bears.
+    # A lineage that can bear first (`fertile`); then `Actor.canBreed`'s age and reserve (a gut-less body fed), `infertile` and the cap on whoever bears.
+    lineage = ctx["subspecies_by_id"].get(actor.get("subspecies"))
+    lineage_bears = fertile(lineage)
     can_reproduce = (
-        breeding_mode(_biology(actor, ctx)) is not None
+        lineage_bears
         and age >= age_breeding
-        and (not needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) or int(actor.get("nutrition") or 0) >= NEW_BABY_NUTRITION)
+        and (not needs_food(lineage) or int(actor.get("nutrition") or 0) >= NEW_BABY_NUTRITION)
         and (
             _bears(actor, ctx) is not True
             or ("infertile" not in (actor.get("saved_traits") or []) and ctx["children_by_parent"].get(actor.get("id"), 0) < int(snap.get("max_children") or 0))
@@ -283,7 +285,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "asset_id": actor.get("asset_id"),
         "born": world_date(actor.get("created_time") or 0),  # the month WB set it on the map, dated as the chronicle dates: who came first, and when
         # Chronicler-only, and only while it still bites: the date WB opens a body's own line — `adult_on` lifts a bridling and lets it found a town, never bear.
-        **({"breeds_on": crossed_on(actor, age_breeding)} if age < age_breeding else {}),
+        **({"breeds_on": crossed_on(actor, age_breeding)} if age < age_breeding and lineage_bears else {}),
         # Said only when they hold, as every flag the tools emit: a body that cannot is most of the world, beasts and children first.
         **({"can_reproduce": True} if can_reproduce else {}),
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
@@ -312,7 +314,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "personality": _compute_personality(actor, snap),
         "religion": entity_ref(actor.get("religion"), ctx["religions_by_id"]),  # a ref, not a bare name: `religion/info.py <id>` reads the creed it holds
         "roles": _compute_roles(actor, save),
-        "sapient": is_sapient(ctx["subspecies_by_id"].get(actor.get("subspecies"))),  # tells a builder of cities from a beast, and gates his person tag
+        "sapient": is_sapient(lineage),  # tells a builder of cities from a beast, and gates his person tag
         # Chronicler-only, a thinker's alone: whether a town could rise where it stands, else what bars it — the zone weighed even for a child.
         **settle_told(settle_gates(actor, ctx)),
         "sex": sex_label(actor),
@@ -559,7 +561,7 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
     return [role for role in _ROLE_ORDER if checks[role]]
 
 
-# `compute_actor_stats` hands back the cleaned pipeline — what the save carries on the body is appended here: the five vitals always, life's tallies above nought.
+# Onto `compute_actor_stats`' cleaned pipeline, what the save carries on the body: its vitals, a gut's reserve, tallies above nought.
 def _compute_stats(actor: dict, ctx: dict) -> dict:
     cleaned = compute_actor_stats(actor, ctx)
     if not cleaned:
@@ -580,7 +582,8 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
             **({"loot": n} if (n := int(actor.get("loot") or 0)) else {}),
             "mana": int(actor.get("mana") or 0),
             **({"money": n} if (n := int(actor.get("money") or 0)) else {}),
-            "nutrition": int(actor.get("nutrition") or 0),
+            # Its reserve only where it has a gut: on a body that never hungers WB leaves the figure standing, and it says nothing.
+            **({"nutrition": int(actor.get("nutrition") or 0)} if "nutrition_max" in cleaned else {}),
             **({"renown": n} if (n := int(actor.get("renown") or 0)) else {}),
             "stamina": int(actor.get("stamina") or 0),
         }

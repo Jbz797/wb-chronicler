@@ -133,6 +133,11 @@ def _book_reach(save: dict, author_field: str, living: set, holder_of) -> Counte
     return reach
 
 
+# A lineage's breeding traits: WB's `reproduction_*`, less the `reproduction_strategy_*` that say how a birth comes and not who bears it.
+def _breedings(traits: Collection[str]) -> set[str]:
+    return {trait for trait in traits if trait.startswith("reproduction_") and not trait.startswith("reproduction_strategy")}
+
+
 # The live save: `WB_SAVE` first, else what the reader's settings panel recorded — never guessed from the platform. A `C<n>` in argv beats both, wherever it sits.
 def _current_save() -> Path | None:
     if override := os.environ.get("WB_SAVE"):
@@ -398,7 +403,7 @@ def books_held(save: dict) -> tuple[Counter, Counter, dict[int, int]]:
 
 # How a lineage breeds: `mate`, `alone` (fission, spores…) or `None` — WB grants each breeding by its trait (`addReproduction`), so without one it never breeds.
 def breeding_mode(traits: Collection[str]) -> str | None:
-    modes = {trait for trait in traits if trait.startswith("reproduction_") and not trait.startswith("reproduction_strategy")}
+    modes = _breedings(traits)
     return "mate" if modes & _MATE_BREEDINGS else "alone" if modes else None
 
 
@@ -606,6 +611,11 @@ def equipment_rarity(modifiers: list[str]) -> str:
     if max_level >= 3:
         return "Rare"
     return "Normal"
+
+
+# Whether a lineage can ever bear: a breeding trait first, WB granting none without, and for spores the meal they wait on.
+def fertile(subspecies: dict | None) -> bool:
+    return breeding_mode((subspecies or {}).get("saved_traits") or ()) is not None and not spores_unfed(subspecies)
 
 
 # A tally's first place, ex æquo ordered by key — nobody past `PODIUM_PLACES` sharing it, nor under `min_peers` rivals: the best of a handful is a draw of lots.
@@ -1088,6 +1098,11 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
 # WB omits default values at save time: an absent `sex` IS male (0) — every species has sexed members, living swords included.
 def sex_label(actor: dict) -> str:
     return "female" if actor.get("sex") == 1 else "male"
+
+
+# Spores alone and no stomach: WB lets them go off a body that `just_ate` only, a status a meal gives and sunlit skin never does — such a lineage bears no one.
+def spores_unfed(subspecies: dict | None) -> bool:
+    return _breedings((subspecies or {}).get("saved_traits") or ()) == {"reproduction_spores"} and not needs_food(subspecies)
 
 
 # WB `ListSorters.sortUnitsSortedByAgeAndTraits`: age, then a trait re-sorts on renown/stat/coins, then sex — sorted last, so it wins. Callers pick the pool.

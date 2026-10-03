@@ -49,6 +49,7 @@ from shared import (
     city_score_dimensions,
     civic_building_ids,
     emit,
+    fertile,
     first_place,
     index_by_id,
     is_aboard,
@@ -66,6 +67,7 @@ from shared import (
     rounded_world_time,
     score_totals,
     sex_label,
+    spores_unfed,
     take_chapter,
     take_since,
     unranked,
@@ -279,6 +281,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
     # Traits and breeding are a lineage's, read once each: a kind's bodies share a handful of lineages, and every pair below asks of both.
     traits = {sub["id"]: frozenset(sub.get("saved_traits") or ()) for sub in save.get("subspecies") or []}
     mode, empty = {sid: breeding_mode(lineage) for sid, lineage in traits.items()}, frozenset()
+    unfed = {sub["id"] for sub in save.get("subspecies") or [] if spores_unfed(sub)}  # spores no meal will ever let go: no date to give them
     carry = {sid: maturation_months(lineage, ctx) * UNITS_PER_MONTH if _carried(lineage) else 0 for sid, lineage in traits.items()}  # the bearer's sets it
     rows: list[tuple[float, dict]] = []
     now = ctx["world_time"]  # a birth is today's at the earliest — and may be, WB saving no status: a `pregnant` begun before the save shows nowhere
@@ -288,9 +291,10 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         mating = [actor for actor in bodies if mode.get(actor.get("subspecies")) == "mate"]
         row: dict = {"asset_id": kind}
         births = []
-        if lone := [actor for actor in bodies if mode.get(actor.get("subspecies")) == "alone"]:  # a lineage breeding alone needs no one
-            row["alone_on"] = min(ready[actor["id"]] for actor in lone)
-            births += [max(ready[actor["id"]] + carry.get(actor.get("subspecies"), 0), now) for actor in lone]
+        lone = [actor for actor in bodies if mode.get(actor.get("subspecies")) == "alone"]
+        if fed := [actor for actor in lone if actor.get("subspecies") not in unfed]:  # a lineage breeding alone needs no one
+            row["alone_on"] = min(ready[actor["id"]] for actor in fed)
+            births += [max(ready[actor["id"]] + carry.get(actor.get("subspecies"), 0), now) for actor in fed]
         sexed = {actor["id"]: _SEXED in traits.get(actor.get("subspecies"), empty) for actor in mating}
         bars = {actor["id"]: _breeding_bars(actor, ctx, island_of, grid, save["tileMap"]) for actor in mating}
         # WB's law on babies, a beast's or a thinker's, read off the kind's first lineage that mates — every one of a kind thinks or none does.
@@ -333,6 +337,8 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         elif mating:  # a partner wanted, none to be had: a sexed kind of one sex says which, else blood or pledges bar every pair
             sexes = {sex_label(actor) for actor in mating}
             row["missing"] = ({"female": "male", "male": "female"}[sexes.pop()]) if len(sexes) == 1 and all(sexed.values()) else "partner"
+        elif not fed:  # breeding alone, but by spores a body with no stomach never sheds
+            row["missing"] = "meal"
         # A barren lineage beside fertile ones, its bodies by lineage: WB wants `needs_mate` of both lovers, so none of them ever pairs, not even across lineages.
         if (mating or lone) and (barren := Counter(sid for actor in bodies if (sid := actor.get("subspecies")) is not None and mode.get(sid) is None)):
             row["barren"] = {str(sid): count for sid, count in sorted(barren.items())}  # ids as JSON keys, in their numeric order
@@ -426,6 +432,7 @@ def _build_roster(
             return crossed_at(body[0], adult_age(body[0], ctx)), body[0]["id"]
         return isinstance(body[1], str), body[1], body[0]["id"]
 
+    lineages = ctx["subspecies_by_id"]
     for actor, here, change in sorted(bodies, key=order):
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
         stage = _stage(actor, ctx, age, adult)
@@ -434,7 +441,7 @@ def _build_roster(
                 "adult_on": crossed_on(actor, adult) if age < adult else None,
                 "asset_id": None if one_kind else actor.get("asset_id"),
                 # Under `--barred`, what founding weighs alone: no mate nor sex, and `adult_on` says the youth — its gates keep each line inline
-                "breeds_on": crossed_on(actor, breeding) if age < breeding and not barred else None,
+                "breeds_on": crossed_on(actor, breeding) if age < breeding and not barred and fertile(lineages.get(actor.get("subspecies"))) else None,
                 "id": actor["id"],
                 # Said outright beside a `was_on`, a missing one reading as still on the land left; silent where `-i` already named it
                 "island_id": None if here == asked and "was_on" not in change else here,

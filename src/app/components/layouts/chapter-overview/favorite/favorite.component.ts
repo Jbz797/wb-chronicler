@@ -114,7 +114,7 @@ export class FavoriteComponent {
   // A share of the body's own cap — `big_stomach` doubles it, so the raw count reads as a percentage only on a narrow stomach.
   protected readonly nutritionPct = computed(() => {
     const stats = this.currentChapter()?.meta.favorite?.stats;
-    return stats?.nutrition_max ? Math.round((100 * stats.nutrition) / stats.nutrition_max) : 0;
+    return stats?.nutrition_max ? Math.round((100 * (stats.nutrition ?? 0)) / stats.nutrition_max) : 0;
   });
   // Names the post `tenure_years` counts — only kings/leaders/captains hold one, so the fallback never surfaces.
   protected readonly tenureLabel = computed(() => {
