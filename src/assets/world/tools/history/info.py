@@ -58,7 +58,37 @@ _SECTIONS = ("dead_kingdoms", "entity", "log", "world")
 _SKIPPED = frozenset({"auto", "id", "timestamp"})  # WB's row bookkeeping: `auto` flags a row it wrote itself, and says nothing of the world
 _STAT_KEYS = {"deaths_natural": "deaths_age", _DEATHS_TOTAL: "deaths"}  # the yearly columns `mapStats` names otherwise: old age, and the bare total
 _STEPS = (1, 5, 10, 50, 100, 500, 1000, 5000, 10000)  # WB's table suffixes, each keeping a window of the last rows at that step
-_WORLD_RENAMED = {"houses_built": "buildings_built", "houses_destroyed": "buildings_destroyed"}  # `world … cumulative`'s names: WB's houses are all its buildings
+
+# WB's columns under the names `world`'s own sections tell them by: its houses are all its buildings, its two populations the thinking and the wild.
+_WORLD_RENAMED = {
+    "houses": "buildings",
+    "houses_built": "buildings_built",
+    "houses_destroyed": "buildings_destroyed",
+    "population_beasts": "wild_creatures",
+    "population_civ": "sapient_population",
+}
+
+# What a year's row closed on, as `world … snapshot` tells today's — WB's fifty-odd counts of tiles and biomes are left out.
+_WORLD_STATES = (
+    "alliances",
+    "books",
+    "cities",
+    "clans",
+    "cultures",
+    "families",
+    "houses",
+    "infected",
+    "kingdoms",
+    "languages",
+    "plots",
+    "population_beasts",
+    "population_civ",
+    "religions",
+    "subspecies",
+    "trees",
+    "vegetation",
+    "wars",
+)
 
 
 # WB's crowns once raised, fallen ones with their dates — the one record a fallen crown keeps once its years are gone.
@@ -122,7 +152,7 @@ def _build_log(save: dict, since: str | None, actor: int | None, event: str | No
     return entries
 
 
-# The world's years: what each one saw born, raised, razed or dying, as gains — the one under way, which has no row yet, off the save's own tallies.
+# The world's years: what each one saw born, raised, razed or dying, as gains, and what it closed on — the one under way, with no row yet, off the save's tallies.
 def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     map_stats = save.get("mapStats") or {}
     closed = _closed_year(save)
@@ -134,7 +164,11 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     for row in rows:
         now = {c: row[c] for c in tracked}
         if gains := _with_unknown(_gains(before, now, events), before, now):
-            timeline.append({**gains, "until": _until(row["timestamp"])})
+            at_close = {_WORLD_RENAMED.get(column, column): row[column] for column in _WORLD_STATES if row.get(column)}
+            # WB's `vegetation` counts its trees in, where `snapshot` tells them apart — and a nought goes unsaid.
+            if (plants := at_close.pop("vegetation", 0) - at_close.get("trees", 0)) > 0:
+                at_close["vegetation"] = plants
+            timeline.append({**gains, "at_close": at_close, "until": _until(row["timestamp"])})
         before = now
     # WB's `mapStats` holds the same tallies in camelCase, the deaths snake-cased — two of them under names of their own.
     keys = {c: _STAT_KEYS.get(c) or (c if c.startswith("deaths_") else _camel(c)) for c in tracked}
@@ -255,7 +289,7 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     with sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True) as conn:
         if args.section == "world":
-            out = _build_world(conn, save)
+            out = _build_world(conn, save) or "✗ no year closed, and nothing born, raised or dead yet"
         elif args.section == "log":
             out = _build_log(save, since, args.actor, args.type)
         elif args.section == "dead_kingdoms":
