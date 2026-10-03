@@ -211,11 +211,11 @@ def _until(year: int) -> str:
     return f"y{year} m11"
 
 
-# A year's deaths WB counted in its total and filed under no cause, as `world … cumulative` says them: the causes then sum to the total.
+# A year's deaths WB filed under no cause, as `world … cumulative` says them — its total less the metamorphoses it counts in: the causes then sum to the true deaths.
 def _with_unknown(gains: dict, before: dict, now: dict) -> dict:
     if before.get(_DEATHS_TOTAL) is None or now.get(_DEATHS_TOTAL) is None:
         return gains
-    if (unknown := now[_DEATHS_TOTAL] - before[_DEATHS_TOTAL] - sum((gains.get("deaths") or {}).values())) > 0:
+    if (unknown := now[_DEATHS_TOTAL] - before[_DEATHS_TOTAL] - gains.get("metamorphosis", 0) - sum((gains.get("deaths") or {}).values())) > 0:
         gains.setdefault("deaths", {})["unknown"] = unknown
     return gains
 

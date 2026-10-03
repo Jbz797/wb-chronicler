@@ -106,7 +106,7 @@ _CUMULATIVE_COUNTERS = {
     "wars_started": "warsStarted",
 }
 
-# Chronicler key => WB save field. Mirrors the 16 rows of WB's « Deaths » panel; `water` is hydrophobic damage (separate from `drowning`).
+# Chronicler key => WB save field: the 16 rows of WB's « Deaths » panel, and the Grin Reaper's, which it leaves out; `water` is hydrophobic damage, not `drowning`.
 _DEATH_CAUSES = {
     "acid": "deaths_acid",
     "divine": "deaths_divine",
@@ -115,6 +115,7 @@ _DEATH_CAUSES = {
     "explosion": "deaths_explosion",
     "fire": "deaths_fire",
     "gravity": "deaths_gravity",
+    "grin_reaper": "deaths_smile",
     "hunger": "deaths_hunger",
     "infection": "deaths_infection",
     "old_age": "deaths_age",
@@ -196,8 +197,8 @@ def _build_boats(save: dict, requested: str | None) -> dict:
 def _build_cumulative(map_stats: dict) -> dict:
     out: dict = {k: v for k, src in _CUMULATIVE_COUNTERS.items() if (v := int(map_stats.get(src) or 0)) > 0}
     out["deaths"] = {k: v for k, src in _DEATH_CAUSES.items() if (v := int(map_stats.get(src) or 0)) > 0}
-    # WB `Actor.countDeath` raises the total at every death but files some attack types under no cause: what the causes leave of it, so they sum to it.
-    if (unknown := int(map_stats.get("deaths") or 0) - sum(out["deaths"].values())) > 0:
+    # WB `Actor.countDeath` counts a metamorphosis as a death and files `Other`, `AshFever` and `None` under no cause: what the causes leave of the true deaths.
+    if (unknown := int(map_stats.get("deaths") or 0) - out.get("metamorphosis", 0) - sum(out["deaths"].values())) > 0:
         out["deaths"]["unknown"] = unknown
     return out
 

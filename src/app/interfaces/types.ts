@@ -20,7 +20,7 @@ export type ClanRegistry = Record<string, ClanInfo>;
 export type CultureRegistry = Record<string, CultureInfo>;
 export type CumulativeStat = 'books_burnt' | 'books_read' | 'cities_conquered' | 'cities_rebelled' | 'evolutions' | 'metamorphosis' | 'plots_succeeded';
 
-export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' | 'fire' | 'gravity' | 'hunger'
+export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' | 'fire' | 'gravity' | 'grin_reaper' | 'hunger'
   | 'infection' | 'old_age' | 'other' | 'plague' | 'poison' | 'tumor' | 'unknown' | 'water' | 'weapon';
 
 export type FamilyRegistry = Record<string, FamilyInfo>;
