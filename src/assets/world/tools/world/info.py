@@ -145,7 +145,7 @@ _ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too
 # The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
-_ON_REQUEST = ("pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll of bodies is no chapter's to carry
+_ON_REQUEST = ("laws", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll of bodies is no chapter's to carry
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
 _SINCE_SECTIONS = ("cumulative", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll, and two counts weighed chapter against chapter
 
@@ -200,6 +200,13 @@ def _build_cumulative(map_stats: dict) -> dict:
     if (unknown := int(map_stats.get("deaths") or 0) - sum(out["deaths"].values())) > 0:
         out["deaths"]["unknown"] = unknown
     return out
+
+
+# The laws by WB's own English title, the label a wiki row goes by, split by state — the age switches of the same list left out: the next age stays a surprise.
+def _build_laws(save: dict) -> dict:
+    names = load_data("world-laws.json")
+    laws = {names.get(law, law): on for law, on in world_laws(save).items() if law.startswith("world_law_")}
+    return {"off": sorted(name for name, on in laws.items() if not on), "on": sorted(name for name, on in laws.items() if on)}
 
 
 # The world's standouts, shaped as every tier's `leaders`: group, then measure, then its first place — `persons` weighing thinking souls alone, `unranked` the thin.
@@ -637,6 +644,8 @@ def main(argv: list[str]) -> int:
         out["boats"] = _build_boats(save, requested)
     if "cumulative" in sections:
         out["cumulative"] = _build_cumulative(map_stats)
+    if "laws" in sections:
+        out["laws"] = _build_laws(save)
     if "leaders" in sections:
         out["leaders"] = _build_leaders(save)
     if "metadata" in sections:

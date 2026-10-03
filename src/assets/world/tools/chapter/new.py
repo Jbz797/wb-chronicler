@@ -73,12 +73,10 @@ _ALERTS = {
     "DISABLE_DROP_OF_THOUGHTS": {
         "condition": lambda pops, quota, _own: len(pops) >= quota,
         "law": "world_law_drop_of_thoughts",
-        "title": "Drop of Thoughts",
     },
     "DISABLE_HANDSOME_MIGRANTS": {
         "condition": lambda pops, quota, own: _stands_alone(own) and sum(1 for sexes in pops if _stands_alone(sexes)) >= quota,
         "law": "world_law_civ_migrants",
-        "title": "Handsome Migrants",
     },
 }
 
@@ -142,6 +140,7 @@ _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds 
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
 _LAND_PER_KINGDOM = 52_044  # a quarter of what a map carries once grown — measured at ~12k land tiles per crown on two worlds
+_LAW_NAMES = load_data("world-laws.json")  # WB's own English title of each law, the label a wiki row goes by
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
@@ -337,7 +336,7 @@ def _deliver() -> int:
     else:
         print("  → mode: player — the chapter and that account, nothing else")
     # A world law's alert asks the player at the close, where the errand is due: raised at step 2, it would have to outlast the whole audit to be remembered.
-    laws = [_ALERTS[code]["title"] for code in json.loads((SAVES_DIR / f"C{n}" / "chapter.json").read_text()).get("tags") or [] if code in _ALERTS]
+    laws = [_LAW_NAMES[_ALERTS[code]["law"]] for code in json.loads((SAVES_DIR / f"C{n}" / "chapter.json").read_text()).get("tags") or [] if code in _ALERTS]
     off = f"to turn the {' and '.join(laws)} world law{'s' if len(laws) > 1 else ''} off, and " if laws else ""
     print(f"  → then hand back: tell the player the chapter is closed, and ask him {off}to say when the save has moved on")
     return 0
@@ -500,9 +499,9 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
 
 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.
-def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None, regime: str, tags: list[str], prev_world: dict) -> None:
+def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime: str, tags: list[str], prev_world: dict) -> None:
     age_label = (_AGE_LABELS.get(f"age_{age_id}") or {}).get("name") or age_id  # recap line only, the chapter carrying the id alone
-    year = int(world_time / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
+    year = int(rounded_world_time(live["mapStats"]) / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ C{n} — year {year}, {age_label}")
     print(f"  favorite: {fav_name or 'none'}{f' — {regime}' if regime else ''}")
@@ -512,6 +511,11 @@ def _print_report(n: int, world_time: float, age_id: str, favorite: dict | None,
         for code in events:
             print(f"  ⚑ {code}")
         print("  → each ⚑ is an event the chapter owes its reader, glossed in docs/tags.md")
+        print(_RECAP_RULE)
+    # A law the player turned since the chapter before changes what the world may do, and `world … laws` is no part of `full`: nothing else would say it.
+    then = prev_world.get("laws") or {}
+    if turned := sorted(f"{_LAW_NAMES.get(law, law)} {'on' if on else 'off'}" for law, on in world_laws(live).items() if law in then and then[law] != on):
+        print(f"  ⚖ world laws turned since C{n - 1}: {', '.join(turned)} — `tools/wiki/info.py World_Laws --row <law>` says what each rules")
         print(_RECAP_RULE)
     # The one source naming a killer, printed so a king's fall needn't wait on the file; none at C1, whose whole past would pour out: `history log`'s to give.
     journal = log_entries(float(prev_world.get("world_time") or 0)) if n > 1 else []
@@ -571,7 +575,11 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
             sworn.add(sworn_id)
         if prior == n - 1:
             favorite = data.get("favorite")
-            world = {**((data.get("world") or {}).get("metadata") or {}), "world_time": chapter_world_time(prior)}
+            # That chapter's own save, read once for its hour and its laws — the age switches left to `age_id`. Gone, it leaves neither.
+            then = load_save(archived) if (archived := SAVES_DIR / f"C{prior}" / "map.wbox").exists() else None
+            laws = {law: on for law, on in world_laws(then or {}).items() if law.startswith("world_law_")}
+            hour = rounded_world_time(then.get("mapStats") or {}) if then else None
+            world = {**((data.get("world") or {}).get("metadata") or {}), "laws": laws, "world_time": hour}
     return tags, favorite, world, sworn
 
 
@@ -940,7 +948,7 @@ def main(argv: list[str]) -> int:
         (chapter_dir / "chapter.md").write_text(f"# {_DRAFT_HEADINGS.get(settings.get('lang', ''), 'Draft')}\n")
         _write_index(n, world_time)
 
-        _print_report(n, world_time, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, prev_world)
+        _print_report(n, live, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, prev_world)
         _print_next_step(n, live, favorite, _forget_subagents())
         return 0
     except BaseException as fault:  # a crash or a Ctrl-C halfway, which `_abandon` never sees: the half-built folder goes the same way, the fault still surfacing

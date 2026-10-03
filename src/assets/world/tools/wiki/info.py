@@ -22,6 +22,7 @@ _BATCH = 500  # the most titles one `allpages` call hands back
 _CELL_ATTRS = re.compile(r'^\s*(?:[\w-]+\s*=\s*"[^"]*"\s*)+\|(?!\|)')  # `| style="…" | text`: a cell's own styling, before its single pipe
 _HEADERS = {"User-Agent": "Mozilla/5.0"}  # the wiki turns away a request that names no browser, 403 and nothing else
 _TIMEOUT = 15
+_UNTOLD = frozenset({"version of introduction"})  # columns that tell the wiki's own history, none of the game's rules
 
 
 # One API call, its answer parsed.
@@ -100,14 +101,18 @@ def main(argv: list[str]) -> int:
         print(wikitext)
         return 0
     wanted = args.row.replace("_", " ").casefold()
-    found = [row for row in _rows(wikitext) if any(cell.casefold() == wanted for cell in row[2])]
-    if not found:
+    blocks = []
+    for caption, header, cells in _rows(wikitext):
+        if all(cell.casefold() != wanted for cell in cells):
+            continue
+        # A column past the header keeps its rank for a name: the header is a help, a ragged row still prints whole. The cell asked for only repeats the question.
+        named = [((header[i : i + 1] or [f"#{i + 1}"])[0], cell) for i, cell in enumerate(cells) if cell and cell.casefold() != wanted]
+        if lines := [f"{column}: {cell}" for column, cell in named if column.casefold() not in _UNTOLD]:
+            blocks.append("\n".join([f"[{caption}]"] * bool(caption) + lines))
+    if not blocks:
         print(f"✗ no row of `{page}` names « {args.row} » — a table names a thing by its in-game label", file=sys.stderr)
         return 1
-    # A column past the header keeps its rank for a name: the header is a help, and a ragged row still prints whole.
-    for k, (caption, header, cells) in enumerate(found):
-        lines = [f"{(header[i : i + 1] or [f'#{i + 1}'])[0]}: {cell}" for i, cell in enumerate(cells) if cell]
-        print(("\n" if k else "") + "\n".join([f"[{caption}]"] * bool(caption) + lines))
+    print("\n\n".join(blocks))
     return 0
 
 
