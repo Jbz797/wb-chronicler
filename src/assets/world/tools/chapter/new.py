@@ -172,7 +172,7 @@ _SHORT_AGE_YEARS = (30, 40)
 _STAMP_SLACK = 1  # seconds a mod's stamp may stray from the save's own time: WB stores it less finely, a save from before lies years off
 _SUBAGENT_GRACE = 120  # seconds: a transcript written this lately may be a sub-agent still at work, not to be pulled from under it
 _SUMMARY_CAP = 400
-_TAG = re.compile(r"\[[a-z] [^\s\]]+(?: [^\]]+)?\]")  # a marker, which no title may bear: a name there is written bare
+_TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
 _TOOLS = Path(__file__).parent.parent
 
@@ -534,8 +534,6 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  → the final H1, alone and in place of « # {facts['draft']} »: {_H1_CAP} characters at most")
     elif facts["h1_length"] > _H1_CAP:
         print(f"  ✗ H1, {facts['h1_length']} characters of {_H1_CAP}")
-    for number, title in facts["tagged"]:  # the chapter's title and its sections' alike
-        print(f"  ✗ line {number}, title « {title} »: a tag — a title bears none, write the name bare")
     if facts["favorite"]:
         if not (text := facts["descriptor"]):
             print(
@@ -742,18 +740,17 @@ def _step_five_facts(n: int, lang: str) -> dict:
     carried = bool(descriptor) and same and descriptor == before.get("descriptor")
     written = {tier: summary for tier in _TRAIT_SOURCES if isinstance(summary := (chapter.get(tier) or {}).get("traits"), str)}
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
-    h1_length = len(h1 or "")
+    h1_length = len(_TAG.sub(lambda m: m[1] or "", h1 or ""))  # as read: a tag in the title shows its name alone, never its markup
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: len(summary) for tier, summary in sorted(written.items()) if len(summary) > _SUMMARY_CAP}
     misplaced = _misplaced_places(n)
-    tagged = [(number, line.lstrip("# ")) for number, line in enumerate(prose.splitlines(), 1) if line.startswith("#") and _TAG.search(line)]
     # A summary carried word for word was audited when written, so only a new one goes; the descriptor always, an age in it stale by the next chapter.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
     return {
         "audited": sorted(fresh + (["favorite.descriptor"] if favorite else [])),
         "carried": carried,
         "descriptor": descriptor,
-        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (owed or long or misplaced or tagged),
+        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (owed or long or misplaced),
         "draft": draft,
         "favorite": bool(favorite),
         "h1": h1,
@@ -763,7 +760,6 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "misplaced": misplaced,
         "mourned": bool(before) and not same,
         "owed": owed,
-        "tagged": tagged,
     }
 
 
