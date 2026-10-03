@@ -3,7 +3,6 @@
 # Marks an actor as the world's favorite in the live WorldBox save, then rebuilds the current chapter around the pick. Spares the player the in-game marking and
 # the re-save: the chronicler names a pick, the player agrees, and the chapter is born with its favorite. Who to pick, and how to ask: `new.py`'s recap.
 
-import json
 import re
 import shutil
 import subprocess
@@ -13,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import SAVES_DIR, is_sapient, latest_chapter, live_save, load_save, rounded_world_time, worldbox_running, write_save
+from shared import SAVES_DIR, chapter_world_time, is_sapient, latest_chapter, live_save, load_save, rounded_world_time, worldbox_running, write_save
 
 
 # The actor the chronicler picked, refused unless the body can actually carry a chronicle: alive in the save, and thinking — a beast holds no story of its own.
@@ -60,14 +59,12 @@ def main(argv: list[str]) -> int:
         print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
         return 1
     chapter_dir = SAVES_DIR / f"C{n}"
-    # Judged on the world's clock, not the file's bytes: WorldBox rewrites a save whole on every quit, so saving twice without playing would else read as moved.
-    # The chapter's hour is read off its card, as `new.py` reads it, rather than by parsing its archived save for one field.
-    card = chapter_dir / "chapter.json"
-    if not card.exists():
+    if not (chapter_dir / "chapter.json").exists():
         print(f"✗ C{n} has no chapter.json — run `tools/chapter/new.py` again, then mark the favorite right after", file=sys.stderr)
         return 1
     save = load_save(live_wbox)
-    if ((json.loads(card.read_text()).get("world") or {}).get("metadata") or {}).get("world_time") != rounded_world_time(save.get("mapStats") or {}):
+    # Judged on the world's clock, not the file's bytes: WorldBox rewrites a save whole on every quit, so saving twice without playing would else read as moved.
+    if chapter_world_time(n) != rounded_world_time(save.get("mapStats") or {}):
         print(f"✗ the world has turned since C{n} — run `tools/chapter/new.py` again, then mark the favorite right after", file=sys.stderr)
         return 1
 

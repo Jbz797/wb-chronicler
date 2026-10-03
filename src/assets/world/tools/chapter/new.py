@@ -33,6 +33,7 @@ from shared import (
     SAVES_DIR,
     UNITS_PER_YEAR,
     chapter_length,
+    chapter_world_time,
     index_by_id,
     is_boat,
     is_sapient,
@@ -570,7 +571,7 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
             sworn.add(sworn_id)
         if prior == n - 1:
             favorite = data.get("favorite")
-            world = (data.get("world") or {}).get("metadata") or {}
+            world = {**((data.get("world") or {}).get("metadata") or {}), "world_time": chapter_world_time(prior)}
     return tags, favorite, world, sworn
 
 
@@ -791,17 +792,14 @@ def _value(argv: list[str], flag: str) -> str:
 
 
 # Every chapter in one file: what the nav prints beside a slug, and nothing else. Rewritten whole each time, so a chapter deleted by hand drops out on the next run.
-def _write_index() -> None:
+def _write_index(fresh: int, world_time: float) -> None:
+    # Each hour is kept from the index before, the chapter just built given its own: an archived save is opened only for one the index has lost.
+    hours = {row["n"]: row["world_time"] for row in (json.loads(_INDEX_JSON.read_text()) if _INDEX_JSON.exists() else [])} | {fresh: world_time}
     entries = []
     for chapter_json in sorted(SAVES_DIR.glob("C*/chapter.json"), key=lambda f: int(f.parent.name[1:])):
-        data = json.loads(chapter_json.read_text())
-        entries.append(
-            {
-                "n": int(chapter_json.parent.name[1:]),
-                "tags": data.get("tags") or [],
-                "world_time": ((data.get("world") or {}).get("metadata") or {}).get("world_time", 0),
-            }
-        )
+        n = int(chapter_json.parent.name[1:])
+        hour = hours[n] if n in hours else chapter_world_time(n) or 0
+        entries.append({"n": n, "tags": json.loads(chapter_json.read_text()).get("tags") or [], "world_time": hour})
     _INDEX_JSON.write_text(render(entries) + "\n")
 
 
@@ -872,7 +870,7 @@ def main(argv: list[str]) -> int:
     # A favorite the chapter before did not carry — the world's first, or a successor to one who died. Both earn a chapter at an unchanged timestamp, and the tag.
     just_designated = fav_id is not None and fav_id != prev_fav_id
 
-    # Read off the chapter before rather than by re-parsing its save for one field — `world/info.py` wrote it through the same `rounded_world_time`.
+    # Held against the hour the chapter before archived in its own save, both through the same `rounded_world_time`.
     if (prev_time := prev_world.get("world_time")) is not None and world_time <= prev_time and not just_designated:
         print(
             f"✗ save not advanced (world_time {world_time} ≤ C{n - 1} {prev_time}), and no new favorite either — ask the player to play on, then save again",
@@ -940,7 +938,7 @@ def main(argv: list[str]) -> int:
 
         # The draft's H1, in the language the chronicler writes the chapter in: the reader has a page, and it reads unfinished.
         (chapter_dir / "chapter.md").write_text(f"# {_DRAFT_HEADINGS.get(settings.get('lang', ''), 'Draft')}\n")
-        _write_index()
+        _write_index(n, world_time)
 
         _print_report(n, world_time, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, prev_world)
         _print_next_step(n, live, favorite, _forget_subagents())

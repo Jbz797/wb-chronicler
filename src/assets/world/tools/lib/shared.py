@@ -433,6 +433,12 @@ def chapter_length(text: str) -> int:
     return len(re.sub(r"\s+", " ", text).strip())
 
 
+# The world's hour as chapter `n` archived it, `None` where its save is gone: read off the save itself, the one record no script rewrites after the fact.
+def chapter_world_time(n: int) -> float | None:
+    path = SAVES_DIR / f"C{n}" / "map.wbox"
+    return rounded_world_time(load_save(path).get("mapStats") or {}) if path.exists() else None
+
+
 # Living children per parent, counted off `parent_id_1`/`parent_id_2`. World-wide on purpose — a parent's brood is theirs wherever it settled.
 def children_by_id(save: dict) -> Counter:
     tally: Counter = Counter()
@@ -991,7 +997,7 @@ def resolve_profession(actor: dict, save: dict) -> str | None:
     return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)
 
 
-# The save's hour to the hundredth, as `world/info.py` writes it into a chapter and `new.py`/`favorite.py` hold the live save against it: one rounding, one digit.
+# The save's hour to the hundredth, as the nav's index keeps it and as `new.py`/`favorite.py` hold the live save against a chapter's: one rounding, one digit.
 def rounded_world_time(map_stats: dict) -> float:
     return round(float(map_stats.get("world_time", 0)), 2)
 

@@ -4,7 +4,7 @@
 # `chapter/registries.py` (the bootstrap), not here. User-facing docs — usage and sections — live in `docs/tools.md`.
 #
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
-# Exception: WB-native names kept verbatim for raw-save fields (e.g. `world_time`) — the tools' default, a rename having to earn its churn across py, UI and data.
+# Exception: WB-native names kept verbatim for raw-save fields (e.g. `asset_id`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
 import sys
 from collections import Counter, defaultdict
@@ -241,7 +241,7 @@ def _build_leaders(save: dict) -> dict:
     return out
 
 
-# WB's own clock and its age of the world; `next_age_on` is derived here because the save states progress as a ratio, never as a countdown.
+# The world's day and its age; `next_age_on` is derived here because the save states progress as a ratio, never as a countdown.
 def _build_metadata(map_stats: dict) -> dict:
     age_duration = float(map_stats.get("current_world_ages_duration") or 0)
     age_id = map_stats.get("world_age_id") or ""
@@ -252,9 +252,9 @@ def _build_metadata(map_stats: dict) -> dict:
         "age_description": age.get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
         "age_id": age_id.removeprefix("age_"),  # `WorldAgeLibrary` key without WB's prefix — `hope`, as the panel keys its French and its icon
         "age_name": age.get("name"),  # Chronicler-only: WB's own English title, the id above being what the panel translates
+        "date": world_date(world_time),  # Chronicler-only: the day as every other date is written — the raw clock stays the scripts', read off the save
         # Chronicler-only: a date as `born` is, where WB's UI counts « Lunes jusqu'au prochain âge ». Absent where no age runs: WB then stores no span.
         "next_age_on": world_date(world_time + age_duration * (1 - age_progress)) if age_duration > 0 else None,
-        "world_time": world_time,
     }
 
 

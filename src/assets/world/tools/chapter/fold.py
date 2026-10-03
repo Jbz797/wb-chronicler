@@ -14,6 +14,7 @@ _AUDIT = {
             "breeds_on",
             "can_reproduce",
             "clan_chief_years",
+            "date",  # the world's day as the chronicler reads it — the panels take the clock through `index.json`
             "deaths_by_cause",
             "families",
             "favorite_food",
