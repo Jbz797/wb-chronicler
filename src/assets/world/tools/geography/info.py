@@ -45,6 +45,17 @@ _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
+
+_NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault, or as a word mistyped
+    "biomes": "biome",
+    "bodies": "body",
+    "burning": "fire",
+    "frozen": "frost",
+    "gear": "gear borne",
+    "islands": "land",
+    "ridges": "ridge",
+}
+
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
 
 
@@ -474,12 +485,19 @@ def main(argv: list[str]) -> int:
     if "positions" in out and out["positions"] is None:  # a word nothing answers to, never a silent `{}`
         print(f"✗ no {wanted} in this world — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
         return 1
+    where = "in this world" if args.island is None else f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}"
     if "positions" in out and not out["positions"]:
-        where = f"land {args.island}" if isinstance(args.island, int) else f"the {args.island}"
-        print(f"✗ no {wanted} on {where} — without `-i`, `positions` says which lands hold one", file=sys.stderr)
+        print(f"✗ no {wanted} {where} — without `-i`, `positions` says which lands hold one", file=sys.stderr)
         return 1
 
-    emit(out if args.island is None else _narrowed(out, args.island))
+    shown = out if args.island is None else _narrowed(out, args.island)
+    # An empty section says so, the command failing only where all asked are, as `positions` does — a dict of empty blocks counts: `biomes` on a bare land.
+    bare = [s for s in sections if s in _NONE and not (any(shown[s].values()) if isinstance(shown[s], dict) else shown[s])]
+    for section in bare:
+        print(f"✗ no {_NONE[section]} {where}", file=sys.stderr)
+    if len(bare) == len(sections):
+        return 1
+    emit(shown)
     return 0
 
 
