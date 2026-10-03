@@ -50,6 +50,7 @@ _NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault
     "biomes": "biome",
     "bodies": "body",
     "burning": "fire",
+    "entity_types": "entity of any kind",
     "frozen": "frost",
     "gear": "gear borne",
     "islands": "land",
@@ -57,6 +58,7 @@ _NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault
 }
 
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
+_SURVEY_PCT = 1  # the share of its land under which a ground is only named in the world-wide `biomes`: half its rows weigh less, and `-i` has them all
 
 
 # What a land tile is where no biome grows: `rock` for mountains and summits alike — one massif whatever its height —, else its frost, else its ground.
@@ -419,6 +421,17 @@ def _surfaces(save: dict) -> tuple[int, int, int]:
     return land, goo, len(save.get("tileArray") or []) * sum((save.get("tileAmounts") or [[]])[0]) - land - goo
 
 
+# The world-wide `biomes`: each land's grounds from `_SURVEY_PCT` up, the lesser ones named in one row — a rare biome still shows, `-i` then tells it whole.
+def _surveyed(biomes: dict) -> dict:
+    lands = {}
+    for land, rows in biomes["islands"].items():
+        kept = [row for row in rows if (row.get("pct") or 0) >= _SURVEY_PCT]
+        minor = rows[len(kept) :]  # the rows come largest first, so the lesser ones close the list
+        others = {"others": sorted(row.get("biome") or row["ground"] for row in minor), "tiles": sum(row["tiles"] for row in minor)}
+        lands[land] = kept + ([others] if minor else [])
+    return {"info": "`-i <land>` lists every ground of a land and describes its biomes", "islands": lands}
+
+
 def main(argv: list[str]) -> int:
     try:
         since, argv = take_since(argv)
@@ -494,10 +507,10 @@ def main(argv: list[str]) -> int:
     # An empty section says so, the command failing only where all asked are, as `positions` does — a dict of empty blocks counts: `biomes` on a bare land.
     bare = [s for s in sections if s in _NONE and not (any(shown[s].values()) if isinstance(shown[s], dict) else shown[s])]
     for section in bare:
-        print(f"✗ no {_NONE[section]} {where}", file=sys.stderr)
+        print(f"✗ no {_NONE[section]} {where if section in _BY_LAND else 'in this world'}", file=sys.stderr)  # `-i` narrows a land's sections alone
     if len(bare) == len(sections):
         return 1
-    emit(shown)
+    emit(shown | {"biomes": _surveyed(shown["biomes"])} if args.island is None and "biomes" in shown and "biomes" not in bare else shown)
     return 0
 
 
