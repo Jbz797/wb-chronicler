@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 03/10/26 15:33</p>
+<p class="metadata">Date de mise à jour : 03/10/26 16:29</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -36,7 +36,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 - `--since C<n>` : ce qui a bougé, `[avant, après]`, `new` ou `gone` ; des soldes : un passage se lit dans `roster --since`
 - `-i <id>` : une seule terre dans les sections rangées par terre, ou `islets` et `water` là où elles les comptent
-- `-t <type>` (`positions`) : un `asset_id`, une famille (`trees`…) ou une liste à virgules, hors corps
+- `-t <type>` : sous `positions`, un `asset_id`, une famille (`trees`…) ou une liste à virgules, hors corps ; sous `biomes -i`, un biome ou un sol, ses 5 plus grandes parcelles
 
 ### `history` :
 
