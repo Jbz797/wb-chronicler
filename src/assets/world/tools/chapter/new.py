@@ -383,7 +383,7 @@ def _finalize() -> int:
     # Counted before the audit reads the chapter, so the chronicler weighs his own repeats first.
     if counts := {key: len(rows) for key, rows in (echoes(n) or {}).items() if rows}:
         said = ", ".join(f"{count} {key}" for key, count in counts.items())
-        print(f"  → said again: {said} — `tools/chapter/echo.py C{n}` points, you judge each: only a repeat goes, the language and a refrain meant stay")
+        print(f"  → said again: {said} — `tools/chapter/echo.py C{n}` points, you judge each: only a repeat goes — the language, a term and a refrain meant stay")
     # The targets name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
     if not facts["done"]:
         print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: it then hands the audit over")

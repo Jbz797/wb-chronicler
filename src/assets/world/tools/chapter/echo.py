@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 # What a chapter says again, for `chronicler.md` § V « Ne te répète pas »: each passage it takes back from the two chapters before — a run of words, a
-# rare word framed alike, a chute —, the runs it says twice itself, the families it leans on past anything the chronicle did before, and the cast it
-# is poured in again: a title, a heading, a section begun alike. It points, the eye judges: an angle taken again slips past it, a refrain meant is caught.
+# rare word framed alike, a chute —, the runs it says twice itself and the terms it coins, the families it leans on past anything the chronicle did
+# before, and the cast it is poured in again: a title, a heading, a section begun alike. It points, the eye judges: an angle taken again slips past it.
 
 import json
 import re
@@ -32,6 +32,7 @@ _SCARCE = 8  # uses across the whole chronicle under which a word can carry a ch
 _SECTION = re.compile(r"^(##\s|---\s*$)")  # a heading or a separator: where a section, and so its chute, ends
 _SENTENCE = re.compile(r"(?<=[.!?…])\s+")  # where a sentence ends inside a line
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # `[p 28 Voxzen]` read as its text, as `new.py` reads a title: a bare marker says nothing
+_TERM = 3  # lines of one chapter a turn must be said on to be a term it coined — `le bras du couchant`, a place with no name —, told apart as a refrain is
 _WORD = re.compile(r"\b[^\W\d_]{1,2}['’]|\w[\w-]*(?:['’]\w[\w-]*)*")  # an elision splits, `qu'il` as `qu'` and `il`; `aujourd'hui` holds, `---` is none
 
 
@@ -333,6 +334,27 @@ def _weight(before: int, matches: list[dict]) -> tuple[int, int, int]:
     return len(set().union(*(match["by"] for match in matches)) - {"refrain"}), before, len(matches)
 
 
+# What chapter `n` says twice itself, and apart the terms it coins: a turn said on `_TERM` lines or more, its variants joined by the words they carry.
+def _within(words: list[_Token], n: int) -> tuple[list[dict], list[dict]]:
+    # A table's rows are cast alike by design, so never a repeat of one another.
+    rows = {number for number, line in enumerate((_chapter(n) or "").splitlines(), 1) if line.lstrip().startswith("|")}
+    said: defaultdict[frozenset[str], list[tuple[int, int, str]]] = defaultdict(list)
+    for (line, at), texts in _runs(words, words).items():
+        if not (line in rows and at in rows):
+            for text in texts:
+                said[frozenset(key for key in _keys(text) if _content(key, False))].append((line, at, text))
+    again: defaultdict[int, list[dict]] = defaultdict(list)  # `line` the one saying it again, `from` the line that said it first
+    terms = []
+    for matches in said.values():
+        if len(lines := {number for line, at, _ in matches for number in (line, at)}) >= _TERM:
+            terms.append({"lines": sorted(lines), "text": Counter(text for *_, text in matches).most_common(1)[0][0]})
+        else:
+            for line, at, text in matches:
+                again[line].append({"from": at, "text": text})
+    internal = [{"line": line, "matches": sorted(matches, key=lambda match: match["from"])} for line, matches in sorted(again.items())]
+    return internal, sorted(terms, key=lambda term: term["lines"])
+
+
 # A chapter as the reader hears it, word by word, each with its line.
 @cache
 def _words(n: int) -> list[_Token]:
@@ -343,11 +365,8 @@ def _words(n: int) -> list[_Token]:
 def echoes(n: int) -> dict | None:
     if not (words := _words(n)):
         return None
-    again: defaultdict[int, list[dict]] = defaultdict(list)  # `line` the one saying it again, `from` the line that said it first
-    for (line, at), texts in sorted(_runs(words, words).items()):
-        again[line] += [{"from": at, "text": text} for text in texts]
-    internal = [{"line": line, "matches": matches} for line, matches in again.items()]
-    return {"internal": internal, "overused": _overused(words, n), "passages": _passages(words, n), "shape": _shaped(n)}
+    internal, terms = _within(words, n)
+    return {"internal": internal, "overused": _overused(words, n), "passages": _passages(words, n), "shape": _shaped(n), "terms": terms}
 
 
 def main(argv: list[str]) -> int:
