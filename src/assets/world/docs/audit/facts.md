@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 03/10/26 08:50</p>
+<p class="metadata">Date de mise à jour : 03/10/26 10:45</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail, chacun de son côté. Au baptême d'un monde, ta seule cible est `history/world.json`, son nom et sa description, et tu es seul.
 
@@ -15,6 +15,7 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 - **Un nombre juste ne prouve que sa question** : avant de conclure, vérifie que la commande compte le même ensemble que la phrase (tous les corps ou les pensants, le monde ou une terre), avec le champ que la doc prescrit pour ce fait.
 - **Un test d'existence ne se tronque jamais** : compte ou imprime entier ; une sortie coupée qui confirme n'a rien prouvé.
 - **Une affirmation sur tout le monde** (« seul », « aucun », « ce monde n'a que », une mort, « il n'en est plus question ») se vérifie sur le monde entier, `world … roster` pour les corps, `geography … positions -t` pour le reste, jamais sur ce que le texte nomme.
+- **Une eau ou une marche ne se balaie pas à la main** : `tiles <x,y> tile_info` dit l'eau de chaque tuile, `tiles <x,y> --to <x,y>` le détour à pied.
 - **Une phrase que le texte donne lui-même pour incertaine n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.
 - **Une somme se vérifie aussi contre ses termes** : un total et ses parts, un tableau et la phrase qui le reprend, un solde et ce qui est venu et parti. Des termes justes un à un qui ne font pas le total sont un écart : dis lequel la commande dément.
 

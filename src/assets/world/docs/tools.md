@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 03/10/26 10:20</p>
+<p class="metadata">Date de mise à jour : 03/10/26 10:45</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -89,7 +89,6 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `geography … frozen` : par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé pour toujours ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `ground` (`biomes`) : le sol sans biome ; `rock` joint monts et sommets.
 - `heart` (`islands`, `waters`) : le point le plus loin des rives.
-- `patches` (`biomes`) : une parcelle se joint par les coins ; une terre comme WB (un coin dans un seul chunk) ; une eau, côte à côte.
 - `ridges` (`geography`) : là où deux terres se touchent sans eau, une crête de roche infranchissable à pied, `at` sa tuile du milieu.
 - `seas` (`waters`) : les eaux de 64 tuiles au moins qui touchent un bord du monde.
 - `strait_to_land` (`distances`) : l'eau à nager (`swim_tiles`) depuis **tout le rocher**, écueils à sec gratuits ; de rive à rive, `islet … to_islands`.
@@ -98,6 +97,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
 - `unlisted` (`waters`) : les mares sous 64 tuiles (comptées) et les bras de plus de 1 024, écartés.
 - `walk_tiles` (`distances`, `to`) : les tuiles faites à pied, roche, lave et goo contournés ; sable, marais, neige et arbres sous Entanglewood n'allongent que le temps. Hors d'`actor`, rien ne se nage, au `speed` 10 : absente sans terre qui les joigne.
+- Un coin joint deux parcelles (`patches`), jamais deux eaux ; deux terres ou un pas, seulement dans un chunk de 16 et sans roche.
 
 ### Classements :
 
