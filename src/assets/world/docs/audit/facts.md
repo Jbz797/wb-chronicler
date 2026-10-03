@@ -1,8 +1,8 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 03/10/26 10:45</p>
+<p class="metadata">Date de mise à jour : 03/10/26 15:31</p>
 
-Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail, chacun de son côté. Au baptême d'un monde, ta seule cible est `history/world.json`, son nom et sa description, et tu es seul.
+Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Un autre vérificateur fait le même travail, chacun de son côté. Au baptême d'un monde, ta seule cible est `history/world.json`, son nom et sa description, et tu es seul.
 
 ## Ta tâche
 
