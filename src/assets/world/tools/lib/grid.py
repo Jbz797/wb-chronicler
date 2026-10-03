@@ -1,8 +1,9 @@
 # Tile-level primitives. No save-wide state, no module cache — just functions over a tile name, the rows the save folds away as runs, or the tiles it lists by id.
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from itertools import chain, compress, repeat
 
+HEART_CELL = 4  # tiles a side of the cells `hearts` reads on a land or a sea, one tile standing for each: a name needs no finer, the sweep sixteen times lighter
 LAND_LAYERS = frozenset({"Block", "Ground", "Lava"})  # what a foot stands on, and all `totals` counts as land: off it, the rare goo included, a tile is water
 
 # The tile types WB marks `block` (`TileLibrary`, `TopTileLibrary`): rock of the `Block` layer no body crosses on foot, from mountains to the walls a player paints.
@@ -87,6 +88,31 @@ def decode_tile_grid(save: dict) -> list[list[int]]:
 def frozen_tally(save: dict) -> tuple[int, int]:
     frozen = tile_count(save, [bool(tile_frost(name) or tile_biome(name) == "permafrost") for name in save.get("tileMap") or []])
     return frozen + len(save.get("frozen_tiles") or []), sum(chain.from_iterable(runs for _, runs in _tile_rows(save)))
+
+
+# Each label's heart, the cell farthest from every other label and from the map's edge: where a name sits clear of its shores, which a mean never promises.
+def hearts(cells: list[Sequence[int]], side: int = HEART_CELL) -> dict[int, tuple[int, int]]:
+    # A ring of empty cells spares every bound, and the tide rises from each shore inward: the last to reach a label leaves its heart.
+    wide = len(cells[0]) + 2
+    flat = [0] * wide
+    for line in cells:
+        flat += (0, *line, 0)
+    flat += [0] * wide
+    steps = (-wide, wide, -1, 1)
+    front = [k for k, label in enumerate(flat) if label and not (flat[k - wide] == label == flat[k + wide] and flat[k - 1] == label == flat[k + 1])]
+    reached, deepest = set(front), {}
+    while front:
+        for k in reversed(front):  # of one tide, the first cell the sweep met
+            deepest[flat[k]] = k
+        tide = []
+        for k in front:
+            label = flat[k]
+            for step in steps:
+                if flat[j := k + step] == label and j not in reached:
+                    reached.add(j)
+                    tide.append(j)
+        front = tide
+    return {label: ((k % wide - 1) * side + side // 2, (k // wide - 1) * side + side // 2) for label, k in deepest.items()}  # each cell's own middle tile
 
 
 # What WB `SavedMap.create` lists by `tile_id` rather than on the grid — `fire`, `frozen_tiles` — packed row-major as `y * width + x`, unpacked into `(x, y)`.

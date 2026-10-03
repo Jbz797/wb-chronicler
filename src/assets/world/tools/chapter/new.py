@@ -667,15 +667,14 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
     if (s3db := live_dir / "map_stats.s3db").exists():
         shutil.copy2(s3db, HISTORY_S3DB)
     _write_world(live)
-    if not _PLACES_JSON.exists():  # his toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge
+    # His toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge. A book an older gazetteer lacks joins it.
+    places = json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
+    if missing := [book for book in ("islands", "lakes", "seas") if book not in places]:
         if (surveyed := _run("geography/info.py", "islands,waters", chapter)) is None:  # seeded once and never again: an empty survey would stay empty
             return "geography/info.py islands,waters"
-        seeded = {
-            "islands": _unnamed(surveyed.get("islands") or []),
-            "lakes": _unnamed((surveyed.get("waters") or {}).get("lakes") or []),
-            "places": {},
-        }
-        _PLACES_JSON.write_text(render(seeded) + "\n")
+        found = {**(surveyed.get("waters") or {}), "islands": surveyed.get("islands")}
+        places = {"places": {}, **places, **{book: _unnamed(found.get(book) or []) for book in missing}}
+        _PLACES_JSON.write_text(render(places) + "\n")
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
     return None
@@ -755,9 +754,9 @@ def _trait_fingerprint(save: dict, tier: str, entity_id: int | None) -> tuple | 
     return None if record is None else (entity_id, *(tuple(sorted(record.get(field) or [])) for field in fields))
 
 
-# A surveyed feature stripped to what a toponym needs: where it lies, how big it is, and the two fields the chronicler fills when his tale reaches it.
+# A surveyed feature stripped to what a toponym needs: where its name sits — its heart, else its mean —, its size, and the two fields the chronicler fills.
 def _unnamed(features: list[dict]) -> dict:
-    return {str(f["id"]): {"centroid": f["centroid"], "chapter": "", "name": "", "size": f["size"]} for f in features}
+    return {str(f["id"]): {"centroid": f.get("heart") or f["centroid"], "chapter": "", "name": "", "size": f["size"]} for f in features}
 
 
 def _value(argv: list[str], flag: str) -> str:

@@ -6,7 +6,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { PLACES_FILE, SPECIES_COLORS } from '../../../../constants';
-import { LabelBox, MapPin, PlaceArea, Places, TileExtent, TilePoint } from '../../../../interfaces';
+import { LabelBox, MapPin, MapPinKind, PlaceArea, Places, TileExtent, TilePoint } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 
 @Component({
@@ -66,15 +66,16 @@ export class WorldMapComponent {
     const chapter = Number(this._chronicler.currentChapter()?.slug.slice(1) ?? 0);
     const isKnown = (given: string): boolean => given !== '' && Number(given.slice(1)) <= chapter;
     const named = (book: Record<string, PlaceArea>): [string, PlaceArea][] => Object.entries(book).filter(([, entry]) => isKnown(entry.chapter));
-    const [islands, lakes] = [named(places.islands), named(places.lakes)];
-    const fontSize = this._sizer([...islands, ...lakes].map(([, entry]) => entry.size)); // lands and waters on one scale: a lake never outgrows a wider land
-    const areas = (kind: 'island' | 'lake', entries: [string, PlaceArea][]): MapPin[] => entries.map(([id, entry]) => ({
+    const [islands, lakes, seas] = [named(places.islands), named(places.lakes), named(places.seas ?? {})];
+    const fontSize = this._sizer([...islands, ...lakes, ...seas].map(([, entry]) => entry.size)); // lands and waters on one scale: no water outgrows a wider land
+    const areas = (kind: Exclude<MapPinKind, 'spot'>, entries: [string, PlaceArea][]): MapPin[] => entries.map(([id, entry]) => ({
       ...this._at(entry.centroid, extent), area: entry.size * this._tileKm2, fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name,
     }));
 
     return [
       ...areas('island', islands),
       ...areas('lake', lakes),
+      ...areas('sea', seas),
       ...Object.entries(places.places)
         .filter(([, spot]) => isKnown(spot.chapter))
         .map(([name, spot]): MapPin => ({

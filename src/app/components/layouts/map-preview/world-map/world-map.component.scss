@@ -29,7 +29,8 @@
       letter-spacing: $letter-spacing-wide;
     }
 
-    &.pin-lake {
+    &.pin-lake,
+    &.pin-sea {
       color: #cfe3f2;
       font-family: $font-body;
       font-style: italic;

@@ -20,7 +20,12 @@ export interface MapPin {
 export interface PlaceArea { centroid: TilePoint; chapter: string; name: string; size: number }
 
 // `history/places.json`, the chronicler's gazetteer: one file for the whole world, lands and waters keyed by their id, spots by their own name.
-export interface Places { islands: Record<string, PlaceArea>; lakes: Record<string, PlaceArea>; places: Record<string, PlaceSpot> }
+export interface Places {
+  islands: Record<string, PlaceArea>;
+  lakes: Record<string, PlaceArea>;
+  places: Record<string, PlaceSpot>;
+  seas?: Record<string, PlaceArea>; // absent from a gazetteer seeded before the seas were, until its next chapter
+}
 
 // The map's extent in tiles — the preview's own size, WB drawing one pixel a tile.
 export interface TileExtent { height: number; width: number }

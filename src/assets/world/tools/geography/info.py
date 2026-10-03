@@ -39,12 +39,21 @@ from shared import (
 from waters import waters_cached
 
 _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
+_BARE = "~"  # marks a ground no biome grows on among the biomes' own names, none of which could start so
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
 _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
+
+
+# What a land tile is where no biome grows: `rock` for mountains and summits alike — one massif whatever its height —, else its frost, else its ground.
+def _bare_ground(name: str) -> str | None:
+    if tile_layer(name) not in LAND_LAYERS:
+        return None
+    kind = tile_kind(name)
+    return _BARE + ("rock" if kind in ("mountain", "summit") else tile_frost(name) or kind)
 
 
 # Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
@@ -57,8 +66,13 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict
         lands, row = island_of.row(len(rows)), []
         for match in _BIOME_RUN.finditer(marks):
             west, end = match.span()
-            row.append((west, end, lands[west] << 8 | marks[west], count))  # side by side, two ground tiles are one land: a run never straddles two
-            count += 1
+            # Side by side, two ground tiles are one land; rock is where two lands meet, so a run of it is cut wherever the land changes under it.
+            while west < end:
+                land, east = lands[west], end
+                if lands[west:end].count(land) != end - west:
+                    east = next(x for x in range(west + 1, end) if lands[x] != land)
+                row.append((west, east, land << 8 | marks[west], count))
+                count, west = count + 1, east
         rows.append(row)
 
     parent = list(range(count))
@@ -89,9 +103,9 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict
     return by_key
 
 
-# Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject. Shares are of the whole island, sand and rock cutting them under 100.
+# Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject — then the ground none grows on: the shares add up to the land.
 def _build_biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v13", save_path, lambda: _compute_biomes(save, save_path))
+    return pickle_cached("biomes_v14", save_path, lambda: _compute_biomes(save, save_path))
 
 
 # Who lives where, land by land, then on the islets and in the water: the living bodies and how many of them think — a hull carries, it is no body.
@@ -286,7 +300,8 @@ def _collect(save: dict, save_path: Path, sections: tuple[str, ...], kinds: set[
 # The sweep itself, run once per save: every land tile of the map asked its biome, which is why `_build_biomes` keeps the answer on disk.
 def _compute_biomes(save: dict, save_path: Path) -> dict:
     islands, island_of = compute_islands_cached(save, save_path)
-    biome_by_id = [tile_biome(name) for name in save.get("tileMap") or []]  # already merged: `soil_high:paradox_high` and its low twin both read `paradox`
+    # Biomes come already merged, `soil_high:paradox_high` and its low twin both reading `paradox`; a tile with none is told by its ground, patched alike.
+    biome_by_id = [tile_biome(name) or _bare_ground(name) for name in save.get("tileMap") or []]
     # The patches tally the biomes too, land by land, in the order the sweep first meets each — so ties between biomes fall as met. Islets go under `None`.
     patches = _biome_patches(save, island_of, biome_by_id)
     tallies: defaultdict[int | None, Counter] = defaultdict(Counter)
@@ -302,7 +317,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
         "islets" if island_id is None else str(island_id): [
             {
                 **_patch_fields(patches[(island_id, biome)], frames.get(island_id)),
-                "biome": biome,
+                **({"ground": biome[1:]} if biome.startswith(_BARE) else {"biome": biome}),
                 "pct": round(n / sizes[island_id] * 100, 1) or None,
                 "tiles": n,
             }
@@ -312,7 +327,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     }
 
     # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
-    named = {row["biome"] for rows in per_island.values() for row in rows}
+    named = {row["biome"] for rows in per_island.values() for row in rows if "biome" in row}
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island}
 
 
@@ -332,7 +347,7 @@ def _narrowed(out: dict, land: int | str) -> dict:
     key, narrowed = str(land), dict(out)
     if "biomes" in out:
         rows = out["biomes"]["islands"].get(key) or []
-        grown = {row["biome"] for row in rows}
+        grown = {row.get("biome") for row in rows}
         narrowed["biomes"] = {"descriptions": {b: text for b, text in out["biomes"]["descriptions"].items() if b in grown}, "islands": {key: rows} if rows else {}}
     for section in ("bodies", "burning", "frozen", "gear"):
         if section in out:
@@ -346,6 +361,7 @@ def _narrowed(out: dict, land: int | str) -> dict:
         narrowed["waters"] = {
             **waters,
             "lakes": [lake for lake in waters["lakes"] if land in lake["shores"]],
+            "seas": [sea for sea in waters["seas"] if land in sea["shores"]],
             "straits": [strait for strait in waters["straits"] if land in strait["between"]],
         }
     return narrowed

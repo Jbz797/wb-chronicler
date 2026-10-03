@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 02/10/26 11:55</p>
+<p class="metadata">Date de mise à jour : 03/10/26 10:20</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -87,10 +87,13 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 - `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions (une diagonale compte 1,41), à citer tel quel, jamais refait à la règle ; pas un compte de pas.
 - `geography … frozen` : par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé pour toujours ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
+- `ground` (`biomes`) : le sol sans biome ; `rock` joint monts et sommets.
+- `heart` (`islands`, `waters`) : le point le plus loin des rives.
 - `patches` (`biomes`) : une parcelle se joint par les coins ; une terre comme WB (un coin dans un seul chunk) ; une eau, côte à côte.
 - `ridges` (`geography`) : là où deux terres se touchent sans eau, une crête de roche infranchissable à pied, `at` sa tuile du milieu.
+- `seas` (`waters`) : les eaux de 64 tuiles au moins qui touchent un bord du monde.
 - `strait_to_land` (`distances`) : l'eau à nager (`swim_tiles`) depuis **tout le rocher**, écueils à sec gratuits ; de rive à rive, `islet … to_islands`.
-- `tiles … tile_info` : `block` barre la marche ; `islet_tiles`, la taille d'un îlot, sous 300 tuiles de sol, que `islet` décrit entier, roche et îlots accolés compris ; sur l'eau, `sea`, `lake` (son id) ou `pond_tiles`, une eau close sous 64 tuiles ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.
+- `tiles … tile_info` : `block` barre la marche ; `islet_tiles`, la taille d'un îlot, sous 300 tuiles de sol, que `islet` décrit entier, roche et îlots accolés compris ; sur l'eau, `sea` ou `lake` (leur id) ou `pond_tiles`, une eau sous 64 tuiles ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.
 - `to_islands` (`distances`) : les 5 îles les plus proches, à vol d'oiseau jusqu'à leur **tuile la plus proche**.
 - `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
 - `unlisted` (`waters`) : les mares sous 64 tuiles (comptées) et les bras de plus de 1 024, écartés.

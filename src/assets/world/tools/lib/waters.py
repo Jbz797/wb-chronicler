@@ -1,22 +1,31 @@
-# The water a map holds: every enclosed stretch worth a name, and the narrowest crossing between each pair of lands, both read off one mask and cached per save.
+# The water a map holds: every sea and enclosed stretch worth a name, and the narrowest crossing between each pair of lands, read off one mask and cached per save.
 
 import re
+import zlib
 from collections import defaultdict
 from collections.abc import Callable
 from heapq import heappop, heappush
 from pathlib import Path
 
-from grid import tile_layer, tile_mask
+from grid import HEART_CELL, hearts, tile_layer, tile_mask
 from islands import compute_islands_cached
 from shared import pickle_cached, union_root
 
 _FARTHEST_SWIM = 512  # two tides make a crossing, so none past twice this is kept — breath then drowning carry a body far (`actor/info.py`), and the sweep 20 ms
 _MIN_LAKE_TILES = 64  # WB knows no lake at all, so the floor is ours: WB `CITY_ZONE_TILES`, one city zone — under it no town could ever sit on the shore.
-_OPEN_SEA = -1  # the one water body that reaches the map edge, standing apart from the lakes indexed from 0
+_OPEN_SEA = -1  # any water that reaches the map edge, standing apart from the lakes indexed from 0
 _RUN = re.compile(rb"\x01+")  # a row's unbroken water, which the mask's dry border keeps from ever running on into the next row
 _STEP = 10_000  # a tide counts a straight step in ten-thousandths of a tile, so its two costs stay whole and its depths can be walked in order
 _STEP_SLANT = round(_STEP * 2**0.5)  # what a slanted stretch of sea costs a swimmer, against one for its straight neighbour
 _UNREACHED = 1 << 40  # deeper than any tide runs, so the first to claim a tile always undercuts it
+
+
+# A pool's index to the id it goes by, read in C over a whole row: one slot more than there are pools, that the `-1` of a dry tile land on a `0` of its own.
+def _by_pool(id_of: dict[int, int], pools: int) -> Callable[[int], int]:
+    ids = [0] * (pools + 1)
+    for index, given in id_of.items():
+        ids[index] = given
+    return ids.__getitem__
 
 
 # Every land tile that touches water, with its island, for both sweeps — an inland tile rings no lake and raises no tide. Read off the edges, where all coasts lie.
@@ -38,17 +47,20 @@ def _compute_waters(save: dict, save_path: Path) -> dict:
     water = bytearray(stride) + b"".join(b"\x00" + row + b"\x00" for row in rows) + bytes(stride)
     coast = _coast(water, stride, island_of)
     pool_at, pools = _pool_map(water, stride)
-    # What the two lists leave out, said in the data so that an absence never reads as a count: the pools under the floor, the crossings no body could swim.
-    hidden = sum(1 for size, _, _, enclosed in pools if enclosed and size < _MIN_LAKE_TILES)
+    # What the lists leave out, said in the data so that an absence never reads as a count: the pools under the floor, the crossings no body could swim.
+    hidden = sum(1 for size, *_ in pools if size < _MIN_LAKE_TILES)
+    seas, sea_at = _seas(pools, pool_at, coast, water, stride)
     return {
         "lakes": _lakes(pools, pool_at, coast, water, stride),
+        "sea_at": sea_at,
+        "seas": seas,
         "straits": _straits(water, stride, coast),
         "unlisted": {"lakes": {"count": hidden, "smaller_than": _MIN_LAKE_TILES}, "straits": {"wider_than": 2 * _FARTHEST_SWIM}},
     }
 
 
 # An enclosed water is named by the shores that ring it, and holds as its own any land no other water touches — the isles a chronicle reaches last, or never.
-def _lakes(pools: list[tuple[int, int, int, bool]], pool_at: list[int], coast: list[tuple[int, int]], water: bytearray, stride: int) -> list[dict]:
+def _lakes(pools: list[tuple[int, int, int, bool, int]], pool_at: list[int], coast: list[tuple[int, int]], water: bytearray, stride: int) -> list[dict]:
     # Numbered widest first, as WB numbers its islands: the id is what `places.json` keys a name on, so it must not shift from one chapter to the next.
     kept = [p for p in sorted((p for p, pool in enumerate(pools) if pool[3]), key=lambda p: -pools[p][0]) if pools[p][0] >= _MIN_LAKE_TILES]
     lakes = set(kept)
@@ -66,16 +78,21 @@ def _lakes(pools: list[tuple[int, int, int, bool]], pool_at: list[int], coast: l
             if pool != _OPEN_SEA:
                 shores[pool].add(island_id)
 
+    # A heart tile by tile, a lake being small: its mean, which a bend leaves ashore, stays the mark `water_bodies` knows it by.
+    lake_of = {index: lake for lake, index in enumerate(kept, start=1)}
+    lake_at = _by_pool(lake_of, len(pools))
+    middles = hearts([list(map(lake_at, pool_at[row + 1 : row + stride - 1])) for row in range(stride, len(pool_at) - stride, stride)], 1)
     out = []
-    for lake_id, index in enumerate(kept, start=1):
-        size, cx, cy, _ = pools[index]
-        islands = sorted(i for i, seen in pools_of_island.items() if seen == {index})
-        out.append({"centroid": {"x": cx, "y": cy}, "id": lake_id, "islands": islands, "shores": sorted(shores[index] - set(islands)), "size": size})
+    for index, lake in lake_of.items():
+        size, cx, cy, *_ = pools[index]
+        islands, (x, y) = sorted(i for i, seen in pools_of_island.items() if seen == {index}), middles[lake]
+        heart, shore = {"x": x, "y": y}, sorted(shores[index] - set(islands))
+        out.append({"centroid": {"x": cx, "y": cy}, "heart": heart, "id": lake, "islands": islands, "shores": shore, "size": size})
     return out
 
 
-# Every body of water with its size, centroid and whether land encloses it — the open sea reaches the map edge. `_lakes` keeps the enclosed ones worth a name.
-def _pool_map(water: bytearray, stride: int) -> tuple[list[int], list[tuple[int, int, int, bool]]]:
+# Every body of water with its size, centroid, whether land encloses it and the map edges it reaches, a bit each for west, east, south and north.
+def _pool_map(water: bytearray, stride: int) -> tuple[list[int], list[tuple[int, int, int, bool, int]]]:
     width, height = stride - 2, len(water) // stride - 2
     # Walked by the runs of each row rather than tile by tile: a run joins those it overlaps in the row above, and its size and sums are arithmetic.
     runs = [match.span() for match in _RUN.finditer(water)]
@@ -97,14 +114,40 @@ def _pool_map(water: bytearray, stride: int) -> tuple[list[int], list[tuple[int,
     for k, (a, b) in enumerate(runs):
         if (index := index_of.get(root := union_root(parent, k))) is None:
             index = index_of[root] = len(sums)
-            sums.append([0, 0, 0, False])
+            sums.append([0, 0, 0, 0])
         pool_at[a:b] = [index] * (b - a)
         (y, x), n = divmod(a, stride), b - a
         pool = sums[index]
         pool[0], pool[1], pool[2] = pool[0] + n, pool[1] + (2 * x + n - 1) * n // 2, pool[2] + y * n
-        pool[3] = pool[3] or x == 1 or x + n - 1 == width or y == 1 or y == height
+        pool[3] |= (x == 1) | (x + n - 1 == width) << 1 | (y == 1) << 2 | (y == height) << 3
     # Its tiles are not kept, `pool_at` already sites each one: only the size and the centroid, the border's column and row taken back off the mean.
-    return pool_at, [(size, sum_x // size - 1, sum_y // size - 1, not open_sea) for size, sum_x, sum_y, open_sea in sums]
+    return pool_at, [(size, sum_x // size - 1, sum_y // size - 1, not edges, edges) for size, sum_x, sum_y, edges in sums]
+
+
+# Every water that reaches the map's edge and is worth a name, widest first as the lakes are: the lands it washes, the edges it touches, each tile marked its own.
+def _seas(pools: list[tuple[int, int, int, bool, int]], pool_at: list[int], coast: list[tuple[int, int]], water: bytearray, stride: int) -> tuple[list[dict], bytes]:
+    open_pools = sorted((p for p, pool in enumerate(pools) if not pool[3] and pool[0] >= _MIN_LAKE_TILES), key=lambda p: -pools[p][0])
+    sea_of = {index: sea for sea, index in enumerate(open_pools[:255], start=1)}  # a byte each in the mask, which no map comes near filling
+    shores: defaultdict[int, set[int]] = defaultdict(set)
+    for i, island_id in coast:
+        for j in (i - stride, i + stride, i - 1, i + 1):
+            if water[j] and (sea := sea_of.get(pool_at[j])):
+                shores[sea].add(island_id)
+
+    # Sited at its heart, the mean of a sea falling ashore of any gulf: one tile in each cell stands for it.
+    cols, half = (stride - 2) // HEART_CELL, HEART_CELL // 2
+    firsts = range((half + 1) * stride + half + 1, len(pool_at) - stride, HEART_CELL * stride)
+    sea_at = _by_pool(sea_of, len(pools))
+    middles = hearts([list(map(sea_at, pool_at[first : first + cols * HEART_CELL : HEART_CELL])) for first in firsts])
+    seas = []
+    for index, sea in sea_of.items():
+        size, *_, edges = pools[index]
+        x, y = middles.get(sea) or ((own := pool_at.index(index)) % stride - 1, own // stride - 1)  # too thin for any cell: the first of its tiles
+        reached = sorted(side for bit, side in enumerate("WESN") if edges >> bit & 1)
+        seas.append({"edges": reached, "heart": {"x": x, "y": y}, "id": sea, "shores": sorted(shores[sea]), "size": size})
+    # The map's own tiles alone, row by row, a sea's id on each of its tiles and nothing elsewhere: folded, the runs of one id weigh next to nothing.
+    marks = b"".join(bytes(map(sea_at, pool_at[row + 1 : row + stride - 1])) for row in range(stride, len(pool_at) - stride, stride))
+    return seas, zlib.compress(marks)
 
 
 # The narrowest water between two lands in `swim_tiles`: every coast floods at once, its first step weighing half, and two meeting tides add up to the crossing.
@@ -157,21 +200,29 @@ def _water_rows(save: dict) -> list[bytes]:
     return tile_mask(save, [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []])
 
 
-# What water a tile lies in — `sea`, a listed `lake` by id, or `pond_tiles` for a pool under the lakes' floor — filled from the tile, never past the largest lake.
+# Every stretch of water the map holds, read once per save since the map never moves — the seas' mask with it, which only `water_bodies` reads.
+def _waters(save: dict, save_path: Path) -> dict:
+    return pickle_cached("waters_v14", save_path, lambda: _compute_waters(save, save_path))
+
+
+# What water a tile lies in — a `sea` or a listed `lake` by id, or `pond_tiles` for a pool under their floor — read off the seas' mask, else filled from the tile.
 def water_bodies(save: dict, save_path: Path) -> Callable[[int, int], dict]:
-    lakes = {(lake["size"], lake["centroid"]["x"], lake["centroid"]["y"]): lake["id"] for lake in waters_cached(save, save_path)["lakes"]}
-    rows = _water_rows(save)
+    waters = _waters(save, save_path)
+    lakes = {(lake["size"], lake["centroid"]["x"], lake["centroid"]["y"]): lake["id"] for lake in waters["lakes"]}
+    rows, sea_at = _water_rows(save), zlib.decompress(waters["sea_at"])
     width, height, cap = len(rows[0]), len(rows), max((size for size, _, _ in lakes), default=_MIN_LAKE_TILES)
 
     def body(x: int, y: int) -> dict:
+        if sea := sea_at[y * width + x]:
+            return {"sea": sea}
         seen, todo, sum_x, sum_y = {(x, y)}, [(x, y)], 0, 0
         while todo:
             cx, cy = todo.pop()
-            if cx in (0, width - 1) or cy in (0, height - 1) or len(seen) > cap:  # the edge, or more than any lake holds: an open sea, as `_pool_map` has it
+            if len(seen) > cap:  # more than any lake holds: a sea past the mask's last id
                 return {"sea": True}
             sum_x, sum_y = sum_x + cx, sum_y + cy
             for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
-                if (nx, ny) not in seen and rows[ny][nx]:
+                if (nx, ny) not in seen and 0 <= nx < width and 0 <= ny < height and rows[ny][nx]:
                     seen.add((nx, ny))
                     todo.append((nx, ny))
         size = len(seen)
@@ -181,6 +232,6 @@ def water_bodies(save: dict, save_path: Path) -> Callable[[int, int], dict]:
     return body
 
 
-# Every stretch of sea the map encloses, and every land it holds apart — the map never moves, so what its water says is read once per save.
+# The seas, the lakes and the straits between the lands, as `geography … waters` prints them.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v13", save_path, lambda: _compute_waters(save, save_path))
+    return {key: value for key, value in _waters(save, save_path).items() if key != "sea_at"}
