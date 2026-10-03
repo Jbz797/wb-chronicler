@@ -253,6 +253,8 @@ def _build_metadata(map_stats: dict) -> dict:
     age_duration = float(map_stats.get("current_world_ages_duration") or 0)
     age_id = map_stats.get("world_age_id") or ""
     age_progress = float(map_stats.get("current_age_progress") or 0)
+    # WB `WorldAgeManager.update` adds `delta × speed / duration` in single precision: the end, a hair off the month's edge every age ends on, is rounded to a unit.
+    age_left = age_duration * (1 - age_progress) / float(map_stats.get("world_ages_speed_multiplier") or 1)
     age = load_data("world-ages.json").get(age_id) or {}
     world_time = rounded_world_time(map_stats)
     return {
@@ -261,7 +263,7 @@ def _build_metadata(map_stats: dict) -> dict:
         "age_name": age.get("name"),  # Chronicler-only: WB's own English title, the id above being what the panel translates
         "date": world_date(world_time),  # Chronicler-only: the day as every other date is written — the raw clock stays the scripts', read off the save
         # Chronicler-only: a date as `born` is, where WB's UI counts « Lunes jusqu'au prochain âge ». Absent where no age runs: WB then stores no span.
-        "next_age_on": world_date(world_time + age_duration * (1 - age_progress)) if age_duration > 0 else None,
+        "next_age_on": world_date(round(world_time + age_left)) if age_duration > 0 else None,
     }
 
 
