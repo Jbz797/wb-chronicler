@@ -361,7 +361,7 @@ def _shares(counter: Counter, total: int) -> str | None:
     return " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / total * 100)) > 0) or None
 
 
-# `block`, `burning`, `frozen` (passing frost), `islet_tiles` (a land too small to count), `snow`, `ice`, on water `sea`, `lake` or `pond_tiles`: where they hold.
+# `block`, `burning`, `frozen` (passing frost), `islet_tiles` (a land too small to count), `snow`, `ice`, on water the body or `pond_tiles`: where they hold.
 def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
     out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}

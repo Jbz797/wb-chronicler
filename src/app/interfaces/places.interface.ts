@@ -24,7 +24,8 @@ export interface Places {
   islands: Record<string, PlaceArea>;
   lakes: Record<string, PlaceArea>;
   places: Record<string, PlaceSpot>;
-  seas?: Record<string, PlaceArea>; // absent from a gazetteer seeded before the seas were, until its next chapter
+  rivers?: Record<string, PlaceArea>; // absent, as `seas`, from a gazetteer seeded before they were, until its next chapter
+  seas?: Record<string, PlaceArea>;
 }
 
 // The map's extent in tiles — the preview's own size, WB drawing one pixel a tile.

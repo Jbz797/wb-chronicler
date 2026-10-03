@@ -66,8 +66,9 @@ export class WorldMapComponent {
     const chapter = Number(this._chronicler.currentChapter()?.slug.slice(1) ?? 0);
     const isKnown = (given: string): boolean => given !== '' && Number(given.slice(1)) <= chapter;
     const named = (book: Record<string, PlaceArea>): [string, PlaceArea][] => Object.entries(book).filter(([, entry]) => isKnown(entry.chapter));
-    const [islands, lakes, seas] = [named(places.islands), named(places.lakes), named(places.seas ?? {})];
-    const fontSize = this._sizer([...islands, ...lakes, ...seas].map(([, entry]) => entry.size)); // lands and waters on one scale: no water outgrows a wider land
+    const [islands, lakes, rivers, seas] = [named(places.islands), named(places.lakes), named(places.rivers ?? {}), named(places.seas ?? {})];
+    // Lands and waters on one scale: no water outgrows a wider land.
+    const fontSize = this._sizer([...islands, ...lakes, ...rivers, ...seas].map(([, entry]) => entry.size));
     const areas = (kind: Exclude<MapPinKind, 'spot'>, entries: [string, PlaceArea][]): MapPin[] => entries.map(([id, entry]) => ({
       ...this._at(entry.centroid, extent), area: entry.size * this._tileKm2, fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name,
     }));
@@ -75,6 +76,7 @@ export class WorldMapComponent {
     return [
       ...areas('island', islands),
       ...areas('lake', lakes),
+      ...areas('river', rivers),
       ...areas('sea', seas),
       ...Object.entries(places.places)
         .filter(([, spot]) => isKnown(spot.chapter))

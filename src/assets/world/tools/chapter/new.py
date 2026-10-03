@@ -669,7 +669,7 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
     _write_world(live)
     # His toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge. A book an older gazetteer lacks joins it.
     places = json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
-    if missing := [book for book in ("islands", "lakes", "seas") if book not in places]:
+    if missing := [book for book in ("islands", "lakes", "rivers", "seas") if book not in places]:
         if (surveyed := _run("geography/info.py", "islands,waters", chapter)) is None:  # seeded once and never again: an empty survey would stay empty
             return "geography/info.py islands,waters"
         found = {**(surveyed.get("waters") or {}), "islands": surveyed.get("islands")}

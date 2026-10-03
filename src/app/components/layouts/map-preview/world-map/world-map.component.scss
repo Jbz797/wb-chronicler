@@ -29,11 +29,22 @@
       letter-spacing: $letter-spacing-wide;
     }
 
+    // Waters in italics, as a printed map letters them, each in its own blue: a lake plain, a river the brightest, a sea the palest and spaced like a land.
     &.pin-lake,
+    &.pin-river,
     &.pin-sea {
       color: #cfe3f2;
       font-family: $font-body;
       font-style: italic;
+    }
+
+    &.pin-river {
+      color: #8fd3f7;
+    }
+
+    &.pin-sea {
+      color: #eef6fc;
+      letter-spacing: $letter-spacing-wide;
     }
 
     // A spot the chronicler named: his emoji, its name hung beside it in small caps.

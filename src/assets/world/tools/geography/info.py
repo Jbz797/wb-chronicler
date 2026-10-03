@@ -360,8 +360,7 @@ def _narrowed(out: dict, land: int | str) -> dict:
         waters = out["waters"]
         narrowed["waters"] = {
             **waters,
-            "lakes": [lake for lake in waters["lakes"] if land in lake["shores"]],
-            "seas": [sea for sea in waters["seas"] if land in sea["shores"]],
+            **{kind: [body for body in waters[kind] if land in body["shores"]] for kind in ("lakes", "rivers", "seas")},
             "straits": [strait for strait in waters["straits"] if land in strait["between"]],
         }
     return narrowed
