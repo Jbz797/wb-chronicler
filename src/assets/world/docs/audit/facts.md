@@ -1,13 +1,14 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 01/10/26 15:42</p>
+<p class="metadata">Date de mise à jour : 03/10/26 08:50</p>
 
-Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail, chacun de son côté.
+Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` avec entre parenthèses les champs qu'il y a écrits. Un autre vérificateur fait le même travail, chacun de son côté. Au baptême d'un monde, ta seule cible est `history/world.json`, son nom et sa description, et tu es seul.
 
 ## Ta tâche
 
 Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, comparaison avec le passé, absolu, mécanisme, cause… Utilise les outils de `docs/tools.md`, sur la save dont parle l'affirmation (`C<n>` pour « il y a N ans »). Donne à chaque écart sa commande et sa valeur vraie. De `docs/chronicler.md`, lis § IV, « Le passé du monde » et « Prudence et rigueur » : le reste est la manière, qui n'est pas ton rôle.
 
+- **Le nom d'un monde et sa description** se vérifient comme un chapitre : une forme (une chaîne, une mer ouverte au sud) se lit sur la carte (`docs/tools.md` § Carte), et le nom vaut ce que vaut ce qu'il dit du sol.
 - **Le silence du wiki ne dément rien** : une condition qu'il ne donne ni ne nie reste ouverte, et se signale comme telle, jamais comme fausse. La page consacrée à la chose l'emporte sur un tableau qui la résume.
 - **Un arrondi juste n'est pas un écart** : range à part, sans rien demander, un chiffre vrai que l'outil donne plus fin.
 - **Un mécanisme** que ni les sorties ni `docs/chronicler.md` ne donnent se vérifie sur le wiki (`docs/chronicler.md` § « Accès au wiki WorldBox »). Si les deux divergent, la sortie l'emporte.

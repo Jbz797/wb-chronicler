@@ -551,6 +551,25 @@ def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -
     return "yet to be designated" if fav_id is None else ""
 
 
+# Rewrites the world's name or blurb in the live save and on its card, the other left as it stands: what the check after the naming mends.
+def _rename_world(live_wbox: Path, name: str, description: str) -> int:
+    if not (name or description):
+        print("✗ --name, --description: neither carries its words", file=sys.stderr)
+        return 2
+    if worldbox_running():
+        print("✗ WorldBox is running — quit the game before renaming, or its next save writes the old words back", file=sys.stderr)
+        return 1
+
+    save = load_save(live_wbox)
+    stats = save["mapStats"]
+    stats["description"], stats["name"] = description or stats.get("description") or "", name or stats.get("name") or ""
+    write_save(live_wbox, save)
+    _write_world(save)
+    (live_wbox.parent / "map.meta").unlink(missing_ok=True)  # as at the reset: WB rebuilds it from the save on opening
+    print(f"✓ world named {stats['name'] or '—'}, {'described anew' if description else 'its description kept'}")
+    return 0
+
+
 # Zeroed by type rather than by name: WB adds counters between versions, and a hardcoded list would leave the new ones running. `id_*` restarts at 1, the rest at 0.
 def _reset_counters(stats: dict) -> None:
     for key, value in stats.items():
@@ -576,14 +595,17 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     _purge_history(live_wbox.parent / "map_stats.s3db")
     (live_wbox.parent / "map.meta").unlink(missing_ok=True)  # WB rebuilds it from the save on opening; writing it ourselves would guess at a format we only read
 
-    landmarks = ", ".join(f"{count} {asset}" for asset, count in sorted(Counter(b["asset_id"] for b in save["buildings"]).items())) or "none"
+    landmarks = ", ".join(f"{count} {asset}" for asset, count in sorted(Counter(b["asset_id"] for b in save["buildings"]).items()))
     print(f"✓ world reset — year 1 of the Age of Hope, {stats['current_world_ages_duration'] / UNITS_PER_YEAR:.0f} years long")
-    print(f"  map kept: {landmarks}")
+    print(f"  map kept, {f'with its landmarks: {landmarks}' if landmarks else 'no landmark on it'}")
     print(f"  named: {stats['name'] or '—'}")
+    if name or description:  # his own words, written before any audit stood and read by none after: checked here, the game still closed for the mending
+        print("  → chronicler, first, the game still closed: a fresh sub-agent checks them — `Lis docs/audit/facts.md — history/world.json (description, name)`")
+        print('    a gap is mended with `tools/chapter/new.py --name "…" --description "…"`, either alone leaving the other; settled, close that sub-agent')
 
-    # WB re-pauses the ages on any year-1 load, so no flag set here holds; and it is saved, hence the wheel before the re-save — else a still world is archived.
-    print("  → player, in this order: 1. reopen the save in WorldBox and press play on the age wheel — the reset leaves the ages paused, or the age never turns")
-    print("                           2. save again — only the game redraws preview.png, and the chapter then archives a world whose ages run")
+    # WB may re-pause the ages on a year-1 load, so no flag set here holds, and it alone redraws preview.png: the wheel first, then the re-save the chapter archives.
+    print("  → player, in this order: 1. reopen the save in WorldBox and press play on the age wheel if paused — the reset may pause it, and the age never turns")
+    print("                           2. save again — the chapter then archives the world as it now stands")
     print("  → chronicler: once he has done both, `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
     return 0
 
@@ -761,12 +783,14 @@ def main(argv: list[str]) -> int:
         print(f"✗ no live save at {live_wbox} — ask the player to update the path, from the Settings button below the map", file=sys.stderr)
         return 2
 
-    # A world's name and blurb are set at its reset alone: accepted nowhere else, and staying mute on them would leave it bare while the run looked well.
+    # A world's name and blurb are set at its reset; alone, the two flags mend what the check that follows faults in them, and nothing past the first chapter.
     resetting = "--reset" in argv
-    if not resetting and (lone := [flag for flag in ("--description", "--name") if flag in argv]):
-        print(f"✗ {', '.join(lone)}: only with `--reset` — a world is named and described once, when it is reset", file=sys.stderr)
-        return 2
     n = latest_chapter() + 1
+    if not resetting and (lone := [flag for flag in ("--description", "--name") if flag in argv]):
+        if n > 2:
+            print(f"✗ {', '.join(lone)}: past the first chapter the world keeps the words its chapters tell it by", file=sys.stderr)
+            return 2
+        return _rename_world(live_wbox, _value(argv, "--name"), _value(argv, "--description"))
 
     chapter, chapter_dir = f"C{n}", SAVES_DIR / f"C{n}"
     if resetting:  # the player said yes, and only he can: nothing but this flag ever reaches the branch below
