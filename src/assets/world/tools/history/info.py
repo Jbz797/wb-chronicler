@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import (
     HISTORY_S3DB,
     SAVES_DIR,
+    UNITS_PER_MONTH,
     UNITS_PER_YEAR,
     absent_entity,
     arg_parser,
@@ -62,7 +63,7 @@ _WORLD_RENAMED = {"houses_built": "buildings_built", "houses_destroyed": "buildi
 
 # WB's crowns once raised, fallen ones with their dates — the one record a fallen crown keeps once its years are gone.
 def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict) -> list[dict]:
-    _, now = _chapter_clock(save)
+    now = _chapter_time(save)
     rows = conn.execute(
         "SELECT id, name, original_actor_asset, created_time, died_time, total_births, total_deaths, total_kills FROM KingdomData"
         " WHERE died_time IS NOT NULL AND died_time <= ? ORDER BY died_time",
@@ -77,26 +78,26 @@ def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict) -> list[dict]:
 # One entity's years: its states as they closed each year, and what its tallies gained in it; older years, coarse, their states alone and never as a date.
 def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dict, chapter: str | None) -> list[dict] | str:
     stem, collection = _ENTITIES[kind]
-    year, _ = _chapter_clock(save)
-    columns, coarse, rows = _series(conn, stem, entity_id, year)
+    closed = _closed_year(save)
+    columns, coarse, rows = _series(conn, stem, entity_id, closed + 1)
     living = next((e for e in save.get(collection) or [] if e.get("id") == entity_id), None)
     if not rows and not coarse:
         if living is not None:
-            return f"✗ {kind} {entity_id} has no year closed yet: WB writes a year's row as it ends"
+            return f"✗ {kind} {entity_id} has no year closed yet: WB writes a year's row as its 12th month opens"
         refusal = absent_entity(kind, collection, entity_id, chapter)
         return f"{refusal} — WB keeps the years of the living alone" if " is gone " in refusal else refusal
     events = [c for c in columns if _EVENT_COLUMN.search(c)]
     states = [c for c in columns if c not in events and any(r[c] for r in (*coarse, *rows))]  # a state at nought all along says nothing
-    born = int(float(living["created_time"]) // UNITS_PER_YEAR) + 1 if living and living.get("created_time") is not None else None
+    born = _row_year(float(living["created_time"])) if living and living.get("created_time") is not None else None
     # Its first fine year is a first year only when it was born in it: a window opened later holds a total, not that year's gain.
     before: dict = dict.fromkeys(events, 0) if rows and not coarse and born == rows[0]["timestamp"] else {}
     years, by_year = [], {row["timestamp"]: row for row in rows}
     row = rows[0] if rows else {}
     # Every year from its first to the last closed, a quiet one too: WB drops a year's row when nothing moved, and a gap would read as an end.
-    for at in range(rows[0]["timestamp"], year) if rows else ():
+    for at in range(rows[0]["timestamp"], closed + 1) if rows else ():
         row = by_year.get(at, row)
         now = {c: row[c] for c in events}
-        years.append({"year": at, **{c: row[c] for c in states if row[c]}, **(_gains(before, now, events) if at in by_year else {})})
+        years.append({**{c: row[c] for c in states if row[c]}, **(_gains(before, now, events) if at in by_year else {}), "until": _until(at)})
         before = now
     older = [{"around_year": r["timestamp"], "step": r["step"], **{c: r[c] for c in states if r[c]}} for r in coarse]
     return older + years  # the coarse steps' approximations first, each told `around_year`, never as a date
@@ -104,8 +105,8 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
 
 # WB's own log up to the chapter, its bodies and crowns named off the registries — past `_MAX_LOG` entries, a count by kind of event.
 def _build_log(save: dict, since: str | None, actor: int | None, event: str | None) -> dict | list[dict] | str:
-    start = _chapter_clock(load_save(SAVES_DIR / since / "map.wbox"))[1] if since else 0.0
-    if not (entries := log_entries(start, _chapter_clock(save)[1], actor, event)):
+    start = _chapter_time(load_save(SAVES_DIR / since / "map.wbox")) if since else 0.0
+    if not (entries := log_entries(start, _chapter_time(save), actor, event)):
         return "✗ nothing logged" + (f" since {since}" if since else "") + (" for that body" if actor is not None else "") + (f" as {event}" if event else "")
     if len(entries) > _MAX_LOG:
         counts = Counter(e["event"] for e in entries)
@@ -121,11 +122,11 @@ def _build_log(save: dict, since: str | None, actor: int | None, event: str | No
     return entries
 
 
-# The world's years: what each one saw born, raised, razed or dying, as gains — the year under way, which has no row yet, off the save's own tallies.
+# The world's years: what each one saw born, raised, razed or dying, as gains — the one under way, which has no row yet, off the save's own tallies.
 def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     map_stats = save.get("mapStats") or {}
-    year, _ = _chapter_clock(save)
-    columns, _, rows = _series(conn, "World", None, year)
+    closed = _closed_year(save)
+    columns, _, rows = _series(conn, "World", None, closed + 1)
     events = [c for c in columns if _EVENT_COLUMN.search(c) and c != _DEATHS_TOTAL]
     tracked = [*events, _DEATHS_TOTAL] if _DEATHS_TOTAL in columns else events
     before: dict = dict.fromkeys(tracked, 0) if not rows or rows[0]["timestamp"] == 1 else {}
@@ -133,13 +134,13 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     for row in rows:
         now = {c: row[c] for c in tracked}
         if gains := _with_unknown(_gains(before, now, events), before, now):
-            timeline.append({"year": row["timestamp"], **gains})
+            timeline.append({**gains, "until": _until(row["timestamp"])})
         before = now
     # WB's `mapStats` holds the same tallies in camelCase, the deaths snake-cased — two of them under names of their own.
     keys = {c: _STAT_KEYS.get(c) or (c if c.startswith("deaths_") else _camel(c)) for c in tracked}
     now = {c: int(v) if (v := map_stats.get(key)) is not None else None for c, key in keys.items()}
     if gains := _with_unknown(_gains(before, now, events), before, now):
-        timeline.append({"year": year, **gains, "so_far": True})
+        timeline.append({**gains, "since": f"y{closed} m12" if closed else "y1 m1", "so_far": True})
     return timeline
 
 
@@ -147,10 +148,14 @@ def _camel(column: str) -> str:
     return re.sub(r"_(\w)", lambda m: m.group(1).upper(), column)
 
 
-# The chapter's own year and time: the base is the latest chapter's, so an older chapter reads it only up to the year it had closed.
-def _chapter_clock(save: dict) -> tuple[int, float]:
-    world_time = float((save.get("mapStats") or {}).get("world_time") or 0)
-    return int(world_time // UNITS_PER_YEAR) + 1, world_time
+# The chapter's own time: the base is the latest chapter's, so an older chapter reads it only up to the year it had closed.
+def _chapter_time(save: dict) -> float:
+    return float((save.get("mapStats") or {}).get("world_time") or 0)
+
+
+# The last year WB has closed at the chapter's hour — a closed row then says `until` and the one under way `since`, a bare year lying by a month.
+def _closed_year(save: dict) -> int:
+    return _row_year(_chapter_time(save)) - 1
 
 
 # Each year's rise of the rising tallies: `None` before any reading, so a window opened past the entity's first year never passes a total off as a year's gain.
@@ -174,6 +179,11 @@ def _registry(name: str) -> dict:
     return {int(k): v for k, v in json.loads(path.read_text()).items()} if path and path.exists() else {}
 
 
+# The year whose row a moment falls in: WB `MapBox.updateMetaHistory` writes a year's row as its 12th month opens, so that month is already the next one's.
+def _row_year(world_time: float) -> int:
+    return int((world_time + UNITS_PER_MONTH) // UNITS_PER_YEAR) + 1
+
+
 # Every row of one series before `year`, the fine window's years and, older, the coarse steps' approximations — each row its own blanks carried.
 def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: int) -> tuple[list[str], list[dict], list[dict]]:
     where, params = ("WHERE timestamp < ?", [year]) if entity_id is None else ("WHERE id = ? AND timestamp < ?", [entity_id, year])
@@ -195,6 +205,10 @@ def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: in
                 row[column] = carried.get(column)
             carried[column] = row[column]
     return columns, coarse, rows
+
+
+def _until(year: int) -> str:
+    return f"y{year} m11"
 
 
 # A year's deaths WB counted in its total and filed under no cause, as `world … cumulative` says them: the causes then sum to the total.
