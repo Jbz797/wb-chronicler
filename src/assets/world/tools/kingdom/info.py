@@ -30,6 +30,7 @@ from shared import (
     death_causes,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     index_by_id,
     is_transport,
@@ -302,9 +303,10 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     return {
         "age": entity_age(kingdom, ctx["world_time"]),
         **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
-        **({"births": born} if (born := int(kingdom.get("total_births") or 0)) else {}),  # Members born over its lifetime, the counterpart WB keeps to `deaths`.
+        **({"births": births} if (births := int(kingdom.get("total_births") or 0)) else {}),  # Members born over its lifetime, the counterpart WB keeps to `deaths`.
         **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # `_BOOK_POINTS` per authored book + how widely it's read
         **({"books": held} if (held := ctx["books_by_kingdom"]()[kid]) else {}),  # volumes shelved in its towns, whoever wrote them
+        "born": entity_born(kingdom),  # chronicler-only: its month, where `age` counts whole years
         "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
         "capital": {"id": cap["id"], "name": cap.get("name")} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
         "cities": ctx["cities_by_kingdom"].get(kid, 0),

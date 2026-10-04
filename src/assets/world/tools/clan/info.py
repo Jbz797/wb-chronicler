@@ -25,6 +25,7 @@ from shared import (
     death_causes,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     index_by_id,
     light,
@@ -91,6 +92,7 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
         "age": entity_age(clan, ctx["world_time"]),
         **({"births": births} if (births := int(clan.get("total_births") or 0)) else {}),
         **({"books_written": books} if (books := int(clan.get("books_written") or 0)) else {}),
+        "born": entity_born(clan),  # chronicler-only: its month, where `age` counts whole years
         "chief": entity_ref(clan.get("chief_id"), ctx["actors_by_id"]),
         **({"cities": len(cities)} if cities else {}),  # settlements its members answer from — a clan crosses borders, WB never ties it to one town
         **({"deaths": deaths} if (deaths := int(clan.get("total_deaths") or 0)) else {}),

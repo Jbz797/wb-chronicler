@@ -34,6 +34,7 @@ from shared import (
     death_causes,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     equipment_entry,
     index_by_id,
@@ -363,8 +364,9 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
         # The crowns storming the town, eldest id first. Sorting the refs themselves would raise the moment a second one shows up — two dicts never compare.
         **({"besieged_by": sorted(besiegers, key=itemgetter("id"))} if besiegers else {}),
-        **({"births": born} if (born := int(city.get("total_births") or 0)) else {}),  # Inhabitants born over its lifetime, the counterpart WB keeps to `deaths`.
+        **({"births": births} if (births := int(city.get("total_births") or 0)) else {}),  # Inhabitants born over its lifetime, the counterpart WB keeps to `deaths`
         **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # `_BOOK_POINTS` per book written here + how widely it's read
+        "born": entity_born(city),  # chronicler-only: its month, where `age` counts whole years
         "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
         **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
         "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).

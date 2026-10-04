@@ -24,6 +24,7 @@ from shared import (
     competition_ranks,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     index_by_id,
     light,
@@ -102,6 +103,7 @@ def _build_metadata(language: dict, members: list[dict], ctx: dict, tallies: dic
     return {
         "age": entity_age(language, ctx["world_time"]),
         **({"books_written": tally} if (tally := int(language.get("books_written") or 0)) else {}),  # WB's lifetime count, burnt volumes included
+        "born": entity_born(language),  # chronicler-only: its month, where `age` counts whole years
         **({"cities": cities} if (cities := tallies["cities"][language_id]) else {}),  # towns WB records as speaking it, not merely housing a speaker
         **({"converted": converted} if (converted := int(language.get("speakers_converted") or 0)) else {}),  # won from another tongue, a WB lifetime tally
         **({"deaths": deaths} if (deaths := int(language.get("total_deaths") or 0)) else {}),

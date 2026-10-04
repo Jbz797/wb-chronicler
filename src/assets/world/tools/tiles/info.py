@@ -29,6 +29,7 @@ from shared import (
     city_centre,
     civic_building_ids,
     emit,
+    entity_born,
     entity_ref,
     index_by_id,
     load_data,
@@ -165,12 +166,13 @@ def _fabric_distance(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
     return round(min(walk_tiles(max(qx - x, x - qx - ZONE_TILES + 1, 0), max(qy - y, y - qy - ZONE_TILES + 1, 0)) for qx, qy in quarters))
 
 
-# One object per tile, never two. WB's `buildings` collection holds the flowers and the ore too, hence the family, named as `geography` names them.
-def _ground_at(x: int, y: int, ctx: dict) -> dict:
+# One object per tile, never two — WB's `buildings` holds the flowers and the ore too, hence the family; `dated` for the tile asked about, a sweep's rows kept short.
+def _ground_at(x: int, y: int, ctx: dict, dated: bool) -> dict:
     if (b := ctx["ground_by_pos"].get((x, y))) is None:
         return {}
     asset = b.get("asset_id")
-    return {"asset_id": asset, "id": b.get("id"), "type": "buildings" if asset in ctx["civic"] else ctx["categories"].get(asset) or "other"}
+    family = "buildings" if asset in ctx["civic"] else ctx["categories"].get(asset) or "other"  # named as `geography` names them
+    return {"asset_id": asset, **({"born": entity_born(b)} if dated else {}), "id": b.get("id"), "type": family}
 
 
 # Quarters are held by their corner tile, a town being the ground they cover — while a crown's seat stays the one centre `city/info.py` sites a capital by.
@@ -455,7 +457,7 @@ def main(argv: list[str]) -> int:
         if "distances" in sections and (x, y) in queried:  # what a sweep's neighbours would repeat to the tile, said once for the tile asked about
             cell["distances"] = _distances_at(x, y, ctx)
         if "ground" in sections:
-            cell["ground"] = _ground_at(x, y, ctx)
+            cell["ground"] = _ground_at(x, y, ctx, (x, y) in queried)
         if "islet" in sections and (x, y) in queried:  # the islet whole, said once for the tile asked about as `distances` is
             cell["islet"] = _islet_at(x, y, ctx)
         if "tile_info" in sections:

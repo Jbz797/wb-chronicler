@@ -48,6 +48,7 @@ from shared import (
     competition_ranks,
     duration,
     emit,
+    entity_born,
     entity_ref,
     equipment_entry,
     equipment_rarity,
@@ -72,7 +73,6 @@ from shared import (
     trip_time,
     walk_tiles,
     wants_detail,
-    world_date,
     world_laws,
 )
 from walking import Gait, WalkMap, walk_from, walk_way
@@ -283,7 +283,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "asset_id": actor.get("asset_id"),
-        "born": world_date(actor.get("created_time") or 0),  # the month WB set it on the map, dated as the chronicle dates: who came first, and when
+        "born": entity_born(actor),  # the month WB set it on the map, dated as the chronicle dates: who came first, and when
         # Chronicler-only, and only while it still bites: the date WB opens a body's own line — `adult_on` lifts a bridling and lets it found a town, never bear.
         **({"breeds_on": crossed_on(actor, age_breeding)} if age < age_breeding and lineage_bears else {}),
         # Said only when they hold, as every flag the tools emit: a body that cannot is most of the world, beasts and children first.
@@ -464,7 +464,7 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
         if _circle(actor, ctx, None, island_of.get(goal) != home, sailed_hours) == "common_with_boat":
             return {**to, "circle": "common_with_boat", "with_boat": _way_parts(sailed(), per_hour, "sail")}
         raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["crow_tiles"], ctx))
-    walked, _, _, _, widest, reached = way
+    walked, _, _, _, widest, reached, _ = way
     if mark:
         to = _heading(cx, cy, reached % walk_map.width, reached // walk_map.width, mark, about)
     part = "sail" if is_aboard(actor) else "swim"  # a passenger's water is sailed, never swum
@@ -881,12 +881,12 @@ def _water_trait_ids() -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if "damaged_by_water" in (spec.get("tags") or []))
 
 
-# A way told by parts, lengths and times: `walk_`, the water's `part` (`swim_` or `sail_`, 1 tile at least), `total_` once two, rounded whole, never summed by hand.
+# A way by parts, lengths and times: `walk_`, the water's `part` (`swim_`/`sail_`, 1 tile at least), its `crossings`, `total_` once two — never summed by hand.
 def _way_parts(way: tuple | None, per_hour: float, part: str) -> dict:
     if way is None:
         return {}
-    cost, water, swam, trod, _, _ = way
-    wet = {f"{part}_tiles": max(round(swam), 1), "total_tiles": round(trod)} if water else {}
+    cost, water, swam, trod, _, _, crossings = way
+    wet = {"crossings": crossings, f"{part}_tiles": max(round(swam), 1), "total_tiles": round(trod)} if water else {}
     return {**wet, "walk_tiles": round(trod - swam), **trip_time(per_hour, cost, cost - water, (part, water) if water else None)}
 
 

@@ -21,6 +21,7 @@ from shared import (
     competition_ranks,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     index_by_id,
     is_boat,
@@ -68,6 +69,7 @@ def _build_metadata(alliance: dict, subjects: list[dict], members: set[int], ctx
     return {
         "age": entity_age(alliance, ctx["world_time"]),
         **({"births": births} if (births := int(alliance.get("total_births") or 0)) else {}),
+        "born": entity_born(alliance),  # chronicler-only: its month, where `age` counts whole years
         **({"buildings": built} if (built := ctx["pooled"]["buildings"][alliance["id"]]) else {}),  # civic only, houses included; nature is not built
         "cities": sum(1 for c in ctx["cities_by_id"].values() if c.get("kingdomID") in members),
         **({"deaths": deaths} if (deaths := int(alliance.get("total_deaths") or 0)) else {}),

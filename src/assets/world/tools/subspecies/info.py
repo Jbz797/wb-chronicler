@@ -27,6 +27,7 @@ from shared import (
     death_causes,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     index_by_id,
     is_boat,
@@ -85,6 +86,7 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         "age": entity_age(subspecies, ctx["world_time"]),
         **({"biome": biome_id} if biome_lore(biome_id) else {}),  # the biome that shaped the mutation, never the stock — `default_color` being none, the key drops
         **({"births": births} if (births := int(subspecies.get("total_births") or 0)) else {}),
+        "born": entity_born(subspecies),  # chronicler-only: its month, where `age` counts whole years
         **({"cities": len(cities)} if cities else {}),  # settlements its bearers answer from — a biology spreads wherever its carriers walk
         **({"deaths": deaths} if (deaths := int(subspecies.get("total_deaths") or 0)) else {}),
         **({"deaths_by_cause": causes} if causes else {}),  # chronicler-only: how the biology has been dying, which its totals alone never say

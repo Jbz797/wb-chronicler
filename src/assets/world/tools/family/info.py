@@ -19,6 +19,7 @@ from shared import (
     competition_ranks,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     index_by_id,
     light,
@@ -80,6 +81,7 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
         "age": entity_age(family, ctx["world_time"]),
         **({"alpha": entity_ref(family.get("alpha_id"), ctx["actors_by_id"])} if family.get("alpha_id") else {}),  # its head, on the few clans WB gave one
         **({"births": births} if (births := int(family.get("total_births") or 0)) else {}),
+        "born": entity_born(family),  # chronicler-only: its month, where `age` counts whole years
         # Towns and crowns its living answer from. A family almost always holds to one of each — which is what makes the line that says otherwise worth reading.
         **({"cities": len(cities)} if (cities := {cid for a in members if (cid := a.get("cityID"))}) else {}),
         **({"deaths": deaths} if (deaths := int(family.get("total_deaths") or 0)) else {}),

@@ -24,6 +24,7 @@ from shared import (
     competition_ranks,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     index_by_id,
     light,
@@ -101,6 +102,7 @@ def _build_metadata(religion: dict, members: list[dict], ctx: dict, tallies: dic
 
     return {
         "age": entity_age(religion, ctx["world_time"]),
+        "born": entity_born(religion),  # chronicler-only: its month, where `age` counts whole years
         **({"cities": cities} if (cities := tallies["cities"][religion_id]) else {}),  # towns WB records as holding it, not merely housing a believer
         **({"deaths": deaths} if (deaths := int(religion.get("total_deaths") or 0)) else {}),
         "id": religion_id,  # the block travels into `chapter.json`, detached from its command — the UI resolves the panel from this

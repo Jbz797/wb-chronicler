@@ -574,6 +574,11 @@ def entity_age(record: dict, world_time: float) -> int:
     return int((world_time - float(record.get("created_time") or 0)) / UNITS_PER_YEAR)
 
 
+# The month WB set a record on the map, as `born` dates a body: `age` counts whole years, and two of one year need telling apart.
+def entity_born(record: dict) -> str:
+    return world_date(float(record.get("created_time") or 0))
+
+
 # `{id, name}` ref or `None` — the name feeds the narration, the id a follow-up query; an unnamed entity keeps the id and loses the key, having nothing to quote.
 def entity_ref(entity_id: int | None, by_id: dict) -> dict | None:
     entity = by_id.get(entity_id) if entity_id is not None else None
