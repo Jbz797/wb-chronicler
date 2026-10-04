@@ -1,6 +1,6 @@
 # 📐 Audit de conformité
 
-<p class="metadata">Date de mise à jour : 04/10/26 19:42</p>
+<p class="metadata">Date de mise à jour : 04/10/26 19:51</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets après le chapitre, ce que le script a demandé à ce chapitre-là : cela vaut comme le § III.
 
@@ -14,7 +14,7 @@ Confronte tes cibles aux parties § I à § V de `docs/chronicler.md`, sous-sect
 - **Redites** : `python3 tools/chapter/echo.py C<n>` te montre les passages repris des 2 chapitres précédents, ceux que le chapitre dit deux fois, les familles qui débordent et le gabarit repris (`shape` : titre, titres de section, ouvertures, découpe) : juge ce qu'il signale. Un angle ou une chute repris lui échappent : relis pour eux, dans les 2 chapitres précédents, les seules sections qui répondent à celles de ta cible — même place, même sujet, ou désignées par `shape` —, jamais les chapitres entiers.
 - **Toponyme** : il se lit dans `history/places.json` : `places` porte les lieux forgés, ses autres blocs les terres et les eaux comptées.
 
-Ne rends que les écarts, et ce qu'on te demande : chacun avec sa partie, sa ligne, sa citation et ce que tu attendais — ce qui enfreint une règle à corriger, le reste en mieux possible. N'écris rien dans les fichiers ; tes fichiers de travail vont dans un sous-dossier à toi.
+Ne rends que les écarts, et ce qu'on te demande : chacun avec sa partie, sa ligne, sa citation et ce que tu attendais — ce qui enfreint une règle à corriger, le reste en mieux possible. N'écris rien dans les fichiers ; tes fichiers de travail vont dans un sous-dossier à toi du scratchpad.
 
 ## Au réaudit
 
