@@ -10,6 +10,7 @@
 # 4. `ActorMove.goTo` lets no body swim toward a spot of its own island — it walks round the bay —, and none the water burns at all: `Gait.ashore`.
 
 from heapq import heappop, heappush
+from itertools import islice
 from math import inf
 
 from grid import tile_block, tile_layer, tile_mask
@@ -20,6 +21,7 @@ _CHUNK = 16  # WB's `CHUNK_SIZE`: its regions never span two chunks, and neither
 _DIAGONAL = 1 + DIAGONAL_EXTRA
 _DRY_FIRST = 1e-6  # what a stroke costs over a step: of two ways of one cost the drier wins, whatever goals the search was aimed at
 _OUT_OF_BREATH = 0.4  # WB's pace for a swimmer whose stamina has run out
+_POCKET = 5_000  # the tiles a flood takes before a place is held open: an islet off every counted land is under 300, its rim of rock with it
 
 _SLOW_GROUNDS = {
     "desert_high": (0.7, "walk_adaptation_sand"),
@@ -224,6 +226,10 @@ class Gait:
     def sailing(self, pace: float) -> "Gait":
         return Gait(self._land, self._tangled, pace, pace, inf, inf)
 
+    # The same swimmer with breath for any crossing: what stops it then is the rock alone.
+    def tireless(self) -> "Gait":
+        return Gait(self._land, self._tangled, self._swim, self._swim, inf, inf)
+
 
 # The map as a walker reads it, built once per save: a class byte per tile, the tiles under a tree when Entanglewood holds, those beside a wall.
 class WalkMap:
@@ -275,3 +281,8 @@ def walk_from(walk_map: WalkMap, gait: Gait, x: int, y: int, limit: float, goals
 def walk_way(walk_map: WalkMap, gait: Gait, x: int, y: int, goals: set[int], limit: float = inf) -> tuple[float, float, float, float, float, int, int] | None:
     ways = _settle(walk_map, gait, x, y, limit, _aim(walk_map, gait, goals), told=True)
     return next(((cost, water, swam, trod, widest, tile, crossings) for tile, cost, water, widest, swam, trod, crossings in ways if tile in goals), None)
+
+
+# Whether rock, lava or goo shut a tile in: a swimmer no breath stops, leaving it, runs out of ground and water alike before `_POCKET` tiles.
+def walled_in(walk_map: WalkMap, gait: Gait, x: int, y: int) -> bool:
+    return sum(1 for _ in islice(_settle(walk_map, gait.tireless(), x, y, inf, None), _POCKET)) < _POCKET

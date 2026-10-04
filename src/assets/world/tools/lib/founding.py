@@ -108,7 +108,7 @@ def settle_gates(actor: dict, ctx: dict) -> bool | list[str] | None:
                     else:
                         wanted[need] += 1
     if ground < ZONE_TILES * ZONE_TILES:  # a zone is 8 × 8, and every tile of it must be ground: said with what stands in for the rest
-        place.append(f"ground {ground}/{ZONE_TILES * ZONE_TILES}: " + ", ".join(f"{n} {kind}" for kind, n in barred.most_common()))
+        place.append(f"ground {ground}/{ZONE_TILES * ZONE_TILES}, barred by " + ", ".join(f"{n} {kind}" for kind, n in barred.most_common()))
     unfit = sum(wanted.values())
     soil -= fit + unfit  # WB `checkCanSettleInThisBiomes`: the bare soil left once every grown tile is offset
     if not (soil > unfit or unfit <= fit):  # named by the lineage trait that would lift it, off the adaptation granting the missing tag

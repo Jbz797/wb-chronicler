@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import (
+    MULTIPLIER_TARGETS,
     actor_stat_totals,
     adult_age,
     breeding_age,
@@ -75,7 +76,7 @@ from shared import (
     wants_detail,
     world_laws,
 )
-from walking import Gait, WalkMap, walk_from, walk_way
+from walking import Gait, WalkMap, walk_from, walk_way, walled_in
 from waters import waters_cached
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
@@ -154,7 +155,8 @@ def _absorbed(actor: dict, trait: dict, ctx: dict, totals: dict) -> list[str] | 
     if not (moved := trait.get("stats")):
         return None
     without = actor_stat_totals({**actor, "saved_traits": [t for t in actor.get("saved_traits") or () if t != trait["id"]]}, ctx)
-    return sorted(stat for stat in moved if round(totals.get(stat, 0), 6) == round(without.get(stat, 0), 6)) or None
+    # A multiplier is weighed on the stat it multiplies, WB folding it into that one: `multiplier_damage` shows in `damage`, and nowhere else.
+    return sorted(stat for stat in moved if round(totals.get(key := MULTIPLIER_TARGETS.get(stat, stat), 0), 6) == round(without.get(key, 0), 6)) or None
 
 
 # Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
@@ -441,6 +443,9 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
         return {**to, "circle": _circle(actor, ctx, crow / per_hour, home != island_of.get(goal), lambda: None), **trip_time(per_hour, crow)}
     walk_map = ctx["walk_map"]()
     goals = {y * walk_map.width + x for x, y in aims}
+    # A lone goal the rock shuts in, off a body it does not shut in too, is refused at once: the search would walk the whole world before giving up.
+    if len(goals) == 1 and walled_in(walk_map, gait, gx, gy) and not walled_in(walk_map, gait, cx, cy):
+        raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["crow_tiles"], ctx))
     # WB walks round the bays of his own land, and swims only toward another — each aim by its own land, as `_walker` does: of many, the cheapest reached wins.
     if walk_map.wet(cx, cy):
         way = walk_way(walk_map, gait, cx, cy, goals)
@@ -890,13 +895,15 @@ def _way_parts(way: tuple | None, per_hour: float, part: str) -> dict:
     return {**wet, "walk_tiles": round(trod - swam), **trip_time(per_hour, cost, cost - water, (part, water) if water else None)}
 
 
-# Why no walk joins the two, named: the rock of their one land, a water shut to the body, a strait no islet chain shortens enough, or no crossing short enough.
+# Why no walk joins the two, named: the rock of their one land or round the goal, a water shut to the body, a strait no islet chain shortens, no crossing in reach.
 def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, crow: int, ctx: dict) -> str:
     island_of = ctx["island_lookup"]()
     home, land, who = island_of.get(actor_xy(actor)), island_of.get(goal), _named(actor)
     head = f"✗ {who} can't reach {whom}, {crow} tiles away as the crow flies"
     if (home is not None and home == land) or gait.reach == inf:  # his own land, walked round its bays, or a sea he crosses at will: the ground is to blame
         return f"{head}: rock, lava or goo walls the way off"
+    if walled_in(ctx["walk_map"](), gait, *goal):  # no swim, however long, would get there: the water is not to blame
+        return f"{head}: rock, lava or goo walls it in, on {f'land {land}' if land is not None else 'an islet off any counted land'} — no water leads there"
     where = f"land {land}" if land is not None else "its spot, off any counted land"
     if (reach := round(gait.reach)) < 1:  # a breath that crosses no whole tile: the water is shut to it, and a strait's width is beside the point
         return f"{head}: {who} never takes to the water, and no walk on land reaches {where}"

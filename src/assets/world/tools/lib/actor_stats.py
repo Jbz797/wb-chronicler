@@ -43,6 +43,21 @@ from shared import (
     world_date,
 )
 
+# WB `BaseStatsLibrary.init` declares each target on its own asset (`main_stat_to_multiply`), two off the name: `crit` raises `critical_chance`, `mass` the `mass_2`.
+MULTIPLIER_TARGETS = {
+    "multiplier_attack_speed": "attack_speed",
+    "multiplier_crit": "critical_chance",
+    "multiplier_damage": "damage",
+    "multiplier_diplomacy": "diplomacy",
+    "multiplier_health": "health",
+    "multiplier_lifespan": "lifespan",
+    "multiplier_mana": "mana",
+    "multiplier_mass": "mass_2",
+    "multiplier_offspring": "offspring",
+    "multiplier_speed": "speed",
+    "multiplier_stamina": "stamina",
+}
+
 _BASE_FLOOR = ("damage", "health", "lifespan", "speed")  # WB `Subspecies.recalcBaseStats`: what no biology goes without, an insect's single year included
 _BROKEN_ITEM_RATIO = 0.5  # WB `Actor.updateStats`: a worn-out piece stays worn and still counts, at half of all it grants.
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}  # the stats a `bad` gene rounds UP rather than down
@@ -175,21 +190,6 @@ _MOD_KEY = "faithful_"  # the Faithful Saves mod keeps a status's time left besi
 _MOD_MARK = "faithful_waits"  # set on every body the mod wrote: a status with no key is then over, where a save without the mod says nothing of it
 _MOD_STATUS = "faithful_status_"
 _MOD_UNTOLD = "recovery_"  # WB's own cooldowns worn as statuses — after a fight, a spell, a meeting, a plot: the game's clockwork, no state of a body
-
-# WB `BaseStatsLibrary.init` declares each target on its own asset (`main_stat_to_multiply`), two off the name: `crit` raises `critical_chance`, `mass` the `mass_2`.
-_MULTIPLIER_TARGETS = {
-    "multiplier_attack_speed": "attack_speed",
-    "multiplier_crit": "critical_chance",
-    "multiplier_damage": "damage",
-    "multiplier_diplomacy": "diplomacy",
-    "multiplier_health": "health",
-    "multiplier_lifespan": "lifespan",
-    "multiplier_mana": "mana",
-    "multiplier_mass": "mass_2",
-    "multiplier_offspring": "offspring",
-    "multiplier_speed": "speed",
-    "multiplier_stamina": "stamina",
-}
 
 # WB `BaseStatAsset.normalize_min`/`normalize_max` for the 23 bounded stats — an unset max (2^31) is `inf`. Floors bite: traits push under, WB lifts back.
 _NORMALIZE = {
@@ -383,8 +383,8 @@ def _apply_level_scaling(totals: dict, level: int) -> None:
 
 # Resolve every `multiplier_X` key as a coefficient on stats[X]: `final = base × (1 + multiplier)`.
 def _apply_multipliers(totals: dict) -> None:
-    for key in _MULTIPLIER_TARGETS.keys() & totals.keys():  # the declared set is closed, so an unknown `multiplier_*` rides on out rather than vanishing unapplied
-        if (target := _MULTIPLIER_TARGETS[key]) in totals:
+    for key in MULTIPLIER_TARGETS.keys() & totals.keys():  # the declared set is closed, so an unknown `multiplier_*` rides on out rather than vanishing unapplied
+        if (target := MULTIPLIER_TARGETS[key]) in totals:
             totals[target] *= 1 + totals[key]
         del totals[key]
 
