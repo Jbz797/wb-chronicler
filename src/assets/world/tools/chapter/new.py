@@ -75,6 +75,9 @@ _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a ti
 
 _ALERTS = {"DISABLE_DROP_OF_THOUGHTS": "world_law_drop_of_thoughts"}  # each alert by the law it asks the player to cut — a state while that law stays on
 
+# What a baptism's check weighs — in no doc, a world being named once: handed to the audit with its target, as a chapter's asks are.
+_BAPTISM = "a world's name and description are checked as a chapter is, and the name is worth what it says of the ground"
+
 _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a world's start and at a favorite's death alone, in no doc
     "a thinking body only: `sapient: true` in `actor … metadata`",
     "weighed in depth: traits, political standing, narrative promise, age, where it stands, what surrounds it…",
@@ -677,7 +680,8 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     print(f"  map kept, {f'with its landmarks: {landmarks}' if landmarks else 'no landmark on it'}")
     print(f"  named: {stats['name'] or '—'}")
     if name or description:  # his own words, written before any audit stood and read by none after: checked here, the game still closed for the mending
-        print("  → chronicler, first, the game still closed: a fresh sub-agent checks them — `Lis docs/audit/facts.md — history/world.json (description, name)`")
+        target = f"history/world.json (description, name) [{_BAPTISM}]"
+        print(f"  → chronicler, first, the game still closed: a fresh sub-agent checks them — `Lis docs/audit/facts.md — {target}`")
         print('    a gap is fixed with `tools/chapter/new.py --name "…" --description "…"`, either alone leaving the other; the first chapter deletes the sub-agent')
 
     # The game alone redraws preview.png and has the mods stamp the save: hence the re-save, which is the one the chapter archives.
