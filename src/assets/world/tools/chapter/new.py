@@ -81,7 +81,7 @@ _BAPTISM = "a world's name and description are checked as a chapter is, and the 
 _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a world's start and at a favorite's death alone, in no doc
     "a thinking body only: `sapient: true` in `actor … metadata`",
     "weighed in depth: traits, political standing, narrative promise, age, where it stands, what surrounds it…",
-    "the world's first favorite also needs room for a village — a fitting biome around it, resources, obstacles at a distance; later ones, while nothing is built",
+    "the world's first favorite also needs room for a homestead — a fitting biome around it, resources, obstacles at a distance; later ones, while nothing is built",
 )
 # What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
 _DEATH = "the death section opens the chapter: how he died, pieced together as far as the data allow (§ Déduction des meurtres), what he leaves, the handover"
