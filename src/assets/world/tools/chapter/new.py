@@ -166,6 +166,10 @@ _SHORT_AGES = frozenset({"age_despair", "age_ice"})
 _SHORT_AGE_YEARS = (30, 40)
 _STAMP_SLACK = 1  # seconds a mod's stamp may stray from the save's own time: WB stores it less finely, a save from before lies years off
 _SUBAGENT_GRACE = 120  # seconds: a transcript written this lately may be a sub-agent still at work, not to be pulled from under it
+
+# What a trait summary is — in no doc: said to the chronicler as one falls due, and handed to the audit with the targets that name one.
+_SUMMARY = "what those traits make of the body; never a list, a tally of the traits or a figure that ages — read alone in its panel, it may say the chapter again"
+
 _SUMMARY_CAP = 400
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
@@ -201,6 +205,18 @@ def _abandon(chapter_dir: Path, failed: list[str]) -> int:
 def _age_duration(age_id: str) -> float:
     low, high = _SHORT_AGE_YEARS if age_id in _SHORT_AGES else _LONG_AGE_YEARS
     return float(random.randint(low, high) * UNITS_PER_YEAR)
+
+
+# The chapter and what it wrote into `chapter.json`, with what the recap asked of this chapter alone between brackets: the auditors never see the recap.
+def _audit_targets(n: int, facts: dict) -> str:
+    asked = [
+        *([] if facts["favorite"] else [f"no favorite: {' / '.join(_WORLD_ONLY)}"]),
+        *([f"favorite dead: {_DEATH}"] if facts["mourned"] else []),
+        *([f"trait summaries: {_SUMMARY}"] if any(field.endswith(".traits") for field in facts["audited"]) else []),
+    ]
+    shape = f" [{' — '.join(asked)}]" if asked else ""
+    written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
+    return f"saves/C{n}/chapter.md{shape}{written}"
 
 
 # The whole rewind, in the order WB's fields depend on one another: survivors first, `id_building` counting from them. Of `buildings`, only landmarks stand.
@@ -381,11 +397,7 @@ def _finalize() -> int:
         print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: it then hands the audit over")
         return 0
     # The run of the audit is `docs/review.md`'s, kept from the auditors: only the targets, which change with each chapter, are said here.
-    written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
-    # What the recap asked of this chapter alone goes with its target: the auditors never see the recap.
-    asked = ([] if facts["favorite"] else [f"no favorite: {' / '.join(_WORLD_ONLY)}"]) + ([f"favorite dead: {_DEATH}"] if facts["mourned"] else [])
-    shape = f" [{' — '.join(asked)}]" if asked else ""
-    print(f"  → the audit, until delivery: docs/review.md — its <cibles> are saves/C{n}/chapter.md{shape}{written}")
+    print(f"  → the audit, until delivery: docs/review.md — its <cibles> are {_audit_targets(n, facts)}")
     return 0
 
 
@@ -559,7 +571,7 @@ def _print_step_five(n: int, facts: dict) -> None:
     if owed := facts["owed"]:
         reads = ", ".join(f"`{'actor' if tier == 'favorite' else tier} {entity} traits C{n}`" for tier, entity in owed.items())
         print(f"  → trait summaries owed ({', '.join(owed)}): one string each under the block's own `traits` key, read off {reads}")
-        print(f"    what those traits make of the body, {_SUMMARY_CAP} characters at most; never a list, a tally of the traits or a figure that ages")
+        print(f"    {_SUMMARY}; {_SUMMARY_CAP} characters at most")
     if long := facts["long"]:
         print(f"  ✗ trait summaries, {', '.join(f'{tier} {size}' for tier, size in long.items())} characters of {_SUMMARY_CAP}")
     if sized:
