@@ -21,8 +21,15 @@ _API = "https://the-official-worldbox-wiki.fandom.com/api.php"
 _BATCH = 500  # the most titles one `allpages` call hands back
 _CELL_ATTRS = re.compile(r'^\s*(?:[\w-]+\s*=\s*"[^"]*"\s*)+\|(?!\|)')  # `| style="…" | text`: a cell's own styling, before its single pipe
 _HEADERS = {"User-Agent": "Mozilla/5.0"}  # the wiki turns away a request that names no browser, 403 and nothing else
+_LABEL_WORDS = 3  # words past which a cell is prose, not a label: « Spore », « Mushroom Production »
+_STEM = 4  # letters two words must open on alike to be taken for one: `spore` and `spores`, `corruption` and `corrupted`
 _TIMEOUT = 15
 _UNTOLD = frozenset({"version of introduction"})  # columns that tell the wiki's own history, none of the game's rules
+
+
+# Whether a cell is a label close to the one asked: a few words, one of them beginning as one of its words does — `spore` for `spores`, never an effect's sentence.
+def _akin(label: list[str], asked: list[str]) -> bool:
+    return 0 < len(label) <= _LABEL_WORDS and any(a.startswith(b[:_STEM]) for a in asked for b in label if len(b) >= _STEM)
 
 
 # One API call, its answer parsed.
@@ -101,8 +108,8 @@ def main(argv: list[str]) -> int:
         print(wikitext)
         return 0
     wanted = args.row.replace("_", " ").casefold()
-    blocks = []
-    for caption, header, cells in _rows(wikitext):
+    blocks, rows = [], _rows(wikitext)
+    for caption, header, cells in rows:
         if all(cell.casefold() != wanted for cell in cells):
             continue
         # A column past the header keeps its rank for a name: the header is a help, a ragged row still prints whole. The cell asked for only repeats the question.
@@ -110,7 +117,11 @@ def main(argv: list[str]) -> int:
         if lines := [f"{column}: {cell}" for column, cell in named if column.casefold() not in _UNTOLD]:
             blocks.append("\n".join([f"[{caption}]"] * bool(caption) + lines))
     if not blocks:
-        print(f"✗ no row of `{page}` names « {args.row} » — a table names a thing by its in-game label", file=sys.stderr)
+        # A label the wiki cuts short — its « Spore » for WB's « Spore Reproduction » — is offered where no row answers, and sought only then.
+        asked = wanted.split()
+        near = sorted({cell for _, _, cells in rows for cell in cells if _akin(cell.casefold().split(), asked)})
+        like = f"; near it: {', '.join(near)}" if near else ""
+        print(f"✗ no row of `{page}` names « {args.row} » — a table names a thing by its in-game label{like}", file=sys.stderr)
         return 1
     print("\n\n".join(blocks))
     return 0

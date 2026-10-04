@@ -979,7 +979,11 @@ def main(argv: list[str]) -> int:
     elif isinstance(target, str):  # kinds and families, comma-parted, the body itself left out: the cheapest reached is the nearest
         families = asset_families(save)
         if not (sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, target)) if record is not actor]):
-            print(f"✗ no {target} in this world, {_named(actor)} aside — the families: {', '.join(sorted(families))}", file=sys.stderr)
+            # A word that is no kind's id — a resource's `silver` for `mineral_silver` — is told so, with the kinds here that hold it: the world may well have some.
+            kinds = {kind for counts in families.values() for kind in counts}  # a kind he is the last of is one all the same: no likeness to offer
+            near = sorted({kind for kind in kinds for word in target.split(",") if word and word not in kinds and word in kind})
+            none = f"`{target}` names no kind here — like it: {', '.join(near)}" if near else f"no {target} in this world, {_named(actor)} aside"
+            print(f"✗ {none} — the families: {', '.join(sorted(families))}", file=sys.stderr)
             return 1
         about = {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
         aims, mark, whom = [tile for _, tile in sites], "nearest", f"the nearest {target}"
