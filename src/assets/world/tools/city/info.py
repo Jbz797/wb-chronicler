@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, meta_ratios, settlement_population
+from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, kept_statuses, meta_ratios, settlement_population
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -652,13 +652,14 @@ def _kingdom_species(kingdom: dict, ctx: dict) -> str:
     return (king.get("asset_id") if king else kingdom.get("original_actor_asset")) or ""
 
 
-# The `loyalty_traits` an actor carries. `_cleanup_stats` drops it (nothing else reads it), so the four trait tables are summed here instead.
+# The `loyalty_traits` an actor carries. `_cleanup_stats` drops it (nothing else reads it), so the trait tables and the statuses are summed here instead.
 def _loyalty_traits(actor: dict, ctx: dict) -> int:
     total = 0.0
     for table, ids in (
         ("clan_traits", (ctx["clans_by_id"].get(actor.get("clan")) or {}).get("saved_traits")),
         ("creature_traits", actor.get("saved_traits")),
         ("language_traits", (ctx["languages_by_id"].get(actor.get("language")) or {}).get("saved_traits")),
+        ("statuses", kept_statuses(actor)),
         ("subspecies_traits", (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits")),
     ):
         for trait_id in ids or []:

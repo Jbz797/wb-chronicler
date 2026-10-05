@@ -658,12 +658,14 @@ def actor_stat_totals(actor: dict, ctx: dict, *, lifespan_only: bool = False) ->
         totals[stat] = totals.get(stat, 0) + value
     _add_trait_stats(totals, _waking_traits(actor.get("saved_traits") or [], ctx), ctx["creature_traits"])
     _add_group_stats(totals, actor, ctx)
-    if lifespan_only:  # Nothing below writes `lifespan`: `_normalize` and `_apply_multipliers`, narrowed to it, answer the same and cost half.
+    # A body's own span, the one a stage and an old age are read off: below, only a status writes `lifespan`, and no spell makes a body young.
+    if lifespan_only:  # `_normalize` and `_apply_multipliers`, narrowed to it, answer the same and cost half
         low, high = _NORMALIZE["lifespan"]
         span = min(max(totals["lifespan"], low), high)
         return {"lifespan": span * (1 + totals["multiplier_lifespan"]) if "multiplier_lifespan" in totals else span}
     # WB adds it here. A fiche read in-game can lag behind — `stats` is recomputed on event — but a reload settles it, and that state is the one a save describes.
     _add_custom_data_float(totals, actor.get("custom_data_float"))
+    _add_trait_stats(totals, kept_statuses(actor) or [], ctx["statuses"])  # a status weighs like a trait while it lasts, merged at this very rank
     _apply_level_scaling(totals, max(int(actor.get("level") or 0), 1))  # WB scaling starts at level 1 even when the raw save field is absent / 0 (matches tooltip).
     # After the scaling, never before: `updateStats` merges the racks last, so a blade's health/mana/stamina rides flat — a veteran's gear is worth a recruit's.
     _add_equipment_stats(totals, actor.get("saved_items") or [], ctx["items_by_id"], ctx["equipment"]["items"], ctx["equipment"]["modifiers"])
@@ -710,6 +712,7 @@ def build_actor_stats_context(save: dict) -> dict:
         "life_dna": int(save["mapStats"].get("life_dna") or 0),
         "nutrition_memo": {},  # `_nutrition_max`: a stomach's cap hangs on the biology, so it is summed once per subspecies rather than per body
         "species_data": load_data("species.json"),
+        "statuses": load_data("statuses.json"),
         "subspecies_base_cache": {},  # Filled by the first `actor_stat_totals`: the species + chromosomes + traits base, one per subspecies, not per body.
         "subspecies_by_id": index_by_id(save.get("subspecies", [])),
         "subspecies_traits": load_data("subspecies-traits.json"),

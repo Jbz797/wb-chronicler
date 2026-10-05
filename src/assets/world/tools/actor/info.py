@@ -256,7 +256,7 @@ def _build_inventory(actor: dict) -> dict:
 # The actor's identity card: civic ties (city/kingdom/culture/family…), body (age tier, mass), posts held and their tenure.
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     snap = compute_actor_stats(actor, ctx)
-    lifespan = snap.get("lifespan", 0)
+    lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))  # its own span, as a roster reads a stage: no status makes a body young
     age = actor_age(actor, ctx["world_time"])
 
     # Both off the biology, as WB writes them onto the subspecies — never off this body's own span. `age_adult` is nil where no baby form was ever drawn.
