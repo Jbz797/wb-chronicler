@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 04/10/26 19:58</p>
+<p class="metadata">Date de mise à jour : 05/10/26 12:23</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche.
 
@@ -8,7 +8,7 @@ Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le 
 
 Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, comparaison avec le passé, absolu, mécanisme, cause… Utilise les outils de `docs/tools.md`, sur la save dont parle l'affirmation (`C<n>` pour « il y a N ans »). De `docs/chronicler.md`, lis § IV, « Le passé du monde » et « Prudence et rigueur » : le reste est la manière, qui n'est pas ton rôle.
 
-- **La save brute ne prouve rien seule**, elle omet ses zéros : elle sert à contredire un outil, l'écart rendu avec les deux valeurs. Une eau ou une marche ne s'y balaie pas, et ce qu'aucun outil ne donne se signale.
+- **La save brute omet ses zéros** : tes scripts y contredisent un outil, l'écart rendu avec les deux valeurs, ou y comptent ce qu'aucun ne donne, à signaler. Une eau ou une marche qu'un outil rend ne s'y balaie pas.
 - **Le silence du wiki ne dément rien** : une condition qu'il ne donne ni ne nie reste ouverte, et se signale comme telle, jamais comme fausse. La page consacrée à la chose l'emporte sur un tableau qui la résume.
 - **Un arrondi juste n'est pas un écart** : range à part, sans rien demander, un chiffre vrai que l'outil donne plus fin.
 - **Un mécanisme** que ni les sorties ni `docs/chronicler.md` ne donnent se vérifie sur le wiki (`docs/chronicler.md` § « Accès au wiki WorldBox »). Si les deux divergent, la sortie l'emporte.
