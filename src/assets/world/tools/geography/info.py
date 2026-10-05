@@ -7,6 +7,7 @@ import re
 import statistics
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -125,7 +126,7 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> tupl
 
 # The sweep kept on disk, with every ground's largest patches, which only `_patch_detail` reads.
 def _biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v17", save_path, lambda: _compute_biomes(save, save_path))
+    return pickle_cached("biomes_v18", save_path, lambda: _compute_biomes(save, save_path))
 
 
 # What lies along a patch's outline, side by side: its three first neighbours, each its share of that outline — its own ground is none, nor the map's edge.
@@ -369,11 +370,32 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
         ]
         for island_id, counts in lands
     }
-    top_patches = {_land_name(island_id): {biome.removeprefix(BARE): tops[(island_id, biome)] for biome in counts} for island_id, counts in lands}
+    # Beside a ground's largest patches, the box of them all: where the lesser ones lie, which no list names — none for a lone patch, whose own box says it.
+    top_patches = {
+        _land_name(island_id): {
+            biome.removeprefix(BARE): {"bounds": _whole_bounds(patches[(island_id, biome)]), "largest_patches": tops[(island_id, biome)]} for biome in counts
+        }
+        for island_id, counts in lands
+    }
 
     # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
     named = {row["biome"] for rows in per_island.values() for row in rows if "biome" in row}
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island, "patches": top_patches}
+
+
+# One ground the world over: every land that bears it, the islets too, each with its row — the whole of it, which a « nowhere else » stands on. `None` for none.
+def _ground_lands(biomes: dict, kind: str) -> dict | None:
+    lands, name = {}, "ground"
+    for land, rows in biomes["islands"].items():
+        if row := _ground_row(rows, kind):
+            name = "biome" if "biome" in row else "ground"
+            lands[land] = {key: value for key, value in row.items() if key != name}
+    return {name: kind, "info": f"`-i <land>` sites its {_TOP_PATCHES} largest patches there", "islands": lands} if lands else None
+
+
+# The row of one ground among a land's, asked by its biome or its bare ground alike — `None` where the land bears none.
+def _ground_row(rows: Iterable[dict], kind: str) -> dict | None:
+    return next((row for row in rows if kind in (row.get("biome"), row.get("ground"))), None)
 
 
 # A counted land by its id; off every one, the place itself — `islets`, the rocks too small to count, or `water` — so that a bearer on a rock reads as no swimmer.
@@ -416,11 +438,14 @@ def _narrowed(out: dict, land: int | str) -> dict:
     return narrowed
 
 
-# One ground of a land told whole: its row, the one `largest` giving way to its largest patches, each with its box — `None` where the land bears none of it.
+# One ground of a land told whole: its row, the one `largest` giving way to its largest patches, and what they leave unlisted — `None` where the land bears none.
 def _patch_detail(save: dict, save_path: Path, land: int | str, kind: str) -> dict | None:
     biomes = _biomes(save, save_path)
-    row = next((row for row in biomes["islands"].get(str(land), ()) if kind in (row.get("biome"), row.get("ground"))), None)
-    return row and {**{key: value for key, value in row.items() if key != "largest"}, "largest_patches": biomes["patches"][str(land)][kind]}
+    if (row := _ground_row(biomes["islands"].get(str(land), ()), kind)) is None:
+        return None
+    told = biomes["patches"][str(land)][kind]
+    rest = {"patches": row["patches"] - len(told["largest_patches"]), "tiles": row["tiles"] - sum(patch["tiles"] for patch in told["largest_patches"])}
+    return {**{key: value for key, value in row.items() if key != "largest"}, **told, "unlisted": rest if rest["patches"] else None}
 
 
 # Where a patch lies on its land (« the desert covers its north-east »): its heading from the land's centroid, `centre` within a quarter of each half-span
@@ -463,7 +488,7 @@ def _surveyed(biomes: dict) -> dict:
         minor = rows[len(kept) :]  # the rows come largest first, so the lesser ones close the list
         others = {"others": sorted(row.get("biome") or row["ground"] for row in minor), "tiles": sum(row["tiles"] for row in minor)}
         lands[land] = kept + ([others] if minor else [])
-    return {"info": "`-i <land>` lists every ground of a land and describes its biomes", "islands": lands}
+    return {"info": "`-i <land>` lists every ground of a land and describes its biomes, `-t <ground>` every land a ground lies on", "islands": lands}
 
 
 # A ground's `_TOP_PATCHES` largest patches placed on its land, ties in size to the lower `(x, y)`, each with its box as a land's `bounds` — the rest is a count.
@@ -482,6 +507,14 @@ def _top_patches(found: list[list], land: dict | None, grounds: list[bytes], kin
     ]
 
 
+# The box of every patch of one ground on a land, as a land's `bounds` — `None` for a lone patch.
+def _whole_bounds(found: list[list]) -> dict | None:
+    if len(found) < 2:
+        return None
+    _, wests, ends = zip(*(run for *_, runs in found for run in runs))  # the columns unzipped for C to weigh; a patch's runs come south to north
+    return {"x": [min(wests), max(ends) - 1], "y": [min(runs[0][0] for *_, runs in found), max(runs[-1][0] for *_, runs in found)]}
+
+
 def main(argv: list[str]) -> int:
     try:
         since, argv = take_since(argv)
@@ -496,7 +529,7 @@ def main(argv: list[str]) -> int:
         "--type",
         "-t",
         help=f"What `positions` sites, bodies aside: an asset id, a family (`trees`) or a comma list; past {MAX_LISTED}, a count by land. "
-        f"Under `biomes -i <land>`, one biome or ground: its {_TOP_PATCHES} largest patches.",
+        f"Under `biomes`, one biome or ground: the lands it lies on, or with `-i <land>` its {_TOP_PATCHES} largest patches.",
     )
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="One land alone in the sections that go land by land, or `islets` or `water`.")
     args = parser.parse_args(argv)
@@ -517,12 +550,13 @@ def main(argv: list[str]) -> int:
     if args.island is not None and not set(_BY_LAND) & set(sections):  # refused before the save is read
         print(f"✗ `--island` narrows {', '.join(_BY_LAND)}: name one of them", file=sys.stderr)
         return 2
-    if isinstance(args.island, str) and (unbucketed := sorted(set(sections) & set(_BY_LAND) - set(_BUCKETED))):
-        print(f"✗ {', '.join(unbucketed)}: no {args.island} to narrow to — `-i {args.island}` narrows {', '.join(_BUCKETED)}", file=sys.stderr)
+    bucketed = {*_BUCKETED, "biomes"} if args.island == "islets" else set(_BUCKETED)  # the islets bear grounds too, the water none
+    if isinstance(args.island, str) and (unbucketed := sorted(set(sections) & set(_BY_LAND) - bucketed)):
+        print(f"✗ {', '.join(unbucketed)}: no {args.island} to narrow to — `-i {args.island}` narrows {', '.join(sorted(bucketed))}", file=sys.stderr)
         return 2
 
-    if wanted is not None and "biomes" in sections and ("positions" in sections or since or not isinstance(args.island, int)):
-        print("✗ `biomes -t <ground>` sites one ground's patches on one land of one chapter: name `-i <land>`, ask `positions` and `--since` apart", file=sys.stderr)
+    if wanted is not None and "biomes" in sections and ("positions" in sections or since):
+        print("✗ `biomes -t <ground>` tells one ground of one chapter: ask `positions` and `--since` apart", file=sys.stderr)
         return 2
 
     then_path = SAVES_DIR / since / "map.wbox" if since else None
@@ -568,16 +602,21 @@ def main(argv: list[str]) -> int:
     if len(bare) == len(sections):
         return 1
     if "biomes" in shown and "biomes" not in bare:
-        if args.island is None:
+        if wanted is None and args.island is None:
             shown = shown | {"biomes": _surveyed(shown["biomes"])}
         elif wanted is None:
             shown = shown | {
                 "biomes": {**shown["biomes"], "info": f"`-t <ground>` sites one ground's {_TOP_PATCHES} largest patches, each with its bounds and what borders it"}
             }
+        elif args.island is None:
+            if (found := _ground_lands(shown["biomes"], wanted)) is None:
+                print(f"✗ no {wanted} in this world — `biomes -i <land>` lists a land's grounds", file=sys.stderr)
+                return 1
+            shown = shown | {"biomes": found}
         elif detail := _patch_detail(save, save_path, args.island, wanted):
             shown = shown | {"biomes": detail}
         else:
-            print(f"✗ no {wanted} {where} — `biomes -i {args.island}` lists its grounds", file=sys.stderr)
+            print(f"✗ no {wanted} {where} — `biomes -i {args.island}` lists the grounds there", file=sys.stderr)
             return 1
     emit(shown)
     return 0
