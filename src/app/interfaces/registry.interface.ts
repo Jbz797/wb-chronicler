@@ -97,6 +97,7 @@ export interface LanguageInfo {
 export interface PersonInfo {
   asset_id: string;
   dead?: boolean;
+  egg?: string; // the shell a body is still in, drawn in its stead — the egg its biology lays
   head?: number;
   job?: string;
   kingdom?: number;

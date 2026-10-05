@@ -115,8 +115,8 @@ export class SpriteHelpers {
   }
 
   // WB `ColorAsset.checkIfColorTooDark`: +50 a channel when all three sit under 128. `initColor` runs it on the two ramp roots alone, so the registry ships raw.
-  private static _lightenIfDark([r, g, b]: readonly number[]): [number, number, number] {
-    const channels: [number, number, number] = [r ?? 0, g ?? 0, b ?? 0];
+  private static _lightenIfDark([r = 0, g = 0, b = 0]: readonly number[]): [number, number, number] {
+    const channels: [number, number, number] = [r, g, b];
     return channels.every(channel => channel < 128) ? [channels[0] + 50, channels[1] + 50, channels[2] + 50] : channels;
   }
 

@@ -13,6 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
+from actor_stats import build_actor_stats_context, is_egg
 from shared import (
     MIN_RANK_PEERS,
     MIN_SCORE_PEERS,
@@ -147,7 +148,13 @@ def _build_registries(save: dict, prev: dict) -> dict:
 
     # A level, where every other podium counts heads — past the 1 WB starts every body on, or the whole world would tie for a medal nobody earned.
     rank_by_person = _podium(Counter({aid: level for aid, (a, _) in crowd.items() if (level := int(a.get("level") or 0)) > 1}))
-    persons = {str(aid): _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid)) for aid, (a, job) in crowd.items()}
+    # A body still in its shell is drawn as that shell: the egg its biology lays, WB keeping it among the biology's traits.
+    ctx, shells = build_actor_stats_context(save), {trait for trait, told in load_data("subspecies-traits.json").items() if told.get("group") == "eggs"}
+    egg_by_subspecies = {sid: next((trait for trait in sub.get("saved_traits") or () if trait in shells), None) for sid, sub in subspecies_by_id.items()}
+    persons = {}
+    for aid, (a, job) in crowd.items():
+        egg = egg_by_subspecies.get(a.get("subspecies")) if is_egg(a, ctx) else None
+        persons[str(aid)] = _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid), egg)
 
     # The composite score's points, medalled as every other podium is — from three rivals up, a world raising its towns and crowns by the handful.
     rank_by_city = _podium(score_totals([c["id"] for c in cities], city_score_dimensions(save)), MIN_SCORE_PEERS)
@@ -376,9 +383,11 @@ def _palette(color_id) -> dict:
 
 
 # Person registry entry — everything the UI composes an actor from, plus the last-known name. `dead` comes from the merge.
-def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspecies_by_id: dict, rank: int | None) -> dict:
+def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspecies_by_id: dict, rank: int | None, egg: str | None) -> dict:
     carried = [(items_by_id.get(iid) or {}).get("asset_id", "") for iid in actor.get("saved_items") or []]  # resolved once: head and weapon both read it
     entry = {"asset_id": actor.get("asset_id"), "sex": sex_label(actor)}
+    if egg:  # the shell the reader draws in the body's stead, until a later chapter finds it hatched
+        entry["egg"] = egg
     for field in ("head", "phenotype_index", "phenotype_shade"):  # All three default to 0 in WB — omit then, the reader falls back to the same.
         if value := actor.get(field):
             entry[field] = value

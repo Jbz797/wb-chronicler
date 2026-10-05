@@ -359,6 +359,19 @@ def _deliver() -> int:
     return 0
 
 
+# The places this chapter baptised on the very point of another name: two signs on one spot of the map, which the reader could only pull apart at random.
+def _doubled_places(n: int) -> list[tuple[str, int, int, str]]:
+    gazetteer = json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
+    held: dict[tuple[int, int], list[str]] = {}
+    for book in ("places", *_SEEDED):
+        for key, entry in (gazetteer.get(book) or {}).items():
+            centroid = entry.get("centroid") or {}
+            if name := key if book == "places" else entry.get("name"):  # a seeded land or water goes by its id until it is named, and shows nothing till then
+                held.setdefault((int(centroid.get("x") or 0), int(centroid.get("y") or 0)), []).append(name)
+    fresh = {name for name, spot in (gazetteer.get("places") or {}).items() if spot.get("chapter") == f"C{n}"}
+    return [(name, x, y, other) for (x, y), names in held.items() for name in names if name in fresh for other in names if other != name]
+
+
 # Whether the crown was drawn into a war begun after `since`, on either side and ended or not — the declaration is the event the chapter owes, not the fighting.
 def _entered_war(save: dict, kingdom_id: int, since: float) -> bool:
     return any(
@@ -588,9 +601,11 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  ✗ trait summaries, {', '.join(f'{tier} {size}' for tier, size in long.items())} characters of {_SUMMARY_CAP}")
     if sized:
         print("  → every length above counts spaces and markup too")
-    if misplaced := facts["misplaced"]:
-        for name, x, y, found, declared in misplaced:
-            print(f"  ✗ places.json « {name} »: ({x},{y}) lies on {f'land {found}' if found else 'no counted land'}, its `island_id` saying {declared or 'none'}")
+    for name, x, y, other in facts["doubled"]:
+        print(f"  ✗ places.json « {name} »: ({x},{y}) is the very point of « {other} » — its sign needs a point of its own on the map")
+    for name, x, y, found, declared in facts["misplaced"]:
+        print(f"  ✗ places.json « {name} »: ({x},{y}) lies on {f'land {found}' if found else 'no counted land'}, its `island_id` saying {declared or 'none'}")
+    if facts["doubled"] or facts["misplaced"]:
         print("  → set these right in history/places.json")
 
 
@@ -763,14 +778,15 @@ def _step_five_facts(n: int, lang: str) -> dict:
     h1_length = len(_TAG.sub(lambda m: m[1] or "", h1 or ""))  # as read: a tag in the title shows its name alone, never its markup
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: len(summary) for tier, summary in sorted(written.items()) if len(summary) > _SUMMARY_CAP}
-    misplaced = _misplaced_places(n)
+    doubled, misplaced = _doubled_places(n), _misplaced_places(n)
     # A summary carried word for word was audited when written, so only a new one goes; the descriptor always, an age in it stale by the next chapter.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
     return {
         "audited": sorted(fresh + (["favorite.descriptor"] if favorite else [])),
         "carried": carried,
         "descriptor": descriptor,
-        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (owed or long or misplaced),
+        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (doubled or owed or long or misplaced),
+        "doubled": doubled,
         "draft": draft,
         "events": _events(chapter.get("tags") or []),
         "favorite": bool(favorite),

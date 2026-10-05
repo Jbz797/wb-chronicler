@@ -17,7 +17,7 @@ export class ClanSpriteHelpers {
 
   // Both sheets share one 26×40 canvas with a centred pivot and align by it alone; the emblems are hand-placed, (6,16) to (9,21), so no centring can stand in.
   private static async _build(clan: ClanInfo): Promise<HTMLCanvasElement | null> {
-    const pad = (slot: number | undefined): string => String(slot ?? 0).padStart(2, '0');
+    const pad = (slot = 0): string => String(slot).padStart(2, '0');
     const [field, emblem] = await Promise.all([
       SpriteHelpers.load(`assets/img/clans/clan_background_${pad(clan.banner_bg)}.png`),
       SpriteHelpers.load(`assets/img/clans/clan_icon_${pad(clan.banner_icon)}.png`),

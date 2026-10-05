@@ -10,13 +10,16 @@ export class ActorSpriteHelpers {
   private static readonly _bodySheets: Record<string, string> = { army_captain: 'warrior', king: 'king', leader: 'leader', warrior: 'warrior' };
   private static readonly _bodyVariants = 10; // the four classics ship ten `warrior_*`/`male_*`/`female_*` sheets each, `skin_id` indexing them; the rest ship one
   private static readonly _darkerFactors = [1, 0.9, 0.8, 0.7]; // WB `loadPhenotype`: the four greens are one skin colour at four `makeDarkerColor` steps
+  private static readonly _eggScale = 4; // a shell is 3-5px tall, which the bodies' own scale would leave a third under the plate's cap
   private static readonly _lightPlaceholder: [string, string] = ['255,216,0', '0,0,0'];
   private static readonly _phenotypeGreens = ['184,255,150', '0,255,0', '0,175,0', '74,131,31']; // WB `color_phenotype_green_0..3` → the skin shades
   private static readonly _scale = 3; // every body (6-16px) then clears the 22px cap `canvas.portrait` imposes, so each one fills it
   private static readonly _sprites = new Map<string, Promise<HTMLCanvasElement | null>>();
 
   // The only one of the three drawn scaled — a body is 6-16px, well under the 22px cap `canvas.portrait` imposes.
-  public static paint = async (canvas: HTMLCanvasElement, actor: PersonInfo): Promise<void> => SpriteHelpers.blit(canvas, await this._compose(actor), this._scale);
+  public static async paint(canvas: HTMLCanvasElement, actor: PersonInfo): Promise<void> {
+    SpriteHelpers.blit(canvas, await this._compose(actor), actor.egg ? this._eggScale : this._scale);
+  }
 
   public static paintAll(root: ParentNode, persons: Record<string, PersonInfo | undefined>): void {
     SpriteHelpers.paintAll(root, 'person', persons, (canvas, actor) => this.paint(canvas, actor));
@@ -35,6 +38,8 @@ export class ActorSpriteHelpers {
   // Body → weapon → head, each blitted from its atlas rect, then the whole recoloured in one pass. `null` when the species ships no sheet we can draw.
   private static async _build(actor: PersonInfo, hue: string): Promise<HTMLCanvasElement | null> {
     const sheets = await this._atlas;
+    if (actor.egg) return this._egg(sheets, actor, hue);
+
     const species = sheets.species[actor.asset_id];
     const sex = actor.sex === 'female' ? 'female' : 'male';
 
@@ -77,6 +82,7 @@ export class ActorSpriteHelpers {
     const hue = PaletteHelpers.realmHue(actor.kingdom);
     const key = [
       actor.asset_id,
+      actor.egg,
       actor.sex,
       actor.job,
       actor.head,
@@ -88,6 +94,22 @@ export class ActorSpriteHelpers {
       hue,
     ].join(',');
     return SpriteHelpers.compose(this._sprites, key, () => this._build(actor, hue));
+  }
+
+  // WB `getUnitTexturePath`: an egg is its biology's shell and nothing else — one frame, recoloured as a body is, `egg_colored` alone wearing the skin.
+  private static async _egg(sheets: ActorAtlas, actor: PersonInfo, hue: string): Promise<HTMLCanvasElement | null> {
+    const shell = await SpriteHelpers.load(`assets/img/actors/eggs/${actor.egg ?? ''}.png`);
+    const cut = document.createElement('canvas');
+
+    cut.height = shell.height;
+    cut.width = shell.width;
+
+    const context = cut.getContext('2d');
+    if (!context) return null;
+
+    context.drawImage(shell, 0, 0);
+    SpriteHelpers.repaint(context, shell.width, shell.height, this._swaps(sheets, actor, hue));
+    return cut;
   }
 
   // WB `Actor.checkSpriteHead`: a helmet, a crown or the wise's white hair replace the head, never overlay it — Python picks which, we only fetch the sheet.
