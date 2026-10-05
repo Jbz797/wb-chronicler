@@ -1,10 +1,10 @@
-# The water a map holds: its seas, lakes and rivers worth a name, and the narrowest crossing between each pair of lands, read off one mask and cached per save.
+# The water a map holds: its seas, lakes and rivers worth a name, the narrowest crossing between two lands and the narrowest land between two seas — cached per save.
 
 import re
 import zlib
 from array import array
 from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from functools import cache
 from heapq import heappop, heappush
 from pathlib import Path
@@ -12,8 +12,9 @@ from typing import NamedTuple
 
 from grid import HEART_CELL, hearts, tile_block, tile_layer, tile_mask
 from islands import compute_islands_cached
-from shared import pickle_cached, union_root
+from shared import bearing, pickle_cached, union_root
 
+_DRY = bytes([1, 0]) + bytes(254)  # the water's mask turned over: the land a tide raised from the seas runs through, which no lake lets by
 _FARTHEST_SWIM = 512  # two tides make a crossing, so none past twice this is kept — breath then drowning carry a body far (`actor/info.py`), and the sweep 20 ms
 _ID_BITS = 14  # a body's code on each of its tiles holds its kind above its id: sixteen thousand seas, lakes or rivers, which no map comes near
 _KINDS = ("", "sea", "lake", "river")  # a code's kind, as `tile_info` names it
@@ -101,6 +102,7 @@ def _compute_waters(save: dict, save_path: Path) -> dict:
     return {
         "body_at": zlib.compress(marks),
         "lakes": _lakes(pools, pool_at, coast, water, stride, lake_of, shores),
+        "necks": _necks(water, pools, pool_at, coast, stride, sea_of, island_of),
         "rivers": rivers,
         "seas": _seas(pools, pool_at, stride, sea_of, shores, deep),
         "straits": _straits(water, stride, [(i, island_id) for i, island_id in coast if not rock[i]]),
@@ -133,13 +135,41 @@ def _lakes(
     return out
 
 
+# The narrowest land between two seas, land by land: every sea floods the dry at once, a lake walked round, and two tides meeting on a land add up to its neck.
+def _necks(water: bytearray, pools: list[_Pool], pool_at: list[int], coast: list[tuple[int, int]], stride: int, sea_of: dict[int, int], island_of) -> list[dict]:
+    rows = len(pool_at) // stride
+    sea_at = _by_pool(sea_of, len(pools))
+    dry = bytearray(water.translate(_DRY))
+    dry[:stride] = dry[-stride:] = bytes(stride)  # the border no tide may leave by, as the water's own mask is ringed
+    dry[::stride] = dry[stride - 1 :: stride] = bytes(rows)
+    blank = array("H", [0])
+    land_at = array("H", bytes(2 * stride))
+    for y in range(rows - 2):
+        land_at += blank + island_of.row(y) + blank
+    land_at += array("H", bytes(2 * stride))
+    # A sea's tiles against a counted land: no tide rises from a lake, nor off a rock too small to count.
+    shore = {j: sea for i, _ in coast for j in (i - stride, i + stride, i - 1, i + 1) if (sea := sea_at(pool_at[j]))}
+    gaps, banks = _tides(dry, stride, list(shore.items()), _UNREACHED, land_at)
+
+    grounds: dict[int, bytes] = {}  # each land's own tiles, masked once however many necks it bears
+    out = []
+    for key, span in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0])):
+        land, *pair = key
+        if land not in grounds:
+            grounds[land] = bytes(map(land.__eq__, land_at))
+        ends = banks[key]
+        sited = [{"x": i % stride - 1, "y": i // stride - 1} for i in ends]
+        out.append({"banks": sited, "island": land, "land_tiles": round(span / _STEP), "seas": pair, "sides": _sides(grounds[land], stride, ends)})
+    return out
+
+
 # Each pool its id, widest first as WB numbers its islands and ties as the sweep met them: what `places.json` keys a name on, and all a code can hold.
 def _numbered(kept: Iterable[int], pools: list[_Pool]) -> dict[int, int]:
     return {index: given for given, index in enumerate(sorted(kept, key=lambda p: -pools[p].size)[: (1 << _ID_BITS) - 1], start=1)}
 
 
-# Every body of water side by side, walked by the runs of each row rather than tile by tile, and the pool each tile belongs to.
-def _pool_map(water: bytearray, stride: int) -> tuple[list[int], list[_Pool]]:
+# Every body of water side by side, walked by the runs of each row, and the pool each tile belongs to — `corners` joins them slantwise too, as a land holds.
+def _pool_map(water: bytearray, stride: int, corners: int = 0) -> tuple[list[int], list[_Pool]]:
     width, height = stride - 2, len(water) // stride - 2
     # A run joins those it overlaps in the row above, and its size and sums are arithmetic.
     runs = [match.span() for match in _RUN.finditer(water)]
@@ -148,10 +178,10 @@ def _pool_map(water: bytearray, stride: int) -> tuple[list[int], list[_Pool]]:
     for k, (a, b) in enumerate(runs):
         if a // stride != runs[row_start][0] // stride:
             above, row_start = row_start, k
-        while above < row_start and runs[above][1] <= a - stride:  # a row with no water between them leaves every run behind, as it should
+        while above < row_start and runs[above][1] + corners <= a - stride:  # a row with no water between them leaves every run behind, as it should
             above += 1
         o = above
-        while o < row_start and runs[o][0] < b - stride:
+        while o < row_start and runs[o][0] < b - stride + corners:
             ro, rk = union_root(parent, o), union_root(parent, k)
             parent[max(ro, rk)] = min(ro, rk)
             o += 1
@@ -247,20 +277,59 @@ def _seas(pools: list[_Pool], pool_at: list[int], stride: int, sea_of: dict[int,
     return seas
 
 
-# The narrowest water between two lands in `swim_tiles`: every coast floods at once, its first step weighing half, and two meeting tides add up to the crossing.
+# What a straight cut from bank to bank leaves of a land, its two largest parts beside it — `None` where it holds in one piece, or sheds less than a city zone.
+def _sides(ground: bytes, stride: int, ends: tuple[int, int]) -> list[dict] | None:
+    # Bresenham's line, a slanted step doubled by the tile beside it: a land holds by its corners, so nothing but a line without one parts it.
+    here, last = ends
+    (y, x), (to_y, to_x) = divmod(here, stride), divmod(last, stride)
+    run, rise, east, north = abs(to_x - x), -abs(to_y - y), 1 if x < to_x else -1, stride if y < to_y else -stride
+    lean, line = run + rise, [here]
+    while here != last:
+        twice = 2 * lean
+        if twice >= rise:
+            lean, here = lean + rise, here + east
+        if twice <= run:
+            if twice >= rise:
+                line.append(here)
+            lean, here = lean + run, here + north
+        line.append(here)
+    cut = bytearray(ground)
+    for i in line:
+        cut[i] = 0
+    part_at, parts = _pool_map(cut, stride, 1)
+    around = (-stride - 1, -stride, -stride + 1, -1, 1, stride - 1, stride, stride + 1)
+    beside = {part_at[i + step] for i in line for step in around} - {-1}
+    kept = sorted((parts[p] for p in beside if parts[p].size >= _MIN_LAKE_TILES), key=lambda part: -part.size)[:2]
+    if len(kept) < 2:
+        return None
+    whole, (mid_y, mid_x) = ground.count(1), divmod(line[len(line) // 2], stride)  # a part's mean is the map's own, the line's tile the ringed mask's
+    return [{"dir": bearing(part.x - mid_x + 1, part.y - mid_y + 1), "pct": round(part.size / whole * 100, 1), "size": part.size} for part in kept]
+
+
+# The narrowest water between two lands in `swim_tiles`: every coast floods at once, and two meeting tides add up to the crossing.
 def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> list[dict]:
+    gaps, banks = _tides(water, stride, coast, _FARTHEST_SWIM * _STEP)  # a tide reaching nobody is not worth raising: what it would still close, no body could swim
+    return [
+        {"banks": [{"x": i % stride - 1, "y": i // stride - 1} for i in banks[pair]], "between": list(pair), "swim_tiles": round(span / _STEP)}
+        for pair, span in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))
+    ]
+
+
+# Tides raised at once from every source, a first step weighing half: two that meet add up to a gap, the narrowest kept per pair — and per land under `land_at`.
+def _tides(
+    open_: bytes | bytearray, stride: int, sources: list[tuple[int, int]], farthest: int, land_at: Sequence[int] | None = None
+) -> tuple[dict[tuple[int, ...], int], dict[tuple[int, ...], tuple[int, int]]]:
     # The straight neighbours and the slanted ones, each at its own cost: the depth a step reaches is reckoned once for four neighbours, not once for each.
     moves = ((-stride, stride, -1, 1), _STEP), ((-stride - 1, -stride + 1, stride - 1, stride + 1), _STEP_SLANT)
-    # Each tide carries the coast tile it rose from, so that where two meet their two sources are the crossing's banks: the strait sited, not only measured.
-    depth, nearest, source = [_UNREACHED] * len(water), [0] * len(water), [0] * len(water)
-    for i, island_id in coast:
-        depth[i], nearest[i], source[i] = 0, island_id, i
-    # Four costs only, two steps and their halves off a shore, so few depths are ever reached: a heap of them, each with its tiles, walks them in order.
-    at_depth, pending = {0: [i for i, _ in coast]}, [0]
-    farthest = _FARTHEST_SWIM * _STEP  # a tide reaching nobody is not worth raising: what it would still close, no body could swim
+    # Each tide carries the tile it rose from, so that where two meet their two sources are the gap's banks: sited, not only measured.
+    depth, nearest, source = [_UNREACHED] * len(open_), [0] * len(open_), [0] * len(open_)
+    for i, label in sources:
+        depth[i], nearest[i], source[i] = 0, label, i
+    # Four costs only, two steps and their halves off a source, so few depths are ever reached: a heap of them, each with its tiles, walks them in order.
+    at_depth, pending = {0: [i for i, _ in sources]}, [0]
 
-    gaps: dict[tuple[int, int], int] = {}
-    banks: dict[tuple[int, int], tuple[int, int]] = {}  # the lower id's bank first, as `between` is
+    gaps: dict[tuple[int, ...], int] = {}
+    banks: dict[tuple[int, ...], tuple[int, int]] = {}  # the lower label's bank first, as the pair is
     while pending and (here := heappop(pending)) <= farthest:
         slot = at_depth.pop(here)
         while slot:
@@ -269,27 +338,28 @@ def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> lis
                 continue
             own, origin = nearest[i], source[i]
             for steps, cost in moves:
-                swum = here + (cost if here else cost // 2)  # both costs even, so the half stays whole
-                bucket = at_depth.get(swum)
+                reach = here + (cost if here else cost // 2)  # both costs even, so the half stays whole
+                bucket = at_depth.get(reach)
                 for step in steps:
                     j = i + step
-                    if not water[j]:
+                    if not open_[j]:
                         continue
-                    if (reached := depth[j]) > swum:
-                        depth[j], nearest[j], source[j] = swum, own, origin
+                    if (reached := depth[j]) > reach:
+                        depth[j], nearest[j], source[j] = reach, own, origin
                         if bucket is None:
-                            bucket = at_depth[swum] = []
-                            heappush(pending, swum)
+                            bucket = at_depth[reach] = []
+                            heappush(pending, reach)
                         bucket.append(j)
                     elif (rival := nearest[j]) != own:
-                        pair = (own, rival) if own < rival else (rival, own)
-                        if (span := swum + reached) < gaps.get(pair, span + 1):  # the narrowest the two ever leave
+                        pair: tuple[int, ...] = (own, rival) if own < rival else (rival, own)
+                        if land_at is not None:
+                            if not (land := land_at[i] or land_at[j]):  # met off every counted land: a rock too small to bear a name bears no neck
+                                continue
+                            pair = (land, *pair)
+                        if (span := reach + reached) < gaps.get(pair, span + 1):  # the narrowest the two ever leave
                             gaps[pair] = span
                             banks[pair] = (origin, source[j]) if own < rival else (source[j], origin)
-    return [
-        {"banks": [{"x": i % stride - 1, "y": i // stride - 1} for i in banks[pair]], "between": list(pair), "swim_tiles": round(span / _STEP)}
-        for pair, span in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))
-    ]
+    return gaps, banks
 
 
 # The map's water, a row of bytes each, read on the top as WB does: the one mask `waters_cached` and `water_bodies` must agree on.
@@ -299,7 +369,7 @@ def _water_rows(save: dict) -> list[bytes]:
 
 # Every stretch of water the map holds, read once per save since the map never moves — the bodies' mask with it, which only `water_bodies` reads.
 def _waters(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v15", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v16", save_path, lambda: _compute_waters(save, save_path))
 
 
 # What water a tile lies in — a `sea`, a `lake` or a `river` by id, read off the mask — or `pond_tiles`, a water under their floor filled from the tile.
@@ -324,6 +394,6 @@ def water_bodies(save: dict, save_path: Path) -> Callable[[int, int], dict]:
     return body
 
 
-# The seas, the lakes, the rivers and the straits between the lands, as `geography … waters` prints them.
+# The seas, the lakes, the rivers, the straits between the lands and the necks between the seas, as `geography … waters` prints them.
 def waters_cached(save: dict, save_path: Path) -> dict:
     return {key: value for key, value in _waters(save, save_path).items() if key != "body_at"}
