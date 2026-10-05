@@ -80,31 +80,45 @@ from walking import WalkMap, walk_way
 
 _ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "plots", "snapshot")
 
-# Chronicler key => WB `mapStats` counter — UI keys (`CUMULATIVE_STATS`) + churn a net snapshot hides; `_created` stored, `destroyed = created − snapshot.alive`.
 _CARRYING = ("pregnant", "pregnant_parthenogenesis")  # WB's two statuses that end on a birth
+
+# Chronicler key, `history world`'s column name where it has one => WB `mapStats` counter — beginnings and ends both, the churn a net snapshot hides.
 _CUMULATIVE_COUNTERS = {
+    "alliances_dissolved": "alliancesDissolved",
     "alliances_made": "alliancesMade",
     "armies_created": "armiesCreated",
+    "armies_destroyed": "armiesDestroyed",
     "books_burnt": "booksBurnt",
     "books_read": "booksRead",
-    "buildings_built": "housesBuilt",  # WB `housesBuilt` counts all buildings, not dwellings (net ≈ `buildings`)
+    "books_written": "booksWritten",
+    "buildings_built": "housesBuilt",  # WB's two `houses…` counters take every building, not dwellings alone — their net ≈ `buildings`
+    "buildings_destroyed": "housesDestroyed",
     "cities_conquered": "citiesConquered",
     "cities_created": "citiesCreated",
+    "cities_destroyed": "citiesDestroyed",
     "cities_rebelled": "citiesRebelled",
     "clans_created": "clansCreated",
+    "clans_destroyed": "clansDestroyed",
     "creatures_born": "creaturesBorn",  # natural reproduction
     "creatures_created": "creaturesCreated",  # divine spawn + worldgen
     "cultures_created": "culturesCreated",
+    "cultures_forgotten": "culturesForgotten",
     "evolutions": "evolutions",
     "families_created": "familiesCreated",
+    "families_destroyed": "familiesDestroyed",
     "kingdoms_created": "kingdomsCreated",
+    "kingdoms_destroyed": "kingdomsDestroyed",
     "languages_created": "languagesCreated",
+    "languages_forgotten": "languagesForgotten",
     "metamorphosis": "metamorphosis",
     "peaces_made": "peacesMade",
+    "plots_forgotten": "plotsForgotten",
     "plots_started": "plotsStarted",
     "plots_succeeded": "plotsSucceeded",
     "religions_created": "religionsCreated",
+    "religions_forgotten": "religionsForgotten",
     "subspecies_created": "subspeciesCreated",
+    "subspecies_extinct": "subspeciesExtinct",
     "wars_started": "warsStarted",
 }
 
