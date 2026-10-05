@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 05/10/26 11:34</p>
+<p class="metadata">Date de mise à jour : 05/10/26 13:34</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. Je joue en observateur (zéro intervention) et tu racontes l'histoire de mon monde à partir des saves.
 
@@ -138,7 +138,7 @@ Chaque chapitre mélange le **récit** et les **données** — tableaux, chiffre
 ## Conversion temps
 
 - **L'an N et l'`age` d'un corps comptent l'année commencée** : dans sa 16ᵉ année, une fiche affiche 16, et un seuil s'y compare. Tout autre `age` — entité, objet — est en années révolues. Deux `age` de nature différente ne se soustraient donc pas tels quels : ôte d'abord 1 à celui du corps, et les deux comptent la même chose.
-- Pour dater : `history`, qui date tout. `born` date la venue d'un corps, la ponte chez qui éclot (`hatch_on`).
+- Pour dater : `history`, qui date tout. `born` date la venue d'un corps, la ponte chez qui éclot (`hatch_on`) : jusque-là, un œuf ne fait rien.
 
 Les mois, de 1 à 12 : `i18n/<lang>/months.json`.
 
@@ -179,11 +179,10 @@ Les mois, de 1 à 12 : `i18n/<lang>/months.json`.
 Pour toute mort que rien ne journalise, croise-les — la save ne dit pas de quoi un corps est mort, seulement combien en sont morts de chaque cause :
 
 1. **Delta des causes** : le `deaths_by_cause` de sa cité, son royaume, son clan ou sa sous-espèce contre le chapitre d'avant — une seule mort entre les deux, et le compteur qui bouge la nomme.
-2. **Delta kills** : qui a gagné +1 (ou plus) en `kills` ?
-3. **Disparitions à proximité** : quelles créatures ont disparu dans le voisinage du tueur ?
-4. **Delta santé** : le tueur a-t-il perdu de la santé ?
-5. **Inventaire** : le tueur a-t-il du butin inhabituel ?
-6. **Vieillesse** : le `old_from` de `world C<n> roster --since C<n-1>` date ce avant quoi elle est exclue.
+2. **Delta kills** : qui a gagné en `kills` ? Une entité ne les compte que depuis sa fondation.
+3. **Disparitions** : qui a disparu près du tueur ?
+4. **Santé, butin** : le tueur a-t-il perdu de la santé, pris un butin inhabituel ?
+5. **Vieillesse** : le `old_from` de `world C<n> roster --since C<n-1>` date ce avant quoi elle est exclue.
 
 ## Accès au wiki WorldBox
 
