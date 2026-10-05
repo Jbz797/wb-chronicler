@@ -3,6 +3,7 @@
 from collections.abc import Iterator, Sequence
 from itertools import chain, compress, repeat
 
+BARE = "~"  # marks a ground no biome grows on among the biomes' own names, none of which could start so
 HEART_CELL = 4  # tiles a side of the cells `hearts` reads on a land or a sea, one tile standing for each: a name needs no finer, the sweep sixteen times lighter
 LAND_LAYERS = frozenset({"Block", "Ground", "Lava"})  # what a foot stands on, and all `totals` counts as land: off it, the rare goo included, a tile is water
 
@@ -154,6 +155,16 @@ def tile_elevation(tile_name: str) -> str | None:
 # `snow` or `ice` where the ground lies frozen for good — the map's own frost, beside the passing one a save lists as `frozen_tiles`.
 def tile_frost(tile_name: str) -> str | None:
     return _FROST_BY_TOP.get(tile_name.partition(":")[2])
+
+
+# The ground a patch is made of: a tile's biome, else, marked `BARE`, `rock` for mountains and summits — one massif whatever its height —, its frost or its kind.
+def tile_ground(tile_name: str) -> str | None:
+    if biome := tile_biome(tile_name):
+        return biome
+    if tile_layer(tile_name) not in LAND_LAYERS:
+        return None
+    kind = tile_kind(tile_name)
+    return BARE + ("rock" if kind in ("mountain", "summit") else tile_frost(tile_name) or kind)
 
 
 # Structural terrain kind (mirrors WB UI), off the base: overlays (`*:road`, `*:field`) win, while snow and walls are told apart (`tile_frost`, `tile_block`).

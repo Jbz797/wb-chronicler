@@ -8,7 +8,7 @@ import argparse
 import math
 import sys
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import cache
 from heapq import heapify, heappop, heappush
 from itertools import compress
@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, listed_tiles, off_land, tile_biome, tile_block, tile_elevation, tile_frost, tile_kind, tile_layer
+from grid import LazyTileGrid, listed_tiles, off_land, tile_biome, tile_block, tile_elevation, tile_frost, tile_ground, tile_kind, tile_layer, tile_mask
 from islands import compute_islands_cached, islet_centre
 from shared import (
     DIAGONAL_EXTRA,
@@ -114,6 +114,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     if "tile_info" in sections:
         ctx["burning_set"] = wanted.intersection(listed_tiles(save, "fire"))
         ctx["frozen_set"] = wanted.intersection(listed_tiles(save, "frozen_tiles"))
+        ctx["patch_at"] = _patch_finder(save, ctx["grid"], ctx["tile_to_island"])
 
     if {"distances", "tile_info"} & sections:
         ctx["water_body"] = cache(lambda: water_bodies(save, save_path))  # called not stored: a tile on dry land never asks what water it lies in
@@ -343,6 +344,39 @@ def _nearest_water(x: int, y: int, ctx: dict) -> dict | None:
     return {**ctx["water_body"]()(*at), **spot, "crow_tiles": round(best), "dir": bearing(at[0] - x, at[1] - y)}
 
 
+# The patch a land tile lies in, as `geography … biomes -t` cuts and sites it: one ground on one land, corners joining — its size, its own tile nearest its middle.
+def _patch_finder(save: dict, grid: LazyTileGrid, island_of) -> Callable[[int, int], dict]:
+    grounds = [tile_ground(name) for name in save.get("tileMap") or []]
+    masks: dict[str | None, list[bytes]] = {}  # a ground's own tiles, each row a mask C built, asked once however many tiles of a window stand on it
+    filled: list[tuple[set[tuple[int, int]], dict]] = []  # a patch two tiles of a window share is filled once
+
+    def patch(x: int, y: int) -> dict:
+        if known := next((found for tiles, found in filled if (x, y) in tiles), None):
+            return known
+        ground, land = grounds[grid[y][x]], island_of.get((x, y))
+        if ground not in masks:
+            masks[ground] = tile_mask(save, [own == ground for own in grounds])
+        mask, lands = masks[ground], {}
+        seen, todo = {(x, y)}, [(x, y)]
+        while todo:
+            cx, cy = todo.pop()
+            for ny in range(max(cy - 1, 0), min(cy + 2, grid.height)):
+                if (own := lands.get(ny)) is None:
+                    own = lands[ny] = island_of.row(ny)
+                row = mask[ny]
+                for nx in range(max(cx - 1, 0), min(cx + 2, grid.width)):
+                    if row[nx] and own[nx] == land and (nx, ny) not in seen:
+                        seen.add((nx, ny))
+                        todo.append((nx, ny))
+        mean_x, mean_y = sum(tx for tx, _ in seen) / len(seen), sum(ty for _, ty in seen) / len(seen)
+        at_x, at_y = min(seen, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))  # ties to the lower `(x, y)`, as the sweep's
+        told = {"tiles": len(seen), "x": at_x, "y": at_y}
+        filled.append((seen, told))
+        return told
+
+    return patch
+
+
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
@@ -365,7 +399,7 @@ def _shares(counter: Counter, total: int) -> str | None:
     return " | ".join(f"{pct}% {name}" for name, n in counter.most_common(3) if (pct := round(n / total * 100)) > 0) or None
 
 
-# `block`, `burning`, `frozen` (passing frost), `islet_tiles` (a land too small to count), `snow`, `ice`, on water the body or `pond_tiles`: where they hold.
+# `block`, `burning`, `frozen` (passing frost), `islet_tiles` (a land too small to count) or `patch`, `snow`, `ice`, in water the body or `pond_tiles`: as they hold.
 def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     name = ctx["tile_map"][ctx["grid"][y][x]]
     out: dict = {"biome": tile_biome(name), "elevation": tile_elevation(name), "island_id": ctx["tile_to_island"].get((x, y)), "kind": tile_kind(name)}
@@ -377,7 +411,9 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
         out[frost] = True
     if block := tile_block(name):
         out["block"] = block
-    if out["island_id"] is None and off_land(name) == "islet":
+    if out["island_id"] is not None:
+        out["patch"] = ctx["patch_at"](x, y)
+    elif off_land(name) == "islet":
         out["islet_tiles"] = ctx["tile_to_island"].islet_size((x, y))
     elif tile_layer(name) == "Ocean":
         out |= ctx["water_body"]()(x, y)

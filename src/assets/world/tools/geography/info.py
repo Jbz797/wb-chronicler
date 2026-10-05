@@ -11,7 +11,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LAND_LAYERS, LazyTileGrid, frozen_tally, listed_tiles, off_land, tile_biome, tile_count, tile_frost, tile_kind, tile_layer, tile_mask
+from grid import (
+    BARE,
+    LAND_LAYERS,
+    LazyTileGrid,
+    frozen_tally,
+    listed_tiles,
+    off_land,
+    tile_biome,
+    tile_count,
+    tile_frost,
+    tile_ground,
+    tile_kind,
+    tile_layer,
+    tile_mask,
+)
 from islands import compute_islands_cached
 from shared import (
     MAX_LISTED,
@@ -39,7 +53,6 @@ from shared import (
 from waters import waters_cached
 
 _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
-_BARE = "~"  # marks a ground no biome grows on among the biomes' own names, none of which could start so
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
 _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
@@ -61,14 +74,6 @@ _NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
 _SURVEY_PCT = 1  # the share of its land under which a ground is only named in the world-wide `biomes`: half its rows weigh less, and `-i` has them all
 _TOP_PATCHES = 5  # the patches `biomes -t` sites of one ground — a second massif, a frost in two halves: past a handful, the row's count says the rest
-
-
-# What a land tile is where no biome grows: `rock` for mountains and summits alike — one massif whatever its height —, else its frost, else its ground.
-def _bare_ground(name: str) -> str | None:
-    if tile_layer(name) not in LAND_LAYERS:
-        return None
-    kind = tile_kind(name)
-    return _BARE + ("rock" if kind in ("mountain", "summit") else tile_frost(name) or kind)
 
 
 # Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
@@ -115,7 +120,7 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> tupl
     by_key: dict[tuple[int | None, str], list[list]] = {}
     for key, *patch in found.values():
         by_key.setdefault((key >> 8 or None, names[(key & 255) - 1]), []).append(patch)
-    return by_key, grounds, names  # with them the map they were read off, a code per tile, and the names its codes count from 1: an outline's reading
+    return by_key, grounds, names  # the patches, the map they were cut from — a code per tile — and the names those codes count from 1: what `_borders` reads
 
 
 # The sweep kept on disk, with every ground's largest patches, which only `_patch_detail` reads.
@@ -336,7 +341,7 @@ def _collect(save: dict, save_path: Path, sections: tuple[str, ...], kinds: set[
 def _compute_biomes(save: dict, save_path: Path) -> dict:
     islands, island_of = compute_islands_cached(save, save_path)
     # Biomes come already merged, `soil_high:paradox_high` and its low twin both reading `paradox`; a tile with none is told by its ground, patched alike.
-    biome_by_id = [tile_biome(name) or _bare_ground(name) for name in save.get("tileMap") or []]
+    biome_by_id = [tile_ground(name) for name in save.get("tileMap") or []]
     # The patches tally the biomes too, land by land, in the order the sweep first meets each — so ties between biomes fall as met. Islets go under `None`.
     patches, grounds, names = _biome_patches(save, island_of, biome_by_id)
     tallies: defaultdict[int | None, Counter] = defaultdict(Counter)
@@ -346,7 +351,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     if None in tallies:  # off every land, the share is of all the islets, as `totals`, `burning` and `frozen` count them
         sizes[None] = _surfaces(save)[0] - sum(sizes.values())
     frames = {island["id"]: island for island in islands}  # each land's centroid and bounds, that a biome's patches be placed on it
-    kinds = ["water", *(name.removeprefix(_BARE) for name in names)]  # a code's name as the rows print it, and `0` what bears no ground at all
+    kinds = ["water", *(name.removeprefix(BARE) for name in names)]  # a code's name as the rows print it, and `0` what bears no ground at all
     tops = {key: _top_patches(found, frames.get(key[0]), grounds, kinds) for key, found in patches.items()}
 
     # No share where it rounds to nothing: the tiles say it, and a lone `paradox` tile is still a subject. A lone patch is the whole biome, whose size the row says.
@@ -354,7 +359,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     per_island = {
         _land_name(island_id): [
             {
-                **({"ground": biome[1:]} if biome.startswith(_BARE) else {"biome": biome}),
+                **({"ground": biome[1:]} if biome.startswith(BARE) else {"biome": biome}),
                 "largest": {k: v for k, v in tops[(island_id, biome)][0].items() if k not in _DETAIL and (k != "tiles" or len(patches[(island_id, biome)]) > 1)},
                 "patches": len(patches[(island_id, biome)]),
                 "pct": round(n / sizes[island_id] * 100, 1) or None,
@@ -364,7 +369,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
         ]
         for island_id, counts in lands
     }
-    top_patches = {_land_name(island_id): {biome.removeprefix(_BARE): tops[(island_id, biome)] for biome in counts} for island_id, counts in lands}
+    top_patches = {_land_name(island_id): {biome.removeprefix(BARE): tops[(island_id, biome)] for biome in counts} for island_id, counts in lands}
 
     # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
     named = {row["biome"] for rows in per_island.values() for row in rows if "biome" in row}
