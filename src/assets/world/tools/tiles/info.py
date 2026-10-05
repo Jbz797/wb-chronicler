@@ -338,7 +338,9 @@ def _nearest_water(x: int, y: int, ctx: dict) -> dict | None:
                 best, at = walked, (nx, ny)
     if best is None:
         return None
-    return {**ctx["water_body"]()(*at), "crow_tiles": round(best), "dir": bearing(at[0] - x, at[1] - y)}  # which water, by the id `geography waters` lists it under
+    # Which water, by the id `geography waters` lists it under — and its tile, a goal `actor … --to` walks a body to: none on the water itself, the tile asked.
+    spot = {"x": at[0], "y": at[1]} if at != (x, y) else {}
+    return {**ctx["water_body"]()(*at), **spot, "crow_tiles": round(best), "dir": bearing(at[0] - x, at[1] - y)}
 
 
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
