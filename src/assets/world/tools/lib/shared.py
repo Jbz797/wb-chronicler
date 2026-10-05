@@ -1224,6 +1224,15 @@ def write_save(wbox: Path, save: dict) -> None:
     staged.replace(wbox)
 
 
+# An `x,y` tile off the command line, as WB's UI reads them — raising `ArgumentTypeError` is what makes argparse print the usage line rather than a traceback.
+def xy_arg(value: str) -> tuple[int, int]:
+    try:
+        x_str, y_str = value.split(",", 1)
+        return int(x_str), int(y_str)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"expected `x,y` (e.g. `415,117`), got {value!r}") from e
+
+
 # A city zone's `(x, y)`, in zone units. WB omits a zero at save time, so the first row writes no `y` and the first column no `x` — both read 0.
 def zone_xy(zone: dict) -> tuple[int, int]:
     return zone.get("x", 0), zone.get("y", 0)

@@ -1,6 +1,6 @@
 # Tile-level primitives. No save-wide state, no module cache — just functions over a tile name, the rows the save folds away as runs, or the tiles it lists by id.
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from itertools import chain, compress, repeat
 
 BARE = "~"  # marks a ground no biome grows on among the biomes' own names, none of which could start so
@@ -125,6 +125,38 @@ def listed_tiles(save: dict, key: str) -> Iterator[tuple[int, int]]:
 # Off every counted land, where a tile lies: on an `islet` too small to count, or in the `water` — two places, never one bucket, a body on a rock being no swimmer.
 def off_land(tile_name: str) -> str:
     return "islet" if tile_layer(tile_name) in LAND_LAYERS else "water"
+
+
+# The patch a land tile lies in, as `geography … biomes -t` cuts and sites it: one ground on one land, corners joining → its tiles, its size and its own middle tile.
+def patch_finder(save: dict, grid: LazyTileGrid, island_of) -> Callable[[int, int], tuple[set[tuple[int, int]], dict]]:
+    grounds = [tile_ground(name) for name in save.get("tileMap") or []]
+    masks: dict[str | None, list[bytes]] = {}  # a ground's own tiles, each row a mask C built, asked once however many tiles of a window stand on it
+    filled: list[tuple[set[tuple[int, int]], dict]] = []  # a patch two tiles of a window share is filled once
+
+    def patch(x: int, y: int) -> tuple[set[tuple[int, int]], dict]:
+        if known := next((found for found in filled if (x, y) in found[0]), None):
+            return known
+        ground, land = grounds[grid[y][x]], island_of.get((x, y))
+        if ground not in masks:
+            masks[ground] = tile_mask(save, [own == ground for own in grounds])
+        mask, lands = masks[ground], {}
+        seen, todo = {(x, y)}, [(x, y)]
+        while todo:
+            cx, cy = todo.pop()
+            for ny in range(max(cy - 1, 0), min(cy + 2, grid.height)):
+                if (own := lands.get(ny)) is None:
+                    own = lands[ny] = island_of.row(ny)
+                row = mask[ny]
+                for nx in range(max(cx - 1, 0), min(cx + 2, grid.width)):
+                    if row[nx] and own[nx] == land and (nx, ny) not in seen:
+                        seen.add((nx, ny))
+                        todo.append((nx, ny))
+        mean_x, mean_y = sum(tx for tx, _ in seen) / len(seen), sum(ty for _, ty in seen) / len(seen)
+        at_x, at_y = min(seen, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))  # ties to the lower `(x, y)`, as the sweep's
+        filled.append((seen, {"tiles": len(seen), "x": at_x, "y": at_y}))
+        return filled[-1]
+
+    return patch
 
 
 # Vegetation biome (jungle/savanna/swamp/…). `None` for terrain-only tiles, overlays (`*:road`, `*:field`) and snow or ice, whose `frozen_low` is none either.

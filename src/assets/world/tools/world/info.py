@@ -29,7 +29,7 @@ from actor_stats import (
     status_left,
 )
 from founding import city_zones, settle_gates, settle_rank, settle_told
-from grid import LazyTileGrid, frozen_tally, off_land
+from grid import LazyTileGrid, frozen_tally, off_land, patch_finder
 from islands import compute_islands_cached
 from shared import (
     MAX_LISTED,
@@ -75,6 +75,7 @@ from shared import (
     wants_detail,
     world_date,
     world_laws,
+    xy_arg,
 )
 from walking import WalkMap, walk_way
 
@@ -385,12 +386,23 @@ def _build_plots(save: dict) -> list[dict]:
 
 # Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
 def _build_roster(
-    save: dict, island_of, kinds: set[str] | None, trait: str | None, land: int | str | None, since: str | None, sapient: bool, settle: bool, barred: bool
+    save: dict,
+    island_of,
+    kinds: set[str] | None,
+    trait: str | None,
+    land: int | str | None,
+    since: str | None,
+    sapient: bool,
+    settle: bool,
+    barred: bool,
+    patch: set[tuple[int, int]] | None,
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
     thinking = _sapient_subspecies(save) if sapient else None
     grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
     asked = _ISLET if land == "islets" else land  # `-i islets` names the islets as a body stands on one, `islet`
+    if patch and land is None:
+        asked = island_of.get(next(iter(patch)))  # a patch lies on one land, which then goes unsaid as `-i`'s does
     ctx = build_actor_stats_context(save)
     if settle or barred:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
         ctx |= {
@@ -406,6 +418,8 @@ def _build_roster(
     for actor in save.get("actors_data") or []:
         borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
         if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or not borne or (thinking is not None and actor.get("subspecies") not in thinking):
+            continue
+        if patch is not None and actor_xy(actor) not in patch:
             continue
         gates = settle_gates(actor, ctx) if settle or barred else None
         if settle and gates not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
@@ -562,6 +576,7 @@ def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
         "that could found a town where it stands" if args.settle else None,
         "kept from founding by more than its age" if args.barred else None,
         (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
+        f"on the patch of {args.patch[0]},{args.patch[1]}" if args.patch else None,
         f"arrived, moved or died since {since}" if since else None,
     ]
     thinking = "thinking " if args.sapient or args.settle or args.barred else ""
@@ -633,6 +648,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
     parser.add_argument("--barred", action="store_true", help="`roster`: the thinkers something besides their age keeps from founding, and what")
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
+    parser.add_argument("--patch", type=xy_arg, metavar="x,y", help="`roster`: the bodies standing on that tile's patch, one ground of one land")
     parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
     parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
@@ -646,12 +662,15 @@ def main(argv: list[str]) -> int:
         return 2
     if not requested or requested == "full":
         sections = _ALL_SECTIONS
-    narrowing = args.type or args.trait or args.sapient or args.settle or args.barred or args.island is not None
+    narrowing = args.type or args.trait or args.sapient or args.settle or args.barred or args.island is not None or args.patch
     if args.settle and args.barred:  # the two halves of the thinkers: together they name no one
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        print("✗ -t, --trait, --sapient, --settle, --barred and -i narrow `roster`: name it", file=sys.stderr)
+        print("✗ -t, --trait, --patch, --sapient, --settle, --barred and -i narrow `roster`: name it", file=sys.stderr)
+        return 2
+    if since and args.patch:  # the dead of a roll stood on a ground no save keeps
+        print("✗ `--patch` reads one chapter: ask `--since` apart", file=sys.stderr)
         return 2
     # `--since` narrows a roll and weighs two counts: any other section would say a chapter's state as if it were a change
     if since and (unweighed := [section for section in sections if section not in _SINCE_SECTIONS]):
@@ -686,7 +705,13 @@ def main(argv: list[str]) -> int:
         if args.trait and args.trait not in load_data("creature-traits.json") and args.trait not in load_data("subspecies-traits.json"):
             print(f"✗ no trait {args.trait}, of a body or of a lineage — `actor <id> traits` and `subspecies <id> traits` give the ids", file=sys.stderr)
             return 2
-        roster = _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred)
+        patch = None
+        if args.patch:
+            if island_of.get(args.patch) is None:  # off the map as on the water: a patch is one ground of one counted land
+                print(f"✗ {args.patch[0]},{args.patch[1]} stands on no counted land — `tiles <x,y> tile_info` tells what a tile is", file=sys.stderr)
+                return 2
+            patch = patch_finder(save, LazyTileGrid(save), island_of)(*args.patch)[0]
+        roster = _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred, patch)
         if not roster:  # a filter nothing answers, never a silent `{}`
             print(_nobody(args, kinds, save, since), file=sys.stderr)
             return 1
