@@ -44,6 +44,7 @@ _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one
 _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
+_DETAIL = ("borders", "bounds")  # what `-t` alone tells of a patch, the wide view keeping to where it lies
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 
 _NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault, or as a word mistyped
@@ -71,12 +72,12 @@ def _bare_ground(name: str) -> str | None:
 
 
 # Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
-def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict[tuple[int | None, str], list[list]]:
+def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> tuple[dict[tuple[int | None, str], list[list]], list[bytes], list[str]]:
     names = sorted({biome for biome in biome_by_id if biome})
     code_of = {biome: k + 1 for k, biome in enumerate(names)}
     rows: list[list[tuple[int, int, int, int]]] = []  # each row's runs, as `(west, east + 1, land << 8 | biome code, run index)`
-    count = 0
-    for marks in tile_mask(save, [code_of.get(biome or "", 0) for biome in biome_by_id]):
+    count, grounds = 0, tile_mask(save, [code_of.get(biome or "", 0) for biome in biome_by_id])
+    for marks in grounds:
         lands, row = island_of.row(len(rows)), []
         for match in _BIOME_RUN.finditer(marks):
             west, end = match.span()
@@ -114,12 +115,27 @@ def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> dict
     by_key: dict[tuple[int | None, str], list[list]] = {}
     for key, *patch in found.values():
         by_key.setdefault((key >> 8 or None, names[(key & 255) - 1]), []).append(patch)
-    return by_key
+    return by_key, grounds, names  # with them the map they were read off, a code per tile, and the names its codes count from 1: an outline's reading
 
 
 # The sweep kept on disk, with every ground's largest patches, which only `_patch_detail` reads.
 def _biomes(save: dict, save_path: Path) -> dict:
-    return pickle_cached("biomes_v16", save_path, lambda: _compute_biomes(save, save_path))
+    return pickle_cached("biomes_v17", save_path, lambda: _compute_biomes(save, save_path))
+
+
+# What lies along a patch's outline, side by side: its three first neighbours, each its share of that outline — its own ground is none, nor the map's edge.
+def _borders(runs: list[tuple[int, int, int]], grounds: list[bytes], kinds: list[str]) -> str | None:
+    last, met = len(grounds) - 1, []
+    for y, a, b in runs:
+        met.append(grounds[y][a - 1 : a] + grounds[y][b : b + 1])  # an empty slice at either edge of the map
+        if y:
+            met.append(grounds[y - 1][a:b])
+        if y < last:
+            met.append(grounds[y + 1][a:b])
+    counts = Counter(b"".join(met))
+    del counts[grounds[runs[0][0]][runs[0][1]]]  # the tiles above and below that are the patch's own
+    total = sum(counts.values())
+    return " | ".join(f"{pct}% {kinds[code]}" for code, n in counts.most_common(3) if (pct := round(n / total * 100)) > 0) or None
 
 
 # Every biome a land carries, marginal ones included — a paradox patch is a chapter's subject — then the ground none grows on: the shares add up to the land.
@@ -322,7 +338,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     # Biomes come already merged, `soil_high:paradox_high` and its low twin both reading `paradox`; a tile with none is told by its ground, patched alike.
     biome_by_id = [tile_biome(name) or _bare_ground(name) for name in save.get("tileMap") or []]
     # The patches tally the biomes too, land by land, in the order the sweep first meets each — so ties between biomes fall as met. Islets go under `None`.
-    patches = _biome_patches(save, island_of, biome_by_id)
+    patches, grounds, names = _biome_patches(save, island_of, biome_by_id)
     tallies: defaultdict[int | None, Counter] = defaultdict(Counter)
     for (island_id, biome), found in patches.items():
         tallies[island_id][biome] = sum(size for size, *_ in found)
@@ -330,7 +346,8 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     if None in tallies:  # off every land, the share is of all the islets, as `totals`, `burning` and `frozen` count them
         sizes[None] = _surfaces(save)[0] - sum(sizes.values())
     frames = {island["id"]: island for island in islands}  # each land's centroid and bounds, that a biome's patches be placed on it
-    tops = {key: _top_patches(found, frames.get(key[0])) for key, found in patches.items()}
+    kinds = ["water", *(name.removeprefix(_BARE) for name in names)]  # a code's name as the rows print it, and `0` what bears no ground at all
+    tops = {key: _top_patches(found, frames.get(key[0]), grounds, kinds) for key, found in patches.items()}
 
     # No share where it rounds to nothing: the tiles say it, and a lone `paradox` tile is still a subject. A lone patch is the whole biome, whose size the row says.
     lands = sorted(tallies.items(), key=lambda kv: (kv[0] is None, kv[0] or 0))
@@ -338,7 +355,7 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
         _land_name(island_id): [
             {
                 **({"ground": biome[1:]} if biome.startswith(_BARE) else {"biome": biome}),
-                "largest": {k: v for k, v in tops[(island_id, biome)][0].items() if k != "bounds" and (k != "tiles" or len(patches[(island_id, biome)]) > 1)},
+                "largest": {k: v for k, v in tops[(island_id, biome)][0].items() if k not in _DETAIL and (k != "tiles" or len(patches[(island_id, biome)]) > 1)},
                 "patches": len(patches[(island_id, biome)]),
                 "pct": round(n / sizes[island_id] * 100, 1) or None,
                 "tiles": n,
@@ -445,13 +462,14 @@ def _surveyed(biomes: dict) -> dict:
 
 
 # A ground's `_TOP_PATCHES` largest patches placed on its land, ties in size to the lower `(x, y)`, each with its box as a land's `bounds` — the rest is a count.
-def _top_patches(found: list[list], land: dict | None) -> list[dict]:
+def _top_patches(found: list[list], land: dict | None, grounds: list[bytes], kinds: list[str]) -> list[dict]:
     floor = sorted((size for size, *_ in found), reverse=True)[:_TOP_PATCHES][-1]  # only those that may make the list are sited
     sited = [(size, _site(sum_x / size, sum_y / size, runs), runs) for size, sum_x, sum_y, runs in found if size >= floor]
     return [
         {
             **site,
             **(_side(site, land) if land else {}),
+            "borders": _borders(runs, grounds, kinds),
             "bounds": {"x": [min(a for _, a, _ in runs), max(b for *_, b in runs) - 1], "y": [runs[0][0], runs[-1][0]]},  # the runs come south to north
             "tiles": size,
         }
@@ -548,7 +566,9 @@ def main(argv: list[str]) -> int:
         if args.island is None:
             shown = shown | {"biomes": _surveyed(shown["biomes"])}
         elif wanted is None:
-            shown = shown | {"biomes": {**shown["biomes"], "info": f"`-t <ground>` sites one ground's {_TOP_PATCHES} largest patches, each with its bounds"}}
+            shown = shown | {
+                "biomes": {**shown["biomes"], "info": f"`-t <ground>` sites one ground's {_TOP_PATCHES} largest patches, each with its bounds and what borders it"}
+            }
         elif detail := _patch_detail(save, save_path, args.island, wanted):
             shown = shown | {"biomes": detail}
         else:
