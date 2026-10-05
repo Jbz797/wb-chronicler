@@ -132,6 +132,7 @@ _EMPTIED = (
     "wars",
 )
 
+_EVENT = "an event the chapter owes its reader, glossed in docs/tags.md"  # said to the chronicler at the recap, and to his auditors with their targets
 _FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked"})  # all `main` reads — others are refused as typos
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _GROWN = frozenset({"adult", "teen"})  # the stages a kind may be counted on: past childhood, an elder read as the adult it is — its span is not asked
@@ -216,6 +217,7 @@ def _audit_targets(n: int, facts: dict) -> str:
     asked = [
         *([] if facts["favorite"] else [f"no favorite: {' / '.join(_WORLD_ONLY)}"]),
         *([f"favorite dead: {_DEATH}"] if facts["mourned"] else []),
+        *([f"events: {', '.join(facts['events'])}, each {_EVENT}"] if facts["events"] else []),
         *([f"trait summaries: {_SUMMARY}"] if any(field.endswith(".traits") for field in facts["audited"]) else []),
     ]
     shape = f" [{' — '.join(asked)}]" if asked else ""
@@ -368,6 +370,11 @@ def _entered_war(save: dict, kingdom_id: int, since: float) -> bool:
 
 def _entity_id(block: dict) -> int | None:
     return (block.get("metadata") or {}).get("id")
+
+
+# The tags a chapter owes a telling of: an alert waits for `--deliver`, a state the prose may not name, and `NEW_FAVORITE` is the chronicler's own pick.
+def _events(tags: list[str]) -> list[str]:
+    return [code for code in tags if code not in _ALERTS and code != "NEW_FAVORITE"]
 
 
 # The save's `favorite`-flagged actor (WB's in-game marker), detail folded; the chronicler's `descriptor` carries forward while it stays the same favorite.
@@ -533,11 +540,10 @@ def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime
     print(f"✓ C{n} — year {year}, {age_label}")
     print(f"  favorite: {fav_name or 'none'}{f' — {regime}' if regime else ''}")
     print(_RECAP_RULE)
-    # A tag in `chapter.json` alone never reaches the chronicler. Alerts wait for `--deliver`, and `NEW_FAVORITE` is his own pick.
-    if events := [code for code in tags if code not in _ALERTS and code != "NEW_FAVORITE"]:
+    if events := _events(tags):  # a tag in `chapter.json` alone never reaches the chronicler
         for code in events:
             print(f"  ⚑ {code}")
-        print("  → each ⚑ is an event the chapter owes its reader, glossed in docs/tags.md")
+        print(f"  → each ⚑ is {_EVENT}")
         print(_RECAP_RULE)
     # A law the player turned since the chapter before changes what the world may do, and `world … laws` is no part of `full`: nothing else would say it.
     then = prev_world.get("laws") or {}
@@ -766,6 +772,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "descriptor": descriptor,
         "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (owed or long or misplaced),
         "draft": draft,
+        "events": _events(chapter.get("tags") or []),
         "favorite": bool(favorite),
         "h1": h1,
         "h1_length": h1_length,
