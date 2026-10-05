@@ -149,6 +149,7 @@ _MODS = {"Faithful Saves": "faithful_saved_at", "Wandering Clouds": "wandering_c
 
 _MODS_DIR = "../../../mods"  # from the chronicler's own directory, where he runs this script
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
+_PLAIN = "plain text with no tag"  # what a field of `chapter.json` is written in: its panel prints it as it stands, brackets and all
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
 
 # Put to the player at the first chapter, before a line is written. The three commands answer it, and the naming brief rides with the third.
@@ -171,7 +172,7 @@ _STAMP_SLACK = 1  # seconds a mod's stamp may stray from the save's own time: WB
 _SUBAGENT_GRACE = 120  # seconds: a transcript written this lately may be a sub-agent still at work, not to be pulled from under it
 
 # What a trait summary is — in no doc: said to the chronicler as one falls due, and handed to the audit with the targets that name one.
-_SUMMARY = "what those traits make of the body; never a list, a tally of the traits or a figure that ages — read alone in its panel, it may say the chapter again"
+_SUMMARY = f"what those traits make of the body, {_PLAIN}; never a list, a tally of traits or a figure that ages — read alone, it may echo the chapter"
 
 _SUMMARY_CAP = 400
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
@@ -564,12 +565,12 @@ def _print_step_five(n: int, facts: dict) -> None:
         if not (text := facts["descriptor"]):
             print(
                 "  → `favorite.descriptor` in chapter.json, yet to be written: one line on where the favorite stands now, made of what the chapter already says"
-                f" — {_DESCRIPTOR_CAP} characters at most"
+                f" — {_PLAIN}, {_DESCRIPTOR_CAP} characters at most"
             )
         elif carrying:
             print(
                 f"  → `favorite.descriptor`, carried from C{n - 1}: « {text} » — it may stand while every fact in it still holds, an age never does;"
-                f" else rewrite it, {_DESCRIPTOR_CAP} characters at most"
+                f" else rewrite it, {_PLAIN}, {_DESCRIPTOR_CAP} characters at most"
             )
         elif len(text) > _DESCRIPTOR_CAP:
             print(f"  ✗ descriptor, {len(text)} characters of {_DESCRIPTOR_CAP}")
