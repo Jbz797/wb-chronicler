@@ -25,8 +25,8 @@ export type DeathCause = 'acid' | 'divine' | 'drowning' | 'eaten' | 'explosion' 
 
 export type FamilyRegistry = Record<string, FamilyInfo>;
 
-export type IconKind = 'alliances' | 'boats' | 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons'
-  | 'religions' | 'resources' | 'species' | 'subspecies' | 'wars';
+export type IconKind = 'alliances' | 'boats' | 'books' | 'cities' | 'clans' | 'cultures' | 'families' | 'gear' | 'kingdoms' | 'languages'
+  | 'persons' | 'religions' | 'resources' | 'species' | 'subspecies' | 'wars';
 
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 

@@ -40,6 +40,7 @@ export class MarkedHelpers {
         this._extension(INLINE_MARKER.Clan, 'clans', false, this._renderClan), // `[l <id> <name>]` = clan (name in its own hue + headcount).
         this._extension(INLINE_MARKER.Culture, 'cultures', false, this._renderCulture), // `[t <id> <name>]` = culture (emblem + name + followers).
         this._extension(INLINE_MARKER.Family, 'families', false, this._renderFamily), // `[f <id> <name>]` = family (WB's picture frame + name).
+        this._extension(INLINE_MARKER.Gear, 'gear', true, this._renderGear), // `[g <id> <text>?]` = a piece of gear (icon + optional text, never colored).
         this._extension(INLINE_MARKER.Kingdom, 'kingdoms', false, this._renderKingdom), // `[k <id> <name>]` = kingdom (colored name + banner icon).
         this._extension(INLINE_MARKER.Language, 'languages', false, this._renderLanguage), // `[a <id> <name>]` = language (emblem + name + speakers).
         this._extension(INLINE_MARKER.Person, 'persons', false, this._renderPerson), // `[p <id> <name>]` = person (portrait + name + sex icon + charge).
@@ -196,6 +197,13 @@ export class MarkedHelpers {
     const style = `${border}--tag-fill: ${info?.bg_color}; --tag-ink: ${PaletteHelpers.readableOn(info?.bg_color)}`;
 
     return `<span class="ant-tag entity-tag family-tag${framed}${dead}" style="${style}"><span class="entity-name">${name}</span>${medal}${size}${species}</span>`;
+  }
+
+  // A piece of gear: WB's own icon for its kind + optional inline text, never coloured — its rarity is the bearer's panel to tell.
+  private static _renderGear(this: ParserThis, token: Tokens.Generic): string {
+    const { id, tokens: children } = token as IconToken;
+    const img = `<img class="icon" src="assets/img/gear/${id}.png" />`;
+    return children?.length ? `<span class="icon-wrap">${this.parser.parseInline(children)}${img}</span>` : img;
   }
 
   private static _renderKingdom(this: ParserThis, token: Tokens.Generic): string {

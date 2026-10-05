@@ -7,6 +7,7 @@ export const INLINE_MARKER = {
   Clan: 'l',
   Culture: 't',
   Family: 'f',
+  Gear: 'g',
   Kingdom: 'k',
   Language: 'a',
   Person: 'p',

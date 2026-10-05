@@ -225,6 +225,13 @@
     }
   }
 
+  // An icon sits on the line at one size, worn by a name or alone: a bare `[g id]` takes no rule from the wrap it lacks.
+  .icon {
+    max-height: 16px;
+    max-width: 16px;
+    vertical-align: 0;
+  }
+
   .icon-wrap {
     font-weight: 500;
 
@@ -234,9 +241,6 @@
 
     .icon {
       margin-left: 2px;
-      max-height: 16px;
-      max-width: 16px;
-      vertical-align: 0;
     }
   }
 }
