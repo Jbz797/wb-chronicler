@@ -25,6 +25,7 @@ from actor_stats import (
     is_egg,
     is_hungry,
     kept_statuses,
+    kept_task,
     maturation_months,
     status_left,
 )
@@ -406,6 +407,7 @@ def _build_roster(
     barred: bool,
     patch: set[tuple[int, int]] | None,
     status: str | None,
+    task: str | None,
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
     thinking = _sapient_subspecies(save) if sapient else None
@@ -432,6 +434,8 @@ def _build_roster(
         if patch is not None and actor_xy(actor) not in patch:
             continue
         if status and status not in (kept_statuses(actor) or ()):
+            continue
+        if task and kept_task(actor) != task:
             continue
         gates = settle_gates(actor, ctx) if settle or barred else None
         if settle and gates not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
@@ -589,6 +593,7 @@ def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
     said = [
         f"bearing {args.trait}" if args.trait else None,
         f"wearing {args.status}" if args.status else None,
+        f"at {args.task}" if args.task else None,
         "that could found a town where it stands" if args.settle else None,
         "kept from founding by more than its age" if args.barred else None,
         (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
@@ -668,6 +673,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
     parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
     parser.add_argument("--status", help="`roster`: the bodies wearing one status, by its id — what a body wears now, where a trait is what it is")
+    parser.add_argument("--task", help="`roster`: the bodies at one task the instant of the save, by its id — what a body does, where a status is what it wears")
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster`: one kind, a family (`actors`) or a comma list")
     args = parser.parse_args(argv)
@@ -677,15 +683,15 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    narrowing = args.type or args.trait or args.status or args.sapient or args.settle or args.barred or args.island is not None or args.patch
+    narrowing = args.type or args.trait or args.status or args.task or args.sapient or args.settle or args.barred or args.island is not None or args.patch
     if args.settle and args.barred:  # the two halves of the thinkers: together they name no one
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        print("✗ -t, --trait, --status, --patch, --sapient, --settle, --barred and -i narrow `roster`: name it", file=sys.stderr)
+        print("✗ -t, --trait, --status, --task, --patch, --sapient, --settle, --barred and -i narrow `roster`: name it", file=sys.stderr)
         return 2
-    if since and (args.patch or args.status):  # the dead of a roll stood on a ground no save keeps, and wore what no later one tells
-        print(f"✗ `--{'patch' if args.patch else 'status'}` reads one chapter: ask `--since` apart", file=sys.stderr)
+    if since and (alone := next((flag for flag in ("patch", "status", "task") if getattr(args, flag)), None)):
+        print(f"✗ `--{alone}` reads one chapter: ask `--since` apart", file=sys.stderr)  # the dead stood, wore and did what no later save tells
         return 2
     # `--since` narrows a roll and weighs two counts: any other section would say a chapter's state as if it were a change
     if since and (unweighed := [section for section in sections if section not in _SINCE_SECTIONS]):
@@ -728,13 +734,16 @@ def main(argv: list[str]) -> int:
         if args.status and args.status not in worn:  # refused by what this world wears: WB's whole list would not tell a mistyped id from an idle one
             print(f"✗ no body wears {args.status} — worn here: {', '.join(worn) or 'no status at all'}", file=sys.stderr)
             return 2
+        if args.task and args.task not in (done := sorted(set(filter(None, map(kept_task, save.get("actors_data") or []))))):
+            print(f"✗ no body is at {args.task} — tasks here: {', '.join(done) or 'none kept in this save'}", file=sys.stderr)
+            return 2
         patch = None
         if args.patch:
             if island_of.get(args.patch) is None:  # off the map as on the water: a patch is one ground of one counted land
                 print(f"✗ {args.patch[0]},{args.patch[1]} stands on no counted land — `tiles <x,y> tile_info` tells what a tile is", file=sys.stderr)
                 return 2
             patch = patch_finder(save, LazyTileGrid(save), island_of)(*args.patch)[0]
-        roster = _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred, patch, args.status)
+        roster = _build_roster(save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred, patch, args.status, args.task)
         if not roster:  # a filter nothing answers, never a silent `{}`
             print(_nobody(args, kinds, save, since), file=sys.stderr)
             return 1

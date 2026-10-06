@@ -34,6 +34,7 @@ _AUDIT = {
             "settle",  # the chronicler's « why no town yet »: no panel says who could found one
             "settle_more",
             "statuses",
+            "task",
             "tax_local",
             "tax_tribute",
             "traits",

@@ -23,7 +23,7 @@ namespace FaithfulSaves
             _declare = pModDecl;
             _gameObject = pGameObject;
             Harmony.CreateAndPatchAll(typeof(SavePatches), pModDecl.UID);
-            LogService.LogInfo($"[{pModDecl.Name}]: a save now keeps statuses, long waits and the world's clocks");
+            LogService.LogInfo($"[{pModDecl.Name}]: a save now keeps statuses, tasks, long waits and the world's clocks");
         }
     }
 }

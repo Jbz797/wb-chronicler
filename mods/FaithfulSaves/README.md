@@ -22,6 +22,7 @@ WorldBox also redraws two kinds of timers on every load:
 
 - **On save**, each creature gets written into its own saved data the time each of its statuses has left, and the time left before each of its long decisions (a wait of 90 seconds or more) may be taken again. The world gets the time left on its two clocks.
 - **On load**, once the world stands, each status, wait and clock is handed back for exactly the time it had left.
+- **The task under way** — the `Task` line of a creature's window — is kept the same way: on save, its id, the step it had reached, how long the creature had been at it and the pause it was holding; on load, the creature takes it up at that very step, not from the start. What a step was aimed at (a prey, a tile, a wall) is in no save: such a step ends the task, as the game does when a prey dies, and the creature picks one anew.
 
 Nothing else changes: no status lasts longer or shorter than in vanilla, and none is added that the creature did not have. A status handed back does not replay what it does when first given (a change of mood, a sound): that was felt before the save.
 
@@ -37,18 +38,18 @@ The mod installs by hand. Install [NeoModLoader](https://steamcommunity.com/shar
    - **Windows** (a terminal run as administrator): `mklink /D "<Steam>\steamapps\common\worldbox\Mods\FaithfulSaves" "%CD%\mods\FaithfulSaves"`
 
    Run it from the root of this repository. Without a clone, copy the folder's files there instead (`mod.json`, `icon.png` and the two `.cs` files), with `mod.json` directly in `Mods/FaithfulSaves/`.
-2. Launch WorldBox. NML compiles the mod as the game starts: it shows up in the _Mods_ window, and the game log reads `[Faithful Saves]: a save now keeps statuses, long waits and the world's clocks`.
+2. Launch WorldBox. NML compiles the mod as the game starts: it shows up in the _Mods_ window, and the game log reads `[Faithful Saves]: a save now keeps statuses, tasks, long waits and the world's clocks`.
 
 **To uninstall**, disable the mod in NML's _Mods_ window, or delete its link (or its folder) from `Mods`.
 
 ## Notes
 
 - **Compatibility:** the mod replaces no game code. It works with other mods unless they also store data under a `faithful_` key.
-- **What it writes into your saves:** a handful of numbers per creature, in its `custom_data_float` — one `faithful_status_<status>` for each status under way, one `faithful_wait_<decision>` for each long wait still running, and a `faithful_waits` mark — and, in the world's own `custom_data`, two `faithful_timer_<clock>` and `faithful_saved_at`, the world's time at the save, by which the chronicle this repository builds knows the mod wrote it. A save made with the mod loads fine without it: vanilla ignores those keys, and everything is simply lost as before.
+- **What it writes into your saves:** a handful of numbers per creature, in its `custom_data_float` — one `faithful_status_<status>` for each status under way, one `faithful_wait_<decision>` for each long wait still running, and a `faithful_waits` mark —, three `faithful_task_<step|time|wait>` and, in its `custom_data_string`, `faithful_task`, the id of the task it was at — and, in the world's own `custom_data`, two `faithful_timer_<clock>` and `faithful_saved_at`, the world's time at the save, by which the chronicle this repository builds knows the mod wrote it. A save made with the mod loads fine without it: vanilla ignores those keys, and everything is simply lost as before.
 - **A save made before the mod** carries no such key, so its first load still wipes the statuses and redraws the waits. Everything is kept from the next save on.
 
 ## For modders
 
-- `SavePatches.BeforeSave`, prefix on `Actor.prepareForSave()`: it stores the time left on each status and on each long wait.
+- `SavePatches.BeforeSave`, prefix on `Actor.prepareForSave()`: it stores the time left on each status and on each long wait, and the task: `Actor.ai.task`, its `action_index`, the time since it began and `Actor.timer_action`.
 - `SavePatches.BeforeWorldSave`, prefix on `SaveManager.currentWorldToSavedMap()`: it stores the two world clocks and stamps the save with the world's time.
-- `SavePatches.AfterLoad`, postfix on `SaveManager.randomDecisionCooldowns()`, the last step WorldBox runs over every creature when a world loads: it hands each status, wait and clock back, and removes its key.
+- `SavePatches.AfterLoad`, postfix on `SaveManager.randomDecisionCooldowns()`, the last step WorldBox runs over every creature when a world loads: it hands each status, wait, task and clock back, and removes its key. It then logs what it handed back (`handed back 12 statuses, 17 tasks, 34 long waits and 2 clocks`) and, as a warning, names whatever it could not: nothing a save was given is dropped in silence.

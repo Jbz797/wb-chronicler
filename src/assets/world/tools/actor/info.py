@@ -23,6 +23,7 @@ from actor_stats import (
     is_baby,
     is_egg,
     kept_statuses,
+    kept_task,
 )
 from founding import city_zones, settle_gates, settle_told
 from grid import LazyTileGrid, off_land
@@ -143,7 +144,9 @@ _TENURE_ROLES = {
 }
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
-_UNCOMPARED = frozenset({"island_id", "statuses", "x", "y"})  # what `since` leaves out of `changed`: a place is told as a path, `moved`, a status is an instant
+
+# What `since` leaves out of `changed`: a place is told as a path, `moved`, a status or a task is an instant.
+_UNCOMPARED = frozenset({"island_id", "statuses", "task", "x", "y"})
 
 
 # A `--to` no walk answers: its message says what bars the way, the water's width against the body's reach where the sea is to blame.
@@ -324,6 +327,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "sex": sex_label(actor),
         "statuses": kept_statuses(actor),  # Chronicler-only: what the body is in the middle of — asleep, with young —, where the save keeps it
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
+        "task": kept_task(actor),  # Chronicler-only: what the body was doing the instant of the save, by WB's own id, where the save keeps it
         "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
         # WB `isInsideSomething`: a save keeps the boat half, never the building. A plain ref, souls boarding transports alone — `boat/info.py <id>` spells it out.
         **({"transport": entity_ref(actor.get("transportID"), ctx["actors_by_id"])} if is_aboard(actor) else {}),

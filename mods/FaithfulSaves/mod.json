@@ -1,7 +1,7 @@
 {
     "name": "Faithful Saves",
     "author": "Jbz797",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "A save keeps what every creature was in the middle of: a pregnancy, an egg, a sleep, a fire, a mood, and the wait before its next sleep. Loading no longer wipes them.",
     "GUID": "Jbz797.faithfulsaves",
     "iconPath": "icon.png",

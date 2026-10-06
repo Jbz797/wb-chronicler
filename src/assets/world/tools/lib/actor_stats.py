@@ -185,10 +185,10 @@ _LEVEL_VETERAN_THRESHOLD = 5
 _MANA_PER_INTELLIGENCE = 10
 _MATURATION = "maturation"  # the months a lineage carries, conception to birth or to hatching — WB `getMaturationTimeMonths`, off `base_stats_meta`
 _META_RATIOS = ("children", "happy", "homeless", "unhappy")  # WB `IMetaObject`'s four, named as its getters are — every one of them a share of the living.
-
-_MOD_KEY = "faithful_"  # the Faithful Saves mod keeps a status's time left beside WB's own bonuses, in the same custom data: no stat
+_MOD_KEY = "faithful_"  # the Faithful Saves mod keeps its times — a status's, a wait's, a task's — beside WB's own bonuses, in the same custom data: no stat
 _MOD_MARK = "faithful_waits"  # set on every body the mod wrote: a status with no key is then over, where a save without the mod says nothing of it
 _MOD_STATUS = "faithful_status_"
+_MOD_TASK = "faithful_task"  # among a body's custom strings: the id of the task it was at, which the mod hands back on load
 _MOD_UNTOLD = "recovery_"  # WB's own cooldowns worn as statuses — after a fight, a spell, a meeting, a plot: the game's clockwork, no state of a body
 
 # WB `BaseStatAsset.normalize_min`/`normalize_max` for the 23 bounded stats — an unset max (2^31) is `inf`. Floors bite: traits push under, WB lifts back.
@@ -782,6 +782,11 @@ def kept_statuses(actor: dict) -> list[str] | None:
     custom = actor.get("custom_data_float") or {}
     told = (key[len(_MOD_STATUS) :] for key, left in custom.items() if key.startswith(_MOD_STATUS) and left > 0)
     return sorted(status for status in told if not status.startswith(_MOD_UNTOLD)) or None
+
+
+# The task the Faithful Saves mod found a body at the instant of the save, by WB's own id — `do_hunting`, `stay_in_own_home` — and no more: no step, no time.
+def kept_task(actor: dict) -> str | None:
+    return (actor.get("custom_data_string") or {}).get(_MOD_TASK)
 
 
 # The months a lineage carries before a birth or a hatching: WB sums its traits' `maturation` into `base_stats_meta`.
