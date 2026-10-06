@@ -68,9 +68,6 @@ _IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 
-# What WB's `special1..3` hold, message by message — a crown's name skipped, the entry's `kingdom_id` already naming it.
-_LOG_ROLES = {"favorite_killed": ("favorite", "killer"), "king_killed": (None, "king", "killer")}
-
 _MATE_BREEDINGS = frozenset({"reproduction_hermaphroditic", "reproduction_sexual"})  # the two WB asks a partner for, one of them by opposite sexes
 _MAX_REIGNS_SHOWN = 3  # a succession in `full`: the first reign and the two latest, a lighter cut than a roster's since its summary still names them
 
@@ -837,17 +834,22 @@ def log_entries(start: float, end: float = float("inf"), actor: int | None = Non
             rows = conn.execute(sql + " ORDER BY timestamp, rowid", [start, end, *([actor] if actor is not None else []), *([event] if event else [])]).fetchall()
     except sqlite3.Error:  # no copy yet, the live save having come without one
         return []
+    # Read off each `WorldLog.log…`: `roles` names `special1..3` where they shift meaning, a crown's skipped as `kingdom_id` names it; `point`, whose place it is.
+    kinds = load_data("world-log.json")
     return [
         {
             "actor_id": unit if unit is not None and unit >= 0 else None,  # WB's -1: no one
             "date": world_date(ts),
             "event": asset,
-            **({role: n for role, n in zip(_LOG_ROLES[asset], names) if role} if asset in _LOG_ROLES else {"names": [n for n in names if n] or None}),
+            **({role: n for role, n in zip(roles, names) if role} if (roles := kind.get("roles")) else {"names": [n for n in names if n] or None}),
             "kingdom_id": crown if crown is not None and crown >= 0 else None,
+            # A murder's is the slain one's, where `actor_id` names the killer; a crown's is its founder's the day it is made, its capital's centre after.
+            "point": kind.get("point"),
             "x": x,
             "y": y,
         }
         for ts, asset, *names, unit, crown, x, y in rows
+        for kind in (kinds.get(asset, {}),)
     ]
 
 

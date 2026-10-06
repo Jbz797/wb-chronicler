@@ -593,9 +593,9 @@ def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime
         print(_RECAP_RULE)
     # The one source naming a killer, printed so a king's fall needn't wait on the file; none at C1, whose whole past would pour out: `history log`'s to give.
     journal = log_entries(float(prev_world.get("world_time") or 0)) if n > 1 else []
-    for entry in journal:  # the killer named as such, `special1..3` shifting meaning from one message to the next — a meteorite names no one
+    for entry in journal:  # the killer named as such, `special1..3` shifting meaning, the point by whose place it is — a meteorite names no one, its point its own
         told = [f"{role} {entry[role]}" for role in ("favorite", "king", "killer") if entry.get(role)] or (entry.get("names") or [])
-        print(f"  ✎ {' · '.join((entry['date'], entry['event'], *told))} ({entry['x']},{entry['y']})")
+        print(f"  ✎ {' · '.join((entry['date'], entry['event'], *told))} ({entry['point'] or 'at'} {entry['x']},{entry['y']})")
     if journal:
         print(_RECAP_RULE)
 

@@ -1,0 +1,22 @@
+{
+  "city_destroyed": { "point": "town" },
+  "city_new": { "point": "town" },
+  "diplomacy_war_started": { "point": "capital" },
+  "favorite_dead": { "point": "favorite" },
+  "favorite_killed": { "point": "favorite", "roles": ["favorite", "killer"] },
+  "king_dead": { "point": "king" },
+  "king_fled_capital": { "point": "king" },
+  "king_fled_city": { "point": "king" },
+  "king_killed": { "point": "king", "roles": [null, "king", "killer"] },
+  "king_left": { "point": "king" },
+  "king_new": { "point": "king" },
+  "kingdom_destroyed": { "point": "capital" },
+  "kingdom_fractured": { "point": "capital" },
+  "kingdom_new": { "point": "founder" },
+  "kingdom_royal_clan_changed": { "point": "king" },
+  "kingdom_royal_clan_dead": { "point": "capital" },
+  "kingdom_royal_clan_new": { "point": "king" },
+  "kingdom_shattered": { "point": "capital" },
+  "log_city_revolted": { "point": "town" },
+  "total_war_started": { "point": "capital" }
+}

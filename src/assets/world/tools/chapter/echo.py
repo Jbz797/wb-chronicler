@@ -31,12 +31,21 @@ _REFRAIN = 3  # chapters a run of words must be said in to be the chronicle's ow
 _SCARCE = 8  # uses across the whole chronicle under which a word can carry a chute: `monde` or `terre` would join any two sentences
 _SECTION = re.compile(r"^(##\s|---\s*$)")  # a heading or a separator: where a section, and so its chute, ends
 _SENTENCE = re.compile(r"(?<=[.!?…])\s+")  # where a sentence ends inside a line
+
+_SIGNS = {  # what a match's `by` names, glossed in the output for the signs it shows
+    "borrowed": "a rare word set between the same neighbours",
+    "chute": "a section's last sentence in the chapter before, at `from`, taken up again on this line",
+    "echo": "a run of words said again",
+    "refrain": f"said in {_REFRAIN} chapters or more, the chronicle's own voice",
+}
+
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # `[p 28 Voxzen]` read as its text, as `new.py` reads a title: a bare marker says nothing
 _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined — `le bras du couchant`, a place with no name —, told apart as a refrain is
 
 _USAGE = (
-    "usage: chapter/echo.py [C<n>] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before (`from` their line), "
-    "`internal` runs it says twice, `terms` it coins, `overused` families, `shape` its cast poured again; `clear` the checks that found nothing"
+    "usage: chapter/echo.py [C<n>] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before (`from` their line, "
+    f"`by` its sign — {'; '.join(f'`{sign}` {gloss}' for sign, gloss in _SIGNS.items())}), `internal` runs it says twice, `terms` it coins, "
+    "`overused` families, `shape` its cast poured again; `clear` the checks that found nothing, `length` among them — a chapter out of its bounds says so with a ✗"
 )
 
 _WORD = re.compile(r"\b[^\W\d_]{1,2}['’]|\w[\w-]*(?:['’]\w[\w-]*)*")  # an elision splits, `qu'il` as `qu'` and `il`; `aujourd'hui` holds, `---` is none
@@ -216,33 +225,37 @@ def _refrains() -> frozenset[tuple[str, ...]]:
     return frozenset(run for run, chapters in said.items() if len(chapters) >= _REFRAIN)
 
 
-# Widened runs of `_MIN_RUN`+ words shared with `earlier`, keyed (line, line said first); against itself, a run counts only where an earlier line said it
+# Runs of `_MIN_RUN`+ words shared with `earlier`, each followed along one passage of it, keyed (line, line said first); against itself, only an earlier line counts
 def _runs(words: list[_Token], earlier: list[_Token]) -> dict[tuple[int, int], list[str]]:
     within = earlier is words
     long_run = _LONG_RUN_WITHIN if within else _LONG_RUN
-    seen: dict[tuple[str, ...], int] = {}
-    for i in range(len(earlier) - _MIN_RUN + 1):
-        if earlier[i].line == earlier[i + _MIN_RUN - 1].line:
-            seen.setdefault(tuple(token.key for token in earlier[i : i + _MIN_RUN]), earlier[i].line)
+    seen: defaultdict[tuple[str, ...], list[int]] = defaultdict(list)
+    for at in range(len(earlier) - _MIN_RUN + 1):
+        if earlier[at].line == earlier[at + _MIN_RUN - 1].line:
+            seen[tuple(token.key for token in earlier[at : at + _MIN_RUN])].append(at)
 
-    def said_at(i: int) -> int | None:
-        if words[i].line != words[i + _MIN_RUN - 1].line:  # a run never spans two lines: a heading sewn to the paragraph under it was never written so
-            return None
-        at = seen.get(tuple(token.key for token in words[i : i + _MIN_RUN]))
-        return at if at is not None and (not within or at < words[i].line) else None
+    # How far the words at `i` and the passage at `at` run alike, neither leaving its line: a heading sewn to the paragraph under it was never written so.
+    def along(i: int, at: int) -> int:
+        size = 0
+        while i + size < len(words) and at + size < len(earlier):
+            word, said = words[i + size], earlier[at + size]
+            if word.key != said.key or word.line != words[i].line or said.line != earlier[at].line:
+                break
+            size += 1
+        return size
 
     runs: dict[tuple[int, int], list[str]] = {}
     i = 0
     while i <= len(words) - _MIN_RUN:
-        if (at := said_at(i)) is None:
-            i += 1
-            continue
-        end = i + _MIN_RUN
-        while end < len(words) and said_at(end - _MIN_RUN + 1) is not None:
-            end += 1
-        if _telling(run := words[i:end], long_run):
-            runs.setdefault((run[0].line, at), []).append("".join(t.surface + ("" if t.surface[-1] in "'’" else " ") for t in run).strip())
-        i = end
+        places = [at for at in seen.get(tuple(token.key for token in words[i : i + _MIN_RUN]), ()) if not within or earlier[at].line < words[i].line]
+        # The longest it follows, never sewn from two places: « serait à près de » off one line and « à près de 2 » off another are two runs, or none.
+        sizes = [along(i, at) for at in places]
+        if (size := max(sizes, default=0)) >= _MIN_RUN and _telling(run := words[i : i + size], long_run):
+            said = earlier[places[sizes.index(size)]].line  # the first to say it, on a tie
+            runs.setdefault((run[0].line, said), []).append("".join(t.surface + ("" if t.surface[-1] in "'’" else " ") for t in run).strip())
+            i += size
+        else:
+            i += 1  # a run too plain to tell may hide a longer one begun inside it
     return runs
 
 
@@ -387,13 +400,16 @@ def main(argv: list[str]) -> int:
         print(_USAGE, file=sys.stdout if asked else sys.stderr)
         return 0 if asked else 2
     n = int(chapter[1:]) if chapter else latest_chapter()
-    # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
-    if (text := _chapter(n)) is not None and not CHAPTER_FLOOR <= (length := chapter_length(text)) <= CHAPTER_CAP:
-        print(f"✗ chapter.md, {length} characters, blanks folded — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
     if (found := echoes(n)) is None:
         print(f"✗ no chapter.md for C{n}", file=sys.stderr)
         return 1
-    emit({**found, "clear": [check for check, rows in found.items() if not rows]})  # a check gone silent found nothing: named, so it is not read as unrun
+    # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
+    if not (held := CHAPTER_FLOOR <= (length := chapter_length(_chapter(n) or "")) <= CHAPTER_CAP):
+        print(f"✗ chapter.md, {length} characters, blanks folded — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
+    signs = sorted({sign for row in found["passages"] for match in row["matches"] for sign in match["by"]})
+    # A check gone silent found nothing: named, so it is not read as unrun — the length too, silent while it holds.
+    clear = sorted(check for check, rows in {**found, "length": not held}.items() if not rows)
+    emit({**found, "clear": clear, "info": "; ".join(f"`{sign}` {_SIGNS[sign]}" for sign in signs) or None})
     return 0
 
 

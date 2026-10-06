@@ -1,28 +1,9 @@
 {
   "ash_fever": {
-    "stats": {
-      "diplomacy": -5,
-      "intelligence": -5,
-      "lifespan": -45,
-      "multiplier_health": -0.6,
-      "multiplier_speed": -0.1,
-      "stewardship": -5,
-      "warfare": 5
-    }
+    "stats": { "diplomacy": -5, "intelligence": -5, "lifespan": -45, "multiplier_health": -0.6, "multiplier_speed": -0.1, "stewardship": -5, "warfare": 5 }
   },
-  "caffeinated": {
-    "stats": {
-      "intelligence": 222,
-      "speed": 200
-    }
-  },
-  "cough": {
-    "stats": {
-      "lifespan": -15,
-      "multiplier_health": -0.1,
-      "multiplier_speed": -0.1
-    }
-  },
+  "caffeinated": { "stats": { "intelligence": 222, "speed": 200 } },
+  "cough": { "stats": { "lifespan": -15, "multiplier_health": -0.1, "multiplier_speed": -0.1 } },
   "cursed": {
     "stats": {
       "lifespan": -10,
@@ -34,110 +15,20 @@
       "multiplier_speed": -0.2
     }
   },
-  "dash": {
-    "stats": {
-      "multiplier_speed": 1.55
-    }
-  },
-  "egg": {
-    "stats": {
-      "armor": 10
-    }
-  },
-  "enchanted": {
-    "stats": {
-      "lifespan": 10,
-      "multiplier_crit": 0.1,
-      "multiplier_damage": 0.77,
-      "multiplier_diplomacy": 0.1,
-      "multiplier_speed": 0.1
-    }
-  },
-  "frozen": {
-    "stats": {
-      "armor": -20,
-      "mass": 100,
-      "speed": -10000
-    }
-  },
-  "inspired": {
-    "stats": {
-      "multiplier_attack_speed": 0.3,
-      "multiplier_crit": 0.3,
-      "multiplier_speed": 0.3
-    }
-  },
-  "motivated": {
-    "stats": {
-      "attack_speed": 2,
-      "speed": 10
-    }
-  },
-  "powerup": {
-    "stats": {
-      "armor": 1,
-      "damage": 5,
-      "multiplier_crit": 0.5,
-      "multiplier_damage": 0.5,
-      "scale": 0.1
-    }
-  },
-  "pregnant": {
-    "stats": {
-      "multiplier_speed": -0.2
-    }
-  },
-  "pregnant_parthenogenesis": {
-    "stats": {
-      "multiplier_speed": -0.2
-    }
-  },
-  "rage": {
-    "stats": {
-      "multiplier_damage": 1
-    }
-  },
-  "shield": {
-    "stats": {
-      "armor": 90,
-      "mass": 100
-    }
-  },
-  "slowness": {
-    "stats": {
-      "speed": -100
-    }
-  },
-  "spell_boost": {
-    "stats": {
-      "mana": 100,
-      "skill_spell": 0.2
-    }
-  },
-  "taking_roots": {
-    "stats": {
-      "armor": 10,
-      "mass": 100,
-      "multiplier_damage": -0.3,
-      "multiplier_health": -0.3,
-      "multiplier_speed": -0.3,
-      "speed": -10000
-    }
-  },
-  "uprooting": {
-    "stats": {
-      "armor": 20,
-      "multiplier_damage": -0.3,
-      "multiplier_health": -0.3,
-      "multiplier_speed": -0.3,
-      "speed": -10000
-    }
-  },
-  "voices_in_my_head": {
-    "stats": {
-      "diplomacy": -5,
-      "opinion": -5,
-      "personality_rationality": -0.3
-    }
-  }
+  "dash": { "stats": { "multiplier_speed": 1.55 } },
+  "egg": { "stats": { "armor": 10 } },
+  "enchanted": { "stats": { "lifespan": 10, "multiplier_crit": 0.1, "multiplier_damage": 0.77, "multiplier_diplomacy": 0.1, "multiplier_speed": 0.1 } },
+  "frozen": { "stats": { "armor": -20, "mass": 100, "speed": -10000 } },
+  "inspired": { "stats": { "multiplier_attack_speed": 0.3, "multiplier_crit": 0.3, "multiplier_speed": 0.3 } },
+  "motivated": { "stats": { "attack_speed": 2, "speed": 10 } },
+  "powerup": { "stats": { "armor": 1, "damage": 5, "multiplier_crit": 0.5, "multiplier_damage": 0.5, "scale": 0.1 } },
+  "pregnant": { "stats": { "multiplier_speed": -0.2 } },
+  "pregnant_parthenogenesis": { "stats": { "multiplier_speed": -0.2 } },
+  "rage": { "stats": { "multiplier_damage": 1 } },
+  "shield": { "stats": { "armor": 90, "mass": 100 } },
+  "slowness": { "stats": { "speed": -100 } },
+  "spell_boost": { "stats": { "mana": 100, "skill_spell": 0.2 } },
+  "taking_roots": { "stats": { "armor": 10, "mass": 100, "multiplier_damage": -0.3, "multiplier_health": -0.3, "multiplier_speed": -0.3, "speed": -10000 } },
+  "uprooting": { "stats": { "armor": 20, "multiplier_damage": -0.3, "multiplier_health": -0.3, "multiplier_speed": -0.3, "speed": -10000 } },
+  "voices_in_my_head": { "stats": { "diplomacy": -5, "opinion": -5, "personality_rationality": -0.3 } }
 }
