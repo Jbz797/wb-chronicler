@@ -44,6 +44,7 @@ from waters import water_bodies
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info")
 _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
+_BARE = {"actors": "no body", "ground": "nothing built or grown"}  # what a tile lacks, said when `actors` or `ground` is all the call asked
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
 _LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
@@ -441,6 +442,11 @@ def main(argv: list[str]) -> int:
     # Asked alone, a sweep with no town in it would read as a failure rather than open ground — every tile weighed, a neighbour's town counting.
     if sections == {"context"} and not any(_context_at(x, y, ctx) for x, y in coords):
         print(f"✗ ({cx}, {cy}){' and the tiles around lie' if args.radius else ' lies'} in no town", file=sys.stderr)
+        return 2
+
+    # The same for what lives or stands there: asked with nothing else, a tile with neither says so, an empty answer reading as a tool gone wrong.
+    if sections and sections <= _BARE.keys() and not any(ctx[f"{section}_by_pos"] for section in sections):  # each index holds the tiles asked alone
+        print(f"✗ {' and '.join(_BARE[s] for s in sorted(sections))} on ({cx}, {cy}){' or the tiles around' if args.radius else ''}", file=sys.stderr)
         return 2
 
     out: dict = {}

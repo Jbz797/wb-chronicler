@@ -576,9 +576,10 @@ def duration(hours: float, prefix: str = "") -> dict:
 def emit(out: dict) -> None:
     asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}
     asked |= {"islets"} if "islet" in asked else set()  # `land_arg`'s singular names the block its plural keys
-    value, alone = _strip_none(out), sum(key in asked for key in out) == 1
-    while alone and isinstance(value, dict) and len(value) == 1 and next(iter(value)) in asked:
-        value = next(iter(value.values()))
+    raw, value = out, _strip_none(out)
+    # Weighed level by level on what was asked, not on what is left: under a tile, a section gone empty must not strip its neighbour of its name.
+    while isinstance(value, dict) and len(value) == 1 and (key := next(iter(value))) in asked and sum(name in asked for name in raw) == 1:
+        raw, value = raw[key], value[key]
     print(render(value))
 
 
