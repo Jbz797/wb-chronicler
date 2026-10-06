@@ -153,6 +153,10 @@ _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock si
 _MODS = {"Faithful Saves": "faithful_saved_at", "Wandering Clouds": "wandering_clouds_saved_at"}
 
 _MODS_DIR = "../../../mods"  # from the chronicler's own directory, where he runs this script
+
+# What a place's check weighs — in no doc: handed to the audit with the names a chapter gave, which no auditor was sent to before.
+_PLACE = "a place named this chapter is checked as the chapter is: its point falls on what its kind names, and its kind and sign say what the chapter says of it"
+
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 _PLAIN = "plain text with no tag"  # what a field of `chapter.json` is written in: its panel prints it as it stands, brackets and all
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
@@ -228,7 +232,8 @@ def _audit_targets(n: int, facts: dict) -> str:
     ]
     shape = f" [{' — '.join(asked)}]" if asked else ""
     written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
-    return f"saves/C{n}/chapter.md{shape}{written}"
+    named = f", history/places.json ({', '.join(f'« {name} »' for name in facts['named'])}) [{_PLACE}]" if facts["named"] else ""
+    return f"saves/C{n}/chapter.md{shape}{written}{named}"
 
 
 # The whole rewind, in the order WB's fields depend on one another: survivors first, `id_building` counting from them. Of `buildings`, only landmarks stand.
@@ -306,7 +311,7 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
 
 # A seeded land or water the chronicler has just named takes this chapter for its own → the names dated: his to give, the date the map shows them from ours.
 def _dated_places(n: int) -> list[str]:
-    places = json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
+    places = _gazetteer()
     fresh = [entry for book in _SEEDED for entry in (places.get(book) or {}).values() if entry.get("name") and not entry.get("chapter")]
     for entry in fresh:
         entry["chapter"] = f"C{n}"
@@ -367,7 +372,7 @@ def _deliver() -> int:
 
 # The places this chapter baptised on the very point of another name: two signs on one spot of the map, which the reader could only pull apart at random.
 def _doubled_places(n: int) -> list[tuple[str, int, int, str]]:
-    gazetteer = json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
+    gazetteer = _gazetteer()
     held: dict[tuple[int, int], list[str]] = {}
     for book in ("places", *_SEEDED):
         for key, entry in (gazetteer.get(book) or {}).items():
@@ -478,6 +483,11 @@ def _founding_kinds(save: dict, save_path: Path) -> int:
     return len(kinds)
 
 
+# `places.json` as it stands, read afresh at each call: the chronicler writes it between two runs, and `--finalize` itself dates it on the way.
+def _gazetteer() -> dict:
+    return json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
+
+
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
 def _kingdom_quota(save: dict) -> int:
     sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
@@ -492,7 +502,7 @@ def _life_dna() -> int:
 
 # The places this chapter baptised whose centroid stands off the land their `island_id` names — none named means off every counted land: the sea, or an islet.
 def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | None]]:
-    spots = (json.loads(_PLACES_JSON.read_text()).get("places") or {}) if _PLACES_JSON.exists() else {}
+    spots = _gazetteer().get("places") or {}
     if not (fresh := [(name, spot) for name, spot in spots.items() if spot.get("chapter") == f"C{n}"]):
         return []  # nothing baptised here, and so no save to open
     save_path = SAVES_DIR / f"C{n}" / "map.wbox"
@@ -511,6 +521,18 @@ def _mods_off(save: dict) -> list[str]:
     stats = save.get("mapStats") or {}
     stamps = (stats.get("custom_data") or {}).get("custom_data_float") or {}
     return [name for name, key in _MODS.items() if abs(float(stamps.get(key, -inf)) - float(stats.get("world_time") or 0)) > _STAMP_SLACK]
+
+
+# The names this chapter put on the map, a land's or a water's as a place's own: what `--finalize` dated, and what the chronicler wrote `chapter` on himself.
+def _named_places(n: int) -> list[str]:
+    gazetteer = _gazetteer()
+    named = (
+        key if book == "places" else entry.get("name")
+        for book in ("places", *_SEEDED)
+        for key, entry in (gazetteer.get(book) or {}).items()
+        if entry.get("chapter") == f"C{n}"
+    )
+    return sorted(filter(None, named))
 
 
 def _print_bullets(lines: tuple[str, ...]) -> None:
@@ -748,7 +770,7 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
         shutil.copy2(s3db, HISTORY_S3DB)
     _write_world(live)
     # His toponyms, the lands and waters seeded by id — each already numbered, so only their names are left to forge. A book an older gazetteer lacks joins it.
-    places = json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
+    places = _gazetteer()
     if missing := [book for book in _SEEDED if book not in places]:
         if (surveyed := _run("geography/info.py", "islands,waters", chapter)) is None:  # seeded once and never again: an empty survey would stay empty
             return "geography/info.py islands,waters"
@@ -803,6 +825,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "long": long,
         "misplaced": misplaced,
         "mourned": bool(before) and not same,
+        "named": _named_places(n),
         "owed": owed,
     }
 
