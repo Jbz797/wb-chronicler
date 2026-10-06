@@ -76,8 +76,8 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         **({"health": int(health)} if (health := house.get("health")) is not None else {}),  # WB writes `health` only when hurt — absent means intact, not unknown.
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
-        # A site still rising: nobody sleeps in it yet, though WB already counts it among a town's `houses` (`City.getHouseCurrent`).
-        "under_construction": under_construction(house) or None,
+        # A site, laid and not built: nobody sleeps in it yet, though WB already counts it among a town's `houses` (`City.getHouseCurrent`).
+        "under_construction": _site(house),
         "x": hx,
         "y": hy,
     }
@@ -110,6 +110,13 @@ def _here(actor: dict, house: dict, civic: bool) -> dict:
     if not civic:  # nobody steps « inside » a field
         return {}
     return {"in_building": True} if actor_xy(actor) == building_tile(house) else {}
+
+
+# A site by the progress WB keeps from a builder's first blow (`Building.updateBuild`), none meaning nobody touched it — never a share, which would tell its end.
+def _site(house: dict) -> str | None:
+    if not under_construction(house):
+        return None
+    return "rising" if (house.get("custom_data_int") or {}).get("construction_progress") else "untouched"
 
 
 def main(argv: list[str]) -> int:
