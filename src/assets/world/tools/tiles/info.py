@@ -24,14 +24,13 @@ from shared import (
     actor_xy,
     arg_parser,
     bearing,
+    building_family,
     building_tile,
     city_centre,
-    civic_building_ids,
     emit,
     entity_born,
     entity_ref,
     index_by_id,
-    load_data,
     load_save,
     parse_sections,
     take_chapter,
@@ -90,7 +89,6 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
                 ctx["actors_by_pos"][pos].append(a)
 
     if "ground" in sections:
-        ctx["categories"], ctx["civic"] = load_data("building-categories.json"), civic_building_ids()
         for b in save.get("buildings") or []:
             # The bare tuple sifts the whole world first and the helper reads only what lands in the window — both take WB's omitted coordinate as 0.
             if (b.get("mainX", 0), b.get("mainY", 0)) in wanted and (pos := building_tile(b)) is not None:
@@ -172,7 +170,7 @@ def _ground_at(x: int, y: int, ctx: dict, dated: bool) -> dict:
     if (b := ctx["ground_by_pos"].get((x, y))) is None:
         return {}
     asset = b.get("asset_id")
-    family = "buildings" if asset in ctx["civic"] else ctx["categories"].get(asset) or "other"  # named as `geography` names them
+    family = building_family(asset)  # named as `geography` names them
     return {"asset_id": asset, **({"born": entity_born(b)} if dated else {}), "id": b.get("id"), "type": family}
 
 

@@ -50,6 +50,7 @@ from shared import (
     take_chapter,
     take_since,
     union_root,
+    unsited_reason,
 )
 from waters import waters_cached
 
@@ -528,7 +529,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--type",
         "-t",
-        help=f"What `positions` sites, bodies aside: an asset id, a family (`trees`) or a comma list; past {MAX_LISTED}, a count by land. "
+        help=f"What `positions` sites, bodies aside: an asset id, a family (`trees`), a resource (`wood`) or a comma list; past {MAX_LISTED}, a count by land. "
         f"Under `biomes`, one biome or ground: the lands it lies on, or with `-i <land>` its {_TOP_PATCHES} largest patches.",
     )
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="One land alone in the sections that go land by land, or `islets` or `water`.")
@@ -587,7 +588,8 @@ def main(argv: list[str]) -> int:
         emit(moved)
         return 0
     if "positions" in out and out["positions"] is None:  # a word nothing answers to, never a silent `{}`
-        print(f"✗ no {wanted} in this world — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
+        none = unsited_reason(families, wanted or "") or f"no {wanted} in this world"
+        print(f"✗ {none} — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
         return 1
     where = "in this world" if args.island is None else f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}"
     if "positions" in out and not out["positions"]:

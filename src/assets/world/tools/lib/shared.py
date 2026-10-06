@@ -330,19 +330,21 @@ def arg_parser(prog: str, description: str) -> argparse.ArgumentParser:
     return parser
 
 
-# Every kind the save holds, by the family `entity_types` files it in: bodies apart, a building by `building-categories.json`, civic `buildings`, strays `other`.
+# Every kind the save holds, by the family `entity_types` files it in: bodies apart, and a building by `building_family`.
 def asset_families(save: dict) -> dict[str, Counter]:
-    categories, civic = load_data("building-categories.json"), civic_building_ids()
     families: defaultdict[str, Counter] = defaultdict(Counter, actors=Counter(a["asset_id"] for a in save.get("actors_data") or [] if a.get("asset_id")))
     for building in save.get("buildings") or []:
-        if asset := building.get("asset_id"):  # `civic` knows the built kinds the manifest itself never declared
-            families["buildings" if asset in civic else categories.get(asset) or "other"][asset] += 1
+        if asset := building.get("asset_id"):
+            families[building_family(asset)][asset] += 1
     return {family: counts for family, counts in families.items() if counts}
 
 
-# The asset ids a comma list of kinds and families stands for — a family, only the kinds this save carries.
+# The asset ids a comma list of kinds, families and resources stands for — a family or a resource, only the kinds this save carries. A kind here wins its own name.
 def asset_kinds(families: dict[str, Counter], words: str) -> set[str]:
-    return {kind for word in words.split(",") for kind in (families[word].keys() if word in families else {word})}
+    here, kinds = {kind for counts in families.values() for kind in counts}, set[str]()
+    for word in words.split(","):
+        kinds |= families[word].keys() if word in families else (word not in here and resource_sources(word) & here) or {word}
+    return kinds
 
 
 # A named set of WB asset ids (`food`, `ranged`) from `datas/asset-sets.json`. A cached function, not a constant: `load_data` is defined below.
@@ -425,6 +427,12 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
                 item[key] = entry[key]
         out.append(item)  # keys left as inserted: `render` sorts every record-shaped dict on the way out, so ordering them here would be sorting twice
     return sorted(out, key=lambda t: t["id"])
+
+
+# The family `entity_types` files a building in: civic `buildings`, the built kinds the manifest never declared among them, else WB's own category, strays `other`.
+@cache
+def building_family(asset: str) -> str:
+    return "buildings" if asset in civic_building_ids() else (load_data("buildings.json").get(asset) or {}).get("category") or "other"
 
 
 # A building's tile. WB omits a zero at save time, so a lone missing coordinate reads 0 — the first row writes no `mainY` — and neither written leaves it unsited.
@@ -516,10 +524,10 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
     }
 
 
-# Built structures (`buildings/civ_*` in `datas/building-categories.json`), nature excluded — plus the `fishing_docks_*` that manifest omits, derived from `docks_*`.
+# Built structures (a `civ_*` category in `datas/buildings.json`), nature excluded — plus the `fishing_docks_*` that manifest omits, derived from `docks_*`.
 @cache
 def civic_building_ids() -> frozenset[str]:
-    listed = {asset for asset, category in load_data("building-categories.json").items() if category.startswith("civ_")}
+    listed = {asset for asset, spec in load_data("buildings.json").items() if spec["category"].startswith("civ_")}
     return frozenset(listed | {f"fishing_{asset}" for asset in listed if asset.startswith("docks_")})
 
 
@@ -1012,6 +1020,12 @@ def resolve_profession(actor: dict, save: dict) -> str | None:
     return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)
 
 
+# The kinds a resource comes of when harvested, off WB's `BuildingAsset.resources_given` — a clone keeps its model's list: every tree gives wood, every lode stone.
+@cache
+def resource_sources(resource: str) -> frozenset[str]:
+    return frozenset(kind for kind, spec in load_data("buildings.json").items() if resource in spec.get("resources", ()))
+
+
 # The save's hour to the hundredth, as the nav's index keeps it and as `new.py`/`favorite.py` hold the live save against a chapter's: one rounding, one digit.
 def rounded_world_time(map_stats: dict) -> float:
     return round(float(map_stats.get("world_time", 0)), 2)
@@ -1182,6 +1196,20 @@ def union_root(parent: list[int], node: int) -> int:
 # Blocks too thin to rank, with their field and missed floor — unlike `{}`, a first place nobody holds; an empty block stays out, having nothing to rank
 def unranked(pools: Mapping[str, tuple[int, int]]) -> dict:
     return {block: {"needs": needs, "peers": peers} for block, (peers, needs) in pools.items() if 0 < peers < needs}
+
+
+# Why a comma list sites nothing, past a kind merely absent: a resource no site here yields, a word a kind here holds, one WB knows no kind or resource by.
+def unsited_reason(families: dict[str, Counter], words: str) -> str | None:
+    here = {kind for counts in families.values() for kind in counts}  # a kind a body is the last of is one all the same: no likeness to offer
+    asked = [word for word in words.split(",") if word and word not in here]
+    if barren := {word: sorted(sources) for word in asked if (sources := resource_sources(word))}:
+        return "; ".join(f"nothing here yields `{word}` — it comes of {', '.join(sources)}" for word, sources in barren.items())
+    if near := sorted({kind for kind in here for word in asked if word in kind}):
+        return f"`{words}` names no kind here — like it: {', '.join(near)}"
+    known = load_data("species.json").keys() | load_data("buildings.json").keys() | civic_building_ids()  # every kind WB has, hulls aside
+    if strange := [word for word in asked if not (word in known or word.startswith("boat_"))]:
+        return f"`{', '.join(strange)}` names no kind nor resource"
+    return None
 
 
 # What a body actually walks between two points: WB paths in eight directions but spends its speed on each step's length, which is the octile distance.

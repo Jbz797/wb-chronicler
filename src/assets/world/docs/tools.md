@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 05/10/26 21:52</p>
+<p class="metadata">Date de mise à jour : 06/10/26 08:19</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — `creatures_born` de `world … cumulative` compris. `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -29,14 +29,14 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 
 ### `actor` :
 
-- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types et familles, par virgules (`nearest`) ; il rend son `circle`, chaque part en tuiles et en temps, `total_` dès qu'il y en a deux ; sur l'eau, `march_days` ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre, s'il diffère ; seule sans section nommée.
+- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de types, familles et ressources, par virgules (`nearest`) ; il rend son `circle`, chaque part en tuiles et en temps, `total_` dès qu'il y en a deux ; sur l'eau, `march_days` ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre, s'il diffère ; seule sans section nommée.
 - `--since C<n>` : ce qui a bougé depuis — `moved` est le trajet fait, et son temps au plus court, au pas du corps, quand `--to` ne donne qu'un gisement ; `gone` : mort ; `last_seen` sa dernière place
 
 ### `geography` :
 
 - `--since C<n>` : ce qui a bougé, `[avant, après]`, `new` ou `gone` ; des soldes : un passage se lit dans `roster --since`
 - `-i <id>` : une seule terre dans les sections rangées par terre, ou `islets` et `water` là où elles les comptent
-- `-t <type>` : sous `positions`, un `asset_id`, une famille (`trees`…) ou une liste à virgules, hors corps ; sous `biomes -i`, un biome ou un sol, ses 5 plus grandes parcelles
+- `-t <type>` : sous `positions`, types, familles (`trees`…) et ressources, par virgules, hors corps ; sous `biomes -i`, un biome ou un sol, ses 5 plus grandes parcelles
 
 ### `history` :
 

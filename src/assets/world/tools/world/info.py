@@ -46,6 +46,7 @@ from shared import (
     asset_families,
     asset_kinds,
     breeding_mode,
+    building_family,
     city_score_dimensions,
     civic_building_ids,
     emit,
@@ -487,7 +488,6 @@ def _build_snapshot(save: dict) -> dict:
     actors = save.get("actors_data") or []
     civic = civic_building_ids()
     asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings") or [])  # Count `asset_id`s once, classify the distinct keys — four scans saved.
-    categories = load_data("building-categories.json")  # WB's own grouping of what it files under `buildings`: what grows, what lies there, and what was built
 
     # `infected` ⊂ `sick` — a plague never shows up in the first, hence both; each drops at 0, outbreaks leaving them idle most chapters.
     boats = infected = passengers = sapients = sick = 0
@@ -516,8 +516,8 @@ def _build_snapshot(save: dict) -> dict:
         "sapient_population": sapients,  # named apart from every tier's `population`, which counts members: this one weighs minds, and no crown gathers them
         **({"sick": sick} if sick else {}),
         "statuses": dict(sorted(statuses.items())) or None,  # Chronicler-only: how many bodies each status holds this instant, as the Faithful Saves mod kept them
-        "trees": sum(n for aid, n in asset_counts.items() if categories.get(aid) == "trees"),
-        "vegetation": sum(n for aid, n in asset_counts.items() if categories.get(aid) == "vegetation"),  # `trees` counts apart — WB files the two as it pleases
+        "trees": sum(n for aid, n in asset_counts.items() if building_family(aid) == "trees"),
+        "vegetation": sum(n for aid, n in asset_counts.items() if building_family(aid) == "vegetation"),  # `trees` counts apart — WB files the two as it pleases
         "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
         "wild_creatures": len(actors) - boats - sapients,
     }
