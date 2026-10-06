@@ -109,13 +109,14 @@ def main(argv: list[str]) -> int:
         return 0
     wanted = args.row.replace("_", " ").casefold()
     blocks, rows = [], _rows(wikitext)
-    for caption, header, cells in rows:
-        if all(cell.casefold() != wanted for cell in cells):
-            continue
-        # A column past the header keeps its rank for a name: the header is a help, a ragged row still prints whole. The cell asked for only repeats the question.
-        named = [((header[i : i + 1] or [f"#{i + 1}"])[0], cell) for i, cell in enumerate(cells) if cell and cell.casefold() != wanted]
-        if lines := [f"{column}: {cell}" for column, cell in named if column.casefold() not in _UNTOLD]:
-            blocks.append("\n".join([f"[{caption}]"] * bool(caption) + lines))
+    cited = [row for row in rows if any(cell.casefold() == wanted for cell in row[2])]
+    # A row is named by its first cell that says anything, an icon's being blank: those alone where any is, the rows that only cite the word failing one.
+    named = [row for row in cited if next((cell for cell in row[2] if cell), "").casefold() == wanted]
+    for caption, header, cells in named or cited:
+        # A column past the header keeps its rank for a name: the header is a help, a ragged row still prints whole.
+        kept = [(column, cell) for i, cell in enumerate(cells) if cell and (column := (header[i : i + 1] or [f"#{i + 1}"])[0]).casefold() not in _UNTOLD]
+        if any(cell.casefold() != wanted for _, cell in kept):  # a row left with its name alone, its only other column untold, says nothing
+            blocks.append("\n".join([f"[{caption}]"] * bool(caption) + [f"{column}: {cell}" for column, cell in kept]))
     if not blocks:
         # A label the wiki cuts short — its « Spore » for WB's « Spore Reproduction » — is offered where no row answers, and sought only then.
         asked = wanted.split()
