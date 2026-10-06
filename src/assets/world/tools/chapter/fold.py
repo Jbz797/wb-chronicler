@@ -8,6 +8,7 @@ _AUDIT = {
     "metadata": frozenset(
         {
             "adult_on",
+            "age_stage",
             "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
             "besieged_by",
             "born",  # when WB set it on the map, a soul or a people — for the chronicler's « who came first », no panel dating either
@@ -29,7 +30,6 @@ _AUDIT = {
             "islet",
             "mass",
             "motto",
-            "next_age_on",
             "peace_time",
             "settle",  # the chronicler's « why no town yet »: no panel says who could found one
             "settle_more",
@@ -75,8 +75,8 @@ _AUDIT_TIERS = {
     "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
     "attackers.kingdoms": {"population"},  # a camp's realms as tags, the side's pooled `population` printed beside them
     "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
-    # No row counts its births, its crown and seat are the kingdom panel's to name, and its centre and years under the banner only the chronicler reads.
-    "city.metadata": {"births", "capital", "kingdom", "x", "y", "years_in_kingdom"},
+    # No row counts its births, its crown and seat are the kingdom panel's to name, and its migrants, centre and years under the banner only the chronicler reads.
+    "city.metadata": {"births", "capital", "kingdom", "migrants", "x", "y", "years_in_kingdom"},
     "city.population": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
     "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does

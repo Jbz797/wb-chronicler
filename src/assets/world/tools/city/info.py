@@ -54,6 +54,7 @@ from shared import (
     succession_heir,
     take_chapter,
     wants_detail,
+    world_laws,
     zone_xy,
 )
 
@@ -78,6 +79,9 @@ _LOYALTY_GLOSSES = (  # what WB's own names hide or say backwards, by the driver
 )
 
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
+_MIGRANT_FOOD = 10  # WB `updateMigrants`: the stock a town must hold for strangers to come
+_MIGRANT_PEOPLE = 100  # and the headcount past which none does
+_MIGRANT_SOON = 40  # seconds, half of WB's 80 between two turns of migrants: under it the next one falls within 8 months, most likely before a chapter is out
 _RANGED_ATTACKS = asset_set("ranged")  # WB `attack_type != 0`: every asset cloned from the `$range` template (`ItemLibrary`).
 _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  # `ActorTrait.same_trait_mod`/`opposite_trait_mod` — the kingdom reads it too.
 
@@ -392,6 +396,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
         "islands": islands,
         "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
+        "migrants": _migrants(city, residents, ctx, save),  # chronicler-only: whether strangers may yet sit at its fire, and what keeps them off
         "name": city.get("name"),
         "renown": city.get("renown", 0),
         "report": report,  # what WB has the settlement say of itself
@@ -672,6 +677,28 @@ def _loyalty_traits(actor: dict, ctx: dict) -> int:
         for trait_id in ids or []:
             total += (ctx[table].get(trait_id) or {}).get("stats", {}).get("loyalty_traits", 0)
     return int(total)
+
+
+# WB `updateMigrants` for one town: what bars it, in the game's order, else how near the next turn — no coming, the towns being drawn at random, and no date.
+def _migrants(city: dict, residents: list[dict], ctx: dict, save: dict) -> str | None:
+    if not world_laws(save).get("world_law_civ_migrants") or ctx["kingdoms_by_id"].get(city.get("kingdomID")) is None:
+        return None
+    if len(residents) > _MIGRANT_PEOPLE:
+        return "too_big"
+    if ctx["food_by_city"][city["id"]] < _MIGRANT_FOOD:
+        return "no_food"
+    lit = (b for b in save.get("buildings") or [] if b.get("cityID") == city["id"] and b.get("asset_id") == "bonfire")
+    if not any("under_construction" not in (b.get("custom_data_flags") or ()) for b in lit):
+        return "no_bonfire"
+    if (lineage := main_subspecies(city, ctx, "city")) is None:
+        return None
+    traits = (ctx["subspecies_by_id"].get(lineage) or {}).get("saved_traits") or []
+    limit = sum(((ctx["subspecies_traits"].get(trait) or {}).get("meta_stats") or {}).get("limit_population", 0) for trait in traits)
+    if limit and sum(a.get("subspecies") == lineage for a in save.get("actors_data") or []) >= limit:
+        return "lineage_full"
+    # The clock Faithful Saves keeps of a turn WB would rewind on every load: without it a save says nothing of when, and the field keeps silent.
+    left = ((save["mapStats"].get("custom_data") or {}).get("custom_data_float") or {}).get("faithful_timer_migrants")
+    return None if left is None else "soon" if left <= _MIGRANT_SOON else "later"
 
 
 # WB `CityBehCheckLeader.tryGetClanLeader`: the realm's clanned subjects, royal house first, ranked by the city's culture. `None` where WB would roll dice instead.

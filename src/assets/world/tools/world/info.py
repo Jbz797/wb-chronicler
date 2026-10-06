@@ -80,6 +80,8 @@ from shared import (
 )
 from walking import WalkMap, walk_way
 
+_AGE_WANING = 5 / 6  # the share of its span past which an age is `waning`: its last sixth, six to nine years of a long one
+_AGE_YOUNG = 1 / 4  # and under which it is `young`: its first quarter
 _ALL_SECTIONS = ("boats", "cumulative", "leaders", "metadata", "plots", "snapshot")
 
 _CARRYING = ("pregnant", "pregnant_parthenogenesis")  # WB's two statuses that end on a birth
@@ -190,6 +192,11 @@ _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB ma
 _WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_ISLET` is, but in the sea or a lake
 
 
+# An age's life stage off the share of its span it has run — three words and no date, the end of an age being the turn a chronicle must not see coming.
+def _age_stage(progress: float) -> str:
+    return "young" if progress < _AGE_YOUNG else "waning" if progress >= _AGE_WANING else "mature"
+
+
 # What keeps a body of age from breeding, WB weighing each partner: a belly short of a baby or half-full, a footing to leave first — tagged `tiny_islet 40`.
 def _breeding_bars(actor: dict, ctx: dict, island_of, grid: LazyTileGrid, names: list[str]) -> set[str]:
     bars = set()
@@ -266,22 +273,18 @@ def _build_leaders(save: dict) -> dict:
     return out
 
 
-# The world's day and its age; `next_age_on` is derived here because the save states progress as a ratio, never as a countdown.
+# The world's day and its age — how far that age has run, never when it ends: WB's UI counts the moons left, and a chronicle told the month would foretell it.
 def _build_metadata(map_stats: dict) -> dict:
-    age_duration = float(map_stats.get("current_world_ages_duration") or 0)
     age_id = map_stats.get("world_age_id") or ""
-    age_progress = float(map_stats.get("current_age_progress") or 0)
-    # WB `WorldAgeManager.update` adds `delta × speed / duration` in single precision: the end, a hair off the month's edge every age ends on, is rounded to a unit.
-    age_left = age_duration * (1 - age_progress) / float(map_stats.get("world_ages_speed_multiplier") or 1)
     age = load_data("world-ages.json").get(age_id) or {}
     world_time = rounded_world_time(map_stats)
     return {
         "age_description": age.get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
         "age_id": age_id.removeprefix("age_"),  # `WorldAgeLibrary` key without WB's prefix — `hope`, as the panel keys its French and its icon
         "age_name": age.get("name"),  # Chronicler-only: WB's own English title, the id above being what the panel translates
+        # Chronicler-only: an age's own life stage, off the share of its span the save says it has run. Absent where no age runs: WB then stores no span.
+        "age_stage": _age_stage(float(map_stats.get("current_age_progress") or 0)) if float(map_stats.get("current_world_ages_duration") or 0) > 0 else None,
         "date": world_date(world_time),  # Chronicler-only: the day as every other date is written — the raw clock stays the scripts', read off the save
-        # Chronicler-only: a date as `born` is, where WB's UI counts « Lunes jusqu'au prochain âge ». Absent where no age runs: WB then stores no span.
-        "next_age_on": world_date(round(world_time + age_left)) if age_duration > 0 else None,
     }
 
 
