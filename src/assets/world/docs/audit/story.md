@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 04/10/26 19:47</p>
+<p class="metadata">Date de mise à jour : 06/10/26 09:32</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -22,13 +22,13 @@ Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peu
 
 ## Le registre des veilles
 
-Pars de `history/watches.md`, le registre des veilles encore ouvertes, ou crée-le : en tête la date du jour, comme sur cette fiche, puis ses puces, rien d'autre. Mets-le à jour à la passe que le chroniqueur t'annonce comme la dernière ; aux autres, n'y écris rien et signale dans ton rapport ce qui y changerait, sans redonner le reste. Ouvre ton rapport sur ce qui y a changé.
+Pars de `history/watches.md`, les veilles encore ouvertes, ou crée-le : la date du jour en tête, comme ici, puis ses seules puces. Mets-le à jour à la passe que le chroniqueur t'annonce comme la dernière ; aux autres, n'y écris rien et donne dans ton rapport les seules puces qui y changeraient, ou dis que rien n'y change. Ouvre ton rapport sur ce qui y a changé.
 
-- **Chiffres** : le registre n'en porte aucun hors l'échéance en tête, ni an ni compte ni distance — un article ou une locution (_« un singe »_, _« nul des deux »_) n'en est pas un : une veille dit son fil, le chapitre porte le fait.
-- **Entrées et sorties** : celles que le chapitre ouvre y entrent, une veille soldée en sort, une veille qu'il ne touche pas reste telle quelle.
-- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · `y7 m10` · son sujet en une ligne — ouverte (C1) »_. L'échéance, que les outils datent, seulement si elle en a une ; le sort avec son chapitre : ouverte, reconduite si un chapitre reprend le fil sans le solder, détournée s'il le mène ailleurs. Les noms s'y balisent comme dans un chapitre.
-- **Fusion** : deux veilles qui suivent un même fil se fondent en une, la plus ancienne gardant son ouverture ; elles ne se lient que si la chronique les lie elle-même.
-- **Plafond** : au-delà de 10 veilles, abandonne celles qui pèsent le moins dans le récit et ont le moins de chances de se refermer un jour, et dis-le au chroniqueur : une veille abandonnée sort, close, elle n'est plus un écart. Sous 10, une veille ne s'abandonne pas : elle se solde ou reste.
+- **Chiffres** : le registre n'en porte aucun hors l'échéance en tête — un article ou une locution (_« un singe »_, _« nul des deux »_) n'en est pas un : une veille dit son fil, le chapitre porte le fait.
+- **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, une veille soldée en sort, une qu'il ne touche pas reste telle quelle.
+- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · `y7 m10` · son sujet en une ligne — ouverte (C1) »_. L'échéance, que les outils datent, seulement si elle en a une ; le sort avec son chapitre : ouverte, reconduite si un chapitre reprend le fil sans le solder, détournée s'il le mène ailleurs que vers une autre veille. Les noms s'y balisent comme dans un chapitre.
+- **Fusion** : deux veilles qui suivent un même fil se fondent en une, la plus ancienne gardant son ouverture ; elles ne se lient que si la chronique les lie.
+- **Plafond** : au-delà de 10 veilles, abandonne celles qui pèsent le moins dans le récit et ont le moins de chances de se refermer un jour, et dis-le au chroniqueur : abandonnée, une veille sort, close, et n'est plus un écart. Sous 10, aucune ne s'abandonne : elle se solde ou reste.
 - **Réserves** : une veille garde celles du chapitre (`docs/chronicler.md` § « Prudence et rigueur »).
 - **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question à sa prochaine reconduite, le fil gardé.
 
