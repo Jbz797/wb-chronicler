@@ -33,6 +33,12 @@ _SECTION = re.compile(r"^(##\s|---\s*$)")  # a heading or a separator: where a s
 _SENTENCE = re.compile(r"(?<=[.!?…])\s+")  # where a sentence ends inside a line
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # `[p 28 Voxzen]` read as its text, as `new.py` reads a title: a bare marker says nothing
 _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined — `le bras du couchant`, a place with no name —, told apart as a refrain is
+
+_USAGE = (
+    "usage: chapter/echo.py [C<n>] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before (`from` their line), "
+    "`internal` runs it says twice, `terms` it coins, `overused` families, `shape` its cast poured again; `clear` the checks that found nothing"
+)
+
 _WORD = re.compile(r"\b[^\W\d_]{1,2}['’]|\w[\w-]*(?:['’]\w[\w-]*)*")  # an elision splits, `qu'il` as `qu'` and `il`; `aujourd'hui` holds, `---` is none
 
 
@@ -167,8 +173,10 @@ def _passages(words: list[_Token], n: int) -> list[dict]:
         if heard <= shown[line]:
             continue
         shown[line] |= heard
-        matches = [{**m, "by": sorted(m["by"]), "words": sorted(m.get("words") or ())} for m in sorted(matches, key=lambda m: m["from"])]
-        out.append({"chapter": f"C{before}", "line": line, "matches": matches})
+        # `from` names its chapter with its line: set beside `line`, the chapter read as this line's own.
+        ordered = sorted(matches, key=lambda m: m["from"])
+        told = [{**m, "by": sorted(m["by"]), "from": f"C{before} l.{m['from']}", "words": sorted(m.get("words") or ())} for m in ordered]
+        out.append({"line": line, "matches": told})
     return out
 
 
@@ -351,7 +359,10 @@ def _within(words: list[_Token], n: int) -> tuple[list[dict], list[dict]]:
         else:
             for line, at, text in matches:
                 again[line].append({"from": at, "text": text})
-    internal = [{"line": line, "matches": sorted(matches, key=lambda match: match["from"])} for line, matches in sorted(again.items())]
+    internal = [
+        {"line": line, "matches": [{**match, "from": f"l.{match['from']}"} for match in sorted(matches, key=lambda match: match["from"])]}
+        for line, matches in sorted(again.items())
+    ]
     return internal, sorted(terms, key=lambda term: term["lines"])
 
 
@@ -371,6 +382,10 @@ def echoes(n: int) -> dict | None:
 
 def main(argv: list[str]) -> int:
     chapter = next((arg for arg in argv if arg[:1] == "C" and arg[1:].isdigit()), None)
+    if stray := [arg for arg in argv if arg != chapter]:  # `--help` among them: a word unheard would else pass for a run of the latest chapter
+        asked = stray[0] in ("-h", "--help")
+        print(_USAGE, file=sys.stdout if asked else sys.stderr)
+        return 0 if asked else 2
     n = int(chapter[1:]) if chapter else latest_chapter()
     # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
     if (text := _chapter(n)) is not None and not CHAPTER_FLOOR <= (length := chapter_length(text)) <= CHAPTER_CAP:
@@ -378,7 +393,7 @@ def main(argv: list[str]) -> int:
     if (found := echoes(n)) is None:
         print(f"✗ no chapter.md for C{n}", file=sys.stderr)
         return 1
-    emit(found)
+    emit({**found, "clear": [check for check, rows in found.items() if not rows]})  # a check gone silent found nothing: named, so it is not read as unrun
     return 0
 
 
