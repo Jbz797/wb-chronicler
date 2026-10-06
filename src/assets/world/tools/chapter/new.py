@@ -141,6 +141,10 @@ _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav read
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
 _LAND_PER_KINGDOM = 52_044  # a quarter of what a map carries once grown — measured at ~12k land tiles per crown on two worlds
 _LAW_NAMES = load_data("world-laws.json")  # WB's own English title of each law, the label a wiki row goes by
+
+# A trial, in no doc: what a lineage's summary skips of `subspecies … traits` — the four WB makes it think by, every favorite's lot, and what its bodies wear.
+_LINEAGE = "a lineage's summary leaves out its `advanced_brain` group, which every thinking lineage bears, and its `birth` block, told by the body's own"
+
 _LIVE_FILES = ("map.wbox", "preview.png")  # archived into the chapter dir under WB's own names; `map.wbox` alone regenerates everything for the chapter
 _LONG_AGE_YEARS = (35, 55)  # WB draws an age's span when it opens; only the two bleak ones run shorter
 _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock size over: Tiny 2×2 = 128, Iceberg 9×9 = 576. Not `ZONE_TILES`, the city grid.
@@ -176,6 +180,7 @@ _SUBAGENT_GRACE = 120  # seconds: a transcript written this lately may be a sub-
 _SUMMARY = f"what those traits make of the body, {_PLAIN}; never a list, a tally of traits or a figure that ages — read alone, it may echo the chapter"
 
 _SUMMARY_CAP = 400
+_SUMMARY_CAPS = {"subspecies": 500}  # a lineage's alone is given more room: a biology is born whole, where the other tiers gather their traits one by one
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
 _TOOLS = Path(__file__).parent.parent
@@ -219,6 +224,7 @@ def _audit_targets(n: int, facts: dict) -> str:
         *([f"favorite dead: {_DEATH}"] if facts["mourned"] else []),
         *([f"events: {', '.join(facts['events'])}, each {_EVENT}"] if facts["events"] else []),
         *([f"trait summaries: {_SUMMARY}"] if any(field.endswith(".traits") for field in facts["audited"]) else []),
+        *([_LINEAGE] if "subspecies.traits" in facts["audited"] else []),
     ]
     shape = f" [{' — '.join(asked)}]" if asked else ""
     written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
@@ -596,9 +602,10 @@ def _print_step_five(n: int, facts: dict) -> None:
     if owed := facts["owed"]:
         reads = ", ".join(f"`{'actor' if tier == 'favorite' else tier} {entity} traits C{n}`" for tier, entity in owed.items())
         print(f"  → trait summaries owed ({', '.join(owed)}): one string each under the block's own `traits` key, read off {reads}")
-        print(f"    {_SUMMARY}; {_SUMMARY_CAP} characters at most")
+        lineage = f", a lineage's {_SUMMARY_CAPS['subspecies']} — {_LINEAGE}" if "subspecies" in owed else ""
+        print(f"    {_SUMMARY}; {_SUMMARY_CAP} characters at most{lineage}")
     if long := facts["long"]:
-        print(f"  ✗ trait summaries, {', '.join(f'{tier} {size}' for tier, size in long.items())} characters of {_SUMMARY_CAP}")
+        print(f"  ✗ trait summaries, in characters: {', '.join(f'{tier} {told}' for tier, told in long.items())}")
     if sized:
         print("  → every length above counts spaces and markup too")
     for name, x, y, other in facts["doubled"]:
@@ -777,7 +784,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
     h1_length = len(_TAG.sub(lambda m: m[1] or "", h1 or ""))  # as read: a tag in the title shows its name alone, never its markup
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
-    long = {tier: len(summary) for tier, summary in sorted(written.items()) if len(summary) > _SUMMARY_CAP}
+    long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(text)) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
     doubled, misplaced = _doubled_places(n), _misplaced_places(n)
     # A summary carried word for word was audited when written, so only a new one goes; the descriptor always, an age in it stale by the next chapter.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
