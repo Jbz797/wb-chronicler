@@ -78,7 +78,7 @@ export class KingdomComponent {
       { icon: 'assets/img/world/books_read.png', label: 'ui_reach', shown: (k.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
       { icon: 'assets/img/world/books.png', label: 'ui_books', shown: (k.metadata.books ?? 0) > 0, stat: 'books' as const },
       { icon: 'assets/img/world/wars.png', label: 'ui_wars_won', shown: (k.metadata.wars_won ?? 0) > 0, stat: 'wars_won' as const },
-      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!k.gear.total, stat: 'gear' as const },
+      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!k.gear?.total, stat: 'gear' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));
   });

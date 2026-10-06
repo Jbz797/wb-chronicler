@@ -29,6 +29,7 @@ from shared import (
     resolve_profession,
     sex_label,
     take_chapter,
+    under_construction,
     wants_detail,
 )
 
@@ -76,7 +77,7 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
         # A site still rising: nobody sleeps in it yet, though WB already counts it among a town's `houses` (`City.getHouseCurrent`).
-        "under_construction": "under_construction" in flags or None,
+        "under_construction": under_construction(house) or None,
         "x": hx,
         "y": hy,
     }
@@ -90,7 +91,7 @@ def _build_occupants(residents: list[dict], house: dict, ctx: dict, save: dict, 
         {
             "age": actor_age(actor, ctx["world_time"]),
             "family": entity_ref(actor.get("family"), ctx["families_by_id"]),
-            "gen": int(actor.get("generation") or 1),  # elder above child under one roof, the roster being sorted by age already
+            "gen": gen if (gen := int(actor.get("generation") or 1)) > 1 else None,  # elder above child under one roof; a founder's 1, the floor, unsaid
             "id": actor["id"],
             "job": resolve_profession(actor, save),
             "name": actor.get("name"),

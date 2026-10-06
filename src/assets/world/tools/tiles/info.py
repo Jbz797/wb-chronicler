@@ -35,6 +35,7 @@ from shared import (
     parse_sections,
     take_chapter,
     trip_time,
+    under_construction,
     walk_tiles,
     xy_arg,
     zone_xy,
@@ -172,7 +173,8 @@ def _ground_at(x: int, y: int, ctx: dict, dated: bool) -> dict:
         return {}
     asset = b.get("asset_id")
     family = building_family(asset)  # named as `geography` names them
-    return {"asset_id": asset, **({"born": entity_born(b)} if dated else {}), "id": b.get("id"), "type": family}
+    # `born` dates the laying, not the roof: a site still rising says so, on the tile asked about as on a sweep's.
+    return {"asset_id": asset, **({"born": entity_born(b)} if dated else {}), "id": b.get("id"), "type": family, "under_construction": under_construction(b) or None}
 
 
 # Quarters are held by their corner tile, a town being the ground they cover — while a crown's seat stays the one centre `city/info.py` sites a capital by.

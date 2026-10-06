@@ -18,7 +18,7 @@
       </nz-descriptions-item>
     }
 
-    <nz-descriptions-item *appNonZero="c.loyalty.total" [nzTitle]="loyaltyTitle">
+    <nz-descriptions-item *appNonZero="c.loyalty?.total" [nzTitle]="loyaltyTitle">
       <app-ranked-stat source="city" stat="loyalty" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="c.metadata.score_rank" [nzTitle]="scoreRankTitle">

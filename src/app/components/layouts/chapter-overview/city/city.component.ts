@@ -62,10 +62,10 @@ export class CityComponent {
     const c = this.city();
     if (!c) return [];
     const rows = [
-      { icon: 'assets/img/world/population.png', label: 'ui_attractiveness', shown: c.metadata.attractivity !== 0, stat: 'attractivity' as const },
+      { icon: 'assets/img/world/population.png', label: 'ui_attractiveness', shown: !!c.metadata.attractivity, stat: 'attractivity' as const },
       { icon: 'assets/img/world/books_read.png', label: 'ui_reach', shown: (c.metadata.book_reach ?? 0) > 0, stat: 'book_reach' as const },
-      { icon: 'assets/img/world/books.png', label: 'ui_books', shown: !!c.books.total, stat: 'books' as const },
-      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!c.gear.total, stat: 'gear' as const },
+      { icon: 'assets/img/world/books.png', label: 'ui_books', shown: !!c.books?.total, stat: 'books' as const },
+      { icon: 'assets/img/stats/equipment_power.png', label: 'ui_racks', shown: !!c.gear?.total, stat: 'gear' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, label, stat }) => ({ icon, label, stat }));
   });

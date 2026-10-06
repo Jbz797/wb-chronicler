@@ -103,7 +103,7 @@ export class RankedStatComponent {
 
       if (key === 'score_rank') return this._snap(k.metadata.score_rank ?? 0, undefined); // the value IS the placement — no podium rank of its own
       if (key === 'boats') return this._snap(k.boats?.total ?? 0, k.ranks?.boats); // its own block: the hulls ride alongside the total
-      if (key === 'gear') return this._snap(k.gear.total, k.ranks?.gear); // its own block: the racks ride alongside the total
+      if (key === 'gear') return this._snap(k.gear?.total ?? 0, k.ranks?.gear); // its own block: the racks ride alongside the total
       if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
 
       // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
@@ -122,9 +122,8 @@ export class RankedStatComponent {
     const key = this.stat();
 
     if (key === 'score_rank') return this._snap(c.metadata.score_rank ?? 0, undefined); // the value IS the placement — no podium rank of its own
-    if (key === 'books') return this._snap(c.books.total, c.ranks?.books); // its own block: the volumes ride alongside the total
-    if (key === 'gear') return this._snap(c.gear.total, c.ranks?.gear); // its own block: the racks ride alongside the total
-    if (key === 'loyalty') return this._snap(c.loyalty.total, c.ranks?.loyalty); // its own block, not `metadata`: the modifiers ride alongside the total
+    // Each its own block, not `metadata`: the volumes, the racks, the modifiers ride alongside the total — and the block goes whole at nought.
+    if (key === 'books' || key === 'gear' || key === 'loyalty') return this._snap(c[key]?.total ?? 0, c.ranks?.[key]);
     if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
 
     // Army stats rank under an `army_` prefix, the city ranking `kills`/`deaths`/`renown` of its own. The corps also holds a name and a captain: hence the typeof.
@@ -148,7 +147,8 @@ export class RankedStatComponent {
     const ranks = f.ranks_in_species ?? {}; // Absent when the favorite tops nothing in its species — every lookup below then simply misses.
     if (k === 'age') return this._snap(f.metadata.age, ranks.age); // the one kind read off `metadata`; every other names a field of `stats`
     const field = FAVORITE_GAUGE_FIELDS[k] ?? k;
-    return this._snap(f.stats[field as keyof typeof f.stats] ?? 0, ranks[field as keyof typeof ranks]);
+    // `level` alone has a floor of 1, where Python leaves it unsaid.
+    return this._snap(f.stats[field as keyof typeof f.stats] ?? (field === 'level' ? 1 : 0), ranks[field as keyof typeof ranks]);
   }
 
   // A clan, a culture, a family, a tongue, a biology, built alike: the body in `metadata`, its living in `population` as on a city, the roster apart.

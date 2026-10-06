@@ -19,7 +19,7 @@
     }
 
     <!-- The founder alone counts 1: a succession only reads as one from a second chief. -->
-    @if (c.metadata.past_chiefs > 1) {
+    @if ((c.metadata.past_chiefs ?? 1) > 1) {
       <nz-descriptions-item [nzTitle]="chiefsTitle">{{ c.metadata.past_chiefs }}</nz-descriptions-item>
     }
     @if (c.metadata.age > 0) {

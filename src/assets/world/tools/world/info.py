@@ -65,12 +65,14 @@ from shared import (
     moved_between,
     needs_food,
     parse_sections,
+    quiet_zeros,
     rounded_world_time,
     score_totals,
     sex_label,
     spores_unfed,
     take_chapter,
     take_since,
+    under_construction,
     unranked,
     walk_tiles,
     wants_detail,
@@ -511,22 +513,26 @@ def _build_snapshot(save: dict) -> dict:
             infected += "infected" in traits
 
     frozen, tiles = frozen_tally(save)
-    return {
-        **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
-        "armies": len(save.get("armies") or []),
-        "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
-        "frozen_pct": round(frozen / (tiles or 1) * 100),  # the map's frozen share, whole — permafrost, snow, ice and frost; `geography … totals` has the tenth
-        "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
-        **({"infected": infected} if infected else {}),
-        "passengers": passengers,  # souls at sea this instant, WB's own word (`Boat.countPassengers`) — chronicler-only, `boats` counts the hulls
-        "sapient_population": sapients,  # named apart from every tier's `population`, which counts members: this one weighs minds, and no crown gathers them
-        **({"sick": sick} if sick else {}),
-        "statuses": dict(sorted(statuses.items())) or None,  # Chronicler-only: how many bodies each status holds this instant, as the Faithful Saves mod kept them
-        "trees": sum(n for aid, n in asset_counts.items() if building_family(aid) == "trees"),
-        "vegetation": sum(n for aid, n in asset_counts.items() if building_family(aid) == "vegetation"),  # `trees` counts apart — WB files the two as it pleases
-        "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
-        "wild_creatures": len(actors) - boats - sapients,
-    }
+    return quiet_zeros(
+        {
+            **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
+            "armies": len(save.get("armies") or []),
+            "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
+            "frozen_pct": round(frozen / (tiles or 1) * 100),  # the map's frozen share, whole — permafrost, snow, ice and frost; `geography … totals` has the tenth
+            "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
+            "infected": infected,
+            "passengers": passengers,  # souls at sea this instant, WB's own word (`Boat.countPassengers`) — chronicler-only, `boats` counts the hulls
+            "sapient_population": sapients,  # named apart from every tier's `population`, which counts members: this one weighs minds, and no crown gathers them
+            "sick": sick,
+            # Chronicler-only: how many bodies each status holds this instant, as the Faithful Saves mod kept them.
+            "statuses": dict(sorted(statuses.items())) or None,
+            "trees": sum(n for aid, n in asset_counts.items() if building_family(aid) == "trees"),
+            "under_construction": sum(under_construction(b) for b in save.get("buildings") or [] if b.get("asset_id") in civic),  # the sites among `buildings`
+            "vegetation": sum(n for aid, n in asset_counts.items() if building_family(aid) == "vegetation"),  # `trees` counts apart — WB files the two as it pleases
+            "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
+            "wild_creatures": len(actors) - boats - sapients,
+        }
+    )
 
 
 # Whether a birth waits `maturation`: a pair's or a virgin's only if viviparous (an egg is laid at once), buds and sprouts always, a fission or a spore never.

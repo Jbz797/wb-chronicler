@@ -1007,7 +1007,7 @@ def main(argv: list[str]) -> int:
             "world": world,
         }
 
-        # `render`, not `json.dumps(indent=2)`: same tree, a quarter fewer characters once branches inline. No `_strip_none` — `tags: []` and a `null` city belong.
+        # `render`, not `json.dumps(indent=2)`: same tree, a quarter fewer characters once branches inline. `drop_chronicler_keys` strips the empties as it cuts.
         (chapter_dir / "chapter.json").write_text(render(drop_chronicler_keys(chapter_json)) + "\n")
         settings = _settings()
 

@@ -577,6 +577,8 @@ def emit(out: dict) -> None:
     asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}
     asked |= {"islets"} if "islet" in asked else set()  # `land_arg`'s singular names the block its plural keys
     raw, value = out, _strip_none(out)
+    if isinstance(value, dict):  # a shelf, a rack or a fleet counted at nought says nothing in a sheet: only the section asked by its name still answers 0
+        value = {key: block for key, block in value.items() if block != {"total": 0} or key in asked}
     # Weighed level by level on what was asked, not on what is left: under a tile, a section gone empty must not strip its neighbour of its name.
     while isinstance(value, dict) and len(value) == 1 and (key := next(iter(value))) in asked and sum(name in asked for name in raw) == 1:
         raw, value = raw[key], value[key]
@@ -962,6 +964,11 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     }
 
 
+# A count at nought and a flag down go unsaid, absent reading as 0 — bar the keys where an absence would say something else: an age unknown, a point on the map.
+def quiet_zeros(block: dict, said: Collection[str] = ()) -> dict:
+    return {key: value for key, value in block.items() if key in said or value != 0}
+
+
 # A crown's or a town's succession off WB's `past_rulers`, oldest first, dated as the game shows — the sitting reign open-ended, its purse `population.ruler_money`.
 def reigns(record: dict, actors_by_id: dict, requested: str | None) -> list[dict] | dict:
     out = []
@@ -1194,6 +1201,11 @@ def trip_time(per_hour: float, total: float, foot: float | None = None, water: t
         whole = marched + wet / per_hour / 24
         return told | ({"total_days": round(whole, 1)} if whole >= 1 else duration(total / per_hour, "total_"))
     return {"march_days": round(total / day, 1)} if total >= day else duration(total / per_hour, "walk_" if foot is not None else "total_")
+
+
+# A site still rising: WB flags a town's building the day it is laid — the day its `created_time` and `housesBuilt` count it — and lifts the flag at its completion.
+def under_construction(building: dict) -> bool:
+    return "under_construction" in (building.get("custom_data_flags") or ())
 
 
 # The node a union-find set is known by, each one passed pointed a step nearer it so a map's unions stay shallow: `islands` and `waters` join their runs by it.

@@ -46,6 +46,7 @@ from shared import (
     meta_report,
     parse_sections,
     population_breakdown,
+    quiet_zeros,
     reigns,
     score_ranks,
     settlement_leaders,
@@ -53,6 +54,7 @@ from shared import (
     sex_label,
     succession_heir,
     take_chapter,
+    under_construction,
     wants_detail,
     world_laws,
     zone_xy,
@@ -84,6 +86,9 @@ _MIGRANT_PEOPLE = 100  # and the headcount past which none does
 _MIGRANT_SOON = 40  # seconds, half of WB's 80 between two turns of migrants: under it the next one falls within 8 months, most likely before a chapter is out
 _RANGED_ATTACKS = asset_set("ranged")  # WB `attack_type != 0`: every asset cloned from the `$range` template (`ItemLibrary`).
 _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  # `ActorTrait.same_trait_mod`/`opposite_trait_mod` — the kingdom reads it too.
+
+# What `metadata` says even at 0: a town of the year, a point on the map's edge, a banner changed within the year — every other count keeps silent.
+_ZERO_SAID = frozenset({"age", "x", "y", "years_in_kingdom"})
 
 
 # Untruncated on purpose — loyalty adds stats together before casting, exactly as WB does. See `actor_stat_totals`.
@@ -223,6 +228,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     gold_by_city: Counter[int] = Counter()
     goods_by_city: Counter[int] = Counter()
     houses_by_city: Counter[int] = Counter()
+    sites_by_city: Counter[int] = Counter()
 
     for b in save.get("buildings") or []:
         cid = b.get("cityID")
@@ -243,6 +249,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         asset_id = b.get("asset_id")
         if asset_id in civic:
             buildings_by_city[cid] += 1
+            sites_by_city[cid] += under_construction(b)
             if asset_id.startswith("house"):
                 houses_by_city[cid] += 1
 
@@ -288,6 +295,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "score_dimensions": cache(lambda: city_score_dimensions(save)),  # the composite score's tallies, some sourced nowhere else; same two callers
         "shelved_by_city": cache(lambda: _shelved_by_city(save)),  # the records behind `books_by_city`, only the `books` section spells them out
         "sick_by_city": sick_by_city,
+        "sites_by_city": sites_by_city,
         "stats_cache": {},  # `_actor_stats` memo: loyalty asks the same handful of kings and mayors for their skills over and over.
         "troop_money_by_city": troop_money_by_city,
         "warriors_by_city": warriors_by_city,
@@ -372,42 +380,46 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
 
     pact = next((a for a in save.get("alliances") or [] if city.get("kingdomID") in (a.get("kingdoms") or [])), None)  # through its crown; a realm sits in one
 
-    return {
-        **_city_taxes(kingdom),
-        "age": entity_age(city, ctx["world_time"]),
-        **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
-        "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
-        # The crowns storming the town, eldest id first. Sorting the refs themselves would raise the moment a second one shows up — two dicts never compare.
-        **({"besieged_by": sorted(besiegers, key=itemgetter("id"))} if besiegers else {}),
-        **({"births": births} if (births := int(city.get("total_births") or 0)) else {}),  # Inhabitants born over its lifetime, the counterpart WB keeps to `deaths`
-        **({"book_reach": reach} if (reach := dims["book_reach"].get(cid, 0)) else {}),  # `_BOOK_POINTS` per book written here + how widely it's read
-        "born": entity_born(city),  # chronicler-only: its month, where `age` counts whole years
-        "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
-        **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
-        "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
-        **({"deaths_by_cause": causes} if (causes := death_causes(city)) else {}),  # chronicler-only: what the town's people died of, which `deaths` never says
-        "families": len(ctx["families_by_city"].get(cid, ())),  # Distinct families among its residents; the `familyless` count is in `population`.
-        "food": ctx["food_by_city"][cid],  # Eatable resources stocked in the city's buildings.
-        "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.
-        "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).
-        **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
-        "houses": ctx["houses_by_city"][cid],  # Dwellings (subset of `buildings`).
-        "id": cid,
-        "islands": islands,
-        "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).
-        "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
-        "migrants": _migrants(city, residents, ctx, save),  # chronicler-only: whether strangers may yet sit at its fire, and what keeps them off
-        "name": city.get("name"),
-        "renown": city.get("renown", 0),
-        "report": report,  # what WB has the settlement say of itself
-        "score_rank": score_ranks([e["id"] for e in save.get("cities") or []], dims).get(cid),  # composite settlement place (1 = heaviest), total kept internal
-        "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
-        "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
-        # Last, and out of order on purpose: the pair rides in on one spread, so it sorts under the `x` its own key never spells. WB's `updateCityCenter` anchor.
-        **(dict(zip(("x", "y"), centre)) if (centre := _city_centre(city, ctx)) else {}),
-        # Chronicler-only, years under the present banner: stamped on annexation, so no key means the city never changed hands. The save keeps no previous owner.
-        **({"years_in_kingdom": _years_since(stamp, ctx)} if (stamp := city.get("timestamp_kingdom")) not in (None, -1.0) else {}),
-    }
+    return quiet_zeros(
+        {
+            **_city_taxes(kingdom),
+            "age": entity_age(city, ctx["world_time"]),
+            **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
+            "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
+            # The crowns storming the town, eldest id first. Sorting the refs themselves would raise the moment a second one shows up — two dicts never compare.
+            **({"besieged_by": sorted(besiegers, key=itemgetter("id"))} if besiegers else {}),
+            "births": int(city.get("total_births") or 0),  # Inhabitants born over its lifetime, the counterpart WB keeps to `deaths`
+            "book_reach": dims["book_reach"].get(cid, 0),  # `_BOOK_POINTS` per book written here + how widely it's read
+            "born": entity_born(city),  # chronicler-only: its month, where `age` counts whole years
+            "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
+            **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
+            "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
+            **({"deaths_by_cause": causes} if (causes := death_causes(city)) else {}),  # chronicler-only: what the town's people died of, which `deaths` never says
+            "families": len(ctx["families_by_city"].get(cid, ())),  # Distinct families among its residents; the `familyless` count is in `population`.
+            "food": ctx["food_by_city"][cid],  # Eatable resources stocked in the city's buildings.
+            "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.
+            "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).
+            **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
+            "houses": ctx["houses_by_city"][cid],  # Dwellings (subset of `buildings`).
+            "id": cid,
+            "islands": islands,
+            "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).
+            "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
+            "migrants": _migrants(city, residents, ctx, save),  # chronicler-only: whether strangers may yet sit at its fire, and what keeps them off
+            "name": city.get("name"),
+            "renown": city.get("renown", 0),
+            "report": report,  # what WB has the settlement say of itself
+            "score_rank": score_ranks([e["id"] for e in save.get("cities") or []], dims).get(cid),  # composite settlement place (1 = heaviest), total kept internal
+            "territory": len(city.get("zones") or []),  # Zone count (each = an 8-tile `TileZone`).
+            "under_construction": ctx["sites_by_city"][cid],  # chronicler-only: the sites among `buildings`, which WB counts from the day they are laid
+            "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
+            # Last, and out of order on purpose: the pair rides in on one spread, so it sorts under the `x` its own key never spells. WB's `updateCityCenter` anchor.
+            **(dict(zip(("x", "y"), centre)) if (centre := _city_centre(city, ctx)) else {}),
+            # Chronicler-only, years under the present banner: stamped on annexation, so no key means the city never changed hands. The save keeps no previous owner.
+            **({"years_in_kingdom": _years_since(stamp, ctx)} if (stamp := city.get("timestamp_kingdom")) not in (None, -1.0) else {}),
+        },
+        _ZERO_SAID,
+    )
 
 
 # The realm layer `_city_loyalty` needs: who holds what, who borders whom, who is at war, and where each crown stands among the others.
@@ -585,7 +597,7 @@ def _city_species(city: dict, ctx: dict) -> str | None:
 
 # Chronicler-only, `BehActorGiveTax`: an inhabitant pays its mayor (`tax_local`), the mayor pays the crown (`tax_tribute`). The crown sets both rates.
 def _city_taxes(kingdom: dict | None) -> dict:
-    taxes = {"tax_local": "normal", "tax_tribute": "normal"}
+    taxes = {}  # a rate no trait moves is WB's normal one, and goes unsaid
     for trait in (kingdom or {}).get("saved_traits") or []:
         if spec := _CITY_TAX_TRAITS.get(trait):
             taxes[spec[0]] = spec[1]
@@ -687,8 +699,8 @@ def _migrants(city: dict, residents: list[dict], ctx: dict, save: dict) -> str |
         return "too_big"
     if ctx["food_by_city"][city["id"]] < _MIGRANT_FOOD:
         return "no_food"
-    lit = (b for b in save.get("buildings") or [] if b.get("cityID") == city["id"] and b.get("asset_id") == "bonfire")
-    if not any("under_construction" not in (b.get("custom_data_flags") or ()) for b in lit):
+    fires = (b for b in save.get("buildings") or [] if b.get("cityID") == city["id"] and b.get("asset_id") == "bonfire")
+    if all(under_construction(b) for b in fires):  # none, or none finished
         return "no_bonfire"
     if (lineage := main_subspecies(city, ctx, "city")) is None:
         return None

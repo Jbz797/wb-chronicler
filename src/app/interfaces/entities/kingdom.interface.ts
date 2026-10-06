@@ -4,7 +4,7 @@ import { EntityReference, EquipmentStock, HullCount, Leaders, PersonReference, P
 export interface Kingdom {
   boats?: HullCount; // absent where no hull sails — Python omits a count at 0
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
-  gear: EquipmentStock;
+  gear?: EquipmentStock;
   identity: KingdomIdentity;
   leaders?: Leaders;
   metadata: KingdomMetadata;
@@ -25,25 +25,25 @@ interface KingdomMetadata {
   age: number;
   book_reach?: number;
   books?: number; // volumes shelved across its towns, whoever wrote them
-  buildings: number;
+  buildings?: number;
   capital?: EntityReference;
-  cities: number;
+  cities?: number;
   culture_traits?: number;
-  deaths: number;
-  food: number;
+  deaths?: number;
+  food?: number;
   foundings?: number;
-  gold: number;
-  goods: number;
+  gold?: number;
+  goods?: number;
   heir?: PersonReference;
-  houses: number;
+  houses?: number;
   id: number;
-  kills: number;
+  kills?: number;
   name: string;
-  renown: number;
+  renown?: number;
   score_rank?: number; // absent where the realm stands alone — a place needs a rival
-  territory: number;
+  territory?: number;
   wars_won?: number;
-  wealth: number;
+  wealth?: number;
 }
 
 // Aggregates over the kingdom's inhabitants, not its `metadata` — age/sex tallies and the `money` total left to the chronicler, Richesse summing the shares.

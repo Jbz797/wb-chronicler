@@ -2,7 +2,7 @@ import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown,
 
 // The favourite's language: caught by ear, not by blood — so WB counts its speakers three ways, born to it, won from another tongue, and lost to one.
 export interface Language {
-  books: BookShelf; // volumes still written in it, whoever holds them now — `metadata.books_written` is WB's lifetime tally, burnt ones counted
+  books?: BookShelf; // volumes still written in it, whoever holds them now — `metadata.books_written` is WB's lifetime tally, burnt ones counted
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: LanguageIdentity;
   leaders?: Leaders;

@@ -3,13 +3,13 @@ import { BookShelf, EquipmentStock, Leaders, PersonReference, PopulationBreakdow
 // Absent, not empty: Python's `emit` strips `None`/`[]`/`{}`, so no podium (`ranks`) or an empty dimension means no key at all. A city is a kingdom's settlement.
 export interface City {
   army?: CityArmy;
-  books: BookShelf;
+  books?: BookShelf;
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
-  gear: EquipmentStock;
+  gear?: EquipmentStock;
   identity: CityIdentity;
   inventory?: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
   leaders?: Leaders;
-  loyalty: CityLoyalty;
+  loyalty?: CityLoyalty; // absent at nought with no modifier: a town that answers to no crown
   metadata: CityMetadata;
   population: CityPopulation;
   ranks?: CityRanks;
@@ -38,22 +38,22 @@ interface CityLoyalty { total: number }
 // The city's own attributes (age, heir, stocks…) — `population` aggregates its inhabitants instead.
 interface CityMetadata {
   age: number;
-  attractivity: number; // `migrated - left`, emitted whatever its sign — 0 and negatives are readings too
+  attractivity?: number; // `migrated - left`, negatives included — absent at 0, as every count of the block is
   book_reach?: number;
-  buildings: number;
-  deaths: number;
-  food: number;
-  gold: number;
-  goods: number;
+  buildings?: number;
+  deaths?: number;
+  food?: number;
+  gold?: number;
+  goods?: number;
   heir?: PersonReference;
-  houses: number;
+  houses?: number;
   id: number;
-  kills: number;
+  kills?: number;
   name: string;
-  renown: number;
+  renown?: number;
   score_rank?: number; // absent where the town stands alone — a place needs a rival
-  territory: number;
-  wealth: number;
+  territory?: number;
+  wealth?: number;
 }
 
 // The city's inhabitants aggregated, not its `metadata`: `immortals`/`infected`/`sick` omitted at 0, age/sex tallies and the `money` total left to the chronicler.

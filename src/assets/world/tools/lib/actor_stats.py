@@ -851,8 +851,8 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
         **({"familyless": n} if (n := counts["familyless"]) else {}),
         # Share of the food-needing not hungry by WB's measure (above half their cap), dropped under the floor where the figure reports the divisor, not the body.
         **({"fed_pct": round(100 * counts["fed"] / eaters)} if (eaters := counts["eaters"]) >= MIN_PER_CAPITA_UNITS else {}),
-        # Dropped whole where the body holds nobody, as `eggs` and `immortals` drop at nought: a depth of 0 is no depth, WB counting a parentless founder its 1.
-        **({"gen_deepest": max(generations), "gen_median": round(_median(generations))} if total else {}),
+        # Dropped whole at the floor, as a count drops at nought: WB counts a parentless founder its 1, so a depth of 1 says only that none here was born of another.
+        **({"gen_deepest": deepest, "gen_median": round(_median(generations))} if total and (deepest := max(generations)) > 1 else {}),
         **({"happy": n} if (n := counts["happy"]) else {}),
         **({"housed_pct": round((total - counts["homeless"]) / total * 100)} if total >= MIN_PER_CAPITA_UNITS else {}),
         **({"immortals": n} if (n := counts["immortals"]) else {}),

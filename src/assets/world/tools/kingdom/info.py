@@ -42,12 +42,14 @@ from shared import (
     meta_report,
     parse_sections,
     population_breakdown,
+    quiet_zeros,
     reigns,
     score_ranks,
     settlement_leaders,
     settlement_rank_getters,
     succession_heir,
     take_chapter,
+    under_construction,
     wants_detail,
     zone_xy,
 )
@@ -60,6 +62,7 @@ _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _TRAIT_MODS = _OPINION_CONSTANTS["actor_trait_opinion_mods"]  # Read once per king trait in `_compute_opinion`, so it earns its own name (as in `city/info.py`).
 _WORLDVIEWS = ("ethnocentric_guard", "xenophiles", "xenophobic")  # WB's `worldview` culture traits: mutually exclusive, often absent — hence our own fourth value.
 _WORLDVIEW_NEUTRAL = "neutral"
+_ZERO_SAID = frozenset({"age", "peace_time"})  # what `metadata` says even at 0: a crown of the year, one at war this very year — every other count keeps silent
 
 
 # The realm's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
@@ -180,6 +183,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     gold_by_kingdom: Counter[int] = Counter()
     goods_by_kingdom: Counter[int] = Counter()
     houses_by_kingdom: Counter[int] = Counter()
+    sites_by_kingdom: Counter[int] = Counter()
     zone_to_kingdom = {zone: kid for kid, zone_list in zones_by_kingdom.items() for zone in zone_list}
 
     for b in save.get("buildings", []):
@@ -200,6 +204,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
             continue
         if (tile := building_tile(b)) is not None and (kid := zone_to_kingdom.get((tile[0] // ZONE_TILES, tile[1] // ZONE_TILES))) is not None:
             buildings_by_kingdom[kid] += 1
+            sites_by_kingdom[kid] += under_construction(b)
             if asset_id.startswith("house"):
                 houses_by_kingdom[kid] += 1
 
@@ -246,6 +251,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "renown_by_kingdom": renown_by_kingdom,
         "score_dimensions": cache(lambda: kingdom_score_dimensions(save)),  # the composite score's tallies, some sourced nowhere else; same two callers
         "sick_by_kingdom": sick_by_kingdom,
+        "sites_by_kingdom": sites_by_kingdom,
         "supreme_kingdom_id": supreme_kingdom_id,
         "territory_by_kingdom": territory_by_kingdom,
         "warriors_by_kingdom": warriors_by_kingdom,
@@ -299,43 +305,47 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     pact = next((a for a in save.get("alliances") or [] if kid in (a.get("kingdoms") or [])), None)  # a realm sits in one pact at most
 
     # Chronicler-only: WB's « Hommage », what a mayor owes the crown. `normal` = no tax trait, which is what almost every crown carries.
-    tribute = next((tier for t in kingdom.get("saved_traits") or [] if (tier := _KINGDOM_TRIBUTE_TRAITS.get(t))), "normal")
+    tribute = next((tier for t in kingdom.get("saved_traits") or [] if (tier := _KINGDOM_TRIBUTE_TRAITS.get(t))), None)  # WB's normal rate goes unsaid
 
-    return {
-        "age": entity_age(kingdom, ctx["world_time"]),
-        **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
-        **({"births": births} if (births := int(kingdom.get("total_births") or 0)) else {}),  # Members born over its lifetime, the counterpart WB keeps to `deaths`.
-        **({"book_reach": reach} if (reach := dims["book_reach"].get(kid, 0)) else {}),  # `_BOOK_POINTS` per authored book + how widely it's read
-        **({"books": held} if (held := ctx["books_by_kingdom"]()[kid]) else {}),  # volumes shelved in its towns, whoever wrote them
-        "born": entity_born(kingdom),  # chronicler-only: its month, where `age` counts whole years
-        "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
-        "capital": {"id": cap["id"], "name": cap.get("name")} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
-        "cities": ctx["cities_by_kingdom"].get(kid, 0),
-        **({"culture_traits": traits} if (traits := dims["culture_traits"].get(kid, 0)) else {}),  # its culture + language + religion traits
-        "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
-        **({"deaths_by_cause": causes} if (causes := death_causes(kingdom)) else {}),  # chronicler-only: what its members died of, which `deaths` never says
-        "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct families; `familyless` count is in `population`.
-        # Chronicler-only: whether the crown can carry its people over the sea — a ferry serves any request of its kingdom, whichever of its towns docks it.
-        **({"ferries": True} if any(is_transport(b) for b in ctx["boats_by_kingdom"].get(kid) or ()) else {}),
-        "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
-        **({"foundings": found} if (found := dims["foundings"].get(kid, 0)) else {}),
-        "gold": ctx["gold_by_kingdom"][kid],  # Gold ore in the kingdom's buildings: mined from `mineral_gold` + half of each taxpayer's loot. Not coins.
-        "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
-        "heir": heir,
-        "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).
-        "id": kid,
-        "islands": islands,
-        "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
-        "name": kingdom.get("name"),
-        **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
-        "renown": kingdom.get("renown", 0),
-        "report": report,  # what WB has the realm say of itself
-        "score_rank": score_ranks([e["id"] for e in save.get("kingdoms") or []], dims).get(kid),  # composite power place (1 = strongest), total kept internal
-        "tax_tribute": tribute,
-        "territory": ctx["territory_by_kingdom"].get(kid, 0),
-        **({"wars_won": won} if (won := dims["wars_won"].get(kid, 0)) else {}),
-        "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
-    }
+    return quiet_zeros(
+        {
+            "age": entity_age(kingdom, ctx["world_time"]),
+            **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
+            "births": int(kingdom.get("total_births") or 0),  # Members born over its lifetime, the counterpart WB keeps to `deaths`.
+            "book_reach": dims["book_reach"].get(kid, 0),  # `_BOOK_POINTS` per authored book + how widely it's read
+            "books": ctx["books_by_kingdom"]()[kid],  # volumes shelved in its towns, whoever wrote them
+            "born": entity_born(kingdom),  # chronicler-only: its month, where `age` counts whole years
+            "buildings": ctx["buildings_by_kingdom"][kid],  # Civic buildings in the kingdom's zones (nature excluded); `houses` is the dwelling subset.
+            "capital": {"id": cap["id"], "name": cap.get("name")} if (cap := ctx["capitals_by_kingdom"].get(kid)) else None,
+            "cities": ctx["cities_by_kingdom"].get(kid, 0),
+            "culture_traits": dims["culture_traits"].get(kid, 0),  # its culture + language + religion traits
+            "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
+            **({"deaths_by_cause": causes} if (causes := death_causes(kingdom)) else {}),  # chronicler-only: what its members died of, which `deaths` never says
+            "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct families; `familyless` count is in `population`.
+            # Chronicler-only: whether the crown can carry its people over the sea — a ferry serves any request of its kingdom, whichever of its towns docks it.
+            **({"ferries": True} if any(is_transport(b) for b in ctx["boats_by_kingdom"].get(kid) or ()) else {}),
+            "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
+            "foundings": dims["foundings"].get(kid, 0),
+            "gold": ctx["gold_by_kingdom"][kid],  # Gold ore in the kingdom's buildings: mined from `mineral_gold` + half of each taxpayer's loot. Not coins.
+            "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
+            "heir": heir,
+            "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).
+            "id": kid,
+            "islands": islands,
+            "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
+            "name": kingdom.get("name"),
+            **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
+            "renown": kingdom.get("renown", 0),
+            "report": report,  # what WB has the realm say of itself
+            "score_rank": score_ranks([e["id"] for e in save.get("kingdoms") or []], dims).get(kid),  # composite power place (1 = strongest), total kept internal
+            "tax_tribute": tribute,
+            "territory": ctx["territory_by_kingdom"].get(kid, 0),
+            "under_construction": ctx["sites_by_kingdom"][kid],  # chronicler-only: the sites among `buildings`, as a town's
+            "wars_won": dims["wars_won"].get(kid, 0),
+            "wealth": ctx["money_by_kingdom"][kid] + ctx["gold_by_kingdom"][kid],  # Everything it owns: its people's coins + the gold in its buildings.
+        },
+        _ZERO_SAID,
+    )
 
 
 # Diplomatic ties involving this kingdom. Status derived from alliances/wars cross-ref (WB only persists pair + timestamps).

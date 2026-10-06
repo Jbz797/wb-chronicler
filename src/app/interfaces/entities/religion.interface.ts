@@ -2,7 +2,7 @@ import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown,
 
 // The favourite's religion: preached, not inherited — so its `breakdown` answers to no border, a creed crossing blood and crown one conversion at a time.
 export interface Religion {
-  books: BookShelf; // volumes written under it, whoever holds them now — the mirror of a town's shelf, which counts what it holds whoever wrote it
+  books?: BookShelf; // volumes written under it, whoever holds them now — the mirror of a town's shelf, which counts what it holds whoever wrote it
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: ReligionIdentity;
   leaders?: Leaders;

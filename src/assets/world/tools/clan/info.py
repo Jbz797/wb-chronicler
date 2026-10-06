@@ -103,7 +103,8 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
         **({"kills": kills} if (kills := int(clan.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its members answer to — a clan is sworn, not granted, so it spans realms freely
         "name": clan.get("name"),
-        "past_chiefs": len(clan.get("past_chiefs") or []),  # the sitting chief included — WB appends him on accession, so it never reads zero
+        # The sitting chief included — WB appends him on accession, so 1 is the floor: said from the first succession on.
+        **({"past_chiefs": chiefs} if (chiefs := len(clan.get("past_chiefs") or [])) > 1 else {}),
         **({"renown": renown} if (renown := int(clan.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `population`
         **({"report": report} if report else {}),
         **({"traits": traits} if (traits := len(clan.get("saved_traits") or [])) else {}),

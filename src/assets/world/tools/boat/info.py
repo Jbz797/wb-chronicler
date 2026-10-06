@@ -95,7 +95,7 @@ def _build_metadata(boat: dict, ctx: dict) -> dict:
         "home": home["id"] if home else None,  # the dock it answers to — a handle, `ground/info.py <id>` spelling out its age, health, city and zone
         **({"in_building": quay} if (quay := _berth(boat, ctx)) else {}),
         "kills": boat.get("kills", 0),
-        "level": level,
+        "level": level if level > 1 else None,  # the floor every hull starts at, unsaid
         "loot": boat.get("loot", 0),  # coin plundered from what it sank, WB's own word
         "mass_kg": _mass_kg(boat),
         "renown": boat.get("renown", 0),

@@ -37,6 +37,7 @@ _AUDIT = {
             "tax_local",
             "tax_tribute",
             "traits",
+            "under_construction",  # a town's and a crown's sites, counted among the `buildings` the panel prints
         }
     ),
     "ranks": frozenset(
@@ -62,7 +63,8 @@ _AUDIT = {
     ),
     "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
     "relations": frozenset({"age_years", "borders", "years_since_last_war"}),  # the tie's age, its border, its last war: the panel prints the standing, its drivers
-    "snapshot": frozenset({"gear", "statuses"}),  # the world's stock of items and what its bodies are in the middle of — the panel counts souls, roofs and trees
+    # The world's stock of items, what its bodies are in the middle of and its sites — the panel counts souls, roofs and trees.
+    "snapshot": frozenset({"gear", "statuses", "under_construction"}),
     "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "projectiles", "recoil", "swim", "throwing_range"}),
 }
 
@@ -105,7 +107,8 @@ _DEMOGRAPHY = frozenset(
     {"adults", "babies", "children", "couples", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
 )
 
-_EMPTY = (None, [], {})  # a tier the favorite holds none of, a war-free crown, a biology no stock counts: said by the key's absence
+# A tier the favorite holds none of, a war-free crown: said by the key absent. Never `{"total": 0}` — `emit` drops an empty shelf, and an opinion at 0 is a reading.
+_EMPTY = (None, [], {})
 
 # The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
 _LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
@@ -124,7 +127,6 @@ _TALLIES = {
 # The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
 _UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
 _UI_UNSHOWN_ZERO = frozenset({"critical_chance"})  # a floor the chronicler reads as a fact (`_KEEP_ZERO`), where the panel has nothing to show
-_UI_ZERO_FREE_BLOCKS = frozenset({"boats", "snapshot"})  # counts the panels read as nought when absent, so a 0 there is bytes and nothing else
 
 
 # The one name a panel prints per record: a shared first place travels as its first holder, bare of the count the chronicler reads off the script.
@@ -226,7 +228,7 @@ def _without(block: dict, cut: frozenset) -> dict:
     return {key: value for key, value in block.items() if key not in cut}
 
 
-# `_CHRONICLER_ONLY` cuts at every depth, `_AUDIT` from one named section, and the noughts and empties no panel shows go too — `<tier>/info.py` still says all.
+# `_CHRONICLER_ONLY` cuts at every depth, `_AUDIT` from one named section; the empties a cut leaves go too, and the one nought kept for the chronicler alone.
 def drop_chronicler_keys(node, parent: str = ""):
     if isinstance(node, dict):
         kept = {}
@@ -238,9 +240,7 @@ def drop_chronicler_keys(node, parent: str = ""):
                     value = _without(value, cut)
                 elif isinstance(value, list):
                     value = [_without(item, cut) if isinstance(item, dict) else item for item in value]
-            if key in _UI_ZERO_FREE_BLOCKS and isinstance(value, dict):
-                value = {count: n for count, n in value.items() if n != 0}
-            elif key == "stats" and isinstance(value, dict):
+            if key == "stats" and isinstance(value, dict):
                 value = {stat: n for stat, n in value.items() if n or stat not in _UI_UNSHOWN_ZERO}
             if (value := drop_chronicler_keys(value, key)) not in _EMPTY:  # absent, not empty: `render` keeps what `emit` strips, and the panels read it absent
                 kept[key] = value

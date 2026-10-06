@@ -69,7 +69,7 @@ interface FavoriteStats {
   health_max: number;
   intelligence?: number;
   kills?: number;
-  level: number;
+  level?: number; // absent at 1, the floor every body starts at
   lifespan: number;
   mana: number;
   mana_max?: number;

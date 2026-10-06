@@ -297,7 +297,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "culture": entity_ref(actor.get("culture"), ctx["cultures_by_id"]),  # a ref like `clan`: `culture/info.py <id>` reads the customs it was raised in
         "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # a ref, not a bare name: `family/info.py <id>` can be called on it
         "favorite_food": actor.get("favorite_food"),
-        "gen": int(actor.get("generation") or 1),  # WB counts a first child 2, so a parentless founder is its 1 — a default the save omits
+        # WB counts a first child 2, so a parentless founder is its 1: a floor, which says nothing and goes unsaid as a count at nought does.
+        **({"gen": gen} if (gen := int(actor.get("generation") or 1)) > 1 else {}),
         "hatch_on": hatch_on(actor, ctx),  # Chronicler-only: the hatching, past or to come — `born` dates the laying, the chronicle the hatching
         **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # Chronicler-only: WB names no roof — `ground/info.py <id>` takes the bare id
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
@@ -584,7 +585,7 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
             **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
             "health": int(actor.get("health") or 0),
             **({"kills": n} if (n := int(actor.get("kills") or 0)) else {}),
-            "level": max(int(actor.get("level") or 0), 1),  # WB displays level 1 as the floor, even when the raw save field is absent / 0.
+            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # every body starts at 1, WB's floor: said once earned past it
             **({"loot": n} if (n := int(actor.get("loot") or 0)) else {}),
             "mana": int(actor.get("mana") or 0),
             **({"money": n} if (n := int(actor.get("money") or 0)) else {}),
