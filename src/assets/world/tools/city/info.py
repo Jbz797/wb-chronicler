@@ -69,9 +69,16 @@ _CITY_TAX_TRAITS = {
     "tax_rate_tribute_low": ("tax_tribute", "low"),
 }
 
+_LOYALTY_GLOSSES = (  # what WB's own names hide or say backwards, by the drivers each is said beside
+    (frozenset({"baby_king"}), "`baby_king` weighs a king under 18 years of age, grown or not"),
+    (
+        frozenset({"king_diplomacy", "leader_diplomacy"}),
+        "`king_diplomacy` and `leader_diplomacy` weigh diplomacy + 2 × stewardship: a king's binds his towns, a leader's own skill loosens his",
+    ),
+)
+
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
 _RANGED_ATTACKS = asset_set("ranged")  # WB `attack_type != 0`: every asset cloned from the `$range` template (`ItemLibrary`).
-_STATECRAFT = "`king_diplomacy` and `leader_diplomacy` weigh diplomacy + 2 × stewardship: a king's binds his towns, a leader's own skill loosens his"
 _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  # `ActorTrait.same_trait_mod`/`opposite_trait_mod` — the kingdom reads it too.
 
 
@@ -337,8 +344,8 @@ def _build_loyalty(city_id: int, ctx: dict, detailed: bool) -> dict:
         top_pos = max((kv for kv in mods.items() if kv[1] > 0), key=lambda kv: kv[1], default=None)
         top_neg = min((kv for kv in mods.items() if kv[1] < 0), key=lambda kv: kv[1], default=None)
         key, shown = "top_drivers", dict(kv for kv in (top_pos, top_neg) if kv is not None)
-    # WB's two names say « diplomacy » of a score that is two thirds stewardship, and a leader's reads backwards: glossed wherever one of them shows.
-    return {key: shown, "info": _STATECRAFT if shown.keys() & {"king_diplomacy", "leader_diplomacy"} else None, "total": total}
+    # « Diplomacy » names a score two thirds stewardship, a leader's reads backwards, and « baby » an age no life stage follows: glossed wherever one shows.
+    return {key: shown, "info": "; ".join(gloss for drivers, gloss in _LOYALTY_GLOSSES if shown.keys() & drivers) or None, "total": total}
 
 
 # The city's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and officialdom tallied in `_build_context`.
