@@ -144,10 +144,7 @@ def _breedings(traits: Collection[str]) -> set[str]:
 def _current_save() -> Path | None:
     if override := os.environ.get("WB_SAVE"):
         return Path(override)
-    try:
-        return Path(json.loads(_SETTINGS_JSON.read_text())["savePath"])
-    except (KeyError, OSError, ValueError):
-        return None
+    return Path(path) if (path := reader_settings().get("savePath")) else None
 
 
 # Item base stats + its modifiers' bonuses, floats trimmed to 4 decimals (ints when whole), zeros dropped.
@@ -658,6 +655,13 @@ def head_money(entity: dict, ctx: dict, tier: str) -> int:
     return int((ctx["actors_by_id"].get(entity.get(_HEAD_FIELD[tier])) or {}).get("money") or 0)
 
 
+# A file of `i18n/<lang>/`, in the chronicle's language as the settings name it — `{}` where that language has none: a name falls back, a check runs chattier.
+@cache
+def i18n(name: str) -> dict:
+    path = SAVES_DIR.parent / "i18n" / (reader_settings().get("lang") or "fr") / name
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
 def index_by_id(records: list[dict]) -> dict:
     return {record["id"]: record for record in records}
 
@@ -969,6 +973,14 @@ def population_breakdown(actors: list[dict], ctx: dict) -> dict:
 # A count at nought and a flag down go unsaid, absent reading as 0 — bar the keys where an absence would say something else: an age unknown, a point on the map.
 def quiet_zeros(block: dict, said: Collection[str] = ()) -> dict:
     return {key: value for key, value in block.items() if key in said or value != 0}
+
+
+# The reader's settings: the live save's path, the chronicle's language, the player's workshop switch. A missing or broken file reads as a panel never opened.
+def reader_settings() -> dict:
+    try:
+        return json.loads(_SETTINGS_JSON.read_text())
+    except (OSError, ValueError):
+        return {}
 
 
 # A crown's or a town's succession off WB's `past_rulers`, oldest first, dated as the game shows — the sitting reign open-ended, its purse `population.ruler_money`.

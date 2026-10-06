@@ -4,7 +4,6 @@
 # rare word framed alike, a chute —, the runs it says twice itself and the terms it coins, the families it leans on past anything the chronicle did
 # before, and the cast it is poured in again: a title, a heading, a section begun alike. It points, the eye judges: an angle taken again slips past it.
 
-import json
 import re
 import sys
 from collections import Counter, defaultdict
@@ -14,7 +13,7 @@ from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, emit, latest_chapter
+from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, emit, i18n, latest_chapter
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
@@ -108,16 +107,6 @@ def _heard(n: int) -> list[tuple[int, frozenset[str]]]:
     return out
 
 
-# A file of `i18n/<lang>/`, in the chronicle's language as the settings name it — `{}` where that language has none, the tool then only the chattier.
-@cache
-def _i18n(name: str) -> dict:
-    world = Path(__file__).parents[2]
-    settings = world / "history" / "settings.json"
-    lang = (json.loads(settings.read_text()) if settings.exists() else {}).get("lang") or "fr"
-    path = world / "i18n" / lang / name
-    return json.loads(path.read_text()) if path.exists() else {}
-
-
 # A shown run's words as compared, to tell which rare words it already carries.
 def _keys(text: str) -> set[str]:
     return {word.lower().rstrip("'’") for word in _WORD.findall(text)}
@@ -192,7 +181,7 @@ def _passages(words: list[_Token], n: int) -> list[dict]:
 # The words too common to make two runs a turn of phrase or a family worth counting, and the units a measure is said in — `words.json`, per language.
 @cache
 def _plain() -> frozenset[str]:
-    words = _i18n("words.json")
+    words = i18n("words.json")
     return frozenset((*words.get("measures", ()), *words.get("stop", ())))
 
 
@@ -324,7 +313,7 @@ def _shaped(n: int) -> list[dict]:
 # The species as the chronicle names them in its own language, by their first four letters — `loup` catches `loups`, `mouc` catches `mouches`.
 @cache
 def _species_roots() -> frozenset[str]:
-    names = _i18n("species.json").values()
+    names = i18n("species.json").values()
     return frozenset(word[:4].lower() for name in names for word in re.findall(r"[\wÀ-ÿ-]+", name) if len(word) >= 4)
 
 

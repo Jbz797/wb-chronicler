@@ -38,6 +38,7 @@ from shared import (
     actor_age,
     chapter_length,
     chapter_world_time,
+    i18n,
     index_by_id,
     is_boat,
     is_sapient,
@@ -47,6 +48,7 @@ from shared import (
     load_data,
     load_save,
     log_entries,
+    reader_settings,
     render,
     rounded_world_time,
     world_laws,
@@ -70,7 +72,6 @@ _ACCOUNT = {
     },
 }
 
-_AGE_LABELS = load_data("world-ages.json")  # WB `WorldAgeLibrary` key → `{name, description}`; an unknown id falls back to the raw key.
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
 
 _ALERTS = {"DISABLE_DROP_OF_THOUGHTS": "world_law_drop_of_thoughts"}  # each alert by the law it asks the player to cut — a state while that law stays on
@@ -174,7 +175,6 @@ _RESET_PROMPT = (
 )
 
 _SEEDED = ("islands", "lakes", "rivers", "seas")  # the gazetteer's books the survey seeds by id, `places` being the chronicler's own
-_SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # the reader's settings, where the player's workshop switch sits beside the live save's path
 _SHORT_AGES = frozenset({"age_despair", "age_ice"})
 _SHORT_AGE_YEARS = (30, 40)
 _STAMP_SLACK = 1  # seconds a mod's stamp may stray from the save's own time: WB stores it less finely, a save from before lies years off
@@ -325,7 +325,7 @@ def _deliver() -> int:
     if not (n := latest_chapter()):
         print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
         return 1
-    settings = _settings()
+    settings = reader_settings()
     _tidy_cards(n)
     facts = _step_five_facts(n, settings.get("lang", ""))
     length = facts["length"]
@@ -383,6 +383,11 @@ def _doubled_places(n: int) -> list[tuple[str, int, int, str]]:
     return [(name, x, y, other) for (x, y), names in held.items() for name in names if name in fresh for other in names if other != name]
 
 
+# The H1 a chapter is born under, in the chronicle's language — the settings' own unless `lang` is already in hand.
+def _draft_heading(lang: str | None = None) -> str:
+    return _DRAFT_HEADINGS.get(reader_settings().get("lang", "") if lang is None else lang, "Draft")
+
+
 # Whether the crown was drawn into a war begun after `since`, on either side and ended or not — the declaration is the event the chapter owes, not the fighting.
 def _entered_war(save: dict, kingdom_id: int, since: float) -> bool:
     return any(
@@ -417,7 +422,7 @@ def _finalize() -> int:
     if not (n := latest_chapter()):
         print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
         return 1
-    lang = _settings().get("lang", "")
+    lang = reader_settings().get("lang", "")
     _tidy_cards(n)
     dated = _dated_places(n)  # once the gazetteer is known to parse
     facts = _step_five_facts(n, lang)
@@ -569,13 +574,12 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
     if not fav_id:
         _print_bullets(_WORLD_ONLY)
     # In no doc: the cycle is the script's to tell, step by step. A chapter still under its draft title reads as unfinished, to the reader and to `--finalize`.
-    draft = _DRAFT_HEADINGS.get(_settings().get("lang", ""), "Draft")
-    print(f"  → step 5, once written under the H1 `# {draft}`, kept till then: `tools/chapter/new.py --finalize`, followed to delivery")
+    print(f"  → step 5, once written under the H1 `# {_draft_heading()}`, kept till then: `tools/chapter/new.py --finalize`, followed to delivery")
 
 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.
 def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime: str, tags: list[str], prev_world: dict) -> None:
-    age_label = (_AGE_LABELS.get(f"age_{age_id}") or {}).get("name") or age_id  # recap line only, the chapter carrying the id alone
+    age_label = i18n("ages.json").get(age_id) or age_id  # recap line only, in the chronicle's own words — the chapter carries the id alone
     year = int(rounded_world_time(live["mapStats"]) / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
     fav_name = ((favorite or {}).get("metadata") or {}).get("name")
     print(f"✓ C{n} — year {year}, {age_label}")
@@ -782,14 +786,6 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
     return None
 
 
-# The reader's settings: the player's workshop switch and the chronicle's language. A missing or broken file reads as a player who never opened the panel.
-def _settings() -> dict:
-    try:
-        return json.loads(_SETTINGS_JSON.read_text())
-    except (OSError, ValueError):
-        return {}
-
-
 # Step 5 off the chapter's files: its H1 and length, the favorite's descriptor and if carried, the summaries owed or too long, places astray, prose new since C<n-1>.
 def _step_five_facts(n: int, lang: str) -> dict:
     chapter_dir, prior_path = SAVES_DIR / f"C{n}", SAVES_DIR / f"C{n - 1}" / "chapter.json"
@@ -797,7 +793,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
     prior = json.loads(prior_path.read_text()) if prior_path.exists() else {}
     prose = (chapter_dir / "chapter.md").read_text()
     headings = [line[2:] for line in prose.splitlines() if line.startswith("# ")]
-    draft = _DRAFT_HEADINGS.get(lang, "Draft")
+    draft = _draft_heading(lang)
     favorite, before = chapter.get("favorite") or {}, prior.get("favorite") or {}
     descriptor = favorite.get("descriptor")
     same = (before.get("metadata") or {}).get("id") == (favorite.get("metadata") or {}).get("id")  # a favorite stays so until death: another, or none, mourns him
@@ -1009,10 +1005,9 @@ def main(argv: list[str]) -> int:
 
         # `render`, not `json.dumps(indent=2)`: same tree, a quarter fewer characters once branches inline. `drop_chronicler_keys` strips the empties as it cuts.
         (chapter_dir / "chapter.json").write_text(render(drop_chronicler_keys(chapter_json)) + "\n")
-        settings = _settings()
 
         # The draft's H1, in the language the chronicler writes the chapter in: the reader has a page, and it reads unfinished.
-        (chapter_dir / "chapter.md").write_text(f"# {_DRAFT_HEADINGS.get(settings.get('lang', ''), 'Draft')}\n")
+        (chapter_dir / "chapter.md").write_text(f"# {_draft_heading()}\n")
         _write_index(n, world_time)
 
         _print_report(n, live, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, prev_world)

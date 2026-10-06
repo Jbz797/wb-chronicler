@@ -52,6 +52,7 @@ from shared import (
     emit,
     fertile,
     first_place,
+    i18n,
     index_by_id,
     is_aboard,
     is_boat,
@@ -279,11 +280,13 @@ def _build_leaders(save: dict) -> dict:
 def _build_metadata(map_stats: dict) -> dict:
     age_id = map_stats.get("world_age_id") or ""
     age = load_data("world-ages.json").get(age_id) or {}
+    key = age_id.removeprefix("age_")  # `WorldAgeLibrary` key without WB's prefix — `hope`, as the panel keys its French and its icon
     world_time = rounded_world_time(map_stats)
     return {
         "age_description": age.get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
-        "age_id": age_id.removeprefix("age_"),  # `WorldAgeLibrary` key without WB's prefix — `hope`, as the panel keys its French and its icon
-        "age_name": age.get("name"),  # Chronicler-only: WB's own English title, the id above being what the panel translates
+        "age_id": key,
+        # Chronicler-only: the age as the chronicle names it, said here so nobody opens `i18n/<lang>/ages.json`, where every age to come is listed. Else WB's title.
+        "age_name": i18n("ages.json").get(key) or age.get("name"),
         # Chronicler-only: an age's own life stage, off the share of its span the save says it has run. Absent where no age runs: WB then stores no span.
         "age_stage": _age_stage(float(map_stats.get("current_age_progress") or 0)) if float(map_stats.get("current_world_ages_duration") or 0) > 0 else None,
         "date": world_date(world_time),  # Chronicler-only: the day as every other date is written — the raw clock stays the scripts', read off the save
