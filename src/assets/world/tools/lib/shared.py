@@ -120,6 +120,11 @@ _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Mod
 _captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
 
 
+# `full` named, alone or with sections beside it, or nothing at all: the default lot, where a list answers by its count and not one by one.
+def _asks_full(requested: str | None) -> bool:
+    return requested is None or "full" in requested.split(",")
+
+
 # `_BOOK_POINTS` per volume plus its readings. A razed author-town would strand that reach, so the book goes to whoever shelves it — `holder_of` picks the tier.
 def _book_reach(save: dict, author_field: str, living: set, holder_of) -> Counter:
     _, _, city_of_book = books_held(save)
@@ -889,14 +894,16 @@ def needs_food(subspecies: dict | None) -> bool:
     return _has_meta_tag(subspecies, "needs_food")
 
 
-# Parses a comma-separated section list — `None` and `full` both expand to all known sections, unless the caller has no `full` to offer (`geography`).
-def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: bool = True) -> tuple[str, ...]:
-    if allow_full and (not arg or arg == "full"):
-        return all_sections
+# Parses a comma-separated section list — `None` and `full` expand to the default lot (`full`, else every section), and what is named beside `full` adds to it.
+def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: bool = True, full: tuple[str, ...] | None = None) -> tuple[str, ...]:
+    lot = all_sections if full is None else full
+    if allow_full and not arg:
+        return lot
     requested = tuple(s.strip() for s in (arg or "").split(",") if s.strip())
-    if unknown := [s for s in requested if s not in all_sections]:
+    named = tuple(s for s in requested if not (allow_full and s == "full"))  # a caller with no `full` to offer (`geography`) reads the word as unknown
+    if unknown := [s for s in named if s not in all_sections]:
         raise ValueError(f"✗ unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}")
-    return requested
+    return (*lot, *(s for s in named if s not in lot)) if len(named) < len(requested) else named
 
 
 # A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.
@@ -961,7 +968,7 @@ def reigns(record: dict, actors_by_id: dict, requested: str | None) -> list[dict
         if (end := past.get("timestamp_end")) is not None:
             reign["to"] = world_date(end)
         out.append(reign)
-    if requested not in (None, "full") or len(out) <= _MAX_REIGNS_SHOWN:
+    if not _asks_full(requested) or len(out) <= _MAX_REIGNS_SHOWN:
         return out
     return light({"first": out[0], "latest": out[-2:], "total": len(out)})
 
@@ -1222,7 +1229,7 @@ def walk_tiles(dx: int, dy: int) -> float:
 
 # Spelled out because the section was named, or too small for a summary to earn the call it forces — only where that summary is a pure signpost, never traits.
 def wants_detail(requested: str | None, count: int) -> bool:
-    return requested not in (None, "full") or count < _MIN_SUMMARY_ENTRIES
+    return not _asks_full(requested) or count < _MIN_SUMMARY_ENTRIES
 
 
 # Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.

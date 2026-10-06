@@ -19,6 +19,7 @@ from shared import (
     civic_building_ids,
     emit,
     entity_age,
+    entity_born,
     entity_ref,
     index_by_id,
     is_boat,
@@ -64,7 +65,7 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
 
     return {
         # Dropped where it reads under zero: a reset before landmarks were stamped left them older than the world, and no age beats one counting backwards.
-        **({"age": age} if (age := entity_age(house, ctx["world_time"])) >= 0 else {}),
+        **({"age": age, "born": entity_born(house)} if (age := entity_age(house, ctx["world_time"])) >= 0 else {}),  # its month, where `age` counts years
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         # A volcano or a geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops`, until lightning or the player flips it.

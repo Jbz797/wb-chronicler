@@ -656,12 +656,10 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     requested = args.sections
     try:
-        sections = parse_sections(requested, (*_ALL_SECTIONS, *_ON_REQUEST))
+        sections = parse_sections(requested, (*_ALL_SECTIONS, *_ON_REQUEST), full=_ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    if not requested or requested == "full":
-        sections = _ALL_SECTIONS
     narrowing = args.type or args.trait or args.sapient or args.settle or args.barred or args.island is not None or args.patch
     if args.settle and args.barred:  # the two halves of the thinkers: together they name no one
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)

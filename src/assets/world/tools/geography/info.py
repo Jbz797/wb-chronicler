@@ -545,7 +545,7 @@ def main(argv: list[str]) -> int:
         return 2
     wanted: str | None = args.type
     if wanted is None and "positions" in sections:
-        print("✗ positions needs --type <asset_id> — run `entity_types` for the roll", file=sys.stderr)
+        print("✗ positions needs --type, a kind, a family or a resource — `entity_types` lists the kinds", file=sys.stderr)
         return 2
 
     if args.island is not None and not set(_BY_LAND) & set(sections):  # refused before the save is read
