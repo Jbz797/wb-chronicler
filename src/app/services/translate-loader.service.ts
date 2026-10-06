@@ -4,7 +4,7 @@ import { TranslateLoader } from '@ngx-translate/core';
 import { from, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-// The app's own strings out of `assets/i18n/`, plus the species and age names from the chronicler's own `world/i18n/` — what his tools never spell out for him.
+// The app's own strings out of `assets/i18n/`, plus the age, biome and species names from the chronicler's `world/i18n/` — what his tools never spell out for him.
 @Service()
 export class TranslateLoaderService implements TranslateLoader {
 
@@ -24,14 +24,15 @@ export class TranslateLoaderService implements TranslateLoader {
     return response.json() as Promise<Record<string, string>>;
   }
 
-  // Species and age names live beside the chronicle, keyed by bare id so he reads them as he writes; the `species_` and `age_` prefixes are the reader's business.
+  // Those names live beside the chronicle, keyed by bare id so he reads them as he writes; the `age_`, `biome_` and `species_` prefixes are the reader's business.
   private async _load(lang: string): Promise<Record<string, string>> {
-    const [app, ages, species] = await Promise.all([
+    const [app, ages, biomes, species] = await Promise.all([
       this._fetch(`./assets/i18n/${lang}.json`),
       this._fetch(`./assets/world/i18n/${lang}/ages.json`),
+      this._fetch(`./assets/world/i18n/${lang}/biomes.json`),
       this._fetch(`./assets/world/i18n/${lang}/species.json`),
     ]);
-    return { ...app, ...this._prefixed('age', ages), ...this._prefixed('species', species) };
+    return { ...app, ...this._prefixed('age', ages), ...this._prefixed('biome', biomes), ...this._prefixed('species', species) };
   }
 
   // A world file's bare ids, under the prefix the templates translate them by.
