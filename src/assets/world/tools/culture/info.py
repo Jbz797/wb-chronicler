@@ -98,7 +98,8 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 # The culture's ledger: WB's lifetime counters beside the reach a walk over towns and crowns tells — the founder's card sits in `identity`. Counters drop at zero.
 def _build_metadata(culture: dict, members: list[dict], ctx: dict, tallies: dict) -> dict:
     culture_id = culture["id"]
-    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the following say of itself
+    # What WB has the following say of itself
+    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)}, (ctx["world_time"], "culture", culture["id"]))
 
     return {
         "age": entity_age(culture, ctx["world_time"]),

@@ -65,7 +65,8 @@ def _build_kingdoms(members: set[int], ctx: dict) -> list[dict]:
 
 # The pact's identity card: WB's own lifetime counters, which it keeps apart from its members', beside what a walk over the pooled living tells.
 def _build_metadata(alliance: dict, subjects: list[dict], members: set[int], ctx: dict) -> dict:
-    report = meta_report("meta", {"units": len(subjects), **meta_ratios(subjects, ctx)})  # WB gives a pact the same four verdicts it gives a realm
+    # WB gives a pact a realm's own four verdicts
+    report = meta_report("meta", {"units": len(subjects), **meta_ratios(subjects, ctx)}, (ctx["world_time"], "alliance", alliance["id"]))
     return {
         "age": entity_age(alliance, ctx["world_time"]),
         **({"births": births} if (births := int(alliance.get("total_births") or 0)) else {}),

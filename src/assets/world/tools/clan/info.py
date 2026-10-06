@@ -86,7 +86,7 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
     cities = {c for a in members if (c := a.get("cityID"))}
     families = {f for a in members if (f := a.get("family"))}
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
-    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the band say of itself
+    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)}, (ctx["world_time"], "clan", clan["id"]))  # what WB has the band say of itself
 
     return {
         "age": entity_age(clan, ctx["world_time"]),

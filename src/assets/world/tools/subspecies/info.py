@@ -80,7 +80,8 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
     families = {f for a in members if (f := a.get("family"))}
     island_of = ctx["island_lookup"]()
     kingdoms = {k for a in members if (k := a.get("civ_kingdom_id"))}
-    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the biology say of itself
+    # What WB has the biology say of itself
+    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)}, (ctx["world_time"], "subspecies", subspecies["id"]))
 
     return {
         "age": entity_age(subspecies, ctx["world_time"]),

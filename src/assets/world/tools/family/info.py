@@ -74,7 +74,8 @@ def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -
 
 # The family's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
 def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
-    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)})  # what WB has the line say of itself
+    # What WB has the line say of itself
+    report = meta_report("meta", {"units": len(members), **meta_ratios(members, ctx)}, (ctx["world_time"], "family", family["id"]))
     houses = {home for a in members if (home := a.get("homeBuildingID"))}  # its own roster alone: a handful of souls, where the podium's pass walks the world
 
     return {

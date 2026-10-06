@@ -287,7 +287,8 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     kid = kingdom["id"]
     dims = ctx["score_dimensions"]()
     subjects = ctx["actors_by_kingdom"].get(kid, [])
-    report = meta_report("meta", {"units": len(subjects), **meta_ratios(subjects, ctx)})  # `None` where none of the realm's four verdicts holds
+    # `None` where none of the realm's four verdicts holds
+    report = meta_report("meta", {"units": len(subjects), **meta_ratios(subjects, ctx)}, (ctx["world_time"], "kingdom", kingdom["id"]))
 
     # Chronicler-only: island ids the kingdom's city zones touch, sorted asc (1 = biggest), probed at each zone centre. From ctx — recomputing re-reads the disk.
     island_lookup = ctx["island_lookup"]()

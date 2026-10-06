@@ -367,7 +367,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
     # WB weighs a settlement's stores beside its people — the one meta type whose list runs past the four moods, its `getPopulationPeople` being its own headcount.
     residents, stock = ctx["actors_by_city"].get(cid, []), ctx["inventory_by_city"][cid]
     stores = {**{r: stock[r] for r in ("common_metals", "gold", "stone", "wood")}, "food": ctx["food_by_city"][cid]}
-    report = meta_report("city", {**meta_ratios(residents, ctx), **stores, "people": len(residents), "units": len(residents)})
+    report = meta_report("city", {**meta_ratios(residents, ctx), **stores, "people": len(residents), "units": len(residents)}, (ctx["world_time"], "city", cid))
     kingdom = ctx["kingdoms_by_id"].get(city.get("kingdomID"))
 
     pact = next((a for a in save.get("alliances") or [] if city.get("kingdomID") in (a.get("kingdoms") or [])), None)  # through its crown; a realm sits in one
@@ -769,7 +769,8 @@ def main(argv: list[str]) -> int:
     if "army" in sections:
         if army := _build_army(city, ctx):  # Here, not in `_build_army`: the ranks section builds one per city and would pay for a verdict no getter reads.
             troops = ctx["actors_by_army"].get(ctx["armies_by_city"][city["id"]]["id"], [])
-            army = {**army, **({"report": report} if (report := meta_report("army", {"units": len(troops), **meta_ratios(troops, ctx)})) else {})}
+            report = meta_report("army", {"units": len(troops), **meta_ratios(troops, ctx)}, (ctx["world_time"], "army", city["id"]))
+            army = {**army, **({"report": report} if report else {})}
         out["army"] = army
     if "books" in sections:
         out["books"] = _build_books(city, ctx, requested)

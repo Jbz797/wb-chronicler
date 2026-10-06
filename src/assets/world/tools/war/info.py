@@ -39,7 +39,7 @@ def _build_metadata(war: dict, attackers: set[int], defenders: set[int], ctx: di
         "id": war["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         "name": war.get("name"),
         "renown_at_stake": war.get("renown", 0),
-        **({"report": report} if (report := meta_report("war", state)) else {}),
+        **({"report": report} if (report := meta_report("war", state, (ctx["world_time"], "war", war["id"]))) else {}),
         "started_by": {"id": war.get("started_by_actor_id"), **({"name": started_by["name"]} if started_by and started_by.get("name") else {})},
         "started_by_kingdom": {"id": war.get("started_by_kingdom_id"), "name": war.get("started_by_kingdom_name")},
         **({"war_type": kind} if (kind := war.get("war_type")) else {}),  # WB leaves it unset on most declarations, and an absent kind is not `none`

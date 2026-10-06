@@ -859,11 +859,13 @@ def main_subspecies(entity: dict, ctx: dict, tier: str) -> int | None:
 
 
 # WB `MetaTextReportHelper.getText`: what a body says of itself — every verdict of its own list that holds, joined in that order. `None` where none does, as in game.
-def meta_report(kind: str, state: dict) -> str | None:
+def meta_report(kind: str, state: dict, who: tuple) -> str | None:
     import random  # deferred: a millisecond or two of import for one `choice`, which every tool would pay at startup where only a few tiers ever report
 
-    phrases = load_data("meta-reports.json")  # one of five phrasings per verdict, drawn as WB draws it — the wording never reaches a chapter, so it need not settle
-    said = [random.choice(wordings) for report in _META_REPORTS[kind] if _META_CONDITIONS[report](state) and (wordings := phrases.get(report))]
+    phrases = load_data("meta-reports.json")  # one of five phrasings per verdict, drawn as WB draws it
+    # Drawn off `who` speaks — the chapter's clock, the tier, the id — and what it says: two auditors quote the same words, a clan and its crown each their own.
+    draw = random.Random(repr((kind, who, sorted(state.items()))))
+    said = [draw.choice(wordings) for report in _META_REPORTS[kind] if _META_CONDITIONS[report](state) and (wordings := phrases.get(report))]
     return " ".join(said) or None
 
 
