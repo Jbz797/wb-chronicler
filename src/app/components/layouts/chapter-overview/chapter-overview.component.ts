@@ -70,11 +70,11 @@ export class ChapterOverviewComponent {
   protected currentChapter = this._chronicler.currentChapter;
 
   protected readonly activePanel = signal<ChapterOverviewPanel>(this._restoreActivePanel());
-  // Panel title honours the `chronicler.md` population scale — never call a three-soul hamlet a « cité ».
+  // Panel title honours the `chronicler.md` population scale — never call a three-soul hamlet a « cité ». The registry leaves `size` unsaid at 1, its floor.
   protected readonly cityTerm = computed(() => {
     const id = this.currentChapter()?.meta.city?.metadata.id;
-    const size = id === undefined ? undefined : this._registry.cities()[String(id)]?.size;
-    return this._translate.instant((size ? CITY_SIZE_TERMS[size - 1] : undefined) ?? 'ui_village') as string;
+    const entry = id === undefined ? undefined : this._registry.cities()[String(id)];
+    return this._translate.instant((entry ? CITY_SIZE_TERMS[(entry.size ?? 1) - 1] : undefined) ?? 'ui_village') as string;
   });
   // The world turned an age since the previous chapter — the menu badges the chapter itself, this names the age it turned to.
   protected readonly isNewAge = computed(() => {
