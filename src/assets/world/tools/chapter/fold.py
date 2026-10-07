@@ -35,6 +35,7 @@ _AUDIT = {
             "settle_more",
             "statuses",
             "task",
+            "task_target",
             "tax_local",
             "tax_tribute",
             "traits",

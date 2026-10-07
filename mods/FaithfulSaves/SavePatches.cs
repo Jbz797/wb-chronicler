@@ -11,7 +11,7 @@ namespace FaithfulSaves
     // afterglow that spaces two matings and wakes every sleeper. It then redraws at random how long each creature must wait before its next
     // sleep, and winds the world's own clocks back. The time each of those had left now rides in custom data, which WB does save — the
     // creature's own, or the world's —, and is handed back once the world is loaded. So is the task a creature was at, which WB drops as well:
-    // the step it had reached, how long it had been at it, and the pause it was holding.
+    // the step it had reached, how long it had been at it, the pause it was holding, and what that step was aimed at — a tile, a wall, a prey.
     internal static class SavePatches
     {
         private const string Log = "[Faithful Saves]: "; // every load says what it handed back, and names what it could not
@@ -21,7 +21,13 @@ namespace FaithfulSaves
         private const string Sleeping = "sleeping"; // handed back through `Actor.makeSleep`, which stills the body as well
         private const string StatusPrefix = "faithful_status_"; // `faithful_status_pregnant`: the seconds that status had left
         private const string Task = "faithful_task"; // the id of the task the creature was at, among its custom strings
+        private const string TaskActor = "faithful_task_actor"; // the id of the creature that task was aimed at: a prey, a lover, a foe
+        private const string TaskBook = "faithful_task_book"; // the id of the book it was after
+        private const string TaskBuilding = "faithful_task_building"; // the id of the building it was at work on, or bound for
+        private const string TaskObject = "faithful_task_object"; // the id of a building held where a creature usually is: one it was attacking
         private const string TaskStep = "faithful_task_step"; // which of that task's steps it had reached: `AiSystem.action_index`
+        private const string TaskTileX = "faithful_task_tile_x"; // the tile it was walking to, among its custom ints
+        private const string TaskTileY = "faithful_task_tile_y";
         private const string TaskTime = "faithful_task_time"; // the seconds it had been at that task, as its window shows them
         private const string TaskWait = "faithful_task_wait"; // the seconds its pause had left before it acts again: `Actor.timer_action`
         private const string TimerPrefix = "faithful_timer_"; // `faithful_timer_disasters`, in the world's custom data: the seconds before its next turn
@@ -31,11 +37,17 @@ namespace FaithfulSaves
         // The two turns WB takes every 80 seconds, a disaster and a wave of migrants: `clearWorld` rewinds both to a full interval on every load.
         private static readonly string[] _keptTimers = { "disasters", "migrants" };
 
-        private static readonly AccessTools.FieldRef<Actor, AiSystemActor> _ai = AccessTools.FieldRefAccess<Actor, AiSystemActor>("ai");
+        // What a task's step is aimed at — `beh_actor_target`, and below it a book, a building, a tile —, each set by an earlier step of the task:
+        // `Actor.clearBeh` empties all four when a task ends.
+        private static readonly AccessTools.FieldRef<Actor, BaseSimObject> _actorTarget = AccessTools.FieldRefAccess<Actor, BaseSimObject>("beh_actor_target");
 
         private static readonly Func<BaseSimObject, string, float, bool, bool> _addStatusEffect =
             AccessTools.MethodDelegate<Func<BaseSimObject, string, float, bool, bool>>(
                 AccessTools.Method(typeof(BaseSimObject), "addStatusEffect", new[] { typeof(string), typeof(float), typeof(bool) }));
+
+        private static readonly AccessTools.FieldRef<Actor, AiSystemActor> _ai = AccessTools.FieldRefAccess<Actor, AiSystemActor>("ai");
+        private static readonly AccessTools.FieldRef<Actor, Book> _bookTarget = AccessTools.FieldRefAccess<Actor, Book>("beh_book_target");
+        private static readonly AccessTools.FieldRef<Actor, Building> _buildingTarget = AccessTools.FieldRefAccess<Actor, Building>("beh_building_target");
 
         // `Actor._decision_cooldowns`: when each decision was last taken, by `DecisionAsset.decision_index` — 0 for one free to be taken.
         private static readonly AccessTools.FieldRef<Actor, double[]> _lastTaken = AccessTools.FieldRefAccess<Actor, double[]>("_decision_cooldowns");
@@ -48,6 +60,7 @@ namespace FaithfulSaves
         private static readonly AccessTools.FieldRef<Mind, BehaviourTaskActor> _task = AccessTools.FieldRefAccess<Mind, BehaviourTaskActor>("task");
         private static readonly AccessTools.FieldRef<Mind, double> _taskStart = AccessTools.FieldRefAccess<Mind, double>("_timestamp_task_start");
 
+        private static readonly AccessTools.FieldRef<Actor, WorldTile> _tileTarget = AccessTools.FieldRefAccess<Actor, WorldTile>("beh_tile_target");
         private static readonly AccessTools.FieldRef<WorldBehaviour, float> _timer = AccessTools.FieldRefAccess<WorldBehaviour, float>("_timer");
 
         // Before WB serialises a creature: what each status and each long wait has left, or no key at all — a stale one would hand back a time long over —,
@@ -64,7 +77,8 @@ namespace FaithfulSaves
                 Keep(data, StatusPrefix + asset.id, kept ? (float)statuses[asset.id].getRemainingTime() : 0f);
             }
             AiSystemActor mind = _ai(__instance);
-            BehaviourTaskActor task = mind != null ? _task(mind) : null;
+            // A boat's task is WB's own to keep: it saves the state of each hull and sets its task anew on load (`SaveManager.loadBoatStates`).
+            BehaviourTaskActor task = mind != null && !__instance.asset.is_boat ? _task(mind) : null;
             if (task != null)
                 data.set(Task, task.id);
             else
@@ -72,6 +86,22 @@ namespace FaithfulSaves
             Keep(data, TaskStep, task != null ? _step(mind) : 0f);
             Keep(data, TaskTime, task != null ? World.world.getWorldTimeElapsedSince(_taskStart(mind)) : 0f);
             Keep(data, TaskWait, task != null ? _pause(__instance) : 0f);
+            BaseSimObject aim = task != null ? _actorTarget(__instance) : null;
+            KeepAim(data, TaskActor, aim is Actor ? aim : null);
+            KeepAim(data, TaskObject, aim is Building ? aim : null);
+            KeepAim(data, TaskBook, task != null ? _bookTarget(__instance) : null);
+            KeepAim(data, TaskBuilding, task != null ? _buildingTarget(__instance) : null);
+            WorldTile tile = task != null ? _tileTarget(__instance) : null;
+            if (tile != null)
+            {
+                data.set(TaskTileX, tile.x);
+                data.set(TaskTileY, tile.y);
+            }
+            else
+            {
+                data.removeInt(TaskTileX);
+                data.removeInt(TaskTileY);
+            }
             double[] lastTaken = _lastTaken(__instance);
             if (lastTaken == null)
                 return;
@@ -100,14 +130,14 @@ namespace FaithfulSaves
             data.set(SavedAt, (float)World.world.getCurWorldTime()); // a time, not a flag: one left by an older save would read as today's
         }
 
-        // WB's last step of a load, every creature standing and its waits just redrawn: the place to hand each status, task, wait and clock back.
-        // Whatever a save was given is handed back or named in the log: a key read and dropped in silence would be a thing lost unseen.
+        // WB's last step over the creatures of a load, each one standing and its waits just redrawn: the place to hand each status, wait and clock
+        // back. Whatever a save was given is handed back or named in the log: a key read and dropped in silence would be a thing lost unseen.
         [HarmonyPostfix]
         [HarmonyPatch(typeof(SaveManager), "randomDecisionCooldowns")]
         private static void AfterLoad()
         {
             double now = World.world.getCurWorldTime();
-            int statuses = 0, tasks = 0, waits = 0, clocks = 0;
+            int statuses = 0, waits = 0, clocks = 0;
             List<string> lost = new List<string>();
             foreach (Actor actor in World.world.units)
             {
@@ -122,11 +152,6 @@ namespace FaithfulSaves
                     else
                         lost.Add($"{asset.id} of {actor.getName()}");
                 }
-                string task = GiveTaskBack(actor, data, now); // after the statuses: a sleeper's pause is the task's own, written the same
-                if (task == null)
-                    tasks++;
-                else if (task.Length > 0)
-                    lost.Add($"task {task} of {actor.getName()}");
                 double[] lastTaken = _lastTaken(actor);
                 if (lastTaken == null || Take(data, WaitsKept) == 0f) // no mark: a save from before the mod, left to the waits WB has just drawn
                     continue;
@@ -153,9 +178,22 @@ namespace FaithfulSaves
                 _timer(clock) = left;
                 clocks++;
             }
-            LogService.LogInfo($"{Log}handed back {statuses} statuses, {tasks} tasks, {waits} long waits and {clocks} clocks");
-            if (lost.Count > 0)
-                LogService.LogWarning($"{Log}could not hand back {lost.Count}: {string.Join(", ", lost.GetRange(0, Math.Min(lost.Count, 20)))}");
+            Report($"{statuses} statuses, {waits} long waits and {clocks} clocks", lost);
+        }
+
+        // WB's very last step of a load, and the place for the tasks: the buildings a task may aim at load after the creatures, and WB, seating each
+        // king and each leader anew on its way, cancels whatever task they hold (`Actor.setProfession` calls `cancelAllBeh`).
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(MapBox), "finishingUpLoading")]
+        private static void AfterWorldLoaded()
+        {
+            double now = World.world.getCurWorldTime();
+            int tasks = 0;
+            List<string> lost = new List<string>();
+            foreach (Actor actor in World.world.units)
+                if (GiveTaskBack(actor, actor.getData(), now, lost))
+                    tasks++;
+            Report($"{tasks} tasks", lost);
         }
 
         // A status handed back for the time it had left, without what WB does on first posing it: the mood it brought was felt, and saved, already.
@@ -180,26 +218,51 @@ namespace FaithfulSaves
         }
 
         // A task handed back at the step it had reached, not replayed from its first: a sleep already begun, a meal already taken are not taken twice.
-        // What a step aims at — a prey, a tile, a wall — is in no save: WB ends a task whose aim is gone, as it does when the prey dies, and the
-        // creature picks one anew. Returns `null` once handed back, the id of a task this game no longer has, and nothing where none was kept.
-        private static string GiveTaskBack(Actor pActor, BaseObjectData pData, double pNow)
+        // What that step was aimed at comes back with it, looked up by where or who it was; an aim the world no longer holds is named in `pLost`, and
+        // WB then ends the task as it does when a prey dies. A task this game no longer has is named too; a save from before the mod has none.
+        private static bool GiveTaskBack(Actor pActor, BaseObjectData pData, double pNow, List<string> pLost)
         {
             pData.get(Task, out string id, null);
             pData.removeString(Task);
             float step = Take(pData, TaskStep);
             float time = Take(pData, TaskTime);
             float pause = Take(pData, TaskWait);
+            long actor = TakeAim(pData, TaskActor);
+            long book = TakeAim(pData, TaskBook);
+            long building = TakeAim(pData, TaskBuilding);
+            long attacked = TakeAim(pData, TaskObject);
+            pData.get(TaskTileX, out int x, -1);
+            pData.get(TaskTileY, out int y, -1);
+            pData.removeInt(TaskTileX);
+            pData.removeInt(TaskTileY);
             if (string.IsNullOrEmpty(id)) // a creature between two tasks, or a save from before the mod
-                return string.Empty;
+                return false;
             AiSystemActor mind = _ai(pActor);
             if (mind == null || !AssetManager.tasks_actor.has(id))
-                return id;
-            pActor.setTask(id, true, false, false);
+            {
+                pLost.Add($"task {id} of {pActor.getName()}");
+                return false;
+            }
+            pActor.setTask(id, true, false, false); // empties every aim, hence handed back below
             _step(mind) = (int)step;
             _taskStart(mind) = pNow - time; // WB reads the time spent off the moment the task began
             if (pause > 0f)
                 pActor.makeWait(pause);
-            return null;
+            if (x >= 0 && y >= 0)
+                _tileTarget(pActor) = World.world.GetTile(x, y);
+            if (actor >= 0)
+                _actorTarget(pActor) = World.world.units.get(actor);
+            if (attacked >= 0)
+                _actorTarget(pActor) = World.world.buildings.get(attacked);
+            if (book >= 0)
+                _bookTarget(pActor) = World.world.books.get(book);
+            if (building >= 0)
+                _buildingTarget(pActor) = World.world.buildings.get(building);
+            bool whole = (x < 0 || y < 0 || _tileTarget(pActor) != null) && (actor < 0 && attacked < 0 || _actorTarget(pActor) != null)
+                && (book < 0 || _bookTarget(pActor) != null) && (building < 0 || _buildingTarget(pActor) != null);
+            if (!whole)
+                pLost.Add($"an aim of task {id} of {pActor.getName()}");
+            return true;
         }
 
         // Every decision of the game with a long wait, whoever takes it: a creature draws from its kind's and from lists all share (`bored_sleep`),
@@ -211,6 +274,15 @@ namespace FaithfulSaves
                     yield return decision;
         }
 
+        // What a step is aimed at written by its id, the key dropped where it aims at none, or at one that died.
+        private static void KeepAim(BaseSystemData pData, string pKey, NanoObject pAim)
+        {
+            if (pAim != null && pAim.isAlive())
+                pData.set(pKey, pAim.getID());
+            else
+                pData.removeLong(pKey);
+        }
+
         // A time left written under its key, the key dropped when nothing is left.
         private static void Keep(BaseSystemData pData, string pKey, float pLeft)
         {
@@ -220,6 +292,14 @@ namespace FaithfulSaves
                 pData.removeFloat(pKey);
         }
 
+        // What a load handed back, and by name what it could not: twenty at most, the log being no place for a whole world.
+        private static void Report(string pHandedBack, List<string> pLost)
+        {
+            LogService.LogInfo($"{Log}handed back {pHandedBack}");
+            if (pLost.Count > 0)
+                LogService.LogWarning($"{Log}could not hand back {pLost.Count}: {string.Join(", ", pLost.GetRange(0, Math.Min(pLost.Count, 20)))}");
+        }
+
         // A kept time read and its key dropped: the game carries it from here, and the next save writes it anew.
         private static float Take(BaseSystemData pData, string pKey)
         {
@@ -227,6 +307,14 @@ namespace FaithfulSaves
             if (left != 0f)
                 pData.removeFloat(pKey);
             return left;
+        }
+
+        // A kept aim read by its id and its key dropped, -1 where none was kept: WB counts its ids from 1.
+        private static long TakeAim(BaseSystemData pData, string pKey)
+        {
+            pData.get(pKey, out long id, -1L);
+            pData.removeLong(pKey);
+            return id;
         }
 
         // Whether a creature is under a status still running: what a save keeps, and what a load checks it has handed back.

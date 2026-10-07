@@ -789,6 +789,19 @@ def kept_task(actor: dict) -> str | None:
     return (actor.get("custom_data_string") or {}).get(_MOD_TASK)
 
 
+# What that task's step was aimed at, as the mod kept it and no further resolved: the id of a body, a book or a building, a tile's `x` and `y`, 0 included.
+def kept_task_target(actor: dict) -> dict | None:
+    ids, tile = actor.get("custom_data_long") or {}, actor.get("custom_data_int") or {}
+    aim = {
+        "actor": ids.get(f"{_MOD_TASK}_actor"),
+        "book": ids.get(f"{_MOD_TASK}_book"),
+        "ground": ids.get(f"{_MOD_TASK}_building", ids.get(f"{_MOD_TASK}_object")),  # a building attacked rides where a body usually does
+        "x": tile.get(f"{_MOD_TASK}_tile_x"),
+        "y": tile.get(f"{_MOD_TASK}_tile_y"),
+    }
+    return {key: value for key, value in aim.items() if value is not None} or None
+
+
 # The months a lineage carries before a birth or a hatching: WB sums its traits' `maturation` into `base_stats_meta`.
 def maturation_months(traits: Collection[str], ctx: dict) -> float:
     return sum(((ctx["subspecies_traits"].get(trait) or {}).get("meta_stats") or {}).get(_MATURATION, 0) for trait in traits)
