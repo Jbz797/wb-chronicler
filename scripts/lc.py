@@ -12,7 +12,10 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 _CUTOFF = re.compile(r'\*\*`CUTOFF = "([^"]+)"`\*\*(?: — soit le [^(]*\(heure de Paris\)\.)?')  # the one line of the memory file a reading moves on
-_NOISE = "<task-notification>"  # a sub-agent handing back its work: the chronicler's own account of it follows, and is what reads
+
+# What reads as a message and is none: a sub-agent handing back its work, which the chronicler's own account follows, and the summary a long session restarts on.
+_NOISE = ("<task-notification>", "This session is being continued from a previous conversation")
+
 _PASTED = re.compile(r'(?s)(<pasted_content id="[^"]*">\n[^\n]*\n).*?(</pasted_content[^>]*>)')  # a prompt the dev wrote: its first line names it
 _PROJECTS = Path.home() / ".claude" / "projects"
 _REPO = Path(__file__).resolve().parents[1]
@@ -32,7 +35,7 @@ def _events(cutoff: str) -> list[tuple[str, str, str, str]]:
                 continue
             content = (entry.get("message") or {}).get("content")  # a string where JB typed, blocks elsewhere — of which the text alone is prose
             parts = [content] if isinstance(content, str) else [b["text"] for b in content or [] if isinstance(b, dict) and b.get("type") == "text"]
-            if (text := "\n".join(part for part in parts if part).strip()) and _NOISE not in text:
+            if (text := "\n".join(part for part in parts if part).strip()) and not any(noise in text for noise in _NOISE):
                 events.append((stamp, path.stem[:8], "JB  " if entry["type"] == "user" else "CHRO", text))
     return sorted(events)
 
