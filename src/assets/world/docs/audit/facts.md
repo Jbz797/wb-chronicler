@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 05/10/26 12:23</p>
+<p class="metadata">Date de mise à jour : 09/10/26 09:25</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche.
 
@@ -19,7 +19,7 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 - **Une phrase que le texte donne lui-même pour incertaine n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.
 - **Une somme se vérifie aussi contre ses termes** : un total et ses parts, un tableau et la phrase qui le reprend, un solde et ce qui est venu et parti. Des termes justes un à un qui ne font pas le total sont un écart : dis lequel la commande dément.
 
-Ne rends que les écarts, et chaque absolu validé avec l'ensemble sur lequel tu l'as vérifié (« les 28 grandes eaux closes, pas les 762 »), et ce qu'on te demande : chacun avec sa ligne, sa citation, sa commande et sa valeur vraie. N'écris rien dans les fichiers ; tes fichiers de travail vont dans un sous-dossier à toi du scratchpad.
+Ne rends que les écarts, et chaque absolu validé avec l'ensemble sur lequel tu l'as vérifié, et ce qu'on te demande : chacun avec sa ligne, sa citation, sa commande et sa valeur vraie. N'écris rien dans les fichiers ; tes fichiers de travail vont dans ton sous-dossier du scratchpad.
 
 ## Au réaudit
 
