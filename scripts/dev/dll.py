@@ -139,7 +139,7 @@ def _section(heading: str, lines: list[str], none: str) -> None:
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(prog="scripts/dll.py", description="Read WorldBox's Assembly-CSharp.dll: find, dump, callers, readers, strings.")
+    parser = argparse.ArgumentParser(prog="scripts/dev/dll.py", description="Read WorldBox's Assembly-CSharp.dll: find, dump, callers, readers, strings.")
     parser.add_argument("command", choices=("callers", "dump", "find", "readers", "strings"))
     parser.add_argument("pattern", help="`Type::method` (a part of it for find, dump and callers), a field name for readers, text for strings")
     args = parser.parse_args(argv)

@@ -18,7 +18,7 @@ _NOISE = ("<task-notification>", "This session is being continued from a previou
 
 _PASTED = re.compile(r'(?s)(<pasted_content id="[^"]*">\n[^\n]*\n).*?(</pasted_content[^>]*>)')  # a prompt the dev wrote: its first line names it
 _PROJECTS = Path.home() / ".claude" / "projects"
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 
 
 # The messages of every chronicler session after `cutoff`, oldest first whichever session said them: two sessions may overlap, and are read in the order of time.
