@@ -67,6 +67,7 @@ from shared import (
     moved_between,
     needs_food,
     parse_sections,
+    passed_unseen,
     quiet_zeros,
     rounded_world_time,
     score_totals,
@@ -647,15 +648,16 @@ def _then(chapter: str) -> tuple[dict, dict[int, int | str]]:
     return then, {actor["id"]: _standing(actor, island_of, grid, then["tileMap"]) for actor in then.get("actors_data") or [] if not is_boat(actor)}
 
 
-# Why the deaths WB counted between two saves and the bodies gone between them differ, `None` where they agree — WB keeps no dead, so none is named.
-def _unseen_deaths(save: dict, then: dict, since: str) -> str | None:
-    now_ids = {actor["id"] for actor in save.get("actors_data") or []}
-    gone = sum(actor["id"] not in now_ids for actor in then.get("actors_data") or [])
-    died = int((save.get("mapStats") or {}).get("deaths") or 0) - int((then.get("mapStats") or {}).get("deaths") or 0)
-    if gone == died:
+# Why the deaths WB counted since a save and the bodies gone since differ, those no chapter saw counted in — `None` where they agree, `saves` from then to now.
+def _unseen_deaths(saves: list[dict], since: str, unseen: int) -> str | None:
+    seen, now_ids = ({actor["id"] for save in held for actor in save.get("actors_data") or []} for held in (saves[:-1], saves[-1:]))
+    gone = len(seen - now_ids)
+    died = int((saves[-1].get("mapStats") or {}).get("deaths") or 0) - int((saves[0].get("mapStats") or {}).get("deaths") or 0)
+    if not (off := gone + unseen - died):
         return None
-    dying, unborn = f"dying as {since} was saved, counted before it yet still in its save", "born and dead between the two saves, in neither"
-    return f"{gone} bodies gone since {since} for {died} deaths counted: {abs(gone - died)} {dying if gone > died else unborn}"
+    # `Actor.die` skips the count (`pCountDeath` false) for a body removed by a metamorphosis, `dieAndDestroy` and `dieSimpleNone`; a save holds no dying body.
+    uncounted = "gone with no death counted — WB counts none for a body changing kind, a falling UFO, a worm, a sand spider, a printer, a god finger's flip"
+    return f"{gone} bodies gone since {since} and {unseen} passed unseen for {died} deaths counted: {abs(off)} {uncounted if off > 0 else 'deaths with no body'}"
 
 
 def main(argv: list[str]) -> int:
@@ -664,7 +666,7 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
-    save_path, argv, _ = take_chapter(argv)
+    save_path, argv, chapter = take_chapter(argv)
     parser = arg_parser(prog="world/info.py", description="World-wide sections, from the save alone.")
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
     parser.add_argument("--barred", action="store_true", help="`roster`: the thinkers something besides their age keeps from founding, and what")
@@ -758,7 +760,11 @@ def main(argv: list[str]) -> int:
             if isinstance(moved := moved_between(readings[section](then), out.pop(section)), dict):
                 out[section] = moved
         if "cumulative" in out:
-            out["cumulative"]["info"] = _unseen_deaths(save, then, since)
+            # The chapters in between count: a body one of them held was seen, and is gone rather than passed unseen.
+            later = [SAVES_DIR / f"C{n}" / "map.wbox" for n in range(int(since[1:]) + 1, int(chapter[1:]) if chapter else 0)]
+            since_then = [*(load_save(path) for path in later if path.exists()), save]
+            unseen = passed_unseen(then, since_then)
+            out["cumulative"] |= {"came_and_went": unseen or None, "info": _unseen_deaths([then, *since_then], since, unseen.get("bodies_and_hulls", 0))}
         if not out:
             print(f"✗ nothing moved in {', '.join(counted)} since {since}", file=sys.stderr)
             return 1

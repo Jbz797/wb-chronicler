@@ -64,7 +64,26 @@ _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
+
 _IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `--since` weighs a land, a site or a biome against itself
+
+# WB's next id of each kind, by the save's collection (`MapStats.getNextId`): an id under it was handed out, whatever became of what bore it.
+_ID_COUNTERS = {
+    "actors_data": "id_unit",
+    "alliances": "id_alliance",
+    "books": "id_book",
+    "buildings": "id_building",
+    "cities": "id_city",
+    "clans": "id_clan",
+    "cultures": "id_culture",
+    "families": "id_family",
+    "kingdoms": "id_kingdom",
+    "languages": "id_language",
+    "religions": "id_religion",
+    "subspecies": "id_subspecies",
+    "wars": "id_war",
+}
+
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 
@@ -111,6 +130,7 @@ _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `prof
 _RANK_FLOORS = {"cities": 1, "kingdoms": 1, "level": 1}  # where every body starts, so a place held there ranks nobody — other stats floor at the skipped 0
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
 _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower | 1 herb` or `38 bodies · 23 sapient`, cut once at import
+_UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy", "to_islands"})  # shapes whose key order carries meaning: stores heaviest-first, lands nearest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
@@ -288,15 +308,15 @@ def _write_save_cache(cache_file: Path, save: dict) -> None:
         doomed.unlink(missing_ok=True)
 
 
-# Why no record answers an id in this chapter, off the others: gone since the last one it stood in, not born yet, or never — so a refusal says where to read it.
+# Why no record answers an id in this chapter, off the others: gone since the last one it stood in, not born yet, come and gone unseen, or never handed out.
 def absent_entity(tool: str, collection: str, entity_id: int, chapter: str | None, match: Callable[[dict], bool] | None = None, noun: str = "") -> str:
     last = latest_chapter()
     here = int(chapter[1:]) if chapter else last + 1
 
-    # Whether the id stood in chapter `n`'s save, as `match` narrows it — a body, not a hull.
-    def stood(n: int) -> bool:
+    # Whether the id stood in chapter `n`'s save, as `match` narrows it — a body, not a hull — unless `whatever` it was.
+    def stood(n: int, whatever: bool = False) -> bool:
         path = SAVES_DIR / f"C{n}" / "map.wbox"
-        return path.exists() and any(e.get("id") == entity_id and (match is None or match(e)) for e in load_save(path).get(collection) or [])
+        return path.exists() and any(e.get("id") == entity_id and (whatever or match is None or match(e)) for e in load_save(path).get(collection) or [])
 
     seen = [n for n in range(1, last + 1) if n != here and stood(n)]
     where, noun = f"C{here}" if chapter else "the live save", noun or tool
@@ -309,6 +329,12 @@ def absent_entity(tool: str, collection: str, entity_id: int, chapter: str | Non
     known = json.loads(persons.read_text()).get(str(entity_id)) if collection == "actors_data" and persons.exists() else None
     if known and known.get("dead") and (match is None or match(known)):
         return f"✗ {noun} {entity_id} died before any chapter saw it alive — the registry keeps its kind, {known.get('asset_id')}, and no more"
+    # In no save and no registry, yet an id WB did hand out: what bore it came and went between two chapters. Of an actor, no telling a body from a hull.
+    counter, saves = _ID_COUNTERS.get(collection), [(n, path) for n in range(1, last + 1) if (path := SAVES_DIR / f"C{n}" / "map.wbox").exists()]
+    handed = (n for n, path in saves if counter and 0 < entity_id < int(load_save(path)["mapStats"].get(counter) or 1))
+    if (by := next(handed, None)) and not (match and any(stood(n, whatever=True) for n, _ in saves)):
+        span, what = f"between C{by - 1} and C{by}" if by > 1 else f"before C{by}", noun if match is None else "body or hull"
+        return f"✗ {what} {entity_id} came and went {span} — no chapter saw it, and WB keeps nothing of what is gone"
     return f"✗ unknown {noun}: {entity_id}"
 
 
@@ -915,6 +941,15 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: b
     if unknown := [s for s in named if s not in all_sections]:
         raise ValueError(f"✗ unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}")
     return (*lot, *(s for s in named if s not in lot)) if len(named) < len(requested) else named
+
+
+# What WB made after a save and none since holds, `saves` being every chapter's from the next one on: born and gone unseen — actors counted, a tier by its ids.
+def passed_unseen(then: dict, saves: list[dict]) -> dict:
+    def ids(collection: str) -> list[int]:
+        counter, held = _ID_COUNTERS[collection], {entity["id"] for save in saves for entity in save.get(collection) or []}
+        return [i for i in range(int(then["mapStats"].get(counter) or 1), int(saves[-1]["mapStats"].get(counter) or 1)) if i not in held]
+
+    return {kind: found for kind, found in (("bodies_and_hulls", len(ids("actors_data"))), *((kind, ids(kind)) for kind in _UNSEEN_KINDS)) if found}
 
 
 # A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.
