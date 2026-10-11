@@ -691,14 +691,14 @@ def _loyalty_traits(actor: dict, ctx: dict) -> int:
     return int(total)
 
 
-# WB `updateMigrants` for one town: what bars it, in the game's order, else how near the next turn — no coming, the towns being drawn at random, and no date.
+# WB `updateMigrants` for one town: what bars it, in the game's order and measured against its bound, else how near the next turn — no coming told, nor a date.
 def _migrants(city: dict, residents: list[dict], ctx: dict, save: dict) -> str | None:
     if not world_laws(save).get("world_law_civ_migrants") or ctx["kingdoms_by_id"].get(city.get("kingdomID")) is None:
         return None
     if len(residents) > _MIGRANT_PEOPLE:
-        return "too_big"
-    if ctx["food_by_city"][city["id"]] < _MIGRANT_FOOD:
-        return "no_food"
+        return f"people {len(residents)}/{_MIGRANT_PEOPLE}"
+    if (food := ctx["food_by_city"][city["id"]]) < _MIGRANT_FOOD:
+        return f"food {food}/{_MIGRANT_FOOD}"
     fires = (b for b in save.get("buildings") or [] if b.get("cityID") == city["id"] and b.get("asset_id") == "bonfire")
     if all(under_construction(b) for b in fires):  # none, or none finished
         return "no_bonfire"
@@ -706,8 +706,8 @@ def _migrants(city: dict, residents: list[dict], ctx: dict, save: dict) -> str |
         return None
     traits = (ctx["subspecies_by_id"].get(lineage) or {}).get("saved_traits") or []
     limit = sum(((ctx["subspecies_traits"].get(trait) or {}).get("meta_stats") or {}).get("limit_population", 0) for trait in traits)
-    if limit and sum(a.get("subspecies") == lineage for a in save.get("actors_data") or []) >= limit:
-        return "lineage_full"
+    if limit and (alive := sum(a.get("subspecies") == lineage for a in save.get("actors_data") or [])) >= limit:
+        return f"lineage {alive}/{limit}"
     # The clock Faithful Saves keeps of a turn WB would rewind on every load: without it a save says nothing of when, and the field keeps silent.
     left = ((save["mapStats"].get("custom_data") or {}).get("custom_data_float") or {}).get("faithful_timer_migrants")
     return None if left is None else "soon" if left <= _MIGRANT_SOON else "later"
