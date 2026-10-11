@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, emit, i18n, latest_chapter
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
+_CLEAR = "`clear` speaks for words said again: an angle or a chute said in other words is the eye's to find"  # lest a silence read as no repeat at all
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
@@ -398,7 +399,7 @@ def main(argv: list[str]) -> int:
     signs = sorted({sign for row in found["passages"] for match in row["matches"] for sign in match["by"]})
     # A check gone silent found nothing: named, so it is not read as unrun — the length too, silent while it holds.
     clear = sorted(check for check, rows in {**found, "length": not held}.items() if not rows)
-    emit({**found, "clear": clear, "info": "; ".join(f"`{sign}` {_SIGNS[sign]}" for sign in signs) or None})
+    emit({**found, "clear": clear, "info": "; ".join([*(f"`{sign}` {_SIGNS[sign]}" for sign in signs), *([_CLEAR] if clear else [])]) or None})
     return 0
 
 
