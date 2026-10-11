@@ -15,7 +15,7 @@ import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import cache
 from math import inf
 from pathlib import Path
@@ -502,7 +502,7 @@ def _kingdom_quota(save: dict) -> int:
 
 # WB's `life_dna` seeds a world's genetics, redrawn on the hour so a reused map never repopulates with the lineages before it. WB's format: `YYYYMMDDHH`, UTC.
 def _life_dna() -> int:
-    return int(datetime.now(timezone.utc).strftime("%Y%m%d%H"))
+    return int(datetime.now(UTC).strftime("%Y%m%d%H"))
 
 
 # The places this chapter baptised whose centroid stands off the land their `island_id` names — none named means off every counted land: the sea, or an islet.

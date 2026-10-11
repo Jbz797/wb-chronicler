@@ -606,8 +606,7 @@ def _name_of(records: list[dict], target_id) -> str | None:
 def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
     said = [
         f"bearing {args.trait}" if args.trait else None,
-        f"with any {args.has}" if args.has and args.has != "level" else None,
-        "past level 1" if args.has == "level" else None,
+        ("past level 1" if args.has == "level" else f"with any {args.has}") if args.has else None,
         f"wearing {args.status}" if args.status else None,
         f"at {args.task}" if args.task else None,
         "that could found a town where it stands" if args.settle else None,

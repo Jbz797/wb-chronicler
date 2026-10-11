@@ -148,10 +148,17 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
         out["strait_to_land"] = land
     city = _city_at(x, y, ctx)
     if city is None:
-        if quarters := ctx["city_quarters"]:  # a quarter lies whole on the map, WB sizing a world in blocks its zones divide
-            width, span = ctx["width"], range(ZONE_TILES)
-            fabric = ((qy + dy) * width + qx + dx for qx, qy in quarters for dy in span for dx in span)
-            out["to_nearest_city"] = _measure(x, y, _fabric_distance(x, y, quarters), fabric, ctx)
+        if towns := ctx["city_quarters"]:  # a quarter lies whole on the map, WB sizing a world in blocks its zones divide
+            reach = {cid: _fabric_distance(x, y, quarters) for cid, quarters in towns.items()}
+            near = min(reach, key=lambda cid: (reach[cid], cid))
+            (cx, cy), width, span = ctx["city_centres"][near], ctx["width"], range(ZONE_TILES)
+            fabric = ((qy + dy) * width + qx + dx for qx, qy in towns[near] for dy in span for dx in span)
+            # The nearest town is the one whose ground comes first, and both ends of it are told: its `edge`, where a body stands at the gate, and its `centre`.
+            out["to_nearest_city"] = {
+                "centre": _measure(x, y, round(walk_tiles(x - cx, y - cy)), (cy * width + cx,), ctx),
+                "city": entity_ref(near, ctx["cities_by_id"]),
+                "edge": _measure(x, y, reach[near], fabric, ctx),
+            }
     elif (kid := city.get("kingdomID")) and (seat := ctx["capital_pos_by_kingdom"].get(kid)) is not None:
         # A seat is a point, where a town is a fabric — the throne, not the capital's last house.
         out["to_capital"] = _measure(x, y, round(walk_tiles(x - seat[0], y - seat[1])), (seat[1] * ctx["width"] + seat[0],), ctx)
@@ -182,7 +189,8 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
     anchors: dict[int, tuple[int, int]] = {}
     ctx["capital_pos_by_kingdom"] = {}
     ctx["city_by_pos"] = {}
-    ctx["city_quarters"] = []
+    ctx["city_centres"] = anchors
+    ctx["city_quarters"] = {}
 
     for city in ctx["cities_by_id"].values():
         if (anchor := city_centre(city)) is None:  # a city holding no zone stands nowhere: nothing to site it by, nothing to measure towards
@@ -190,7 +198,7 @@ def _index_cities(ctx: dict, wanted_zones: set[tuple[int, int]]) -> None:
         anchors[city["id"]] = anchor
         for zone in city["zones"]:
             zx, zy = zone_xy(zone)
-            ctx["city_quarters"].append((zx * ZONE_TILES, zy * ZONE_TILES))
+            ctx["city_quarters"].setdefault(city["id"], []).append((zx * ZONE_TILES, zy * ZONE_TILES))
             if (zx, zy) in wanted_zones:
                 ctx["city_by_pos"][(zx, zy)] = city
 

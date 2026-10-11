@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 10/10/26 16:02</p>
+<p class="metadata">Date de mise à jour : 11/10/26 14:42</p>
 
 Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -94,7 +94,7 @@ Invoquer chaque outil via `python3 tools/<nom>/info.py [arg] [sections] [C<n>]`,
 - `strait_to_land` (`distances`) : l'eau à nager (`swim_tiles`) depuis **tout le rocher**, écueils à sec gratuits ; de rive à rive, `islet … to_islands`.
 - `tiles … tile_info` : `block` barre la marche ; `islet_tiles`, la taille d'un îlot, sous 300 tuiles de sol, que `islet` décrit entier, roche et îlots accolés compris ; sur l'eau, `sea`, `lake` ou `river` (leur id), sinon `pond_tiles` ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.
 - `to_islands` (`distances`) : les 5 îles les plus proches, à vol d'oiseau jusqu'à leur **tuile la plus proche**.
-- `to_nearest_city` (`distances`) vise le **quartier** le plus proche, pas le centre. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
+- `to_nearest_city` (`distances`) : la plus proche par son `edge`, un quartier. `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.
 - `walk_tiles` (`distances`, `to`) : les tuiles faites à pied, roche, lave et goo contournés ; sable, marais, neige et arbres sous Entanglewood n'allongent que le temps. Hors d'`actor`, rien ne se nage, au `speed` 10 : absente sans terre qui les joigne.
 - `waters` : `seas` touche un bord du monde, `rivers` chaîne par les coins des eaux larges de moins de 3 tuiles, `lakes` est le reste — dès 64 tuiles ; `unlisted` compte les mares en dessous (`pond_tiles`) et écarte les détroits de plus de 1 024 tuiles.
 - Un coin joint deux parcelles (`patches`), jamais deux eaux ; deux terres ou un pas, seulement dans un chunk de 16 et sans roche.
