@@ -54,6 +54,12 @@ _EVENT_COLUMN = re.compile(
 
 _FINE_STEP = 1  # WB's yearly table: a row a year, the only one whose `timestamp` is a year — every coarser one averages its span or keeps its last year
 _MAX_LOG = 50  # past so many entries the journal is read by its kinds of event, not line by line: `-t` or `--actor` narrow it back
+
+# WB's `world_statistics_beasts` walks every unit, the dying and the hulls with it, where `Actor.die` counts a death at the blow and none for a metamorphosis.
+_OFF_TERMS = "WB keeps a body it has counted dead on its roll until its death ends, counts a hull as a beast, and takes no death for a body changing kind"
+
+_ROLL = ("population_beasts", "population_civ")  # the two columns a year's bodies stand in
+_ROLL_TERMS = {"creatures_born": 1, "creatures_created": 1, _DEATHS_TOTAL: -1}  # and what moves them, by its sign
 _SECTIONS = ("dead_kingdoms", "entity", "log", "world")
 _SKIPPED = frozenset({"auto", "id", "timestamp"})  # WB's row bookkeeping: `auto` flags a row it wrote itself, and says nothing of the world
 _STAT_KEYS = {"deaths_natural": "deaths_age", _DEATHS_TOTAL: "deaths"}  # the yearly columns `mapStats` names otherwise: old age, and the bare total
@@ -160,15 +166,22 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     events = [c for c in columns if _EVENT_COLUMN.search(c) and c != _DEATHS_TOTAL]
     tracked = [*events, _DEATHS_TOTAL] if _DEATHS_TOTAL in columns else events
     before: dict = dict.fromkeys(tracked, 0) if not rows or rows[0]["timestamp"] == 1 else {}
-    timeline = []
+    stood = 0 if before else None  # the bodies the year before closed on: unknown where WB's window opens past the world's first year
+    owed, timeline = 0, []
     for row in rows:
         now = {c: row[c] for c in tracked}
+        roll = sum(row.get(column) or 0 for column in _ROLL)
+        over = roll - stood - sum(sign * (now[c] - before[c]) for c, sign in _ROLL_TERMS.items() if c in now) if stood is not None else 0
+        # A gap the next year takes back is one body counted a year off, and says so: the two years together fall right.
+        why = f"the {abs(over)} the year before closed {'over' if owed > 0 else 'under'}, made up" if over and over == -owed else _OFF_TERMS
+        owed, stood = over, roll
         if gains := _with_unknown(_gains(before, now, events), before, now):
             at_close = {_WORLD_RENAMED.get(column, column): row[column] for column in _WORLD_STATES if row.get(column)}
             # WB's `vegetation` counts its trees in, where `snapshot` tells them apart — and a nought goes unsaid.
             if (plants := at_close.pop("vegetation", 0) - at_close.get("trees", 0)) > 0:
                 at_close["vegetation"] = plants
-            timeline.append({**gains, "at_close": at_close, "until": _until(row["timestamp"])})
+            told = {"info": f"close is {abs(over)} {'over' if over > 0 else 'under'} its terms — {why}"} if over else {}
+            timeline.append({**gains, **told, "at_close": at_close, "until": _until(row["timestamp"])})
         before = now
     # WB's `mapStats` holds the same tallies in camelCase, the deaths snake-cased — two of them under names of their own.
     keys = {c: _STAT_KEYS.get(c) or (c if c.startswith("deaths_") else _camel(c)) for c in tracked}
