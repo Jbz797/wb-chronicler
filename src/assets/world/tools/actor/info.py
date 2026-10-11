@@ -988,7 +988,13 @@ def main(argv: list[str]) -> int:
     aims, mark, about, whom = [], None, {}, ""
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
-            print(absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a)), file=sys.stderr)
+            refusal = absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a))
+            # An id no body ever bore may be a building's, the two counted apart: its tile is the way to aim at it, so the refusal hands that over.
+            sites = ((b, tile) for b in save.get("buildings") or [] if b.get("id") == target and (tile := building_tile(b)) is not None)
+            if refusal.startswith("✗ unknown") and (site := next(sites, None)) is not None:
+                building, (x, y) = site
+                refusal = f"✗ {target} is no body — a {building.get('asset_id')}'s id: aim at its tile, `--to {x},{y}`"
+            print(refusal, file=sys.stderr)
             return 1
         aims, whom = [actor_xy(other)], _named(other)
     elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():
@@ -1045,7 +1051,7 @@ def main(argv: list[str]) -> int:
             if isinstance(target, int):
                 out["to"]["from_them"] = _from_them(ctx["actors_by_id"][target], actor, out["to"], ctx)
         except _Unreachable as e:
-            print(str(e), file=sys.stderr)
+            print(f"{e} — `circle`: far", file=sys.stderr)  # out of reach is past every circle: said, a refusal bearing no field
             return 1
 
     emit(out)
