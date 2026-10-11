@@ -40,7 +40,7 @@ from shared import (
     xy_arg,
     zone_xy,
 )
-from walking import WalkMap, walk_way
+from walking import WalkMap, walk_way, walled_in
 from waters import water_bodies
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info")
@@ -145,7 +145,10 @@ def _context_at(x: int, y: int, ctx: dict) -> dict:
 def _distances_at(x: int, y: int, ctx: dict) -> dict:
     out: dict = {"to_water": _nearest_water(x, y, ctx)}
     if (land := _land_distance(x, y, ctx)) is not None:
-        out["strait_to_land"] = land
+        # A land owns its rock: a pocket of ground that rock shuts in touches the land with no water between, and a strait there would read as a way out.
+        walk_map = ctx["walk_map"]()
+        shut = "island_id" in land and not walk_map.wet(x, y) and walled_in(walk_map, walk_map.gait(_REFERENCE_SPEED, frozenset()), x, y)
+        out |= {"walled_in": {"island_id": land["island_id"]}} if shut else {"strait_to_land": land}
     city = _city_at(x, y, ctx)
     if city is None:
         if towns := ctx["city_quarters"]:  # a quarter lies whole on the map, WB sizing a world in blocks its zones divide

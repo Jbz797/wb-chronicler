@@ -245,6 +245,9 @@ class WalkMap:
         self._trees = _tree_tiles(save, self.width, self._height) if self._tangling else bytearray(len(self._classes))
         self._walled = _walled_tiles(save, names, self.width, self._height)
 
+    def barred(self, x: int, y: int) -> bool:
+        return self._classes[y * self.width + x] == _BARRED
+
     # A body's gait: `speed` for WB's floor, `tags` for the grounds it strides; `aloft` hovers over all, `blind` walks every ground alike, `swift` swims fivefold.
     def gait(
         self, speed: float | None, tags: frozenset[str], *, aloft: bool = False, blind: bool = False, swift: bool = False, breath: float = 0.0, reach: float = 0.0

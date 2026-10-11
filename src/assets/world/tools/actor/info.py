@@ -923,8 +923,11 @@ def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, 
     head = f"✗ {who} can't reach {whom}, {crow} tiles away as the crow flies"
     if (home is not None and home == land) or gait.reach == inf:  # his own land, walked round its bays, or a sea he crosses at will: the ground is to blame
         return f"{head}: rock, lava or goo walls the way off"
-    if walled_in(ctx["walk_map"](), gait, *goal):  # no swim, however long, would get there: the water is not to blame
-        return f"{head}: rock, lava or goo walls it in, on {f'land {land}' if land is not None else 'an islet off any counted land'} — no water leads there"
+    islet, walk_map = "an islet off any counted land", ctx["walk_map"]()
+    if walled_in(walk_map, gait, *actor_xy(actor)):  # shut in where it stands: no swim would get it out, whatever its breath
+        return f"{head}: rock, lava or goo walls its own ground in, on {f'land {home}' if home is not None else islet} — no water leads out"
+    if walled_in(walk_map, gait, *goal):  # no swim, however long, would get there: the water is not to blame
+        return f"{head}: rock, lava or goo walls it in, on {f'land {land}' if land is not None else islet} — no water leads there"
     where = f"land {land}" if land is not None else "its spot, off any counted land"
     if (reach := round(gait.reach)) < 1:  # a breath that crosses no whole tile: the water is shut to it, and a strait's width is beside the point
         return f"{head}: {who} never takes to the water, and no walk on land reaches {where}"
@@ -996,7 +999,8 @@ def main(argv: list[str]) -> int:
         if ctx["island_lookup"]().get(actor_xy(actor)) == land:
             print(f"✗ {_named(actor)} already stands on land {land}", file=sys.stderr)
             return 1
-        aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land], "landing", f"land {land}"  # its shore
+        barred = ctx["walk_map"]().barred  # a land owns its rock, where no body lands: its shore is the ground of its rim
+        aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land and not barred(x, y)], "landing", f"land {land}"
     elif isinstance(target, str):  # kinds, families and resources, comma-parted, the body itself left out: the cheapest reached is the nearest
         families = asset_families(save)
         if not (sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, target)) if record is not actor]):
