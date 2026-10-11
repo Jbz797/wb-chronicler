@@ -429,7 +429,7 @@ def _build_roster(
         }
     # A trait is a body's own or its lineage's: `gift_of_thunder` is born with a whole line, `fire_blood` with one body — `--trait` finds either.
     bearing = {sub["id"] for sub in save.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
-    bodies = []
+    bodies, still = [], 0
     for actor in save.get("actors_data") or []:
         borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
         if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or not borne or (thinking is not None and actor.get("subspecies") not in thinking):
@@ -452,7 +452,8 @@ def _build_roster(
         change: dict = {has: held} if has else {}
         if was is not None and actor["id"] in was:  # one unseen then was born or set down since, and says so by standing in the roll at all
             if (then := was[actor["id"]]) == here:
-                continue  # stood still: nothing for `since` to say
+                still += land is None or asked == here  # stood still: nothing for `since` to say of it, but that it was left out
+                continue
             change = {"was_on": then}
         if land is None or asked in (here, change.get("was_on")):
             bodies.append((actor, here, change | (settle_told(gates) if barred else {})))
@@ -464,12 +465,17 @@ def _build_roster(
         by_land = {str(land): lands[land] for land in sorted(lands, key=lambda land: (isinstance(land, str), land))}
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
         stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
+        told = f"{len(bodies)} bodies"
+        if since:  # the roll then holds what changed alone: told by its parts, lest its total read as the world's
+            moved = sum("was_on" in change for _, _, change in bodies)
+            parts = ((len(bodies) - moved, "arrived"), (moved, "moved"), (len(gone), "gone"))
+            told = f"{', '.join(f'{n} {word}' for n, word in parts if n)} since {since}" + (f" — {still} stood still, left out" if still else "")
         return {
             "by_land": None if asked is not None else by_land,  # silent under `-i`, which names the land
             "by_species": dict(species),
             "by_stage": dict(stages),
             "gone_by_species": dict(Counter(row["asset_id"] for row in gone)) or None,
-            "info": f"{len(bodies) + len(gone)} bodies — narrow them with -t, --trait, --has, --sapient, --settle, --barred or -i",
+            "info": f"{told} — narrow them with -t, --trait, --has, --sapient, --settle, --barred or -i",
         }
     rows, one_kind = [], kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
 
