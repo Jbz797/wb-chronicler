@@ -1,6 +1,6 @@
 # 📐 Audit de conformité
 
-<p class="metadata">Date de mise à jour : 12/10/26 11:16</p>
+<p class="metadata">Date de mise à jour : 13/10/26 00:37</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets après le chapitre, ce que le script a demandé à ce chapitre-là : cela vaut comme le § III.
 
@@ -8,13 +8,13 @@ Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le 
 
 Confronte tes cibles aux parties § I à § V de `docs/chronicler.md`, sous-section par sous-section. **Juge la manière, pas la vérité** : ce que le texte affirme ne relève pas de toi. Un jugement qui s'appuierait sur un fait, pour valider comme pour réfuter, ne se tranche ni à l'œil ni par une lecture hors de tes cibles : signale ce fait comme un point à mesurer.
 
-- **`descriptor`** : sa longueur est tenue par le script, pas par toi ; prose sans balise, il suit le § V comme le chapitre, qu'il peut redire : il se lit seul.
+- **`descriptor`** : sa longueur est au script ; prose sans balise, il suit le § V comme le chapitre, qu'il peut redire : il se lit seul.
 - **Cercle** : ce qui ne relève d'aucune entité du favori se classe au `circle` d'`actor <favori> --to`, ou de `surroundings`, qui les donne tous, jamais en reconvertissant les heures de la prose : tu ne lances que ces deux-là, pour le seul favori, et `echo.py` — leur syntaxe : `docs/tools.md`. D'un type, `--to` ne rend que le plus proche : tout autre est un point à mesurer, sauf si celui-là est déjà `far`.
 - **Noms** : une espèce, un biome ou un mois se lit dans `i18n/<lang>/`, un lieu dans `history/places.json` : `places` porte les lieux forgés, ses autres blocs les terres et les eaux comptées ; les ids de balise sont au script.
-- **Pistes** : suivre celles d'un chapitre passé revient à l'auditeur de récit, pas à toi.
+- **Pistes** : suivre celles d'un chapitre passé revient à l'auditeur de récit.
 - **Redites et longueur** : `python tools/chapter/echo.py C<n>` montre les redites à juger, et d'un ✗ un chapitre hors bornes à relever. Un angle repris, une chute redite autrement lui échappent : relis pour eux, des 2 chapitres précédents, les seules sections répondant à celles de ta cible (même place, même sujet, ou désignées par `shape`).
 
-Ne rends que les écarts, et ce qu'on te demande : chacun avec sa partie, sa ligne, sa citation et ce que tu attendais — ce qui enfreint une règle à corriger, le reste en mieux possible. N'écris rien dans les fichiers ; tes fichiers de travail vont dans ton sous-dossier du scratchpad.
+Ne rends que les écarts, et ce qu'on te demande : chacun avec sa partie, sa ligne, sa citation et ce que tu attendais — ce qui enfreint une règle à corriger, le reste en mieux possible. N'écris dans aucun fichier ; les tiens vont dans ton sous-dossier du scratchpad.
 
 ## Au réaudit
 
