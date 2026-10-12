@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 12/10/26 12:19</p>
+<p class="metadata">Date de mise à jour : 12/10/26 13:03</p>
 
 Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans sa clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -70,6 +70,7 @@ Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, 
 - `actor … stats` rend des valeurs **déjà agrégées**, socle, niveau (santé, mana et endurance seulement) et compétences compris : n'ajoute rien par-dessus. Celles d'un mineur sont **bridées** : `damage_max` et `health_max` valent la moitié jusqu'à `adult_on`. La valeur adulte ne se lit pas sur celle de la lignée. `swim` : `breath` tant que dure le souffle, `reach` noyade comprise, sur l'endurance et la santé de l'instant, et `rested` ce qui en change reposé ; `never` pour qui brûle dans l'eau, `unlimited` pour qui n'y peine pas.
 - `actor … surroundings` se compte à son pas, `total_…` par ligne, terrain pesé ; comme `--to`, ne nage que si son but est sur une autre terre ; une coque qu'il rejoint y paraît (`boat_…`), sans être un corps : `intimate` ≤ 30 min, `common` ≤ 2 h ; `common_with_boat`, hors de sa terre, ≤ 2 h en bateau, marches comprises, si son royaume a un transport ; à bord, par l'eau puis à pied ; `water` et `islet_tiles` comme dans `tiles … tile_info`, tus sur sa terre ou son îlot. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. Seul, il donne son `nearest` à vol d'oiseau. `sapient` se tait devant `kin`, `job` ou `role`.
 - `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `diplomacy` et `stewardship` ne servent qu'aux rois et aux chefs, et `damage_*` dit la force d'un coup, `warfare` compris. Le reste : `wiki:Unit_Stats`.
+- `gen` (`actor … metadata`) : absent, le corps a paru sans parents ; dès 2, ils sont `parent` sous `surroundings`.
 - `happiness` (`actor … stats`) : la barre du jeu en %, 50 au neutre — heureux dès 60, malheureux sous 30.
 
 ### Entités et comptes :
