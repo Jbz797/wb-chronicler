@@ -24,6 +24,7 @@ from shared import (
     index_by_id,
     is_boat,
     light,
+    load_data,
     load_save,
     parse_sections,
     resolve_profession,
@@ -69,6 +70,8 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         **({"age": age, "born": entity_born(house)} if (age := entity_age(house, ctx["world_time"])) >= 0 else {}),  # its month, where `age` counts years
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
+        # What WB took from the town's stock as the site was laid (`CityBehBuild.tryToBuild`), a raised tier paying its own — nothing said of a free one.
+        "cost": (load_data("buildings.json").get(house.get("asset_id")) or {}).get("cost"),
         # A volcano or a geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops`, until lightning or the player flips it.
         "dormant": "stop_spawn_drops" in flags or None,
         # Answers for the souls under the roof, so it goes where there are none: a dock, a mine, a bonfire house nobody, whoever stands in them.
