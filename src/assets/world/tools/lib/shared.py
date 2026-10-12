@@ -372,7 +372,7 @@ def asset_families(save: dict) -> dict[str, Counter]:
 def asset_kinds(families: dict[str, Counter], words: str) -> set[str]:
     here, kinds = {kind for counts in families.values() for kind in counts}, set[str]()
     for word in words.split(","):
-        kinds |= families[word].keys() if word in families else (word not in here and resource_sources(word) & here) or {word}
+        kinds |= families[word].keys() if word in families else (word not in here and _resource_sources(word) & here) or {word}
     return kinds
 
 
@@ -1092,7 +1092,7 @@ def resolve_profession(actor: dict, save: dict) -> str | None:
 
 # The kinds a resource comes of when harvested, off WB's `BuildingAsset.resources_given` — a clone keeps its model's list: every tree gives wood, every lode stone.
 @cache
-def resource_sources(resource: str) -> frozenset[str]:
+def _resource_sources(resource: str) -> frozenset[str]:
     return frozenset(kind for kind, spec in load_data("buildings.json").items() if resource in spec.get("resources", ()))
 
 
@@ -1277,7 +1277,7 @@ def unranked(pools: Mapping[str, tuple[int, int]]) -> dict:
 def unsited_reason(families: dict[str, Counter], words: str) -> str | None:
     here = {kind for counts in families.values() for kind in counts}  # a kind a body is the last of is one all the same: no likeness to offer
     asked = [word for word in words.split(",") if word and word not in here]
-    if barren := {word: sorted(sources) for word in asked if (sources := resource_sources(word))}:
+    if barren := {word: sorted(sources) for word in asked if (sources := _resource_sources(word))}:
         return "; ".join(f"nothing here yields `{word}` — it comes of {', '.join(sources)}" for word, sources in barren.items())
     if near := sorted({kind for kind in here for word in asked if word in kind}):
         return f"`{words}` names no kind here — like it: {', '.join(near)}"
