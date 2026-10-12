@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 # Reads the official WorldBox wiki through its MediaWiki API, the one door its 403 leaves open. User-facing docs: `docs/chronicler.md` § « Accès au wiki ».
-# `<Page>` prints its wikitext, redirects followed; `--row <name>` only the table rows naming it, cell by cell under its column; `--list [word]` its titles,
-# every batch of the listing walked, filtered on a word when one is given.
+# `<Page>` prints its wikitext, a redirect followed to the section it names; `--row <name>` only the table rows naming it, cell by cell under its column;
+# `--list [word]` its titles, every batch of the listing walked, filtered on a word when one is given.
 
 import html
 import json
@@ -71,6 +71,17 @@ def _rows(wikitext: str) -> list[tuple[str, list[str], list[str]]]:
     return rows
 
 
+# The section an anchor names, its sub-sections with it, a heading of its rank closing it — cut by the wiki's `byteoffset`, which counts characters, not bytes.
+def _section(wikitext: str, sections: list[dict], fragment: str) -> str | None:
+    anchor = fragment.replace(" ", "_")
+    at = next((i for i, section in enumerate(sections) if section.get("anchor") == anchor and section.get("byteoffset") is not None), None)
+    if at is None:
+        return None
+    rank = int(sections[at]["level"])
+    end = next((s["byteoffset"] for s in sections[at + 1 :] if int(s["level"]) <= rank and s.get("byteoffset") is not None), len(wikitext))
+    return wikitext[sections[at]["byteoffset"] : end].strip()
+
+
 # Every title, batch after batch while the API says more remain.
 def _titles() -> list[str]:
     titles, resume = [], {}
@@ -96,15 +107,21 @@ def main(argv: list[str]) -> int:
             print("\n".join(title for title in _titles() if args.list.lower() in title.lower()))
             return 0
         # `redirects`: a third of the pages are but a pointer to another, and without it the pointer is all that comes back.
-        answer = _ask({"action": "parse", "page": page, "prop": "wikitext", "redirects": 1})
+        answer = _ask({"action": "parse", "page": page, "prop": "wikitext|sections", "redirects": 1})
     except urllib.error.URLError as e:
         print(f"✗ the wiki did not answer: {e.reason}", file=sys.stderr)
         return 1
     if "error" in answer:
         print(f"✗ no page `{page}` — `--list <word>` finds its title", file=sys.stderr)
         return 1
-    wikitext = answer["parse"]["wikitext"]["*"]
+    parsed = answer["parse"]
+    wikitext = parsed["wikitext"]["*"]
     if args.row is None:
+        # A title that points into a page is read where it points: `Renown` is one section of `Unit Stats`, not its 550 lines.
+        fragment = next((turn["tofragment"] for turn in parsed.get("redirects") or [] if turn.get("tofragment")), None)
+        if fragment and (part := _section(wikitext, parsed.get("sections") or [], fragment)):
+            print(f'→ `{page}` is § {fragment} of `{parsed["title"]}`, read alone — the page whole: `wiki/info.py "{parsed["title"]}"`', file=sys.stderr)
+            wikitext = part
         print(wikitext)
         return 0
     wanted = args.row.replace("_", " ").casefold()
