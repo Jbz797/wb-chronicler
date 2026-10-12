@@ -108,6 +108,12 @@ def _heard(n: int) -> list[tuple[int, frozenset[str]]]:
     return out
 
 
+# The roots of the words the manual sets for an entity — `lignée`, `foyer`, `royaume` —, per language: no other word says the same, so none is a tic.
+@cache
+def _imposed() -> frozenset[str]:
+    return frozenset(word[:_FAMILY_ROOT] for word in i18n("words.json").get("terms", ()))
+
+
 # A shown run's words as compared, to tell which rare words it already carries.
 def _keys(text: str) -> set[str]:
     return {word.lower().rstrip("'’") for word in _WORD.findall(text)}
@@ -136,7 +142,7 @@ def _overused(words: list[_Token], n: int) -> list[dict]:
     history = {k: (roots_then, total) for k in range(1, n) for roots_then, _, total in (rates(_words(k)),)}
     out = []
     for root, count in roots.items():
-        if count < _FAMILY_FLOOR:
+        if count < _FAMILY_FLOOR or root in _imposed():
             continue
         peak_rate, peak_count, peak_in = max((then[root] / total, then[root], f"C{k}") for k, (then, total) in history.items())
         if peak_count > 1 and count / size > peak_rate * _OVERUSE and count > peak_count:
