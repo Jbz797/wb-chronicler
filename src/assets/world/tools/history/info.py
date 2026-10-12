@@ -119,9 +119,13 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
     columns, coarse, rows = _series(conn, stem, entity_id, closed + 1)
     living = next((e for e in save.get(collection) or [] if e.get("id") == entity_id), None)
     if not rows and not coarse:
-        if living is not None:
+        # The base is the latest chapter's, where WB has dropped the years of what ended since: alive in an earlier one, it is judged by the last.
+        last = f"C{latest_chapter()}"
+        earlier = living is not None and chapter not in (None, last)  # the save in hand is the latest otherwise, and is not read twice
+        ended = earlier and all(e.get("id") != entity_id for e in load_save(SAVES_DIR / last / "map.wbox").get(collection) or [])
+        if living is not None and not ended:
             return f"✗ {kind} {entity_id} has no year closed yet: WB writes a year's row as its 12th month opens"
-        refusal = absent_entity(kind, collection, entity_id, chapter)
+        refusal = absent_entity(kind, collection, entity_id, last if ended else chapter)
         return f"{refusal} — WB keeps the years of the living alone" if " is gone " in refusal else refusal
     events = [c for c in columns if _EVENT_COLUMN.search(c)]
     states = [c for c in columns if c not in events and any(r[c] for r in (*coarse, *rows))]  # a state at nought all along says nothing
