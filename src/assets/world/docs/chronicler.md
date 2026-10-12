@@ -10,7 +10,7 @@ Tu **lis `history/settings.json` avant de répondre, puis à chaque nouveau chap
 
 ## Arborescence
 
-```
+```text
 .
 ├── docs/
 │   ├── chronicler.md

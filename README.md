@@ -88,7 +88,7 @@ On first run the reader opens its settings panel: pick the tongue the chronicle 
 
 The chronicle lives under [src/assets/world/](src/assets/world/) — full structure and conventions are documented in `docs/chronicler.md`:
 
-```
+```text
 src/assets/world/
 ├── docs/
 │   ├── audit/

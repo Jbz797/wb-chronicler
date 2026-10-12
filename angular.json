@@ -56,7 +56,7 @@
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",
-          "options": { "lintFilePatterns": ["src/**/*.ts", "src/**/*.html", "**/*.toml"] }
+          "options": { "lintFilePatterns": ["**/*.{json,md,toml}", "src/**/*.{html,ts}"] }
         }
       }
     }
