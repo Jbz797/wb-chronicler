@@ -8,6 +8,7 @@ import re
 import sqlite3
 import sys
 from collections import Counter
+from contextlib import closing
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -300,7 +301,7 @@ def main(argv: list[str]) -> int:
         print("✗ no history base yet — `chapter/new.py` copies WB's with each chapter", file=sys.stderr)
         return 1
     save = load_save(save_path)
-    with sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True) as conn:
+    with closing(sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True)) as conn:  # `with connect()` alone commits, it never closes
         if args.section == "world":
             out = _build_world(conn, save) or "✗ no year closed, and nothing born, raised or dead yet"
         elif args.section == "log":

@@ -13,8 +13,9 @@ import subprocess
 import sys
 import time
 from collections import Counter
+from collections.abc import Collection
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import suppress
+from contextlib import closing, suppress
 from datetime import UTC, datetime
 from functools import cache
 from math import inf
@@ -36,6 +37,7 @@ from shared import (
     SAVES_DIR,
     UNITS_PER_YEAR,
     actor_age,
+    asset_set,
     chapter_length,
     chapter_world_time,
     i18n,
@@ -186,6 +188,23 @@ _SUMMARY = f"what those traits make of the body, {_PLAIN}; never a list, a tally
 _SUMMARY_CAP = 400
 _SUMMARY_CAPS = {"subspecies": 500}  # a lineage's alone is given more room: a biology is born whole, where the other tiers gather their traits one by one
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
+_TAG_ID = re.compile(r"\[([a-z]) ([^\s\]]+)[^\]]*\]")  # a marker by its letter and its id, for what the id answers to
+
+# Where an entity's tag reads its id, in the chapter's own registries — a hull (`o`) and a war (`w`) have none, and go unweighed.
+_TAG_REGISTRIES = {
+    "a": "languages",
+    "b": "books",
+    "c": "cities",
+    "e": "religions",
+    "f": "families",
+    "i": "alliances",
+    "k": "kingdoms",
+    "l": "clans",
+    "p": "persons",
+    "t": "cultures",
+    "u": "subspecies",
+}
+
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
 _TOOLS = Path(__file__).parent.parent
 
@@ -640,6 +659,8 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  ✗ places.json « {name} »: ({x},{y}) lies on {f'land {found}' if found else 'no counted land'}, its `island_id` saying {declared or 'none'}")
     if facts["doubled"] or facts["misplaced"]:
         print("  → set these right in history/places.json")
+    if stray := facts["stray"]:
+        print(f"  ✗ tags whose id answers nothing: {', '.join(f'l.{line} {tag}' for line, tag in stray)} — an id made up shows a blank where its icon goes")
 
 
 # One scan of prior chapters for all they arbitrate: a first hull, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.
@@ -669,7 +690,7 @@ def _purge_history(s3db: Path) -> None:
     if not s3db.exists():
         return
     s3db.chmod(0o644)  # WB leaves it read-only often enough that a bare `connect` would fail
-    with sqlite3.connect(s3db) as conn:
+    with closing(sqlite3.connect(s3db)) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         for (table,) in cursor.fetchall():
@@ -803,14 +824,14 @@ def _step_five_facts(n: int, lang: str) -> dict:
     h1_length = len(_TAG.sub(lambda m: m[1] or "", h1 or ""))  # as read: a tag in the title shows its name alone, never its markup
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(text)) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
-    doubled, misplaced = _doubled_places(n), _misplaced_places(n)
+    doubled, misplaced, stray = _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)
     # A summary carried word for word was audited when written, so only a new one goes; the descriptor always, an age in it stale by the next chapter.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
     return {
         "audited": sorted(fresh + (["favorite.descriptor"] if favorite else [])),
         "carried": carried,
         "descriptor": descriptor,
-        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (doubled or owed or long or misplaced),
+        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (doubled or owed or long or misplaced or stray),
         "doubled": doubled,
         "draft": draft,
         "events": _events(chapter.get("tags") or []),
@@ -823,7 +844,24 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "mourned": bool(before) and not same,
         "named": _named_places(n),
         "owed": owed,
+        "stray": stray,
     }
+
+
+# The chapter's tags whose id answers nothing, by line: an entity's is read in the chapter's registry, a kind's in WB's own data.
+def _stray_tags(n: int, prose: str) -> list[tuple[int, str]]:
+    kinds = {"g": load_data("equipment.json")["items"], "r": asset_set("resources"), "s": load_data("species.json")}
+
+    @cache
+    def known(letter: str) -> Collection[str] | None:
+        if letter in kinds:
+            return kinds[letter]
+        if (name := _TAG_REGISTRIES.get(letter)) is None:
+            return None
+        return json.loads(path.read_text()) if (path := SAVES_DIR / f"C{n}" / f"{name}.json").exists() else {}
+
+    tags = ((at, tag) for at, line in enumerate(prose.splitlines(), 1) for tag in _TAG_ID.finditer(line))
+    return [(at, tag[0]) for at, tag in tags if (ids := known(tag[1])) is not None and tag[2] not in ids]
 
 
 # The chronicler writes into `chapter.json` and `places.json` by hand, with whatever encoder comes to him: each put back in the project's layout, no word moved.

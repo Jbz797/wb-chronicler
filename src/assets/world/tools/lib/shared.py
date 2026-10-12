@@ -1,6 +1,8 @@
 # Cross-domain constants + helpers — one of the `tools/lib/` libraries every entry point puts on its `sys.path` (see each bootstrap).
 # Rule: a symbol lives here only if ≥2 scripts need it — directly, or through another exported symbol that does. Single-script helpers live in that script.
 
+__lazy_modules__ = ["sqlite3", "subprocess"]  # Python 3.15 loads these at first use — the history base, one process check; a plain list to any older.
+
 import argparse
 import json
 import os
@@ -13,7 +15,8 @@ import zlib
 from bisect import bisect_right
 from collections import Counter, defaultdict
 from collections.abc import Callable, Collection, Mapping, Sequence
-from functools import cache
+from contextlib import closing
+from functools import cache, partial
 from pathlib import Path
 
 CHAPTER_CAP = 14000  # a sitting's read, some 11 minutes: past it the chapter says more than its world has done
@@ -64,7 +67,7 @@ _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
-
+_HELP_WIDTH = 78  # what argparse gives a piped run, its 80 columns less 2: the help the chronicler has always read
 _IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `--since` weighs a land, a site or a biome against itself
 
 # WB's next id of each kind, by the save's collection (`MapStats.getNextId`): an id under it was handed out, whatever became of what bore it.
@@ -350,7 +353,8 @@ def actor_xy(actor: dict) -> tuple[int, int]:
 
 # argparse's refusals, marked as every other script's are: its bare `usage:` and `error:` pair would be the one refusal a chronicler reads unflagged.
 def arg_parser(prog: str, description: str) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog=prog, description=description)
+    # A width said: left to the terminal, argparse loads `shutil` and three compressors to measure it, at the first `add_argument` of every run.
+    parser = argparse.ArgumentParser(prog=prog, description=description, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH))
     parser.error = lambda message: parser.exit(2, f"✗ {message} — see docs/tools.md\n")
     return parser
 
@@ -860,7 +864,7 @@ def log_entries(start: float, end: float = float("inf"), actor: int | None = Non
     sql = "SELECT timestamp, asset_id, special1, special2, special3, unit_id, kingdom_id, x, y FROM WorldLogMessage WHERE asset_id != 'auto_tester'"
     sql += " AND timestamp >= ? AND timestamp <= ?" + (" AND unit_id = ?" if actor is not None else "") + (" AND asset_id = ?" if event else "")
     try:
-        with sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True) as conn:  # WB stamps a whole unit, hence `>=`
+        with closing(sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True)) as conn:  # WB stamps a whole unit, hence `>=`
             rows = conn.execute(sql + " ORDER BY timestamp, rowid", [start, end, *([actor] if actor is not None else []), *([event] if event else [])]).fetchall()
     except sqlite3.Error:  # no copy yet, the live save having come without one
         return []
