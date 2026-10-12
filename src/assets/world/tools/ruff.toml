@@ -4,8 +4,33 @@
 line-length = 165
 
 [lint]
-# All of these pass on every file as it stands, and they fence what used to be hand-checked: `F401` the dead imports, `I001` the sorted ones.
-select = ["ARG", "C4", "E4", "E7", "E9", "F", "I", "PTH", "SIM", "UP", "W"]
+# The signs our comments and outputs write on purpose; any other look-alike in a string or a comment is still told (`RUF001`, `RUF003`).
+allowed-confusables = ["×", "–", "’", "−"]
+ignore = [
+  "C901", # a complexity ceiling, as the `PLR09` below: arbitrary on code kept dense on purpose
+  "COM812", # fights `ruff format`, which ruff itself says to switch off
+  "CPY001", # a copyright header a file
+  "D", # docstrings, where a `#` line above each function is the rule here
+  "EM", # an exception's message in a variable, as `TRY003` wants it in a class: our refusals are one line
+  "FBT", # no positional boolean: every tool's signature to rework for little
+  "INP001", # an `__init__.py`: these are scripts with `sys.path` siblings, no package
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+  "PLR0917",
+  "PLR2004", # takes every `>= 3` for a magic value to name
+  "S301", # `pickle`, of our own caches
+  "S310", # `urlopen`, of the wiki alone
+  "S311", # a draw no secret hangs on
+  "S603", # `subprocess`, on a command written here
+  "S608", # SQL built on the history base's own table names, which no parameter can bind
+  "T201", # `print` is a tool's output
+  "TRY003"
+]
+
+# Every rule ruff knows, the new ones as they come: what is refused is said above, with its reason.
+select = ["ALL"]
 
 [lint.isort]
 known-first-party = ["actor_stats", "echo", "fold", "founding", "grid", "islands", "registries", "shared", "walking", "waters"]

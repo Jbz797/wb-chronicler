@@ -5,6 +5,7 @@ from collections import Counter
 
 from actor_stats import is_baby
 from grid import LAND_LAYERS, tile_kind, tile_layer
+from islands import TileIslands
 from shared import PROFESSION_KING, ZONE_TILES, actor_xy, is_sapient, zone_xy
 
 # WB `TopTileLibrary`: the biomes any lineage may found on, and those only a meta tag opens — `corrupted` alone spelt apart from its tag.
@@ -53,7 +54,7 @@ def _zone_centre(zx: int, zy: int) -> tuple[int, int]:
 
 
 # Every zone a town holds, with the land its first tile stands on — the one WB spreads its founders' wave across — and the town's name, to say which bars.
-def city_zones(save: dict, island_of) -> list[tuple[int, int, int | None, str]]:
+def city_zones(save: dict, island_of: TileIslands) -> list[tuple[int, int, int | None, str]]:
     zones = []
     for city in save.get("cities") or []:
         if held := city.get("zones") or []:

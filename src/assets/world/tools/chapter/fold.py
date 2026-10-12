@@ -231,12 +231,13 @@ def _without(block: dict, cut: frozenset) -> dict:
 
 
 # `_CHRONICLER_ONLY` cuts at every depth, `_AUDIT` from one named section; the empties a cut leaves go too, and the one nought kept for the chronicler alone.
-def drop_chronicler_keys(node, parent: str = ""):
+def drop_chronicler_keys(node: object, parent: str = "") -> object:
     if isinstance(node, dict):
         kept = {}
-        for key, value in node.items():
+        for key, raw in node.items():
             if key in _CHRONICLER_ONLY:
                 continue
+            value = raw
             if cut := _AUDIT.get(key, frozenset()) | _AUDIT_TIERS.get(f"{parent}.{key}", frozenset()):  # a section is a dict, save `relations`, a list of them
                 if isinstance(value, dict):
                     value = _without(value, cut)

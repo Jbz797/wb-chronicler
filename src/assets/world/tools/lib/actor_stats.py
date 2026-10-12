@@ -416,11 +416,12 @@ def _apply_tier(gene: str, value: float, bad: bool, golden: bool) -> float:
 # Truncate toward zero like C#'s `(int)`, not floor — negatives occur. `health`/`mana` => `health_max`/`mana_max`, post-pipeline maximums; `render` does the sorting.
 def _cleanup_stats(totals: dict, *, delta: bool = False) -> dict:
     result = {}
-    for k, v in totals.items():
+    for k, raw in totals.items():
         if k in _DROP:
             continue
-        if type(v) is float:  # as `render` reads its own leaves: no float subclass ever reaches here, and the exact type spares what `isinstance` walks
-            v = round(v, 1) if k in _KEEP_DECIMAL else int(v)
+        v = raw
+        if type(raw) is float:  # as `render` reads its own leaves: no float subclass ever reaches here, and the exact type spares what `isinstance` walks
+            v = round(raw, 1) if k in _KEEP_DECIMAL else int(raw)
         name = _RENAMES.get(k, k)  # hoisted: `_KEEP_ZERO` is named after the rename, `max_children` being the `offspring` WB actually writes
         # `_KEEP_ZERO` answers for an absolute, where 0 armor is a fact — in a `delta` block it would only say « no difference », which is the block's absence.
         if v or (name in _KEEP_ZERO and not delta):
@@ -589,7 +590,7 @@ class _SystemRandom:
     MBIG = 2147483647
     MSEED = 161803398
 
-    def __init__(self, seed: int):
+    def __init__(self, seed: int) -> None:
         self.inext, self.inextp = 0, 21
         sa = self.SeedArray = [0] * 56
         subtraction = 0x7FFFFFFF if seed == -0x80000000 else abs(seed)
@@ -609,7 +610,7 @@ class _SystemRandom:
                 if sa[i] < 0:
                     sa[i] += self.MBIG
 
-    def Next(self, mv: int) -> int:
+    def Next(self, mv: int) -> int:  # noqa: N802
         return int((self._internal_sample() / self.MBIG) * mv)
 
     def _internal_sample(self) -> int:

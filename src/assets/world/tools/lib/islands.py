@@ -29,7 +29,7 @@ _SET = re.compile(rb"[^\x00]")  # a byte the mask kept
 
 
 # Tile → island id over a flat row-major grid, `0` for water (ids start at 1). The dict it replaces cost 32 ms to unpickle and 1.95 MB; this costs neither.
-class _TileIslands:
+class TileIslands:
     __slots__ = ("_edges", "_grid", "_height", "_islet_sites", "_islets", "_width")
 
     # Wraps what the phases filled — handed over, not copied: already the shape this class reads from. `None` edges: every land tile stands in.
@@ -41,19 +41,19 @@ class _TileIslands:
         edges: array | None = None,
         islets: dict[int, int] | None = None,
         sites: list[tuple[int, int, int]] | None = None,
-    ):
+    ) -> None:
         self._edges, self._grid, self._height, self._islets, self._width = edges, id_grid, height, islets, width
         self._islet_sites = sites or []
 
     # Every land tile and its island, a row at a time off the flat grid: what `edges` hands out where one byte could not hold the ids.
-    def _land(self):
+    def _land(self) -> Iterator[tuple[int, int, int]]:
         for y in range(self._height):
             for x, island_id in enumerate(self.row(y)):
                 if island_id:
                     yield x, y, island_id
 
     # The land tiles with a neighbour off their own land, corners counting: a land's nearest tile to a point off it is one — a step toward the point leaves it.
-    def edges(self):
+    def edges(self) -> Iterator[tuple[int, int, int]]:
         if self._edges is None:
             yield from self._land()
             return
@@ -62,7 +62,7 @@ class _TileIslands:
             yield x, y, self._grid[i]
 
     # Same contract as the dict it replaces — `default` off-map or on water.
-    def get(self, pos: tuple[int, int], default=None):
+    def get(self, pos: tuple[int, int], default: int | None = None) -> int | None:
         x, y = pos
         if 0 <= x < self._width and 0 <= y < self._height and (island_id := self._grid[y * self._width + x]):
             return island_id
@@ -118,15 +118,18 @@ class _TileIslands:
         return self._grid[y * self._width : (y + 1) * self._width]
 
 
+_TileIslands = TileIslands  # the name every cache pickled before the class went public still asks for
+
+
 # Build the islands list and a tile-to-island lookup keyed by WB-actor coordinates (no y inversion — `row` IS the actor y, see `chronicler.md`).
-def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
+def _compute_islands(save: dict) -> tuple[list[dict], TileIslands]:
     tile_map = save.get("tileMap") or []
     layer_by_id = [tile_layer(name) for name in tile_map]
     block_by_id = [tile_block(name) is not None for name in tile_map]  # a `block` tile bars diagonals, which splits regions
     kind_by_id = [tile_kind(name) for name in tile_map]
     grid = decode_tile_grid(save)
     if not grid:
-        return [], _TileIslands(array("H"), 0, 0)
+        return [], TileIslands(array("H"), 0, 0)
     height, width = len(grid), len(grid[0])
     # A byte per tile, 1 on ground and 2 on rock, so that C does the finding: a regex the runs of ground, a shift the ground beside rock.
     code_by_id = [1 if layer == "Ground" else 2 if layer in ("Block", "Lava") else 0 for layer in layer_by_id]
@@ -270,7 +273,7 @@ def _compute_islands(save: dict) -> tuple[list[dict], _TileIslands]:
         centroid = {"x": sum_x // size, "y": sum_y // size}
         islands.append({"bounds": bounds, "centroid": centroid, "ground": ground, "heart": heart, "id": new_id, "size": size})
 
-    return islands, _TileIslands(id_grid, width, height, _edge_tiles(id_grid, width), islets, islet_sites)
+    return islands, TileIslands(id_grid, width, height, _edge_tiles(id_grid, width), islets, islet_sites)
 
 
 # Edge tiles, flat, found in C: a byte per land id, the grid one integer, a tile kept where a neighbour differs, a wrapped shift keeping more. `None` past 255 lands.
@@ -300,7 +303,7 @@ def _middle_tile(runs: list[tuple[int, int, int]], size: int) -> tuple[int, int]
 
 
 # Disk-cached `_compute_islands`, one slot per save like every sweep of the map: `actor … --since` weighs two saves, which a single slot would evict in turn.
-def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], _TileIslands]:
+def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], TileIslands]:
     return pickle_cached("islands_v21", save_path, lambda: _compute_islands(save))
 
 

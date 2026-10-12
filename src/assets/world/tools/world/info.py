@@ -6,6 +6,7 @@
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names kept verbatim for raw-save fields (e.g. `asset_id`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
+import argparse
 import sys
 from collections import Counter, defaultdict
 from functools import cache
@@ -31,7 +32,7 @@ from actor_stats import (
 )
 from founding import city_zones, settle_gates, settle_rank, settle_told
 from grid import LazyTileGrid, frozen_tally, off_land, patch_finder
-from islands import compute_islands_cached
+from islands import TileIslands, compute_islands_cached
 from shared import (
     MAX_LISTED,
     MIN_RANK_PEERS,
@@ -204,7 +205,7 @@ def _age_stage(progress: float) -> str:
 
 
 # What keeps a body of age from breeding, WB weighing each partner: a belly short of a baby or half-full, a footing to leave first — tagged `tiny_islet 40`.
-def _breeding_bars(actor: dict, ctx: dict, island_of, grid: LazyTileGrid, names: list[str]) -> set[str]:
+def _breeding_bars(actor: dict, ctx: dict, island_of: TileIslands, grid: LazyTileGrid, names: list[str]) -> set[str]:
     bars = set()
     if needs_food(ctx["subspecies_by_id"].get(actor.get("subspecies"))) and (int(actor.get("nutrition") or 0) < NEW_BABY_NUTRITION or is_hungry(actor, ctx)):
         bars.add("hungry")
@@ -399,7 +400,7 @@ def _build_plots(save: dict) -> list[dict]:
 # Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
 def _build_roster(
     save: dict,
-    island_of,
+    island_of: TileIslands,
     kinds: set[str] | None,
     trait: str | None,
     land: int | str | None,
@@ -583,7 +584,7 @@ def _count_leaders(counts: Counter, records: list[dict], min_peers: int) -> list
 
 
 # The dead since an earlier chapter, as it knew them — WB keeps no dead, so a body gone from the save is one gone from the world: filtered as the living are.
-def _gone_since(save: dict, then: dict, was: dict[int, int | str], kinds: set[str] | None, trait: str | None, asked, sapient: bool) -> list[dict]:
+def _gone_since(save: dict, then: dict, was: dict[int, int | str], kinds: set[str] | None, trait: str | None, asked: int | str | None, sapient: bool) -> list[dict]:
     alive = {actor["id"] for actor in save.get("actors_data") or []}
     thinking = _sapient_subspecies(then) if sapient else None
     bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
@@ -619,12 +620,12 @@ def _may_mate(a: dict, b: dict, sexed: bool) -> bool:
 
 
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
-def _name_of(records: list[dict], target_id) -> str | None:
+def _name_of(records: list[dict], target_id: int | None) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
 
 
 # Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.
-def _nobody(args, kinds: set[str] | None, save: dict, since: str | None) -> str:
+def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since: str | None) -> str:
     said = [
         f"bearing {args.trait}" if args.trait else None,
         ("past level 1" if args.has == "level" else f"with any {args.has}") if args.has and not since else None,
@@ -668,7 +669,7 @@ def _stage(actor: dict, ctx: dict, age: int, adult: float) -> str:
 
 
 # Where a body stands as `roster` tells it: its land, else `water` where it floats and `islet` on an islet too small to count, as `surroundings` splits them.
-def _standing(actor: dict, island_of, grid: LazyTileGrid, names: list[str]) -> int | str:
+def _standing(actor: dict, island_of: TileIslands, grid: LazyTileGrid, names: list[str]) -> int | str:
     x, y = actor_xy(actor)
     if (land := island_of.get((x, y))) is not None:
         return land

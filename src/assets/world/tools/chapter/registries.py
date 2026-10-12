@@ -378,7 +378,7 @@ def _multiply(base: str, tint: str) -> str:
 
 # A realm's palette, verbatim — WB's own `checkIfColorTooDark` belongs to the sprite ramps alone, so the UI applies it. Empty when WB shipped no such palette.
 @cache  # realms of one palette share the call, and every chapter rebuild replays it
-def _palette(color_id) -> dict:
+def _palette(color_id: int | str) -> dict:
     return load_data("colors.json")["entities"].get(str(color_id), {})
 
 

@@ -769,7 +769,7 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
 
 
 # Runs a sibling `info.py` → its parsed JSON stdout, `None` (stderr surfaced) on failure or empty output. `sys.executable` so a venv never forks children elsewhere.
-def _run(rel_path: str, *args) -> dict | None:
+def _run(rel_path: str, *args: object) -> dict | None:
     result = subprocess.run([sys.executable, str(_TOOLS / rel_path), *map(str, args)], capture_output=True, text=True, check=False)
     if result.returncode:
         cause = (result.stderr.strip().splitlines() or [f"exit {result.returncode}"])[-1]  # a traceback's last line names the fault, its head only the call stack
@@ -1011,17 +1011,17 @@ def main(argv: list[str]) -> int:
             boat_id = (meta.pop("transport", None) or {}).get("id")
             calls.append((_run, "boat/info.py", boat_id, "full", chapter) if boat_id else None)
             results = _run_together(*calls)
-            if failed := [f"{call[1]} {call[2]} full" for call, block in zip(calls, results) if call and block is None]:
+            if failed := [f"{call[1]} {call[2]} full" for call, block in zip(calls, results, strict=True) if call and block is None]:
                 return _abandon(chapter_dir, failed)
             *bodies, boat = results
-            blocks = dict(zip(_TIERS, bodies))
+            blocks = dict(zip(_TIERS, bodies, strict=True))
             fold_bodies(blocks, boat)
 
         # A third wave, the only one a tier opens — popped as `transport` is, the blocks it returns holding the names the crown's list would otherwise say twice.
         wars = [w for w in ((blocks.get("kingdom") or {}).pop("wars", None) or []) if w.get("id") is not None]
         if wars:
             fought = _run_together(*((_run, "war/info.py", w["id"], "full", chapter) for w in wars))
-            if failed := [f"war/info.py {w['id']} full" for w, war in zip(wars, fought) if war is None]:
+            if failed := [f"war/info.py {w['id']} full" for w, war in zip(wars, fought, strict=True) if war is None]:
                 return _abandon(chapter_dir, failed)
             wars = fought
 
@@ -1050,12 +1050,12 @@ def main(argv: list[str]) -> int:
 
         _print_report(n, live, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, prev_world)
         _print_next_step(n, live, favorite, _forget_subagents())
-        return 0
     except BaseException as fault:  # a crash or a Ctrl-C halfway, which `_abandon` never sees: the half-built folder goes the same way, the fault still surfacing
         shutil.rmtree(chapter_dir, ignore_errors=True)
         if isinstance(fault, Exception):  # a Ctrl-C or an exit is no crash, and an exit has said its own ✗ already
             print("✗ new.py crashed — nothing written, report the traceback below", file=sys.stderr)
         raise
+    return 0
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@
 #    Entanglewood takes a fifth off the pace under a tree, the water nothing until the breath runs out. The speed is floored at 1 before WB's common 0.4.
 # 4. `ActorMove.goTo` lets no body swim toward a spot of its own island — it walks round the bay —, and none the water burns at all: `Gait.ashore`.
 
+from collections.abc import Iterator
 from heapq import heappop, heappush
 from itertools import islice
 from math import inf
@@ -95,14 +96,17 @@ _WIDE_TREES = {
 def _aim(walk_map: "WalkMap", gait: "Gait", goals: set[int]) -> tuple[int, int, int, int, float] | None:
     if not goals:
         return None
-    rows, cols = zip(*(divmod(goal, walk_map.width) for goal in goals))
+    rows, cols = zip(*(divmod(goal, walk_map.width) for goal in goals), strict=True)
     return min(cols), min(rows), max(cols), max(rows), gait.cheapest
 
 
 # Each tile once, cheapest first, with its way's water, widest crossing and their count; a step costs its length × its tiles' mean pace — less swum, water is redone.
-def _settle(walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, aim: tuple[int, int, int, int, float] | None, told: bool = False):
-    classes, trees, walled, width, height = walk_map._classes, walk_map._trees, walk_map._walled, walk_map.width, walk_map._height
-    land, tangled, swim, tired, breath, reach = gait._land, gait._tangled, gait._swim, gait._tired, gait.breath, gait.reach
+def _settle(
+    walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, aim: tuple[int, int, int, int, float] | None, told: bool = False
+) -> Iterator[tuple[int, float, float, float, float, float, int]]:
+    # Both classes' own fields, bound once for the loop below: a method on either would still read the other's.
+    classes, trees, walled, width, height = walk_map._classes, walk_map._trees, walk_map._walled, walk_map.width, walk_map._height  # noqa: SLF001
+    land, tangled, swim, tired, breath, reach = gait._land, gait._tangled, gait._swim, gait._tired, gait.breath, gait.reach  # noqa: SLF001
     tireless = breath == inf  # nothing to keep of what was swum: every crossing is the same, and none is searched twice
     left, top, right, bottom, scale = aim or (0, 0, 0, 0, 0.0)
     start = y0 * width + x0
@@ -211,7 +215,7 @@ def _walled_tiles(save: dict, names: list[str], width: int, height: int) -> froz
 class Gait:
     __slots__ = ("_land", "_swim", "_tangled", "_tired", "breath", "reach")
 
-    def __init__(self, land: list[float], tangled: list[float], swim: float, tired: float, breath: float, reach: float):
+    def __init__(self, land: list[float], tangled: list[float], swim: float, tired: float, breath: float, reach: float) -> None:
         self._land, self._swim, self._tangled, self._tired, self.breath, self.reach = land, swim, tangled, tired, breath, reach
 
     def ashore(self) -> "Gait":
@@ -236,7 +240,7 @@ class WalkMap:
     __slots__ = ("_classes", "_height", "_tangling", "_trees", "_walled", "width")
 
     # The classes off the runs, the grid never unfolded; the trees only where the law binds them, the walls only where a player painted some.
-    def __init__(self, save: dict):
+    def __init__(self, save: dict) -> None:
         names = save.get("tileMap") or []
         rows = tile_mask(save, [_tile_class(name) for name in names])
         self._height, self.width = len(rows), len(rows[0]) if rows else 0

@@ -151,7 +151,7 @@ _UNCOMPARED = frozenset({"island_id", "statuses", "task", "task_target", "x", "y
 
 
 # A `--to` no walk answers: its message says what bars the way, the water's width against the body's reach where the sea is to blame.
-class _Unreachable(Exception):
+class _UnreachableError(Exception):
     pass
 
 
@@ -453,7 +453,7 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
     goals = {y * walk_map.width + x for x, y in aims}
     # A lone goal the rock shuts in, off a body it does not shut in too, is refused at once: the search would walk the whole world before giving up.
     if len(goals) == 1 and walled_in(walk_map, gait, gx, gy) and not walled_in(walk_map, gait, cx, cy):
-        raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["crow_tiles"], ctx))
+        raise _UnreachableError(_why_unreachable(actor, goal, whom, gait, to["crow_tiles"], ctx))
     # WB walks round the bays of his own land, and swims only toward another — each aim by its own land, as `_walker` does: of many, the cheapest reached wins.
     if walk_map.wet(cx, cy):
         way = walk_way(walk_map, gait, cx, cy, goals)
@@ -476,7 +476,7 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
     if way is None:  # no walk nor swim gets there, but a crown's hull may: its trip told in place of a walk that has none
         if _circle(actor, ctx, None, island_of.get(goal) != home, sailed_hours) == "common_with_boat":
             return {**to, "circle": "common_with_boat", "with_boat": _way_parts(sailed(), per_hour, "sail")}
-        raise _Unreachable(_why_unreachable(actor, goal, whom, gait, to["crow_tiles"], ctx))
+        raise _UnreachableError(_why_unreachable(actor, goal, whom, gait, to["crow_tiles"], ctx))
     walked, _, _, _, widest, reached, _ = way
     if mark:
         to = _heading(cx, cy, reached % walk_map.width, reached // walk_map.width, mark, about)
@@ -508,7 +508,7 @@ def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
 
 
 # A field as it moved: a list, `roles`, by what came and went, anything else as the pair it was and is.
-def _change(before, after):
+def _change(before: object, after: object) -> dict | list | None:
     return moved_between(before, after) if isinstance(before, list) and isinstance(after, list) else [before, after]
 
 
@@ -548,7 +548,7 @@ def _compute_personality(actor: dict, snap: dict) -> str | None:
 def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
     same_species = ctx["actors_by_asset"].get(actor.get("asset_id"), [])
     peers = [_compute_stats(a, ctx) for a in same_species]
-    own = next(s for a, s in zip(same_species, peers) if a["id"] == actor["id"])
+    own = next(s for a, s in zip(same_species, peers, strict=True) if a["id"] == actor["id"])
 
     getters = {stat: lambda s, st=stat: s.get(st, 0) for stat in _RANKED_STATS if stat in own}  # `st=stat` binds now, else every lambda reads the last one
     ranks = competition_ranks(own, peers, getters)
@@ -619,7 +619,7 @@ def _equipment_power(actor: dict, ctx: dict) -> int:
 def _from_them(other: dict, actor: dict, to: dict, ctx: dict) -> dict | None:
     try:
         back = _build_to(other, [actor_xy(actor)], _named(actor), ctx, None, {})
-    except _Unreachable:
+    except _UnreachableError:
         return {"unreachable": True}
     return {key: value for key, value in back.items() if key != "dir" and to.get(key) != value} or None
 
@@ -812,7 +812,7 @@ def _swim(actor: dict, stats: dict, ctx: dict) -> dict | str | None:
         return "unlimited"
     now = {"breath": round(breath), "reach": round(reach)}
     # What comes back once it has rested, where it differs: the breath off a wind spent, the reach off either gauge — a gauge at its top changes nothing.
-    full = zip(("breath", "reach"), map(round, _swim_reach(actor, stats, biology, aloft, swift, rested=True)))
+    full = zip(("breath", "reach"), map(round, _swim_reach(actor, stats, biology, aloft, swift, rested=True)), strict=True)
     rested = {gauge: value for gauge, value in full if value != now[gauge]}
     return {**now, **({"rested": rested} if rested else {})} if reach or rested else None
 
@@ -868,7 +868,7 @@ def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
 def _trip_back(actor: dict, was: tuple[int, int], ctx: dict) -> dict:
     try:
         trip = _build_to(actor, [was], f"{was[0]},{was[1]}", ctx, None, {})
-    except _Unreachable:
+    except _UnreachableError:
         return {}
     return {key: value for key, value in trip.items() if key not in _GOAL_ONLY}
 
@@ -1050,7 +1050,7 @@ def main(argv: list[str]) -> int:
             out["to"] = _build_to(actor, aims, whom, ctx, mark, about)
             if isinstance(target, int):
                 out["to"]["from_them"] = _from_them(ctx["actors_by_id"][target], actor, out["to"], ctx)
-        except _Unreachable as e:
+        except _UnreachableError as e:
             print(f"{e} — `circle`: far", file=sys.stderr)  # out of reach is past every circle: said, a refusal bearing no field
             return 1
 

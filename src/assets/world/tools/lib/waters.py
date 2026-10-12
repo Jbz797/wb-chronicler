@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from grid import HEART_CELL, hearts, tile_block, tile_layer, tile_mask
-from islands import compute_islands_cached
+from islands import TileIslands, compute_islands_cached
 from shared import bearing, pickle_cached, union_root
 
 _DRY = bytes([1, 0]) + bytes(254)  # the water's mask turned over: the land a tide raised from the seas runs through, which no lake lets by
@@ -50,7 +50,7 @@ def _by_pool(id_of: dict[int, int], pools: int) -> Callable[[int], int]:
 
 
 # Every land tile that touches water, with its island, for both sweeps — an inland tile rings no lake and raises no tide. Read off the edges, where all coasts lie.
-def _coast(water: bytearray, stride: int, island_of) -> list[tuple[int, int]]:
+def _coast(water: bytearray, stride: int, island_of: TileIslands) -> list[tuple[int, int]]:
     coast: list[tuple[int, int]] = []
     for x, y, island_id in island_of.edges():
         i = (y + 1) * stride + x + 1
@@ -136,7 +136,9 @@ def _lakes(
 
 
 # The narrowest land between two seas, land by land: every sea floods the dry at once, a lake walked round, and two tides meeting on a land add up to its neck.
-def _necks(water: bytearray, pools: list[_Pool], pool_at: list[int], coast: list[tuple[int, int]], stride: int, sea_of: dict[int, int], island_of) -> list[dict]:
+def _necks(
+    water: bytearray, pools: list[_Pool], pool_at: list[int], coast: list[tuple[int, int]], stride: int, sea_of: dict[int, int], island_of: TileIslands
+) -> list[dict]:
     rows = len(pool_at) // stride
     sea_at = _by_pool(sea_of, len(pools))
     dry = bytearray(water.translate(_DRY))
@@ -236,7 +238,7 @@ def _rivers(
         mean_x, mean_y = sum(x for x, _ in own) / size, sum(y for _, y in own) / size
         # Sited on its own tile nearest its mean — every tile of a ribbon lies as far from the shore — and ended at both tips of its longer side.
         heart = min(own, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
-        (west, south), (east, north) = map(min, zip(*own)), map(max, zip(*own))
+        (west, south), (east, north) = map(min, zip(*own, strict=True)), map(max, zip(*own, strict=True))
         tips = (min(own), max(own)) if east - west >= north - south else (min(own, key=lambda tile: tile[::-1]), max(own, key=lambda tile: tile[::-1]))
         touched = {other for p in chain for other in met[p]}
         rivers.append(

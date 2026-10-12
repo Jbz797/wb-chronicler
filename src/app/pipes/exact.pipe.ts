@@ -4,7 +4,7 @@ import { inject, LOCALE_ID, Pipe, PipeTransform } from '@angular/core';
 import { NumberHelpers } from '../helpers';
 
 // The whole number behind a `X K`, for a `title` — `null` below the threshold, where the row prints it whole, and Angular then drops the attribute entirely.
-@Pipe({ name: 'exact', standalone: true })
+@Pipe({ name: 'exact' })
 export class ExactPipe implements PipeTransform {
 
   private readonly _locale = inject(LOCALE_ID);

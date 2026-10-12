@@ -242,13 +242,13 @@ def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: in
     fine = conn.execute(f"SELECT * FROM {stem}Yearly{_FINE_STEP} {where} ORDER BY timestamp", params)
     names = [c for c, *_ in fine.description]
     columns = [c for c in names if c not in _SKIPPED]
-    rows = [dict(zip(names, row)) for row in fine.fetchall()]
+    rows = [dict(zip(names, row, strict=True)) for row in fine.fetchall()]
     opens = rows[0]["timestamp"] if rows else year
     coarse: list[dict] = []
     for step in _STEPS[1:]:  # the finest step still reaching further back, one step at a time, never two for the same years
         older = conn.execute(f"SELECT * FROM {stem}Yearly{step} {where} AND timestamp < ? ORDER BY timestamp", [*params, opens])
         coarse_names = [c for c, *_ in older.description]
-        if found := [{**dict(zip(coarse_names, row)), "step": step} for row in older.fetchall()]:
+        if found := [{**dict(zip(coarse_names, row, strict=True)), "step": step} for row in older.fetchall()]:
             coarse, opens = found + coarse, found[0]["timestamp"]
     carried: dict = {}
     for row in [*coarse, *rows]:  # WB blanks a value equal to the one before: every cell carries the last one read, in the order they were written

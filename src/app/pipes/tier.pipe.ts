@@ -1,7 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 // `.tier-*` styles live in `src/styles.scss`.
-@Pipe({ name: 'tier', standalone: true })
+@Pipe({ name: 'tier' })
 export class TierPipe implements PipeTransform {
 
   // Anchored on WB happiness: `tier-high` = `isHappy` (≥ 0.6), `tier-low` = `isUnhappy` (< 0.3); mid = neutral band, full = excellence.

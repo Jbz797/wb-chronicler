@@ -1,12 +1,13 @@
 # Cross-domain constants + helpers — one of the `tools/lib/` libraries every entry point puts on its `sys.path` (see each bootstrap).
 # Rule: a symbol lives here only if ≥2 scripts need it — directly, or through another exported symbol that does. Single-script helpers live in that script.
 
-__lazy_modules__ = ["sqlite3", "subprocess"]  # Python 3.15 loads these at first use — the history base, one process check; a plain list to any older.
+__lazy_modules__ = ["random", "sqlite3", "subprocess"]  # Python 3.15 loads these at first use — a report's draw, the history base, one process check.
 
 import argparse
 import json
 import os
 import pickle
+import random
 import re
 import sqlite3
 import subprocess
@@ -146,7 +147,7 @@ def _asks_full(requested: str | None) -> bool:
 
 
 # `_BOOK_POINTS` per volume plus its readings. A razed author-town would strand that reach, so the book goes to whoever shelves it — `holder_of` picks the tier.
-def _book_reach(save: dict, author_field: str, living: set, holder_of) -> Counter:
+def _book_reach(save: dict, author_field: str, living: set, holder_of: Callable[[int | None], int | None]) -> Counter:
     _, _, city_of_book = books_held(save)
     reach: Counter = Counter()
     for book in save.get("books") or []:
@@ -177,11 +178,8 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
         for k, v in mod_stats.get(mod, {}).items():
             out[k] = out.get(k, 0) + v
     result = {}
-    for k, v in out.items():
-        if isinstance(v, float):
-            v = round(v, 4)
-            if v.is_integer():
-                v = int(v)
+    for k, raw in out.items():
+        v = (int(rounded) if (rounded := round(raw, 4)).is_integer() else rounded) if isinstance(raw, float) else raw
         if v:
             result[k] = v
     return dict(sorted(result.items()))
@@ -227,7 +225,7 @@ def _leader_refs(tallies: dict, records: Mapping) -> dict:
 
 
 # The standout souls. `hungriest` skips a body with no gut, which carries no `nutrition_max` to fall short of; the combat stats share one pass, that being the cost.
-def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of, world_time: float) -> dict:
+def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of: Callable[[dict], dict], world_time: float) -> dict:
     by_id = {actor["id"]: actor for actor in actors}
     stats = {aid: stat_of(actor) for aid, actor in by_id.items()}
     tallies = {  # measure => value per soul, the four stats as `compute_actor_stats` hands them out — a child's blows already halved there
@@ -273,7 +271,7 @@ def _save_cache_name(path: Path) -> str:
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
-def _strip_none(value):
+def _strip_none(value: object) -> object:
     if isinstance(value, dict):
         return {k: stripped for k, v in value.items() if (stripped := _strip_none(v)) not in _EMPTY_VALUES}
     if isinstance(value, list):
@@ -497,7 +495,7 @@ def city_centre(city: dict) -> tuple[int, int] | None:
     zones = [(zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2) for zx, zy in map(zone_xy, city.get("zones") or [])]
     if not zones:
         return None
-    mean_x, mean_y = (sum(c) / len(zones) for c in zip(*zones))
+    mean_x, mean_y = (sum(c) / len(zones) for c in zip(*zones, strict=True))
     closest = min(zones, key=lambda z: (z[0] - mean_x) ** 2 + (z[1] - mean_y) ** 2)
     return closest[0], closest[1] + 2
 
@@ -561,7 +559,7 @@ def civic_building_ids() -> frozenset[str]:
 
 
 # Standard competition rank (1,2,2,4) among `peers`, the entity among them: top 3 only, a metric at 0 or at its floor skipped, the key order left to `render`.
-def competition_ranks(entity, peers: list, getters: dict) -> dict:
+def competition_ranks(entity: dict, peers: list, getters: dict) -> dict:
     if len(peers) < MIN_RANK_PEERS:  # one guard for all eleven ranked blocks: each of them reaches its podium through here
         return {}
     ranks = {}
@@ -851,7 +849,7 @@ def load_save(path: Path | str) -> dict:
         try:
             with cache_file.open("rb") as f:
                 return pickle.load(f)
-        except Exception:  # a corrupt cache: fall through and reparse
+        except Exception:  # a corrupt cache, whatever broke it: fall through and reparse  # noqa: BLE001
             cache_file.unlink(missing_ok=True)
     with path.open("rb") as f:
         save = json.loads(zlib.decompress(f.read()))
@@ -875,7 +873,7 @@ def log_entries(start: float, end: float = float("inf"), actor: int | None = Non
             "actor_id": unit if unit is not None and unit >= 0 else None,  # WB's -1: no one
             "date": world_date(ts),
             "event": asset,
-            **({role: n for role, n in zip(roles, names) if role} if (roles := kind.get("roles")) else {"names": [n for n in names if n] or None}),
+            **({role: n for role, n in zip(roles, names, strict=False) if role} if (roles := kind.get("roles")) else {"names": [n for n in names if n] or None}),
             "kingdom_id": crown if crown is not None and crown >= 0 else None,
             # A murder's is the slain one's, where `actor_id` names the killer; a crown's is its founder's the day it is made, its capital's centre after.
             "point": kind.get("point"),
@@ -898,8 +896,6 @@ def main_subspecies(entity: dict, ctx: dict, tier: str) -> int | None:
 
 # WB `MetaTextReportHelper.getText`: what a body says of itself — every verdict of its own list that holds, joined in that order. `None` where none does, as in game.
 def meta_report(kind: str, state: dict, who: tuple) -> str | None:
-    import random  # deferred: a millisecond or two of import for one `choice`, which every tool would pay at startup where only a few tiers ever report
-
     phrases = load_data("meta-reports.json")  # one of five phrasings per verdict, drawn as WB draws it
     # Drawn off `who` speaks — the chapter's clock, the tier, the id — and what it says: two auditors quote the same words, a clan and its crown each their own.
     draw = random.Random(repr((kind, who, sorted(state.items()))))
@@ -908,7 +904,7 @@ def meta_report(kind: str, state: dict, who: tuple) -> str | None:
 
 
 # What moved between two readings, `[then, now]` at each leaf that differs — rows matched by `_IDENTITIES`, `new` or `gone` said whole; `None` if nothing did.
-def moved_between(then, now):
+def moved_between(then: object, now: object) -> dict | list | None:
     # A tally said as text, `38 bodies · 23 sapient`, weighed part by part — only the count that moved comes out, and a count not there is 0, not a row gone
     if isinstance(then, str | None) and isinstance(now, str | None):
         before, after = _tally(then or ""), _tally(now or "")
@@ -925,7 +921,7 @@ def moved_between(then, now):
     if isinstance(then, list) and isinstance(now, list):  # a set of words, a body's `roles`: what came and what went, never what held
         came, went = [item for item in now if item not in then], [item for item in then if item not in now]
         return {**({"new": came} if came else {}), **({"gone": went} if went else {})} or None
-    if isinstance(then, int | float) and now is None or isinstance(now, int | float) and then is None:
+    if (isinstance(then, int | float) and now is None) or (isinstance(now, int | float) and then is None):
         return [then or 0, now or 0]  # a counter WB dropped at 0, or not yet kept: a count, never a row come or gone
     return {"new": now} if then is None else {"gone": then} if now is None else [then, now]  # a bare `None` would drop out of a pair, and hide which it was
 
@@ -964,7 +960,7 @@ def pickle_cached[T](name: str, save_path: Path, compute: Callable[[], T]) -> T:
         try:
             with cache_file.open("rb") as f:
                 return pickle.load(f)
-        except Exception:  # a corrupt cache: fall through and recompute
+        except Exception:  # a corrupt cache, whatever broke it: fall through and recompute  # noqa: BLE001
             cache_file.unlink(missing_ok=True)
     out = compute()
     if cache_file:
@@ -1037,7 +1033,7 @@ def reigns(record: dict, actors_by_id: dict, requested: str | None) -> list[dict
 
 
 # `json.dumps(indent=2)` that inlines whatever fits `_INLINE_WIDTH`. `used` = what the caller already spent (key + comma), so the test measures the real line.
-def render(value, indent: int = 0, used: int = 0, key: str | None = None) -> str:
+def render(value: object, indent: int = 0, used: int = 0, key: str | None = None) -> str:
     if not isinstance(value, (dict, list)) or not value:
         if type(value) is int:  # a third of a roster's leaves, and `json.dumps` walks its whole encoder to print one — `bool` has a type of its own, so it misses
             return str(value)
@@ -1116,14 +1112,16 @@ def score_totals(ids: list[int], dimensions: dict[str, dict]) -> Counter:
     for values in dimensions.values():
         owns = [values.get(eid, 0) for eid in ids]  # read once, then sorted: those at or below `own` are exactly `N − those ahead`, one sort per dimension.
         ordered = sorted(owns)
-        for eid, own in zip(ids, owns):
+        for eid, own in zip(ids, owns, strict=True):
             if own > 0:
                 totals[eid] += bisect_right(ordered, own)
     return totals
 
 
 # A body's leading families and singular souls, each measure's first place, for every tier that rosters people; no families where one would win every row
-def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of, world_time: float, families: bool = True) -> dict:
+def settlement_leaders(
+    actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of: Callable[[dict], dict], world_time: float, families: bool = True
+) -> dict:
     peers = {"persons": len(actors)}
     if families:
         peers["families"] = len({actor.get("family") for actor in actors} & families_by_id.keys())
@@ -1140,7 +1138,7 @@ def settlement_leaders(actors: Sequence[dict], families_by_id: dict, children: M
 
 # The rank getters both `ranks` sections share — `tier` picks the ctx tallies (`*_by_city` / `*_by_kingdom`); kingdom stacks its extras on top.
 def settlement_rank_getters(ctx: dict, tier: str) -> dict:
-    def tally(name: str):
+    def tally(name: str) -> Callable[[dict], int]:
         counter = ctx[f"{name}_by_{tier}"]
         return lambda r: counter.get(r.get("id"), 0)
 
@@ -1195,7 +1193,7 @@ def spores_unfed(subspecies: dict | None) -> bool:
 
 
 # WB `ListSorters.sortUnitsSortedByAgeAndTraits`: age, then a trait re-sorts on renown/stat/coins, then sex — sorted last, so it wins. Callers pick the pool.
-def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: float, stat_of) -> dict | None:
+def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: float, stat_of: Callable[[dict], dict]) -> dict | None:
     if not candidates:
         return None
     stat = next((s for t, s in _ASCENSION_STATS.items() if t in traits), None)
@@ -1317,7 +1315,7 @@ def world_laws(save: dict) -> dict[str, bool]:
 
 
 def worldbox_running() -> bool:
-    return subprocess.run(["pgrep", "-i", "worldbox"], capture_output=True, check=False).returncode == 0
+    return subprocess.run(["/usr/bin/pgrep", "-i", "worldbox"], capture_output=True, check=False).returncode == 0
 
 
 # Written aside then swapped in: a crash mid-write leaves the old save whole rather than half a new one. Both scripts that touch the live file go through here.

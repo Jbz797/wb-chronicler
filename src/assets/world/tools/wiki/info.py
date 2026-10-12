@@ -53,9 +53,9 @@ def _plain(cell: str) -> str:
 # Every row of every table on the page, with its table's caption and column names — a cell may run over several lines, a list inside it most of all.
 def _rows(wikitext: str) -> list[tuple[str, list[str], list[str]]]:
     rows = []
-    for table in re.findall(r"^\{\|.*?^\|\}", wikitext, flags=re.M | re.S):
+    for table in re.findall(r"^\{\|.*?^\|\}", wikitext, flags=re.MULTILINE | re.DOTALL):
         caption, header = "", []
-        for chunk in re.split(r"^\|-.*$", table.split("\n", 1)[1].rsplit("\n|}", 1)[0], flags=re.M):
+        for chunk in re.split(r"^\|-.*$", table.split("\n", 1)[1].rsplit("\n|}", 1)[0], flags=re.MULTILINE):
             cells: list[str] = []
             for line in chunk.strip("\n").split("\n"):
                 if line.startswith("|+"):  # a caption names the table, the only thing that tells an interval list from the traits it times
@@ -64,7 +64,7 @@ def _rows(wikitext: str) -> list[tuple[str, list[str], list[str]]]:
                     cells += re.split(r"\|\||!!", _CELL_ATTRS.sub("", line[1:]))
                 elif cells:
                     cells[-1] += "\n" + line
-            if not header and re.search(r"^!", chunk, flags=re.M):
+            if not header and re.search(r"^!", chunk, flags=re.MULTILINE):
                 header = [_plain(c) for c in cells]
             elif cells:
                 rows.append((caption, header, [_plain(c) for c in cells]))

@@ -30,7 +30,8 @@
 
 ## UI
 
-Utiliser au maximum les composants ng-zorro (https://ng.ant.design/components/overview/en) plutôt que du HTML/CSS custom
+- Pas d'attribut `alt` sur les `<img>`, templates et HTML générés par le code compris
+- Utiliser au maximum les composants ng-zorro (https://ng.ant.design/components/overview/en) plutôt que du HTML/CSS custom
 
 ## Visibilité
 

@@ -7,7 +7,7 @@
 import math
 import sys
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from functools import cache
 from heapq import heapify, heappop, heappush
 from itertools import compress
@@ -361,7 +361,7 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
 
 
 # The square ring at Chebyshev radius `r` around a tile, clipped to the map — the shape an 8-way search grows by, whatever it then costs a body to walk.
-def _ring_tiles(x: int, y: int, r: int, width: int, height: int):
+def _ring_tiles(x: int, y: int, r: int, width: int, height: int) -> Iterator[tuple[int, int]]:
     x0, x1, y0, y1 = x - r, x + r, y - r, y + r
     for nx in range(max(0, x0), min(width - 1, x1) + 1):  # the two horizontal sides, corners included
         for ny in {y0, y1}:

@@ -1,7 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 // `.tier-*` styles live in `src/styles.scss`.
-@Pipe({ name: 'hunger', standalone: true })
+@Pipe({ name: 'hunger' })
 export class HungerPipe implements PipeTransform {
 
   // Anchored on WB hunger, not happiness: `Actor.isHungry` answers at half the cap or under (`nutrition_level_hungry`), and only an empty belly starves.

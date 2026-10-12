@@ -2,6 +2,10 @@
 
 from collections.abc import Callable, Iterator, Sequence
 from itertools import chain, compress, repeat
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # `islands` imports this module: the type alone, never the code
+    from islands import TileIslands
 
 BARE = "~"  # marks a ground no biome grows on among the biomes' own names, none of which could start so
 HEART_CELL = 4  # tiles a side of the cells `hearts` reads on a land or a sea, one tile standing for each: a name needs no finer, the sweep sixteen times lighter
@@ -57,7 +61,7 @@ _LAYER_BY_TILE = {
 
 # Each row's RLE, its tile ids paired with its run lengths — the module's one and only reading of the grid's own shape.
 def _tile_rows(save: dict) -> Iterator[tuple[list[int], list[int]]]:
-    return zip(save.get("tileArray") or [], save.get("tileAmounts") or [])
+    return zip(save.get("tileArray") or [], save.get("tileAmounts") or [], strict=True)
 
 
 def _unfold(ids: list[int], runs: list[int]) -> list[int]:
@@ -69,7 +73,7 @@ class LazyTileGrid(dict):
     __slots__ = ("_rows", "height", "width")
 
     # Nothing is decoded here — the runs are only indexed, so that `grid[y]` can reach its own.
-    def __init__(self, save: dict):
+    def __init__(self, save: dict) -> None:
         super().__init__()
         self._rows = list(_tile_rows(save))
         self.height, self.width = len(self._rows), sum(self._rows[0][1]) if self._rows else 0
@@ -128,7 +132,7 @@ def off_land(tile_name: str) -> str:
 
 
 # The patch a land tile lies in, as `geography … biomes -t` cuts and sites it: one ground on one land, corners joining → its tiles, its size and its own middle tile.
-def patch_finder(save: dict, grid: LazyTileGrid, island_of) -> Callable[[int, int], tuple[set[tuple[int, int]], dict]]:
+def patch_finder(save: dict, grid: LazyTileGrid, island_of: "TileIslands") -> Callable[[int, int], tuple[set[tuple[int, int]], dict]]:
     grounds = [tile_ground(name) for name in save.get("tileMap") or []]
     masks: dict[str | None, list[bytes]] = {}  # a ground's own tiles, each row a mask C built, asked once however many tiles of a window stand on it
     filled: list[tuple[set[tuple[int, int]], dict]] = []  # a patch two tiles of a window share is filled once
@@ -226,9 +230,9 @@ def tile_layer(tile_name: str) -> str:
 # Each row as a byte per tile, `flags[tile id]` — built off the runs, a map's tiles never unfolded: a mask for C to search, three times faster than from the grid.
 def tile_mask(save: dict, flags: list[int]) -> list[bytes]:
     unit = [bytes((flag,)) for flag in flags]
-    return [b"".join([unit[tile] * n for tile, n in zip(ids, runs)]) for ids, runs in _tile_rows(save)]
+    return [b"".join([unit[tile] * n for tile, n in zip(ids, runs, strict=True)]) for ids, runs in _tile_rows(save)]
 
 
 # The same rows `decode_tile_grid` unfolds, left folded as `(tile id, run length)` — a caller that only tallies never pays for the tiles themselves.
 def tile_runs(save: dict) -> Iterator[tuple[int, int]]:
-    return chain.from_iterable(zip(ids, runs) for ids, runs in _tile_rows(save))
+    return chain.from_iterable(zip(ids, runs, strict=True) for ids, runs in _tile_rows(save))

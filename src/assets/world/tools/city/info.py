@@ -414,7 +414,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
             "under_construction": ctx["sites_by_city"][cid],  # chronicler-only: the sites among `buildings`, which WB counts from the day they are laid
             "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
             # Last, and out of order on purpose: the pair rides in on one spread, so it sorts under the `x` its own key never spells. WB's `updateCityCenter` anchor.
-            **(dict(zip(("x", "y"), centre)) if (centre := _city_centre(city, ctx)) else {}),
+            **(dict(zip(("x", "y"), centre, strict=True)) if (centre := _city_centre(city, ctx)) else {}),
             # Chronicler-only, years under the present banner: stamped on annexation, so no key means the city never changed hands. The save keeps no previous owner.
             **({"years_in_kingdom": _years_since(stamp, ctx)} if (stamp := city.get("timestamp_kingdom")) not in (None, -1.0) else {}),
         },

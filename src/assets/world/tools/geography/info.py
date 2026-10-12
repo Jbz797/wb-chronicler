@@ -27,7 +27,7 @@ from grid import (
     tile_layer,
     tile_mask,
 )
-from islands import compute_islands_cached
+from islands import TileIslands, compute_islands_cached
 from shared import (
     MAX_LISTED,
     SAVES_DIR,
@@ -79,7 +79,7 @@ _TOP_PATCHES = 5  # the patches `biomes -t` sites of one ground — a second mas
 
 
 # Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
-def _biome_patches(save: dict, island_of, biome_by_id: list[str | None]) -> tuple[dict[tuple[int | None, str], list[list]], list[bytes], list[str]]:
+def _biome_patches(save: dict, island_of: TileIslands, biome_by_id: list[str | None]) -> tuple[dict[tuple[int | None, str], list[list]], list[bytes], list[str]]:
     names = sorted({biome for biome in biome_by_id if biome})
     code_of = {biome: k + 1 for k, biome in enumerate(names)}
     rows: list[list[tuple[int, int, int, int]]] = []  # each row's runs, as `(west, east + 1, land << 8 | biome code, run index)`
@@ -469,7 +469,7 @@ def _site(mean_x: float, mean_y: float, runs: list[tuple[int, int, int]]) -> dic
 
 
 # The land a tile lies on, as every land-by-land section keys it — the grid decoded for a tile off every land alone, whose row tells an islet from the water.
-def _site_key(tile: tuple[int, int], island_of, grid: LazyTileGrid, tile_map: list) -> str:
+def _site_key(tile: tuple[int, int], island_of: TileIslands, grid: LazyTileGrid, tile_map: list) -> str:
     x, y = tile
     return str(island_id) if (island_id := island_of.get((x, y))) else _land_key(None, tile_map[grid[y][x]])
 
@@ -512,7 +512,7 @@ def _top_patches(found: list[list], land: dict | None, grounds: list[bytes], kin
 def _whole_bounds(found: list[list]) -> dict | None:
     if len(found) < 2:
         return None
-    _, wests, ends = zip(*(run for *_, runs in found for run in runs))  # the columns unzipped for C to weigh; a patch's runs come south to north
+    _, wests, ends = zip(*(run for *_, runs in found for run in runs), strict=True)  # the columns unzipped for C to weigh; a patch's runs come south to north
     return {"x": [min(wests), max(ends) - 1], "y": [min(runs[0][0] for *_, runs in found), max(runs[-1][0] for *_, runs in found)]}
 
 
