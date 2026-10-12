@@ -23,6 +23,7 @@ from actor_stats import (
     compute_actor_stats,
     crossed_at,
     crossed_on,
+    equipment_power,
     is_egg,
     is_hungry,
     kept_statuses,
@@ -152,6 +153,7 @@ _DEATH_CAUSES = {
     "weapon": "deaths_weapon",
 }
 
+_FEATS = ("kills", "level", "money", "renown")  # what a life adds up, kept on the body itself — weighed among thinking souls as the skills are
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
 
 # Actor field => the save collection it points into, feeding its `population` record — every actor counted, wildlife included, as each tier's medal counts its own.
@@ -246,11 +248,11 @@ def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
     ctx = build_actor_stats_context(save)
     members: dict[str, Counter] = {coll: Counter() for coll in _GROUP_FIELDS.values()}
-    persons: dict[str, Counter] = {stat: Counter() for stat in (*_SKILLS, "level")}
+    persons: dict[str, Counter] = {stat: Counter() for stat in ("equipment_power", *_FEATS, *_SKILLS)}
     sapient = _sapient_subspecies(save)
     species: Counter[str] = Counter()
 
-    # One pass over actors feeds every tally: the rolls and the species first, then the thinking population's levels and skills — only the scores walk them again.
+    # One pass over actors feeds every tally: the rolls and the species first, then the thinking souls' feats, gear and skills — only the scores walk them again.
     for a in actors:
         if is_boat(a):
             continue
@@ -260,10 +262,12 @@ def _build_leaders(save: dict) -> dict:
         species[a.get("asset_id")] += 1  # every body, beasts included, as the rolls above count them
         if a.get("subspecies") not in sapient:  # a mind, not an allegiance: the thinking population counts one owing no crown all the same
             continue
-        persons["level"][a["id"]] = int(a.get("level") or 0)
-        stats = compute_actor_stats(a, ctx)
+        aid, stats = a["id"], compute_actor_stats(a, ctx)
+        persons["equipment_power"][aid] = equipment_power(a, ctx)
+        for stat in _FEATS:
+            persons[stat][aid] = int(a.get(stat) or 0)
         for stat in _SKILLS:
-            persons[stat][a["id"]] = stats.get(stat, 0)
+            persons[stat][aid] = stats.get(stat, 0)
 
     # `{id, name}` apiece, `value` on a tally, the UI reading the rest (palette, banner, size, species) off the registries — `new.py` keeping the first holder.
     out: dict[str, dict] = {

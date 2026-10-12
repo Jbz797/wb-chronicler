@@ -31,6 +31,7 @@ from shared import (
     UNITS_PER_MONTH,
     UNITS_PER_YEAR,
     actor_age,
+    equipment_rarity,
     has_emotions,
     head_money,
     index_by_id,
@@ -225,6 +226,7 @@ _NORMALIZE_BOTH = tuple((stat, low, high) for stat, (low, high) in _NORMALIZE.it
 _NORMALIZE_FLOOR = tuple((stat, low) for stat, (low, high) in _NORMALIZE.items() if high == inf)
 _NUTRITION_MAX = 100  # WB `ActorAsset.nutrition_max`, left at its default by every species: only a biology's `max_nutrition` widens it
 _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
+_RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # WB's own ladder, weighing a carried arsenal into the « puissance » gauge.
 
 _RENAMES = {
     "cities": "max_cities",
@@ -749,6 +751,12 @@ def crossed_at(actor: dict, threshold: float) -> float:
 
 def crossed_on(actor: dict, threshold: float) -> str:
     return world_date(crossed_at(actor, threshold))
+
+
+# What a body's arsenal weighs, each piece by its rarity — one figure for a panel's gauge and for the world's podium, where a count of pieces would say less.
+def equipment_power(actor: dict, ctx: dict) -> int:
+    items = ctx["items_by_id"]
+    return sum(_RARITY_POINTS[equipment_rarity(item.get("modifiers") or [])] for iid in actor.get("saved_items") or [] if (item := items.get(iid)))
 
 
 # The month a body leaves its shell, gone by or to come — `born` being the laying. `None` for a biology that lays nothing.

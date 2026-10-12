@@ -122,5 +122,7 @@ export class FavoriteComponent {
     const label = this._translate.instant(key) as string;
     return label === key ? (this._translate.instant('tenure_default') as string) : label;
   });
+  // The field the post's medal is won in — its holders, where every other medal of the panel is the species'.
+  protected readonly tenurePeers = computed(() => `tenure_peers_${this.currentChapter()?.meta.favorite?.metadata.job ?? ''}`);
 
 }

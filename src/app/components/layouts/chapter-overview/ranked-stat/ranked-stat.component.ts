@@ -31,6 +31,7 @@ export class RankedStatComponent {
   public readonly inverted = input<boolean>(false); // Flips the delta colour — for stats where a rise is bad (deaths).
   public readonly numberFormat = input<string>('1.0-0');
   public readonly ordinal = input<boolean>(false); // A placement rather than a count: the mark it wears is the number's own, and the tongue's.
+  public readonly rankHint = input<string>(''); // An i18n key, said over the medal where its field is not the one the panel's others are ranked in.
   public readonly showRank = input<boolean>(true);
   public readonly source = input<RankedStatSource>('favorite');
   public readonly stat = input.required<RankedStatKind>();
@@ -56,6 +57,11 @@ export class RankedStatComponent {
     if (k === 'health') return s?.health;
     if (k === 'mana') return s?.mana;
     return k === 'stamina' ? s?.stamina : null;
+  });
+  // The medal's field in words, where one was named — nothing otherwise, and the tooltip then stays shut.
+  protected readonly hint = computed(() => {
+    const key = this.rankHint();
+    return key ? (this._translate.instant(key) as string) : '';
   });
   // The unit printed after the figure: an ordinal takes the placement's own mark, anything else its translated word. Nothing asked for, nothing printed.
   protected readonly unit = computed(() => {
@@ -145,7 +151,8 @@ export class RankedStatComponent {
   private _resolveFavorite(f: NonNullable<ChapterMeta['favorite']>): RankedStatSnapshot {
     const k = this.stat();
     const ranks = f.ranks_in_species ?? {}; // Absent when the favorite tops nothing in its species — every lookup below then simply misses.
-    if (k === 'age') return this._snap(f.metadata.age, ranks.age); // the one kind read off `metadata`; every other names a field of `stats`
+    if (k === 'age') return this._snap(f.metadata.age, ranks.age); // read off `metadata`, as the post's years are; every other names a field of `stats`
+    if (k === 'tenure_years') return this._snap(f.metadata.tenure_years ?? 0, f.metadata.tenure_rank_in_post); // ranked among the post's holders, not the species
     const field = FAVORITE_GAUGE_FIELDS[k] ?? k;
     // `level` alone has a floor of 1, where Python leaves it unsaid.
     return this._snap(f.stats[field as keyof typeof f.stats] ?? (field === 'level' ? 1 : 0), ranks[field as keyof typeof ranks]);

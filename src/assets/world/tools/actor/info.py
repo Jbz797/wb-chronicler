@@ -19,6 +19,7 @@ from actor_stats import (
     build_actor_stats_context,
     compute_actor_stats,
     crossed_on,
+    equipment_power,
     hatch_on,
     is_baby,
     is_egg,
@@ -54,7 +55,6 @@ from shared import (
     entity_born,
     entity_ref,
     equipment_entry,
-    equipment_rarity,
     fertile,
     has_emotions,
     index_by_id,
@@ -117,8 +117,6 @@ _RANKED_STATS = {
     "stewardship",
     "warfare",
 }
-
-_RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # WB's own ladder, weighing a carried arsenal into the « puissance » gauge.
 
 # UI order: active roles (chief, alpha) before historical foundations (creators before founders). `army_captain` is a `profession`, not a role.
 _ROLE_ORDER = (
@@ -268,6 +266,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age_adult, age_breeding = adult_age(actor, ctx), breeding_age(actor, ctx)
     tile = actor_xy(actor)
     profession = resolve_profession(actor, save)
+    seats = _tenures(_TENURE_ROLES.get(profession or ""), save, ctx["world_time"])  # every holder of the post, read once: the years, then the place among them
+    held, tenure = [{"years": years} for years in seats.values()], seats.get(actor["id"])
 
     # A lineage that can bear first (`fertile`); then `Actor.canBreed`'s age and reserve (a gut-less body fed), `infertile` and the cap on whoever bears.
     lineage = ctx["subspecies_by_id"].get(actor.get("subspecies"))
@@ -297,7 +297,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"can_reproduce": True} if can_reproduce else {}),
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
         "clan": entity_ref(actor.get("clan"), ctx["clans_by_id"]),  # a ref, not a bare name: `clan/info.py <id>` can be called on it, as on `family`
-        "clan_chief_years": _resolve_tenure(actor, _CLAN_CHIEF_ROLE, save, ctx["world_time"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
+        "clan_chief_years": _tenures(_CLAN_CHIEF_ROLE, save, ctx["world_time"]).get(actor["id"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
         "culture": entity_ref(actor.get("culture"), ctx["cultures_by_id"]),  # a ref like `clan`: `culture/info.py <id>` reads the customs it was raised in
         "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # a ref, not a bare name: `family/info.py <id>` can be called on it
         "favorite_food": actor.get("favorite_food"),
@@ -330,7 +330,9 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "task": kept_task(actor),  # Chronicler-only: what the body was doing the instant of the save, by WB's own id, where the save keeps it
         "task_target": _task_target(actor, ctx, save),
-        "tenure_years": _resolve_tenure(actor, _TENURE_ROLES.get(profession or ""), save, ctx["world_time"]),
+        # A chief among chiefs, a king among kings: no species seats enough of either for its own podium to rank them.
+        "tenure_rank_in_post": competition_ranks({"years": tenure or 0}, held, {"tenure": lambda seat: seat["years"]}).get("tenure"),
+        "tenure_years": tenure,
         # WB `isInsideSomething`: a save keeps the boat half, never the building. A plain ref, souls boarding transports alone — `boat/info.py <id>` spells it out.
         **({"transport": entity_ref(actor.get("transportID"), ctx["actors_by_id"])} if is_aboard(actor) else {}),
         "x": tile[0],
@@ -586,7 +588,7 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
             # Life's tallies, silent at nought as every other stat is: a soul that has killed nobody and owns nothing says so by carrying none of them.
             **({"births": n} if (n := int(actor.get("births") or 0)) else {}),
             **({"children": n} if (n := ctx["children_by_parent"].get(actor.get("id"), 0)) else {}),
-            **({"equipment_power": n} if (n := _equipment_power(actor, ctx)) else {}),
+            **({"equipment_power": n} if (n := equipment_power(actor, ctx)) else {}),
             # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
             **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
             "health": int(actor.get("health") or 0),
@@ -602,17 +604,6 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
         }
     )
     return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
-
-
-# Sum of `_RARITY_POINTS` over carried items — the « puissance d'équipement » gauge.
-def _equipment_power(actor: dict, ctx: dict) -> int:
-    items = ctx["items_by_id"]
-    total = 0
-    for iid in actor.get("saved_items") or []:
-        item = items.get(iid)
-        if item:
-            total += _RARITY_POINTS[equipment_rarity(item.get("modifiers") or [])]
-    return total
 
 
 # The same trip made by the body aimed at, which no shared figure tells: its own pace, its own swim — only what differs, and nothing where both agree.
@@ -697,21 +688,6 @@ def _off_land_at(body: dict, ctx: dict) -> dict:
 # Tiles walked in an hour at the body's own pace — a passenger's too, the unit his hull's sailing is counted in (`_gait`).
 def _per_hour(actor: dict, ctx: dict) -> float:
     return HOURLY_TILES_PER_SPEED * (compute_actor_stats(actor, ctx).get("speed") or 1)
-
-
-# Years the actor has held `role` = (holder field, collection, history). `None` unless the history's last entry still names them.
-def _resolve_tenure(actor: dict, role: tuple[str, str, str] | None, save: dict, world_time: float) -> int | None:
-    if role is None:
-        return None
-    holder_field, collection, history = role
-    actor_id = actor.get("id")
-    for record in save.get(collection, []):
-        if record.get(holder_field) != actor_id:
-            continue
-        entries = record.get(history) or []
-        if entries and entries[-1].get("id") == actor_id:
-            return int((world_time - float(entries[-1].get("timestamp_ago") or 0)) / UNITS_PER_YEAR)
-    return None
 
 
 # The circle a time falls in, read as `duration` tells it, so a row printed « 2 h » stands in the common circle though its walk ran to 2.04 — `None` past them.
@@ -857,6 +833,19 @@ def _task_target(actor: dict, ctx: dict, save: dict) -> dict | None:
         site = next((b for b in save.get("buildings") or [] if b.get("id") == target), None) or {}
         aim["ground"] = {"asset_id": site.get("asset_id"), "id": target}
     return aim
+
+
+# Years each holder of a post has sat in it, by its id — `role` = (holder field, collection, history). A seat counts while its history's last entry names its holder.
+def _tenures(role: tuple[str, str, str] | None, save: dict, world_time: float) -> dict[int, int]:
+    if role is None:
+        return {}
+    holder_field, collection, history = role
+    seats: dict[int, int] = {}
+    for record in save.get(collection, []):
+        entries = record.get(history) or []
+        if entries and (holder := record.get(holder_field)) is not None and entries[-1].get("id") == holder:
+            seats.setdefault(holder, int((world_time - float(entries[-1].get("timestamp_ago") or 0)) / UNITS_PER_YEAR))
+    return seats
 
 
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.

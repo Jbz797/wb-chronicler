@@ -57,7 +57,7 @@ export const LEADER_FAMILY_ROWS: { icon: string; key: 'population'; label: strin
 
 // The world « Palmarès », one table per group: a soul's level and skills first (in `SKILL_STATS` order), then the parent species ahead of the biology it holds.
 export const LEADER_GROUPS: LeaderGroupConfig[] = [
-  { group: 'persons', label: 'ui_persons', measures: ['level', 'diplomacy', 'warfare', 'stewardship', 'intelligence'] },
+  { group: 'persons', label: 'ui_persons', measures: ['level', 'renown', 'diplomacy', 'warfare', 'stewardship', 'intelligence'] },
   { group: 'species', label: 'ui_species_plural', measures: ['population'] },
   { group: 'subspecies', label: 'ui_subspecies_count', measures: ['population'] },
   { group: 'families', label: 'ui_families', measures: ['population'] },
@@ -75,6 +75,7 @@ export const LEADER_MEASURES: Record<LeaderMeasure, { icon: string; label: strin
   intelligence: { icon: 'assets/img/stats/intelligence.png', label: 'ui_intelligence' },
   level: { icon: 'assets/img/stats/level.png', label: 'ui_level' },
   population: { icon: 'assets/img/world/population.png', label: 'ui_population' },
+  renown: { icon: 'assets/img/stats/renown.png', label: 'ui_renown' },
   score: { icon: 'assets/img/podium/1.png', label: 'ui_score' },
   stewardship: { icon: 'assets/img/stats/stewardship.png', label: 'ui_stewardship' },
   warfare: { icon: 'assets/img/stats/warfare.png', label: 'ui_warfare' },

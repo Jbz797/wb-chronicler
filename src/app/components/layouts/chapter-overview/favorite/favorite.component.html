@@ -13,8 +13,10 @@
       <app-ranked-stat stat="age" [hideDelta]="true" [suffix]="ageSuffix()" />
     </nz-descriptions-item>
     <!-- An `@if`, not `*appPresent`: a post held under a year reads 0, and « 0 ans » says nothing the chapter's new crown does not. -->
-    @if (fav.metadata.tenure_years; as years) {
-      <nz-descriptions-item [nzTitle]="tenureTitle">{{ years }}{{ 'ui_years' | translate }}</nz-descriptions-item>
+    @if (fav.metadata.tenure_years) {
+      <nz-descriptions-item [nzTitle]="tenureTitle">
+        <app-ranked-stat stat="tenure_years" suffix="ui_years" [hideDelta]="true" [rankHint]="tenurePeers()" />
+      </nz-descriptions-item>
     }
     <nz-descriptions-item [nzTitle]="lifespanTitle">
       <app-ranked-stat stat="lifespan" suffix="ui_years" />

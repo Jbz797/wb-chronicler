@@ -26,6 +26,7 @@ interface FavoriteMetadata {
   personality?: string;
   roles?: string[];
   sex: 'female' | 'male';
+  tenure_rank_in_post?: number; // 1-3 among those who hold the same post, a chief among chiefs — absent off that podium, as a rank in the species is
   tenure_years?: number;
   x: number; // where the body stood as the chapter was written — the fullscreen map pins it there
   y: number;

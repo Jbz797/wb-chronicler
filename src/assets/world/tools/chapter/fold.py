@@ -128,6 +128,7 @@ _TALLIES = {
 
 # The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
 _UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
+_UI_UNSHOWN_RECORDS = {"persons": frozenset({"equipment_power", "kills", "money"})}  # the « Palmarès » prints `renown`, which weighs what these three count
 _UI_UNSHOWN_ZERO = frozenset({"critical_chance"})  # a floor the chronicler reads as a fact (`_KEEP_ZERO`), where the panel has nothing to show
 
 
@@ -219,11 +220,13 @@ def _fold_total(entity: dict, *keys: str) -> None:
             entity[key] = {"total": block.get("total", 0)}
 
 
-# Every record of the world's « Palmarès », each to its first holder — `world/info.py <chapter> leaders` naming them all.
+# Every record the world's « Palmarès » prints, each to its first holder — `world/info.py <chapter> leaders` naming them all, the unprinted ones too.
 def _fold_world_leaders(world: dict) -> None:
     if isinstance(block := world.get("leaders"), dict):
         block.pop("unranked", None)  # why a group stayed empty: the chronicler's, no panel's
-        world["leaders"] = {group: {row: _first_holder(holders) for row, holders in rows.items()} for group, rows in block.items()}
+        world["leaders"] = {
+            group: {row: _first_holder(holders) for row, holders in rows.items() if row not in _UI_UNSHOWN_RECORDS.get(group, ())} for group, rows in block.items()
+        }
 
 
 def _without(block: dict, cut: frozenset) -> dict:
