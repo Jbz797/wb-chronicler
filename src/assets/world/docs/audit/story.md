@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 07/10/26 01:07</p>
+<p class="metadata">Date de mise à jour : 12/10/26 11:38</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -14,9 +14,9 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut : à partir de `sav
 - un motif, une cause ou un chiffre qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - une âme ou un lieu qu'elle a lâchés là où la chronique l'attendait.
 
-Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : signale-le comme un point à mesurer. Tu ne vérifies pas les faits, c'est l'affaire d'autres auditeurs ; mais un écart que tu t'apprêtes à soulever peut se mesurer d'une commande (`docs/tools.md`), citée avec lui. L'arithmétique du temps (l'an N, les âges, les mois) se lit dans `docs/chronicler.md` § « Conversion temps » ; un seuil d'âge d'espèce se mesure, il se signale.
+Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : signale-le comme un point à mesurer. Tu ne vérifies pas les faits, c'est l'affaire d'autres auditeurs ; mais un écart que tu t'apprêtes à soulever peut se mesurer d'une commande (`docs/tools.md`), citée avec lui. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Conversion temps » ; un seuil d'âge d'espèce se mesure, il se signale.
 
-Dis-le franchement là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage qui manque à la chronique, un angle jamais pris), mais comme une direction, jamais comme de la prose écrite.
+Dis-le franchement là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage manquant, un angle neuf), mais comme une direction, jamais comme de la prose écrite.
 
 Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peut le réparer, ou si la chronique le porte de plus loin. N'écris dans aucun autre fichier.
 
