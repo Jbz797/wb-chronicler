@@ -12,9 +12,12 @@ namespace FaithfulSaves
     // sleep, and winds the world's own clocks back. The time each of those had left now rides in custom data, which WB does save — the
     // creature's own, or the world's —, and is handed back once the world is loaded. So is the task a creature was at, which WB drops as well:
     // the step it had reached, how long it had been at it, the pause it was holding, and what that step was aimed at — a tile, a wall, a prey.
-    // And the roof it was under: WB keeps no trace of who is indoors, and sets every creature back on its doorstep.
+    // And the roof it was under: WB keeps no trace of who is indoors, and sets every creature back on its doorstep. A hull is kept as a creature
+    // is, with the shore it was taking its passengers to: of a boat, WB keeps who is aboard and no more.
     internal static class SavePatches
     {
+        private const string CourseX = "faithful_course_x"; // the shore a hull was taking its passengers to, among its custom ints: `Boat.taxi_target`
+        private const string CourseY = "faithful_course_y";
         private const string Inside = "faithful_inside"; // the id of the building the creature was inside, among its custom longs
         private const string Log = "[Faithful Saves]: "; // every load says what it handed back, and names what it could not
         private const int LongWait = 90; // a decision's cooldown from which a redrawn wait is rarely sat out before the next load: sleeps, a herd's march
@@ -51,6 +54,8 @@ namespace FaithfulSaves
         private static readonly AccessTools.FieldRef<Actor, Book> _bookTarget = AccessTools.FieldRefAccess<Actor, Book>("beh_book_target");
         private static readonly AccessTools.FieldRef<Actor, Building> _buildingTarget = AccessTools.FieldRefAccess<Actor, Building>("beh_building_target");
 
+        private static readonly AccessTools.FieldRef<Boat, WorldTile> _course = AccessTools.FieldRefAccess<Boat, WorldTile>("taxi_target");
+
         // The roof a creature is under and whether it is: the two fields `Actor.stayInBuilding` sets, and all it does.
         private static readonly AccessTools.FieldRef<Actor, Building> _inside = AccessTools.FieldRefAccess<Actor, Building>("inside_building");
         private static readonly AccessTools.FieldRef<Actor, bool> _isInside = AccessTools.FieldRefAccess<Actor, bool>("is_inside_building");
@@ -83,8 +88,7 @@ namespace FaithfulSaves
                 Keep(data, StatusPrefix + asset.id, kept ? (float)statuses[asset.id].getRemainingTime() : 0f);
             }
             AiSystemActor mind = _ai(__instance);
-            // A boat's task is WB's own to keep: it saves the state of each hull and sets its task anew on load (`SaveManager.loadBoatStates`).
-            BehaviourTaskActor task = mind != null && !__instance.asset.is_boat ? _task(mind) : null;
+            BehaviourTaskActor task = mind != null ? _task(mind) : null;
             if (task != null)
                 data.set(Task, task.id);
             else
@@ -98,17 +102,10 @@ namespace FaithfulSaves
             KeepAim(data, TaskBook, task != null ? _bookTarget(__instance) : null);
             KeepAim(data, TaskBuilding, task != null ? _buildingTarget(__instance) : null);
             KeepAim(data, Inside, _isInside(__instance) ? _inside(__instance) : null);
-            WorldTile tile = task != null ? _tileTarget(__instance) : null;
-            if (tile != null)
-            {
-                data.set(TaskTileX, tile.x);
-                data.set(TaskTileY, tile.y);
-            }
-            else
-            {
-                data.removeInt(TaskTileX);
-                data.removeInt(TaskTileY);
-            }
+            KeepTile(data, TaskTileX, TaskTileY, task != null ? _tileTarget(__instance) : null);
+            // A hull's own aim, held on its `Boat` and not among a task's: without it a loaded hull is sent to a shore drawn anew (`BehBoatTransportCheck`).
+            Boat hull = __instance.asset.is_boat ? __instance.getSimpleComponent<Boat>() : null;
+            KeepTile(data, CourseX, CourseY, hull != null ? _course(hull) : null);
             double[] lastTaken = _lastTaken(__instance);
             if (lastTaken == null)
                 return;
@@ -195,7 +192,7 @@ namespace FaithfulSaves
         private static void AfterWorldLoaded()
         {
             double now = World.world.getCurWorldTime();
-            int tasks = 0, roofs = 0;
+            int tasks = 0, roofs = 0, courses = 0;
             List<string> lost = new List<string>();
             foreach (Actor actor in World.world.units)
             {
@@ -204,8 +201,10 @@ namespace FaithfulSaves
                     tasks++;
                 if (GiveRoofBack(actor, data, lost)) // after its task: taking one up empties the roof, as any change of task does
                     roofs++;
+                if (GiveCourseBack(actor, data, lost))
+                    courses++;
             }
-            Report($"{tasks} tasks and {roofs} roofs", lost);
+            Report($"{tasks} tasks, {roofs} roofs and {courses} courses", lost);
         }
 
         // A status handed back for the time it had left, without what WB does on first posing it: the mood it brought was felt, and saved, already.
@@ -227,6 +226,27 @@ namespace FaithfulSaves
                 pAsset.action_on_receive = onReceive;
             }
             return Wears(pActor, pAsset.id); // WB may refuse one: a kind barred from that tier of statuses, an opposite one already worn
+        }
+
+        // A hull handed back the shore it was sailing its passengers to. What it was sailing to fetch is not: a call for a hull lives in a list
+        // WB rebuilds as creatures ask again (`TaxiManager`), and a hull on its way to one drops that task as WB has it do (`Boat.cancelWork`).
+        private static bool GiveCourseBack(Actor pActor, BaseObjectData pData, List<string> pLost)
+        {
+            pData.get(CourseX, out int x, -1);
+            pData.get(CourseY, out int y, -1);
+            pData.removeInt(CourseX);
+            pData.removeInt(CourseY);
+            if (x < 0 || y < 0)
+                return false;
+            WorldTile shore = World.world.GetTile(x, y);
+            Boat hull = pActor.asset.is_boat ? pActor.getSimpleComponent<Boat>() : null;
+            if (shore == null || hull == null)
+            {
+                pLost.Add($"the course of {pActor.getName()}");
+                return false;
+            }
+            _course(hull) = shore;
+            return true;
         }
 
         // A creature set back under the roof it was in, the building looked up by its id; one the world no longer holds is named in `pLost`.
@@ -311,6 +331,21 @@ namespace FaithfulSaves
                 pData.set(pKey, pAim.getID());
             else
                 pData.removeLong(pKey);
+        }
+
+        // A tile written by its two coordinates, both keys dropped where there is none.
+        private static void KeepTile(BaseSystemData pData, string pKeyX, string pKeyY, WorldTile pTile)
+        {
+            if (pTile != null)
+            {
+                pData.set(pKeyX, pTile.x);
+                pData.set(pKeyY, pTile.y);
+            }
+            else
+            {
+                pData.removeInt(pKeyX);
+                pData.removeInt(pKeyY);
+            }
         }
 
         // A time left written under its key, the key dropped when nothing is left.

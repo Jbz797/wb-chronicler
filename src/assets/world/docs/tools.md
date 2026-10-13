@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 13/10/26 12:02</p>
+<p class="metadata">Date de mise à jour : 13/10/26 12:47</p>
 
 Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -34,7 +34,7 @@ Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, 
 
 ### `geography` :
 
-- `--since C<n>` : ce qui a bougé, `[avant, après]`, `new` ou `gone` ; des soldes : un passage se lit dans `roster --since` — sauf `positions`, qui nomme chaque paru et disparu par son id
+- `--since C<n>` : ce qui a bougé, `[avant, après]`, `new` ou `gone` ; des soldes : un passage se lit dans `roster --since` — sauf `positions`, qui nomme chacun par son id
 - `-i <id>` : une seule terre dans les sections rangées par terre, ou `islets` et `water` là où elles les comptent
 - `-t <type>` : sous `positions`, types, familles (`trees`…) et ressources, par virgules, hors corps ; sous `biomes -i`, un biome ou un sol, ses 5 plus grandes parcelles
 
@@ -71,21 +71,22 @@ Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, 
 - `actor … surroundings` se compte à son pas, `total_…` par ligne, terrain pesé ; comme `--to`, ne nage que si son but est sur une autre terre ; une coque qu'il rejoint y paraît (`boat_…`), sans être un corps : `intimate` ≤ 30 min, `common` ≤ 2 h ; `common_with_boat`, hors de sa terre, ≤ 2 h en bateau, marches comprises, si son royaume a un transport ; à bord, par l'eau puis à pied ; `water` et `islet_tiles` comme dans `tiles … tile_info`, tus sur sa terre ou son îlot. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. Seul, il donne son `nearest` à vol d'oiseau. `sapient` se tait devant `kin`, `job` ou `role`.
 - `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `wiki:Unit_Stats`.
 - `gen` (`actor … metadata`) : absent, le corps a paru sans parents ; dès 2, ils sont `parent` sous `surroundings`.
-- `happiness` (`actor … stats`) : la barre du jeu en % ; ses seuils : `wiki:Happiness`.
+- `happiness` (`actor … stats`) : la barre du jeu en % ; seuils : `wiki:Happiness`.
+- `in_building` : sous ce toit ; `at_building` : à une tuile au plus.
 - `task` : une suite d'actions, sans son étape ; il ne dort que si `statuses` dit `sleeping` (`wiki:Behaviour_Tasks`).
 
 ### Entités et comptes :
 
 - `buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose, que `born` date.
 - `description` et `flavor` d'un trait disent l'ambiance, jamais l'effet : il tient dans `stats`, que `dormant` dit endormies par l'ère et `absorbed` bues par une borne, le reste dans `wiki:Creature_Traits` ou `wiki:Subspecies_Traits`. Un don se pèse contre sa lignée (`subspecies … stats`), jamais contre un autre corps.
-- `ground … metadata` : `cost`, pris à la réserve de la cité dès la pose (`wiki:Buildings`) ; `health` ne sort que d'un bâtiment blessé, près de son `health_max` ; un arbre, lui, tombe d'un coup (`wiki:Wood`).
+- `ground … metadata` : `cost`, pris à la réserve dès la pose (`wiki:Buildings`) ; `health` ne sort que blessé, près de `health_max` ; un arbre tombe d'un coup (`wiki:Wood`).
 - `history`, l'historique de WB : `world`, ce que chaque année a vu naître, mourir ou s'éteindre — WB la clôt à l'entrée de son 12ᵉ mois, d'où `until`, et `since` sur celle en cours (`so_far`) —, une année absente : rien de neuf, les ~20 dernières seules ; `entity`, ses états (noms nus : `population`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`), l'avant de la fenêtre approché (`around_year`). Seuls les vivants y ont leurs années. De quoi meurent les siens : `deaths_by_cause`, au `metadata` d'une cité, d'un royaume, d'un clan ou d'une lignée ; ceux du monde, sur `world … cumulative` ou `history world`, jamais en additionnant les lignées, les éteintes n'ayant plus de `metadata`. `unknown` : celles que le jeu ne range nulle part — fièvre des Cendres, ovni, doigt divin…
 - `kingdom … metadata` : une seule coque (`ferries`) sert tout le royaume.
 - `migrants` (`city … metadata`) : ce qui retient la loi d'en amener, sinon `soon` ou `later` (`wiki:World_Laws`).
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : `wiki:Religions`.
 - `report` parle par images : « No fire, no warmth » dit le bois qui manque, pas le feu.
 - `rulers` (cité, royaume) : la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain en place : `population.ruler_money`.
-- `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; `drivers`, complet, somme au `total` ; chaque terme de la loyauté, par son id : `wiki:Loyalty`.
+- `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; `drivers`, complet, somme au `total` ; chaque terme, par son id : `wiki:Loyalty`.
 - `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : naissances et extinctions se lisent dans `cumulative`, où chaque compteur ne fait que monter.
 - Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 

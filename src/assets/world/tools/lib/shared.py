@@ -485,6 +485,14 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
     return sorted(out, key=lambda t: t["id"])
 
 
+# The built structure a body stands at: on its own tile or one of the eight round it, the nearest first, the body's own roof before another as near.
+def building_at(actor: dict, by_tile: Mapping[tuple, dict]) -> dict | None:
+    x, y = actor_xy(actor)
+    home = actor.get("homeBuildingID")
+    near = [(dx * dx + dy * dy, b["id"] != home, b["id"], b) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (b := by_tile.get((x + dx, y + dy)))]
+    return min(near, key=lambda found: found[:3])[3] if near else None
+
+
 # The family `entity_types` files a building in: civic `buildings`, the built kinds the manifest never declared among them, else WB's own category, strays `other`.
 @cache
 def building_family(asset: str) -> str:
@@ -495,6 +503,12 @@ def building_family(asset: str) -> str:
 def building_tile(building: dict) -> tuple[int, int] | None:
     x, y = building.get("mainX"), building.get("mainY")
     return None if x is None and y is None else (x or 0, y or 0)  # WB writes both as ints, so no `int()` to pay on every building of the world
+
+
+# Built structures by their own tile. Nature files under `buildings` too, and nobody stands at a field as at a fire.
+def built_by_tile(save: dict) -> dict[tuple, dict]:
+    civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
+    return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
 
 
 # A chapter's length as its bounds count it, blanks folded as the docs' budget folds them: a blank line or an indent is no prose.
@@ -826,6 +840,11 @@ def land_arg(value: str) -> int | str:
     if not value.isdigit():
         raise argparse.ArgumentTypeError(f"{value!r} is no land — a land's id, `islets` or `water`")
     return int(value)
+
+
+# The building the Faithful Saves mod found a body inside, by its id. WB keeps `is_inside_building` on the runtime actor alone: no save without the mod says it.
+def kept_roof(actor: dict) -> int | None:
+    return (actor.get("custom_data_long") or {}).get("faithful_inside")
 
 
 # The last chapter standing, 0 where none does yet. Three callers glob these dirs, and a chapter is `C<n>` on disk and nowhere else.
@@ -1341,6 +1360,17 @@ def wants_detail(requested: str | None, count: int) -> bool:
 @cache
 def weapon_assets() -> frozenset[str]:
     return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
+
+
+# Where a body stands as to the built: the roof it is under, as the Faithful Saves mod kept it, and the structure it stands at, unsaid where it is that roof.
+def whereabouts(actor: dict, buildings: Sequence[dict], by_tile: Mapping[tuple, dict]) -> dict:
+    roof = kept_roof(actor)
+    inside = next((b for b in buildings if b.get("id") == roof), None) if roof is not None else None
+    at = building_at(actor, by_tile)
+    return {
+        "at_building": {"asset_id": at.get("asset_id"), "id": at["id"]} if at and at is not inside else None,
+        "in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]} if inside else None,
+    }
 
 
 # A `world_time` as the chronicle dates it, both counts 1-based as WB displays them: `t = 1181` is `y20 m9`. A string, not a pair: a roll's line stays on one line.

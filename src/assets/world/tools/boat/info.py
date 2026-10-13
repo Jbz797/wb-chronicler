@@ -14,8 +14,7 @@ from shared import (
     actor_xy,
     build_trait_ids,
     build_trait_list,
-    building_tile,
-    civic_building_ids,
+    built_by_tile,
     emit,
     entity_age,
     entity_ref,
@@ -28,17 +27,12 @@ from shared import (
     resolve_profession,
     take_chapter,
     wants_detail,
+    whereabouts,
 )
 
 _ALL_SECTIONS = ("combat", "crew", "identity", "inventory", "metadata", "traits")
 _LEVEL_HEALTH_MOD = 0.05  # WB `_LEVEL_MOD["health"]`: every level lifts the cap by a twentieth, and leaves damage alone
 _MASS_SCALE_UNIT = 0.1  # WB `Actor.getMassKG` weighs a hull as `mass_2 × (scale / this)`, every boat sharing the one `scale` `$boat$` declares
-
-
-# Moored on a quay's own tile — rare, a hull riding two tiles offshore at best, and never necessarily its own: WB lets one tie up at a rival's dock.
-def _berth(boat: dict, ctx: dict) -> dict | None:
-    quay = ctx["buildings_by_tile"]().get(actor_xy(boat))
-    return {"asset_id": quay.get("asset_id"), "id": quay["id"]} if quay else None
 
 
 # WB arms a hull off its species' shipyard, not its trade — 30 to 65 damage; `damage_range` gives the « min-max » pair. `targets` goes, four on every munition.
@@ -89,11 +83,12 @@ def _build_metadata(boat: dict, ctx: dict) -> dict:
     level = max(int(boat.get("level") or 0), 1)  # WB scales from level 1 even where the field is absent, as `Actor.updateStats` does
     x, y = actor_xy(boat)
     return {
+        # Tied up in a quay as the mod kept it, or riding beside one — rare, a hull keeping two tiles offshore at best, and never necessarily its own dock.
+        **whereabouts(boat, ctx["buildings"], ctx["buildings_by_tile"]()),
         "age": entity_age(boat, ctx["world_time"]),
         "health": boat.get("health"),
         "health_max": _health_max(boat, ctx, level),
         "home": home["id"] if home else None,  # the dock it answers to — a handle, `ground/info.py <id>` spelling out its age, health, city and zone
-        **({"in_building": quay} if (quay := _berth(boat, ctx)) else {}),
         "kills": boat.get("kills", 0),
         "level": level if level > 1 else None,  # the floor every hull starts at, unsaid
         "loot": boat.get("loot", 0),  # coin plundered from what it sank, WB's own word
@@ -109,12 +104,6 @@ def _build_metadata(boat: dict, ctx: dict) -> dict:
 def _build_traits(boat: dict, detailed: bool) -> dict | list[dict]:
     sworn, library = boat.get("saved_traits") or [], load_data("creature-traits.json")
     return build_trait_list(sworn, library) if detailed else light({"ids": build_trait_ids(sworn, library, "group")})
-
-
-# Built structures by their tile, so `metadata` can name the quay a hull is moored at. Nature files under `buildings` too, and nobody ties up to a field.
-def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
-    civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
-    return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
 
 
 # WB `BaseSimObject.getMaxHealth` reads the finished `health` stat: the template's, lifted a twentieth per level, then multiplied by whatever the traits grant.
@@ -167,7 +156,7 @@ def main(argv: list[str]) -> int:
 
     ctx = {
         "buildings": save.get("buildings") or [],
-        "buildings_by_tile": cache(lambda: _buildings_by_tile(save)),  # called not stored: only `metadata` asks what quay a hull is tied to
+        "buildings_by_tile": cache(lambda: built_by_tile(save)),  # called not stored: only `metadata` asks what a hull rides beside
         "cities_by_id": index_by_id(save.get("cities") or []),
         "creature_traits": load_data("creature-traits.json"),
         "equipment": load_data("equipment.json"),

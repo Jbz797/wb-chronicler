@@ -14,8 +14,9 @@ from islands import compute_islands_cached
 from shared import (
     absent_entity,
     actor_age,
-    actor_xy,
+    building_at,
     building_tile,
+    built_by_tile,
     civic_building_ids,
     emit,
     entity_age,
@@ -23,6 +24,7 @@ from shared import (
     entity_ref,
     index_by_id,
     is_boat,
+    kept_roof,
     light,
     load_data,
     load_save,
@@ -38,13 +40,13 @@ _ALL_SECTIONS = ("boats", "inventory", "metadata", "occupants")
 _UNWRITTEN_HEALTH = 100  # WB `BaseObjectData`: the health a record is born with, which a save leaves out
 
 
-# Absent off a shipyard, `in_building` telling a moored hull from a visiting one. `boat/info.py <id>` spells one out.
-def _build_boats(moored: list[dict], house: dict, civic: bool, requested: str | None) -> dict:
+# Absent off a shipyard, `in_building` telling a hull tied up in it from one riding by. `boat/info.py <id>` spells one out.
+def _build_boats(moored: list[dict], spots: dict[int, dict], requested: str | None) -> dict:
     if not moored:
         return {}
     if not wants_detail(requested, len(moored)):  # `full` keeps it light — one count, the hulls themselves only when the section is asked for by name
         return light({"total": len(moored)})
-    afloat = [{"asset_id": b.get("asset_id"), "id": b["id"], "name": b.get("name"), **_here(b, house, civic)} for b in moored]
+    afloat = [{"asset_id": b.get("asset_id"), "id": b["id"], "name": b.get("name"), **spots.get(b["id"], {})} for b in moored]
     return {"afloat": afloat, "total": len(moored)}
 
 
@@ -104,7 +106,7 @@ def _build_occupants(residents: list[dict], house: dict, ctx: dict, save: dict, 
             "job": resolve_profession(actor, save),
             "name": actor.get("name"),
             "sex": sex_label(actor),
-            **_here(actor, house, ctx["civic"]),
+            **ctx["spots"].get(actor["id"], {}),
             # Their own roof, named only when it is not this one — a guest by the fire, a miner at the seam, a soul WB left homeless keeping the key away.
             **({"home": home} if (home := actor.get("homeBuildingID")) and home != house["id"] else {}),
         }
@@ -113,11 +115,11 @@ def _build_occupants(residents: list[dict], house: dict, ctx: dict, save: dict, 
     return {"roster": sorted(out, key=lambda o: (-o["age"], o["id"])), "total": len(out)}
 
 
-# WB keeps `is_inside_building` on the runtime `Actor`, never on the `ActorData` a save writes — the very tile is all a chronicler can read. Absent unless true.
-def _here(actor: dict, house: dict, civic: bool) -> dict:
-    if not civic:  # nobody steps « inside » a field
-        return {}
-    return {"in_building": True} if actor_xy(actor) == building_tile(house) else {}
+# Under this roof, as the Faithful Saves mod kept it, or standing at it: its tile or one beside, and no other structure nearer. Absent unless true.
+def _here(actor: dict, house: dict, by_tile: dict[tuple, dict]) -> dict:
+    if kept_roof(actor) == house["id"]:
+        return {"in_building": True}
+    return {"at_building": True} if building_at(actor, by_tile) is house else {}
 
 
 # A site by the progress WB keeps from a builder's first blow (`Building.updateBuild`), none meaning nobody touched it — never a share, which would tell its end.
@@ -150,37 +152,39 @@ def main(argv: list[str]) -> int:
         print(absent_entity("ground", "buildings", house_id, chapter, noun="building"), file=sys.stderr)
         return 1
 
-    tile = building_tile(house)
-    civic = house.get("asset_id") in civic_building_ids()  # WB files trees and wheat under `buildings` too, and nobody stands « inside » a field
+    civic = house.get("asset_id") in civic_building_ids()  # WB files trees and wheat under `buildings` too, and nobody stands at a field as at a fire
+    spots: dict[int, dict] = {}  # who is under this roof or stands at it, by id: read once as the walk sorts them, and said again on each row
     dwellers: list[dict] = []
     visitors: list[dict] = []
     moored: list[dict] = []
 
     # WB moors a hull to its dock through the same `homeBuildingID` a soul sleeps under, so one walk sorts both — and none at all when no section asks.
     if {"boats", "metadata", "occupants"} & set(sections):
+        by_tile = built_by_tile(save) if civic else {}
         for actor in save.get("actors_data") or []:
-            here = actor_xy(actor) == tile
+            if here := _here(actor, house, by_tile):
+                spots[actor["id"]] = here
             home = actor.get("homeBuildingID") == house_id
-            if is_boat(actor):  # a hull may moor at a rival's dock, and only the tile says which are there right now
+            if is_boat(actor):  # a hull may moor at a rival's dock, and only where it rides says which are there right now
                 if home or here:
                     moored.append(actor)
             elif home:
                 dwellers.append(actor)
-            elif civic and here:  # a guest by the fire is nobody's dweller, yet a mine and a windmill do hold people
+            elif here:  # a guest by the fire is nobody's dweller, yet a mine and a windmill do hold people
                 visitors.append(actor)
     residents = dwellers + visitors
     ctx = {
         "cities_by_id": index_by_id(save.get("cities") or []),
-        "civic": civic,
         "families_by_id": index_by_id(save.get("families") or []),
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # called not stored: 0.2 s cold, and only `metadata` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
+        "spots": spots,
         "world_time": save["mapStats"]["world_time"],
     }
 
     out: dict = {}
     if "boats" in sections:
-        out["boats"] = _build_boats(moored, house, civic, requested)
+        out["boats"] = _build_boats(moored, spots, requested)
     if "inventory" in sections:
         out["inventory"] = _build_inventory(house)
     if "metadata" in sections:

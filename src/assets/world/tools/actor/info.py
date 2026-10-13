@@ -48,8 +48,8 @@ from shared import (
     build_trait_ids,
     build_trait_list,
     building_tile,
+    built_by_tile,
     chunks_apart,
-    civic_building_ids,
     competition_ranks,
     duration,
     emit,
@@ -79,6 +79,7 @@ from shared import (
     unsited_reason,
     walk_tiles,
     wants_detail,
+    whereabouts,
     world_laws,
 )
 from walking import Gait, WalkMap, walk_from, walk_way, walled_in
@@ -213,7 +214,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "actors_by_asset": actors_by_asset,
         "actors_by_id": actors_by_id,
         "alliances_by_id": index_by_id(save.get("alliances") or []),
-        "buildings_by_tile": cache(lambda: _buildings_by_tile(save)),  # called not stored: `metadata` alone asks, and the walk covers every building of the world
+        "buildings_by_tile": cache(lambda: built_by_tile(save)),  # called not stored: `metadata` alone asks, and the walk covers every building of the world
         "children_by_parent": children_by_parent,
         "cities_by_id": index_by_id(save.get("cities") or []),
         "clan_chiefs": frozenset(chief for c in save.get("clans") or [] if (chief := c.get("chief_id"))),
@@ -286,6 +287,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
 
     land = _land_of(actor, ctx)
     return {
+        **whereabouts(actor, save.get("buildings") or [], ctx["buildings_by_tile"]()),  # Chronicler-only: the roof it is under, the structure it stands at
         # Chronicler-only, and only while it still bites: the date WB gives the child its halved `damage_max`/`health_max` back — a bridling, not an infirmity.
         **({"adult_on": crossed_on(actor, age_adult)} if age < age_adult else {}),
         "age": age,
@@ -310,8 +312,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
         # Chronicler-only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks a fighter left out.
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
-        # Standing on a building's own tile, which is as close as a save comes to saying « indoors »: WB keeps `is_inside_building` on the runtime actor alone.
-        **({"in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]}} if (inside := ctx["buildings_by_tile"]().get(tile)) else {}),
         "island_id": land,  # Chronicler-only: its land (geography/info.py), else `water` or `islet`
         # Chronicler-only: which islet, by its centre as `tiles … islet` gives it — the same from a chapter to the next while the rock holds its shape
         **({"islet": {"x": at[0], "y": at[1]}} if land == "islet" and (at := islet_centre(ctx["island_lookup"]().islet_tiles(tile))) else {}),
@@ -507,12 +507,6 @@ def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
         {**trait, "dormant": True} if trait["id"] in asleep else {**trait, "absorbed": _absorbed(actor, trait, ctx, totals)}
         for trait in build_trait_list(sworn, library)
     ]
-
-
-# Built structures by their tile, so `metadata` can name the roof a soul stands under. Nature files under `buildings` too, and nobody steps « inside » a field.
-def _buildings_by_tile(save: dict) -> dict[tuple, dict]:
-    civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
-    return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
 
 
 # A field as it moved: a list, `roles`, by what came and went, anything else as the pair it was and is.

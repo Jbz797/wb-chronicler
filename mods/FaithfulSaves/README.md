@@ -22,12 +22,12 @@ WorldBox also redraws two kinds of timers on every load:
 
 ## What this mod changes
 
-- **On save**, each creature's own data gets the time each of its statuses has left, the time before each of its long decisions (a wait of 90 seconds or more) may be taken again, its task: the step it had reached, how long it had been at it and what it was aimed at (a prey, a tile, a building); and the building it is inside. The world gets the time left on its two clocks.
+- **On save**, each creature's own data gets the time each of its statuses has left, the time before each of its long decisions (a wait of 90 seconds or more) may be taken again, its task: the step it had reached, how long it had been at it and what it was aimed at (a prey, a tile, a building); and the building it is inside. A boat is kept the same way, with the shore it was carrying its passengers to. The world gets the time left on its two clocks.
 - **On load**, each is handed back for exactly the time it had left, and each creature takes its task up at that very step: a woodcutter carrying his logs walks on to the store, a hunter keeps its prey, a sleeper stays under its roof.
 
 Nothing else changes: no status lasts longer or shorter than in vanilla, and none is added. A status handed back does not replay what it does when first given (a change of mood, a sound).
 
-**Not kept:** the `possessed` status, which is your own hand on a creature; a boat's task, which WorldBox restores by itself; the waits of short decisions, soon sat out; and what a town was in the middle of (a capture, a building site).
+**Not kept:** the `possessed` status, which is your own hand on a creature; a boat's errand to fetch passengers, which the game drops and those waiting ask for again; the waits of short decisions, soon sat out; and what a town was in the middle of (a capture, a building site).
 
 ## Installation
 
