@@ -363,7 +363,7 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
     }
 
 
-# A body between two chapters: its path as a heading and a length — never the bearing it lies at from anyone — then each `metadata` field that moved.
+# A body between two chapters: its path, a heading and a length, never a bearing from anyone; then what moved of `metadata`, `stats` and traits — gaps, not events.
 def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, then_ctx: dict, then_save: dict) -> dict:
     if then is None:
         return {"new": True}  # born or set down since, with nothing then to weigh it against
@@ -379,7 +379,11 @@ def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, t
             out["moved"]["land"] = [was_land, land]
     before, after = _build_metadata(then, then_ctx, then_save), _build_metadata(actor, ctx, save)
     changed = {key: _change(before.get(key), after.get(key)) for key in sorted((before.keys() | after.keys()) - _UNCOMPARED) if before.get(key) != after.get(key)}
-    return {**out, **({"changed": changed} if changed else {})}
+    # A level unsaid is WB's floor, 1: left out, it would weigh as 0. No `swim`, which only follows stamina and health.
+    stats_then, stats_now = ({"level": 1, **_compute_stats(body, side)} for body, side in ((then, then_ctx), (actor, ctx)))
+    names = ctx["creature_traits"]  # WB's own library, the same whichever chapter is read
+    traits_then, traits_now = (sorted((names.get(tid) or {}).get("name") or tid for tid in body.get("saved_traits") or []) for body in (then, actor))
+    return {**out, "changed": changed or None, "stats": moved_between(stats_then, stats_now), "traits": moved_between(traits_then, traits_now)}
 
 
 # Every living body within the common reach, nearest first, walked at its own gait — a line is built only for a printed circle: `full` never makes the common one.

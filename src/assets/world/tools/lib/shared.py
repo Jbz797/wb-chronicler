@@ -950,7 +950,7 @@ def moved_between(then: object, now: object) -> dict | list | None:
         came, went = [item for item in now if item not in then], [item for item in then if item not in now]
         return {**({"new": came} if came else {}), **({"gone": went} if went else {})} or None
     if (isinstance(then, int | float) and now is None) or (isinstance(now, int | float) and then is None):
-        return [then or 0, now or 0]  # a counter WB dropped at 0, or not yet kept: a count, never a row come or gone
+        return [then or 0, now or 0] if then or now else None  # a counter WB dropped at 0 or not yet kept: a count, no row come or gone; a lone 0 moved nothing
     return {"new": now} if then is None else {"gone": then} if now is None else [then, now]  # a bare `None` would drop out of a pair, and hide which it was
 
 
