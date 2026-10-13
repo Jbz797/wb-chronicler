@@ -53,6 +53,7 @@ from shared import (
     reader_settings,
     render,
     rounded_world_time,
+    under_construction,
     world_laws,
     worldbox_running,
     write_save,
@@ -311,7 +312,10 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     # The world's first birth (an egg as soon as laid), town and death, once a chronicle: WB's counters leaving 0 — a metamorphosis, counted in its deaths, is none.
     stats = live["mapStats"]
     died = int(stats.get("deaths") or 0) - int(stats.get("metamorphosis") or 0)
-    for tag, count in (("FIRST_BIRTH", stats.get("creaturesBorn")), ("FIRST_CITY", stats.get("citiesCreated")), ("FIRST_DEATH", died)):
+    # Its first house is read off the map, once it stands: WB's `housesBuilt` takes a fire and a stockpile for one, and counts a site the day it is laid.
+    housed = any((b.get("asset_id") or "").startswith("house") and not under_construction(b) for b in live.get("buildings") or [])
+    firsts = (("FIRST_BIRTH", stats.get("creaturesBorn")), ("FIRST_CITY", stats.get("citiesCreated")), ("FIRST_DEATH", died), ("FIRST_HOUSE", housed))
+    for tag, count in firsts:
         if tag not in already and count:
             tags.append(tag)
 
