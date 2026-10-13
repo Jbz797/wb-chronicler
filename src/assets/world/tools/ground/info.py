@@ -74,8 +74,7 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         "cost": (load_data("buildings.json").get(house.get("asset_id")) or {}).get("cost"),
         # A volcano or a geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops`, until lightning or the player flips it.
         "dormant": "stop_spawn_drops" in flags or None,
-        # Answers for the souls under the roof, so it goes where there are none: a dock, a mine, a bonfire house nobody, whoever stands in them.
-        **({"families": len({fid for a in dwellers if (fid := a.get("family"))})} if dwellers else {}),
+        "families": len({fid for a in dwellers if (fid := a.get("family"))}) or None,  # none says nothing of who sleeps there: `occupants` does
         **({"health": int(health)} if (health := house.get("health")) is not None else {}),  # WB writes `health` only when hurt — absent means intact, not unknown.
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
