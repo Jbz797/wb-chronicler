@@ -975,6 +975,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
         return 1
     aims, mark, about, whom = [], None, {}, ""
+    each: dict[str, tuple[list, dict] | None] = {}  # the words of a `--to` naming kinds, each with its sites, `None` where it has none: a question apiece
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
             refusal = absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a))
@@ -996,14 +997,17 @@ def main(argv: list[str]) -> int:
             return 1
         barred = ctx["walk_map"]().barred  # a land owns its rock, where no body lands: its shore is the ground of its rim
         aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land and not barred(x, y)], "landing", f"land {land}"
-    elif isinstance(target, str):  # kinds, families and resources, comma-parted, the body itself left out: the cheapest reached is the nearest
+    elif isinstance(target, str):  # a kind, a family or a resource a word, the body itself left out: each answered by the cheapest of its own reached
         families = asset_families(save)
-        if not (sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, target)) if record is not actor]):
-            none = unsited_reason(families, target) or f"no {target} in this world, {_named(actor)} aside"
+        for word in dict.fromkeys(target.split(",")):
+            if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word)) if record is not actor]:
+                each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
+                continue
+            each[word] = None
+            none = unsited_reason(families, word) or f"no {word} in this world, {_named(actor)} aside"
             print(f"✗ {none} — the families: {', '.join(sorted(families))}", file=sys.stderr)
+        if not any(each.values()):
             return 1
-        about = {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
-        aims, mark, whom = [tile for _, tile in sites], "nearest", f"the nearest {target}"
     elif target is not None:
         height, width = len(save.get("tileArray") or []), sum((save.get("tileAmounts") or [[]])[0])
         if not (0 <= target[0] < width and 0 <= target[1] < height):
@@ -1042,6 +1046,16 @@ def main(argv: list[str]) -> int:
         except _UnreachableError as e:
             print(f"{e} — `circle`: far", file=sys.stderr)  # out of reach is past every circle: said, a refusal bearing no field
             return 1
+    if each:
+        reached: dict = dict.fromkeys(each)  # a word left unanswered keeps its place: the others then keep their names, where one alone would come bare
+        for word, goal in each.items():  # out of reach, it says so and leaves the others their answer: the command fails where none has one
+            try:
+                reached[word] = goal and _build_to(actor, goal[0], f"the nearest {word}", ctx, "nearest", goal[1])
+            except _UnreachableError as e:
+                print(f"{e} — `circle`: far", file=sys.stderr)
+        if not any(reached.values()):
+            return 1
+        out["to"] = reached if len(each) > 1 else next(iter(reached.values()))
 
     emit(out)
     return 0
