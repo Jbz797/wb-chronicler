@@ -72,14 +72,6 @@ _CITY_TAX_TRAITS = {
     "tax_rate_tribute_low": ("tax_tribute", "low"),
 }
 
-_LOYALTY_GLOSSES = (  # what WB's own names hide or say backwards, by the drivers each is said beside
-    (frozenset({"baby_king"}), "`baby_king` weighs a king under 18 years of age, grown or not"),
-    (
-        frozenset({"king_diplomacy", "leader_diplomacy"}),
-        "`king_diplomacy` and `leader_diplomacy` weigh diplomacy + 2 × stewardship: a king's binds his towns, a leader's own skill loosens his",
-    ),
-)
-
 _LOYALTY_WAVES = 30  # WB gives up after this many BFS waves when walking a kingdom's city graph looking for the capital.
 _MIGRANT_FOOD = 10  # WB `updateMigrants`: the stock a town must hold for strangers to come
 _MIGRANT_PEOPLE = 100  # and the headcount past which none does
@@ -356,8 +348,7 @@ def _build_loyalty(city_id: int, ctx: dict, detailed: bool) -> dict:
         top_pos = max((kv for kv in mods.items() if kv[1] > 0), key=lambda kv: kv[1], default=None)
         top_neg = min((kv for kv in mods.items() if kv[1] < 0), key=lambda kv: kv[1], default=None)
         key, shown = "top_drivers", dict(kv for kv in (top_pos, top_neg) if kv is not None)
-    # « Diplomacy » names a score two thirds stewardship, a leader's reads backwards, and « baby » an age no life stage follows: glossed wherever one shows.
-    return {key: shown, "info": "; ".join(gloss for drivers, gloss in _LOYALTY_GLOSSES if shown.keys() & drivers) or None, "total": total}
+    return {key: shown, "total": total}
 
 
 # The city's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and officialdom tallied in `_build_context`.
@@ -575,16 +566,16 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
     # 25-27. The reign itself: one point per year past the fifth (capped at 40), the age's own temper, and a child on the throne.
     if king and (years := _years_since(kingdom.get("timestamp_king_rule") or 0, ctx)) >= 5:
         add("king_rule", min(years, 40))
-    add("world_era", realm["era_loyalty"])
+    add("loyalty_world_era", realm["era_loyalty"])
     if king and actor_age(king, ctx["world_time"]) < 18:  # a body, so the age WB judges it on — `entity_age` would keep the malus a year too long
-        add("baby_king", -50)
+        add("loyalty_baby_king", -50)
 
-    # 28-29. A crown whose sex its own official culture rejects — only where town and realm share that culture.
+    # 28-29. A crown whose sex its own official culture rejects, only where town and realm share that culture. WB's ids, odd prefix and all: the wiki files by them.
     culture = ctx["cultures_by_id"].get(city.get("id_culture"))
     if king and culture and city.get("id_culture") == kingdom.get("id_culture"):
         traits = culture.get("saved_traits") or []
-        add("patriarchy", -50 * ("patriarchy" in traits and sex_label(king) == "female"))
-        add("matriarchy", -50 * ("matriarchy" in traits and sex_label(king) == "male"))
+        add("opinion_patriarchy", -50 * ("patriarchy" in traits and sex_label(king) == "female"))
+        add("opinion_matriarchy", -50 * ("matriarchy" in traits and sex_label(king) == "male"))
 
     return dict(sorted(mods.items(), key=lambda kv: -kv[1]))  # Ordered like WB's own tooltip: the strongest bonds first, the grievances last.
 
