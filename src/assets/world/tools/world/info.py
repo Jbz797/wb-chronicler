@@ -197,6 +197,8 @@ _SNAPSHOT_COLLECTIONS = {
 
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` weighs: a body's own counters in the save, named as `actor … stats` names them
+_TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "equipment_power")))  # what `--top` ranks by: those counters, a skill, an arsenal
+_TOP_ROWS = 10  # a ranking is asked for its head: who comes first, second, third — the rest is counted
 _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
 _WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_ISLET` is, but in the sea or a lake
 
@@ -416,8 +418,10 @@ def _build_roster(
     status: str | None,
     task: str | None,
     has: str | None,
+    top: str | None,
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
+    weighed = has or top  # one measure either way: `--has` keeps whoever holds any, `--top` the highest alone
     thinking = _sapient_subspecies(save) if sapient else None
     grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
     asked = _ISLET if land == "islets" else land  # `-i islets` names the islets as a body stands on one, `islet`
@@ -452,9 +456,9 @@ def _build_roster(
             continue
         if task and kept_task(actor) != task:
             continue
-        held = _held(actor, has) if has else 0
+        held = _held(actor, weighed, ctx) if weighed else 0
         before = once.get(actor["id"], 0) if once is not None else 0  # with no `--since`, a tally is weighed against nought
-        if has and held == before:
+        if weighed and held == before:
             continue
         gates = settle_gates(actor, ctx) if settle or barred else None
         if settle and gates not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
@@ -462,7 +466,7 @@ def _build_roster(
         if barred and (gates is None or gates in (True, ["child"])):  # a thinker something besides its youth keeps from founding
             continue
         here = _standing(actor, island_of, grid, save["tileMap"])
-        change: dict = {has: held if once is None else [max(before, floor), max(held, floor)]} if has else {}
+        change: dict = {weighed: held if once is None else [max(before, floor), max(held, floor)]} if weighed else {}
         if was is not None and actor["id"] in was and not has:  # one unseen then was born or set down since, and says so by standing in the roll at all
             if (then := was[actor["id"]]) == here:
                 still += land is None or asked == here  # stood still: nothing for `since` to say of it, but that it was left out
@@ -478,7 +482,7 @@ def _build_roster(
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
 
     one_kind = kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
-    if len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many on each land, of each kind and of each stage, the adults counted too
+    if not top and len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many on each land, of each kind and of each stage, the adults counted too
         lands = Counter(here for _, here, _ in bodies)
         by_land = {str(land): lands[land] for land in sorted(lands, key=lambda land: (isinstance(land, str), land))}
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
@@ -508,12 +512,13 @@ def _build_roster(
             return settle_rank(body[2]["settle"]), body[0]["id"]
         if settle:  # the grown first, whose youth is past, then by the date each comes of age
             return crossed_at(body[0], adult_age(body[0], ctx)), body[0]["id"]
-        if has:  # the tally asked, highest first — its latest figure under `--since`: whoever stands in no line has none, or has not moved
-            return -(body[2][has] if once is None else body[2][has][1]), body[0]["id"]
+        if weighed:  # the measure asked, highest first — its latest figure under `--since`: whoever stands in no line has none, or has not moved
+            return -(body[2][weighed] if once is None else body[2][weighed][1]), body[0]["id"]
         return isinstance(body[1], str), body[1], body[0]["id"]
 
     lineages = ctx["subspecies_by_id"]
-    for actor, here, change in sorted(bodies, key=order):
+    ranked = sorted(bodies, key=order)
+    for actor, here, change in ranked[:_TOP_ROWS] if top else ranked:
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
         stage = _stage(actor, ctx, age, adult)
         rows.append(
@@ -521,7 +526,7 @@ def _build_roster(
                 "adult_on": crossed_on(actor, adult) if age < adult else None,
                 "asset_id": None if one_kind else actor.get("asset_id"),
                 # Under `--barred`, what founding weighs alone: no mate nor sex, and `adult_on` says the youth — its gates keep each line inline, as `--has`'s tally
-                "breeds_on": crossed_on(actor, breeding) if age < breeding and not (barred or has) and fertile(lineages.get(actor.get("subspecies"))) else None,
+                "breeds_on": crossed_on(actor, breeding) if age < breeding and not (barred or weighed) and fertile(lineages.get(actor.get("subspecies"))) else None,
                 "id": actor["id"],
                 # Said outright beside a `was_on`, a missing one reading as still on the land left; silent where `-i` already named it
                 "island_id": None if here == asked and "was_on" not in change else here,
@@ -532,6 +537,10 @@ def _build_roster(
                 **change,
             }
         )
+
+    if top and len(ranked) > _TOP_ROWS:  # the cut said, and a tie it falls in: a tenth place shared would read as one body's own
+        tied = sum(body[2][top] == ranked[_TOP_ROWS - 1][2][top] for body in ranked[_TOP_ROWS:])
+        return {"info": f"{_TOP_ROWS} highest of {len(ranked)} by {top}" + (f" — {tied} more share the last figure" if tied else ""), "roster": rows}
 
     return rows + [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
 
@@ -611,8 +620,10 @@ def _gone_since(save: dict, then: dict, was: dict[int, int | str], kinds: set[st
     return sorted(rows, key=lambda row: row["id"])
 
 
-# A body's tally as `--has` weighs it: `level` counts past 1, WB's floor, where every body starts.
-def _held(actor: dict, tally: str) -> int:
+# A body's measure as `--has` and `--top` weigh it — `level` counts past 1, WB's floor, where every body starts. A skill or an arsenal asks for `ctx`.
+def _held(actor: dict, tally: str, ctx: dict | None = None) -> int:
+    if ctx is not None and tally not in _TALLIES:  # read off its stats, where a counter is the body's own
+        return equipment_power(actor, ctx) if tally == "equipment_power" else int(compute_actor_stats(actor, ctx).get(tally, 0))
     value = int(actor.get(tally) or 0)
     return value if tally != "level" or value > 1 else 0
 
@@ -637,6 +648,7 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
     said = [
         f"bearing {args.trait}" if args.trait else None,
         ("past level 1" if args.has == "level" else f"with any {args.has}") if args.has and not since else None,
+        f"with any {args.top}" if args.top else None,
         f"wearing {args.status}" if args.status else None,
         f"at {args.task}" if args.task else None,
         "that could found a town where it stands" if args.settle else None,
@@ -721,6 +733,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
     parser.add_argument("--status", help="`roster`: the bodies wearing one status, by its id — what a body wears now, where a trait is what it is")
     parser.add_argument("--task", help="`roster`: the bodies at one task the instant of the save, by its id — what a body does, where a status is what it wears")
+    parser.add_argument("--top", choices=_TOP_MEASURES, help=f"`roster`: its {_TOP_ROWS} highest by one measure, a tally or a skill, each with its figure")
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster`: one kind, a family (`actors`) or a comma list")
     args = parser.parse_args(argv)
@@ -731,13 +744,19 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
     narrowing = (
-        args.type or args.trait or args.has or args.status or args.task or args.sapient or args.settle or args.barred or args.island is not None or args.patch
+        any((args.barred, args.has, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, args.type)) or args.island is not None
     )
     if args.settle and args.barred:  # the two halves of the thinkers: together they name no one
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        print("✗ -t, --trait, --has, --status, --task, --patch, --sapient, --settle, --barred and -i narrow `roster`: name it", file=sys.stderr)
+        print("✗ -t, --trait, --has, --top, --status, --task, --patch, --sapient, --settle, --barred and -i narrow `roster`: name it", file=sys.stderr)
+        return 2
+    if args.top and (other := next((flag for flag in ("has", "settle", "barred") if getattr(args, flag)), None)):
+        print(f"✗ `--top` ranks a roll by one measure: ask `--{other}` apart", file=sys.stderr)
+        return 2
+    if args.top and since:  # two rankings are read side by side, each off its own chapter
+        print(f"✗ `--top` ranks one chapter: read the other by its suffix, `{since}`", file=sys.stderr)
         return 2
     if since and (alone := next((flag for flag in ("patch", "status", "task") if getattr(args, flag)), None)):
         print(f"✗ `--{alone}` reads one chapter: ask `--since` apart", file=sys.stderr)  # the dead stood, wore and did what no later save tells
@@ -793,7 +812,7 @@ def main(argv: list[str]) -> int:
                 return 2
             patch = patch_finder(save, LazyTileGrid(save), island_of)(*args.patch)[0]
         roster = _build_roster(
-            save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred, patch, args.status, args.task, args.has
+            save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred, patch, args.status, args.task, args.has, args.top
         )
         if not roster:  # a filter nothing answers, never a silent `{}`
             print(_nobody(args, kinds, save, since), file=sys.stderr)
