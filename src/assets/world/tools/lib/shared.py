@@ -53,6 +53,19 @@ ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divi
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # One lore under two WB spellings: its tiles say one, its biome sheet the other.
+
+# The field a body carries its tie to each kind by: what counts, of a kind gone, the bodies that outlived it.
+_BODY_LINKS = {
+    "cities": "cityID",
+    "clans": "clan",
+    "cultures": "culture",
+    "families": "family",
+    "kingdoms": "civ_kingdom_id",
+    "languages": "language",
+    "religions": "religion",
+    "subspecies": "subspecies",
+}
+
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_DIR = Path(__file__).parent.parent / ".cache"  # the save pickles and every sweep of the map, a slot per save each; gitignored via the root `.gitignore`
 _CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
@@ -133,6 +146,7 @@ _ORDER_ROWS = frozenset({"hungriest", "oldest", "youngest"})
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
 _RANK_FLOORS = {"cities": 1, "kingdoms": 1, "level": 1}  # where every body starts, so a place held there ranks nobody — other stats floor at the skipped 0
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
+_SURVIVORS_NAMED = 5  # past it, a gone thing's survivors are counted and no longer named: a razed town may leave a crowd
 _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower | 1 herb` or `38 bodies · 23 sapient`, cut once at import
 _UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy", "to_islands"})  # shapes whose key order carries meaning: stores heaviest-first, lands nearest-first
@@ -279,6 +293,19 @@ def _strip_none(value: object) -> object:
     return value
 
 
+# What became of the bodies a gone thing had when last seen, in `then`: gone is not dead — a family down to one dissolves under a body that lives on.
+def _survivors(collection: str, entity_id: int, then: int, now: int) -> str:
+    link, path = _BODY_LINKS.get(collection), SAVES_DIR / f"C{now}" / "map.wbox"
+    if not link or not path.exists():
+        return ""
+    had = {a["id"] for a in load_save(SAVES_DIR / f"C{then}" / "map.wbox").get("actors_data") or [] if a.get(link) == entity_id and not is_boat(a)}
+    if not had:
+        return ""
+    alive = [named_body(a) for a in load_save(path).get("actors_data") or [] if a["id"] in had]
+    names = f": {', '.join(alive)}" if 0 < (left := len(alive)) <= _SURVIVORS_NAMED else ""
+    return f" — {left or 'none'} of the {len(had)} {'body' if len(had) == 1 else 'bodies'} it had then still live{'s' if left < 2 else ''}{names}"
+
+
 @cache
 def _tagged_traits(tag: str) -> frozenset[str]:
     return frozenset(name for name, spec in load_data("subspecies-traits.json").items() if tag in (spec.get("tags") or []))
@@ -322,7 +349,8 @@ def absent_entity(tool: str, collection: str, entity_id: int, chapter: str | Non
     seen = [n for n in range(1, last + 1) if n != here and stood(n)]
     where, noun = f"C{here}" if chapter else "the live save", noun or tool
     if before := [n for n in seen if n < here]:
-        return f"✗ {noun} {entity_id} is gone by {where} — last seen in C{before[-1]}: `{tool}/info.py {entity_id} C{before[-1]}`"
+        gone = f"✗ {noun} {entity_id} is gone by {where} — last seen in C{before[-1]}: `{tool}/info.py {entity_id} C{before[-1]}`"
+        return gone + _survivors(collection, entity_id, before[-1], here)
     if seen:
         return f"✗ {noun} {entity_id} is not there yet in {where} — first seen in C{seen[0]}: `{tool}/info.py {entity_id} C{seen[0]}`"
     # In no chapter's save, yet a body the registry met — it keeps every one a chapter named, a family's founders among them, the dead too; no hull, hence `match`.
@@ -924,6 +952,11 @@ def moved_between(then: object, now: object) -> dict | list | None:
     if (isinstance(then, int | float) and now is None) or (isinstance(now, int | float) and then is None):
         return [then or 0, now or 0]  # a counter WB dropped at 0, or not yet kept: a count, never a row come or gone
     return {"new": now} if then is None else {"gone": then} if now is None else [then, now]  # a bare `None` would drop out of a pair, and hide which it was
+
+
+# How a body is named in a refusal: its name, or its kind where it has none, and its id either way.
+def named_body(body: dict) -> str:
+    return f"{body.get('name') or body.get('asset_id')} ({body['id']})"
 
 
 # WB `Subspecies.needs_food`, cached off the `needs_food` meta-tag in `cacheTags` — carried by the one `stomach` trait, so a body without a gut never hungers.

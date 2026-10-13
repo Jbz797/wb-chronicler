@@ -67,6 +67,7 @@ from shared import (
     load_data,
     load_save,
     moved_between,
+    named_body,
     needs_food,
     parse_sections,
     resolve_profession,
@@ -609,7 +610,7 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
 # The same trip made by the body aimed at, which no shared figure tells: its own pace, its own swim — only what differs, and nothing where both agree.
 def _from_them(other: dict, actor: dict, to: dict, ctx: dict) -> dict | None:
     try:
-        back = _build_to(other, [actor_xy(actor)], _named(actor), ctx, None, {})
+        back = _build_to(other, [actor_xy(actor)], named_body(actor), ctx, None, {})
     except _UnreachableError:
         return {"unreachable": True}
     return {key: value for key, value in back.items() if key != "dir" and to.get(key) != value} or None
@@ -653,11 +654,6 @@ def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str |
 # Its land's id, else `water` afloat or `islet` on an islet too small to count — as `roster` says it.
 def _land_of(body: dict, ctx: dict) -> int | str:
     return ctx["island_lookup"]().get(actor_xy(body)) or ("water" if "water" in _off_land_at(body, ctx) else "islet")
-
-
-# How a body is named in a refusal: its name, or its kind where it has none, and its id either way.
-def _named(body: dict) -> str:
-    return f"{body.get('name') or body.get('asset_id')} ({body['id']})"
 
 
 # The body nearest him as the crow flies, wherever it stands — for one whose circles hold nobody. No hull: a boat is no neighbour.
@@ -908,7 +904,7 @@ def _way_parts(way: tuple | None, per_hour: float, part: str) -> dict:
 # Why no walk joins the two, named: the rock of their one land or round the goal, a water shut to the body, a strait no islet chain shortens, no crossing in reach.
 def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, crow: int, ctx: dict) -> str:
     island_of = ctx["island_lookup"]()
-    home, land, who = island_of.get(actor_xy(actor)), island_of.get(goal), _named(actor)
+    home, land, who = island_of.get(actor_xy(actor)), island_of.get(goal), named_body(actor)
     head = f"✗ {who} can't reach {whom}, {crow} tiles away as the crow flies"
     if (home is not None and home == land) or gait.reach == inf:  # his own land, walked round its bays, or a sea he crosses at will: the ground is to blame
         return f"{head}: rock, lava or goo walls the way off"
@@ -986,14 +982,14 @@ def main(argv: list[str]) -> int:
                 refusal = f"✗ {target} is no body — a {building.get('asset_id')}'s id: aim at its tile, `--to {x},{y}`"
             print(refusal, file=sys.stderr)
             return 1
-        aims, whom = [actor_xy(other)], _named(other)
+        aims, whom = [actor_xy(other)], named_body(other)
     elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():
         land, sizes = int(target[1:]), ctx["island_sizes"]()
         if land not in sizes:
             print(f"✗ unknown land: {land} — the counted lands run 1 to {max(sizes, default=0)}", file=sys.stderr)
             return 1
         if ctx["island_lookup"]().get(actor_xy(actor)) == land:
-            print(f"✗ {_named(actor)} already stands on land {land}", file=sys.stderr)
+            print(f"✗ {named_body(actor)} already stands on land {land}", file=sys.stderr)
             return 1
         barred = ctx["walk_map"]().barred  # a land owns its rock, where no body lands: its shore is the ground of its rim
         aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land and not barred(x, y)], "landing", f"land {land}"
@@ -1004,7 +1000,7 @@ def main(argv: list[str]) -> int:
                 each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
                 continue
             each[word] = None
-            none = unsited_reason(families, word) or f"no {word} in this world, {_named(actor)} aside"
+            none = unsited_reason(families, word) or f"no {word} in this world, {named_body(actor)} aside"
             print(f"✗ {none} — the families: {', '.join(sorted(families))}", file=sys.stderr)
         if not any(each.values()):
             return 1
