@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 13/10/26 11:11</p>
+<p class="metadata">Date de mise à jour : 13/10/26 11:19</p>
 
 Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -72,7 +72,7 @@ Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, 
 - `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `wiki:Unit_Stats`.
 - `gen` (`actor … metadata`) : absent, le corps a paru sans parents ; dès 2, ils sont `parent` sous `surroundings`.
 - `happiness` (`actor … stats`) : la barre du jeu en % ; ses seuils : `wiki:Happiness`.
-- `task` : une suite d'actions, sans son étape ; il ne dort que si `statuses` dit `sleeping`.
+- `task` : une suite d'actions, sans son étape ; il ne dort que si `statuses` dit `sleeping` (`wiki:Behaviour_Tasks`).
 
 ### Entités et comptes :
 

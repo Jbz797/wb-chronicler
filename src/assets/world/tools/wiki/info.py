@@ -70,6 +70,11 @@ def _rows(wikitext: str) -> list[tuple[str, list[str], list[str]]]:
     return rows
 
 
+# A cell as `--row` weighs it: case aside, and a `_` a space, as the asked name is read — a table of ids (`random_move`) answers like one of labels.
+def _said(cell: str) -> str:
+    return cell.casefold().replace("_", " ")
+
+
 # The section an anchor names, its sub-sections with it, a heading of its rank closing it — cut by the wiki's `byteoffset`, which counts characters, not bytes.
 def _section(wikitext: str, sections: list[dict], fragment: str) -> str | None:
     anchor = fragment.replace(" ", "_")
@@ -123,15 +128,15 @@ def main(argv: list[str]) -> int:
             wikitext = part
         print(wikitext)
         return 0
-    wanted = args.row.replace("_", " ").casefold()
+    wanted = _said(args.row)
     blocks, rows = [], _rows(wikitext)
-    cited = [row for row in rows if any(cell.casefold() == wanted for cell in row[2])]
+    cited = [row for row in rows if any(_said(cell) == wanted for cell in row[2])]
     # A row is named by its first cell that says anything, an icon's being blank: those alone where any is, the rows that only cite the word failing one.
-    named = [row for row in cited if next((cell for cell in row[2] if cell), "").casefold() == wanted]
+    named = [row for row in cited if _said(next((cell for cell in row[2] if cell), "")) == wanted]
     for caption, header, cells in named or cited:
         # A column past the header keeps its rank for a name: the header is a help, a ragged row still prints whole.
         kept = [(column, cell) for i, cell in enumerate(cells) if cell and (column := (header[i : i + 1] or [f"#{i + 1}"])[0]).casefold() not in _UNTOLD]
-        if any(cell.casefold() != wanted for _, cell in kept):  # a row left with its name alone, its only other column untold, says nothing
+        if any(_said(cell) != wanted for _, cell in kept):  # a row left with its name alone, its only other column untold, says nothing
             blocks.append("\n".join([f"[{caption}]"] * bool(caption) + [f"{column}: {cell}" for column, cell in kept]))
     if not blocks:
         # A label the wiki cuts short — its « Spore » for WB's « Spore Reproduction » — is offered where no row answers, and sought only then.
