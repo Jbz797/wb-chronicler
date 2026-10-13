@@ -7,7 +7,7 @@ import re
 import statistics
 import sys
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -247,9 +247,12 @@ def _build_gear(save: dict, save_path: Path) -> dict:
     return out
 
 
-# Up to `MAX_LISTED`, or all on the `-i` land, each instance by `id`, `island_id` else `islet_tiles` else water, `asset_id` if kinds mix; past it, a tally by land.
-def _build_positions(save: dict, save_path: Path, kinds: set[str], land: int | str | None) -> list[dict] | dict[str, str] | None:
-    if not (sites := asset_sites(save, kinds)):  # the lookup costs 0.2 s cold, so a kind nobody built never pays for it
+# Up to `MAX_LISTED`, or all on `-i`'s land, each by `id`, land else islet else water, `asset_id` if kinds mix; past it, a tally by land. `only`: `--since`'s ids.
+def _build_positions(
+    save: dict, save_path: Path, kinds: set[str], land: int | str | None, only: Collection[int] | None = None
+) -> list[dict] | dict[str, str] | None:
+    sites = [(record, tile) for record, tile in asset_sites(save, kinds) if only is None or record.get("id") in only]
+    if not sites:  # the lookup below costs 0.2 s cold, so a kind nobody built never pays for it
         return None
     _, island_of = compute_islands_cached(save, save_path)
     grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
@@ -540,10 +543,12 @@ def main(argv: list[str]) -> int:
         return 2
     try:
         sections = parse_sections(args.sections, _ALL_SECTIONS, allow_full=False)
+
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
     wanted: str | None = args.type
+
     if wanted is None and "positions" in sections:
         print("✗ positions needs --type, a kind, a family or a resource — `entity_types` lists the kinds", file=sys.stderr)
         return 2
@@ -551,6 +556,7 @@ def main(argv: list[str]) -> int:
     if args.island is not None and not set(_BY_LAND) & set(sections):  # refused before the save is read
         print(f"✗ `--island` narrows {', '.join(_BY_LAND)}: name one of them", file=sys.stderr)
         return 2
+
     bucketed = {*_BUCKETED, "biomes"} if args.island == "islets" else set(_BUCKETED)  # the islets bear grounds too, the water none
     if isinstance(args.island, str) and (unbucketed := sorted(set(sections) & set(_BY_LAND) - bucketed)):
         print(f"✗ {', '.join(unbucketed)}: no {args.island} to narrow to — `-i {args.island}` narrows {', '.join(sorted(bucketed))}", file=sys.stderr)
@@ -565,32 +571,43 @@ def main(argv: list[str]) -> int:
         print(f"✗ no save for {since}", file=sys.stderr)
         return 2
     save = load_save(save_path)
+
     if isinstance(args.island, int) and args.island not in {land["id"] for land in compute_islands_cached(save, save_path)[0]}:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
         return 2
     kinds, families = None, asset_families(save) if "positions" in sections else {}
+
     if "positions" in sections and wanted is not None:
         kinds, bodies = asset_kinds(families, wanted), {a.get("asset_id") for a in save.get("actors_data") or [] if not is_boat(a)}  # hulls stay sited here
         if said := [word for word in wanted.split(",") if asset_kinds(families, word) & bodies]:  # a body's roll is `roster`'s, with its sex and dates
             print(f"✗ {', '.join(said)}: bodies are listed by `world … roster -t`, `positions` sites the rest", file=sys.stderr)
             return 2
-    out = _collect(save, save_path, sections, kinds, args.island)
+
+    # `positions` is weighed apart under `--since`, an instance at a time: its two forms, a roll or a tally by land, would be held against each other.
+    out = _collect(save, save_path, tuple(s for s in sections if s != "positions") if then_path else sections, kinds, args.island)
+
     if then_path:  # both chapters read alike, then only what moved between them: a section that holds still says so, never a silent `{}`
-        then = _collect(load_save(then_path), then_path, sections, kinds, args.island)
-        for reading in (out, then):  # a kind one chapter lacks reads as none there, not as a question left unanswered
-            if "positions" in reading and reading["positions"] is None:
-                reading["positions"] = []
+        earlier = load_save(then_path)
+        then = _collect(earlier, then_path, tuple(out), kinds, args.island)
         if args.island is not None:
             out, then = _narrowed(out, args.island), _narrowed(then, args.island)
-        if not isinstance(moved := moved_between(then, out), dict):  # both readings are dicts, so what moved is one, or nothing
+        moved = found if isinstance(found := moved_between(then, out), dict) else {}  # both readings are dicts, so what moved is one, or nothing
+        if "positions" in sections and kinds is not None:
+            was, now = ({record["id"] for record, _ in asset_sites(reading, kinds)} for reading in (earlier, save))
+            gone, came = _build_positions(earlier, then_path, kinds, args.island, was - now), _build_positions(save, save_path, kinds, args.island, now - was)
+            if came_or_went := {side: sites for side, sites in (("gone", gone), ("new", came)) if sites}:
+                moved = {**moved, "positions": came_or_went}
+        if not moved:
             print(f"✗ nothing moved in {', '.join(sections)} since {since}", file=sys.stderr)
             return 1
         emit(moved)
         return 0
+
     if "positions" in out and out["positions"] is None:  # a word nothing answers to, never a silent `{}`
         none = unsited_reason(families, wanted or "") or f"no {wanted} in this world"
         print(f"✗ {none} — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
         return 1
+
     where = "in this world" if args.island is None else f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}"
     if "positions" in out and not out["positions"]:
         print(f"✗ no {wanted} {where} — without `-i`, `positions` says which lands hold one", file=sys.stderr)
@@ -599,10 +616,13 @@ def main(argv: list[str]) -> int:
     shown = out if args.island is None else _narrowed(out, args.island)
     # An empty section says so, the command failing only where all asked are, as `positions` does — a dict of empty blocks counts: `biomes` on a bare land.
     bare = [s for s in sections if s in _NONE and not (any(shown[s].values()) if isinstance(shown[s], dict) else shown[s])]
+
     for section in bare:
         print(f"✗ no {_NONE[section]} {where if section in _BY_LAND else 'in this world'}", file=sys.stderr)  # `-i` narrows a land's sections alone
+
     if len(bare) == len(sections):
         return 1
+
     if "biomes" in shown and "biomes" not in bare:
         if wanted is None and args.island is None:
             shown = shown | {"biomes": _surveyed(shown["biomes"])}
@@ -620,6 +640,7 @@ def main(argv: list[str]) -> int:
         else:
             print(f"✗ no {wanted} {where} — `biomes -i {args.island}` lists the grounds there", file=sys.stderr)
             return 1
+
     emit(shown)
     return 0
 
