@@ -35,6 +35,7 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("boats", "inventory", "metadata", "occupants")
+_UNWRITTEN_HEALTH = 100  # WB `BaseObjectData`: the health a record is born with, which a save leaves out
 
 
 # Absent off a shipyard, `in_building` telling a moored hull from a visiting one. `boat/info.py <id>` spells one out.
@@ -64,6 +65,10 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
     # A wall torn mid-tick, left unsited, never pays for the island map at all — `building_tile` already reads a lone missing coordinate as WB's omitted zero.
     island_id = ctx["island_lookup"]().get(tile) if tile is not None else None
     flags = house.get("custom_data_flags") or ()
+    asset = load_data("buildings.json").get(house.get("asset_id")) or {}
+    # WB writes a health whole or hurt alike: only one under its asset's own tells a hurt.
+    health, whole = house.get("health", _UNWRITTEN_HEALTH), asset.get("health")
+    hurt = whole is not None and health < whole
 
     return {
         # Dropped where it reads under zero: a reset before landmarks were stamped left them older than the world, and no age beats one counting backwards.
@@ -71,11 +76,12 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         # What WB took from the town's stock as the site was laid (`CityBehBuild.tryToBuild`), a raised tier paying its own — nothing said of a free one.
-        "cost": (load_data("buildings.json").get(house.get("asset_id")) or {}).get("cost"),
+        "cost": asset.get("cost"),
         # A volcano or a geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops`, until lightning or the player flips it.
         "dormant": "stop_spawn_drops" in flags or None,
         "families": len({fid for a in dwellers if (fid := a.get("family"))}) or None,  # none says nothing of who sleeps there: `occupants` does
-        **({"health": int(health)} if (health := house.get("health")) is not None else {}),  # WB writes `health` only when hurt — absent means intact, not unknown.
+        "health": int(health) if hurt or (whole is None and "health" in house) else None,  # an asset the tables do not know keeps what the save wrote
+        "health_max": whole if hurt else None,
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
         # A site, laid and not built: nobody sleeps in it yet, though WB already counts it among a town's `houses` (`City.getHouseCurrent`).

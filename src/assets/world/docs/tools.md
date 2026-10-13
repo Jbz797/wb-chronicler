@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 13/10/26 10:47</p>
+<p class="metadata">Date de mise à jour : 13/10/26 11:05</p>
 
 Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu, sans clé ; plusieurs gardent la leur. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -78,6 +78,7 @@ Invoquer chaque outil via `python tools/<nom>/info.py [arg] [sections] [C<n>]`, 
 
 - `buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose, que `born` date.
 - `description` et `flavor` d'un trait disent l'ambiance, jamais l'effet : il tient dans `stats`, que `dormant` dit endormies par l'ère et `absorbed` bues par une borne, le reste dans `wiki:Creature_Traits` ou `wiki:Subspecies_Traits`. Un don se pèse contre sa lignée (`subspecies … stats`), jamais contre un autre corps.
+- `ground … metadata` : `health` ne sort que d'un bâtiment blessé, près de son `health_max` ; un arbre, lui, tombe d'un coup (`wiki:Wood`).
 - `history`, l'historique de WB : `world`, ce que chaque année a vu naître, mourir ou s'éteindre — WB la clôt à l'entrée de son 12ᵉ mois, d'où `until`, et `since` sur celle en cours (`so_far`) —, une année absente : rien de neuf, les ~20 dernières seules ; `entity`, ses états (noms nus : `population`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`), l'avant de la fenêtre approché (`around_year`). Seuls les vivants y ont leurs années. De quoi meurent les siens : `deaths_by_cause`, au `metadata` d'une cité, d'un royaume, d'un clan ou d'une lignée ; ceux du monde, sur `world … cumulative` ou `history world`, jamais en additionnant les lignées, les éteintes n'ayant plus de `metadata`. `unknown` : celles que le jeu ne range nulle part — fièvre des Cendres, ovni, doigt divin…
 - `kingdom … metadata` : une seule coque (`ferries`) sert tout le royaume.
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : `wiki:Religions`.
