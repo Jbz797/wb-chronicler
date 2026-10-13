@@ -332,6 +332,32 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     return tags + _fired_alerts(live, path)
 
 
+# The crowns held or within reach: each realm, then each kind wearing none whose grown body could found where it stands. A crown is its king's kind's, no subject's.
+def _crowns_in_reach(save: dict, save_path: Path) -> int:
+    island_of, grid = compute_islands_cached(save, save_path)[1], LazyTileGrid(save)
+    ctx = build_actor_stats_context(save) | {
+        "city_zones": cache(lambda: city_zones(save, island_of)),
+        "island_lookup": lambda: island_of,
+        "tile_grid": lambda: grid,
+        "tile_map": save["tileMap"],
+        "world_laws": world_laws(save),
+    }
+    realms, actors = save.get("kingdoms") or [], save.get("actors_data") or []
+    kings = {realm.get("kingID") for realm in realms}
+    kind_of = {actor["id"]: actor.get("asset_id") for actor in actors if actor["id"] in kings}
+    crowned = {kind_of.get(realm.get("kingID")) or realm.get("original_actor_asset") for realm in realms}
+    free: set[str] = set()
+    for actor in actors:  # a kind once counted is asked no more: the ground is weighed for its first founder alone
+        if (kind := actor.get("asset_id")) in crowned or kind in free or actor.get("cityID") or is_boat(actor):
+            continue
+        if not is_sapient(ctx["subspecies_by_id"].get(actor.get("subspecies"))):
+            continue
+        grown = life_stage(actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), 0, is_egg(actor, ctx)) in _GROWN
+        if grown and settle_gates(actor, ctx) in (True, ["child"]):
+            free.add(kind)
+    return len(realms) + len(free)
+
+
 # A seeded land or water the chronicler has just named takes this chapter for its own → the names dated: his to give, the date the map shows them from ours.
 def _dated_places(n: int) -> list[str]:
     places = _gazetteer()
@@ -466,11 +492,11 @@ def _finalize() -> int:
     return 0
 
 
-# The alerts whose law is on and whose condition holds: thinking kinds able to raise a crown, as many as the dry ground can bear — no more need fall from the clouds.
+# The alerts whose law is on and whose condition holds: crowns standing or within reach, as many as the dry ground can bear — no more need fall from the clouds.
 def _fired_alerts(save: dict, save_path: Path) -> list[str]:
     laws = world_laws(save)
     standing = [code for code, law in _ALERTS.items() if laws.get(law, True)]  # the laws first: once they are off, the world is not walked at all
-    return standing if standing and _founding_kinds(save, save_path) >= _kingdom_quota(save) else []
+    return standing if standing and _crowns_in_reach(save, save_path) >= _kingdom_quota(save) else []
 
 
 # Deletes the transcripts of the sub-agents this session spawned → how many: Claude Code dismisses none, and one stays wakeable while its transcript stands.
@@ -489,26 +515,6 @@ def _forget_subagents() -> int:
                 transcript.with_name(f"{transcript.stem}.meta.json").unlink(missing_ok=True)
                 gone += 1
     return gone
-
-
-# The thinking kinds that hold a founder: a body past childhood that could found a town where it stands, its youth set aside — or one that has a town already.
-def _founding_kinds(save: dict, save_path: Path) -> int:
-    island_of, grid = compute_islands_cached(save, save_path)[1], LazyTileGrid(save)
-    ctx = build_actor_stats_context(save) | {
-        "city_zones": cache(lambda: city_zones(save, island_of)),
-        "island_lookup": lambda: island_of,
-        "tile_grid": lambda: grid,
-        "tile_map": save["tileMap"],
-        "world_laws": world_laws(save),
-    }
-    kinds: set[str] = set()
-    for actor in save.get("actors_data") or []:  # a kind once counted is asked no more: the ground is weighed for its first founder alone
-        if (kind := actor.get("asset_id")) in kinds or is_boat(actor) or not is_sapient(ctx["subspecies_by_id"].get(actor.get("subspecies"))):
-            continue
-        grown = life_stage(actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), 0, is_egg(actor, ctx)) in _GROWN
-        if grown and (actor.get("cityID") or settle_gates(actor, ctx) in (True, ["child"])):
-            kinds.add(kind)
-    return len(kinds)
 
 
 # `places.json` as it stands, read afresh at each call: the chronicler writes it between two runs, and `--finalize` itself dates it on the way.
