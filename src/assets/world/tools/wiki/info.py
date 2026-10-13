@@ -8,7 +8,6 @@ import html
 import json
 import re
 import sys
-import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -108,8 +107,8 @@ def main(argv: list[str]) -> int:
             return 0
         # `redirects`: a third of the pages are but a pointer to another, and without it the pointer is all that comes back.
         answer = _ask({"action": "parse", "page": page, "prop": "wikitext|sections", "redirects": 1})
-    except urllib.error.URLError as e:
-        print(f"✗ the wiki did not answer: {e.reason}", file=sys.stderr)
+    except OSError as e:  # `URLError` for a refused call, a bare `TimeoutError` for an answer that stalls midway: urllib wraps the first kind only
+        print(f"✗ the wiki did not answer: {getattr(e, 'reason', e)} — try again", file=sys.stderr)
         return 1
     if "error" in answer:
         print(f"✗ no page `{page}` — `--list <word>` finds its title", file=sys.stderr)
