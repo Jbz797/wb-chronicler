@@ -12,8 +12,10 @@ namespace FaithfulSaves
     // sleep, and winds the world's own clocks back. The time each of those had left now rides in custom data, which WB does save — the
     // creature's own, or the world's —, and is handed back once the world is loaded. So is the task a creature was at, which WB drops as well:
     // the step it had reached, how long it had been at it, the pause it was holding, and what that step was aimed at — a tile, a wall, a prey.
+    // And the roof it was under: WB keeps no trace of who is indoors, and sets every creature back on its doorstep.
     internal static class SavePatches
     {
+        private const string Inside = "faithful_inside"; // the id of the building the creature was inside, among its custom longs
         private const string Log = "[Faithful Saves]: "; // every load says what it handed back, and names what it could not
         private const int LongWait = 90; // a decision's cooldown from which a redrawn wait is rarely sat out before the next load: sleeps, a herd's march
         private const string Possessed = "possessed"; // the one status left out: it is the player's own hand on a creature, which no save holds
@@ -48,6 +50,10 @@ namespace FaithfulSaves
         private static readonly AccessTools.FieldRef<Actor, AiSystemActor> _ai = AccessTools.FieldRefAccess<Actor, AiSystemActor>("ai");
         private static readonly AccessTools.FieldRef<Actor, Book> _bookTarget = AccessTools.FieldRefAccess<Actor, Book>("beh_book_target");
         private static readonly AccessTools.FieldRef<Actor, Building> _buildingTarget = AccessTools.FieldRefAccess<Actor, Building>("beh_building_target");
+
+        // The roof a creature is under and whether it is: the two fields `Actor.stayInBuilding` sets, and all it does.
+        private static readonly AccessTools.FieldRef<Actor, Building> _inside = AccessTools.FieldRefAccess<Actor, Building>("inside_building");
+        private static readonly AccessTools.FieldRef<Actor, bool> _isInside = AccessTools.FieldRefAccess<Actor, bool>("is_inside_building");
 
         // `Actor._decision_cooldowns`: when each decision was last taken, by `DecisionAsset.decision_index` — 0 for one free to be taken.
         private static readonly AccessTools.FieldRef<Actor, double[]> _lastTaken = AccessTools.FieldRefAccess<Actor, double[]>("_decision_cooldowns");
@@ -91,6 +97,7 @@ namespace FaithfulSaves
             KeepAim(data, TaskObject, aim is Building ? aim : null);
             KeepAim(data, TaskBook, task != null ? _bookTarget(__instance) : null);
             KeepAim(data, TaskBuilding, task != null ? _buildingTarget(__instance) : null);
+            KeepAim(data, Inside, _isInside(__instance) ? _inside(__instance) : null);
             WorldTile tile = task != null ? _tileTarget(__instance) : null;
             if (tile != null)
             {
@@ -188,12 +195,17 @@ namespace FaithfulSaves
         private static void AfterWorldLoaded()
         {
             double now = World.world.getCurWorldTime();
-            int tasks = 0;
+            int tasks = 0, roofs = 0;
             List<string> lost = new List<string>();
             foreach (Actor actor in World.world.units)
-                if (GiveTaskBack(actor, actor.getData(), now, lost))
+            {
+                BaseObjectData data = actor.getData();
+                if (GiveTaskBack(actor, data, now, lost))
                     tasks++;
-            Report($"{tasks} tasks", lost);
+                if (GiveRoofBack(actor, data, lost)) // after its task: taking one up empties the roof, as any change of task does
+                    roofs++;
+            }
+            Report($"{tasks} tasks and {roofs} roofs", lost);
         }
 
         // A status handed back for the time it had left, without what WB does on first posing it: the mood it brought was felt, and saved, already.
@@ -215,6 +227,24 @@ namespace FaithfulSaves
                 pAsset.action_on_receive = onReceive;
             }
             return Wears(pActor, pAsset.id); // WB may refuse one: a kind barred from that tier of statuses, an opposite one already worn
+        }
+
+        // A creature set back under the roof it was in, the building looked up by its id; one the world no longer holds is named in `pLost`.
+        // It leaves as it would have: the step of its task that takes it out, or the end of that task (`Actor.clearTasks`).
+        private static bool GiveRoofBack(Actor pActor, BaseObjectData pData, List<string> pLost)
+        {
+            long id = TakeAim(pData, Inside);
+            if (id < 0)
+                return false;
+            Building roof = World.world.buildings.get(id);
+            if (roof == null || !roof.isAlive())
+            {
+                pLost.Add($"the roof of {pActor.getName()}");
+                return false;
+            }
+            _isInside(pActor) = true;
+            _inside(pActor) = roof;
+            return true;
         }
 
         // A task handed back at the step it had reached, not replayed from its first: a sleep already begun, a meal already taken are not taken twice.

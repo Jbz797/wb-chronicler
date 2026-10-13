@@ -13,6 +13,7 @@ Vanilla WorldBox writes no status into a save, so every load quietly resets them
 - **Harm.** Every burning creature is put out, the poisoned and the cursed are cured: a death the game was dealing never comes.
 - **Moods.** A tantrum, a rage, a dream, a fresh love: all gone.
 - **Tasks.** Every creature drops what it was doing and picks a task anew.
+- **Roofs.** Every creature indoors is set back on its doorstep.
 
 WorldBox also redraws two kinds of timers on every load:
 
@@ -21,8 +22,8 @@ WorldBox also redraws two kinds of timers on every load:
 
 ## What this mod changes
 
-- **On save**, each creature's own data gets the time each of its statuses has left, the time before each of its long decisions (a wait of 90 seconds or more) may be taken again, and its task: the step it had reached, how long it had been at it and what it was aimed at (a prey, a tile, a building). The world gets the time left on its two clocks.
-- **On load**, each is handed back for exactly the time it had left, and each creature takes its task up at that very step: a woodcutter carrying his logs walks on to the store, a hunter keeps its prey.
+- **On save**, each creature's own data gets the time each of its statuses has left, the time before each of its long decisions (a wait of 90 seconds or more) may be taken again, its task: the step it had reached, how long it had been at it and what it was aimed at (a prey, a tile, a building); and the building it is inside. The world gets the time left on its two clocks.
+- **On load**, each is handed back for exactly the time it had left, and each creature takes its task up at that very step: a woodcutter carrying his logs walks on to the store, a hunter keeps its prey, a sleeper stays under its roof.
 
 Nothing else changes: no status lasts longer or shorter than in vanilla, and none is added. A status handed back does not replay what it does when first given (a change of mood, a sound).
 
@@ -38,7 +39,7 @@ Install [NeoModLoader](https://steamcommunity.com/sharedfiles/filedetails/?id=30
    - **Windows** (as administrator): `mklink /D "<Steam>\steamapps\common\worldbox\Mods\FaithfulSaves" "%CD%\mods\FaithfulSaves"`
 
    Without a clone, copy `mod.json`, `icon.png` and the two `.cs` files into `Mods/FaithfulSaves/`.
-2. Launch WorldBox. NML compiles the mod as the game starts: it shows in the _Mods_ window, and the game log reads `[Faithful Saves]: a save now keeps statuses, tasks, long waits and the world's clocks`.
+2. Launch WorldBox. NML compiles the mod as the game starts: it shows in the _Mods_ window, and the game log reads `[Faithful Saves]: a save now keeps statuses, tasks, roofs, long waits and the world's clocks`.
 
 **To uninstall**, disable the mod in NML's _Mods_ window, or delete its link from `Mods`.
 
@@ -50,4 +51,4 @@ Install [NeoModLoader](https://steamcommunity.com/sharedfiles/filedetails/?id=30
 
 ## For modders
 
-Four hooks, in `SavePatches.cs`. Two write: a prefix on `Actor.prepareForSave()` and one on `SaveManager.currentWorldToSavedMap()`. Two hand back: a postfix on `SaveManager.randomDecisionCooldowns()` for statuses, waits and clocks, and one on `MapBox.finishingUpLoading()`, the very last step of a load, for tasks — buildings load after the creatures, and WorldBox cancels the task of each king and leader as it seats them anew.
+Four hooks, in `SavePatches.cs`. Two write: a prefix on `Actor.prepareForSave()` and one on `SaveManager.currentWorldToSavedMap()`. Two hand back: a postfix on `SaveManager.randomDecisionCooldowns()` for statuses, waits and clocks, and one on `MapBox.finishingUpLoading()`, the very last step of a load, for tasks and roofs — buildings load after the creatures, and WorldBox cancels the task of each king and leader as it seats them anew.
