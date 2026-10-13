@@ -48,6 +48,7 @@ from shared import (
     build_trait_ids,
     build_trait_list,
     building_tile,
+    chunks_apart,
     civic_building_ids,
     competition_ranks,
     duration,
@@ -88,7 +89,7 @@ _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a 
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
-_GOAL_ONLY = frozenset({"circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # `--to`'s words for a goal: `moved` keeps its own heading and length
+_GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # a goal's words: `moved` keeps its own heading and length
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -638,7 +639,7 @@ def _gait(actor: dict, ctx: dict) -> Gait | None:
 
 # The bearing and the crow's tiles to a point — and, where the goal was many, which one: a land's `landing`, the `nearest` of some kinds with its kind and id.
 def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mapping[tuple[int, int], dict]) -> dict:
-    to = {"crow_tiles": round(walk_tiles(gx - cx, gy - cy)), "dir": bearing(gx - cx, gy - cy)}
+    to = {"chunks_apart": chunks_apart(cx, cy, gx, gy), "crow_tiles": round(walk_tiles(gx - cx, gy - cy)), "dir": bearing(gx - cx, gy - cy)}
     return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
 
 

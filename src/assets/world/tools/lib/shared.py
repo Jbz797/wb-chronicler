@@ -69,6 +69,7 @@ _BODY_LINKS = {
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_DIR = Path(__file__).parent.parent / ".cache"  # the save pickles and every sweep of the map, a slot per save each; gitignored via the root `.gitignore`
 _CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
+_CHUNK_TILES = 16  # WB `MapChunk` side: 4 to a save's 64-tile block (`MapChunkManager.prepare`)
 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
 _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "stone_none", "gold_none", "metal_none")
@@ -577,6 +578,11 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
         "warriors": warriors,
         "wealth": {c["id"]: money[c["id"]] + gold[c["id"]] for c in cities},
     }
+
+
+# How many chunks lie between two tiles, 0 in the same one: WB's rules look « nearby » by chunk, a body's own and those round it (`Finder.getUnitsFromChunk`).
+def chunks_apart(ax: int, ay: int, bx: int, by: int) -> int:
+    return max(abs(ax // _CHUNK_TILES - bx // _CHUNK_TILES), abs(ay // _CHUNK_TILES - by // _CHUNK_TILES))
 
 
 # Built structures (a `civ_*` category in `datas/buildings.json`), nature excluded — plus the `fishing_docks_*` that manifest omits, derived from `docks_*`.

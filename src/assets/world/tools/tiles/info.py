@@ -26,6 +26,7 @@ from shared import (
     bearing,
     building_family,
     building_tile,
+    chunks_apart,
     city_centre,
     emit,
     entity_born,
@@ -480,7 +481,11 @@ def main(argv: list[str]) -> int:
         out[f"{x},{y}"] = cell
     if args.to:  # a relation between the two ends, not a trait of either: its own key, the cap read from the first toward the second
         tx, ty = args.to
-        out["to"] = {"dir": bearing(tx - cx, ty - cy), **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (ty * width + tx,), ctx)}
+        out["to"] = {
+            "chunks_apart": chunks_apart(cx, cy, tx, ty),
+            "dir": bearing(tx - cx, ty - cy),
+            **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (ty * width + tx,), ctx),
+        }
 
     emit(out)
     return 0
