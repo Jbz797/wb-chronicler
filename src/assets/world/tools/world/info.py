@@ -477,6 +477,7 @@ def _build_roster(
         if once is not None:  # the dead that held the tally, each with what it takes away: where it stood and what took it are another question's
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
 
+    one_kind = kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
     if len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many on each land, of each kind and of each stage, the adults counted too
         lands = Counter(here for _, here, _ in bodies)
         by_land = {str(land): lands[land] for land in sorted(lands, key=lambda land: (isinstance(land, str), land))}
@@ -489,14 +490,17 @@ def _build_roster(
             moved = sum("was_on" in change for _, _, change in bodies)
             parts = ((len(bodies) - moved, "arrived"), (moved, "moved"), (len(gone), "gone"))
             told = f"{', '.join(f'{n} {word}' for n, word in parts if n)} since {since}" + (f" — {still} stood still, left out" if still else "")
+        few = len(gone) <= MAX_LISTED
         return {
             "by_land": None if asked is not None else by_land,  # silent under `-i`, which names the land
             "by_species": dict(species),
             "by_stage": dict(stages),
-            "gone_by_species": dict(Counter(row["asset_id"] for row in gone)) or None,
+            # Named while they are few, each side of a `--since` keeping its own list: it is the arrivals that crowd a census out, and the dead a chapter seeks.
+            "gone": [{**row, "asset_id": None if one_kind else row["asset_id"], "gone": None} for row in gone] if few else None,
+            "gone_by_species": None if few else dict(Counter(row["asset_id"] for row in gone)),
             "info": f"{told} — narrow them with -t, --trait, --has, --sapient, --settle, --barred or -i",
         }
-    rows, one_kind = [], kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
+    rows = []
 
     # Land by land, off every land last — the founders by who founds first, the barred by the gate told
     def order(body: tuple[dict, int | str, dict]) -> tuple:
