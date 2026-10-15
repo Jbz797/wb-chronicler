@@ -243,6 +243,8 @@ def _leader_refs(tallies: dict, records: Mapping) -> dict:
 def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of: Callable[[dict], dict], world_time: float) -> dict:
     by_id = {actor["id"]: actor for actor in actors}
     stats = {aid: stat_of(actor) for aid, actor in by_id.items()}
+    # The birth WB counts an age from: a migrant comes with years already told (`age_overgrowth`), and is the elder of one who set foot here long before.
+    births = {aid: float(a.get("created_time") or 0) - (a.get("age_overgrowth") or 0) * UNITS_PER_YEAR for aid, a in by_id.items()}
     tallies = {  # measure => value per soul, the four stats as `compute_actor_stats` hands them out — a child's blows already halved there
         **{name: {aid: s.get(name, 0) for aid, s in stats.items()} for name in ("damage_max", "health_max", "intelligence", "speed")},
         "births": {aid: int(a.get("births") or 0) for aid, a in by_id.items()},
@@ -250,9 +252,9 @@ def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of
         "kills": {aid: int(a.get("kills") or 0) for aid, a in by_id.items()},
         "level": {aid: int(a.get("level") or 0) for aid, a in by_id.items()},
         "money": {aid: int(a.get("money") or 0) for aid, a in by_id.items()},
-        "oldest": {aid: -float(a.get("created_time") or 0) for aid, a in by_id.items()},
+        "oldest": {aid: -born for aid, born in births.items()},
         "renown": {aid: int(a.get("renown") or 0) for aid, a in by_id.items()},
-        "youngest": {aid: float(a.get("created_time") or 0) for aid, a in by_id.items()},
+        "youngest": births,
     }
     # By share of each body's own cap, as WB's `isHungry` reads it: a stomach `big_stomach` widened, half empty, is hungrier than a narrow one a little lower.
     if eaters := {aid: -int(by_id[aid].get("nutrition") or 0) / s["nutrition_max"] for aid, s in stats.items() if "nutrition_max" in s}:
