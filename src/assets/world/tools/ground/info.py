@@ -84,6 +84,7 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         "families": len({fid for a in dwellers if (fid := a.get("family"))}) or None,  # none says nothing of who sleeps there: `occupants` does
         "health": int(health) if hurt or (whole is None and "health" in house) else None,  # an asset the tables do not know keeps what the save wrote
         "health_max": whole if hurt else None,
+        "housing_slots": asset.get("housing_slots"),  # the souls WB lets live under this roof (`BuildingAsset.housing_slots`), whoever does: `occupants`
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
         # A site, laid and not built: nobody sleeps in it yet, though WB already counts it among a town's `houses` (`City.getHouseCurrent`).
