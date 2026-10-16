@@ -370,8 +370,8 @@ def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, t
         return {"new": True}  # born or set down since, with nothing then to weigh it against
     was = actor_xy(then)
     was_land = _land_of(then, then_ctx)
-    if actor is None:  # WB drops the dead from the save: a body gone is a body dead, its last place all that is left of it
-        return {"asset_id": then.get("asset_id"), "gone": True, "last_seen": {"island_id": was_land, "x": was[0], "y": was[1]}, "name": then.get("name")}
+    if actor is None:  # WB drops the dead from the save: a body gone is a body dead, its place then all that is left — none keeps where it fell
+        return {"asset_id": then.get("asset_id"), "gone": True, "name": then.get("name"), "was_at": {"island_id": was_land, "x": was[0], "y": was[1]}}
     out: dict = {}
     if (now := actor_xy(actor)) != was:
         dx, dy = now[0] - was[0], now[1] - was[1]

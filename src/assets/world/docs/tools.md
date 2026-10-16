@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 16/10/26 11:50</p>
+<p class="metadata">Date de mise à jour : 16/10/26 11:55</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -30,7 +30,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 ### `actor` :
 
 - `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource, par virgules (`nearest`) ; il rend son `circle`, chaque part en tuiles et en temps, `total_` dès qu'il y en a deux ; sur l'eau, `march_days` ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu ; seule sans section nommée.
-- `--since C<n>` : ce qui a bougé depuis — `moved` : le trajet fait et son temps au plus court au pas du corps quand `--to` ne donne qu'un gisement ; `stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre ; `gone` : mort ; `last_seen` sa dernière place ; `to.then` : ce but compté alors
+- `--since C<n>` : ce qui a bougé depuis — `moved` : le trajet fait et son temps au plus court au pas du corps quand `--to` ne donne qu'un gisement ; `stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre ; `gone` : mort, `was_at` sa place alors ; `to.then` : ce but compté alors
 
 ### `geography` :
 
