@@ -21,6 +21,7 @@ from actor_stats import (
     crossed_on,
     equipment_power,
     hatch_on,
+    hatches_as,
     is_baby,
     is_egg,
     kept_statuses,
@@ -308,6 +309,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # WB counts a first child 2, so a parentless founder is its 1: a floor, which says nothing and goes unsaid as a count at nought does.
         **({"gen": gen} if (gen := int(actor.get("generation") or 1)) > 1 else {}),
         "hatch_on": hatch_on(actor, ctx),  # Chronicler-only: the hatching, past or to come — `born` dates the laying, the chronicle the hatching
+        "hatches_as": hatches_as(actor, ctx),  # Chronicler-only, an egg's alone: a state, never a date — the migrant's breaks out grown
         **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # Chronicler-only: WB names no roof — `ground/info.py <id>` takes the bare id
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
         # Chronicler-only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks a fighter left out.

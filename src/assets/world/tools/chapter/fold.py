@@ -24,6 +24,7 @@ _AUDIT = {
             "founding_kingdom",
             "gen",
             "hatch_on",
+            "hatches_as",
             "home",
             "in_building",
             "island_id",

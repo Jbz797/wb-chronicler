@@ -460,6 +460,14 @@ def _half(value: float) -> float:
     return math.floor(value * 0.5) if float(value).is_integer() else value * 0.5
 
 
+# When the shell opens: a running egg as the save keeps it, else its laying plus the lineage's incubation.
+def _hatch_time(actor: dict, ctx: dict) -> float | None:
+    if left := status_left(actor, "egg"):
+        return ctx["world_time"] + left
+    months = _incubation_months(actor, ctx)
+    return float(actor.get("created_time") or 0) + months * UNITS_PER_MONTH if months else None
+
+
 # A lineage's months in the shell, summed once. Nought unless it lays — the trait asked alone, an `egg_*` shell carrying months that outlive the laying.
 def _incubation_months(actor: dict, ctx: dict) -> float:
     memo, sub_id = ctx["incubation_memo"], actor.get("subspecies")
@@ -761,10 +769,14 @@ def equipment_power(actor: dict, ctx: dict) -> int:
 
 # The month a body leaves its shell, gone by or to come — `born` being the laying. `None` for a biology that lays nothing.
 def hatch_on(actor: dict, ctx: dict) -> str | None:
-    if left := status_left(actor, "egg"):  # an egg under way, as the save keeps it
-        return world_date(ctx["world_time"] + left)
-    months = _incubation_months(actor, ctx)
-    return world_date(float(actor.get("created_time") or 0) + months * UNITS_PER_MONTH) if months else None
+    return world_date(hatched) if (hatched := _hatch_time(actor, ctx)) is not None else None
+
+
+# What an egg breaks out as, WB `Actor.calcAgeStates`: a baby only under its majority — a migrant, laid 18 to 35 years old (`updateMigrants`), comes out grown.
+def hatches_as(actor: dict, ctx: dict) -> str | None:
+    if not is_egg(actor, ctx) or (hatched := _hatch_time(actor, ctx)) is None:
+        return None
+    return "adult" if hatched >= crossed_at(actor, adult_age(actor, ctx)) else "baby"
 
 
 # WB `Actor.calcAgeStates` flags `_state_baby` down two roads, an egg and a body under its majority — and every rule reads that one flag, so an egg is a child.
