@@ -91,7 +91,9 @@ _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a 
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
+_FLOORS = {"gen": 1}  # a count `--since` reads unsaid as its floor: WB counts a founder its first generation
 _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # a goal's words: `moved` keeps its own heading and length
+_IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -148,8 +150,8 @@ _TENURE_ROLES = {
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
 
-# What `since` leaves out of `changed`: a place is told as a path, `moved`, a status or a task is an instant.
-_UNCOMPARED = frozenset({"island_id", "statuses", "task", "task_target", "x", "y"})
+# What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
+_UNCOMPARED = frozenset({"island_id", "task", "task_target", "x", "y"})
 
 
 # A `--to` no walk answers: its message says what bars the way, the water's width against the body's reach where the sea is to blame.
@@ -381,7 +383,12 @@ def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, t
         if (land := _land_of(actor, ctx)) != was_land:
             out["moved"]["land"] = [was_land, land]
     before, after = _build_metadata(then, then_ctx, then_save), _build_metadata(actor, ctx, save)
-    changed = {key: _change(before.get(key), after.get(key)) for key in sorted((before.keys() | after.keys()) - _UNCOMPARED) if before.get(key) != after.get(key)}
+    lasting = load_data("statuses.json")  # the statuses that move a stat, a curse among them: a nap or a laugh is an instant, never a change
+    for side in (before, after):
+        side["statuses"] = [status for status in side.get("statuses") or () if status in lasting] or None
+    changed = {
+        key: _change(key, before.get(key), after.get(key)) for key in sorted((before.keys() | after.keys()) - _UNCOMPARED) if before.get(key) != after.get(key)
+    }
     # A level unsaid is WB's floor, 1: left out, it would weigh as 0. No `swim`, which only follows stamina and health.
     stats_then, stats_now = ({"level": 1, **_compute_stats(body, side)} for body, side in ((then, then_ctx), (actor, ctx)))
     names = ctx["creature_traits"]  # WB's own library, the same whichever chapter is read
@@ -511,9 +518,16 @@ def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
     ]
 
 
-# A field as it moved: a list, `roles`, by what came and went, anything else as the pair it was and is.
-def _change(before: object, after: object) -> dict | list | None:
-    return moved_between(before, after) if isinstance(before, list) and isinstance(after, list) else [before, after]
+# A field as it moved: a list, `roles`, by what came and went; a count or a flag as its pair, unsaid read as its floor; anything else as the pair, or `new`/`gone`.
+def _change(key: str, before: object, after: object) -> dict | list | None:
+    if isinstance(before, list) and isinstance(after, list):
+        return moved_between(before, after)
+    if key not in _IDS and isinstance(said := before if after is None else after, int):  # a bool is an int: `False` unsaid as a 0 is
+        floor = _FLOORS.get(key, False if isinstance(said, bool) else 0)
+        return [floor if before is None else before, floor if after is None else after]
+    if after is None:  # a pair would lose its empty side to `emit`, which drops every `None`
+        return {"gone": before}
+    return {"new": after} if before is None else [before, after]
 
 
 # The circle a goal falls in, filed as `surroundings` files a body: by the walk's time as told, then off his land by a crown's hull, the walks to and fro counted.
