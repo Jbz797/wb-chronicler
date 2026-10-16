@@ -498,6 +498,9 @@ def _build_roster(
             parts = ((len(bodies) - moved, "arrived"), (moved, "moved"), (len(gone), "gone"))
             told = f"{', '.join(f'{n} {word}' for n, word in parts if n)} since {since}" + (f" — {still} stood still, left out" if still else "")
         few = len(gone) <= MAX_LISTED
+        filters = (("-t", kinds), ("--trait", trait), ("--has", has), ("--sapient", sapient), ("--settle", settle), ("--barred", barred), ("-i", land is not None))
+        free = [flag for flag, worn in filters if not worn]  # the narrowings still open: one already worn would be no way on
+        ways = ", ".join(free[:-1]) + " or " * (len(free) > 1) + "".join(free[-1:])  # `a, b or c`, or `c` alone
         return {
             "by_land": None if asked is not None else by_land,  # silent under `-i`, which names the land
             "by_species": dict(species),
@@ -505,7 +508,7 @@ def _build_roster(
             # Named while they are few, each side of a `--since` keeping its own list: it is the arrivals that crowd a census out, and the dead a chapter seeks.
             "gone": [{**row, "asset_id": None if one_kind else row["asset_id"], "gone": None} for row in gone] if few else None,
             "gone_by_species": None if few else dict(Counter(row["asset_id"] for row in gone)),
-            "info": f"{told} — narrow them with -t, --trait, --has, --sapient, --settle, --barred or -i",
+            "info": f"{told}, past the {MAX_LISTED} a roll lists" + (f" — narrow them with {ways}" if free else ""),
         }
     rows = []
 
