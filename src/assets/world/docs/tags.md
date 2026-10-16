@@ -1,6 +1,6 @@
 # 📌 Vocabulaire des tags
 
-<p class="metadata">Date de mise à jour : 13/10/26 15:42</p>
+<p class="metadata">Date de mise à jour : 16/10/26 13:59</p>
 
 | Tag                        | Signification                                                                                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -13,6 +13,7 @@
 | `FIRST_CITY`               | La **première cité** du monde est fondée. Une fois dans la chronique.                                                                          |
 | `FIRST_DEATH`              | La **première mort** du monde, quelle qu'en soit la cause. Une fois dans la chronique.                                                         |
 | `FIRST_HOUSE`              | La **première maison** du monde est debout — ni un chantier ni une tente n'en sont une. Une fois dans la chronique.                            |
+| `FIRST_MIGRANTS`           | Les **premiers migrants** du monde arrivent à un feu, appelés par la loi (`wiki:World_Laws`). Une fois dans la chronique.                      |
 | `NAVIGATION`               | Le premier bateau du monde prend la mer — **la navigation est découverte**.                                                                    |
 | `NEW_AGE`                  | Le monde bascule dans un **nouvel âge** (l'`age_id` change vs le chapitre précédent).                                                          |
 | `NEW_FAVORITE`             | Un nouveau **favori** est désigné dans ce chapitre.                                                                                            |
