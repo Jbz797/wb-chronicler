@@ -857,6 +857,15 @@ def _trip_back(actor: dict, was: tuple[int, int], ctx: dict) -> dict:
     return {key: value for key, value in trip.items() if key not in _GOAL_ONLY}
 
 
+# The same goal timed in the chapter `--since` names: from where the body stood then, at its pace and on its ground of then — the two times side by side.
+def _trip_then(then: dict, goal: tuple[int, int], whom: str, then_ctx: dict) -> dict:
+    try:
+        trip = _build_to(then, [goal], whom, then_ctx, None, {})
+    except _UnreachableError:
+        return {"circle": "far"}
+    return {key: value for key, value in trip.items() if key == "crow_tiles" or key not in _GOAL_ONLY}
+
+
 # How far on foot each of `spots` lies, `None` for a body the ground never holds: round his land's bays, swum within reach toward another, each walk drawn if asked.
 def _walker(actor: dict, gait: Gait | None, ctx: dict, limit: float, spots: list[tuple]) -> Callable[[int, int, int | None], float | None] | None:
     if gait is None:
@@ -1041,6 +1050,13 @@ def main(argv: list[str]) -> int:
         except _UnreachableError as e:
             print(f"{e} — `circle`: far", file=sys.stderr)  # out of reach is past every circle: said, a refusal bearing no field
             return 1
+        if then is not None and isinstance(target, int) and target not in then_ctx["actors_by_id"]:
+            print(f"✗ no `then`: {whom} not yet in {since}", file=sys.stderr)
+        elif then is not None and not isinstance(target, str):
+            goal = target if isinstance(target, tuple) else actor_xy(then_ctx["actors_by_id"][target])
+            out["to"]["then"] = _trip_then(then, goal, whom, then_ctx)
+    if isinstance(target, str) and then is not None:  # a land's numbers and a kind's sites are redrawn from save to save: the goal then would be another
+        print("✗ no `then`: only a point or a body is the same goal in both chapters", file=sys.stderr)
     if each:
         reached: dict = dict.fromkeys(each)  # a word left unanswered keeps its place: the others then keep their names, where one alone would come bare
         for word, goal in each.items():  # out of reach, it says so and leaves the others their answer: the command fails where none has one

@@ -45,7 +45,7 @@
     "@ngx-translate/core": "18.0.0",
     "marked": "18.1.1",
     "ng-zorro-antd": "22.1.2",
-    "ngx-markdown": "22.1.0",
+    "ngx-markdown": "22.1.1",
     "ngx-scrollbar": "^19.1.5",
     "prism-themes": "1.9.0",
     "prismjs": "1.30.0",
@@ -53,8 +53,8 @@
     "zone.js": "0.16.3"
   },
   "devDependencies": {
-    "@angular/build": "^22.2.2",
-    "@angular/cli": "^22.2.2",
+    "@angular/build": "^22.2.3",
+    "@angular/cli": "^22.2.3",
     "@angular/compiler-cli": "22.2.3",
     "@angular/language-service": "22.2.3",
     "chokidar": "5.0.0",
