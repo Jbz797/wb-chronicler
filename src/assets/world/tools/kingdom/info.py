@@ -442,8 +442,8 @@ def _compute_opinion(main: dict, side: dict, target: dict, ctx: dict, relation: 
     if tid == ctx.get("supreme_kingdom_id") and len(ctx["kingdoms_by_id"]) >= 3:
         mod["is_supreme"] = -100
 
-    # 4. borders: ±25. WB checks `areKingdomsClose` (any city pair within adjacency threshold). `close` = the caller's zone-proximity proxy, computed once per pair.
-    mod["borders"] = -25 if close else 25
+    # 4. borders ±25, keyed by WB's label for its sign (`opinion_far_borders`/`_close_borders`): `areKingdomsClose`, `close` its zone proxy, once per pair.
+    mod["close_borders" if close else "far_borders"] = -25 if close else 25
 
     # 5. far_lands: +60 when the realms do not border and their capitals sit on different islands (`WorldTile.isSameIsland`), read off the island map.
     target_island = _capital_island(target, ctx)
