@@ -444,7 +444,7 @@ def _build_roster(
     once = {a["id"]: _held(a, has) for a in earlier.get("actors_data") or []} if has and earlier is not None else None
 
     floor = 1 if has == "level" else 0
-    bodies, still = [], 0
+    bodies, still, unranked = [], 0, 0
 
     for actor in save.get("actors_data") or []:
         borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
@@ -458,7 +458,7 @@ def _build_roster(
             continue
         held = _held(actor, weighed, ctx) if weighed else 0
         before = once.get(actor["id"], 0) if once is not None else 0  # with no `--since`, a tally is weighed against nought
-        if weighed and held == before:
+        if weighed and held == before and not top:  # `--top` counts such a body once every other filter has had its say
             continue
         gates = settle_gates(actor, ctx) if settle or barred else None
         if settle and gates not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
@@ -473,7 +473,10 @@ def _build_roster(
                 continue
             change = {"was_on": then}
         if land is None or asked in (here, change.get("was_on")):
-            bodies.append((actor, here, change | (settle_told(gates) if barred else {})))
+            if top and held == before:  # holds none of the measure: left out of the ranking, and said so
+                unranked += 1
+            else:
+                bodies.append((actor, here, change | (settle_told(gates) if barred else {})))
     gone = []
 
     if earlier is not None and was is not None and not (settle or barred):  # the dead found nothing
@@ -538,11 +541,13 @@ def _build_roster(
             }
         )
 
-    if top and rows:  # one shape whatever the world, its `info` keeping a lone key from coming bare: the cut said, and a tie it falls in
+    if top and rows:  # one shape whatever the world, its `info` keeping a lone key from coming bare: the cut said, a tie it falls in, and who holds none
         if len(ranked) <= _TOP_ROWS:
-            return {"info": f"all {len(ranked)} by {top}, none cut", "roster": rows}
-        tied = sum(body[2][top] == ranked[_TOP_ROWS - 1][2][top] for body in ranked[_TOP_ROWS:])  # a tenth place shared would read as one body's own
-        return {"info": f"{_TOP_ROWS} highest of {len(ranked)} by {top}" + (f" — {tied} more share the last figure" if tied else ""), "roster": rows}
+            told = f"all {len(ranked)} by {top}, none cut"
+        else:
+            tied = sum(body[2][top] == ranked[_TOP_ROWS - 1][2][top] for body in ranked[_TOP_ROWS:])  # a tenth place shared would read as one body's own
+            told = f"{_TOP_ROWS} highest of {len(ranked)} by {top}" + (f" — {tied} more share the last figure" if tied else "")
+        return {"info": told + (f"; {unranked} with no {top}, left out" if unranked else ""), "roster": rows}
 
     return rows + [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
 
