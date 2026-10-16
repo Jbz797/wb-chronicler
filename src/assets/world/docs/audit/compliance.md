@@ -1,12 +1,12 @@
 # 📐 Audit de conformité
 
-<p class="metadata">Date de mise à jour : 13/10/26 00:37</p>
+<p class="metadata">Date de mise à jour : 16/10/26 12:19</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets après le chapitre, ce que le script a demandé à ce chapitre-là : cela vaut comme le § III.
 
 ## Ta tâche
 
-Confronte tes cibles aux parties § I à § V de `docs/chronicler.md`, sous-section par sous-section. **Juge la manière, pas la vérité** : ce que le texte affirme ne relève pas de toi. Un jugement qui s'appuierait sur un fait, pour valider comme pour réfuter, ne se tranche ni à l'œil ni par une lecture hors de tes cibles : signale ce fait comme un point à mesurer.
+Confronte tes cibles aux parties § I à § V de `docs/chronicler.md`, sous-section par sous-section. **Juge la manière, pas la vérité** : ce que le texte affirme ne relève pas de toi. Un jugement qui s'appuierait sur un fait, pour valider comme pour réfuter, ne se tranche ni à l'œil ni par une lecture hors de tes cibles : ce fait est un point à mesurer.
 
 - **`descriptor`** : sa longueur est au script ; prose sans balise, il suit le § V comme le chapitre, qu'il peut redire : il se lit seul.
 - **Cercle** : ce qui ne relève d'aucune entité du favori se classe au `circle` d'`actor <favori> --to`, ou de `surroundings`, qui les donne tous, jamais en reconvertissant les heures de la prose : tu ne lances que ces deux-là, pour le seul favori, et `echo.py` — leur syntaxe : `docs/tools.md`. D'un type, `--to` ne rend que le plus proche : tout autre est un point à mesurer, sauf si celui-là est déjà `far`.

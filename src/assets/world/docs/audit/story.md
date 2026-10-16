@@ -1,12 +1,12 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 13/10/26 00:37</p>
+<p class="metadata">Date de mise à jour : 16/10/26 12:19</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
 ## Ta tâche
 
-Lis le chapitre, puis autant de la chronique qu'il t'en faut : de `saves/C1/chapter.md` au dernier, tout t'est ouvert. Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
+Lis le chapitre, puis autant de la chronique qu'il t'en faut, de `saves/C1/chapter.md` au dernier. Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
 
 - un fil qu'elle a ouvert et jamais refermé ;
 - une épithète ou un lien que les chapitres ne soutiennent plus (un toponyme n'en est pas une) ;
@@ -14,7 +14,7 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut : de `saves/C1/chap
 - un motif, une cause ou un chiffre qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - une âme ou un lieu qu'elle a lâchés là où la chronique l'attendait.
 
-Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : signale-le comme un point à mesurer. Tu ne vérifies pas les faits ; mais un écart que tu t'apprêtes à soulever peut se mesurer d'une seule commande (`docs/tools.md`), citée avec lui ; au-delà, signale-le à mesurer. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Conversion temps » ; un seuil d'âge d'espèce se mesure, il se signale.
+Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : c'est un point à mesurer. Tu ne vérifies pas les faits ; mais un écart que tu t'apprêtes à soulever peut se mesurer d'une seule commande (`docs/tools.md`), citée avec lui ; au-delà, il est à mesurer. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Conversion temps » ; un seuil d'âge d'espèce se mesure, il se signale.
 
 Dis-le là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage manquant, un angle neuf), comme une direction, jamais de la prose écrite, sauf un dialogue, bâti à deux : à lui les faits, à toi ce que la chronique sait du favori.
 
@@ -28,7 +28,7 @@ Pars de `history/watches.md`, les veilles encore ouvertes, ou crée-le : ses seu
 - **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` : rien ne garde son issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas reste telle quelle.
 - **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · `y7 m10` · son sujet en une ligne — ouverte (C1) »_. L'échéance, que les outils datent, seulement si elle en a une ; le sort avec son chapitre : ouverte, reconduite si un chapitre reprend le fil sans le solder, détournée s'il le mène ailleurs que vers une autre veille. Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles qui suivent un même fil se fondent en une, la plus ancienne gardant son ouverture ; elles ne se lient que si la chronique les lie.
-- **Plafond** : au-delà de 10 veilles, abandonne celles qui pèsent le moins dans le récit et ont le moins de chances de se refermer, et dis-le au chroniqueur : abandonnée, une veille sort et n'est plus un écart. Sous 10, aucune ne s'abandonne : elle se solde ou reste.
+- **Plafond** : au-delà de 10 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, et dis-le au chroniqueur : abandonnée, une veille sort et n'est plus un écart. Sous 10, aucune ne s'abandonne : elle se solde ou reste.
 - **Réserves** : une veille garde celles du chapitre (`docs/chronicler.md` § « Prudence et rigueur »).
 - **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand une question s'y solde ou que le fil se détourne, l'ouverture gardée.
 
