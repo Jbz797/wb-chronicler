@@ -538,8 +538,10 @@ def _build_roster(
             }
         )
 
-    if top and len(ranked) > _TOP_ROWS:  # the cut said, and a tie it falls in: a tenth place shared would read as one body's own
-        tied = sum(body[2][top] == ranked[_TOP_ROWS - 1][2][top] for body in ranked[_TOP_ROWS:])
+    if top and rows:  # one shape whatever the world, its `info` keeping a lone key from coming bare: the cut said, and a tie it falls in
+        if len(ranked) <= _TOP_ROWS:
+            return {"info": f"all {len(ranked)} by {top}, none cut", "roster": rows}
+        tied = sum(body[2][top] == ranked[_TOP_ROWS - 1][2][top] for body in ranked[_TOP_ROWS:])  # a tenth place shared would read as one body's own
         return {"info": f"{_TOP_ROWS} highest of {len(ranked)} by {top}" + (f" — {tied} more share the last figure" if tied else ""), "roster": rows}
 
     return rows + [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
