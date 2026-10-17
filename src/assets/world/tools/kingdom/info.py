@@ -2,6 +2,7 @@
 
 # User-facing docs (usage, available sections) live in `docs/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
+import math
 import sys
 from collections import Counter, defaultdict
 from functools import cache
@@ -371,7 +372,8 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool) -> li
         if kid in (r.get("kingdom1_id"), r.get("kingdom2_id"))
     }
 
-    halo = _zone_halo(ctx["zones_by_kingdom"].get(kid, []))  # built once and probed against each rival, rather than rebuilt on every pair
+    ours = ctx["zones_by_kingdom"].get(kid, [])
+    halo = _zone_halo(ours)  # built once and probed against each rival, rather than rebuilt on every pair
     side = _opinion_side(kingdom, ctx, allies, war_sides)
     out = []
 
@@ -388,6 +390,8 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool) -> li
             {
                 "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / UNITS_PER_YEAR) if r else None,
                 **({"borders": True} if borders else {}),  # Chronicler-only, omitted when False: absence = kingdoms don't share a border.
+                # Chronicler-only: how far apart, edge to edge, where they do not touch — the distance a chapter puts between two crowns.
+                "gap_tiles": None if borders else _zone_gap(ours, ctx["zones_by_kingdom"].get(other_id, [])),
                 "kingdom": {"id": other_id, "name": other.get("name")},
                 "opinion": _compute_opinion(kingdom, side, other, ctx, r, borders, detailed),
                 "status": status,
@@ -639,6 +643,13 @@ def _war_sides(war: dict) -> tuple[set, set]:
     attackers = ({war.get("main_attacker")} | set(war.get("list_attackers") or [])) - {None}
     defenders = ({war.get("main_defender")} | set(war.get("list_defenders") or [])) - {None}
     return attackers, defenders
+
+
+# The straight gap between the nearest edges of two realms' quarters, in tiles: zone squares a row or a column apart touch, so only the rows past count.
+def _zone_gap(ours: list[tuple[int, int]], theirs: list[tuple[int, int]]) -> int | None:
+    if not ours or not theirs:
+        return None
+    return round(ZONE_TILES * min(math.hypot(max(0, abs(ax - bx) - 1), max(0, abs(ay - by) - 1)) for ax, ay in ours for bx, by in theirs))
 
 
 # WB `areKingdomsClose` via `City.nearbyBorders`: zone abutting zone, diagonals included. Dilated once, each rival is a set test, not an O(a × b) all-pairs scan.

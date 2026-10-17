@@ -67,7 +67,8 @@ _AUDIT = {
         }
     ),
     "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
-    "relations": frozenset({"age_years", "borders", "years_since_last_war"}),  # the tie's age, its border, its last war: the panel prints the standing, its drivers
+    # The tie's age, its border or its gap, its last war: the panel prints the standing, its drivers.
+    "relations": frozenset({"age_years", "borders", "gap_tiles", "years_since_last_war"}),
     # The world's stock of items, what its bodies are in the middle of and its sites — the panel counts souls, roofs and trees.
     "snapshot": frozenset({"gear", "statuses", "under_construction"}),
     "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "projectiles", "recoil", "swim", "throwing_range"}),
