@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 16/10/26 13:54</p>
+<p class="metadata">Date de mise à jour : 17/10/26 19:07</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -30,7 +30,7 @@ Pars de `history/watches.md`, les veilles encore ouvertes, ou crée-le : ses seu
 - **Fusion** : deux veilles qui suivent un même fil se fondent en une, la plus ancienne gardant son ouverture ; elles ne se lient que si la chronique les lie.
 - **Plafond** : au-delà de 10 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, et dis-le au chroniqueur : abandonnée, une veille sort et n'est plus un écart. Sous 10, aucune ne s'abandonne : elle se solde ou reste.
 - **Réserves** : une veille garde celles du chapitre (`docs/chronicler.md` § « Prudence et rigueur »).
-- **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand une question s'y solde ou que le fil se détourne, l'ouverture gardée.
+- **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand l'une de ses questions s'y solde ou que le fil se détourne, l'ouverture gardée.
 
 ## Au réaudit
 
