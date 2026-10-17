@@ -24,7 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
-from actor_stats import adult_age, build_actor_stats_context, is_egg
+from actor_stats import adult_age, build_actor_stats_context, is_egg, kept_task, kept_task_target
 from echo import echoes
 from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_world
 from founding import city_zones, settle_gates
@@ -109,6 +109,7 @@ _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never don
     "and any other observation within your remit",
 )
 
+_DIALOGUE = "chronicler.md § V, « Un dialogue quand le favori parle »"  # what the audit judges a dialogue by, in the rule's own words
 _DRAFT_HEADINGS = {"en": "Draft", "fr": "Brouillon"}  # one per language the settings panel offers: a language added there owes its word here
 
 # Everything a reset sweeps away. `tiles` holds the ticking ones (fires, melting ice), not the ground — that lives in `tileMap`/`tileArray`/`tileAmounts`.
@@ -206,6 +207,7 @@ _TAG_REGISTRIES = {
     "u": "subspecies",
 }
 
+_TALKS = frozenset({"socialize_do_talk", "socialize_receiving"})  # WB's two talking tasks: the favorite speaking, the favorite spoken to
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
 _TOOLS = Path(__file__).parent.parent
 
@@ -249,6 +251,7 @@ def _audit_targets(n: int, facts: dict) -> str:
         *([f"events: {', '.join(facts['events'])}, each {_EVENT}"] if facts["events"] else []),
         *([f"trait summaries: {_SUMMARY}"] if any(field.endswith(".traits") for field in facts["audited"]) else []),
         *([_LINEAGE] if "subspecies.traits" in facts["audited"] else []),
+        *([f"dialogue owed: {facts['talk']} — {_DIALOGUE}"] if facts["talk"] else []),
     ]
     shape = f" [{' — '.join(asked)}]" if asked else ""
     written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
@@ -464,6 +467,18 @@ def _entity_id(block: dict) -> int | None:
 # The tags a chapter owes a telling of: an alert waits for `--deliver`, a state the prose may not name, and `NEW_FAVORITE` is the chronicler's own pick.
 def _events(tags: list[str]) -> list[str]:
     return [code for code in tags if code not in _ALERTS and code != "NEW_FAVORITE"]
+
+
+# The favorite's talk at the save's instant, as `chapter.json` drops its task: who speaks with whom, `None` while it does anything else.
+def _favorite_talk(n: int, favorite: dict) -> str | None:
+    if (favorite_id := (favorite.get("metadata") or {}).get("id")) is None or not (wbox := SAVES_DIR / f"C{n}" / "map.wbox").exists():
+        return None
+    bodies = {actor["id"]: actor for actor in load_save(wbox).get("actors_data") or []}
+    if (actor := bodies.get(favorite_id)) is None or (task := kept_task(actor)) not in _TALKS:
+        return None
+    other = bodies.get((kept_task_target(actor) or {}).get("actor"))
+    name = other.get("name") or other.get("asset_id") if other else "another"
+    return f"the favorite talks with {name}" if task == "socialize_do_talk" else f"{name} talks to the favorite"
 
 
 # The save's `favorite`-flagged actor (WB's in-game marker), detail folded; the chronicler's `descriptor` carries forward while it stays the same favorite.
@@ -866,6 +881,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "named": _named_places(n),
         "owed": owed,
         "stray": stray,
+        "talk": _favorite_talk(n, favorite),
     }
 
 
