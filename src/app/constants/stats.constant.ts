@@ -1,8 +1,8 @@
 import { CumulativeStat, DeathCause, Favorite, LeaderGroupConfig, LeaderMeasure, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
 
-// City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `cities`, plus the `attractivity` only a settlement can have.
+// City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `buildings` and `cities`, plus the `attractivity` of a settlement.
 export const CITY_META_STATS = new Set<RankedStatKind>([
-  'age', 'attractivity', 'book_reach', 'buildings', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
+  'age', 'attractivity', 'book_reach', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
 ]);
 
 // The three gauges rank on their cap, never on the live value the panel prints beside it; every other kind names its own field of the favorite's `stats`.

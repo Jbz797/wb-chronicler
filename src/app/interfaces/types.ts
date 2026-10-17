@@ -12,7 +12,7 @@ export type ChapterOverviewPanel = 'wars' | 'world-stats' | ChapterTier; // the 
 // Every body a chapter names, and the four types below are cut from it. `ChapterMeta extends Record<ChapterTier, unknown>` closes the loop from downstream.
 export type ChapterTier = 'alliance' | 'city' | 'clan' | 'culture' | 'family' | 'favorite' | 'kingdom' | 'language' | 'religion' | 'subspecies';
 
-export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'buildings' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
+export type CityMetaStat = 'age' | 'attractivity' | 'book_reach' | 'deaths' | 'food' | 'goods' | 'houses' | 'kills' | 'renown'
   | 'territory' | 'wealth';
 
 export type CityRegistry = Record<string, CityInfo>;

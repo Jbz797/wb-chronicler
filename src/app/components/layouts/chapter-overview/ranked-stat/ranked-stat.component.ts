@@ -123,13 +123,13 @@ export class RankedStatComponent {
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
   }
 
-  // Per-kind accessor for a city — `army`, `books`, `gear` and `loyalty` each own a block, score dimensions sit in `metadata`, the rest in `population`.
+  // Per-kind accessor for a city — `army`, `books`, `buildings`, `gear`, `loyalty` each own a block, score dimensions sit in `metadata`, the rest in `population`.
   private _resolveCity(c: NonNullable<ChapterMeta['city']>): RankedStatSnapshot {
     const key = this.stat();
 
     if (key === 'score_rank') return this._snap(c.metadata.score_rank ?? 0, undefined); // the value IS the placement — no podium rank of its own
     // Each its own block, not `metadata`: the volumes, the racks, the modifiers ride alongside the total — and the block goes whole at nought.
-    if (key === 'books' || key === 'gear' || key === 'loyalty') return this._snap(c[key]?.total ?? 0, c.ranks?.[key]);
+    if (key === 'books' || key === 'buildings' || key === 'gear' || key === 'loyalty') return this._snap(c[key]?.total ?? 0, c.ranks?.[key]);
     if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
 
     // Army stats rank under an `army_` prefix, the city ranking `kills`/`deaths`/`renown` of its own. The corps also holds a name and a captain: hence the typeof.

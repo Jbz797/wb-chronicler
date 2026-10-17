@@ -26,6 +26,7 @@ from shared import (
     actor_xy,
     asset_set,
     books_held,
+    building_tile,
     children_by_id,
     city_centre,
     city_score_dimensions,
@@ -60,7 +61,7 @@ from shared import (
     zone_xy,
 )
 
-_ALL_SECTIONS = ("army", "books", "breakdown", "gear", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks", "rulers")
+_ALL_SECTIONS = ("army", "books", "breakdown", "buildings", "gear", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks", "rulers")
 
 _CAPTURE_PROFESSIONS = frozenset({PROFESSION_KING, PROFESSION_LEADER, PROFESSION_WARRIOR})  # WB `ProfessionAsset.can_capture`
 
@@ -141,6 +142,18 @@ def _build_books(city: dict, ctx: dict, requested: str | None) -> dict:
     return {"held": [{"id": b["id"], "name": b.get("name")} for b in ctx["shelved_by_city"]().get(city["id"], ())], "total": total}
 
 
+# Its civic buildings, nature aside: `full` counts them, as the panel prints the count; named, each by its id and tile, a site said as one.
+def _build_buildings(city: dict, ctx: dict, requested: str | None) -> dict | list[dict]:
+    owned = ctx["civic_by_city"].get(city["id"], [])
+    if requested in (None, "full"):  # whatever their number: the panel reads the total there, and a town's roofs are the section's to list
+        return light({"total": len(owned)})
+    rows = []
+    for building in sorted(owned, key=itemgetter("id")):
+        x, y = building_tile(building) or (None, None)
+        rows.append({"asset_id": building.get("asset_id"), "id": building["id"], "under_construction": under_construction(building) or None, "x": x, "y": y})
+    return rows
+
+
 # One pass over actors then buildings — every per-city tally the sections need, so no section rescans the save. Built whole whatever was asked for.
 def _build_context(save: dict, save_path: Path) -> dict:
     captain_ids = {cap for army in save.get("armies") or [] if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
@@ -213,7 +226,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
     # Counted off the roster rather than tallied alongside it: one length per town at the end beats an increment per inhabitant, and the two can't drift.
     populations_by_city: Counter[int] = Counter({cid: len(residents) for cid, residents in actors_by_city.items()})
 
-    buildings_by_city: Counter[int] = Counter()
+    buildings_by_city: Counter[int] = Counter()  # read by `settlement_rank_getters` under a composed key, `f"{name}_by_{tier}"`
+    civic_by_city: defaultdict[int, list[dict]] = defaultdict(list)
     civic = civic_building_ids()  # `houses` = the dwelling subset.
     food_ids = asset_set("food")
     food_by_city: Counter[int] = Counter()
@@ -241,6 +255,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         asset_id = b.get("asset_id")
         if asset_id in civic:
             buildings_by_city[cid] += 1
+            civic_by_city[cid].append(b)
             sites_by_city[cid] += under_construction(b)
             if asset_id.startswith("house"):
                 houses_by_city[cid] += 1
@@ -254,6 +269,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "besieging_by_city": cache(lambda: _besieging_kingdoms(save)),  # a walk over every actor, and only `metadata` asks — resolved on demand, once
         "books_by_city": cache(lambda: books_held(save)[0]),  # custody, not authorship; called not stored, a walk of every building few sections need
         "buildings_by_city": buildings_by_city,
+        "civic_by_city": civic_by_city,
         "centres": {},  # `_city_centre` memo — every town asks its capital's, over and over.
         "children_by_id": cache(lambda: children_by_id(save)),  # living offspring per parent, world-wide: a resident's child may live elsewhere
         "cities_by_id": index_by_id(save.get("cities") or []),
@@ -382,7 +398,6 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
             "births": int(city.get("total_births") or 0),  # Inhabitants born over its lifetime, the counterpart WB keeps to `deaths`
             "book_reach": dims["book_reach"].get(cid, 0),  # `_BOOK_POINTS` per book written here + how widely it's read
             "born": entity_born(city),  # chronicler-only: its month, where `age` counts whole years
-            "buildings": ctx["buildings_by_city"][cid],  # Civic buildings owned by the city (nature excluded); `houses` is the dwelling subset.
             **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
             "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
             **({"deaths_by_cause": causes} if (causes := death_causes(city)) else {}),  # chronicler-only: what the town's people died of, which `deaths` never says
@@ -391,7 +406,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
             "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.
             "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).
             **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
-            "houses": ctx["houses_by_city"][cid],  # Dwellings (subset of `buildings`).
+            "houses": ctx["houses_by_city"][cid],  # Dwellings, a subset of the `buildings` section.
             "id": cid,
             "islands": islands,
             "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).
@@ -780,6 +795,8 @@ def main(argv: list[str]) -> int:
     if "breakdown" in sections:
         # No `kingdoms`: a townsman answers to the town's own crown, which `metadata.kingdom` already names.
         out["breakdown"] = {k: v for k, v in population_breakdown(ctx["actors_by_city"].get(city_id, []), ctx).items() if k != "kingdoms"}
+    if "buildings" in sections:
+        out["buildings"] = _build_buildings(city, ctx, requested)
     if "gear" in sections:
         out["gear"] = _build_gear(city, ctx, requested)
     if "identity" in sections:

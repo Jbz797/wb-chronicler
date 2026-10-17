@@ -5,6 +5,7 @@ export interface City {
   army?: CityArmy;
   books?: BookShelf;
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
+  buildings?: CityBuildings;
   gear?: EquipmentStock;
   identity: CityIdentity;
   inventory?: Record<string, number>; // WB's « Inventaire »: the itemised form of `metadata.food`, `gold` and `goods`
@@ -29,6 +30,9 @@ interface CityArmy {
   renown: number;
 }
 
+// Its civic buildings, counted: `city/info.py <id> buildings` lists each by id and tile for the chronicler.
+interface CityBuildings { total: number }
+
 // The settler who raised the town. The bodies it answers to stay in `city/info.py <id> identity`, each tier's own panel naming the favorite's.
 interface CityIdentity { founder?: PersonReference }
 
@@ -40,7 +44,6 @@ interface CityMetadata {
   age: number;
   attractivity?: number; // `migrated - left`, negatives included — absent at 0, as every count of the block is
   book_reach?: number;
-  buildings?: number;
   deaths?: number;
   food?: number;
   gold?: number;

@@ -64,7 +64,7 @@
         <app-ranked-stat source="city" [stat]="o.stat" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item *appNonZero="c.metadata.buildings" [nzTitle]="buildingsTitle">
+    <nz-descriptions-item *appNonZero="c.buildings?.total" [nzTitle]="buildingsTitle">
       <app-ranked-stat source="city" stat="buildings" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="c.metadata.houses" [nzTitle]="housesTitle">
