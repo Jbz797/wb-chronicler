@@ -4812,9 +4812,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:22.6.7":
-  version: 22.6.7
-  resolution: "eslint-config-angular-strict@npm:22.6.7"
+"eslint-config-angular-strict@npm:22.6.8":
+  version: 22.6.8
+  resolution: "eslint-config-angular-strict@npm:22.6.8"
   dependencies:
     "@angular-eslint/builder": "npm:22.6.0"
     "@angular-eslint/eslint-plugin": "npm:22.6.0"
@@ -4825,7 +4825,7 @@ __metadata:
     "@stylistic/eslint-plugin": "npm:5.10.0"
     "@typescript-eslint/eslint-plugin": "npm:8.71.2"
     "@typescript-eslint/parser": "npm:8.71.2"
-    eslint: "npm:10.12.0"
+    eslint: "npm:10.13.0"
     eslint-config-airbnb-extended: "npm:3.3.0"
     eslint-config-flat-gitignore: "npm:2.4.0"
     eslint-plugin-import-x: "npm:4.17.1"
@@ -4833,7 +4833,7 @@ __metadata:
     eslint-plugin-toml: "npm:1.5.0"
     eslint-plugin-unicorn: "npm:78.0.0"
     eslint-plugin-yml: "npm:3.9.0"
-  checksum: 10c0/7287b65444d719da74ce8549bf533296ab079a750cf50792b6a0b5b28f0f7d80a8de9d29444dfff731455b9d8f4a94bcda7b7969b5939437fb2df2d6ab53e880
+  checksum: 10c0/971c1884e766e89c9394a99d627e32f7756bc08666b2273832b56d9f66a05691ba47a49041f2a7cb654e26cb4fae7ad1f492841e4fb31deaad7089e45714db1c
   languageName: node
   linkType: hard
 
@@ -5189,9 +5189,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:10.12.0":
-  version: 10.12.0
-  resolution: "eslint@npm:10.12.0"
+"eslint@npm:10.13.0":
+  version: 10.13.0
+  resolution: "eslint@npm:10.13.0"
   dependencies:
     "@eslint-community/eslint-utils": "npm:^4.8.0"
     "@eslint-community/regexpp": "npm:^4.12.2"
@@ -5230,7 +5230,7 @@ __metadata:
       optional: true
   bin:
     eslint: bin/eslint.js
-  checksum: 10c0/1302ce8a7df2f67fe8f4014b2f9449bd38eb86903ba7b841d9a8ca5a5daf8ee15442861ab870e96c0074d5f333b405d7b2f16388981f807db410cc3a02178af9
+  checksum: 10c0/4a28e85de458f13306d30f07df21b58109056bd8bd691b6158952d95e126cf742db2eb09562e3f1c1cc0154ee44dedc789f8ced8d0d8da48e82a689aa9cb1c0d
   languageName: node
   linkType: hard
 
@@ -10009,7 +10009,7 @@ __metadata:
     "@ngx-translate/core": "npm:18.0.0"
     chokidar: "npm:5.0.0"
     concurrently: "npm:10.0.6"
-    eslint-config-angular-strict: "npm:22.6.7"
+    eslint-config-angular-strict: "npm:22.6.8"
     less: "npm:4.9.1"
     marked: "npm:18.1.1"
     ng-zorro-antd: "npm:22.1.2"

@@ -27,6 +27,7 @@ from actor_stats import (
     kept_statuses,
     kept_task,
     kept_task_target,
+    status_left,
 )
 from founding import city_zones, settle_gates, settle_told
 from grid import LazyTileGrid, off_land
@@ -140,6 +141,7 @@ _ROLE_ORDER = (
 _SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
 _SPENT_BREATH_PACE = 0.4  # WB's own multiplier for a body out of breath: it still swims, at two fifths of its pace
 _STAMINA_PER_SECOND = 10.0  # `spendStaminaWithCooldown` takes 1 to 5 points every 0.3s — `Randy.randomInt` leaves its top out, so three on average
+_STATUS_SPANS = ((3 * UNITS_PER_MONTH, "soon"), (UNITS_PER_YEAR, "months"))  # a status's time left as a state: under 3 months, under a year, else `years`
 
 # Profession → (current-holder field, save collection, history list). Every post keeps a `past_*` history whose last entry is the sitting holder's start.
 _TENURE_ROLES = {
@@ -151,7 +153,7 @@ _TENURE_ROLES = {
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
-_UNCOMPARED = frozenset({"island_id", "task", "task_target", "x", "y"})
+_UNCOMPARED = frozenset({"island_id", "statuses_left", "task", "task_target", "x", "y"})
 
 
 # A `--to` no walk answers: its message says what bars the way, the water's width against the body's reach where the sea is to blame.
@@ -333,6 +335,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **settle_told(settle_gates(actor, ctx)),
         "sex": sex_label(actor),
         "statuses": kept_statuses(actor),  # Chronicler-only: what the body is in the middle of — asleep, with young —, where the save keeps it
+        "statuses_left": _statuses_left(actor),  # Chronicler-only: how long a lasting one still runs, a state and never a date
         "subspecies": entity_ref(actor.get("subspecies"), ctx["subspecies_by_id"]),  # a ref, not a bare name: the chapter panel resolves its tag from the id
         "task": kept_task(actor),  # Chronicler-only: what the body was doing the instant of the save, by WB's own id, where the save keeps it
         "task_target": _task_target(actor, ctx, save),
@@ -715,6 +718,15 @@ def _ring_bound(minutes: int) -> float:
 # The body's own species record in `species.json` — WB's `ActorAsset` flags that no save carries.
 def _species(actor: dict, ctx: dict) -> dict:
     return ctx["species_data"].get(actor.get("asset_id")) or {}
+
+
+# What each lasting status has still to run, off WB's own clock that Faithful Saves keeps: `soon`, `months` or `years`. An egg's end is `hatch_on`'s to date.
+def _statuses_left(actor: dict) -> dict | None:
+    lasting, left = load_data("statuses.json"), {}
+    for status in kept_statuses(actor) or ():
+        if status in lasting and status != "egg" and (seconds := status_left(actor, status)) is not None:
+            left[status] = next((span for bound, span in _STATUS_SPANS if seconds < bound), "years")
+    return left or None
 
 
 # A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
