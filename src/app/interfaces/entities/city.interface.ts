@@ -42,7 +42,7 @@ interface CityLoyalty { total: number }
 // The city's own attributes (age, heir, stocks…) — `pop` aggregates its inhabitants instead.
 interface CityMetadata {
   age: number;
-  attractivity?: number; // `migrated - left`, negatives included — absent at 0, as every count of the block is
+  attractivity?: number; // settlers won less those gone, founder and migrants aside, negatives included — absent at 0, as every count of the block is
   book_reach?: number;
   deaths?: number;
   food?: number;

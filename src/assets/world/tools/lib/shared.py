@@ -152,7 +152,7 @@ _NEEDS_ESCAPE = re.compile(r'["\\\x00-\x1f]')  # what `json.encoder.ESCAPE` cove
 _ORDER_ROWS = frozenset({"hungriest", "oldest", "youngest"})
 
 _PROFESSIONS = {2: "civilian", 3: "king", 4: "leader", 5: "warrior"}  # WB `profession` int → label; 0 none, 1 (`Baby`) unused, `unit` renamed after `is_civilian`.
-_RANK_FLOORS = {"cities": 1, "kingdoms": 1, "level": 1}  # where every body starts, so a place held there ranks nobody — other stats floor at the skipped 0
+_RANK_FLOORS = {"attractivity": 0, "cities": 1, "kingdoms": 1, "level": 1}  # where every body starts, or a town that bleeds: held there, a place ranks nobody
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
 _SURVIVORS_NAMED = 5  # past it, a gone thing's survivors are counted and no longer named: a razed town may leave a crowd
 _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower | 1 herb` or `38 bodies · 23 sapient`, cut once at import
@@ -292,6 +292,13 @@ def _save_cache_key(path: Path | str) -> str | None:
 
 def _save_cache_name(path: Path) -> str:
     return f"save_v1_{_save_cache_key(path)}.pkl"
+
+
+# The bodies a town won, less those who walked out: its founder is no settler won over, yet WB's `joinCity` counts them as one, the first to have joined it.
+def _settlers_won(city: dict) -> int:
+    gained = int(city.get("joined") or 0) + int(city.get("moved") or 0)
+    founder = int(city.get("founder_id") is not None and gained > 0)
+    return gained - founder - int(city.get("left") or 0)
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
@@ -588,7 +595,7 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
 
     return {
         # Net settlers won over: `joined` had no city, `moved` came from another, `left` walked out. `migrated` is out — a world law spawns those outright.
-        "attractivity": {c["id"]: c.get("joined", 0) + c.get("moved", 0) - c.get("left", 0) for c in cities},
+        "attractivity": {c["id"]: _settlers_won(c) for c in cities},
         "book_reach": _book_reach(save, "author_city_id", {c["id"] for c in cities}, lambda cid: cid),  # a city shelves its own, so the holder is the owner
         "buildings": buildings,
         "elite": elite,  # the renown of its inhabitants — who lives there, where `renown` below is what the city itself achieved

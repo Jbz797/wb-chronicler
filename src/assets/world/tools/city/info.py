@@ -392,7 +392,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
             **_city_taxes(kingdom),
             "age": entity_age(city, ctx["world_time"]),
             **({"alliance": {"id": pact["id"], "name": pact.get("name")}} if pact else {}),  # `alliance/info.py <id>` spells the pact out, members and pooled living
-            "attractivity": dims["attractivity"].get(cid, 0),  # `migrated - left` over the city's life — negative where it bleeds faster than it draws.
+            "attractivity": dims["attractivity"].get(cid, 0),  # settlers won less those gone, founder and migrants aside — below 0 where it bleeds
             # The crowns storming the town, eldest id first. Sorting the refs themselves would raise the moment a second one shows up — two dicts never compare.
             **({"besieged_by": sorted(besiegers, key=itemgetter("id"))} if besiegers else {}),
             "births": int(city.get("total_births") or 0),  # Inhabitants born over its lifetime, the counterpart WB keeps to `deaths`

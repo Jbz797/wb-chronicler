@@ -30,7 +30,7 @@ export type IconKind = 'alliances' | 'boats' | 'books' | 'cities' | 'clans' | 'c
 
 export type InlineMarker = (typeof INLINE_MARKER)[keyof typeof INLINE_MARKER];
 
-// A realm's own metrics — listed in full, not extended from `CityMetaStat`: a crown has no `attractivity`, nobody migrates to a realm.
+// A realm's own metrics, listed in full rather than extended from `CityMetaStat`: no `attractivity`, a crown's settlers are its towns'.
 export type KingdomMetaStat = 'age' | 'book_reach' | 'books' | 'buildings' | 'cities' | 'culture_traits' | 'deaths' | 'food' | 'foundings' | 'goods'
   | 'houses' | 'kills' | 'renown' | 'territory' | 'wars_won' | 'wealth';
 
