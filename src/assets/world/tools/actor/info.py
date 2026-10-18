@@ -1075,8 +1075,15 @@ def main(argv: list[str]) -> int:
         barred = ctx["walk_map"]().barred  # a land owns its rock, where no body lands: its shore is the ground of its rim
         aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land and not barred(x, y)], "landing", f"land {land}"
     elif isinstance(target, str):  # a kind, a family or a resource a word, the body itself left out: each answered by the cheapest of its own reached
-        families = asset_families(save)
-        for word in dict.fromkeys(target.split(",")):
+        families, words = asset_families(save), list(dict.fromkeys(target.split(",")))
+        # Ids among the words, refused at once: bodies are aimed at one by one, and two numbers alone would have read as a tile.
+        if numbers := {word for word in words if word.lstrip("-").isdigit()}:
+            told = ", ".join(f"`{word}`" for word in words if word in numbers)
+            print(f"✗ {told}: a list takes kinds only — one `--to` per body, two numbers alone make a tile", file=sys.stderr)
+        for word in words:
+            if word in numbers:
+                each[word] = None
+                continue
             if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word)) if record is not actor]:
                 each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
                 continue
