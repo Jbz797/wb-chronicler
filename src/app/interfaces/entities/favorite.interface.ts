@@ -60,7 +60,7 @@ interface FavoriteRanks {
 interface FavoriteStats {
   armor?: number;
   attack_speed?: number;
-  children?: number;
+  children?: number; // said at 0 while the lineage can bear, absent where it never will — the panel's « Enfants » line follows it
   critical_chance?: number;
   damage_max: number;
   diplomacy?: number;
@@ -74,7 +74,7 @@ interface FavoriteStats {
   lifespan: number;
   mana: number;
   mana_max?: number;
-  max_children?: number; // absent on a sexed species' male: WB weighs the cap on the one who bears alone, so a sire at his count still fathers
+  max_children?: number; // absent on a sire, the cap weighing on who bears alone, and on a lineage that never bears
   money?: number;
   nutrition?: number; // absent with its cap, on a body with no gut: it never hungers, and the figure WB keeps for it says nothing
   nutrition_max?: number; // WB `Actor.getMaxNutrition`: 100, which `big_stomach` doubles — absent on a body with no gut, which never eats

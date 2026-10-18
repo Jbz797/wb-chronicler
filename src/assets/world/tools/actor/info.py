@@ -602,11 +602,14 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
         return {}
     if _bears(actor, ctx) is False:  # a sire's `offspring` only bars him from starting — his mate starts in his stead, so no count of his says what he can father
         cleaned.pop("max_children", None)
+    if not (bearing := fertile(ctx["subspecies_by_id"].get(actor.get("subspecies")))):  # a lineage that never bears, spores with no meal: a cap on nothing
+        cleaned.pop("max_children", None)
     cleaned.update(
         {
             # Life's tallies, silent at nought as every other stat is: a soul that has killed nobody and owns nothing says so by carrying none of them.
             **({"births": n} if (n := int(actor.get("births") or 0)) else {}),
-            **({"children": n} if (n := ctx["children_by_parent"].get(actor.get("id"), 0)) else {}),
+            # Said at nought while the lineage can still bear, unsaid where it never will: the absence then says « none to come », not « none yet »
+            **({"children": n} if (n := ctx["children_by_parent"].get(actor.get("id"), 0)) or bearing else {}),
             **({"equipment_power": n} if (n := equipment_power(actor, ctx)) else {}),
             # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
             **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
