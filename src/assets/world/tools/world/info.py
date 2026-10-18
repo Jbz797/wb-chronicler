@@ -116,7 +116,7 @@ _CUMULATIVE_COUNTERS = {
     "clans_created": "clansCreated",
     "clans_destroyed": "clansDestroyed",
     "creatures_born": "creaturesBorn",  # natural reproduction
-    "creatures_created": "creaturesCreated",  # divine spawn + worldgen
+    "creatures_created": "creaturesCreated",  # WB `Actor.newCreature`: whatever appears unborn — set down, migrant, summoned, changed kind, a hull
     "cultures_created": "culturesCreated",
     "cultures_forgotten": "culturesForgotten",
     "evolutions": "evolutions",
@@ -806,16 +806,17 @@ def _then(chapter: str) -> tuple[dict, dict[int, int | str]]:
     return then, {actor["id"]: _standing(actor, island_of, grid, then["tileMap"]) for actor in then.get("actors_data") or [] if not is_boat(actor)}
 
 
-# Why the deaths WB counted since a save and the bodies gone since differ, those no chapter saw counted in — `None` where they agree, `saves` from then to now.
-def _unseen_deaths(saves: list[dict], since: str, unseen: int) -> str | None:
+# Why the deaths WB counted since a save and the bodies gone since differ, those no chapter saw counted in — nothing where they agree, `saves` from then to now.
+def _unseen_deaths(saves: list[dict], since: str, unseen: int) -> dict:
     seen, now_ids = ({actor["id"] for save in held for actor in save.get("actors_data") or []} for held in (saves[:-1], saves[-1:]))
     gone = len(seen - now_ids)
     died = int((saves[-1].get("mapStats") or {}).get("deaths") or 0) - int((saves[0].get("mapStats") or {}).get("deaths") or 0)
     if not (off := gone + unseen - died):
-        return None
+        return {}
     # `Actor.die` skips the count (`pCountDeath` false) for a body removed by a metamorphosis, `dieAndDestroy` and `dieSimpleNone`; a save holds no dying body.
-    uncounted = "gone with no death counted — WB counts none for a body changing kind, a falling UFO, a worm, a sand spider, a printer, a god finger's flip"
-    return f"{gone} bodies gone since {since} and {unseen} passed unseen for {died} deaths counted: {abs(off)} {uncounted if off > 0 else 'deaths with no body'}"
+    why = " — WB counts no death for a body changing kind, a falling UFO, a worm, a sand spider, a printer, a god finger's flip" if off > 0 else ""
+    told = f"{gone} bodies gone since {since} and {unseen} passed unseen for {died} deaths counted{why}"
+    return {"deaths_without_body" if off < 0 else "gone_without_death": abs(off), "info": told}
 
 
 def main(argv: list[str]) -> int:
@@ -945,7 +946,7 @@ def main(argv: list[str]) -> int:
             later = [SAVES_DIR / f"C{n}" / "map.wbox" for n in range(int(since[1:]) + 1, int(chapter[1:]) if chapter else 0)]
             since_then = [*(load_save(path) for path in later if path.exists()), save]
             unseen = passed_unseen(then, since_then)
-            out["cumulative"] |= {"came_and_went": unseen or None, "info": _unseen_deaths([then, *since_then], since, unseen.get("bodies_and_hulls", 0))}
+            out["cumulative"] |= {"came_and_went": unseen or None, **_unseen_deaths([then, *since_then], since, unseen.get("bodies_and_hulls", 0))}
         if not out:
             print(f"✗ nothing moved in {', '.join(counted)} since {since}", file=sys.stderr)
             return 1

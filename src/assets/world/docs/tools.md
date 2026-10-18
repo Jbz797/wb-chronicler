@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 18/10/26 17:25</p>
+<p class="metadata">Date de mise à jour : 18/10/26 17:55</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -79,17 +79,18 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 ### Entités et comptes :
 
 - `buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose, que `born` date ; nommée, `city … buildings` les liste, chantier marqué : ce qu'elle tait, la cité ne l'a pas.
+- `creatures_created` (`cumulative`) : ce qui paraît sans naître — semé, migrant, invoqué, changé d'espèce, coque —, jamais une naissance (`creatures_born`).
 - `description` et `flavor` d'un trait sont l'ambiance ; son effet tient dans `stats`, que `dormant` dit endormies par l'ère et `absorbed` bues par une borne, le reste dans `wiki:Creature_Traits` ou `wiki:Subspecies_Traits`. Un don se pèse contre sa lignée (`subspecies … stats`), jamais contre un autre corps.
 - `gap_tiles` (`kingdom … relations`) : de bord à bord des quartiers, à vol d'oiseau, tu s'ils se touchent.
 - `ground … metadata` : `cost`, pris à la réserve dès la pose (`wiki:Buildings`) ; `health` ne sort que blessé, près de `health_max` ; un arbre tombe d'un coup (`wiki:Wood`).
-- `history` (WB) : `world`, ce que chaque année a vu naître, mourir ou s'éteindre — WB la clôt à l'entrée de son 12ᵉ mois, d'où `until`, et `since` sur celle en cours (`so_far`) —, une année absente : rien de neuf, les ~20 dernières seules ; `entity`, ses états (noms nus : `pop`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`), l'avant de la fenêtre approché (`around_year`). Seuls les vivants y ont leurs années. De quoi meurent les siens : `deaths_by_cause`, au `metadata` d'une cité, d'un royaume, d'un clan, d'une lignée ; ceux du monde, sur `world … cumulative` ou `history world`, jamais en additionnant les lignées, les éteintes n'ayant plus de `metadata`. `unknown` : ce que le jeu ne range nulle part (fièvre des Cendres…)
+- `history` (WB) : `world`, ce que chaque année a vu naître, mourir ou s'éteindre — WB la clôt à l'entrée de son 12ᵉ mois, d'où `until`, et `since` sur celle en cours (`so_far`) —, une année absente : rien de neuf, les ~20 dernières seules ; `entity`, ses états (noms nus : `pop`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`), l'avant de la fenêtre approché (`around_year`). Seuls les vivants y ont leurs années. De quoi meurt le monde : `world … cumulative` ou `history world`, jamais la somme des `deaths_by_cause` des lignées, les éteintes n'en ayant plus. `unknown` : ce que le jeu ne range nulle part (fièvre des Cendres…)
 - `kingdom … metadata` : une seule coque (`ferries`) sert tout le royaume.
 - `migrants` (`city … metadata`) : ce qui retient la loi d'en amener, sinon `soon` ou `later` (`wiki:World_Laws`).
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : `wiki:Religions`.
 - `report` parle par images : « No fire, no warmth » dit le bois qui manque, pas le feu.
 - `rulers` (cité, royaume) : la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain : `pop.ruler_money`.
 - `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; `drivers`, complet, somme au `total` ; chaque terme, par son id : `wiki:Loyalty`.
-- `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : naissances et extinctions se lisent dans `cumulative`.
+- `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : naissances et extinctions se lisent dans `cumulative` ; `gone_without_death` : les corps partis sans mort comptée (`deaths_without_body`, l'inverse).
 - Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 
 ### Lieux et trajets :
