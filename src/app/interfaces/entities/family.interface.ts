@@ -1,20 +1,19 @@
-import { Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { Leaders, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
 // The favourite's bloodline. A family, not a household — `houses` counts the roofs its members sleep under, rarely one. The roster stays chronicler-only.
 export interface Family {
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: FamilyIdentity;
   leaders?: Leaders;
-  members: MemberRoster;
   metadata: FamilyMetadata;
-  population: TierPopulation;
+  pop: TierPopulation;
   ranks?: FamilyRanks;
 }
 
 // Who opened the line — WB seats a family on one founder or a founding couple, and the panel titles each after their own sex.
 interface FamilyIdentity { founders: PersonReference[] }
 
-// Every counter drops at zero, so panels read them via `?? 0` — what the living themselves are worth now sits in `population`, as it does on the other tiers.
+// Every counter drops at zero, so panels read them via `?? 0` — what the living themselves are worth now sits in `pop`, as it does on the other tiers.
 interface FamilyMetadata {
   age: number;
   alpha?: PersonReference;
@@ -24,6 +23,7 @@ interface FamilyMetadata {
   houses?: number;
   id: number;
   kills?: number;
+  members?: number; // its living, counted: `world … roster --family <id>` names them
   name: string;
 }
 

@@ -21,6 +21,6 @@ interface WarSide {
   cities: number;
   deaths: number;
   kingdoms: WarKingdom[];
-  population: number;
+  pop: number;
   warriors: number;
 }

@@ -30,13 +30,13 @@
     <nz-descriptions-item *appNonZero="c.metadata.renown" [nzTitle]="renownTitle">
       <app-ranked-stat source="city" stat="renown" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="c.population.renown_total" [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appNonZero="c.pop.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="city" stat="renown_total" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="c.population.total" [nzTitle]="populationTitle">
-      <app-ranked-stat source="city" stat="population" />
+    <nz-descriptions-item *appNonZero="c.pop.total" [nzTitle]="populationTitle">
+      <app-ranked-stat source="city" stat="pop" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="c.population.warriors" [nzTitle]="warriorsTitle">
+    <nz-descriptions-item *appNonZero="c.pop.warriors" [nzTitle]="warriorsTitle">
       <app-ranked-stat source="city" stat="warriors" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="c.metadata.deaths" [nzTitle]="deathsTitle">
@@ -70,7 +70,7 @@
     <nz-descriptions-item *appNonZero="c.metadata.houses" [nzTitle]="housesTitle">
       <app-ranked-stat source="city" stat="houses" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="c.population.housed_pct" [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appNonZero="c.pop.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="city" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="c.metadata.territory" [nzTitle]="territoryTitle">
@@ -79,10 +79,10 @@
     <nz-descriptions-item *appNonZero="c.metadata.food" [nzTitle]="foodTitle">
       <app-ranked-stat source="city" stat="food" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="c.population.food_per_capita" [nzTitle]="foodPerCapitaTitle">
+    <nz-descriptions-item *appNonZero="c.pop.food_per_capita" [nzTitle]="foodPerCapitaTitle">
       <app-ranked-stat numberFormat="1.1-1" source="city" stat="food_per_capita" suffix="ui_per_inhabitant" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="c.population.fed_pct" [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appNonZero="c.pop.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="city" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="c.metadata.goods" [nzTitle]="goodsTitle">
@@ -231,7 +231,7 @@
   </ng-template>
   <ng-template #populationTitle>
     <img src="assets/img/world/population.png" />
-    <span>{{ 'ui_population' | translate }}</span>
+    <span>{{ 'ui_pop' | translate }}</span>
   </ng-template>
   <ng-template #renownTitle>
     <img src="assets/img/stats/renown.png" />

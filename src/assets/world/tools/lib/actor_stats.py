@@ -843,8 +843,8 @@ def meta_ratios(actors: list[dict], ctx: dict) -> dict:
     return {key: counts[key] / total for key in _META_RATIOS}
 
 
-# What a body's members tell about it — age tiers, sexes, mutual couples, the tallies each soul answers for alone. `settlement_population` adds stores and head.
-def population_of(actors: list[dict], ctx: dict) -> dict:
+# What a body's members tell about it — age tiers, sexes, mutual couples, the tallies each soul answers for alone. `settlement_pop` adds stores and head.
+def pop_of(actors: list[dict], ctx: dict) -> dict:
     by_id, ids = ctx["actors_by_id"], {a["id"] for a in actors}
     counts: Counter[str] = Counter()
     generations: list[int] = []
@@ -908,17 +908,17 @@ def population_of(actors: list[dict], ctx: dict) -> dict:
 
 
 # The population panel both tiers print, field for field — `tier` picks the ctx tallies, as `settlement_rank_getters` does. `immortals`/`infected`/`sick` drop at 0.
-def settlement_population(entity: dict, ctx: dict, tier: str) -> dict:
+def settlement_pop(entity: dict, ctx: dict, tier: str) -> dict:
     entity_id = entity["id"]
 
     def tally(name: str) -> int:
         return ctx[f"{name}_by_{tier}"][entity_id]
 
-    population = population_of(ctx[f"actors_by_{tier}"].get(entity_id, []), ctx)
+    population = pop_of(ctx[f"actors_by_{tier}"].get(entity_id, []), ctx)
     money, nobles_money, total = population.get("money", 0), tally("nobles_money"), population["total"]  # `money` drops at nought, `total` never does
     ruler_money = head_money(entity, ctx, tier)
 
-    # What a roof over stores and a head on the throne add to what the people alone say — a biology or a band has neither, and reads `population_of` bare.
+    # What a roof over stores and a head on the throne add to what the people alone say — a biology or a band has neither, and reads `pop_of` bare.
     return dict(
         sorted(
             {

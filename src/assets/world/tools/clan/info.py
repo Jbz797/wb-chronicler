@@ -5,19 +5,15 @@
 
 import sys
 from collections import Counter, defaultdict
-from functools import cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
-from islands import compute_islands_cached
+from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, pop_of
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     absent_entity,
-    actor_age,
-    actor_xy,
     build_trait_ids,
     build_trait_list,
     children_by_id,
@@ -34,16 +30,13 @@ from shared import (
     meta_report,
     parse_sections,
     population_breakdown,
-    resolve_profession,
     settlement_leaders,
-    sex_label,
     succession_heir,
     take_chapter,
-    wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
-_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # `identity` reads the founding record, `traits` a data file
+_ALL_SECTIONS = ("breakdown", "identity", "leaders", "metadata", "pop", "ranks", "traits")
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "metadata", "pop", "ranks"})  # `identity` reads the founding record, `traits` a data file
 
 
 # Chronicler-only: what the clan was founded as — the creator's own stock — plus the culture it currently answers to, which its later members need not share.
@@ -57,27 +50,6 @@ def _build_identity(clan: dict, ctx: dict) -> dict:
         "species": clan.get("creator_species_id"),
         "subspecies": entity_ref(clan.get("creator_subspecies_id"), ctx["subspecies_by_id"]),
     }
-
-
-# Everyone alive who wears the colours, eldest first — WB points the actor at its clan, never the reverse. `total` rides with the list it counts, not in `metadata`.
-def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
-    if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"total": len(members)})
-    island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a wide band would still call through it hundreds of times
-    out = [
-        {
-            "age": actor_age(actor, ctx["world_time"]),
-            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs some 40 chars and blows the inline budget
-            "id": actor["id"],
-            "island_id": island_of.get(actor_xy(actor)),  # Chronicler-only: land mass (`geography/info.py islands`)
-            "job": resolve_profession(actor, save),
-            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — a rung above is earned, and unaggregated.
-            "name": actor.get("name"),
-            "sex": sex_label(actor),
-        }
-        for actor in members
-    ]
-    return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
 # The clan's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
@@ -102,18 +74,19 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
         "id": clan["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         **({"kills": kills} if (kills := int(clan.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its members answer to — a clan is sworn, not granted, so it spans realms freely
+        "members": len(members),  # its living, each named by `world … roster --clan <id>`
         "name": clan.get("name"),
         # The sitting chief included — WB appends him on accession, so 1 is the floor: said from the first succession on.
         **({"past_chiefs": chiefs} if (chiefs := len(clan.get("past_chiefs") or [])) > 1 else {}),
-        **({"renown": renown} if (renown := int(clan.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `population`
+        **({"renown": renown} if (renown := int(clan.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `pop`
         **({"report": report} if report else {}),
         **({"traits": traits} if (traits := len(clan.get("saved_traits") or [])) else {}),
     }
 
 
-# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `members` section owns.
-def _build_population(members: list[dict], ctx: dict) -> dict:
-    return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
+# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which `metadata.members` counts.
+def _build_pop(members: list[dict], ctx: dict) -> dict:
+    return {key: value for key, value in pop_of(members, ctx).items() if key != "total"}
 
 
 # What the band swore itself to, off WB's clan library — summarised to each trait and its group at any size, the effect and flavour only when named.
@@ -210,7 +183,6 @@ def main(argv: list[str]) -> int:
         "cities_by_id": index_by_id(save.get("cities") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": index_by_id(save.get("religions") or []),
     }
@@ -223,12 +195,10 @@ def main(argv: list[str]) -> int:
         out["identity"] = _build_identity(clan, ctx)
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below four members, where a champion among three names nobody
         out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
-    if "members" in sections:
-        out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
         out["metadata"] = _build_metadata(clan, members, ctx)
-    if "population" in sections:
-        out["population"] = _build_population(members, ctx)
+    if "pop" in sections:
+        out["pop"] = _build_pop(members, ctx)
     if "ranks" in sections:
         out["ranks"] = competition_ranks(clan, list(clans_by_id.values()), _rank_getters(tallies, ctx["world_time"]))
     if "traits" in sections:

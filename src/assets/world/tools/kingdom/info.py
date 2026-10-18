@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats, is_baby, meta_ratios, settlement_population
+from actor_stats import build_actor_stats_context, compute_actor_stats, is_baby, meta_ratios, settlement_pop
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -55,7 +55,8 @@ from shared import (
     zone_xy,
 )
 
-_ALL_SECTIONS = ("boats", "breakdown", "cities", "gear", "identity", "leaders", "metadata", "population", "ranks", "relations", "rulers", "wars")
+_ALL_SECTIONS = ("boats", "breakdown", "cities", "gear", "identity", "leaders", "metadata", "pop", "ranks", "relations", "rulers", "wars")
+
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
 _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
 
@@ -78,8 +79,8 @@ def _build_boats(kingdom: dict, ctx: dict, requested: str | None) -> dict:
 def _build_cities(kingdom: dict, ctx: dict) -> list[dict]:
     kid = kingdom["id"]
     cities = [c for c in ctx["cities_by_id"].values() if c.get("kingdomID") == kid]
-    out = [{"id": c["id"], "name": c.get("name"), "population": ctx["populations_by_city"][c["id"]]} for c in cities]
-    return sorted(out, key=lambda c: (-c["population"], c["id"]))
+    out = [{"id": c["id"], "name": c.get("name"), "pop": ctx["populations_by_city"][c["id"]]} for c in cities]
+    return sorted(out, key=lambda c: (-c["pop"], c["id"]))
 
 
 # One pass over actors, cities then buildings — every per-kingdom tally the sections need, so no section rescans the save. Built whole whatever was asked for.
@@ -322,7 +323,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
             "culture_traits": dims["culture_traits"].get(kid, 0),  # its culture + language + religion traits
             "deaths": int(kingdom.get("total_deaths") or 0),  # Members lost over the kingdom's lifetime (WB `total_deaths`).
             **({"deaths_by_cause": causes} if (causes := death_causes(kingdom)) else {}),  # chronicler-only: what its members died of, which `deaths` never says
-            "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct families; `familyless` count is in `population`.
+            "families": len(ctx["families_by_kingdom"].get(kid, ())),  # Distinct families; `familyless` count is in `pop`.
             # Chronicler-only: whether the crown can carry its people over the sea — a ferry serves any request of its kingdom, whichever of its towns docks it.
             **({"ferries": True} if any(is_transport(b) for b in ctx["boats_by_kingdom"].get(kid) or ()) else {}),
             "food": ctx["food_by_kingdom"][kid],  # Eatable resources stocked across the kingdom's buildings (WB « nourriture »).
@@ -581,7 +582,7 @@ def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
             "gear": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
             # How dearly a crown sells its dead. A realm that lost nobody is left out — a bare kill count would win the podium on 0 losses.
             "kills_per_death": lambda k: int(k.get("total_kills") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
-            "population_per_city": lambda k: p / c if (c := ctx["cities_by_kingdom"].get(k.get("id"), 0)) and (p := populations(k)) >= MIN_PER_CAPITA_UNITS else 0.0,
+            "pop_per_city": lambda k: p / c if (c := ctx["cities_by_kingdom"].get(k.get("id"), 0)) and (p := populations(k)) >= MIN_PER_CAPITA_UNITS else 0.0,
             "territory": lambda k: ctx["territory_by_kingdom"].get(k.get("id"), 0),  # A kingdom record has no `zones` — the tally sums its cities'.
             "wars_won": lambda k: dims["wars_won"].get(k.get("id"), 0),
         }
@@ -696,8 +697,8 @@ def main(argv: list[str]) -> int:
         out["leaders"] = _build_leaders(kingdom, ctx)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(kingdom, ctx, save)
-    if "population" in sections:
-        out["population"] = settlement_population(kingdom, ctx, "kingdom")
+    if "pop" in sections:
+        out["pop"] = settlement_pop(kingdom, ctx, "kingdom")
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(kingdom, ctx, save)
     if "relations" in sections:

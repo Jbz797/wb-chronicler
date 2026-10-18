@@ -1,4 +1,4 @@
-import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { BookShelf, Leaders, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
 // The favourite's culture: caught at the cradle, not sworn — so its `breakdown` drifts furthest from the founder whose card `identity` holds.
 export interface Culture {
@@ -6,9 +6,8 @@ export interface Culture {
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: CultureIdentity;
   leaders?: Leaders;
-  members: MemberRoster;
   metadata: CultureMetadata;
-  population: TierPopulation;
+  pop: TierPopulation;
   ranks?: CultureRanks;
   traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
@@ -24,6 +23,7 @@ interface CultureMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
+  members?: number; // its living, counted: `world … roster --culture <id>` names them
   name: string;
   renown?: number;
 }

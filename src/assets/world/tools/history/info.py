@@ -47,7 +47,9 @@ _ENTITIES = {
     "war": ("War", "wars"),
 }
 
-# A column that only rises, an event's tally — where a bare noun (`population`, `cities`) is a state, and a year's value is the state it closed on.
+_ENTITY_RENAMED = {"population": "pop"}  # WB's column under the name every tier's section tells it by
+
+# A column that only rises, an event's tally — where a bare noun (`pop`, `cities`) is a state, and a year's value is the state it closed on.
 _EVENT_COLUMN = re.compile(
     r"^(births|deaths(_\w+)?|evolutions|joined|kills|left|metamorphosis|migrated|moved|speakers_\w+)$"
     r"|_(born|built|burnt|conquered|created|destroyed|dissolved|extinct|forgotten|made|read|rebelled|started|succeeded|written)$"
@@ -72,7 +74,7 @@ _WORLD_RENAMED = {
     "houses_built": "buildings_built",
     "houses_destroyed": "buildings_destroyed",
     "population_beasts": "wild_creatures",
-    "population_civ": "sapient_population",
+    "population_civ": "sapient_pop",
 }
 
 # What a year's row closed on, as `world … snapshot` tells today's — WB's fifty-odd counts of tiles and biomes are left out.
@@ -129,6 +131,7 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
         return f"{refusal} — WB keeps the years of the living alone" if " is gone " in refusal else refusal
     events = [c for c in columns if _EVENT_COLUMN.search(c)]
     states = [c for c in columns if c not in events and any(r[c] for r in (*coarse, *rows))]  # a state at nought all along says nothing
+    names = {c: _ENTITY_RENAMED.get(c, c) for c in states}
     born = _row_year(float(living["created_time"])) if living and living.get("created_time") is not None else None
     # Its first fine year is a first year only when it was born in it: a window opened later holds a total, not that year's gain.
     before: dict = dict.fromkeys(events, 0) if rows and not coarse and born == rows[0]["timestamp"] else {}
@@ -138,9 +141,9 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
     for at in range(rows[0]["timestamp"], closed + 1) if rows else ():
         row = by_year.get(at, row)
         now = {c: row[c] for c in events}
-        years.append({**{c: row[c] for c in states if row[c]}, **(_gains(before, now, events) if at in by_year else {}), "until": _until(at)})
+        years.append({**{names[c]: row[c] for c in states if row[c]}, **(_gains(before, now, events) if at in by_year else {}), "until": _until(at)})
         before = now
-    older = [{"around_year": r["timestamp"], "step": r["step"], **{c: r[c] for c in states if r[c]}} for r in coarse]
+    older = [{"around_year": r["timestamp"], "step": r["step"], **{names[c]: r[c] for c in states if r[c]}} for r in coarse]
     return older + years  # the coarse steps' approximations first, each told `around_year`, never as a date
 
 

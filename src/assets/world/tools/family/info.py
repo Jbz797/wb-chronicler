@@ -9,12 +9,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
+from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, pop_of
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     absent_entity,
-    actor_age,
     children_by_id,
     competition_ranks,
     emit,
@@ -22,20 +21,16 @@ from shared import (
     entity_born,
     entity_ref,
     index_by_id,
-    light,
     load_save,
     meta_report,
     parse_sections,
     population_breakdown,
-    resolve_profession,
     settlement_leaders,
-    sex_label,
     take_chapter,
-    wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "leaders", "members", "metadata", "population", "ranks")
-_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # `identity` alone reads the founding record and nothing else
+_ALL_SECTIONS = ("breakdown", "identity", "leaders", "metadata", "pop", "ranks")
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "metadata", "pop", "ranks"})  # `identity` alone reads the founding record and nothing else
 
 
 # Chronicler-only: what the family was stamped as at its founding, not what its living carry — most still share both, the `breakdown` section telling how many.
@@ -50,26 +45,6 @@ def _build_identity(family: dict, ctx: dict) -> dict:
         "species": family.get("species_id"),
         "subspecies": entity_ref(family.get("subspecies_id"), ctx["subspecies_by_id"]),
     }
-
-
-# Everyone alive who carries the name, eldest first — the roster WB never stores. `total` rides with the list it counts rather than drifting in `metadata`.
-def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
-    if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"total": len(members)})
-    out = [
-        {
-            "age": actor_age(actor, ctx["world_time"]),
-            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the named ref, the roster's one entity — a second would blow the inline budget
-            "gen": gen if (gen := int(actor.get("generation") or 1)) > 1 else None,  # a founder's 1 is WB's floor: unsaid, as in a body's own sheet
-            **({"home": home} if (home := actor.get("homeBuildingID")) else {}),  # `ground/info.py <id>` — who shares a roof with whom
-            "id": actor["id"],
-            "job": resolve_profession(actor, save),
-            "name": actor.get("name"),
-            "sex": sex_label(actor),
-        }
-        for actor in members
-    ]
-    return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
 # The family's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
@@ -90,6 +65,7 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
         "id": family["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         **({"kills": kills} if (kills := int(family.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if (kingdoms := {kid for a in members if (kid := a.get("civ_kingdom_id"))}) else {}),
+        "members": len(members),  # its living, each named by `world … roster --family <id>`
         "name": family.get("name"),
         # A family is born of a couple, so WB writes up to two parent lines — but a ref drops when that line has since died out and been purged from the save.
         **({"parents": parents} if (parents := [ref for n in (1, 2) if (ref := entity_ref(family.get(f"original_family_{n}"), ctx["families_by_id"]))]) else {}),
@@ -97,9 +73,9 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
     }
 
 
-# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `members` section owns.
-def _build_population(members: list[dict], ctx: dict) -> dict:
-    return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
+# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which `metadata.members` counts.
+def _build_pop(members: list[dict], ctx: dict) -> dict:
+    return {key: value for key, value in pop_of(members, ctx).items() if key != "total"}
 
 
 # What a family is ranked on among the world's others. Living counts read off the rosters one actor pass built: the podium weighs every line, on each below.
@@ -110,7 +86,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "births_per_death": lambda f: int(f.get("total_births") or 0) / d if (d := int(f.get("total_deaths") or 0)) else 0.0,
         "cities": lambda f: len({cid for a in tallies["members"].get(f["id"], ()) if (cid := a.get("cityID"))}),
         "deaths": lambda f: int(f.get("total_deaths") or 0),
-        # No `housed_pct` here nor on a clan: a family runs a handful of souls, and a share capped at one ties most of the field — `population` says the share.
+        # No `housed_pct` here nor on a clan: a family runs a handful of souls, and a share capped at one ties most of the field — `pop` says the share.
         "houses": lambda f: len(tallies["houses"].get(f["id"], ())),
         "kills": lambda f: int(f.get("total_kills") or 0),
         # Per-head, so a small body can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
@@ -189,12 +165,10 @@ def main(argv: list[str]) -> int:
         out["leaders"] = settlement_leaders(
             members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"], families=False
         )
-    if "members" in sections:
-        out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
         out["metadata"] = _build_metadata(family, members, ctx)
-    if "population" in sections:
-        out["population"] = _build_population(members, ctx)
+    if "pop" in sections:
+        out["pop"] = _build_pop(members, ctx)
     if "ranks" in sections:
         getters = _rank_getters(tallies, ctx["world_time"])
         out["ranks"] = competition_ranks(family, list(families_by_id.values()), getters)

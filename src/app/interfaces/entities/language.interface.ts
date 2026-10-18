@@ -1,4 +1,4 @@
-import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { BookShelf, Leaders, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
 // The favourite's language: caught by ear, not by blood — so WB counts its speakers three ways, born to it, won from another tongue, and lost to one.
 export interface Language {
@@ -6,9 +6,8 @@ export interface Language {
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: LanguageIdentity;
   leaders?: Leaders;
-  members: MemberRoster; // those who answer in it — WB points the actor at its tongue, never the reverse
   metadata: LanguageMetadata;
-  population: TierPopulation;
+  pop: TierPopulation;
   ranks?: LanguageRanks;
   traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
@@ -27,6 +26,7 @@ interface LanguageMetadata {
   kills?: number;
   kingdoms?: number;
   lost?: number;
+  members?: number; // its living, counted: `world … roster --language <id>` names them
   name: string;
   native?: number;
   renown?: number;

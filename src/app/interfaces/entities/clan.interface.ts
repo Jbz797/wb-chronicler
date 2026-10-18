@@ -1,13 +1,12 @@
-import { Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { Leaders, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
 // The favourite's clan. Joined, not inherited — so unlike its `Family`, its members share colours rather than blood, and its `traits` are sworn to.
 export interface Clan {
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: ClanIdentity;
   leaders?: Leaders;
-  members: MemberRoster;
   metadata: ClanMetadata;
-  population: TierPopulation;
+  pop: TierPopulation;
   ranks?: ClanRanks;
   traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
@@ -26,6 +25,7 @@ interface ClanMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
+  members?: number; // its living, counted: `world … roster --clan <id>` names them
   name: string;
   past_chiefs?: number;
   renown?: number;

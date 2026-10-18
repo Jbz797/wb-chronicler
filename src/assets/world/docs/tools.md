@@ -1,35 +1,35 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 18/10/26 12:55</p>
+<p class="metadata">Date de mise à jour : 18/10/26 14:38</p>
 
-Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
+Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
-| Commande          | Sections                                                                                                                                      |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `actor <id>`      | `companions`, `gear`, `inventory`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`                                  |
-| `alliance <id>`   | `breakdown`, `identity`, `kingdoms`, `leaders`, `metadata`, `population`, `ranks`, `wars`                                                     |
-| `boat <id>`       | `combat`, `crew`, `identity`, `inventory`, `metadata`, `traits`                                                                               |
-| `book <id>`       | `gains`, `metadata`, `origin`, `teaches`                                                                                                      |
-| `city <id>`       | `army`, `books`, `breakdown`, `buildings`, `gear`, `identity`, `inventory`, `leaders`, `loyalty`, `metadata`, `population`, `ranks`, `rulers` |
-| `clan <id>`       | `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                                    |
-| `culture <id>`    | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                           |
-| `family <id>`     | `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`                                                              |
-| `geography`       | `biomes`, `bodies`, `burning`, `entity_types`, `frozen`, `gear`, `islands`, `positions`, `ridges`, `totals`, `waters`                         |
-| `ground <id>`     | `boats`, `inventory`, `metadata`, `occupants`                                                                                                 |
-| `history`         | `dead_kingdoms`, `entity`, `log`, `world`                                                                                                     |
-| `kingdom <id>`    | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `population`, `ranks`, `relations`, `rulers`, `wars`               |
-| `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                           |
-| `religion <id>`   | `books`, `breakdown`, `identity`, `leaders`, `members`, `metadata`, `population`, `ranks`, `traits`                                           |
-| `subspecies <id>` | `breakdown`, `leaders`, `members`, `metadata`, `population`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                                |
-| `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `islet`, `tile_info`                                                                              |
-| `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                                          |
-| `world`           | `boats`, `cumulative`, `laws`, `leaders`, `metadata`, `pairings`, `plots`, `roster`, `snapshot`                                               |
+| Commande          | Sections                                                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `actor <id>`      | `companions`, `gear`, `inventory`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`                           |
+| `alliance <id>`   | `breakdown`, `identity`, `kingdoms`, `leaders`, `metadata`, `pop`, `ranks`, `wars`                                                     |
+| `boat <id>`       | `combat`, `crew`, `identity`, `inventory`, `metadata`, `traits`                                                                        |
+| `book <id>`       | `gains`, `metadata`, `origin`, `teaches`                                                                                               |
+| `city <id>`       | `army`, `books`, `breakdown`, `buildings`, `gear`, `identity`, `inventory`, `leaders`, `loyalty`, `metadata`, `pop`, `ranks`, `rulers` |
+| `clan <id>`       | `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                               |
+| `culture <id>`    | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
+| `family <id>`     | `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`                                                                         |
+| `geography`       | `biomes`, `bodies`, `burning`, `entity_types`, `frozen`, `gear`, `islands`, `positions`, `ridges`, `totals`, `waters`                  |
+| `ground <id>`     | `boats`, `inventory`, `metadata`, `occupants`                                                                                          |
+| `history`         | `dead_kingdoms`, `entity`, `log`, `world`                                                                                              |
+| `kingdom <id>`    | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `relations`, `rulers`, `wars`               |
+| `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
+| `religion <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
+| `subspecies <id>` | `breakdown`, `leaders`, `metadata`, `pop`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                                           |
+| `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `islet`, `tile_info`                                                                       |
+| `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                                   |
+| `world`           | `boats`, `cumulative`, `laws`, `leaders`, `metadata`, `pairings`, `plots`, `roster`, `snapshot`                                        |
 
 ## Options :
 
 ### `actor` :
 
-- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource, par virgules (`nearest`) ; il rend son `circle`, chaque part en tuiles et en temps, `total_` dès qu'il y en a deux ; sur l'eau, `march_days` ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu ; seule sans section nommée.
+- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource, par virgules (`nearest`) ; son `circle`, chaque part en tuiles et en temps, `total_` dès qu'il y en a deux ; sur l'eau, `march_days` ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu ; seule sans section nommée.
 - `--since C<n>` : ce qui a bougé depuis — `moved` : le trajet fait et son temps au plus court, au pas du corps ; `stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre ; `gone` : mort, `was_at` sa place alors ; `to.then` : ce but compté alors
 
 ### `geography` :
@@ -40,7 +40,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ### `history` :
 
-- `entity <type> <id>` : les années d'une entité — `alliance`, `city`, `clan`, `culture`, `family`, `kingdom`, `language`, `religion`, `subspecies`, `war`
+- `entity <type> <id>` : les années d'une entité, son refus liste les types
 - `log` : `--since C<n>` depuis un chapitre, `--actor <id>` les entrées qui nomment un corps, `-t <event>` un type (`kingdom_new`…)
 
 ### `tiles` :
@@ -53,7 +53,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
 - `pairings` : par espèce (un couple ignore la lignée), la 1ʳᵉ naissance possible (`birth_on` ; `pregnant` nomme les porteuses, à la date du jeu ; sinon `now` chez des amants, faute de trace) et l'écart du couple ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `missing: meal`, des spores sans estomac, que seul un repas lâche ; `lovers`, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, suivi du corps en cause (`hungry`, `water`, `tiny_islet` : îlot de 5 tuiles ou moins), ou la loi WB pour le couple ; règles : `wiki:Reproduction`
-- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has <compte>`/`--top <mesure>`, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) ; sous `--has`, les seuls comptes changés, `[avant, après]`
+- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has <compte>`/`--top <mesure>`, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--clan`…) ses membres, comptés en `metadata.members` ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) — d'une entité, `arrived` y entre, `left` en sort vivant ; sous `--has`, les seuls comptes changés, `[avant, après]`
 
 ---
 
@@ -81,19 +81,19 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `description` et `flavor` d'un trait sont l'ambiance ; son effet tient dans `stats`, que `dormant` dit endormies par l'ère et `absorbed` bues par une borne, le reste dans `wiki:Creature_Traits` ou `wiki:Subspecies_Traits`. Un don se pèse contre sa lignée (`subspecies … stats`), jamais contre un autre corps.
 - `gap_tiles` (`kingdom … relations`) : de bord à bord des quartiers, à vol d'oiseau, tu s'ils se touchent.
 - `ground … metadata` : `cost`, pris à la réserve dès la pose (`wiki:Buildings`) ; `health` ne sort que blessé, près de `health_max` ; un arbre tombe d'un coup (`wiki:Wood`).
-- `history`, l'historique de WB : `world`, ce que chaque année a vu naître, mourir ou s'éteindre — WB la clôt à l'entrée de son 12ᵉ mois, d'où `until`, et `since` sur celle en cours (`so_far`) —, une année absente : rien de neuf, les ~20 dernières seules ; `entity`, ses états (noms nus : `population`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`), l'avant de la fenêtre approché (`around_year`). Seuls les vivants y ont leurs années. De quoi meurent les siens : `deaths_by_cause`, au `metadata` d'une cité, d'un royaume, d'un clan, d'une lignée ; ceux du monde, sur `world … cumulative` ou `history world`, jamais en additionnant les lignées, les éteintes n'ayant plus de `metadata`. `unknown` : ce que le jeu ne range nulle part (fièvre des Cendres…)
+- `history`, l'historique de WB : `world`, ce que chaque année a vu naître, mourir ou s'éteindre — WB la clôt à l'entrée de son 12ᵉ mois, d'où `until`, et `since` sur celle en cours (`so_far`) —, une année absente : rien de neuf, les ~20 dernières seules ; `entity`, ses états (noms nus : `pop`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`), l'avant de la fenêtre approché (`around_year`). Seuls les vivants y ont leurs années. De quoi meurent les siens : `deaths_by_cause`, au `metadata` d'une cité, d'un royaume, d'un clan, d'une lignée ; ceux du monde, sur `world … cumulative` ou `history world`, jamais en additionnant les lignées, les éteintes n'ayant plus de `metadata`. `unknown` : ce que le jeu ne range nulle part (fièvre des Cendres…)
 - `kingdom … metadata` : une seule coque (`ferries`) sert tout le royaume.
 - `migrants` (`city … metadata`) : ce qui retient la loi d'en amener, sinon `soon` ou `later` (`wiki:World_Laws`).
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : `wiki:Religions`.
-- `report` parle par images : « No fire, no warmth » dit le bois qui manque.
-- `rulers` (cité, royaume) : la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain : `population.ruler_money`.
+- `report` parle par images : « No fire, no warmth » dit le bois qui manque, pas le feu.
+- `rulers` (cité, royaume) : la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain : `pop.ruler_money`.
 - `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; `drivers`, complet, somme au `total` ; chaque terme, par son id : `wiki:Loyalty`.
 - `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : naissances et extinctions se lisent dans `cumulative`, qui ne fait que monter.
 - Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 
 ### Lieux et trajets :
 
-- `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions (une diagonale compte 1,41), à citer tel quel ; pas un compte de pas.
+- `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions (une diagonale compte 1,41), à citer tel quel, jamais refait à la règle ; pas un compte de pas.
 - `geography … frozen` : par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé en toute saison ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `ground` (`biomes`) : le sol sans biome ; `rock` joint monts et sommets, sa plus grande parcelle est un massif.
 - `heart` (`islands`, `waters`) : le point le plus loin des rives.

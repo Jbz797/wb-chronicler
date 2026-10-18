@@ -8,7 +8,7 @@ export interface Kingdom {
   identity: KingdomIdentity;
   leaders?: Leaders;
   metadata: KingdomMetadata;
-  population: KingdomPopulation;
+  pop: KingdomPopulation;
   ranks?: KingdomRanks;
   relations?: KingdomRelation[];
   rulers?: [PersonReference]; // the sitting king alone, absent at an interregnum
@@ -20,7 +20,7 @@ export interface KingdomRelation { kingdom: EntityReference; opinion: { total: n
 // The ruler who opened the crown. What it officially is stays in `kingdom/info.py <id> identity`, each tier's own panel naming the favorite's.
 interface KingdomIdentity { founder?: PersonReference }
 
-// The kingdom's own attributes (age, capital, heir, resource stocks…) — as opposed to `population`, which aggregates its inhabitants.
+// The kingdom's own attributes (age, capital, heir, resource stocks…) — as opposed to `pop`, which aggregates its inhabitants.
 interface KingdomMetadata {
   age: number;
   book_reach?: number;
@@ -83,7 +83,7 @@ interface KingdomRanks {
   immortals?: number;
   infected?: number;
   kills?: number;
-  population?: number;
+  pop?: number;
   renown?: number;
   renown_total?: number;
   sick?: number;

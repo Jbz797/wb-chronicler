@@ -45,7 +45,7 @@ export class FamilyComponent {
     const tier = this.family();
     if (!tier) return [];
     const m = tier.metadata;
-    const pop = tier.population;
+    const { pop } = tier;
     const rows = [
       { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_births', shown: !!m.births, stat: 'births' as const },
       { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: !!m.deaths, stat: 'deaths' as const },

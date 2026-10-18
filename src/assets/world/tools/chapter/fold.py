@@ -59,7 +59,7 @@ _AUDIT = {
             "loot",
             "nobles",
             "nobles_money",
-            "population_per_city",
+            "pop_per_city",
             "renown_per_capita",
             "ruler_money",
             "subjects_money",
@@ -76,21 +76,21 @@ _AUDIT = {
 
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
 _AUDIT_TIERS = {
-    # A people's health is charted by a town and a crown alone: no other body's panel prints it, and `<tier>/info.py <id> population` still counts it
-    **{f"{tier}.population": {"immortals", "infected", "sick"} for tier in ("alliance", "clan", "culture", "family", "language", "religion", "subspecies")},
-    "alliance.kingdoms": {"population"},  # each member a tag, its headcount the crown's own panel to print
+    # A people's health is charted by a town and a crown alone: no other body's panel prints it, and `<tier>/info.py <id> pop` still counts it
+    **{f"{tier}.pop": {"immortals", "infected", "sick"} for tier in ("alliance", "clan", "culture", "family", "language", "religion", "subspecies")},
+    "alliance.kingdoms": {"pop"},  # each member a tag, its headcount the crown's own panel to print
     "alliance.metadata": {"cities", "kingdoms"},  # the pact names its realms and towns as tags, so counting either says nothing the list has not
     "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
-    "attackers.kingdoms": {"population"},  # a camp's realms as tags, the side's pooled `population` printed beside them
+    "attackers.kingdoms": {"pop"},  # a camp's realms as tags, the side's pooled `pop` printed beside them
     "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
     # No row counts its births, its crown and seat are the kingdom panel's to name, and its migrants, centre and years under the banner only the chronicler reads.
     "city.metadata": {"births", "capital", "kingdom", "migrants", "x", "y", "years_in_kingdom"},
-    "city.population": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
+    "city.pop": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
     "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
     "clan.metadata": {"births"},  # unlike a family, a pact or a biology, the clan panel prints no births row
     "culture.identity": {"species", "subspecies"},  # the founder's stock — the panel names the founder alone, whose own tag carries it
-    "defenders.kingdoms": {"population"},  # as `attackers`
+    "defenders.kingdoms": {"pop"},  # as `attackers`
     "family.identity": {"culture", "species", "subspecies"},  # the family is read by the souls it seated, its blood and its tongue answering from their own tiers
     "family.metadata": {"kingdoms", "parents"},  # a second crown or a parent line is too rare for a panel row, so both ride the script's output alone
     "family.ranks": {"cities", "kingdoms"},  # towns and crowns follow the heads that hold them, so the podium repeats the one `members` already draws
@@ -98,7 +98,7 @@ _AUDIT_TIERS = {
     "favorite.metadata": {"asset_id", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies"},
     "kingdom.identity": {"clan", "culture", "language", "religion", "subspecies"},  # as a town's
     "kingdom.metadata": {"births", "ferries"},  # as a town's, and no panel asks whether a crown ferries — that answers a rule of the chronicle, not a row
-    "kingdom.population": {"money"},  # as a town's
+    "kingdom.pop": {"money"},  # as a town's
     "kingdom.ranks": {"money"},  # as a town's
     "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
     "religion.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
@@ -108,7 +108,7 @@ _AUDIT_TIERS = {
 # No panel reads them: `report` and `info` are per-call, `taxonomy` comes from `identity.species`, `passengers` is the chronicler's own reading.
 _CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "sapient", "taxonomy"})
 
-# `population` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> population`, they simply don't ride along in the chapter.
+# `pop` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> pop`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset(
     {"adults", "babies", "children", "couples", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
 )
@@ -117,17 +117,14 @@ _DEMOGRAPHY = frozenset(
 _EMPTY = (None, [], {})
 
 # The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
-_LEADER_ROWS = {"families": frozenset({"population"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
+_LEADER_ROWS = {"families": frozenset({"pop"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
 
-# Rosters, libraries and fleets kept as a count alone — the tier's own `info.py <id> <section>` still names every soul, volume and hull behind the figure.
+# Libraries and fleets kept as a count alone — the tier's own `info.py <id> <section>` still names every volume and hull behind the figure.
 _TALLIES = {
-    "clan": ("members",),
-    "culture": ("books", "members"),
-    "family": ("members",),
+    "culture": ("books",),
     "kingdom": ("boats",),
-    "language": ("books", "members"),
-    "religion": ("books", "members"),
-    "subspecies": ("members",),
+    "language": ("books",),
+    "religion": ("books",),
 }
 
 # The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
@@ -195,10 +192,10 @@ def _fold_leaders(entity: dict) -> None:
             podium[block] = {key: _first_holder(refs) for key, refs in rows.items() if key in kept}
 
 
-# The age and sex slices, the lineage depth, the count of nobles — figures the chronicler writes with and no panel prints. `population` keeps what the UI reads.
-def _fold_population(entity: dict) -> None:
-    if isinstance(block := entity.get("population"), dict):
-        entity["population"] = {k: v for k, v in block.items() if k not in _DEMOGRAPHY}
+# The age and sex slices, the lineage depth, the count of nobles — figures the chronicler writes with and no panel prints. `pop` keeps what the UI reads.
+def _fold_pop(entity: dict) -> None:
+    if isinstance(block := entity.get("pop"), dict):
+        entity["pop"] = {k: v for k, v in block.items() if k not in _DEMOGRAPHY}
 
 
 # The sitting ruler alone and undated, the panels naming no other. Returns the first reign's `{id, name}`, a crown's founder — a town's is its first settler.
@@ -271,7 +268,7 @@ def fold_bodies(blocks: dict, boat: dict | None) -> None:
             continue
         _fold_breakdown(block)
         _fold_leaders(block)
-        _fold_population(block)
+        _fold_pop(block)
         block.pop("traits", None)  # the raw list goes; `new.py` carries or asks for the chronicler's prose in its place
         if fold := folds.get(tier):
             fold(block)

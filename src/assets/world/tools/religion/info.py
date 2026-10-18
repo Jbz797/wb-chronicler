@@ -10,14 +10,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
-from islands import compute_islands_cached
+from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, pop_of
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     absent_entity,
-    actor_age,
-    actor_xy,
     build_trait_ids,
     build_trait_list,
     children_by_id,
@@ -33,15 +30,13 @@ from shared import (
     meta_report,
     parse_sections,
     population_breakdown,
-    resolve_profession,
     settlement_leaders,
-    sex_label,
     take_chapter,
     wants_detail,
 )
 
-_ALL_SECTIONS = ("books", "breakdown", "identity", "leaders", "members", "metadata", "population", "ranks", "traits")
-_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the creed's record, its shelf and its library
+_ALL_SECTIONS = ("books", "breakdown", "identity", "leaders", "metadata", "pop", "ranks", "traits")
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "metadata", "pop", "ranks"})  # the rest read the creed's record, its shelf and its library
 
 
 # Books grouped by the creed stamped on them, off their own `religion_id` — unsorted, since `ranks` only counts a shelf and the section printing it sorts its own.
@@ -74,27 +69,6 @@ def _build_identity(religion: dict, ctx: dict) -> dict:
     }
 
 
-# Everyone alive who still holds to it, eldest first — WB points the actor at its faith, never the reverse. `total` rides with the list it counts, not `metadata`.
-def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
-    if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"total": len(members)})
-    island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a wide faith would still call through it hundreds of times
-    out = [
-        {
-            "age": actor_age(actor, ctx["world_time"]),
-            "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),  # the roster's one entity — a second ref costs some 40 chars and blows the inline budget
-            "id": actor["id"],
-            "island_id": island_of.get(actor_xy(actor)),  # Chronicler-only: land mass (`geography/info.py islands`)
-            "job": resolve_profession(actor, save),
-            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — a rung above is earned, and unaggregated.
-            "name": actor.get("name"),
-            "sex": sex_label(actor),
-        }
-        for actor in members
-    ]
-    return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
-
-
 # The creed's ledger: WB's lifetime counters beside the reach a walk over towns and crowns tells — the founder's card sits in `identity`. Counters drop at zero.
 def _build_metadata(religion: dict, members: list[dict], ctx: dict, tallies: dict) -> dict:
     religion_id = religion["id"]
@@ -109,16 +83,17 @@ def _build_metadata(religion: dict, members: list[dict], ctx: dict, tallies: dic
         "id": religion_id,  # the block travels into `chapter.json`, detached from its command — the UI resolves the panel from this
         **({"kills": kills} if (kills := int(religion.get("total_kills") or 0)) else {}),
         **({"kingdoms": kingdoms} if (kingdoms := tallies["kingdoms"][religion_id]) else {}),  # crowns that made it their own, the widest reach WB grants a creed
+        "members": len(members),  # its living, each named by `world … roster --religion <id>`
         "name": religion.get("name"),
-        **({"renown": renown} if (renown := int(religion.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `population`
+        **({"renown": renown} if (renown := int(religion.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `pop`
         **({"report": report} if report else {}),
         **({"traits": traits} if (traits := len(religion.get("saved_traits") or [])) else {}),
     }
 
 
-# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `members` section owns.
-def _build_population(members: list[dict], ctx: dict) -> dict:
-    return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
+# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which `metadata.members` counts.
+def _build_pop(members: list[dict], ctx: dict) -> dict:
+    return {key: value for key, value in pop_of(members, ctx).items() if key != "total"}
 
 
 # What the faith practises, off WB's religion library — summarised to each rite and its group at any size, the effect and flavour only when named.
@@ -205,14 +180,12 @@ def main(argv: list[str]) -> int:
 
     members = members_by_id.get(religion_id, [])
     ctx = {
-        **build_actor_stats_context(save),  # brings the trait libraries and `subspecies_by_id`, `languages_by_id`, `world_time` with them
+        **build_actor_stats_context(save),  # brings the trait libraries and `clans_by_id`, `languages_by_id`, `subspecies_by_id`, `world_time` with them
         "actors_by_id": index_by_id(save.get("actors_data") or []),
         "books_by_religion": cache(lambda: _books_by_religion(save)),  # called not stored: the `books` section lists them, `ranks` only counts them
         "cities_by_id": index_by_id(save.get("cities") or []),
-        "clans_by_id": index_by_id(save.get("clans") or []),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "religions_by_id": religions_by_id,
     }
@@ -226,12 +199,10 @@ def main(argv: list[str]) -> int:
         out["identity"] = _build_identity(religion, ctx)
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below four faithful, where a champion among three names nobody
         out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
-    if "members" in sections:
-        out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
         out["metadata"] = _build_metadata(religion, members, ctx, tallies)
-    if "population" in sections:
-        out["population"] = _build_population(members, ctx)
+    if "pop" in sections:
+        out["pop"] = _build_pop(members, ctx)
     if "ranks" in sections:
         out["ranks"] = competition_ranks(religion, list(religions_by_id.values()), _rank_getters(tallies, ctx["world_time"], ctx["books_by_religion"]()))
     if "traits" in sections:

@@ -5,7 +5,7 @@
         <app-ranked-stat source="subspecies" stat="age" suffix="ui_years" [hideDelta]="true" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item *appPresent="s.population?.renown_total" [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appPresent="s.pop?.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="subspecies" stat="renown_total" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="membersTitle">
@@ -29,13 +29,13 @@
     <nz-descriptions-item *appPlural="s.metadata.kingdoms" [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="subspecies" stat="kingdoms" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.population?.housed_pct" [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appPresent="s.pop?.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="subspecies" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.population?.fed_pct" [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appPresent="s.pop?.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="subspecies" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="s.population?.money" [nzTitle]="moneyTitle">
+    <nz-descriptions-item *appPresent="s.pop?.money" [nzTitle]="moneyTitle">
       <app-ranked-stat source="subspecies" stat="money" />
     </nz-descriptions-item>
   </nz-descriptions>
@@ -56,8 +56,8 @@
     @if (biomeName(); as b) {
       <nz-descriptions-item [nzTitle]="biomeTitle">{{ b }}</nz-descriptions-item>
     }
-    <nz-descriptions-item *appPresent="s.species.population" [nzTitle]="stockPopulationTitle">
-      <app-ranked-stat source="species" stat="population" />
+    <nz-descriptions-item *appPresent="s.species.pop" [nzTitle]="stockPopulationTitle">
+      <app-ranked-stat source="species" stat="pop" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="s.species.renown" [nzTitle]="stockRenownTitle">
       <app-ranked-stat source="species" stat="renown" />
@@ -115,7 +115,7 @@
   </ng-template>
   <ng-template #stockPopulationTitle>
     <img src="assets/img/world/population.png" />
-    <span>{{ 'ui_population' | translate }}</span>
+    <span>{{ 'ui_pop' | translate }}</span>
   </ng-template>
   <ng-template #stockRenownTitle>
     <img src="assets/img/stats/renown.png" />

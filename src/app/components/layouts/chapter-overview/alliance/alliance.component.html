@@ -13,7 +13,7 @@
         <app-kingdom-tag [id]="k.id" [name]="k.name" />
       }
     </nz-descriptions-item>
-    <nz-descriptions-item [nzTitle]="populationTitle"><app-ranked-stat source="alliance" stat="population" /></nz-descriptions-item>
+    <nz-descriptions-item [nzTitle]="populationTitle"><app-ranked-stat source="alliance" stat="pop" /></nz-descriptions-item>
     @if (a.metadata.renown) {
       <nz-descriptions-item [nzTitle]="renownTitle"><app-ranked-stat source="alliance" stat="renown" /></nz-descriptions-item>
     }
@@ -52,7 +52,7 @@
   </ng-template>
   <ng-template #populationTitle>
     <img src="assets/img/world/population.png" />
-    <span>{{ 'ui_population' | translate }}</span>
+    <span>{{ 'ui_pop' | translate }}</span>
   </ng-template>
   <ng-template #renownTitle>
     <img src="assets/img/stats/renown.png" />

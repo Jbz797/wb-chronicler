@@ -11,13 +11,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of, subspecies_stats
+from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, pop_of, subspecies_stats
 from islands import compute_islands_cached
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     absent_entity,
-    actor_age,
     actor_xy,
     biome_lore,
     build_trait_ids,
@@ -28,7 +27,6 @@ from shared import (
     emit,
     entity_age,
     entity_born,
-    entity_ref,
     index_by_id,
     is_boat,
     is_sapient,
@@ -38,38 +36,14 @@ from shared import (
     meta_report,
     parse_sections,
     population_breakdown,
-    resolve_profession,
     settlement_leaders,
-    sex_label,
     take_chapter,
-    wants_detail,
 )
 
-_ALL_SECTIONS = ("breakdown", "leaders", "members", "metadata", "population", "ranks", "species", "stats", "taxonomy", "traits")
-_EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "population": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
-_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "members", "metadata", "population", "ranks"})  # the rest read the subspecies record and its libraries
+_ALL_SECTIONS = ("breakdown", "leaders", "metadata", "pop", "ranks", "species", "stats", "taxonomy", "traits")
+_EMPTY_SPECIES = {"cities": 0, "kingdoms": 0, "pop": 0, "renown": 0, "subspecies": 0}  # What a species is ranked on; its keys double as the rank getters.
+_NEEDS_ACTORS = frozenset({"breakdown", "leaders", "metadata", "pop", "ranks"})  # the rest read the subspecies record and its libraries
 _TAXONOMY_RANKS = ("kingdom", "phylum", "class", "order", "family", "genus")  # WB's own order, broadest first — `render` keeps it, not alphabetical.
-
-
-# Everyone alive who carries the biology, eldest first — WB points the actor at its subspecies, never the reverse. `total` rides with the list it counts.
-def _build_members(members: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
-    if not detailed:  # `full` keeps the chapter light: ids and a headcount, since a widespread biology rosters hundreds and no panel ever names one
-        return light({"total": len(members)})
-    island_of = ctx["island_lookup"]()  # resolved once: the lookup is memoised, but a widespread biology would still call through it hundreds of times
-    out = [
-        {
-            "age": actor_age(actor, ctx["world_time"]),
-            "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # The roster's one entity: a line holds a handful of bearers, a town dozens.
-            "id": actor["id"],
-            "island_id": island_of.get(actor_xy(actor)),  # Chronicler-only: land mass (`geography/info.py islands`)
-            "job": resolve_profession(actor, save),
-            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1 — as in `clan`, no aggregate here carries it.
-            "name": actor.get("name"),
-            "sex": sex_label(actor),
-        }
-        for actor in members
-    ]
-    return {"roster": sorted(out, key=lambda m: (-m["age"], m["id"])), "total": len(out)}
 
 
 # The biology's identity card: WB's lifetime counters beside what a walk over the living tells. Every counter drops at zero — the panels read them through `?? 0`.
@@ -96,15 +70,16 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         "islands": sorted({iid for a in members if (iid := island_of.get(actor_xy(a))) is not None}),  # 1 = biggest — presence, not weight.
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
+        "members": len(members),  # its living, each named by `world … roster --subspecies <id>`
         "name": subspecies.get("name"),
         **({"report": report} if report else {}),
         "sapient": is_sapient(subspecies),  # the faculty that lets its bearers found cities — a beast's biology never carries it
     }
 
 
-# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which the `members` section owns.
-def _build_population(members: list[dict], ctx: dict) -> dict:
-    return {key: value for key, value in population_of(members, ctx).items() if key != "total"}
+# What the living say of the body they belong to — the settlement block less its granary and its head, and less `total`, which `metadata.members` counts.
+def _build_pop(members: list[dict], ctx: dict) -> dict:
+    return {key: value for key, value in pop_of(members, ctx).items() if key != "total"}
 
 
 # The stock's standing over every soul of that species: counts flat beside its `ranks`, and `id` to say whose — the block reaches `chapter.json` alone.
@@ -167,7 +142,7 @@ def _species_totals(save: dict) -> dict[str, dict]:
         if is_boat(actor) or not (asset_id := actor.get("asset_id")):
             continue
         entry = totals[asset_id]
-        entry["population"] += 1
+        entry["pop"] += 1
         entry["renown"] += int(actor.get("renown") or 0)
         if city := actor.get("cityID"):
             cities[asset_id].add(city)
@@ -227,10 +202,10 @@ def main(argv: list[str]) -> int:
     members = members_by_id.get(subspecies_id, [])
     ctx = {
         **build_actor_stats_context(save),  # brings the trait libraries and `languages_by_id`, `world_time` with them
-        "actors_by_id": index_by_id(save.get("actors_data") or []),  # `population_of` pairs lovers through it, and only a mutual pair counts
+        "actors_by_id": index_by_id(save.get("actors_data") or []),  # `pop_of` pairs lovers through it, and only a mutual pair counts
         "cultures_by_id": index_by_id(save.get("cultures") or []),
         "families_by_id": index_by_id(save.get("families") or []),
-        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: only `members` needs it
+        "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # tile → island id, called not stored: `metadata` alone reads it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),  # `population_breakdown` alone reads it here — a biology answers to no crown of its own
         "religions_by_id": index_by_id(save.get("religions") or []),
         "subspecies_by_id": subspecies_by_id,  # the index the id was checked against, so the context's own copy never takes over
@@ -242,12 +217,10 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k not in ("species", "subspecies")}
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below four members, where a champion among three names nobody
         out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
-    if "members" in sections:
-        out["members"] = _build_members(members, ctx, save, detailed=wants_detail(requested, len(members)))
     if "metadata" in sections:
         out["metadata"] = _build_metadata(subspecies, members, ctx)
-    if "population" in sections:
-        out["population"] = _build_population(members, ctx)
+    if "pop" in sections:
+        out["pop"] = _build_pop(members, ctx)
     if "ranks" in sections:
         getters = _rank_getters(members_by_id, housed, money, renown, warriors, ctx["world_time"])
         out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), getters)

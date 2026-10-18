@@ -23,8 +23,8 @@
     }
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="populationTitle">
-    <span [class]="sideClass(w.attackers.population, w.defenders.population, 'attackers')">{{ w.attackers.population }}</span>
-    <app-delta [value]="d?.attackers?.population" />
+    <span [class]="sideClass(w.attackers.pop, w.defenders.pop, 'attackers')">{{ w.attackers.pop }}</span>
+    <app-delta [value]="d?.attackers?.pop" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="warriorsTitle">
     <span [class]="sideClass(w.attackers.warriors, w.defenders.warriors, 'attackers')">{{ w.attackers.warriors }}</span>
@@ -49,8 +49,8 @@
     }
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="populationTitle">
-    <span [class]="sideClass(w.attackers.population, w.defenders.population, 'defenders')">{{ w.defenders.population }}</span>
-    <app-delta [value]="d?.defenders?.population" />
+    <span [class]="sideClass(w.attackers.pop, w.defenders.pop, 'defenders')">{{ w.defenders.pop }}</span>
+    <app-delta [value]="d?.defenders?.pop" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="warriorsTitle">
     <span [class]="sideClass(w.attackers.warriors, w.defenders.warriors, 'defenders')">{{ w.defenders.warriors }}</span>
@@ -106,7 +106,7 @@
 </ng-template>
 <ng-template #populationTitle>
   <img src="assets/img/world/population.png" />
-  <span>{{ 'ui_population' | translate }}</span>
+  <span>{{ 'ui_pop' | translate }}</span>
 </ng-template>
 <ng-template #renownTitle>
   <img src="assets/img/stats/renown.png" />

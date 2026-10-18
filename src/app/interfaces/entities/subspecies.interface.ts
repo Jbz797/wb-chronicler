@@ -1,4 +1,4 @@
-import { Leaders, MemberRoster, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { Leaders, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
 // The stock's standing among the world's species — flat counts beside its own podium; `id` stays out of `SpeciesTotals`, which the podium reads as `keyof`.
 export interface SpeciesStanding extends SpeciesTotals { id: string; ranks?: Partial<SpeciesTotals> }
@@ -7,7 +7,7 @@ export interface SpeciesStanding extends SpeciesTotals { id: string; ranks?: Par
 export interface SpeciesTotals {
   cities?: number;
   kingdoms?: number;
-  population?: number;
+  pop?: number;
   renown?: number;
   subspecies?: number;
 }
@@ -16,9 +16,8 @@ export interface SpeciesTotals {
 export interface Subspecies {
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   leaders?: Leaders;
-  members: MemberRoster;
   metadata: SubspeciesMetadata;
-  population?: TierPopulation; // absent where no stock of it lives in a town — Python omits an empty block
+  pop?: TierPopulation; // absent where no stock of it lives in a town — Python omits an empty block
   ranks?: SubspeciesRanks;
   species: SpeciesStanding;
   traits: string; // the chronicler's summary of its biology and of what its newborns inherit — `subspecies/info.py <id> traits` keeps the two apart
@@ -34,6 +33,7 @@ interface SubspeciesMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
+  members?: number; // its living, counted: `world … roster --subspecies <id>` names them
   name: string;
 }
 

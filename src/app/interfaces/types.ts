@@ -37,7 +37,7 @@ export type KingdomMetaStat = 'age' | 'book_reach' | 'books' | 'buildings' | 'ci
 export type KingdomRegistry = Record<string, KingdomInfo>;
 export type LanguageRegistry = Record<string, LanguageInfo>;
 export type LeaderGroup = 'cities' | 'clans' | 'cultures' | 'families' | 'kingdoms' | 'languages' | 'persons' | 'religions' | 'species' | 'subspecies';
-export type LeaderMeasure = 'diplomacy' | 'intelligence' | 'level' | 'population' | 'renown' | 'score' | 'stewardship' | 'warfare';
+export type LeaderMeasure = 'diplomacy' | 'intelligence' | 'level' | 'pop' | 'renown' | 'score' | 'stewardship' | 'warfare';
 export type LifeStage = 'adult' | 'baby' | 'child' | 'egg' | 'elder' | 'teen';
 export type MapPinKind = 'island' | 'lake' | 'river' | 'sea' | 'spot'; // a land, a lake, a river, a sea, a spot the chronicler named: the books of `places.json`
 export type PeopleTierName = Exclude<ChapterTier, 'city' | 'favorite' | 'kingdom'>; // those `_resolvePeople` serves — the bodies that roster the living
@@ -52,7 +52,7 @@ export type RankedStatKind = 'age' | 'armor'
   | 'diplomacy' | 'equipment_power' | 'fed_pct' | 'food' | 'food_per_capita' | 'foundings'
   | 'gear' | 'goods' | 'health' | 'housed_pct' | 'houses' | 'immortals' | 'infected' | 'intelligence' | 'kills' | 'kingdoms' | 'level' | 'lifespan' | 'lost'
   | 'loyalty' | 'mana' | 'members' | 'money'
-  | 'native' | 'population' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'tenure_years' | 'territory'
+  | 'native' | 'pop' | 'renown' | 'renown_total' | 'score_rank' | 'sick' | 'speed' | 'stamina' | 'stewardship' | 'subspecies' | 'tenure_years' | 'territory'
   | 'warfare' | 'warriors' | 'wars_won' | 'wealth' | 'wealth_per_capita';
 
 export type RankedStatSource = 'alliance' | 'species' | ChapterTier; // a tier, or a block nested in one: a realm's alliance, a biology's parent stock
@@ -60,7 +60,7 @@ export type ReligionRegistry = Record<string, ReligionInfo>;
 
 export type SnapshotStat = 'alliances' | 'armies' | 'books' | 'buildings' | 'cities' | 'clans'
   | 'cultures' | 'families' | 'frozen_pct' | 'houses' | 'infected' | 'kingdoms'
-  | 'languages' | 'religions' | 'sapient_population' | 'sick' | 'subspecies' | 'trees' | 'vegetation'
+  | 'languages' | 'religions' | 'sapient_pop' | 'sick' | 'subspecies' | 'trees' | 'vegetation'
   | 'wars' | 'wild_creatures';
 
 export type SubspeciesRegistry = Record<string, SubspeciesInfo>;

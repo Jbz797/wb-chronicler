@@ -769,7 +769,7 @@ def _surroundings_row(other: dict, ctx: dict, span: dict, dx: int, dy: int, home
     }
     if is_boat(other):  # a hull: always afloat, sexless and thoughtless — its asset already says what it carries
         return row
-    # Raw totals narrowed to `lifespan`, as `population_of` reads a stage: it alone is kept, and the whole pipeline doubled the sweep.
+    # Raw totals narrowed to `lifespan`, as `pop_of` reads a stage: it alone is kept, and the whole pipeline doubled the sweep.
     age, lifespan = actor_age(other, ctx["world_time"]), int(actor_stat_totals(other, ctx, lifespan_only=True).get("lifespan", 0))
     # Why a line stands in full, where the reason tells a story: the tie before the post, a crown before a clan. Each marks a thinker, so `sapient` falls silent.
     job = None if tie else _POSTS.get(other.get("profession", 0))  # WB omits `profession` at 0, its « nothing »

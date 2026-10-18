@@ -1,6 +1,6 @@
 import { CumulativeStat, DeathCause, Favorite, LeaderGroupConfig, LeaderMeasure, RankedStatKind, SnapshotStat, StatConfig } from '../interfaces';
 
-// City `RankedStatKind`s resolved from `metadata` (vs `population`) — the kingdom's minus `buildings` and `cities`, plus the `attractivity` of a settlement.
+// City `RankedStatKind`s resolved from `metadata` (vs `pop`) — the kingdom's minus `buildings` and `cities`, plus the `attractivity` of a settlement.
 export const CITY_META_STATS = new Set<RankedStatKind>([
   'age', 'attractivity', 'book_reach', 'deaths', 'food', 'goods', 'houses', 'kills', 'renown', 'territory', 'wealth',
 ]);
@@ -8,7 +8,7 @@ export const CITY_META_STATS = new Set<RankedStatKind>([
 // The three gauges rank on their cap, never on the live value the panel prints beside it; every other kind names its own field of the favorite's `stats`.
 export const FAVORITE_GAUGE_FIELDS: Partial<Record<RankedStatKind, keyof Favorite['stats']>> = { health: 'health_max', mana: 'mana_max', stamina: 'stamina_max' };
 
-// Kingdom `RankedStatKind`s resolved from `metadata` (vs `population`) — routes the lookup in `RankedStatComponent`.
+// Kingdom `RankedStatKind`s resolved from `metadata` (vs `pop`) — routes the lookup in `RankedStatComponent`.
 export const KINGDOM_META_STATS = new Set<RankedStatKind>([
   'age',
   'book_reach',
@@ -51,22 +51,22 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
 ];
 
 // The one family a settlement/realm panel names in its « Palmarès », out of the five `leaders.families` rankings Python emits.
-export const LEADER_FAMILY_ROWS: { icon: string; key: 'population'; label: string }[] = [
-  { icon: 'assets/img/world/families.png', key: 'population', label: 'ui_leading_family' },
+export const LEADER_FAMILY_ROWS: { icon: string; key: 'pop'; label: string }[] = [
+  { icon: 'assets/img/world/families.png', key: 'pop', label: 'ui_leading_family' },
 ];
 
 // The world « Palmarès », one table per group: a soul's level and skills first (in `SKILL_STATS` order), then the parent species ahead of the biology it holds.
 export const LEADER_GROUPS: LeaderGroupConfig[] = [
   { group: 'persons', label: 'ui_persons', measures: ['level', 'renown', 'diplomacy', 'warfare', 'stewardship', 'intelligence'] },
-  { group: 'species', label: 'ui_species_plural', measures: ['population'] },
-  { group: 'subspecies', label: 'ui_subspecies_count', measures: ['population'] },
-  { group: 'families', label: 'ui_families', measures: ['population'] },
-  { group: 'clans', label: 'ui_clans', measures: ['population'] },
-  { group: 'cultures', label: 'ui_cultures', measures: ['population'] },
-  { group: 'languages', label: 'ui_languages', measures: ['population'] },
-  { group: 'religions', label: 'ui_religions', measures: ['population'] },
-  { group: 'cities', label: 'ui_cities', measures: ['population', 'score'] },
-  { group: 'kingdoms', label: 'ui_kingdoms', measures: ['population', 'score'] },
+  { group: 'species', label: 'ui_species_plural', measures: ['pop'] },
+  { group: 'subspecies', label: 'ui_subspecies_count', measures: ['pop'] },
+  { group: 'families', label: 'ui_families', measures: ['pop'] },
+  { group: 'clans', label: 'ui_clans', measures: ['pop'] },
+  { group: 'cultures', label: 'ui_cultures', measures: ['pop'] },
+  { group: 'languages', label: 'ui_languages', measures: ['pop'] },
+  { group: 'religions', label: 'ui_religions', measures: ['pop'] },
+  { group: 'cities', label: 'ui_cities', measures: ['pop', 'score'] },
+  { group: 'kingdoms', label: 'ui_kingdoms', measures: ['pop', 'score'] },
 ];
 
 // Each world record's sprite and label — `score`, the composite WB weighs a town and a crown on, under the label the city and kingdom panels print.
@@ -74,7 +74,7 @@ export const LEADER_MEASURES: Record<LeaderMeasure, { icon: string; label: strin
   diplomacy: { icon: 'assets/img/stats/diplomacy.png', label: 'ui_diplomacy' },
   intelligence: { icon: 'assets/img/stats/intelligence.png', label: 'ui_intelligence' },
   level: { icon: 'assets/img/stats/level.png', label: 'ui_level' },
-  population: { icon: 'assets/img/world/population.png', label: 'ui_population' },
+  pop: { icon: 'assets/img/world/population.png', label: 'ui_pop' },
   renown: { icon: 'assets/img/stats/renown.png', label: 'ui_renown' },
   score: { icon: 'assets/img/podium/1.png', label: 'ui_score' },
   stewardship: { icon: 'assets/img/stats/stewardship.png', label: 'ui_stewardship' },
@@ -120,9 +120,9 @@ export const SKILL_STATS: StatConfig[] = [
 ];
 
 // Snapshot world stats — display order: demography → environment → society → conflict → culture → activity. A row at 0 hides itself.
-// `icon` names the sprite in `assets/img/world/`, filed by concept: `population.png` draws a crowd, whichever crowd the key happens to count. `suffix`: a share.
+// `icon` names the sprite in `assets/img/world/`, filed by concept: `pop.png` draws a crowd, whichever crowd the key happens to count. `suffix`: a share.
 export const SNAPSHOT_STATS: { icon?: string; key: SnapshotStat; label: string; suffix?: string }[] = [
-  { icon: 'population', key: 'sapient_population', label: 'ui_sapient_population' },
+  { icon: 'population', key: 'sapient_pop', label: 'ui_sapient_pop' },
   { key: 'sick', label: 'ui_sick' },
   { key: 'infected', label: 'ui_infected' },
   { key: 'wild_creatures', label: 'ui_creatures' },

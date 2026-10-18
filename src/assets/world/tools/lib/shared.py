@@ -139,6 +139,13 @@ _META_REPORTS = {
 
 _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homeless` — the two that count heads rather than weigh hearts.
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
+
+# A section a tool no longer offers, named in a request: refused all the same, with where its content now lives.
+_MOVED_SECTIONS = {
+    "members": " — an entity's members are `world … roster --<entity> <id>`, their count `metadata.members`",
+    "population": " — `population` is now `pop`",
+}
+
 _NEEDS_ESCAPE = re.compile(r'["\\\x00-\x1f]')  # what `json.encoder.ESCAPE` covers, its named `\b\f\n\r\t` all sitting inside the control range
 
 # Ranked on a key of our own making — a negated birth, a share of a stomach: `_leader_refs` leaves their value to the caller, who fills in years or a share.
@@ -200,7 +207,7 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
     return dict(sorted(result.items()))
 
 
-# The families with someone on the ground: `oldest`/`kills`/`deaths` are WB's own counters, `population`/`renown` are scoped to who is present.
+# The families with someone on the ground: `oldest`/`kills`/`deaths` are WB's own counters, `pop`/`renown` are scoped to who is present.
 def _family_leaders(actors: Sequence[dict], families_by_id: dict, world_time: float) -> dict:
     members: Counter = Counter()
     renown: Counter = Counter()
@@ -216,7 +223,7 @@ def _family_leaders(actors: Sequence[dict], families_by_id: dict, world_time: fl
         "deaths": {fid: int(f.get("total_deaths") or 0) for fid, f in present.items()},
         "kills": {fid: int(f.get("total_kills") or 0) for fid, f in present.items()},
         "oldest": {fid: -float(f.get("created_time") or 0) for fid, f in present.items()},
-        "population": {fid: members[fid] for fid in present},
+        "pop": {fid: members[fid] for fid in present},
         "renown": {fid: renown[fid] for fid in present},
     }
     refs = _leader_refs(tallies, present)
@@ -588,7 +595,7 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
         # Racked gear, counted apart from `wealth`: nearly orthogonal to the other nine (−0.21 with `warriors`, 0.16 with `wealth`), so it earns its own rank.
         "equipment": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in cities},
         "kills": {c["id"]: c.get("total_kills", 0) for c in cities},
-        "population": population,
+        "pop": population,
         "renown": {c["id"]: c.get("renown", 0) for c in cities},
         "territory": {c["id"]: len(c.get("zones") or []) for c in cities},
         "warriors": warriors,
@@ -824,7 +831,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
         "equipment": equipment,  # its towns' racks summed — see the city dimension: a martial capital none of the other nine sees
         "foundings": Counter(item.get("creator_kingdom_id") for coll in ("cultures", "languages", "religions") for item in save.get(coll) or []),
         "kills": {k["id"]: k.get("total_kills", 0) for k in kingdoms},
-        "population": population,
+        "pop": population,
         "renown": {k["id"]: k.get("renown", 0) for k in kingdoms},
         "territory": territory,
         "warriors": warriors,
@@ -999,7 +1006,8 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: b
     requested = tuple(s.strip() for s in (arg or "").split(",") if s.strip())
     named = tuple(s for s in requested if not (allow_full and s == "full"))  # a caller with no `full` to offer (`geography`) reads the word as unknown
     if unknown := [s for s in named if s not in all_sections]:
-        raise ValueError(f"✗ unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}")
+        moved = "".join(gloss for section, gloss in _MOVED_SECTIONS.items() if section in unknown)
+        raise ValueError(f"✗ unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}{moved}")
     return (*lot, *(s for s in named if s not in lot)) if len(named) < len(requested) else named
 
 
@@ -1078,7 +1086,7 @@ def reader_settings() -> dict:
         return {}
 
 
-# A crown's or a town's succession off WB's `past_rulers`, oldest first, dated as the game shows — the sitting reign open-ended, its purse `population.ruler_money`.
+# A crown's or a town's succession off WB's `past_rulers`, oldest first, dated as the game shows — the sitting reign open-ended, its purse `pop.ruler_money`.
 def reigns(record: dict, actors_by_id: dict, requested: str | None) -> list[dict] | dict:
     out = []
     for past in record.get("past_rulers") or []:
@@ -1213,7 +1221,7 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "age": lambda r: entity_age(r, ctx["world_time"]),
         "buildings": tally("buildings"),
         "deaths": lambda r: r.get("total_deaths", 0),
-        # No `fed_pct` on any tier: hunger is where a people stood when the save was written, and it ties most of the field in peace — `population` says the share.
+        # No `fed_pct` on any tier: hunger is where a people stood when the save was written, and it ties most of the field in peace — `pop` says the share.
         "food": food,
         "food_per_capita": lambda r: food(r) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
         "gold": gold,
@@ -1228,7 +1236,7 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
         "money": money,
         "nobles": tally("nobles"),
         "nobles_money": nobles_money,  # the head's own purse excluded — it is reported on its own as `ruler_money`
-        "population": populations,
+        "pop": populations,
         "renown": lambda r: r.get("renown", 0),
         "renown_per_capita": lambda r: r.get("renown", 0) / n if (n := populations(r)) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": tally("renown"),

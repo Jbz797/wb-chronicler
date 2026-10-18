@@ -1,4 +1,4 @@
-import { BookShelf, Leaders, MemberRoster, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
+import { BookShelf, Leaders, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
 // The favourite's religion: preached, not inherited — so its `breakdown` answers to no border, a creed crossing blood and crown one conversion at a time.
 export interface Religion {
@@ -6,9 +6,8 @@ export interface Religion {
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
   identity: ReligionIdentity;
   leaders?: Leaders;
-  members: MemberRoster;
   metadata: ReligionMetadata;
-  population: TierPopulation;
+  pop: TierPopulation;
   ranks?: ReligionRanks;
   traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }
@@ -24,6 +23,7 @@ interface ReligionMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
+  members?: number; // its living, counted: `world … roster --religion <id>` names them
   name: string;
   renown?: number;
 }

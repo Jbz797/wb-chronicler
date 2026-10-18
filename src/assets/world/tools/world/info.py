@@ -9,8 +9,10 @@
 import argparse
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from functools import cache
 from math import inf
+from operator import itemgetter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -43,6 +45,7 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_MONTH,
     UNITS_PER_YEAR,
+    absent_entity,
     actor_age,
     actor_xy,
     arg_parser,
@@ -53,6 +56,7 @@ from shared import (
     city_score_dimensions,
     civic_building_ids,
     emit,
+    entity_ref,
     fertile,
     first_place,
     i18n,
@@ -71,6 +75,7 @@ from shared import (
     parse_sections,
     passed_unseen,
     quiet_zeros,
+    resolve_profession,
     rounded_world_time,
     score_totals,
     sex_label,
@@ -156,7 +161,7 @@ _DEATH_CAUSES = {
 _FEATS = ("kills", "level", "money", "renown")  # what a life adds up, kept on the body itself — weighed among thinking souls as the skills are
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
 
-# Actor field => the save collection it points into, feeding its `population` record — every actor counted, wildlife included, as each tier's medal counts its own.
+# Actor field => the save collection it points into, feeding its `pop` record — every actor counted, wildlife included, as each tier's medal counts its own.
 _GROUP_FIELDS = {
     "cityID": "cities",  # a townsman need answer to no crown — counted apart from the kingdom's roll
     "civ_kingdom_id": "kingdoms",  # the crown's own roll, which many a thinking soul is not on — a people can stand before any banner is raised
@@ -169,6 +174,19 @@ _GROUP_FIELDS = {
 }
 
 _ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too small to count — `_WATER` where it floats
+
+# What `roster` narrows to by entity: the collection its id answers in, and the body's own field that ties it there — a pact's, through the crown.
+_MEMBERSHIPS = {
+    "alliance": ("alliances", None),
+    "city": ("cities", "cityID"),
+    "clan": ("clans", "clan"),
+    "culture": ("cultures", "culture"),
+    "family": ("families", "family"),
+    "kingdom": ("kingdoms", "civ_kingdom_id"),
+    "language": ("languages", "language"),
+    "religion": ("religions", "religion"),
+    "subspecies": ("subspecies", "subspecies"),
+}
 
 # The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
@@ -206,6 +224,18 @@ _WATER = "water"  # where `roster` says a body stands, or stood, afloat — off 
 # An age's life stage off the share of its span it has run — three words and no date, the end of an age being the turn a chronicle must not see coming.
 def _age_stage(progress: float) -> str:
     return "young" if progress < _AGE_YOUNG else "waning" if progress >= _AGE_WANING else "mature"
+
+
+# Whether a body belongs to the entity `roster` is narrowed to, read off the body itself: a pact through its crown, every other tie by its own field.
+def _belongs(save: dict, entity: tuple[str, int] | None) -> Callable[[dict], bool]:
+    if entity is None:
+        return lambda _actor: True
+    kind, entity_id = entity
+    if kind == "alliance":
+        crowns = {kid for pact in save.get("alliances") or [] if pact.get("id") == entity_id for kid in pact.get("kingdoms") or []}
+        return lambda actor: actor.get("civ_kingdom_id") in crowns
+    field = _MEMBERSHIPS[kind][1]
+    return lambda actor: actor.get(field) == entity_id
 
 
 # What keeps a body of age from breeding, WB weighing each partner: a belly short of a baby or half-full, a footing to leave first — tagged `tiny_islet 40`.
@@ -272,11 +302,9 @@ def _build_leaders(save: dict) -> dict:
             persons[stat][aid] = stats.get(stat, 0)
 
     # `{id, name}` apiece, `value` on a tally, the UI reading the rest (palette, banner, size, species) off the registries — `new.py` keeping the first holder.
-    out: dict[str, dict] = {
-        coll: {"population": _count_leaders(tally, save.get(coll) or [], _MIN_PEERS.get(coll, MIN_RANK_PEERS))} for coll, tally in members.items()
-    }
+    out: dict[str, dict] = {coll: {"pop": _count_leaders(tally, save.get(coll) or [], _MIN_PEERS.get(coll, MIN_RANK_PEERS))} for coll, tally in members.items()}
     out["persons"] = {stat: _count_leaders(tally, actors, MIN_RANK_PEERS) for stat, tally in persons.items()}
-    out["species"] = {"population": [{"asset_id": asset, "value": n} for asset, n in first_place(species, MIN_RANK_PEERS)]}  # `asset_id`: its icon
+    out["species"] = {"pop": [{"asset_id": asset, "value": n} for asset, n in first_place(species, MIN_RANK_PEERS)]}  # `asset_id`: its icon
     for coll, dimensions in (("cities", city_score_dimensions), ("kingdoms", kingdom_score_dimensions)):
         records = save.get(coll) or []
         out[coll]["score"] = _score_leaders(score_totals([r["id"] for r in records], dimensions(save)), records)
@@ -419,8 +447,14 @@ def _build_roster(
     task: str | None,
     has: str | None,
     top: str | None,
+    entity: tuple[str, int] | None,
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
+    belongs = _belongs(save, entity)
+    belonged = _belongs(earlier, entity) if earlier is not None else belongs  # the same tie read off the earlier save, a pact's crowns as they stood
+    # Under an entity, `--since` weighs who belonged then: a body that joined arrives, one alive elsewhere has left, though the world saw both all along.
+    members_then = {a["id"] for a in earlier.get("actors_data") or [] if belonged(a)} if entity and earlier is not None else None
+    known = was if members_then is None else members_then
     weighed = has or top  # one measure either way: `--has` keeps whoever holds any, `--top` the highest alone
     thinking = _sapient_subspecies(save) if sapient else None
     grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
@@ -450,7 +484,7 @@ def _build_roster(
         borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
         if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or not borne or (thinking is not None and actor.get("subspecies") not in thinking):
             continue
-        if patch is not None and actor_xy(actor) not in patch:
+        if (patch is not None and actor_xy(actor) not in patch) or not belongs(actor):
             continue
         if status and status not in (kept_statuses(actor) or ()):
             continue
@@ -467,7 +501,7 @@ def _build_roster(
             continue
         here = _standing(actor, island_of, grid, save["tileMap"])
         change: dict = {weighed: held if once is None else [max(before, floor), max(held, floor)]} if weighed else {}
-        if was is not None and actor["id"] in was and not has:  # one unseen then was born or set down since, and says so by standing in the roll at all
+        if was is not None and actor["id"] in known and not has:  # one unseen then was born or set down since, and says so by standing in the roll at all
             if (then := was[actor["id"]]) == here:
                 still += land is None or asked == here  # stood still: nothing for `since` to say of it, but that it was left out
                 continue
@@ -480,7 +514,7 @@ def _build_roster(
     gone = []
 
     if earlier is not None and was is not None and not (settle or barred):  # the dead found nothing
-        gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient)
+        gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient, belonged)
         if once is not None:  # the dead that held the tally, each with what it takes away: where it stood and what took it are another question's
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
 
@@ -520,13 +554,19 @@ def _build_roster(
             return crossed_at(body[0], adult_age(body[0], ctx)), body[0]["id"]
         if weighed:  # the measure asked, highest first — its latest figure under `--since`: whoever stands in no line has none, or has not moved
             return -(body[2][weighed] if once is None else body[2][weighed][1]), body[0]["id"]
+        if entity:  # its members eldest first, as each entity's own list ran
+            return -actor_age(body[0], ctx["world_time"]), body[0]["id"]
         return isinstance(body[1], str), body[1], body[0]["id"]
 
     lineages = ctx["subspecies_by_id"]
     # Unsaid where a view never reads it — `--barred`'s gates, `--has`'s tally, `--since`'s blocks — whose lines it would push past inline
     breeds_said = not (barred or weighed or since)
     ranked = sorted(bodies, key=order)
+    refs = {"city": index_by_id(save.get("cities") or []), "family": index_by_id(save.get("families") or [])} if entity else {}
     for actor, here, change in ranked[:_TOP_ROWS] if top else ranked:
+        if entity:
+            rows.append({**_member_row(actor, entity[0], None if here == asked and "was_on" not in change else here, refs, save, ctx, one_kind), **change})
+            continue
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
         stage = _stage(actor, ctx, age, adult)
         rows.append(
@@ -556,11 +596,14 @@ def _build_roster(
     gone = [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
     if since and not has:  # each body filed by what befell it, the block saying it: an arrival bears no mark of its own, read off the others it would be guessed
         parts = {"arrived": [r for r in rows if "was_on" not in r], "gone": [{**r, "gone": None} for r in gone], "moved": [r for r in rows if "was_on" in r]}
+        if members_then is not None and entity:  # alive and elsewhere now: left the entity, which a death alone does not say
+            leavers = sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id"))
+            parts["left"] = [_member_row(a, entity[0], _standing(a, island_of, grid, save["tileMap"]), refs, save, ctx, one_kind) for a in leavers]
         return {part: bodies for part, bodies in parts.items() if bodies}
     return rows + gone
 
 
-# Actors split three ways: hulls (`boats`), thinking souls (`sapient_population`) and the beasts (`wild_creatures`). `infected` = WB's `current_infected`.
+# Actors split three ways: hulls (`boats`), thinking souls (`sapient_pop`) and the beasts (`wild_creatures`). `infected` = WB's `current_infected`.
 def _build_snapshot(save: dict) -> dict:
     actors = save.get("actors_data") or []
     civic = civic_building_ids()
@@ -591,7 +634,7 @@ def _build_snapshot(save: dict) -> dict:
             "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
             "infected": infected,
             "passengers": passengers,  # souls at sea this instant, WB's own word (`Boat.countPassengers`) — chronicler-only, `boats` counts the hulls
-            "sapient_population": sapients,  # named apart from every tier's `population`, which counts members: this one weighs minds, and no crown gathers them
+            "sapient_pop": sapients,  # named apart from every tier's `pop`, which counts members: this one weighs minds, and no crown gathers them
             "sick": sick,
             # Chronicler-only: how many bodies each status holds this instant, as the Faithful Saves mod kept them.
             "statuses": dict(sorted(statuses.items())) or None,
@@ -616,14 +659,23 @@ def _count_leaders(counts: Counter, records: list[dict], min_peers: int) -> list
 
 
 # The dead since an earlier chapter, as it knew them — WB keeps no dead, so a body gone from the save is one gone from the world: filtered as the living are.
-def _gone_since(save: dict, then: dict, was: dict[int, int | str], kinds: set[str] | None, trait: str | None, asked: int | str | None, sapient: bool) -> list[dict]:
+def _gone_since(
+    save: dict,
+    then: dict,
+    was: dict[int, int | str],
+    kinds: set[str] | None,
+    trait: str | None,
+    asked: int | str | None,
+    sapient: bool,
+    belongs: Callable[[dict], bool],
+) -> list[dict]:
     alive = {actor["id"] for actor in save.get("actors_data") or []}
     thinking = _sapient_subspecies(then) if sapient else None
     bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
     ctx = build_actor_stats_context(then)
     rows = []
     for actor in then.get("actors_data") or []:
-        if actor["id"] in alive or actor["id"] not in was or (kinds and actor.get("asset_id") not in kinds):
+        if actor["id"] in alive or actor["id"] not in was or (kinds and actor.get("asset_id") not in kinds) or not belongs(actor):
             continue
         if trait and trait not in (actor.get("saved_traits") or ()) and actor.get("subspecies") not in bearing:
             continue
@@ -653,6 +705,30 @@ def _may_mate(a: dict, b: dict, sexed: bool) -> bool:
     return not sexed or a.get("sex") != b.get("sex")
 
 
+# A member's line under an entity, as that entity's own list wrote it: its age and post, one ref the entity leaves open — the town, or the family a lineage spans.
+def _member_row(actor: dict, kind: str, here: int | str | None, refs: dict, save: dict, ctx: dict, one_kind: bool) -> dict:
+    row = {
+        "age": actor_age(actor, ctx["world_time"]),
+        "asset_id": actor.get("asset_id") if kind == "city" and not one_kind else None,  # a town's line alone: elsewhere the ref fills its room
+        "id": actor["id"],
+        "job": resolve_profession(actor, save),
+        **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1: a rung above is earned
+        "name": actor.get("name"),
+        "sex": sex_label(actor),
+    }
+    if kind == "city":  # the town is the filter: its roof is what a line can still tell, `ground/info.py <id>` behind it
+        return {**row, "home": actor.get("homeBuildingID"), "island_id": here}
+    if kind == "family":  # kin under a roof: the generation and the house, the land left to `actor`
+        return {
+            **row,
+            "city": entity_ref(actor.get("cityID"), refs["city"]),
+            "gen": gen if (gen := int(actor.get("generation") or 1)) > 1 else None,
+            "home": actor.get("homeBuildingID"),
+        }
+    ref = ("family", actor.get("family")) if kind == "subspecies" else ("city", actor.get("cityID"))  # one ref a line can afford: a second blows the inline budget
+    return {**row, ref[0]: entity_ref(ref[1], refs[ref[0]]), "island_id": here}
+
+
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
 def _name_of(records: list[dict], target_id: int | None) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
@@ -670,6 +746,7 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
         "kept from founding by more than its age" if args.barred else None,
         (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
         f"on the patch of {args.patch[0]},{args.patch[1]}" if args.patch else None,
+        *(f"of {kind} {entity_id}" for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None),
         (f"whose {args.has} moved since {since}" if args.has else f"arrived, moved or died since {since}") if since else None,
     ]
     thinking = "thinking " if args.sapient or args.settle or args.barred else ""
@@ -740,6 +817,8 @@ def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
     parser = arg_parser(prog="world/info.py", description="World-wide sections, from the save alone.")
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
+    for kind in _MEMBERSHIPS:
+        parser.add_argument(f"--{kind}", type=int, metavar="id", help=f"`roster`: the members of one {kind}, in the line its own list kept")
     parser.add_argument("--barred", action="store_true", help="`roster`: the thinkers something besides their age keeps from founding, and what")
     parser.add_argument("--has", choices=_TALLIES, help="`roster`: the bodies with one tally above nought — `level` past 1 — and its figure, highest first")
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
@@ -758,14 +837,19 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
+    entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None]
     narrowing = (
-        any((args.barred, args.has, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, args.type)) or args.island is not None
+        any((args.barred, args.has, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, args.type, entities))
+        or args.island is not None
     )
+    if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
+        print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
+        return 2
     if args.settle and args.barred:  # the two halves of the thinkers: together they name no one
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        print("✗ -t, --trait, --has, --top, --status, --task, --patch, --sapient, --settle, --barred and -i narrow `roster`: name it", file=sys.stderr)
+        print("✗ -t, --trait, --has, --top, --status, --task, --patch, --sapient, --settle, --barred, -i and an entity narrow `roster`: name it", file=sys.stderr)
         return 2
     if args.top and (other := next((flag for flag in ("has", "settle", "barred") if getattr(args, flag)), None)):
         print(f"✗ `--top` ranks a roll by one measure: ask `--{other}` apart", file=sys.stderr)
@@ -820,6 +904,10 @@ def main(argv: list[str]) -> int:
         if args.task and args.task not in (done := sorted(set(filter(None, map(kept_task, save.get("actors_data") or []))))):
             print(f"✗ no body is at {args.task} — tasks here: {', '.join(done) or 'none kept in this save'}", file=sys.stderr)
             return 2
+        entity = entities[0] if entities else None
+        if entity and entity[1] not in {record.get("id") for record in save.get(_MEMBERSHIPS[entity[0]][0]) or []}:
+            print(absent_entity(entity[0], _MEMBERSHIPS[entity[0]][0], entity[1], chapter), file=sys.stderr)
+            return 1
         patch = None
         if args.patch:
             if island_of.get(args.patch) is None:  # off the map as on the water: a patch is one ground of one counted land
@@ -827,7 +915,7 @@ def main(argv: list[str]) -> int:
                 return 2
             patch = patch_finder(save, LazyTileGrid(save), island_of)(*args.patch)[0]
         roster = _build_roster(
-            save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred, patch, args.status, args.task, args.has, args.top
+            save, island_of, kinds, args.trait, args.island, since, args.sapient, args.settle, args.barred, patch, args.status, args.task, args.has, args.top, entity
         )
         if not roster:  # a filter nothing answers, never a silent `{}`
             print(_nobody(args, kinds, save, since), file=sys.stderr)

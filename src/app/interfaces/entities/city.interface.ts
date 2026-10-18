@@ -12,7 +12,7 @@ export interface City {
   leaders?: Leaders;
   loyalty?: CityLoyalty; // absent at nought with no modifier: a town that answers to no crown
   metadata: CityMetadata;
-  population: CityPopulation;
+  pop: CityPopulation;
   ranks?: CityRanks;
   rulers?: [PersonReference]; // the sitting mayor alone, absent between two
 }
@@ -39,7 +39,7 @@ interface CityIdentity { founder?: PersonReference }
 // How firmly the city holds to its crown: `new.py` keeps only the `total` for the reader, `city/info.py <id> loyalty` itemises the modifiers for the chronicler.
 interface CityLoyalty { total: number }
 
-// The city's own attributes (age, heir, stocks…) — `population` aggregates its inhabitants instead.
+// The city's own attributes (age, heir, stocks…) — `pop` aggregates its inhabitants instead.
 interface CityMetadata {
   age: number;
   attractivity?: number; // `migrated - left`, negatives included — absent at 0, as every count of the block is
@@ -98,7 +98,7 @@ interface CityRanks {
   infected?: number;
   kills?: number;
   loyalty?: number;
-  population?: number;
+  pop?: number;
   renown?: number;
   renown_total?: number;
   sick?: number;

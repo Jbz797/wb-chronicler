@@ -59,7 +59,7 @@ export class KingdomComponent {
   });
   // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
   protected readonly optionalStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
-    const p = this.kingdom()?.population;
+    const p = this.kingdom()?.pop;
     if (!p) return [];
     const rows = [
       { icon: 'assets/img/world/sick.png', label: 'ui_sick', stat: 'sick' as const },

@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, kept_statuses, meta_ratios, settlement_population
+from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, kept_statuses, meta_ratios, settlement_pop
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -61,7 +61,7 @@ from shared import (
     zone_xy,
 )
 
-_ALL_SECTIONS = ("army", "books", "breakdown", "buildings", "gear", "identity", "inventory", "leaders", "loyalty", "metadata", "population", "ranks", "rulers")
+_ALL_SECTIONS = ("army", "books", "breakdown", "buildings", "gear", "identity", "inventory", "leaders", "loyalty", "metadata", "pop", "ranks", "rulers")
 
 _CAPTURE_PROFESSIONS = frozenset({PROFESSION_KING, PROFESSION_LEADER, PROFESSION_WARRIOR})  # WB `ProfessionAsset.can_capture`
 
@@ -401,9 +401,9 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
             **({"capital": True} if kingdom and kingdom.get("capitalID") == cid else {}),  # Omitted when False (absence = not its kingdom's seat).
             "deaths": int(city.get("total_deaths") or 0),  # Inhabitants lost over the city's lifetime (WB `total_deaths`).
             **({"deaths_by_cause": causes} if (causes := death_causes(city)) else {}),  # chronicler-only: what the town's people died of, which `deaths` never says
-            "families": len(ctx["families_by_city"].get(cid, ())),  # Distinct families among its residents; the `familyless` count is in `population`.
+            "families": len(ctx["families_by_city"].get(cid, ())),  # Distinct families among its residents; the `familyless` count is in `pop`.
             "food": ctx["food_by_city"][cid],  # Eatable resources stocked in the city's buildings.
-            "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `population.money`.
+            "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `pop.money`.
             "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).
             **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
             "houses": ctx["houses_by_city"][cid],  # Dwellings, a subset of the `buildings` section.
@@ -510,7 +510,7 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
     if not is_capital and capital:
         # 4-5. Outgrowing the capital breeds ambition; trailing it breeds deference. Both capped, in people and in claimed zones.
         for name, own, seat, step, cap in (
-            ("population", population[city["id"]], population[capital["id"]], 3, 30),
+            ("population", population[city["id"]], population[capital["id"]], 3, 30),  # WB's `loyalty_population`, not our `pop`
             ("zones", len(city.get("zones") or []), len(capital.get("zones") or []), 20, 5),
         ):
             gap = min(abs(own - seat) // step, cap)
@@ -809,8 +809,8 @@ def main(argv: list[str]) -> int:
         out["loyalty"] = _build_loyalty(city_id, ctx, detailed=requested not in (None, "full"))  # Naming a section gives the full ledger, `full` the summary.
     if "metadata" in sections:
         out["metadata"] = _build_metadata(city, ctx, save)
-    if "population" in sections:
-        out["population"] = settlement_population(city, ctx, "city")
+    if "pop" in sections:
+        out["pop"] = settlement_pop(city, ctx, "city")
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(city, ctx, save)
     if "rulers" in sections:

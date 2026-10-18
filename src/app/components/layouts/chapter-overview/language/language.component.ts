@@ -36,7 +36,7 @@ export class LanguageComponent {
     const tier = this.language();
     if (!tier) return [];
     const m = tier.metadata;
-    const pop = tier.population;
+    const { pop } = tier;
     const rows = [
       { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: !!m.deaths, stat: 'deaths' as const },
       { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: pop.warriors !== undefined, stat: 'warriors' as const },

@@ -88,7 +88,7 @@ interface WorldSnapshot {
   kingdoms?: number;
   languages?: number;
   religions?: number;
-  sapient_population?: number;
+  sapient_pop?: number;
   sick?: number;
   subspecies?: number;
   trees?: number;

@@ -110,7 +110,7 @@ export class RankedStatComponent {
       if (key === 'score_rank') return this._snap(k.metadata.score_rank ?? 0, undefined); // the value IS the placement — no podium rank of its own
       if (key === 'boats') return this._snap(k.boats?.total ?? 0, k.ranks?.boats); // its own block: the hulls ride alongside the total
       if (key === 'gear') return this._snap(k.gear?.total ?? 0, k.ranks?.gear); // its own block: the racks ride alongside the total
-      if (key === 'population') return this._snap(k.population.total, k.ranks?.population);
+      if (key === 'pop') return this._snap(k.pop.total, k.ranks?.pop);
 
       // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
       if (KINGDOM_META_STATS.has(key)) return this._snap(k.metadata[key as KingdomMetaStat] ?? 0, k.ranks?.[key as KingdomMetaStat]);
@@ -118,19 +118,19 @@ export class RankedStatComponent {
       const pk = key as PopulationStat;
       // Only `immortals`/`infected`/`sick` go missing on the value side, omitted at 0 — the rank side is widened instead, `fed_pct` holding a share ranked nowhere.
       const ranks = k.ranks as unknown as Record<string, number | undefined> | undefined;
-      return this._snap(k.population[pk] ?? 0, ranks?.[pk]);
+      return this._snap(k.pop[pk] ?? 0, ranks?.[pk]);
     }
     return this._resolveFavorite(entity as NonNullable<ChapterMeta['favorite']>);
   }
 
-  // Per-kind accessor for a city — `army`, `books`, `buildings`, `gear`, `loyalty` each own a block, score dimensions sit in `metadata`, the rest in `population`.
+  // Per-kind accessor for a city — `army`, `books`, `buildings`, `gear`, `loyalty` each own a block, score dimensions sit in `metadata`, the rest in `pop`.
   private _resolveCity(c: NonNullable<ChapterMeta['city']>): RankedStatSnapshot {
     const key = this.stat();
 
     if (key === 'score_rank') return this._snap(c.metadata.score_rank ?? 0, undefined); // the value IS the placement — no podium rank of its own
     // Each its own block, not `metadata`: the volumes, the racks, the modifiers ride alongside the total — and the block goes whole at nought.
     if (key === 'books' || key === 'buildings' || key === 'gear' || key === 'loyalty') return this._snap(c[key]?.total ?? 0, c.ranks?.[key]);
-    if (key === 'population') return this._snap(c.population.total, c.ranks?.population);
+    if (key === 'pop') return this._snap(c.pop.total, c.ranks?.pop);
 
     // Army stats rank under an `army_` prefix, the city ranking `kills`/`deaths`/`renown` of its own. The corps also holds a name and a captain: hence the typeof.
     if (key.startsWith('army_')) {
@@ -141,10 +141,10 @@ export class RankedStatComponent {
     // Score dimensions are omitted at 0 by Python, hence the `?? 0`.
     if (CITY_META_STATS.has(key)) return this._snap(c.metadata[key as CityMetaStat] ?? 0, c.ranks?.[key as CityMetaStat]);
 
-    // The money ranks stay chronicler-only on both tiers, so a money share's lookup simply misses — the value still reads from `population`.
+    // The money ranks stay chronicler-only on both tiers, so a money share's lookup simply misses — the value still reads from `pop`.
     const pk = key as PopulationStat;
     const ranks = c.ranks as Record<string, number | undefined> | undefined;
-    return this._snap(c.population[pk] ?? 0, ranks?.[pk]);
+    return this._snap(c.pop[pk] ?? 0, ranks?.[pk]);
   }
 
   // Per-kind accessor over the favorite's stats/ranks. A stat WB never wrote is one nothing granted — no weapon to crit with — so absent reads as zero.
@@ -158,19 +158,17 @@ export class RankedStatComponent {
     return this._snap(f.stats[field as keyof typeof f.stats] ?? (field === 'level' ? 1 : 0), ranks[field as keyof typeof ranks]);
   }
 
-  // A clan, a culture, a family, a tongue, a biology, built alike: the body in `metadata`, its living in `population` as on a city, the roster apart.
+  // A clan, a culture, a family, a tongue, a biology, built alike: the body in `metadata`, its living in `pop` as on a city, the roster apart.
   private _resolvePeople(entity: PeopleTier): RankedStatSnapshot {
     const ranks = entity.ranks as Record<string, number | undefined> | undefined;
     const key = this.stat();
-    // Its own block, like a city's population, and named alike on every tier — a tongue's speakers answer to `members` as a clan's kin do.
-    if (key === 'members') return this._snap(entity.members?.total ?? 0, ranks?.members);
-    // The pact gathers rather than enrols, so its head-count sits in `population.total` as a town's and a crown's do, not under `members`.
-    if (key === 'population') return this._snap(entity.population?.total ?? 0, ranks?.population);
+    // The pact gathers rather than enrols, so its head-count sits in `pop.total` as a town's and a crown's do, not under `members`.
+    if (key === 'pop') return this._snap(entity.pop?.total ?? 0, ranks?.pop);
     const shelf = (entity as { books?: { total: number } }).books; // a custom and a tongue each carry one — its own block, as a town's library is
     if (shelf && key === 'books') return this._snap(shelf.total, ranks?.books);
     // Its living first, its body second. `metadata` also holds names and refs, so the count is what a number proves it to be — WB omits one it never wrote.
-    const { metadata, population = {} } = entity;
-    const held = Object.hasOwn(population, key) ? population[key as keyof typeof population] : metadata[key as keyof typeof metadata];
+    const { metadata, pop = {} } = entity;
+    const held = Object.hasOwn(pop, key) ? pop[key as keyof typeof pop] : metadata[key as keyof typeof metadata];
     return this._snap(typeof held === 'number' ? held : 0, ranks?.[key]);
   }
 

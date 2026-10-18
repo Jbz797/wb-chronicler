@@ -48,12 +48,12 @@ def _build_metadata(war: dict, attackers: set[int], defenders: set[int], ctx: di
 
 # The realms on one side, weightiest first, with what they bring between them. The pact backing them is named where two of its members stand together.
 def _build_side(kingdoms: set[int], deaths: int, alliances: list[dict], ctx: dict) -> dict:
-    realms = [{"id": kid, "name": (ctx["kingdoms_by_id"].get(kid) or {}).get("name"), "population": ctx["populations_by_kingdom"][kid]} for kid in kingdoms]
+    realms = [{"id": kid, "name": (ctx["kingdoms_by_id"].get(kid) or {}).get("name"), "pop": ctx["populations_by_kingdom"][kid]} for kid in kingdoms]
     side = {
         "cities": sum(ctx["cities_by_kingdom"][kid] for kid in kingdoms),
         "deaths": deaths,
-        "kingdoms": sorted(realms, key=lambda k: (-k["population"], k["id"])),
-        "population": sum(realm["population"] for realm in realms),
+        "kingdoms": sorted(realms, key=lambda k: (-k["pop"], k["id"])),
+        "pop": sum(realm["pop"] for realm in realms),
         "warriors": sum(ctx["warriors_by_kingdom"][kid] for kid in kingdoms),
     }
     # WB backs a side with a pact only where two of its members field together — one realm alone answers for itself, whatever it has sworn elsewhere.

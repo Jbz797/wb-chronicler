@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, population_of
+from actor_stats import build_actor_stats_context, compute_actor_stats, meta_ratios, pop_of
 from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
@@ -34,8 +34,8 @@ from shared import (
     zone_xy,
 )
 
-_ALL_SECTIONS = ("breakdown", "identity", "kingdoms", "leaders", "metadata", "population", "ranks", "wars")
-_NEEDS_ACTORS = frozenset({"breakdown", "kingdoms", "leaders", "metadata", "population", "ranks"})  # `identity` reads the record, `wars` the war list
+_ALL_SECTIONS = ("breakdown", "identity", "kingdoms", "leaders", "metadata", "pop", "ranks", "wars")
+_NEEDS_ACTORS = frozenset({"breakdown", "kingdoms", "leaders", "metadata", "pop", "ranks"})  # `identity` reads the record, `wars` the war list
 
 # The two that weigh the pact's ground. Its buildings outnumber its subjects several times over in a grown world, so the walk is worth skipping on its own.
 _NEEDS_GROUND = frozenset({"metadata", "ranks"})
@@ -56,11 +56,11 @@ def _build_kingdoms(members: set[int], ctx: dict) -> list[dict]:
         {
             "id": kid,
             "name": (ctx["kingdoms_by_id"].get(kid) or {}).get("name"),
-            "population": ctx["populations_by_kingdom"][kid],
+            "pop": ctx["populations_by_kingdom"][kid],
         }
         for kid in members
     ]
-    return sorted(out, key=lambda k: (-k["population"], k["id"]))
+    return sorted(out, key=lambda k: (-k["pop"], k["id"]))
 
 
 # The pact's identity card: WB's own lifetime counters, which it keeps apart from its members', beside what a walk over the pooled living tells.
@@ -106,10 +106,10 @@ def _rank_getters(pooled: dict, world_time: float) -> dict:
         "deaths": lambda a: int(a.get("total_deaths") or 0),
         "kills": lambda a: int(a.get("total_kills") or 0),
         # Per-head, so a tight pact can out-rank a wide one — floored at `MIN_PER_CAPITA_UNITS`, under which the divisor speaks louder than the body.
-        "kills_per_capita": lambda a: int(a.get("total_kills") or 0) / n if (n := pooled["population"][a["id"]]) >= MIN_PER_CAPITA_UNITS else 0.0,
+        "kills_per_capita": lambda a: int(a.get("total_kills") or 0) / n if (n := pooled["pop"][a["id"]]) >= MIN_PER_CAPITA_UNITS else 0.0,
         "kingdoms": lambda a: len(a.get("kingdoms") or []),
         "money": lambda a: pooled["money"][a["id"]],
-        "population": lambda a: pooled["population"][a["id"]],
+        "pop": lambda a: pooled["pop"][a["id"]],
         "renown": lambda a: int(a.get("renown") or 0),
         "renown_total": lambda a: pooled["renown_total"][a["id"]],
         "territory": lambda a: pooled["territory"][a["id"]],
@@ -148,7 +148,7 @@ def main(argv: list[str]) -> int:
         "buildings": Counter(),
         "cities": Counter(),
         "money": Counter(),
-        "population": Counter(),
+        "pop": Counter(),
         "renown_total": Counter(),
         "subjects": defaultdict(list),
         "territory": Counter(),
@@ -164,7 +164,7 @@ def main(argv: list[str]) -> int:
 
     # The four sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
     if "ranks" in sections:
-        money, population, renown, warriors = (pooled[k] for k in ("money", "population", "renown_total", "warriors"))
+        money, population, renown, warriors = (pooled[k] for k in ("money", "pop", "renown_total", "warriors"))
         for pact, flock in pooled["subjects"].items():
             coins = fame = fighters = 0
             for actor in flock:
@@ -219,8 +219,8 @@ def main(argv: list[str]) -> int:
         )
     if "metadata" in sections:
         out["metadata"] = _build_metadata(alliance, subjects, members, ctx)
-    if "population" in sections:
-        out["population"] = population_of(subjects, ctx)  # `total` kept, as a town and a crown keep theirs: the pact pools subjects, it enrols none
+    if "pop" in sections:
+        out["pop"] = pop_of(subjects, ctx)  # `total` kept, as a town and a crown keep theirs: the pact pools subjects, it enrols none
     if "ranks" in sections:
         out["ranks"] = competition_ranks(alliance, list(alliances_by_id.values()), _rank_getters(pooled, ctx["world_time"]))
     if "wars" in sections:

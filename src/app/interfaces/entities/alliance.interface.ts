@@ -7,7 +7,7 @@ export interface Alliance {
   kingdoms: AllianceKingdom[];
   leaders?: Leaders;
   metadata: AllianceMetadata;
-  population: TierPopulation;
+  pop: TierPopulation;
   ranks?: AllianceRanks;
 }
 
@@ -34,7 +34,7 @@ interface AllianceRanks {
   buildings?: number;
   deaths?: number;
   kills?: number;
-  population?: number;
+  pop?: number;
   renown?: number;
   territory?: number;
   warriors?: number;

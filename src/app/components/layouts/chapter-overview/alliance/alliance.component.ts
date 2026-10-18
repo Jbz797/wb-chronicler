@@ -33,7 +33,7 @@ export class AllianceComponent {
     const tier = this.alliance();
     if (!tier) return [];
     const meta = tier.metadata;
-    const pop = tier.population;
+    const { pop } = tier;
     const rows = [
       { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_births', shown: meta.births !== undefined, stat: 'births' as const },
       { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: meta.deaths !== undefined, stat: 'deaths' as const },

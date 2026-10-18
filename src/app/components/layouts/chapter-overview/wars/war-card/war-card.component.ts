@@ -32,7 +32,7 @@ export class WarCardComponent {
     const diff = (side: WarSideKey) => ({
       cities: w[side].cities - before[side].cities,
       deaths: w[side].deaths - before[side].deaths,
-      population: w[side].population - before[side].population,
+      pop: w[side].pop - before[side].pop,
       warriors: w[side].warriors - before[side].warriors,
     });
     return { attackers: diff('attackers'), defenders: diff('defenders') };

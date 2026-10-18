@@ -36,13 +36,13 @@
     <nz-descriptions-item *appNonZero="k.metadata.renown" [nzTitle]="renownTitle">
       <app-ranked-stat source="kingdom" stat="renown" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="k.population.renown_total" [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appNonZero="k.pop.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="kingdom" stat="renown_total" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="k.population.total" [nzTitle]="populationTitle">
-      <app-ranked-stat source="kingdom" stat="population" />
+    <nz-descriptions-item *appNonZero="k.pop.total" [nzTitle]="populationTitle">
+      <app-ranked-stat source="kingdom" stat="pop" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="k.population.warriors" [nzTitle]="warriorsTitle">
+    <nz-descriptions-item *appNonZero="k.pop.warriors" [nzTitle]="warriorsTitle">
       <app-ranked-stat source="kingdom" stat="warriors" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="k.metadata.deaths" [nzTitle]="deathsTitle">
@@ -79,7 +79,7 @@
     <nz-descriptions-item *appNonZero="k.metadata.houses" [nzTitle]="housesTitle">
       <app-ranked-stat source="kingdom" stat="houses" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="k.population.housed_pct" [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appNonZero="k.pop.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="kingdom" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="k.metadata.territory" [nzTitle]="territoryTitle">
@@ -91,10 +91,10 @@
     <nz-descriptions-item *appNonZero="k.metadata.food" [nzTitle]="foodTitle">
       <app-ranked-stat source="kingdom" stat="food" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="k.population.food_per_capita" [nzTitle]="foodPerCapitaTitle">
+    <nz-descriptions-item *appNonZero="k.pop.food_per_capita" [nzTitle]="foodPerCapitaTitle">
       <app-ranked-stat numberFormat="1.1-1" source="kingdom" stat="food_per_capita" suffix="ui_per_inhabitant" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appNonZero="k.population.fed_pct" [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appNonZero="k.pop.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="kingdom" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
     <nz-descriptions-item *appNonZero="k.metadata.goods" [nzTitle]="goodsTitle">
@@ -173,7 +173,7 @@
   </ng-template>
   <ng-template #populationTitle>
     <img src="assets/img/world/population.png" />
-    <span>{{ 'ui_population' | translate }}</span>
+    <span>{{ 'ui_pop' | translate }}</span>
   </ng-template>
   <ng-template #renownTitle>
     <img src="assets/img/stats/renown.png" />

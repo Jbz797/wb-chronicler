@@ -15,7 +15,7 @@ export interface HullCount { total: number }
 
 // The standout family and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
 export interface Leaders {
-  families?: { population?: EntityReference };
+  families?: { pop?: EntityReference };
   persons?: {
     kills?: PersonReference;
     level?: PersonReference;
@@ -25,14 +25,10 @@ export interface Leaders {
   };
 }
 
-// The living of a clan, a family or a biology, counted and nothing more — the roster stays behind in `<tier>/info.py <id> members`, where the chronicler reads it.
-export interface MemberRoster { total: number }
-
 // A clan, a culture, a family, a tongue and a biology answer the same shape, served by one resolver — structural, since naming them would reach into `types.ts`.
 export interface PeopleTier {
-  members?: MemberRoster; // every tier names its roster alike, a tongue's speakers included
   metadata: object; // each tier's own shape; the resolver reads it by key, so it casts rather than narrowing
-  population?: TierPopulation; // absent where no member lives in a town — Python omits an empty block
+  pop?: TierPopulation; // absent where no member lives in a town — Python omits an empty block
   ranks?: object; // read by key, as `metadata` is — naming one optional field would weak-type out any tier that happens not to rank on it
 }
 
@@ -49,7 +45,7 @@ export interface PopulationBreakdown {
   subspecies?: [{ id: number; name: string; pct: number }];
 }
 
-// What the living of a body say of it, of which the panels print these — the age and sex slices stay in `<tier>/info.py <id> population`, for the chronicler.
+// What the living of a body say of it, of which the panels print these — the age and sex slices stay in `<tier>/info.py <id> pop`, for the chronicler.
 export interface TierPopulation {
   fed_pct?: number;
   housed_pct?: number;

@@ -48,7 +48,7 @@ export class CityComponent {
   });
   // Situational demographics surfaced only when present — kept out of the always-on rows to avoid noise.
   protected readonly optionalStats = computed<{ icon: string; label: string; stat: RankedStatKind }[]>(() => {
-    const p = this.city()?.population;
+    const p = this.city()?.pop;
     if (!p) return [];
     const rows = [
       { icon: 'assets/img/world/sick.png', label: 'ui_sick', stat: 'sick' as const },
