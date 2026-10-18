@@ -1,6 +1,6 @@
 # 📌 Vocabulaire des tags
 
-<p class="metadata">Date de mise à jour : 16/10/26 13:59</p>
+<p class="metadata">Date de mise à jour : 18/10/26 11:37</p>
 
 | Tag                        | Signification                                                                                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -17,3 +17,4 @@
 | `NAVIGATION`               | Le premier bateau du monde prend la mer — **la navigation est découverte**.                                                                    |
 | `NEW_AGE`                  | Le monde bascule dans un **nouvel âge** (l'`age_id` change vs le chapitre précédent).                                                          |
 | `NEW_FAVORITE`             | Un nouveau **favori** est désigné dans ce chapitre.                                                                                            |
+| `SECOND_CITY`              | La **deuxième cité** du monde est fondée, d'une couronne déjà là ou d'une nouvelle. Une fois dans la chronique.                                |

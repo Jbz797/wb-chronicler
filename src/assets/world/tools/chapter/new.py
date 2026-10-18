@@ -312,9 +312,10 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     if "NAVIGATION" not in already and any(is_boat(a) for a in live.get("actors_data") or []):
         tags.append("NAVIGATION")
 
-    # The world's first birth (an egg as soon as laid), town and death, once a chronicle: WB's counters leaving 0 — a metamorphosis, counted in its deaths, is none.
+    # The world's first birth (an egg once laid), first two towns and first death, once a chronicle, off WB's counters — a metamorphosis is no death.
     stats = live["mapStats"]
     died = int(stats.get("deaths") or 0) - int(stats.get("metamorphosis") or 0)
+    towns = int(stats.get("citiesCreated") or 0)
 
     # Its first house is read off the map, once it stands: WB's `housesBuilt` takes a fire and a stockpile for one, and counts a site the day it is laid.
     housed = any((b.get("asset_id") or "").startswith("house") and not under_construction(b) for b in live.get("buildings") or [])
@@ -323,10 +324,11 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     migrated = sum(int(k.get("migrated") or 0) for k in live.get("kingdoms") or [])
     firsts = (
         ("FIRST_BIRTH", stats.get("creaturesBorn")),
-        ("FIRST_CITY", stats.get("citiesCreated")),
+        ("FIRST_CITY", towns),
         ("FIRST_DEATH", died),
         ("FIRST_HOUSE", housed),
         ("FIRST_MIGRANTS", migrated),
+        ("SECOND_CITY", towns >= 2),  # a town beside the first: the world has a neighbour, a crown's or a rival's
     )
 
     for tag, count in firsts:
