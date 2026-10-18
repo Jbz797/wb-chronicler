@@ -1,6 +1,36 @@
 # 📌 Vocabulaire des tags
 
-<p class="metadata">Date de mise à jour : 18/10/26 11:37</p>
+<p class="metadata">Date de mise à jour : 18/10/26 18:17</p>
+
+## Balises du récit
+
+Les accents graves n'appartiennent qu'à ce tableau.
+
+| Catégorie           | Style markdown                            |
+| ------------------- | ----------------------------------------- |
+| Agglomération       | `[c id Nom]`                              |
+| Alliance            | `[i id Nom]`                              |
+| Bateau              | `[o id Nom]`                              |
+| Clan                | `[l id Nom]`                              |
+| Culture             | `[t id Nom]`                              |
+| Devise              | `*italique*`                              |
+| Équipement          | `[g asset_id Nom]` (`asset_id` de `gear`) |
+| Ère du monde        | `*italique*`                              |
+| Espèce              | `[s asset_id Nom]`                        |
+| Famille             | `[f id Nom]`                              |
+| Guerre              | `[w id Nom]`                              |
+| Langue              | `[a id Nom]`                              |
+| Lieu géographique   | `***gras italique***`                     |
+| Livre               | `[b id Nom]`                              |
+| Monde               | `**MAJUSCULE GRAS**`                      |
+| Personnage          | `[p id Nom]`                              |
+| Religion            | `[e id Nom]`                              |
+| Ressource / minerai | `[r resource_id Nom]`                     |
+| Royaume             | `[k id Nom]`                              |
+| Sous-espèce         | `[u id Nom]`                              |
+| Surnom              | `*italique*`                              |
+
+## Tags de chapitre
 
 | Tag                        | Signification                                                                                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |

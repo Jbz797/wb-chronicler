@@ -871,7 +871,9 @@ def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | str | None, l
             return value, rest
         return ((int(x), int(y)) if sep else int(x)), rest
     except (IndexError, ValueError):
-        raise ValueError("`--to` takes an actor id, a tile, a land or a kind, e.g. `--to 42`, `--to 415,117`, `--to i7` or `--to volcano`") from None
+        raise ValueError(
+            "`--to` takes an actor id, a tile, a building, a land or a kind: `--to 42`, `--to 415,117`, `--to b219`, `--to i7`, `--to volcano`"
+        ) from None
 
 
 # Chronicler-only: what the body's task was aimed at the instant of the save — a prey, a store, a tile —, a body and a building told as every ref is.
@@ -1047,14 +1049,21 @@ def main(argv: list[str]) -> int:
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
             refusal = absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a))
-            # An id no body ever bore may be a building's, the two counted apart: its tile is the way to aim at it, so the refusal hands that over.
-            sites = ((b, tile) for b in save.get("buildings") or [] if b.get("id") == target and (tile := building_tile(b)) is not None)
-            if refusal.startswith("✗ unknown") and (site := next(sites, None)) is not None:
-                building, (x, y) = site
-                refusal = f"✗ {target} is no body — a {building.get('asset_id')}'s id: aim at its tile, `--to {x},{y}`"
+            # An id no body ever bore may be a building's, the two counted apart: `b<id>` aims at it, so the refusal hands that over.
+            sites = (b for b in save.get("buildings") or [] if b.get("id") == target)
+            if refusal.startswith("✗ unknown") and (building := next(sites, None)) is not None:
+                refusal = f"✗ {target} is no body — a {building.get('asset_id')}'s id: aim at it, `--to b{target}`"
             print(refusal, file=sys.stderr)
             return 1
         aims, whom = [actor_xy(other)], named_body(other)
+    elif isinstance(target, str) and target[:1] == "b" and target[1:].isdigit():
+        # A building by its id, aimed at its own tile as a kind is: from there on a point, the same goal in either chapter, for a building never moves.
+        building_id = int(target[1:])
+        site = next((b for b in save.get("buildings") or [] if b.get("id") == building_id), None)
+        if site is None or (tile := building_tile(site)) is None:
+            print(absent_entity("building", "buildings", building_id, chapter), file=sys.stderr)
+            return 1
+        target, aims, whom = tile, [tile], f"{site.get('asset_id')} {site.get('id')}"
     elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():
         land, sizes = int(target[1:]), ctx["island_sizes"]()
         if land not in sizes:

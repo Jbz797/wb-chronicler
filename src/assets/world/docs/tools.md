@@ -1,8 +1,8 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 18/10/26 17:55</p>
+<p class="metadata">Date de mise à jour : 18/10/26 18:20</p>
 
-Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée ici en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
+Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
 | Commande          | Sections                                                                                                                               |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +31,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 - `--since C<n>` : ce qui a bougé depuis — `moved` : le trajet fait et son temps au plus court, au pas du corps ; `stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre ; `gone` : mort, `was_at` sa place alors ; `to.then` : ce but compté alors
 - `--statuses` : `held`, ses statuts durables par chapitre, `seen` ses chapitres ; rien d'entre deux
-- `--to <id | x,y | i<terre> | type>` : un corps, une tuile, une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource, par virgules (`nearest`) ; son `circle`, chaque part en tuiles et en temps, `total_` dès qu'il y en a deux ; sur l'eau, `march_days` ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu.
+- `--to <id | x,y | b<id> | i<terre> | type>` : un corps, une tuile, un bâtiment, une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource, par virgules (`nearest`) — un bâtiment à sa tuile, une tâche à la sienne (`task_target`) ; son `circle`, `total_` dès deux parts ; sur l'eau, `march_days` ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu.
 
 ### `geography` :
 
@@ -53,14 +53,14 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 ### `world` :
 
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
-- `pairings` : par espèce (un couple ignore la lignée), la 1ʳᵉ naissance possible (`birth_on` ; `pregnant` nomme les porteuses, à la date du jeu ; sinon `now` chez des amants, faute de trace) et l'écart du couple ; `pair` : la porteuse d'abord, dont l'enfant prend la cité, sinon celle de l'autre (`drawn` : tirée au sort) ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `missing: meal`, des spores sans estomac, que seul un repas lâche ; `lovers`, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, et le corps en cause (`tiny_islet` : îlot de 5 tuiles au plus), ou la loi WB ; règles : `wiki:Reproduction`
+- `pairings` : par espèce (un couple ignore la lignée), la 1ʳᵉ naissance possible (`birth_on` ; `pregnant` nomme les porteuses, à la date du jeu ; sinon `now` chez des amants, faute de trace) et l'écart du couple ; `pair` : la porteuse d'abord, dont l'enfant prend la cité, sinon celle de l'autre (`drawn` : tirée au sort) ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `missing: meal`, des spores sans estomac, que seul un repas lâche ; `lovers`, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, et le corps en cause (`hungry`, `water` : à flot, `tiny_islet` : îlot de 5 tuiles au plus), ou la loi WB ; règles : `wiki:Reproduction`
 - `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has <compte>`/`--top <mesure>`, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--clan`…) ses membres ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) — d'une entité, `arrived` y entre, `left` en sort vivant ; sous `--has`, les seuls comptes changés, `[avant, après]`
 
 ---
 
 ## Carte :
 
-`map/show.py <x,y> [C<n>]` — cerne la tuile sur la carte du chapitre, rend le chemin de l'image ; **à toi de l'ouvrir pour le joueur**. `--zoom <n>` : les n tuiles autour, leurs parts d'eau, de sol et de roche en dessous.
+`map/show.py <x,y> [C<n>]` — cerne la tuile sur la carte du chapitre, rend le chemin de l'image ; **à toi de l'ouvrir pour le joueur**. `--zoom <n>` : les n tuiles autour — **à lire toi-même** pour la forme d'une côte —, leurs parts d'eau, de sol et de roche en dessous.
 
 ## Lire les sorties :
 
@@ -90,7 +90,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `report` parle par images : « No fire, no warmth » dit le bois qui manque, pas le feu.
 - `rulers` (cité, royaume) : la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain : `pop.ruler_money`.
 - `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; `drivers`, complet, somme au `total` ; chaque terme, par son id : `wiki:Loyalty`.
-- `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : naissances et extinctions se lisent dans `cumulative` ; `gone_without_death` : les corps partis sans mort comptée (`deaths_without_body`, l'inverse).
+- `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : naissances et extinctions se lisent dans `cumulative`, qui ne fait que monter ; `gone_without_death` : les corps partis sans mort comptée (`deaths_without_body`, l'inverse).
 - Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 
 ### Lieux et trajets :
