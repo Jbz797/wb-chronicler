@@ -346,6 +346,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
     carry = {sid: maturation_months(lineage, ctx) * UNITS_PER_MONTH if _carried(lineage) else 0 for sid, lineage in traits.items()}  # the bearer's sets it
     rows: list[tuple[float, dict]] = []
     now = ctx["world_time"]  # a birth is today's at the earliest — and may be, WB saving no status: a `pregnant` begun before the save shows nowhere
+
     for kind, bodies in kinds.items():
         ready = {actor["id"]: crossed_at(actor, breeding_age(actor, ctx)) for actor in bodies}
         where = {actor["id"]: actor_xy(actor) for actor in bodies}
@@ -382,8 +383,15 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         )
         if best:
             apart, _, row["on"], crow, a, b, barred = best
-            row |= {"barred": barred or None, "crow_tiles": round(crow), "lovers": True if not apart else None, "pair": [a["id"], b["id"]]}
-            bearer = b if sexed[a["id"]] and b.get("sex") == 1 else a  # a sexed pair's mother carries; a hermaphrodite pair, either — WB draws it
+            sexual = sexed[a["id"]] or sexed[b["id"]]
+            bearer, other = (b, a) if sexual and b.get("sex") == 1 else (a, b)  # a sexed pair's mother carries (WB `checkForBabies`)
+            row |= {
+                "barred": barred or None,
+                "crow_tiles": round(crow),
+                "drawn": True if not sexual else None,  # no mother to put first: the bearer is drawn at the birth itself
+                "lovers": True if not apart else None,
+                "pair": [bearer["id"], other["id"]],  # the bearer first, whose town the child joins (WB `BabyMaker.makeBaby`), else the other's
+            }
             # Lovers may carry already, unseen, where the save keeps no status; where it does, they wait out the afterglow of their last kiss.
             glow = max(status_left(a, "afterglow") or 0, status_left(b, "afterglow") or 0)
             conceived = max(row["on"], now + glow) if apart or status_left(bearer, "pregnant") is not None else row["on"]
@@ -410,10 +418,12 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         if births:
             row["birth_on"] = min(births)
         rows.append((row.get("birth_on", inf), row))  # the first birth leads: what the chronicle asks is when a body is born, not when two come of age
+
     for _, row in rows:  # the hours dated only once sorted on: `now` for what already holds
         for key in ("alone_on", "birth_on", "on"):
             if key in row:
                 row[key] = "now" if row[key] <= now else world_date(row[key])
+
     return [row for _, row in sorted(rows, key=lambda entry: (entry[0], entry[1]["asset_id"]))]
 
 
