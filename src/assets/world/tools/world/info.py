@@ -523,6 +523,8 @@ def _build_roster(
         return isinstance(body[1], str), body[1], body[0]["id"]
 
     lineages = ctx["subspecies_by_id"]
+    # Unsaid where a view never reads it — `--barred`'s gates, `--has`'s tally, `--since`'s blocks — whose lines it would push past inline
+    breeds_said = not (barred or weighed or since)
     ranked = sorted(bodies, key=order)
     for actor, here, change in ranked[:_TOP_ROWS] if top else ranked:
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
@@ -531,15 +533,14 @@ def _build_roster(
             {
                 "adult_on": crossed_on(actor, adult) if age < adult else None,
                 "asset_id": None if one_kind else actor.get("asset_id"),
-                # Under `--barred`, what founding weighs alone: no mate nor sex, and `adult_on` says the youth — its gates keep each line inline, as `--has`'s tally
-                "breeds_on": crossed_on(actor, breeding) if age < breeding and not (barred or weighed) and fertile(lineages.get(actor.get("subspecies"))) else None,
+                "breeds_on": crossed_on(actor, breeding) if breeds_said and age < breeding and fertile(lineages.get(actor.get("subspecies"))) else None,
                 "id": actor["id"],
                 # Said outright beside a `was_on`, a missing one reading as still on the land left; silent where `-i` already named it
                 "island_id": None if here == asked and "was_on" not in change else here,
                 # Silent at `adult`, as in `surroundings`, and under `--barred`: on every line it would push the longest past inline
                 "life_stage": None if stage == "adult" or barred else stage,
                 "name": actor.get("name"),
-                "sex": None if barred else sex_label(actor),
+                "sex": None if barred else sex_label(actor),  # founding asks no mate: under `--barred`, `adult_on` alone says what the youth waits for
                 **change,
             }
         )
@@ -552,7 +553,11 @@ def _build_roster(
             told = f"{_TOP_ROWS} highest of {len(ranked)} by {top}" + (f" — {tied} more share the last figure" if tied else "")
         return {"info": told + (f"; {unranked} with no {top}, left out" if unranked else ""), "roster": rows}
 
-    return rows + [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
+    gone = [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
+    if since and not has:  # each body filed by what befell it, the block saying it: an arrival bears no mark of its own, read off the others it would be guessed
+        parts = {"arrived": [r for r in rows if "was_on" not in r], "gone": [{**r, "gone": None} for r in gone], "moved": [r for r in rows if "was_on" in r]}
+        return {part: bodies for part, bodies in parts.items() if bodies}
+    return rows + gone
 
 
 # Actors split three ways: hulls (`boats`), thinking souls (`sapient_population`) and the beasts (`wild_creatures`). `infected` = WB's `current_infected`.
