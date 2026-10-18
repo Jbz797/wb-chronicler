@@ -17,6 +17,7 @@ from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, emit, 
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _CLEAR = "`clear` speaks for words said again, figures aside: an angle, a chute, a sentence in other words or order is the eye's"  # lest a silence read as no repeat
+_DATE = "Dᴀᴛᴇ"  # a date as the chronicle must write one, read as a single name: the manual's own form, never a turn said again
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
@@ -89,6 +90,13 @@ def _chutes(n: int, before: int) -> list[tuple[int, int, frozenset[str]]]:
 # A word that says something of its own: neither short, a figure (`N`) among them, common, a measure, a name nor a species — `loups`, `mouches` return by nature.
 def _content(word: str, name: bool) -> bool:
     return len(word) >= 4 and word not in _plain() and not name and word[:4] not in _species_roots()
+
+
+# The chronicle's dates, « en Crocojuin de l'an 13 », its months read in its own language: the form the manual dates by, which no repeat is made of.
+@cache
+def _dates() -> re.Pattern[str]:
+    months = "|".join(map(re.escape, i18n("months.json").values()))
+    return re.compile(rf"\b(?:(?:en|au|à)\s+)?(?:{months})\s+de\s+l['’]an\s+\d+", re.IGNORECASE)
 
 
 # The words just before and after word `i`, as a pair: a borrowing keeps both — `au flanc de` —, where one alone is too often the language's `le` or `de`.
@@ -284,27 +292,35 @@ def _sentences(n: int) -> list[tuple[int, list[_Token] | None]]:
     return [pair for number, edge, sentences in _lines(n) for pair in ([(number, None)] if edge else [(number, tokens) for tokens in sentences])]
 
 
-# What chapter `n` is cast in: its title's start, each heading's, each section's first words — the intro's and the closing's too — and its sections circle by circle.
+# What chapter `n` is cast in: its title's start, each heading's, each section's first and last sentence's first words, and its sections circle by circle.
 @cache
 def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], tuple[int, ...]]:
     marks: dict[tuple[str, tuple[str, ...]], tuple[int, str]] = {}
-    circles, opening = [0], False
+    circles, opening, last = [0], False, None  # `last`: the section's latest prose line, whose last sentence is its chute
 
     def mark(what: str, line: str, number: int, size: int) -> None:
         start = _tokens(line, number)[:size]
         marks.setdefault((what, tuple(token.key for token in start)), (number, " ".join(token.surface for token in start)))
 
+    def close() -> None:
+        if last is not None:
+            mark("closing", _SENTENCE.split(last[1])[-1], last[0], _OPENING_START)
+
     for number, line in enumerate((_chapter(n) or "").splitlines(), 1):
         if line.startswith(("# ", "## ")):
+            close()
             mark("heading" if line[1] == "#" else "title", line, number, _HEADING_START)
             circles[-1] += line[1] == "#"
-            opening = True
+            opening, last = True, None
         elif line.strip() == "---":
+            close()
             circles.append(0)
-            opening = True
-        elif opening and line.strip() and line[0] not in "|<":  # a table or a tag line opens nothing: the first prose does
-            mark("opening", _SENTENCE.split(line)[0], number, _OPENING_START)  # its first sentence alone: `Crabanvier, an 15.` whatever follows
-            opening = False
+            opening, last = True, None
+        elif line.strip() and line[0] not in "|<":  # a table or a tag line opens nothing and closes nothing: prose does
+            if opening:
+                mark("opening", _SENTENCE.split(line)[0], number, _OPENING_START)  # its first sentence alone: `Crabanvier, an 15.` whatever follows
+            opening, last = False, (number, line)
+    close()
     return marks, tuple(circles)
 
 
@@ -336,6 +352,7 @@ def _telling(run: list[_Token], long_run: int = _LONG_RUN) -> bool:
 
 # A stretch of prose as tokens: markup gone, a tag's text kept and marked as a name, an elision split from the word it leans on.
 def _tokens(text: str, number: int) -> list[_Token]:
+    text = _dates().sub(_DATE, text)
     names = {_key(word) for tag in _TAG.finditer(text) for word in _WORD.findall(tag[1] or "")}
     out = []
     for word in _WORD.findall(_MARKS.sub(" ", _TAG.sub(lambda m: m[1] or "", text))):
