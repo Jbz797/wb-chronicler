@@ -52,6 +52,7 @@ from shared import (
     building_tile,
     built_by_tile,
     chunks_apart,
+    city_centre,
     competition_ranks,
     emit,
     entity_born,
@@ -151,9 +152,17 @@ _TENURE_ROLES = {
 }
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
+_TO_USAGE = "`--to` takes a body, a tile, a building, a town, a land or a kind: `--to 42`, `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to volcano`"
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
 _UNCOMPARED = frozenset({"island_id", "statuses_left", "task", "task_target", "x", "y"})
+
+
+# A `--to` that names no goal — a body, a building, a town or a land unknown, a kind nowhere: its message, and the exit it calls for.
+class _AimError(Exception):
+    def __init__(self, message: str, code: int = 1) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 # A `--to` no walk answers: its message says what bars the way, the water's width against the body's reach where the sea is to blame.
@@ -168,6 +177,67 @@ def _absorbed(actor: dict, trait: dict, ctx: dict, totals: dict) -> list[str] | 
     without = actor_stat_totals({**actor, "saved_traits": [t for t in actor.get("saved_traits") or () if t != trait["id"]]}, ctx)
     # A multiplier is weighed on the stat it multiplies, WB folding it into that one: `multiplier_damage` shows in `damage`, and nowhere else.
     return sorted(stat for stat in moved if round(totals.get(key := MULTIPLIER_TARGETS.get(stat, stat), 0), 6) == round(without.get(key, 0), 6)) or None
+
+
+# Where one `--to` aims: its goal as both chapters read it, the tiles a walk seeks, how its end is told, and each word of a list of kinds — a refusal raised.
+def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict, chapter: str | None) -> tuple:
+    aims, mark, about, whom = [], None, {}, ""
+    each: dict[str, tuple[list, dict] | None] = {}  # the words of a `--to` naming kinds, each with its sites, `None` where it has none: a question apiece
+    if isinstance(target, int):
+        if (other := ctx["actors_by_id"].get(target)) is None:
+            refusal = absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a))
+            # An id no body ever bore may be a building's, the two counted apart: `b<id>` aims at it, so the refusal hands that over.
+            sites = (b for b in save.get("buildings") or [] if b.get("id") == target)
+            if refusal.startswith("✗ unknown") and (building := next(sites, None)) is not None:
+                refusal = f"✗ {target} is no body — a {building.get('asset_id')}'s id: aim at it, `--to b{target}`"
+            raise _AimError(refusal)
+        aims, whom = [actor_xy(other)], named_body(other)
+    elif isinstance(target, str) and target[:1] == "b" and target[1:].isdigit():
+        # A building by its id, aimed at its own tile as a kind is: from there on a point, the same goal in either chapter, for a building never moves.
+        building_id = int(target[1:])
+        site = next((b for b in save.get("buildings") or [] if b.get("id") == building_id), None)
+        if site is None or (tile := building_tile(site)) is None:
+            raise _AimError(absent_entity("building", "buildings", building_id, chapter))
+        target, aims, whom = tile, [tile], f"{site.get('asset_id')} {site.get('id')}"
+    elif isinstance(target, str) and target[:1] == "c" and target[1:].isdigit():
+        # A town by its id, aimed at its centre as `tiles … distances` aims at a capital: one point, the same goal in either chapter while it stands.
+        city = ctx["cities_by_id"].get(city_id := int(target[1:]))
+        if city is None or (tile := city_centre(city)) is None:
+            raise _AimError(absent_entity("city", "cities", city_id, chapter))
+        target, aims, whom = tile, [tile], city.get("name") or f"city {city_id}"
+    elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():
+        land, sizes = int(target[1:]), ctx["island_sizes"]()
+        if land not in sizes:
+            raise _AimError(f"✗ unknown land: {land} — the counted lands run 1 to {max(sizes, default=0)}")
+        if ctx["island_lookup"]().get(actor_xy(actor)) == land:
+            raise _AimError(f"✗ {named_body(actor)} already stands on land {land}")
+        barred = ctx["walk_map"]().barred  # a land owns its rock, where no body lands: its shore is the ground of its rim
+        aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land and not barred(x, y)], "landing", f"land {land}"
+    elif isinstance(target, str):  # a kind, a family or a resource a word, the body itself left out: each answered by the cheapest of its own reached
+        families, words = asset_families(save), list(dict.fromkeys(target.split(",")))
+        # Ids among the words, refused at once: bodies are aimed at one by one, and two numbers alone would have read as a tile.
+        if numbers := {word for word in words if word.lstrip("-").isdigit()}:
+            told = ", ".join(f"`{word}`" for word in words if word in numbers)
+            print(f"✗ {told}: a list takes kinds only — one `--to` per body, two numbers alone make a tile", file=sys.stderr)
+        for word in words:
+            if word in numbers:
+                each[word] = None
+                continue
+            if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word)) if record is not actor]:
+                each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
+                continue
+            each[word] = None
+            none = unsited_reason(families, word) or f"no {word} in this world, {named_body(actor)} aside"
+            print(f"✗ {none} — the families: {', '.join(sorted(families))}", file=sys.stderr)
+        if not any(each.values()):
+            raise _AimError("")
+    else:  # a tile, `x,y`
+        height, width = len(save.get("tileArray") or []), sum((save.get("tileAmounts") or [[]])[0])
+        if not (0 <= target[0] < width and 0 <= target[1] < height):
+            raise _AimError(f"✗ coords {target} out of bounds — map is {width}×{height}", 2)
+        aims, whom = [target], f"{target[0]},{target[1]}"
+
+    return target, aims, mark, about, whom, each
 
 
 # Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
@@ -447,12 +517,10 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
         return {"nearest": _nearest_body(actor, ctx)}
     by_id = ctx["actors_by_id"]
     near = sorted(circles.pop("intimate"))
-    rings: dict = {
-        "intimate": [_surroundings_row(by_id[i], ctx, _duration(cost / per_hour, "total_"), dx, dy, home, land, kin.get(i)) for cost, i, dx, dy, land in near]
-    }
-    plans = {name: _surroundings_plan(entries, ctx, kin, per_hour) for name, entries in circles.items()}
+    rings: dict = {"intimate": [_surroundings_row(by_id[i], ctx, dx, dy, home, land, kin.get(i)) for _, i, dx, dy, land in near]}
+    plans = {name: _surroundings_plan(entries, ctx, kin) for name, entries in circles.items()}
     if detailed := wants_detail(requested, sum(map(len, plans.values()))):
-        rings.update({name: _surroundings_rows(plan, ctx, home, kin, per_hour) for name, plan in plans.items()})
+        rings.update({name: _surroundings_rows(plan, ctx, home, kin) for name, plan in plans.items()})
     # An adult's line goes unmarked, most bodies standing there: said beside the rows, where a silence read alone passes for youth. A sexless hull has no stage.
     if any("sex" in row and "life_stage" not in row for ring in rings.values() if isinstance(ring, list) for row in ring):
         rings["life_stage_default"] = "adult"
@@ -782,12 +850,12 @@ def _statuses_left(actor: dict) -> dict | None:
 
 
 # A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
-def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str], per_hour: float) -> list[tuple | dict]:
+def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> list[tuple | dict]:
     by_id, chiefs = ctx["actors_by_id"], ctx["clan_chiefs"]
     groups: dict[tuple, dict] = {}
     plan: list[tuple | dict] = []  # the entries come sorted, so a group stands where its nearest member was met, and nothing is re-sorted
     for entry in sorted(entries):
-        measure, i, dx, dy, _ = entry
+        _, i, dx, dy, _ = entry
         other = by_id[i]
         sapient = not is_boat(other) and is_sapient(ctx["subspecies_by_id"][other["subspecies"]])
         city = other.get("cityID") if sapient else None
@@ -798,7 +866,7 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str], per
         key = ("city", city) if sapient else ("asset_id", other.get("asset_id"))
         if (group := groups.get(key)) is None:
             head = {"city": entity_ref(city, ctx["cities_by_id"]), "species": Counter()} if sapient else {"asset_id": key[1]}
-            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"dir": bearing(dx, dy), **_duration(measure / per_hour, "total_")}}
+            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"crow_tiles": round(walk_tiles(dx, dy)), "dir": bearing(dx, dy)}}
             plan.append(group)
         group["count"] += 1
         if sapient:
@@ -807,10 +875,10 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str], per
 
 
 # One line of `surroundings`: silent on his own land or islet, off it the land's id — or `water` or `islet_tiles` off every land, a bare null reading as home.
-def _surroundings_row(other: dict, ctx: dict, span: dict, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
+def _surroundings_row(other: dict, ctx: dict, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
     row = {
-        **span,
         "asset_id": other.get("asset_id"),
+        "crow_tiles": round(walk_tiles(dx, dy)),  # what a sentence with no walker says: his own pace's time is `--to`'s to tell
         "dir": bearing(dx, dy),
         "id": other["id"],
         **({"kills": n} if (n := int(other.get("kills") or 0)) else {}),
@@ -837,15 +905,15 @@ def _surroundings_row(other: dict, ctx: dict, span: dict, dx: int, dy: int, home
 
 
 # A plan written out: a group of one is no group, so its body stands in full. No `kills` summed on the rest — whoever has killed already stands in full.
-def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, kin: dict[int, str], per_hour: float) -> list[dict]:
+def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, kin: dict[int, str]) -> list[dict]:
     rows = []
     for item in plan:
         entry = item.pop("first") if isinstance(item, dict) else item
         if isinstance(item, dict) and item["count"] > 1:
             rows.append(item)
             continue
-        measure, i, dx, dy, land = entry
-        rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, _duration(measure / per_hour, "total_"), dx, dy, home, land, kin.get(i)))
+        _, i, dx, dy, land = entry
+        rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, dx, dy, home, land, kin.get(i)))
     return rows
 
 
@@ -882,21 +950,20 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
-# `--to` lifted off the command line: an actor id, or a tile as `x,y` — and the words left for the id and the sections.
-def _take_target(argv: list[str]) -> tuple[int | tuple[int, int] | str | None, list[str]]:
-    if "--to" not in argv:
-        return None, argv
-    at = argv.index("--to")
-    try:
-        value, rest = argv[at + 1], argv[:at] + argv[at + 2 :]
+# Every `--to` on the line, in its order: a body, a tile, a building, a town, a land, or kinds — the option repeats where a list of ids would read as a tile.
+def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], list[str]]:
+    targets: list[int | tuple[int, int] | str] = []
+    while "--to" in argv:
+        at = argv.index("--to")
+        if at + 1 == len(argv):
+            raise ValueError(_TO_USAGE)
+        value, argv = argv[at + 1], argv[:at] + argv[at + 2 :]
         x, sep, y = value.partition(",")
-        if not (x.lstrip("-").isdigit() and (not sep or y.lstrip("-").isdigit())):  # a land (`i7`, as `geography … islands` ids it), or kinds and families
-            return value, rest
-        return ((int(x), int(y)) if sep else int(x)), rest
-    except (IndexError, ValueError):
-        raise ValueError(
-            "`--to` takes an actor id, a tile, a building, a land or a kind: `--to 42`, `--to 415,117`, `--to b219`, `--to i7`, `--to volcano`"
-        ) from None
+        if x.lstrip("-").isdigit() and (not sep or y.lstrip("-").isdigit()):
+            targets.append((int(x), int(y)) if sep else int(x))
+        else:  # a land (`i7`, as `geography … islands` ids it), a building, a town, or kinds and families
+            targets.append(value)
+    return targets, argv
 
 
 # Chronicler-only: what the body's task was aimed at the instant of the save — a prey, a store, a tile —, a body and a building told as every ref is.
@@ -928,6 +995,39 @@ def _tenures(role: tuple[str, str, str] | None, save: dict, world_time: float) -
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
 def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
+
+
+# One `--to` answered: the walk, the way back from a body, the same goal in the chapter `--since` names — `None` where its refusal was told.
+def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict, since: str | None) -> dict | None:
+    target, aims, mark, about, whom, each = aim
+    trip: dict | None = None
+    if aims:
+        try:
+            trip = _build_to(actor, aims, whom, ctx, mark, about)
+            if isinstance(target, int):
+                trip["from_them"] = _from_them(ctx["actors_by_id"][target], actor, trip, ctx)
+        except _UnreachableError as e:
+            print(f"{e} — `circle`: far", file=sys.stderr)  # out of reach is past every circle: said, a refusal bearing no field
+            return None
+        if then is not None and isinstance(target, int) and target not in then_ctx["actors_by_id"]:
+            print(f"✗ no `then`: {whom} not yet in {since}", file=sys.stderr)
+        elif then is not None and not isinstance(target, str):
+            goal = target if isinstance(target, tuple) else actor_xy(then_ctx["actors_by_id"][target])
+            trip["then"] = _trip_then(then, goal, whom, then_ctx)
+    if isinstance(target, str) and then is not None:  # a land's numbers and a kind's sites are redrawn from save to save: the goal then would be another
+        print("✗ no `then`: only a point or a body is the same goal in both chapters", file=sys.stderr)
+    if each:
+        reached: dict = dict.fromkeys(each)  # a word left unanswered keeps its place: the others then keep their names, where one alone would come bare
+        for word, goal in each.items():  # out of reach, it says so and leaves the others their answer: the command fails where none has one
+            try:
+                reached[word] = goal and _build_to(actor, goal[0], f"the nearest {word}", ctx, "nearest", goal[1])
+            except _UnreachableError as e:
+                print(f"{e} — `circle`: far", file=sys.stderr)
+        if not any(reached.values()):
+            return None
+        return reached if len(each) > 1 else next(iter(reached.values()))
+
+    return trip
 
 
 # How long the shortest way between two places takes at the body's pace, walked back from where it stands — the way it truly took, no save keeps.
@@ -1037,7 +1137,7 @@ def main(argv: list[str]) -> int:
         return 2
     upto = int(chapter[1:]) if chapter else 0
     try:
-        target, argv = _take_target(argv)
+        targets, argv = _take_targets(argv)
     except ValueError as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
@@ -1053,7 +1153,7 @@ def main(argv: list[str]) -> int:
     requested = argv[1] if len(argv) > 1 else None
     flagged = since is not None or kills or statuses
     try:
-        sections = parse_sections(requested, _ALL_SECTIONS) if requested or (target is None and not flagged) else ()  # a flag alone answers alone
+        sections = parse_sections(requested, _ALL_SECTIONS) if requested or (not targets and not flagged) else ()  # a flag alone answers alone
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -1069,7 +1169,7 @@ def main(argv: list[str]) -> int:
         then_save = load_save(then_path)
         then_ctx = _build_context(then_save, then_path)
         then = then_ctx["actors_by_id"].get(actor_id)
-    if actor is None and not sections and target is None:  # a body gone still answers `--since`, `--kills` and `--statuses`, each with its own past, and they alone
+    if actor is None and not sections and not targets:  # a body gone still answers `--since`, `--kills` and `--statuses`, each with its own past, and they alone
         dealt, history = _kill_history(actor_id, upto) if kills else None, _status_history(actor_id, upto) if statuses else None
         if (since or kills or statuses) and (not since or then is not None) and (not kills or dealt) and (not statuses or history):
             emit({"kills": dealt, "since": _build_since(None, then, ctx, save, then_ctx, then_save) if since else None, "statuses": history})
@@ -1080,61 +1180,19 @@ def main(argv: list[str]) -> int:
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
         return 1
-    aims, mark, about, whom = [], None, {}, ""
-    each: dict[str, tuple[list, dict] | None] = {}  # the words of a `--to` naming kinds, each with its sites, `None` where it has none: a question apiece
-    if isinstance(target, int):
-        if (other := ctx["actors_by_id"].get(target)) is None:
-            refusal = absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a))
-            # An id no body ever bore may be a building's, the two counted apart: `b<id>` aims at it, so the refusal hands that over.
-            sites = (b for b in save.get("buildings") or [] if b.get("id") == target)
-            if refusal.startswith("✗ unknown") and (building := next(sites, None)) is not None:
-                refusal = f"✗ {target} is no body — a {building.get('asset_id')}'s id: aim at it, `--to b{target}`"
-            print(refusal, file=sys.stderr)
-            return 1
-        aims, whom = [actor_xy(other)], named_body(other)
-    elif isinstance(target, str) and target[:1] == "b" and target[1:].isdigit():
-        # A building by its id, aimed at its own tile as a kind is: from there on a point, the same goal in either chapter, for a building never moves.
-        building_id = int(target[1:])
-        site = next((b for b in save.get("buildings") or [] if b.get("id") == building_id), None)
-        if site is None or (tile := building_tile(site)) is None:
-            print(absent_entity("building", "buildings", building_id, chapter), file=sys.stderr)
-            return 1
-        target, aims, whom = tile, [tile], f"{site.get('asset_id')} {site.get('id')}"
-    elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():
-        land, sizes = int(target[1:]), ctx["island_sizes"]()
-        if land not in sizes:
-            print(f"✗ unknown land: {land} — the counted lands run 1 to {max(sizes, default=0)}", file=sys.stderr)
-            return 1
-        if ctx["island_lookup"]().get(actor_xy(actor)) == land:
-            print(f"✗ {named_body(actor)} already stands on land {land}", file=sys.stderr)
-            return 1
-        barred = ctx["walk_map"]().barred  # a land owns its rock, where no body lands: its shore is the ground of its rim
-        aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land and not barred(x, y)], "landing", f"land {land}"
-    elif isinstance(target, str):  # a kind, a family or a resource a word, the body itself left out: each answered by the cheapest of its own reached
-        families, words = asset_families(save), list(dict.fromkeys(target.split(",")))
-        # Ids among the words, refused at once: bodies are aimed at one by one, and two numbers alone would have read as a tile.
-        if numbers := {word for word in words if word.lstrip("-").isdigit()}:
-            told = ", ".join(f"`{word}`" for word in words if word in numbers)
-            print(f"✗ {told}: a list takes kinds only — one `--to` per body, two numbers alone make a tile", file=sys.stderr)
-        for word in words:
-            if word in numbers:
-                each[word] = None
-                continue
-            if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word)) if record is not actor]:
-                each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
-                continue
-            each[word] = None
-            none = unsited_reason(families, word) or f"no {word} in this world, {named_body(actor)} aside"
-            print(f"✗ {none} — the families: {', '.join(sorted(families))}", file=sys.stderr)
-        if not any(each.values()):
-            return 1
-    elif target is not None:
-        height, width = len(save.get("tileArray") or []), sum((save.get("tileAmounts") or [[]])[0])
-        if not (0 <= target[0] < width and 0 <= target[1] < height):
-            print(f"✗ coords {target} out of bounds — map is {width}×{height}", file=sys.stderr)
-            return 2
-        aims, whom = [target], f"{target[0]},{target[1]}"
-
+    aimed: dict[str, tuple | None] = {}  # each `--to` by its own words: where it aims, or `None` where its refusal was told
+    for target in targets:
+        words = f"{target[0]},{target[1]}" if isinstance(target, tuple) else str(target)
+        try:
+            aimed[words] = _aim(target, actor, ctx, save, chapter)
+        except _AimError as e:
+            if str(e):  # a list of kinds told its own refusals, word by word
+                print(e, file=sys.stderr)
+            if len(targets) == 1:
+                return e.code
+            aimed[words] = None
+    if targets and not any(aimed.values()):
+        return 1
     out: dict = {}
     if "companions" in sections:  # both attachments as plain refs — `emit` drops whichever is unset or dead, and the section itself when the actor has neither
         by_id = ctx["actors_by_id"]
@@ -1162,31 +1220,11 @@ def main(argv: list[str]) -> int:
         out["kills"] = _kill_history(actor_id, upto)
     if statuses:
         out["statuses"] = _status_history(actor_id, upto)
-    if aims:
-        try:
-            out["to"] = _build_to(actor, aims, whom, ctx, mark, about)
-            if isinstance(target, int):
-                out["to"]["from_them"] = _from_them(ctx["actors_by_id"][target], actor, out["to"], ctx)
-        except _UnreachableError as e:
-            print(f"{e} — `circle`: far", file=sys.stderr)  # out of reach is past every circle: said, a refusal bearing no field
-            return 1
-        if then is not None and isinstance(target, int) and target not in then_ctx["actors_by_id"]:
-            print(f"✗ no `then`: {whom} not yet in {since}", file=sys.stderr)
-        elif then is not None and not isinstance(target, str):
-            goal = target if isinstance(target, tuple) else actor_xy(then_ctx["actors_by_id"][target])
-            out["to"]["then"] = _trip_then(then, goal, whom, then_ctx)
-    if isinstance(target, str) and then is not None:  # a land's numbers and a kind's sites are redrawn from save to save: the goal then would be another
-        print("✗ no `then`: only a point or a body is the same goal in both chapters", file=sys.stderr)
-    if each:
-        reached: dict = dict.fromkeys(each)  # a word left unanswered keeps its place: the others then keep their names, where one alone would come bare
-        for word, goal in each.items():  # out of reach, it says so and leaves the others their answer: the command fails where none has one
-            try:
-                reached[word] = goal and _build_to(actor, goal[0], f"the nearest {word}", ctx, "nearest", goal[1])
-            except _UnreachableError as e:
-                print(f"{e} — `circle`: far", file=sys.stderr)
-        if not any(reached.values()):
-            return 1
-        out["to"] = reached if len(each) > 1 else next(iter(reached.values()))
+    trips = {words: aim and _trip(actor, aim, ctx, then, then_ctx, since) for words, aim in aimed.items()}
+    if targets and not any(trips.values()):
+        return 1
+    if trips:  # several `--to` keep each its words, where one alone comes bare
+        out["to"] = trips if len(trips) > 1 else next(iter(trips.values()))
 
     emit(out)
     return 0
