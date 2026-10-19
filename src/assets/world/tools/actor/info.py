@@ -40,6 +40,7 @@ from shared import (
     SAVES_DIR,
     UNITS_PER_MONTH,
     UNITS_PER_YEAR,
+    UNWRITTEN_HEALTH,
     absent_entity,
     actor_age,
     actor_xy,
@@ -624,7 +625,7 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
             **({"equipment_power": n} if (n := equipment_power(actor, ctx)) else {}),
             # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
             **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
-            "health": int(actor.get("health") or 0),
+            "health": int(actor.get("health", UNWRITTEN_HEALTH)),
             **({"kills": n} if (n := int(actor.get("kills") or 0)) else {}),
             **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # every body starts at 1, WB's floor: said once earned past it
             **({"loot": n} if (n := int(actor.get("loot") or 0)) else {}),
@@ -853,7 +854,7 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
         return inf, inf
     if not (speed := stats.get("speed")) or not (health_max := stats.get("health_max")):
         return 0.0, 0.0
-    pace, health = speed * _TILES_PER_SPEED, health_max if rested else min(int(actor.get("health") or 0), health_max)
+    pace, health = speed * _TILES_PER_SPEED, health_max if rested else min(int(actor.get("health", UNWRITTEN_HEALTH)), health_max)
     stamina = int(stats.get("stamina_max") or 0) if rested else int(actor.get("stamina") or 0)  # WB omits a zero, so a body without the field has no breath left
     breath = pace * stamina / _STAMINA_PER_SECOND
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND

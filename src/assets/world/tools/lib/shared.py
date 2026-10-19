@@ -49,6 +49,7 @@ SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for th
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
 UNITS_PER_MONTH = 5  # 5 `world_time` units = 1 month, the grain WB counts an incubation and a plot in.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
+UNWRITTEN_HEALTH = 100  # WB `BaseObjectData`: the health a body, a hull or a building is born with, which a save leaves out
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).

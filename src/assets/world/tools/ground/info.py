@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from islands import compute_islands_cached
 from shared import (
+    UNWRITTEN_HEALTH,
     absent_entity,
     actor_age,
     building_at,
@@ -37,7 +38,6 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("boats", "inventory", "metadata", "occupants")
-_UNWRITTEN_HEALTH = 100  # WB `BaseObjectData`: the health a record is born with, which a save leaves out
 
 
 # Absent off a shipyard, `in_building` telling a hull tied up in it from one riding by. `boat/info.py <id>` spells one out.
@@ -69,7 +69,7 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
     flags = house.get("custom_data_flags") or ()
     asset = load_data("buildings.json").get(house.get("asset_id")) or {}
     # WB writes a health whole or hurt alike: only one under its asset's own tells a hurt.
-    health, whole = house.get("health", _UNWRITTEN_HEALTH), asset.get("health")
+    health, whole = house.get("health", UNWRITTEN_HEALTH), asset.get("health")
     hurt = whole is not None and health < whole
 
     return {

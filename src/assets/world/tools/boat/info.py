@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
+    UNWRITTEN_HEALTH,
     absent_entity,
     actor_xy,
     build_trait_ids,
@@ -86,7 +87,7 @@ def _build_metadata(boat: dict, ctx: dict) -> dict:
         # Tied up in a quay as the mod kept it, or riding beside one — rare, a hull keeping two tiles offshore at best, and never necessarily its own dock.
         **whereabouts(boat, ctx["buildings"], ctx["buildings_by_tile"]()),
         "age": entity_age(boat, ctx["world_time"]),
-        "health": boat.get("health"),
+        "health": boat.get("health", UNWRITTEN_HEALTH),
         "health_max": _health_max(boat, ctx, level),
         "home": home["id"] if home else None,  # the dock it answers to — a handle, `ground/info.py <id>` spelling out its age, health, city and zone
         "kills": boat.get("kills", 0),
