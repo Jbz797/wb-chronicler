@@ -119,8 +119,8 @@ class RebuildTrigger {
   #trigger = 'src/main.ts';
 
   start() {
-    // The chronicle's own Git repo lives in `saves/` too: its commits are no chapter, and would else wake a rebuild apiece.
-    watch(SAVES, { alwaysStat: true, ignored: (file) => file.split(path.sep).includes('.git') })
+    // The chronicle's own Git lives in `saves/` too, and the register of watches the reader never shows: neither is a chapter, each would wake a rebuild.
+    watch(SAVES, { alwaysStat: true, ignored: (file) => file.split(path.sep).includes('.git') || path.basename(file) === 'watches.md' })
       .on('add', (file, stats) => this.#added(file, stats))
       .on('addDir', () => this.#ready && this.#schedule())
       .on('change', (file, stats) => this.#changed(file, stats))
@@ -202,7 +202,7 @@ class WorldStore {
   async wipe() {
     const entries = await entriesIn(SAVES);
     const history = [
-      `${this.#history}/map_stats.s3db`, `${this.#history}/places.json`, `${this.#history}/watches.md`, `${this.#history}/world.json`, this.#settings,
+      `${this.#history}/map_stats.s3db`, `${this.#history}/places.json`, `${this.#history}/world.json`, this.#settings,
     ];
     const doomed = [...entries.map((entry) => `${SAVES}/${entry}`), ...history];
     await Promise.all(doomed.map((entry) => rm(entry, { force: true, recursive: true })));

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 # Bootstraps a new chapter from the live WorldBox save: archives it under `saves/C<n>/`, builds its registries (`registries.py`) and `chapter.json` (`fold.py`).
-# The recap steers the chronicler's analysis; `--finalize` then lays out step 5 and hands the audit to `docs/review.md`, `--deliver` the delivery.
+# The recap steers the chronicler's analysis; `--finalize` then lays out step 5 and hands the audit to `docs/review.md`, `--deliver` the delivery,
+# `--retouch` a round for the delivered chapters reworked since.
 
 import json
 import os
@@ -92,7 +93,7 @@ _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a worl
 )
 
 # What the chronicle's own git keeps (`shared.chronicle_git`): each chapter's prose and the chronicler's fields — never a save, a picture or a registry.
-_CHRONICLE_KEPT = "*\n!*/\n!C*/chapter.md\n!C*/chapter.json\n"
+_CHRONICLE_KEPT = "*\n!*/\n!C*/chapter.md\n!C*/chapter.json\n!watches.md\n"
 
 # What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
 _DEATH = "the death section opens the chapter: how he died, pieced together as far as the data allow (§ Déduction des meurtres), what he leaves, the handover"
@@ -147,7 +148,7 @@ _EMPTIED = (
 )
 
 _EVENT = "an event the chapter owes its reader, glossed in docs/tags.md"  # said to the chronicler at the recap, and to his auditors with their targets
-_FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked"})  # all `main` reads — others are refused as typos
+_FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked", "--retouch"})  # all `main` reads, others refused as typos
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _GROWN = frozenset({"adult", "teen"})  # the stages a kind may be counted on: past childhood, an elder read as the adult it is — its span is not asked
 _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
@@ -235,6 +236,7 @@ _WORLD_ONLY = (  # the chapter while no favorite stands — in no doc, a world h
     "no circles: a single `---`, before the closing paragraph",
 )
 
+_WATCHES = SAVES_DIR / "watches.md"  # the story auditor's register of open threads: the world's, as its chapters are, and kept with them in the chronicle's Git
 _WORLD_JSON = SAVES_DIR.parent / "history" / "world.json"  # world identity and span, off the save each chapter — the reader shows the name, the chronicler the rest
 
 
@@ -354,6 +356,15 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     if (favorite or {}).get("plot"):
         tags.append("FAVORITE_PLOTTING")
     return tags + _fired_alerts(live, path)
+
+
+# Commits the chapters named and the register beside them, the Git told what it keeps: one round's own text, never another chapter's retouch swept along.
+def _commit(message: str, *chapters: str) -> None:
+    if not (kept := SAVES_DIR / ".gitignore").exists() or kept.read_text() != _CHRONICLE_KEPT:  # a Git made before the register joined it
+        kept.write_text(_CHRONICLE_KEPT)
+    chronicle_git("add", "-A", "--", *chapters, *([_WATCHES.name] if _WATCHES.exists() else []))
+    if chronicle_git("diff", "--cached", "--quiet").returncode:
+        chronicle_git("commit", "-q", "-m", message)
 
 
 # The crowns held or within reach: each realm, then each kind wearing none whose grown body could found where it stands. A crown is its king's kind's, no subject's.
@@ -640,7 +651,7 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
             print(f"    · what changed on the favorite: `actor {fav_id} --since C{n - 1} C{n}` — its walk and its gates, read before a word of it")
         print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id: names repeat")
     if n > 1:
-        print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `history/watches.md`")
+        print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `saves/watches.md`")
     told = "" if fav_id else " — no favorite, so the world itself, in two parts and no circle:"
     print(f"  → step 4, the writing: {CHAPTER_FLOOR} to {CHAPTER_CAP} characters, {COUNTED_AS}, counted at delivery, past the audit{told}")
     if not fav_id:
@@ -823,6 +834,25 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     return 0
 
 
+# The delivered chapters reworked since their last round, committed together, each tagged `C<n>-r<k>`: a relaunch then hands the diff since the auditor's own round.
+def _retouch() -> int:
+    if not (SAVES_DIR / ".git").exists():
+        print("✗ no chronicle Git yet — `--finalize` makes it at a chapter's first round", file=sys.stderr)
+        return 1
+    delivered = sorted(int(tag[1:].split("-")[0]) for tag in chronicle_git("tag", "--list", "C*-delivered").stdout.split())
+    moved = chronicle_git("status", "--porcelain", "--", *(f"C{n}" for n in delivered)).stdout
+    if not (changed := sorted({int(found) for found in re.findall(r"C(\d+)/", moved)} & set(delivered))):
+        print("✗ no delivered chapter has moved since its last round — the chapter under way rounds with `--finalize`", file=sys.stderr)
+        return 1
+    _commit(f"retouch {', '.join(f'C{n}' for n in changed)}", *(f"C{n}" for n in changed))
+    for n in changed:
+        rounds = sorted(int(tag.rsplit("-r", 1)[1]) for tag in chronicle_git("tag", "--list", f"C{n}-r*").stdout.split())
+        chronicle_git("tag", tag := f"C{n}-r{rounds[-1] + 1 if rounds else 1}")
+        before = f"C{n}-r{rounds[-1]}" if rounds else f"C{n}-delivered"
+        print(f"✓ C{n} — round {tag}: a relaunch hands each auditor `git -C saves diff <the round it last read> {tag} -- C{n}`, the one before: {before}")
+    return 0
+
+
 # Runs a sibling `info.py` → its parsed JSON stdout, `None` (stderr surfaced) on failure or empty output. `sys.executable` so a venv never forks children elsewhere.
 def _run(rel_path: str, *args: object) -> dict | None:
     result = subprocess.run([sys.executable, str(_TOOLS / rel_path), *map(str, args)], capture_output=True, text=True, check=False)
@@ -880,13 +910,9 @@ def _short_dialogues(prose: str) -> list[tuple[int, int]]:
 # Tags the chapter as an audit round reads it, `C<n>-<k>`, and returns that round with the one before — the last one again when nothing moved since it.
 def _snapshot(n: int) -> tuple[str, str | None] | None:
     # Made here the first time it is missing: a world's first round, the first since the reader's reset swept it away with the world, or the first at all.
-    if fresh := not (SAVES_DIR / ".git").exists():
-        if chronicle_git("init", "-q").returncode:
-            return None
-        (SAVES_DIR / ".gitignore").write_text(_CHRONICLE_KEPT)
-    chronicle_git("add", "-A")
-    if chronicle_git("diff", "--cached", "--quiet").returncode:
-        chronicle_git("commit", "-q", "-m", f"C{n}")
+    if (fresh := not (SAVES_DIR / ".git").exists()) and chronicle_git("init", "-q").returncode:
+        return None
+    _commit(f"C{n}", f"C{n}")
     for k in range(1, n) if fresh else ():  # every chapter before this one was delivered, a chapter opening only once the last is
         chronicle_git("tag", f"C{k}-delivered")
     rounds = sorted(int(k) for tag in chronicle_git("tag", "--list", f"C{n}-*").stdout.split() if (k := tag.rsplit("-", 1)[1]).isdigit())
@@ -1025,6 +1051,8 @@ def main(argv: list[str]) -> int:
         return _finalize()
     if "--deliver" in argv:  # the close of the audit, off the same files
         return _deliver()
+    if "--retouch" in argv:  # a round for the delivered chapters reworked since, the chapter under way left to `--finalize`
+        return _retouch()
     live_wbox = live_save()
     if not live_wbox.exists():
         print(f"✗ no live save at {live_wbox} — ask the player to update the path, from the Settings button below the map", file=sys.stderr)

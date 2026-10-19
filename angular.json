@@ -27,8 +27,8 @@
                   "**/.ruff_cache/**",
                   "**/__pycache__/**",
                   "world/history/map_stats.s3db",
-                  "world/history/watches.md",
                   "world/saves/*/map.wbox",
+                  "world/saves/watches.md",
                   "world/tools/*/**",
                   "world/tools/ruff.toml"
                 ],
