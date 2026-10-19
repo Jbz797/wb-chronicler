@@ -1,6 +1,6 @@
 # 🔍 Relecture
 
-<p class="metadata">Date de mise à jour : 19/10/26 11:31</p>
+<p class="metadata">Date de mise à jour : 19/10/26 19:33</p>
 
 Ce que tu fais du chapitre une fois l'étape 5 bouclée, jusqu'à `--deliver`. Les auditeurs n'en savent rien : ne leur en cite rien.
 
@@ -23,4 +23,4 @@ Lance 4 sous-agents neufs pour ce chapitre, en même temps. Chacun reçoit sa li
 5. Rejoue `--finalize`, puis relance chacun par message sur l'id de son rapport, que tu notes, avec le diff qu'il donne depuis son tour et, de ta lecture, seulement ce que tu n'as pas pu mesurer. Un sous-agent neuf seulement si ça échoue. Un chapitre réécrit en entier repart comme au premier audit, chaque fiche avec sa ligne telle quelle.
 6. Annonce au récit le dernier tour une fois que les quatre ont vu le même texte sans rien y trouver : c'est là qu'il écrit le registre des veilles ; réglé, `tools/chapter/new.py --deliver`.
 
-Une retouche après la livraison suit les points 3 et 5, sans relancer `--deliver` : son diff part de la livraison (`git -C saves diff C<n>-delivered --word-diff -- C<n>`), et `echo.py` en refait les contrôles.
+Une retouche après la livraison suit les points 3 et 5, sans relancer `--deliver` : son diff part de la livraison (`git -C saves diff C<n>-delivered -- C<n>`), et `echo.py` en refait les contrôles.

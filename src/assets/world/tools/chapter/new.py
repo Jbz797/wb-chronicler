@@ -528,7 +528,7 @@ def _finalize() -> int:
     # The text tagged as this round reads it, so a relaunch hands over what moved since the auditor's own round rather than a list, or a memory.
     if (rounds := _snapshot(n)) is not None:
         tag, before = rounds
-        relaunch = f" — a relaunch hands each auditor `git -C saves diff <the round it last read> {tag} --word-diff -- C{n}`, the one before: {before}"
+        relaunch = f" — a relaunch hands each auditor `git -C saves diff <the round it last read> {tag} -- C{n}`, the one before: {before}"
         print(f"  → this text is round {tag}{relaunch if before else ''}")
     return 0
 
