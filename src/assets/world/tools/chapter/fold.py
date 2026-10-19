@@ -110,7 +110,7 @@ _CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers
 
 # `pop` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> pop`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset(
-    {"adults", "babies", "children", "couples", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
+    {"adults", "babies", "children", "couples", "eaters", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
 )
 
 # A tier the favorite holds none of, a war-free crown: said by the key absent. Never `{"total": 0}` — `emit` drops an empty shelf, and an opinion at 0 is a reading.

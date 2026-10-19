@@ -288,6 +288,7 @@
   "ui_path_example": "/chemin/vers/map.wbox",
   "ui_per_head": "Par hab.",
   "ui_per_inhabitant": "/hab",
+  "ui_per_mouth": "/bouche",
   "ui_persons": "Personnes",
   "ui_pick_save": "Le chroniqueur lit la sauvegarde WorldBox à même le disque. Indique-lui laquelle suivre.",
   "ui_plague": "Peste",

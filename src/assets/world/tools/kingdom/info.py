@@ -41,6 +41,7 @@ from shared import (
     load_save,
     main_subspecies,
     meta_report,
+    needs_food,
     parse_sections,
     population_breakdown,
     quiet_zeros,
@@ -91,7 +92,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_kingdom: defaultdict[int, list[dict]] = defaultdict(list)
     boats_by_kingdom: defaultdict[int, list[dict]] = defaultdict(list)  # Boats are actors, skipped by every other tally — gathered here for the `boats` section.
     captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
+    eaters_by_kingdom: Counter[int] = Counter()  # a body with no gut takes no share of the stores: `food_per_capita` counts mouths
     families_by_kingdom: defaultdict[int, set[int]] = defaultdict(set)
+    gut = {s["id"]: needs_food(s) for s in save.get("subspecies") or []}
     homeless_by_kingdom: Counter[int] = Counter()
     immortals_by_kingdom: Counter[int] = Counter()
     infected_by_kingdom: Counter[int] = Counter()
@@ -123,6 +126,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if not kid:
             continue
         actors_by_kingdom[kid].append(actor)
+        eaters_by_kingdom[kid] += gut.get(actor.get("subspecies"), False)
 
         if clan_id := actor.get("clan"):
             actors_by_clan[clan_id].append(actor)  # Heir lookup: a royal clan spans kingdoms, so `actors_by_kingdom` can't serve it.
@@ -229,8 +233,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cities_by_id": cities_by_id,
         "cities_by_kingdom": cities_by_kingdom,
         "cultures_by_id": index_by_id(save.get("cultures", [])),
-        "families_by_id": index_by_id(save.get("families") or []),
+        "eaters_by_kingdom": eaters_by_kingdom,
         "era_opinion": (load_data("world-ages.json").get(save["mapStats"].get("world_age_id") or "") or {}).get("bonus_opinion", 0),
+        "families_by_id": index_by_id(save.get("families") or []),
         "families_by_kingdom": families_by_kingdom,
         "food_by_kingdom": food_by_kingdom,
         "gold_by_kingdom": gold_by_kingdom,

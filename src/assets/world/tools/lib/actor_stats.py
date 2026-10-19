@@ -885,6 +885,7 @@ def pop_of(actors: list[dict], ctx: dict) -> dict:
         **({"babies": n} if (n := stages["baby"]) else {}),
         **({"children": n} if (n := stages["child"]) else {}),
         **({"couples": n} if (n := counts["couples"]) else {}),
+        **({"eaters": n} if (n := counts["eaters"]) != total else {}),  # where some have no gut, a nought too: the mouths `fed_pct` divides by
         **({"eggs": n} if (n := stages["egg"]) else {}),  # a laying biology alone ever carries the line, as `immortals` and `sick` carry theirs
         **({"elders": n} if (n := stages["elder"]) else {}),
         **({"familyless": n} if (n := counts["familyless"]) else {}),
@@ -923,7 +924,7 @@ def settlement_pop(entity: dict, ctx: dict, tier: str) -> dict:
         sorted(
             {
                 **population,
-                **({"food_per_capita": round(tally("food") / total, 1)} if total >= MIN_PER_CAPITA_UNITS else {}),  # eatable stock ÷ population
+                **({"food_per_capita": round(tally("food") / n, 1)} if (n := tally("eaters")) >= MIN_PER_CAPITA_UNITS else {}),  # stock ÷ mouths, as ranks divide
                 **({"nobles": n} if (n := tally("nobles")) else {}),
                 **({"nobles_money": nobles_money} if nobles_money else {}),  # the other nobles' coins, the head's own being `ruler_money`
                 **({"ruler_money": ruler_money} if ruler_money else {}),  # the head's own purse — with `nobles_money` and `subjects_money`, all of `money`

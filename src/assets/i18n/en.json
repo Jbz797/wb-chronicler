@@ -288,6 +288,7 @@
   "ui_path_example": "/path/to/map.wbox",
   "ui_per_head": "Per head",
   "ui_per_inhabitant": "/inhab.",
+  "ui_per_mouth": "/mouth",
   "ui_persons": "People",
   "ui_pick_save": "The chronicler reads the WorldBox save straight off the disk. Tell it which one to follow.",
   "ui_plague": "Plague",

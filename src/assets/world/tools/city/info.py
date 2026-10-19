@@ -45,6 +45,7 @@ from shared import (
     load_save,
     main_subspecies,
     meta_report,
+    needs_food,
     parse_sections,
     population_breakdown,
     quiet_zeros,
@@ -161,7 +162,9 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_army: defaultdict[int, list[dict]] = defaultdict(list)
     actors_by_city: defaultdict[int, list[dict]] = defaultdict(list)
     actors_by_id: dict[int, dict] = {}
+    eaters_by_city: Counter[int] = Counter()  # a body with no gut takes no share of the stores: `food_per_capita` counts mouths
     families_by_city: defaultdict[int, set[int]] = defaultdict(set)
+    gut = {s["id"]: needs_food(s) for s in save.get("subspecies") or []}
     homeless_by_city: Counter[int] = Counter()
     immortals_by_city: Counter[int] = Counter()
     infected_by_city: Counter[int] = Counter()
@@ -187,6 +190,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if not cid or asset_id.startswith("boat_"):  # `is_boat` inlined — it would re-read the field we already hold
             continue
         actors_by_city[cid].append(actor)
+        eaters_by_city[cid] += gut.get(actor.get("subspecies"), False)
         # Read once (three tallies want the purse) and guarded: renown is zero on most inhabitants, and a `+= 0` still costs a hash and a store.
         coins = actor.get("money")
         if coins:
@@ -269,11 +273,12 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "besieging_by_city": cache(lambda: _besieging_kingdoms(save)),  # a walk over every actor, and only `metadata` asks — resolved on demand, once
         "books_by_city": cache(lambda: books_held(save)[0]),  # custody, not authorship; called not stored, a walk of every building few sections need
         "buildings_by_city": buildings_by_city,
-        "civic_by_city": civic_by_city,
         "centres": {},  # `_city_centre` memo — every town asks its capital's, over and over.
         "children_by_id": cache(lambda: children_by_id(save)),  # living offspring per parent, world-wide: a resident's child may live elsewhere
         "cities_by_id": index_by_id(save.get("cities") or []),
+        "civic_by_city": civic_by_city,
         "cultures_by_id": index_by_id(save.get("cultures") or []),
+        "eaters_by_city": eaters_by_city,
         # Racked gear per city, the six `item_storage_*` lists summed — a stat of its own, and what `_build_gear` details on request.
         "equipment_by_city": {c["id"]: sum(len((c.get("equipment") or {}).get(f) or []) for f in EQUIPMENT_RACKS.values()) for c in save.get("cities") or []},
         "families_by_city": families_by_city,
