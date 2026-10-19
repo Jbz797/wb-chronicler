@@ -366,6 +366,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # Chronicler-only, and only while it still bites: the date WB gives the child its halved `damage_max`/`health_max` back — a bridling, not an infirmity.
         **({"adult_on": crossed_on(actor, age_adult)} if age < age_adult else {}),
         "age": age,
+        # Years `age` counts that the body never lived here — a migrant called in grown (WB `updateMigrants`), a clone, a time paradox: `born` dates its coming
+        **({"age_overgrowth": n} if (n := int(actor.get("age_overgrowth") or 0)) else {}),
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "asset_id": actor.get("asset_id"),

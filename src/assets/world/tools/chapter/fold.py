@@ -94,8 +94,8 @@ _AUDIT_TIERS = {
     "family.identity": {"culture", "species", "subspecies"},  # the family is read by the souls it seated, its blood and its tongue answering from their own tiers
     "family.metadata": {"kingdoms", "parents"},  # a second crown or a parent line is too rare for a panel row, so both ride the script's output alone
     "family.ranks": {"cities", "kingdoms"},  # towns and crowns follow the heads that hold them, so the podium repeats the one `members` already draws
-    # The bodies it belongs to, each read to open its own tier block — and its stock, which the portrait draws off the persons registry
-    "favorite.metadata": {"asset_id", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies"},
+    # The bodies it belongs to, each read to open its own tier block, its stock, which the portrait draws off the persons registry, and years `age` holds
+    "favorite.metadata": {"age_overgrowth", "asset_id", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies"},
     "kingdom.identity": {"clan", "culture", "language", "religion", "subspecies"},  # as a town's
     "kingdom.metadata": {"births", "ferries"},  # as a town's, and no panel asks whether a crown ferries — that answers a rule of the chronicle, not a row
     "kingdom.pop": {"money"},  # as a town's
