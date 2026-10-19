@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 19/10/26 23:19</p>
+<p class="metadata">Date de mise à jour : 19/10/26 23:29</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -93,7 +93,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : `wiki:Religions`.
 - `report` parle par images : « No fire, no warmth » dit le bois qui manque, pas le feu.
 - `rulers` (cité, royaume) : la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain : `pop.ruler_money`.
-- `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; `drivers`, complet, somme au `total` ; chaque terme, par son id : `wiki:Loyalty`.
+- `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; `drivers`, complet, somme au `total` ; chaque terme, par son id : `wiki:Loyalty`, ou `wiki:Kingdom_Opinions` pour une opinion.
 - `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : naissances et extinctions se lisent dans `cumulative`, qui ne fait que monter ; `gone_without_death` : les corps partis sans mort comptée (`deaths_without_body`, l'inverse).
 - Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 
