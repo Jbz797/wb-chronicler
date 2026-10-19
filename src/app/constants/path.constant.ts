@@ -20,9 +20,10 @@ export const SETTINGS_ENDPOINT = `${SERVICE_URL}/settings`;
 
 // The workshop's pages, and its alone: outside dev mode the nav lists none and the reader resolves none, so a stale link renders blank, not the manual.
 export const PAGES: Page[] = [
-  { label: 'Audit', mdUrl: ['compliance', 'facts', 'story'].map(sheet => `${DOCS_DIR}/audit/${sheet}.md`), slug: 'audit' }, // the three sheets, read as one
+  // The run first, then the three sheets it hands out: one page, as the audit is one step.
+  { label: 'Audit', mdUrl: [`${DOCS_DIR}/review.md`, ...['compliance', 'facts', 'story'].map(sheet => `${DOCS_DIR}/audit/${sheet}.md`)], slug: 'audit' },
   { label: 'Chronicler', mdUrl: `${DOCS_DIR}/chronicler.md`, slug: 'chronicler' },
-  { label: 'Review', mdUrl: `${DOCS_DIR}/review.md`, slug: 'review' },
+  { label: 'Lexicon', mdUrl: `${DOCS_DIR}/lexicon.md`, slug: 'lexicon' },
   { label: 'Tags', mdUrl: `${DOCS_DIR}/tags.md`, slug: 'tags' },
   { label: 'Tools', mdUrl: `${DOCS_DIR}/tools.md`, slug: 'tools' },
 ];

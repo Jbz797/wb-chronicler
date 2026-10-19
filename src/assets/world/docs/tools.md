@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 19/10/26 19:21</p>
+<p class="metadata">Date de mise à jour : 19/10/26 23:18</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -98,7 +98,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ### Lieux et trajets :
 
-- `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions (une diagonale compte 1,41), à citer tel quel, jamais refait à la règle.
+- `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions (une diagonale compte 1,41), à citer tel quel, jamais refait à la règle ; pas un compte de pas.
 - `geography … frozen` : par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé en toute saison ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `ground` (`biomes`) : le sol sans biome ; `rock` joint monts et sommets, sa plus grande parcelle est un massif.
 - `heart` (`islands`, `waters`) : le point le plus loin des rives.

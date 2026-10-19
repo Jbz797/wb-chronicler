@@ -112,6 +112,7 @@ _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never don
     "obscure field: one whose meaning stays uncertain, the wiki included",
     "costly reading: a step that ate the context — say what you read and what you sought — or a passage, an output section, costing without serving: say which",
     "new tag: an important kind of event that no code in docs/tags.md covers",
+    "new word: one the tale keeps reaching for — imposed, banned or by a scale — that docs/lexicon.md lacks",
     "missing tool: a recurring analysis that deserves its own script",
     "and any other observation within your remit",
 )
