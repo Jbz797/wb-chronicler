@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 19/10/26 11:40</p>
+<p class="metadata">Date de mise à jour : 19/10/26 21:55</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -26,10 +26,10 @@ Pars de `history/watches.md`, les veilles encore ouvertes, ou crée-le : ses seu
 
 - **Chiffres** : le registre n'en porte aucun, pas même une date à venir — un article ou une locution (_« un singe »_, _« nul des deux »_) n'en est pas un : une veille dit son fil, le chapitre porte le fait.
 - **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` : rien ne garde son issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas reste telle quelle.
-- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · ouverte (C1) · son sujet en une ligne »_. Le sort avec son chapitre : ouverte, reconduite si un chapitre reprend le fil sans le solder, une seule de ses questions suffisant, détournée s'il le mène ailleurs que vers une autre veille. Les noms s'y balisent comme dans un chapitre.
+- **Forme** : une puce par veille, dans l'ordre d'ouverture, sans numéro de ligne : _« **C1** · ouverte (C1) · son sujet en une ligne »_. Le sort avec son chapitre : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille. Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles qui suivent un même fil se fondent en une, la plus ancienne gardant son ouverture ; elles ne se lient que si la chronique les lie.
 - **Plafond** : au-delà de 10 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, une candidate comprise, et dis-le au chroniqueur : abandonnée, une veille sort et n'est plus un écart. Sous 10, aucune ne s'abandonne : elle se solde ou reste.
-- **Réserves** : une veille garde celles du chapitre (`docs/chronicler.md` § « Prudence et rigueur »).
+- **Réserves** : une veille garde celles du chapitre (`chronicler.md` § « Prudence et rigueur »).
 - **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand l'une de ses questions s'y solde ou que le fil se détourne, l'ouverture gardée.
 
 ## Au réaudit
