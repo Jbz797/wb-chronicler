@@ -53,6 +53,7 @@ from shared import (
     asset_kinds,
     breeding_mode,
     building_family,
+    city_centre,
     city_score_dimensions,
     civic_building_ids,
     emit,
@@ -583,9 +584,12 @@ def _build_roster(
     breeds_said = not (barred or has or top or since)
     ranked = sorted(bodies, key=order)
     refs = {"city": index_by_id(save.get("cities") or []), "family": index_by_id(save.get("families") or [])} if entity else {}
+    # A town's own land goes unsaid on its residents' lines, as `-i` does: the room it frees tells their stage instead
+    seat = island_of.get(centre) if entity and entity[0] == "city" and (centre := city_centre(refs["city"].get(entity[1]) or {})) else None
     for actor, here, change in ranked[:_TOP_ROWS] if top else ranked:
         if entity:
-            rows.append({**_member_row(actor, entity[0], None if here == asked and "was_on" not in change else here, refs, save, ctx, one_kind), **change})
+            told = None if here in (asked, seat) and "was_on" not in change else here
+            rows.append({**_member_row(actor, entity[0], told, refs, save, ctx, one_kind), **change})
             continue
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
         stage = _stage(actor, ctx, age, adult)
@@ -725,14 +729,16 @@ def _may_mate(a: dict, b: dict, sexed: bool) -> bool:
     return not sexed or a.get("sex") != b.get("sex")
 
 
-# A member's line under an entity, as that entity's own list wrote it: its age and post, one ref the entity leaves open — the town, or the family a lineage spans.
+# A member's line under an entity, as that entity's own list wrote it: its age, stage and post, one ref the entity leaves open — the town, or a lineage's family.
 def _member_row(actor: dict, kind: str, here: int | str | None, refs: dict, save: dict, ctx: dict, one_kind: bool) -> dict:
+    age = actor_age(actor, ctx["world_time"])
     row = {
-        "age": actor_age(actor, ctx["world_time"]),
+        "age": age,
         "asset_id": actor.get("asset_id") if kind == "city" and not one_kind else None,  # a town's line alone: elsewhere the ref fills its room
         "id": actor["id"],
         "job": resolve_profession(actor, save),
         **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1: a rung above is earned
+        "life_stage": None if (stage := _stage(actor, ctx, age, adult_age(actor, ctx))) == "adult" else stage,  # an age says no stage: each kind grows at its pace
         "name": actor.get("name"),
         "sex": sex_label(actor),
     }

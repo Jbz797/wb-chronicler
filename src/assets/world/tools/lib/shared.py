@@ -1299,6 +1299,9 @@ def succession_heir(candidates: Sequence[dict], traits: set[str], world_time: fl
 def take_chapter(argv: list[str]) -> tuple[Path, list[str], str | None]:
     for i, arg in enumerate(argv):
         if len(arg) > 1 and arg[0] == "C" and arg[1:].isdigit():
+            if i and argv[i - 1] == "--since":  # a tool that takes no `--since` would read that chapter for the one asked, and say nothing
+                print(f"✗ --since: this tool reads one chapter — read {arg} by its suffix and compare, or ask actor, world, geography, history", file=sys.stderr)
+                sys.exit(2)
             return SAVES_DIR / arg / "map.wbox", argv[:i] + argv[i + 1 :], arg
     if n := latest_chapter():
         return SAVES_DIR / f"C{n}" / "map.wbox", argv, f"C{n}"
