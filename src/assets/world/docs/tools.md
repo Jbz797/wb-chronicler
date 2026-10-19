@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 19/10/26 15:19</p>
+<p class="metadata">Date de mise à jour : 19/10/26 15:36</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -30,8 +30,9 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 ### `actor` :
 
 - `--since C<n>` : ce qui a bougé depuis — `moved` : le trajet fait et son temps au plus court, au pas du corps ; `stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre ; `gone` : mort, `was_at` sa place alors ; `to.then` : ce but compté alors
+- `--kills` : ses morts données, total par chapitres, chaque hausse depuis le chapitre d'avant (ou sa venue)
 - `--statuses` : `held`, ses statuts durables par chapitre, `seen` ses chapitres ; rien d'entre deux
-- `--to <id | x,y | b<id> | i<terre> | type>` : un corps, une tuile, un bâtiment, une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource (`nearest`), par virgules pour les seuls types — deux nombres font une tuile, un corps se vise seul ; un bâtiment à sa tuile, une tâche à la sienne (`task_target`) ; son `circle`, `total_` dès deux parts ; sur l'eau, `march_days` ne compte que la marche, l'eau se passant d'une traite, et `total_days` le tout ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu.
+- `--to <id | x,y | b<id> | i<terre> | type>` : un corps, une tuile, un bâtiment, une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource (`nearest`), par virgules pour les seuls types — deux nombres font une tuile, un corps se vise seul ; un bâtiment à sa tuile, une tâche à la sienne (`task_target`) ; son `circle`, `total_` dès deux parts ; passé 6 h de marche, `march_days`, haltes comprises, remplace les heures, sans l'eau, passée d'une traite, que `total_days` y ajoute ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu.
 
 ### `geography` :
 

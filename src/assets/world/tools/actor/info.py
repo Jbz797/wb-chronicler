@@ -533,7 +533,19 @@ def _change(key: str, before: object, after: object) -> dict | list | None:
     return {"new": after} if before is None else [before, after]
 
 
-# Chapter numbers as runs, `C2–C5, C7`: a status held chapter after chapter reads as one stretch, its breaks as a comma.
+# The body at each chapter up to the one read, off each chapter's save, where it stood at all: one walk for every option that reads the chapters' past.
+@cache
+def _chapter_bodies(actor_id: int, upto: int) -> tuple[tuple[int, dict], ...]:
+    found = []
+    for n in range(1, upto + 1):
+        if (path := SAVES_DIR / f"C{n}" / "map.wbox").exists():
+            body = next((a for a in load_save(path).get("actors_data") or [] if a.get("id") == actor_id), None)
+            if body is not None:
+                found.append((n, body))
+    return tuple(found)
+
+
+# Chapter numbers as runs, `C2–C5, C7`: a status or a total held chapter after chapter reads as one stretch, its breaks as a comma.
 def _chapter_spans(numbers: list[int]) -> str:
     runs: list[list[int]] = []
     for n in numbers:
@@ -677,6 +689,14 @@ def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mappin
     return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
 
 
+# A body's kills at each chapter, total by total: the save dates no death it dealt, so a rise lies between the chapter before its first (or birth) and that one.
+def _kill_history(actor_id: int, upto: int) -> dict | None:
+    totals = defaultdict(list)
+    for n, body in _chapter_bodies(actor_id, upto):
+        totals[str(body.get("kills") or 0)].append(n)
+    return {total: _chapter_spans(at) for total, at in totals.items()} or None
+
+
 # The actor's tie to another body, or `None`, off his `_ties`: WB keeps two parents and one mate each — a child names him, a sibling shares a parent.
 def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str | None:
     aid, parents, lover = ties
@@ -744,11 +764,7 @@ def _species(actor: dict, ctx: dict) -> dict:
 # A body's lasting statuses at each chapter up to the one read, off each chapter's save: `seen` where it stood at all, what came and went in between unseen.
 def _status_history(actor_id: int, upto: int) -> dict | None:
     lasting, held, seen = load_data("statuses.json"), defaultdict(list), []
-    for n in range(1, upto + 1):
-        if not (path := SAVES_DIR / f"C{n}" / "map.wbox").exists():
-            continue
-        if (body := next((a for a in load_save(path).get("actors_data") or [] if a.get("id") == actor_id), None)) is None:
-            continue
+    for n, body in _chapter_bodies(actor_id, upto):
         seen.append(n)
         for status in kept_statuses(body) or ():
             if status in lasting:
@@ -1013,10 +1029,11 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
-    statuses, argv = "--statuses" in argv, [arg for arg in argv if arg != "--statuses"]
+    kills, statuses = "--kills" in argv, "--statuses" in argv
+    argv = [arg for arg in argv if arg not in {"--kills", "--statuses"}]
     save_path, argv, chapter = take_chapter(argv)
-    if statuses and chapter is None:  # the chapters' saves are the record it reads: before the first, there is none
-        print("✗ `--statuses` reads the chapters' saves, and none is written yet", file=sys.stderr)
+    if (kills or statuses) and chapter is None:  # the chapters' saves are the record it reads: before the first, there is none
+        print(f"✗ `--{'kills' if kills else 'statuses'}` reads the chapters' saves, and none is written yet", file=sys.stderr)
         return 2
     upto = int(chapter[1:]) if chapter else 0
     try:
@@ -1025,7 +1042,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     if not argv:
-        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>|i<land>|<kind>] [--since C<n>] [--statuses] [C<n>] — see docs/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>|i<land>|<kind>] [--since C<n>] [--kills] [--statuses] [C<n>] — docs/tools.md", file=sys.stderr)
         return 2
     try:
         actor_id = int(argv[0])
@@ -1034,8 +1051,9 @@ def main(argv: list[str]) -> int:
         return 2
 
     requested = argv[1] if len(argv) > 1 else None
+    flagged = since is not None or kills or statuses
     try:
-        sections = parse_sections(requested, _ALL_SECTIONS) if requested or (target is None and since is None and not statuses) else ()  # a flag alone answers alone
+        sections = parse_sections(requested, _ALL_SECTIONS) if requested or (target is None and not flagged) else ()  # a flag alone answers alone
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -1051,10 +1069,10 @@ def main(argv: list[str]) -> int:
         then_save = load_save(then_path)
         then_ctx = _build_context(then_save, then_path)
         then = then_ctx["actors_by_id"].get(actor_id)
-    if actor is None and not sections and target is None:  # a body gone still answers `--since` and `--statuses`, each with its own past, and they alone
-        history = _status_history(actor_id, upto) if statuses else None
-        if (since or statuses) and (not since or then is not None) and (not statuses or history):
-            emit({"since": _build_since(None, then, ctx, save, then_ctx, then_save) if since else None, "statuses": history})
+    if actor is None and not sections and target is None:  # a body gone still answers `--since`, `--kills` and `--statuses`, each with its own past, and they alone
+        dealt, history = _kill_history(actor_id, upto) if kills else None, _status_history(actor_id, upto) if statuses else None
+        if (since or kills or statuses) and (not since or then is not None) and (not kills or dealt) and (not statuses or history):
+            emit({"kills": dealt, "since": _build_since(None, then, ctx, save, then_ctx, then_save) if since else None, "statuses": history})
             return 0
     if actor is None:
         print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
@@ -1140,6 +1158,8 @@ def main(argv: list[str]) -> int:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
     if since:
         out["since"] = _build_since(actor, then, ctx, save, then_ctx, then_save)
+    if kills:
+        out["kills"] = _kill_history(actor_id, upto)
     if statuses:
         out["statuses"] = _status_history(actor_id, upto)
     if aims:
