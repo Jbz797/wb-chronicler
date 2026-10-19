@@ -135,16 +135,16 @@ class RebuildTrigger {
     if (this.#ready) this.#schedule();
   }
 
-  // A file replaced whole (`sed -i`, atomic save) `ng serve` misses, its new inode the only tell: touched a second later, sooner being lost with the swap.
+  // A file replaced whole (`sed -i`, atomic save) `ng serve` misses: the trigger is touched, never the file, whose new mtime his editor would take for a change
   #changed(file, stats) {
     if (!stats || this.#inodes.get(file) === stats.ino) return;
     this.#inodes.set(file, stats.ino);
-    setTimeout(() => touch(file, `${file} replaced whole — touched for a reload`), this.#debounceMs);
+    this.#schedule();
   }
 
   #schedule() {
     clearTimeout(this.#timer);
-    this.#timer = setTimeout(() => touch(this.#trigger, 'new file/folder in saves — triggered rebuild'), this.#debounceMs);
+    this.#timer = setTimeout(() => touch(this.#trigger, 'a file in saves added or replaced — triggered rebuild'), this.#debounceMs);
   }
 }
 
