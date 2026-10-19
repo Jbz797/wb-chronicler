@@ -2,7 +2,7 @@
 
 # Reads the official WorldBox wiki through its MediaWiki API, the one door its 403 leaves open. User-facing docs: `docs/chronicler.md` § « Accès au wiki ».
 # `<Page>` prints its wikitext, a redirect followed to the section it names; `--row <name>` only the table rows naming it, cell by cell under its column;
-# `--list [word]` its titles, every batch of the listing walked, filtered on a word when one is given.
+# `--list [word]` its titles, every batch of the listing walked, filtered on a word when one is given; `--search <words>` the pages whose text holds them.
 
 import html
 import json
@@ -19,6 +19,8 @@ from shared import arg_parser
 _API = "https://the-official-worldbox-wiki.fandom.com/api.php"
 _BATCH = 500  # the most titles one `allpages` call hands back
 _CELL_ATTRS = re.compile(r'^\s*(?:[\w-]+\s*=\s*"[^"]*"\s*)+\|(?!\|)')  # `| style="…" | text`: a cell's own styling, before its single pipe
+_CHANGELOG = re.compile(r"^\d+\.\d")  # a version's release notes, `0.7.0 - Crabs and Sorcery`: the game's history, never its rules as they stand
+_FOUND = 10  # pages `--search` hands back, best first: past them the wiki only grazes the words
 _HEADERS = {"User-Agent": "Mozilla/5.0"}  # the wiki turns away a request that names no browser, 403 and nothing else
 _LABEL_WORDS = 3  # words past which a cell is prose, not a label: « Spore », « Mushroom Production »
 _STEM = 4  # letters two words must open on alike to be taken for one: `spore` and `spores`, `corruption` and `corrupted`
@@ -97,18 +99,26 @@ def _titles() -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    parser = arg_parser(prog="wiki/info.py", description="Read a page of the official WorldBox wiki, or list its titles.")
+    parser = arg_parser(prog="wiki/info.py", description="Read a page of the official WorldBox wiki, list its titles or search its text.")
     parser.add_argument("page", nargs="?", help="the page's title, as `wiki:<Page>` names it")
     parser.add_argument("--list", nargs="?", const="", metavar="word", help="its titles, those holding the word alone if one is given")
+    parser.add_argument("--search", metavar="words", help="the pages whose text holds them, best first — where no title does")
     parser.add_argument("--row", metavar="name", help="the table rows naming it alone, cell by cell — a trait's id works, `_` read as a space")
     args = parser.parse_args(argv)
-    if args.list is None and not args.page:  # said here rather than by `arg_parser`, whose error points to `tools.md`, where the wiki is not
-        print("✗ name a page, or `--list [word]` — see docs/chronicler.md § « Accès au wiki WorldBox »", file=sys.stderr)
+    if args.list is None and not args.search and not args.page:  # said here rather than by `arg_parser`, whose error points to `tools.md`, where the wiki is not
+        print("✗ name a page, `--list [word]` or `--search <words>` — see docs/chronicler.md § « Accès au wiki WorldBox »", file=sys.stderr)
         return 2
     page = (args.page or "").removeprefix("wiki:")  # the docs write a page as `wiki:<Page>`, and that prefix is no part of its title
     try:
         if args.list is not None:
             print("\n".join(title for title in _titles() if args.list.lower() in title.lower()))
+            return 0
+        if args.search:
+            hits = _ask({"action": "query", "list": "search", "srsearch": args.search, "srwhat": "text", "srlimit": _BATCH})["query"]["search"]
+            if not (found := [hit["title"] for hit in hits if not _CHANGELOG.match(hit["title"])][:_FOUND]):
+                print(f"✗ no page speaks of « {args.search} » — the wiki is in English: the game's own words", file=sys.stderr)
+                return 1
+            print("\n".join(found))
             return 0
         # `redirects`: a third of the pages are but a pointer to another, and without it the pointer is all that comes back.
         answer = _ask({"action": "parse", "page": page, "prop": "wikitext|sections", "redirects": 1})
