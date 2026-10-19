@@ -14,10 +14,11 @@ import {
 import { CompactPipe, ExactPipe, TierPipe } from '../../../../pipes';
 import { ChroniclerService } from '../../../../services';
 import { DeltaComponent } from '../delta/delta.component';
+import { NewBadgeComponent } from '../new-badge/new-badge.component';
 
 @Component({
   selector: 'app-ranked-stat',
-  imports: [CompactPipe, DecimalPipe, DeltaComponent, ExactPipe, NzTooltipModule, TierPipe],
+  imports: [CompactPipe, DecimalPipe, DeltaComponent, ExactPipe, NewBadgeComponent, NzTooltipModule, TierPipe],
   templateUrl: './ranked-stat.component.html',
   styleUrl: './ranked-stat.component.scss',
 })
@@ -47,8 +48,10 @@ export class RankedStatComponent {
     const c = this._resolve(current);
     const p = previous ? this._resolve(previous) : null;
 
-    const valueDelta = this.hideDelta() ? undefined : (p ? c.value - p.value : undefined);
-    return { ...c, rankStatus: this._rankStatus(c.rank, p?.rank, !!p), valueDelta };
+    // Python drops a figure at 0, so a body's line absent last chapter reads 0 there: a figure that appears is new, not a rise from nothing.
+    const isNew = !!p && p.value === 0 && c.value !== 0;
+    const valueDelta = isNew || this.hideDelta() ? undefined : (p ? c.value - p.value : undefined);
+    return { ...c, isNew, rankStatus: this._rankStatus(c.rank, p?.rank, !!p), valueDelta };
   });
   // Live gauge value for stats that have a cap (health/mana/stamina). `null` for all others.
   protected readonly gaugeValue = computed(() => {

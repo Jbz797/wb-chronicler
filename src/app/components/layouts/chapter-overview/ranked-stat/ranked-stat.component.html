@@ -9,7 +9,11 @@
       } @else {
         <span>{{ d.value | number: numberFormat() }}{{ unit() }}</span>
       }
-      <app-delta [inverted]="inverted()" [suffix]="deltaSuffix()" [value]="d.valueDelta" />
+      @if (d.isNew) {
+        <app-new-badge />
+      } @else {
+        <app-delta [inverted]="inverted()" [suffix]="deltaSuffix()" [value]="d.valueDelta" />
+      }
     </span>
     @if (showRank() && (d.rank !== undefined || d.rankStatus)) {
       <span>
