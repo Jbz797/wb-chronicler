@@ -211,6 +211,17 @@
     }
   }
 
+  // A dialogue's lines, as `ReaderPage` marks them: one exchange set off by a rule, its replies held together and left-aligned, where justified prose would gape.
+  .chapter p.dialogue {
+    border-left: 2px solid $gold-soft;
+    margin: 0;
+    padding: 0.3em 0 0.3em 1.2em;
+
+    + :not(.dialogue) {
+      margin-top: 1em; // a paragraph's room sits below it alone, so the prose after the exchange takes the gap the last reply gave up
+    }
+  }
+
   hr {
     border: 0;
     height: 2em;

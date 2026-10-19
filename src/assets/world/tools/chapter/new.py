@@ -115,7 +115,7 @@ _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never don
 )
 
 _DIALOGUE = "chronicler.md § V, « Un dialogue quand le favori parle »"  # what the audit judges a dialogue by, in the rule's own words
-_DIALOGUE_FLOOR = 500  # characters a dialogue holds at least, blanks folded: under it an exchange is a line or two, not a talk
+_DIALOGUE_FLOOR = 750  # characters a dialogue holds at least, as read: no dash, a tag by its text, blanks folded — under it, a line or two, not a talk
 _DRAFT_HEADINGS = {"en": "Draft", "fr": "Brouillon"}  # one per language the settings panel offers: a language added there owes its word here
 
 # Everything a reset sweeps away. `tiles` holds the ticking ones (fires, melting ice), not the ground — that lives in `tileMap`/`tileArray`/`tileAmounts`.
@@ -711,7 +711,7 @@ def _print_step_five(n: int, facts: dict) -> None:
     if facts["doubled"] or facts["misplaced"]:
         print("  → set these right in history/places.json")
     for line, length in facts["dialogues"]:
-        print(f"  ✗ dialogue l.{line}, {length} characters of {_DIALOGUE_FLOOR} at least, blanks folded")
+        print(f"  ✗ dialogue l.{line}, {length} characters of {_DIALOGUE_FLOOR} at least — dashes and tag markup aside, blanks folded")
     if stray := facts["stray"]:
         print(f"  ✗ tags whose id answers nothing: {', '.join(f'l.{line} {tag}' for line, tag in stray)} — an id made up shows a blank where its icon goes")
 
@@ -860,7 +860,7 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
     return None
 
 
-# Each dialogue under its floor, by its first line: two lines or more opening on a dash, parted by blank lines alone, and counted as a chapter is.
+# Each dialogue under its floor, by its first line: two lines or more opening on a dash, parted by blank lines alone, counted as the reader reads it.
 def _short_dialogues(prose: str) -> list[tuple[int, int]]:
     lines, last = prose.splitlines(), 0
     runs: list[tuple[int, list[str]]] = []
@@ -871,7 +871,13 @@ def _short_dialogues(prose: str) -> list[tuple[int, int]]:
             else:
                 runs.append((at, [line]))
             last = at
-    return [(at, length) for at, replies in runs if len(replies) > 1 and (length := chapter_length(" ".join(replies))) < _DIALOGUE_FLOOR]
+    said = [(at, chapter_length(_shown(" ".join(replies)).replace("—", " "))) for at, replies in runs if len(replies) > 1]
+    return [(at, length) for at, length in said if length < _DIALOGUE_FLOOR]
+
+
+# A marked text as the reader sees it: a tag shows its name alone, never its markup — a title's cap and a dialogue's floor count that.
+def _shown(text: str) -> str:
+    return _TAG.sub(lambda m: m[1] or "", text)
 
 
 # Tags the chapter as an audit round reads it, `C<n>-<k>`, and returns that round with the one before — the last one again when nothing moved since it.
@@ -908,7 +914,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
     carried = bool(descriptor) and same and descriptor == before.get("descriptor")
     written = {tier: summary for tier in _TRAIT_SOURCES if isinstance(summary := (chapter.get(tier) or {}).get("traits"), str)}
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
-    h1_length = len(_TAG.sub(lambda m: m[1] or "", h1 or ""))  # as read: a tag in the title shows its name alone, never its markup
+    h1_length = len(_shown(h1 or ""))
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(text)) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
     dialogues, doubled, misplaced, stray = _short_dialogues(prose), _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)

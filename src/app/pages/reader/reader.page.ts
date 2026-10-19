@@ -94,6 +94,7 @@ export class ReaderPage {
     // Flattened before the paint: headings, the closing hook, a table's column titles, and a dialogue's lines, where a plate would break the voice.
     const replies = [...root.querySelectorAll(':scope .chapter p')].filter(line => line.textContent?.trimStart().startsWith('—'));
     this._plainTags([...root.querySelectorAll(':scope h1, :scope h2, :scope .chapter th, :scope .chapter hr + p:last-child'), ...replies]);
+    for (const line of replies) line.classList.add('dialogue');
     ActorSpriteHelpers.paintAll(root, this._registry.persons());
     BookSpriteHelpers.paintAll(root, this._registry.books());
     KingdomSpriteHelpers.paintAll(root, this._registry.kingdoms());
