@@ -1,6 +1,6 @@
 # 🔍 Relecture
 
-<p class="metadata">Date de mise à jour : 19/10/26 19:33</p>
+<p class="metadata">Date de mise à jour : 19/10/26 22:14</p>
 
 Ce que tu fais du chapitre une fois l'étape 5 bouclée, jusqu'à `--deliver`. Les auditeurs n'en savent rien : ne leur en cite rien.
 
@@ -20,7 +20,7 @@ Lance 4 sous-agents neufs pour ce chapitre, en même temps. Chacun reçoit sa li
 2. Répare d'abord ce sur quoi une section repose (son fil de clôture, un absolu, une absence, une cause, une date), puisque sa chute réécrit le reste. Ne réécris que ce qu'une correction ne peut réparer, et lis sur un outil toute affirmation qu'une correction amène, jamais sur le brouillon, un rapport ou ta mémoire. Seule exception : ce qu'un vérificateur de faits a tiré de la save par ses propres scripts, faute d'outil, vaut une sortie — signale au dev l'outil qui manque.
 3. Cherche ensuite partout la même valeur, le même mot ou la même tournure : `chapter.md` avec son titre et son épigraphe, et ta prose dans `chapter.json` ; un mot ne se remplace jamais partout où il revient.
 4. Les propositions du récit et les « mieux possible » de la conformité sont à prendre ou à laisser, de ta main. Un dialogue se bâtit avec le récit, par messages : donne-lui les faits et ce que vit l'interlocuteur, il apporte ce que la chronique sait du favori. Ton premier jet en porte l'esquisse ; échangez sujet et répliques jusqu'à l'accord, puis écris-le de ta main.
-5. Rejoue `--finalize`, puis relance chacun par message sur l'id de son rapport, que tu notes, avec le diff qu'il donne depuis son tour et, de ta lecture, seulement ce que tu n'as pas pu mesurer. Un sous-agent neuf seulement si ça échoue. Un chapitre réécrit en entier repart comme au premier audit, chaque fiche avec sa ligne telle quelle.
+5. Rejoue `--finalize`, puis relance chacun par message sur l'id de son rapport, que tu notes, avec le diff qu'il donne depuis son tour, chaque écart que tu laisses avec sa raison, et, de ta lecture, seulement ce que tu n'as pas pu mesurer. Un sous-agent neuf seulement si ça échoue. Un chapitre réécrit en entier repart comme au premier audit, chaque fiche avec sa ligne telle quelle.
 6. Annonce au récit le dernier tour une fois que les quatre ont vu le même texte sans rien y trouver : c'est là qu'il écrit le registre des veilles ; réglé, `tools/chapter/new.py --deliver`.
 
 Une retouche après la livraison suit les points 3 et 5, sans relancer `--deliver` : son diff part de la livraison (`git -C saves diff C<n>-delivered -- C<n>`), et `echo.py` en refait les contrôles.
