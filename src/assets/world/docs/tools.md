@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 19/10/26 23:29</p>
+<p class="metadata">Date de mise à jour : 19/10/26 23:31</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -80,6 +80,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ### Entités et comptes :
 
+- `armies` (`world … snapshot`) : les armées levées dans le monde, une par cité au plus, en paix comme en guerre (`city … army` la détaille) : `wiki:Armies`.
 - `attractivity` (`city … metadata`) : les corps gagnés, moins ceux partis vivants, fondateur et migrants à part.
 - `buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose, que `born` date ; nommée, `city … buildings` les liste, chantier marqué : ce qu'elle tait, la cité ne l'a pas.
 - `creatures_created` (`cumulative`) : ce qui paraît sans naître — semé, migrant, invoqué, changé d'espèce, coque —, jamais une naissance (`creatures_born`).
