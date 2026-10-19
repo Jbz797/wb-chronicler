@@ -35,7 +35,6 @@ EQUIPMENT_RACKS = {
 }
 
 HISTORY_S3DB = Path(__file__).parents[2] / "history" / "map_stats.s3db"  # WB's SQLite history, copied each chapter: `history/info.py` and the recap read it
-HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 MAX_LISTED = 50  # past so many, a roll is read for what and where, not for which is which: `roster` and `positions` count instead
 MIN_PER_CAPITA_UNITS = 4  # Below four souls a per-head ratio or a share measures the divisor, not the body — a lone survivor would top every podium.
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
@@ -76,7 +75,6 @@ _CHUNK_TILES = 16  # WB `MapChunk` side: 4 to a save's 64-tile block (`MapChunkM
 _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "stone_none", "gold_none", "metal_none")
 
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
-_DAILY_TILES_PER_SPEED = 24.0  # chronicler.md § Échelle: `speed` 10 walks 240 tiles a day, 6 hours of road, its halts counted — far short of 24 hours' worth
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
 _DOMINANT_AXIS = 0.4  # an axis under this share of the other drops out of the bearing: a heading mostly north reads N, not NE
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
@@ -659,13 +657,6 @@ def competition_ranks(entity: dict, peers: list, getters: dict) -> dict:
 # Deaths by cause as WB keeps them, a `deaths_<cause>` field each, none at nought — WB's `natural` told `old_age`, as `world` and `history` tell it.
 def death_causes(record: dict) -> dict[str, int]:
     return {"old_age" if (cause := k.removeprefix("deaths_")) == "natural" else cause: v for k, v in record.items() if k.startswith("deaths_") and v}
-
-
-# A time as the chronicler reads it: whole minutes under the hour, where a tenth of an hour would round a few tiles to nought, else hours to the tenth.
-def duration(hours: float, prefix: str = "") -> dict:
-    if (minutes := round(hours * 60)) >= 60:
-        return {f"{prefix}hours": round(hours, 1)}
-    return {f"{prefix}minutes": max(minutes, 1) if hours else 0}  # a trip, however short, takes a minute: 0 is for the tile he stands on
 
 
 # One block the command named (a section, `--to`, a tile) comes bare, its key only repeating the question; several named stay keyed, even one left empty.
@@ -1326,17 +1317,6 @@ def take_since(argv: list[str]) -> tuple[str | None, list[str]]:
     if not (value[:1] == "C" and value[1:].isdigit()):
         raise ValueError("`--since` takes a chapter, e.g. `--since C2`")
     return value, argv[:at] + argv[at + 2 :]
-
-
-# A trip's time by parts: `walk_`, `swim_` or `sail_`, `total_` once two (`foot` None: unwalked); past a day `march_days`, a crossing's `total_days`.
-def trip_time(per_hour: float, total: float, foot: float | None = None, water: tuple[str, float] | None = None) -> dict:
-    day = _DAILY_TILES_PER_SPEED / HOURLY_TILES_PER_SPEED * per_hour  # a day's march, in the cost's own tiles
-    if water and foot is not None:  # water is crossed in one go, swum or sailed: the march alone keeps its halts, and the whole day by day
-        (part, wet), marched = water, foot / day
-        told = duration(wet / per_hour, f"{part}_") | ({"march_days": round(marched, 1)} if marched >= 1 else duration(foot / per_hour, "walk_"))
-        whole = marched + wet / per_hour / 24
-        return told | ({"total_days": round(whole, 1)} if whole >= 1 else duration(total / per_hour, "total_"))
-    return {"march_days": round(total / day, 1)} if total >= day else duration(total / per_hour, "walk_" if foot is not None else "total_")
 
 
 # A site still rising: WB flags a town's building the day it is laid — the day its `created_time` and `housesBuilt` count it — and lifts the flag at its completion.

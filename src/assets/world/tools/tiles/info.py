@@ -19,7 +19,6 @@ from grid import LazyTileGrid, listed_tiles, off_land, patch_finder, tile_biome,
 from islands import compute_islands_cached, islet_centre
 from shared import (
     DIAGONAL_EXTRA,
-    HOURLY_TILES_PER_SPEED,
     ZONE_TILES,
     actor_xy,
     arg_parser,
@@ -35,7 +34,6 @@ from shared import (
     load_save,
     parse_sections,
     take_chapter,
-    trip_time,
     under_construction,
     walk_tiles,
     xy_arg,
@@ -52,7 +50,7 @@ _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no lo
 _LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
-_REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its walks are timed at the pace the scale is told in
+_REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its way is the one the scale's pace would take, never timed
 # The eight steps a tide takes, each with its length — a slanted one being longer than a straight one, the least water is not the nearest in rings.
 _WEIGHTED_DELTAS = tuple(((dx, dy), 1.0 if dx == 0 or dy == 0 else 1 + DIAGONAL_EXTRA) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)
 
@@ -316,16 +314,16 @@ def _lie(tiles: list[tuple[int, int]], mean_x: float, mean_y: float) -> dict:
     return out
 
 
-# The crow's line beside the walk and its time at the reference pace, left out where no land joins them — `goals` are tile indices, read from a land alone.
+# The crow's line beside the walk the reference pace takes, left out where no land joins them — `goals` are tile indices, read from a land alone.
 def _measure(x: int, y: int, tiles: int, goals: Iterable[int], ctx: dict) -> dict:
     island_of = ctx["tile_to_island"]
     if (land := island_of.get((x, y))) is None or not (ends := set(compress(goals := list(goals), map(land.__eq__, island_of.listed_ids(goals))))):
         return {"crow_tiles": tiles}
     walk_map = ctx["walk_map"]()
-    # A body no ground is home to, and that never swims: which body would, no tile says. Its pace is a `speed` 10's, the sand slowing it as any.
+    # A body no ground is home to, and that never swims: which body would, no tile says. A `speed` 10 picks the way, slowed by sand as any; no time comes out.
     if (way := walk_way(walk_map, walk_map.gait(_REFERENCE_SPEED, frozenset()), x, y, ends)) is None:
         return {"crow_tiles": tiles}
-    return {"crow_tiles": tiles, "walk_tiles": round(way[3]), **trip_time(HOURLY_TILES_PER_SPEED * _REFERENCE_SPEED, way[0], way[0])}
+    return {"crow_tiles": tiles, "walk_tiles": round(way[3])}
 
 
 # The lands nearest first, `_NEAR_ISLANDS` of them named — an order `render` keeps by way of `_VALUE_ORDERED` — and the cut said with its size, as `waters`

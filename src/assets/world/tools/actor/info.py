@@ -33,7 +33,6 @@ from founding import city_zones, settle_gates, settle_told
 from grid import LazyTileGrid, off_land
 from islands import compute_islands_cached, islet_centre
 from shared import (
-    HOURLY_TILES_PER_SPEED,
     NEW_BABY_NUTRITION,
     PROFESSION_KING,
     PROFESSION_LEADER,
@@ -54,7 +53,6 @@ from shared import (
     built_by_tile,
     chunks_apart,
     competition_ranks,
-    duration,
     emit,
     entity_born,
     entity_ref,
@@ -78,7 +76,6 @@ from shared import (
     sex_label,
     take_chapter,
     take_since,
-    trip_time,
     unsited_reason,
     walk_tiles,
     wants_detail,
@@ -92,9 +89,11 @@ _ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_i
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
+_DAILY_TILES_PER_SPEED = 24.0  # chronicler.md § Échelle: `speed` 10 walks 240 tiles a day, 6 hours of road, its halts counted — far short of 24 hours' worth
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 _FLOORS = {"gen": 1}  # a count `--since` reads unsaid as its floor: WB counts a founder its first generation
 _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # a goal's words: `moved` keeps its own heading and length
+_HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
@@ -188,7 +187,7 @@ def _biology(actor: dict, ctx: dict) -> tuple | list:
 def _boat_per_hour(hull: dict | None = None) -> float:
     kinds = load_data("boat-assets.json").get("kinds") or {}
     kind = ((hull or {}).get("asset_id") or "").removeprefix("boat_").partition("_")[0]
-    return HOURLY_TILES_PER_SPEED * (kinds.get(kind) or kinds["transport"])["speed"]
+    return _HOURLY_TILES_PER_SPEED * (kinds.get(kind) or kinds["transport"])["speed"]
 
 
 # The tags a body walks and swims by, off its biology's traits and its clan's: `walk_adaptation_*`, `fast_swimming`, `water_creature`.
@@ -449,7 +448,7 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
     by_id = ctx["actors_by_id"]
     near = sorted(circles.pop("intimate"))
     rings: dict = {
-        "intimate": [_surroundings_row(by_id[i], ctx, duration(cost / per_hour, "total_"), dx, dy, home, land, kin.get(i)) for cost, i, dx, dy, land in near]
+        "intimate": [_surroundings_row(by_id[i], ctx, _duration(cost / per_hour, "total_"), dx, dy, home, land, kin.get(i)) for cost, i, dx, dy, land in near]
     }
     plans = {name: _surroundings_plan(entries, ctx, kin, per_hour) for name, entries in circles.items()}
     if detailed := wants_detail(requested, sum(map(len, plans.values()))):
@@ -469,7 +468,7 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
     home, per_hour = island_of.get((cx, cy)), _per_hour(actor, ctx)
     if (gait := _gait(actor, ctx)) is None:  # its way is the straight line, flown, swum or sailed: no walk to tell, only its time
         crow = to["crow_tiles"]
-        return {**to, "circle": _circle(actor, ctx, crow / per_hour, home != island_of.get(goal), lambda: None), **trip_time(per_hour, crow)}
+        return {**to, "circle": _circle(actor, ctx, crow / per_hour, home != island_of.get(goal), lambda: None), **_trip_time(per_hour, crow)}
     walk_map = ctx["walk_map"]()
     goals = {y * walk_map.width + x for x, y in aims}
     # A lone goal the rock shuts in, off a body it does not shut in too, is refused at once: the search would walk the whole world before giving up.
@@ -640,6 +639,13 @@ def _compute_stats(actor: dict, ctx: dict) -> dict:
     return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
 
 
+# A time as the chronicler reads it: whole minutes under the hour, where a tenth of an hour would round a few tiles to nought, else hours to the tenth.
+def _duration(hours: float, prefix: str = "") -> dict:
+    if (minutes := round(hours * 60)) >= 60:
+        return {f"{prefix}hours": round(hours, 1)}
+    return {f"{prefix}minutes": max(minutes, 1) if hours else 0}  # a trip, however short, takes a minute: 0 is for the tile he stands on
+
+
 # The same trip made by the body aimed at, which no shared figure tells: its own pace, its own swim — only what differs, and nothing where both agree.
 def _from_them(other: dict, actor: dict, to: dict, ctx: dict) -> dict | None:
     try:
@@ -716,10 +722,10 @@ def _off_land_at(body: dict, ctx: dict) -> dict:
 
 # Tiles walked in an hour at the body's own pace — a passenger's too, the unit his hull's sailing is counted in (`_gait`).
 def _per_hour(actor: dict, ctx: dict) -> float:
-    return HOURLY_TILES_PER_SPEED * (compute_actor_stats(actor, ctx).get("speed") or 1)
+    return _HOURLY_TILES_PER_SPEED * (compute_actor_stats(actor, ctx).get("speed") or 1)
 
 
-# The circle a time falls in, read as `duration` tells it, so a row printed « 2 h » stands in the common circle though its walk ran to 2.04 — `None` past them.
+# The circle a time falls in, read as `_duration` tells it, so a row printed « 2 h » stands in the common circle though its walk ran to 2.04 — `None` past them.
 def _ring(hours: float) -> str | None:
     told = minutes if (minutes := round(hours * 60)) < 60 else round(hours, 1) * 60
     return next((name for name, limit in _CIRCLES if told <= limit), None)
@@ -776,7 +782,7 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str], per
         key = ("city", city) if sapient else ("asset_id", other.get("asset_id"))
         if (group := groups.get(key)) is None:
             head = {"city": entity_ref(city, ctx["cities_by_id"]), "species": Counter()} if sapient else {"asset_id": key[1]}
-            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"dir": bearing(dx, dy), **duration(measure / per_hour, "total_")}}
+            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"dir": bearing(dx, dy), **_duration(measure / per_hour, "total_")}}
             plan.append(group)
         group["count"] += 1
         if sapient:
@@ -823,7 +829,7 @@ def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, ki
             rows.append(item)
             continue
         measure, i, dx, dy, land = entry
-        rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, duration(measure / per_hour, "total_"), dx, dy, home, land, kin.get(i)))
+        rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, _duration(measure / per_hour, "total_"), dx, dy, home, land, kin.get(i)))
     return rows
 
 
@@ -926,6 +932,17 @@ def _trip_then(then: dict, goal: tuple[int, int], whom: str, then_ctx: dict) -> 
     return {key: value for key, value in trip.items() if key == "crow_tiles" or key not in _GOAL_ONLY}
 
 
+# A trip's time by parts: `walk_`, `swim_` or `sail_`, `total_` once two (`foot` None: unwalked); past a day `march_days`, a crossing's `total_days`.
+def _trip_time(per_hour: float, total: float, foot: float | None = None, water: tuple[str, float] | None = None) -> dict:
+    day = _DAILY_TILES_PER_SPEED / _HOURLY_TILES_PER_SPEED * per_hour  # a day's march, in the cost's own tiles
+    if water and foot is not None:  # water is crossed in one go, swum or sailed: the march alone keeps its halts, and the whole day by day
+        (part, wet), marched = water, foot / day
+        told = _duration(wet / per_hour, f"{part}_") | ({"march_days": round(marched, 1)} if marched >= 1 else _duration(foot / per_hour, "walk_"))
+        whole = marched + wet / per_hour / 24
+        return told | ({"total_days": round(whole, 1)} if whole >= 1 else _duration(total / per_hour, "total_"))
+    return {"march_days": round(total / day, 1)} if total >= day else _duration(total / per_hour, "walk_" if foot is not None else "total_")
+
+
 # How far on foot each of `spots` lies, `None` for a body the ground never holds: round his land's bays, swum within reach toward another, each walk drawn if asked.
 def _walker(actor: dict, gait: Gait | None, ctx: dict, limit: float, spots: list[tuple]) -> Callable[[int, int, int | None], float | None] | None:
     if gait is None:
@@ -966,7 +983,7 @@ def _way_parts(way: tuple | None, per_hour: float, part: str) -> dict:
         return {}
     cost, water, swam, trod, _, _, crossings = way
     wet = {"crossings": crossings, f"{part}_tiles": max(round(swam), 1), "total_tiles": round(trod)} if water else {}
-    return {**wet, "walk_tiles": round(trod - swam), **trip_time(per_hour, cost, cost - water, (part, water) if water else None)}
+    return {**wet, "walk_tiles": round(trod - swam), **_trip_time(per_hour, cost, cost - water, (part, water) if water else None)}
 
 
 # Why no walk joins the two, named: the rock of their one land or round the goal, a water shut to the body, a strait no islet chain shortens, no crossing in reach.
