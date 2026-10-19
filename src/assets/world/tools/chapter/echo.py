@@ -13,13 +13,13 @@ from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, chronicle_git, emit, i18n, latest_chapter
+from shared import CHAPTER_CAP, CHAPTER_FLOOR, COUNTED_AS, SAVES_DIR, TAG_MARK, chapter_length, chronicle_git, emit, i18n, latest_chapter, unmarked
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _CLEAR = "`clear` speaks for words said again, figures aside: an angle, a chute, a sentence in other words or order is the eye's"  # lest a silence read as no repeat
 _DATE = "Dᴀᴛᴇ"  # a date as the chronicle must write one, read as a single name: the manual's own form, never a turn said again
 _DELIVERED = "delivered: only the lines changed since are weighed, its chapter-wide counts weighed at delivery"
-_FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
+_FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 12 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
 _LONG_RUN = 7  # words from which a run is a turn of phrase with a single word of its own: `et ce qui verdit au ras du sol`, `à l'entrée de l'an 5`
@@ -41,7 +41,6 @@ _SIGNS = {  # what a match's `by` names, glossed in the output for the signs it 
     "refrain": f"said in {_REFRAIN} chapters or more, the chronicle's own voice",
 }
 
-_TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # `[p 28 Voxzen]` read as its text, as `new.py` reads a title: a bare marker says nothing
 _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined — `le bras du couchant`, a place with no name —, told apart as a refrain is
 
 _USAGE = (
@@ -367,9 +366,9 @@ def _telling(run: list[_Token], long_run: int = _LONG_RUN) -> bool:
 # A stretch of prose as tokens: markup gone, a tag's text kept and marked as a name, an elision split from the word it leans on.
 def _tokens(text: str, number: int) -> list[_Token]:
     text = _dates().sub(_DATE, text)
-    names = {_key(word) for tag in _TAG.finditer(text) for word in _WORD.findall(tag[1] or "")}
+    names = {_key(word) for tag in TAG_MARK.finditer(text) for word in _WORD.findall(tag[1] or "")}
     out = []
-    for word in _WORD.findall(_MARKS.sub(" ", _TAG.sub(lambda m: m[1] or "", text))):
+    for word in _WORD.findall(_MARKS.sub(" ", unmarked(text))):
         key = _key(word)
         name = key in names or word[:1].isupper()
         out.append(_Token(_content(key, name), key, number, name, word))
@@ -446,7 +445,7 @@ def main(argv: list[str]) -> int:
         return 1
     # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
     if not (held := CHAPTER_FLOOR <= (length := chapter_length(_chapter(n) or "")) <= CHAPTER_CAP):
-        print(f"✗ chapter.md, {length} characters, blanks folded — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
+        print(f"✗ chapter.md, {length} characters, {COUNTED_AS} — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
     signs = sorted({sign for row in found["passages"] for match in row["matches"] for sign in match["by"]})
     # A check gone silent found nothing: named, so it is not read as unrun — the length too, silent while it holds.
     clear = sorted(check for check, rows in {**found, "length": not held}.items() if not rows)

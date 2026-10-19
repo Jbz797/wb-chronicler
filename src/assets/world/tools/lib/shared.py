@@ -20,8 +20,9 @@ from contextlib import closing
 from functools import cache, partial
 from pathlib import Path
 
-CHAPTER_CAP = 14000  # a sitting's read, some 11 minutes: past it the chapter says more than its world has done
+CHAPTER_CAP = 12000  # a sitting's read, some 9 minutes: past it the chapter says more than its world has done
 CHAPTER_FLOOR = 7000  # both in no doc: `new.py`'s recap gives them, delivery and `echo.py` hold them — counted past the audit, which cuts as much as it adds
+COUNTED_AS = "tags by their name, blanks folded"  # how every length a chapter is held to counts it, said beside each figure
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
@@ -46,6 +47,7 @@ PROFESSION_LEADER = 4
 PROFESSION_WARRIOR = 5
 SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `chapter/` reaches back to `C<n-1>` through it.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
+TAG_MARK = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a name's marker, `[p 28 Voxzen]`: read by its text alone, a bare one nothing
 UNITS_PER_MONTH = 5  # 5 `world_time` units = 1 month, the grain WB counts an incubation and a plot in.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 UNWRITTEN_HEALTH = 100  # WB `BaseObjectData`: the health a body, a hull or a building is born with, which a save leaves out
@@ -526,9 +528,9 @@ def built_by_tile(save: dict) -> dict[tuple, dict]:
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
 
 
-# A chapter's length as its bounds count it, blanks folded as the docs' budget folds them: a blank line or an indent is no prose.
+# A chapter's length as its bounds count it, `COUNTED_AS`: blanks folded as the docs' budget folds them, a marker's markup and an indent no prose.
 def chapter_length(text: str) -> int:
-    return len(re.sub(r"\s+", " ", text).strip())
+    return len(re.sub(r"\s+", " ", unmarked(text)).strip())
 
 
 # The world's hour as chapter `n` archived it, `None` where its save is gone: read off the save itself, the one record no script rewrites after the fact.
@@ -1332,6 +1334,11 @@ def union_root(parent: list[int], node: int) -> int:
     while (up := parent[node]) != node:
         parent[node] = node = parent[up]
     return node
+
+
+# A marked text as the reader sees it: a tag shows its name alone, never its markup — what every length a chapter is held to counts.
+def unmarked(text: str) -> str:
+    return TAG_MARK.sub(lambda m: m[1] or "", text)
 
 
 # Blocks too thin to rank, with their field and missed floor — unlike `{}`, a first place nobody holds; an empty block stays out, having nothing to rank

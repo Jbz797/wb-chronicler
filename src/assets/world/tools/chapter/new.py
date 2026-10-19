@@ -33,6 +33,7 @@ from islands import compute_islands_cached
 from shared import (
     CHAPTER_CAP,
     CHAPTER_FLOOR,
+    COUNTED_AS,
     HISTORY_S3DB,
     SAVES_DIR,
     UNITS_PER_YEAR,
@@ -55,6 +56,7 @@ from shared import (
     render,
     rounded_world_time,
     under_construction,
+    unmarked,
     world_laws,
     worldbox_running,
     write_save,
@@ -195,7 +197,6 @@ _SUMMARY = f"what those traits make of the body, {_PLAIN}; never a list, a tally
 
 _SUMMARY_CAP = 400
 _SUMMARY_CAPS = {"subspecies": 500}  # a lineage's alone is given more room: a biology is born whole, where the other tiers gather their traits one by one
-_TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
 _TAG_ID = re.compile(r"\[([a-z]) ([^\s\]]+)[^\]]*\]")  # a marker by its letter and its id, for what the id answers to
 
 # Where an entity's tag reads its id, in the chapter's own registries — a hull (`o`) and a war (`w`) have none, and go unweighed.
@@ -405,9 +406,9 @@ def _deliver() -> int:
         print(f"✗ C{n} — not yet deliverable")
         _print_step_five(n, facts)
         if short:
-            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes back to the audit")
+            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_FLOOR} at least, {COUNTED_AS} — what the tale gains goes back to the audit")
         elif long:
-            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_CAP} at most, blanks folded — cut whole passages, the least-borne first, never a correction")
+            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_CAP} at most, {COUNTED_AS} — cut whole passages, the least-borne first, never a correction")
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
         return 1
     print(f"✓ C{n} — delivery")
@@ -640,7 +641,7 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `history/watches.md`")
     told = "" if fav_id else " — no favorite, so the world itself, in two parts and no circle:"
-    print(f"  → step 4, the writing: {CHAPTER_FLOOR} to {CHAPTER_CAP} characters, blanks folded, counted at delivery, past the audit{told}")
+    print(f"  → step 4, the writing: {CHAPTER_FLOOR} to {CHAPTER_CAP} characters, {COUNTED_AS}, counted at delivery, past the audit{told}")
     if not fav_id:
         _print_bullets(_WORLD_ONLY)
     # In no doc: the cycle is the script's to tell, step by step. A chapter still under its draft title reads as unfinished, to the reader and to `--finalize`.
@@ -703,7 +704,7 @@ def _print_step_five(n: int, facts: dict) -> None:
     if long := facts["long"]:
         print(f"  ✗ trait summaries, in characters: {', '.join(f'{tier} {told}' for tier, told in long.items())}")
     if sized:
-        print("  → every length above counts spaces and markup too")
+        print("  → every length above counts spaces too, a tag by its name alone")
     for name, x, y, other in facts["doubled"]:
         print(f"  ✗ places.json « {name} »: ({x},{y}) is the very point of « {other} » — its sign needs a point of its own on the map")
     for name, x, y, found, declared in facts["misplaced"]:
@@ -711,7 +712,7 @@ def _print_step_five(n: int, facts: dict) -> None:
     if facts["doubled"] or facts["misplaced"]:
         print("  → set these right in history/places.json")
     for line, length in facts["dialogues"]:
-        print(f"  ✗ dialogue l.{line}, {length} characters of {_DIALOGUE_FLOOR} at least — dashes and tag markup aside, blanks folded")
+        print(f"  ✗ dialogue l.{line}, {length} characters of {_DIALOGUE_FLOOR} at least — asides kept, dashes aside, {COUNTED_AS}")
     if stray := facts["stray"]:
         print(f"  ✗ tags whose id answers nothing: {', '.join(f'l.{line} {tag}' for line, tag in stray)} — an id made up shows a blank where its icon goes")
 
@@ -871,13 +872,8 @@ def _short_dialogues(prose: str) -> list[tuple[int, int]]:
             else:
                 runs.append((at, [line]))
             last = at
-    said = [(at, chapter_length(_shown(" ".join(replies)).replace("—", " "))) for at, replies in runs if len(replies) > 1]
+    said = [(at, chapter_length(" ".join(replies).replace("—", " "))) for at, replies in runs if len(replies) > 1]
     return [(at, length) for at, length in said if length < _DIALOGUE_FLOOR]
-
-
-# A marked text as the reader sees it: a tag shows its name alone, never its markup — a title's cap and a dialogue's floor count that.
-def _shown(text: str) -> str:
-    return _TAG.sub(lambda m: m[1] or "", text)
 
 
 # Tags the chapter as an audit round reads it, `C<n>-<k>`, and returns that round with the one before — the last one again when nothing moved since it.
@@ -914,7 +910,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
     carried = bool(descriptor) and same and descriptor == before.get("descriptor")
     written = {tier: summary for tier in _TRAIT_SOURCES if isinstance(summary := (chapter.get(tier) or {}).get("traits"), str)}
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
-    h1_length = len(_shown(h1 or ""))
+    h1_length = len(unmarked(h1 or ""))
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(text)) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
     dialogues, doubled, misplaced, stray = _short_dialogues(prose), _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)
