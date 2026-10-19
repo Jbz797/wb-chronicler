@@ -119,7 +119,8 @@ class RebuildTrigger {
   #trigger = 'src/main.ts';
 
   start() {
-    watch(SAVES, { alwaysStat: true })
+    // The chronicle's own Git repo lives in `saves/` too: its commits are no chapter, and would else wake a rebuild apiece.
+    watch(SAVES, { alwaysStat: true, ignored: (file) => file.split(path.sep).includes('.git') })
       .on('add', (file, stats) => this.#added(file, stats))
       .on('addDir', () => this.#ready && this.#schedule())
       .on('change', (file, stats) => this.#changed(file, stats))
@@ -197,7 +198,7 @@ class WorldStore {
     await writeFile(this.#settings, `${JSON.stringify({ dev: development, lang, savePath }, undefined, 2)}\n`);
   }
 
-  // Empties `saves/` rather than removing it — angular.json declares it, `new.py` writes into it — then all of `history/`; what outlives a world sits elsewhere.
+  // Empties `saves/`, its Git too, not removing it — angular.json declares it, `new.py` writes into it — then `history/`; what outlives a world sits elsewhere.
   async wipe() {
     const entries = await entriesIn(SAVES);
     const history = [

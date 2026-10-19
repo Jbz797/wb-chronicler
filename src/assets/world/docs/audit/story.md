@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 18/10/26 21:32</p>
+<p class="metadata">Date de mise à jour : 19/10/26 11:25</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -34,4 +34,4 @@ Pars de `history/watches.md`, les veilles encore ouvertes, ou crée-le : ses seu
 
 ## Au réaudit
 
-Ce que la chronique porte de plus loin se dit une fois. Rappelé, pèse les lignes que le chroniqueur te renvoie, avec leurs paragraphes, et ce qui s'appuyait sur un passage coupé.
+Ce que la chronique porte de plus loin se dit une fois. Rappelé, pèse ce qui a bougé dans le diff de ton tour, avec ses paragraphes, et ce qui s'appuyait sur un passage coupé.

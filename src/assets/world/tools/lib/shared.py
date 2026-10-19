@@ -549,6 +549,15 @@ def children_by_id(save: dict) -> Counter:
     return tally
 
 
+# Git on the chronicle's own record, `saves/` — a repo of its own, which the code's ignores. Exit 127 where no git runs, as a shell says it: callers do without.
+def chronicle_git(*args: str) -> subprocess.CompletedProcess:
+    command = ["git", "-C", str(SAVES_DIR), "-c", "user.name=chronicler", "-c", "user.email=chronicler@localhost", *args]
+    try:
+        return subprocess.run(command, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        return subprocess.CompletedProcess(command, 127, "", "")
+
+
 # WB's own anchor for a town (`updateCityCenter`), so what sites one and what distances aim at: the zone centre closest to their average, nudged 2 tiles north.
 def city_centre(city: dict) -> tuple[int, int] | None:
     zones = [(zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2) for zx, zy in map(zone_xy, city.get("zones") or [])]

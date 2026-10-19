@@ -40,6 +40,7 @@ from shared import (
     asset_set,
     chapter_length,
     chapter_world_time,
+    chronicle_git,
     i18n,
     index_by_id,
     is_boat,
@@ -87,6 +88,10 @@ _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a worl
     "weighed in depth: traits, political standing, narrative promise, age, where it stands, what surrounds it…",
     "the world's first favorite also needs room for a homestead — a fitting biome around it, resources, obstacles at a distance; later ones, while nothing is built",
 )
+
+# What the chronicle's own git keeps (`shared.chronicle_git`): each chapter's prose and the chronicler's fields — never a save, a picture or a registry.
+_CHRONICLE_KEPT = "*\n!*/\n!C*/chapter.md\n!C*/chapter.json\n"
+
 # What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
 _DEATH = "the death section opens the chapter: how he died, pieced together as far as the data allow (§ Déduction des meurtres), what he leaves, the handover"
 
@@ -399,12 +404,14 @@ def _deliver() -> int:
         print(f"✗ C{n} — not yet deliverable")
         _print_step_five(n, facts)
         if short:
-            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes to the audit as new")
+            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_FLOOR} at least, blanks folded — what the tale gains goes back to the audit")
         elif long:
             print(f"  ✗ chapter.md, {length} characters of {CHAPTER_CAP} at most, blanks folded — cut whole passages, the least-borne first, never a correction")
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
         return 1
     print(f"✓ C{n} — delivery")
+    if _snapshot(n) is not None:  # what a retouch after delivery is weighed against, `echo.py` weighing those lines alone
+        chronicle_git("tag", "-f", f"C{n}-delivered")
     labels = _ACCOUNT.get(settings.get("lang", ""), _ACCOUNT["en"])
     detail = "each line details its gaps" if settings.get("dev") else "no comment beside them"
     account = ", ".join(f"« {labels[key].format('N')} »" for key in ("facts", "story"))
@@ -517,6 +524,11 @@ def _finalize() -> int:
         return 0
     # The run of the audit is `docs/review.md`'s, kept from the auditors: only the targets, which change with each chapter, are said here.
     print(f"  → the audit, until delivery: docs/review.md — its <cibles> are {_audit_targets(n, facts)}")
+    # The text tagged as this round reads it, so a relaunch hands over what moved since the auditor's own round rather than a list, or a memory.
+    if (rounds := _snapshot(n)) is not None:
+        tag, before = rounds
+        relaunch = f" — a relaunch hands each auditor `git -C saves diff <the round it last read> {tag} --word-diff -- C{n}`, the one before: {before}"
+        print(f"  → this text is round {tag}{relaunch if before else ''}")
     return 0
 
 
@@ -843,6 +855,26 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
     return None
+
+
+# Tags the chapter as an audit round reads it, `C<n>-<k>`, and returns that round with the one before — the last one again when nothing moved since it.
+def _snapshot(n: int) -> tuple[str, str | None] | None:
+    # Made here the first time it is missing: a world's first round, the first since the reader's reset swept it away with the world, or the first at all.
+    if fresh := not (SAVES_DIR / ".git").exists():
+        if chronicle_git("init", "-q").returncode:
+            return None
+        (SAVES_DIR / ".gitignore").write_text(_CHRONICLE_KEPT)
+    chronicle_git("add", "-A")
+    if chronicle_git("diff", "--cached", "--quiet").returncode:
+        chronicle_git("commit", "-q", "-m", f"C{n}")
+    for k in range(1, n) if fresh else ():  # every chapter before this one was delivered, a chapter opening only once the last is
+        chronicle_git("tag", f"C{k}-delivered")
+    rounds = sorted(int(k) for tag in chronicle_git("tag", "--list", f"C{n}-*").stdout.split() if (k := tag.rsplit("-", 1)[1]).isdigit())
+    last = f"C{n}-{rounds[-1]}" if rounds else None
+    if last and not chronicle_git("diff", "--quiet", last, "HEAD", "--", f"C{n}").returncode:
+        return last, f"C{n}-{rounds[-2]}" if len(rounds) > 1 else None
+    chronicle_git("tag", tag := f"C{n}-{rounds[-1] + 1 if rounds else 1}")
+    return tag, last
 
 
 # Step 5 off the chapter's files: its H1 and length, the favorite's descriptor and if carried, the summaries owed or too long, places astray, prose new since C<n-1>.

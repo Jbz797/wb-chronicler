@@ -13,11 +13,12 @@ from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, emit, i18n, latest_chapter
+from shared import CHAPTER_CAP, CHAPTER_FLOOR, SAVES_DIR, chapter_length, chronicle_git, emit, i18n, latest_chapter
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _CLEAR = "`clear` speaks for words said again, figures aside: an angle, a chute, a sentence in other words or order is the eye's"  # lest a silence read as no repeat
 _DATE = "Dᴀᴛᴇ"  # a date as the chronicle must write one, read as a single name: the manual's own form, never a turn said again
+_DELIVERED = "delivered: only the lines changed since are weighed, its chapter-wide counts weighed at delivery"
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 14 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
@@ -70,6 +71,19 @@ def _borrowed(words: list[_Token], before: int) -> list[tuple[int, int, str]]:
         if token.key in rare and not token.name and (at := framed.get((token.key, _frame(words, i)))) is not None:
             taken.setdefault(token.key, (token.line, at))
     return [(line, at, word) for word, (line, at) in taken.items()]
+
+
+# The lines a delivered chapter has changed since, off the chronicle's git tag — `None` before delivery, or with no git, when the whole chapter is weighed.
+@cache
+def _changed(n: int) -> set[int] | None:
+    tag = f"C{n}-delivered"
+    if chronicle_git("rev-parse", "-q", "--verify", f"refs/tags/{tag}").returncode:
+        return None
+    lines: set[int] = set()
+    for start, count in re.findall(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", chronicle_git("diff", "-U0", tag, "--", f"C{n}/chapter.md").stdout, re.MULTILINE):
+        first, span = int(start), int(count or 1)
+        lines.update(range(first, first + span) if span else (first,))  # a line cut leaves its neighbour to answer for it
+    return lines
 
 
 # Chapter `n` as written, read once for its length and its lines alike — `None` where it has none yet.
@@ -408,7 +422,16 @@ def echoes(n: int) -> dict | None:
     if not (words := _words(n)):
         return None
     internal, terms = _within(words, n)
-    return {"internal": internal, "overused": _overused(words, n), "passages": _passages(words, n), "shape": _shaped(n), "terms": terms}
+    found = {"internal": internal, "overused": _overused(words, n), "passages": _passages(words, n), "shape": _shaped(n), "terms": terms}
+    if (changed := _changed(n)) is None:
+        return found
+
+    # Delivered: a row stands by the lines it names, its own or the one it echoes — a count over the whole chapter names none, and was weighed at delivery.
+    def named(row: dict) -> set[int]:
+        echoed = {int(match["from"][2:]) for match in row.get("matches") or () if str(match.get("from", "")).startswith("l.")}
+        return {*([row["line"]] if "line" in row else row.get("lines") or ()), *echoed}
+
+    return {key: [row for row in rows if changed & named(row)] for key, rows in found.items()}
 
 
 def main(argv: list[str]) -> int:
@@ -427,7 +450,8 @@ def main(argv: list[str]) -> int:
     signs = sorted({sign for row in found["passages"] for match in row["matches"] for sign in match["by"]})
     # A check gone silent found nothing: named, so it is not read as unrun — the length too, silent while it holds.
     clear = sorted(check for check, rows in {**found, "length": not held}.items() if not rows)
-    emit({**found, "clear": clear, "info": "; ".join([*(f"`{sign}` {_SIGNS[sign]}" for sign in signs), *([_CLEAR] if clear else [])]) or None})
+    told = [*(f"`{sign}` {_SIGNS[sign]}" for sign in signs), *([_CLEAR] if clear else []), *([_DELIVERED] if _changed(n) is not None else [])]
+    emit({**found, "clear": clear, "info": "; ".join(told) or None})
     return 0
 
 

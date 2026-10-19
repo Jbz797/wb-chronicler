@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 16/10/26 12:19</p>
+<p class="metadata">Date de mise à jour : 19/10/26 11:25</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche.
 
@@ -24,4 +24,4 @@ Ne rends que les écarts, et chaque absolu validé avec l'ensemble sur lequel tu
 
 ## Au réaudit
 
-Le chroniqueur te renvoie les lignes qui ont bougé et les passages coupés. Juge chaque ligne avec son paragraphe et tout ce qui dit la même chose ailleurs, autres chapitres compris ; d'une coupe, ce qui s'y appuyait. Les autres lignes sont closes, non tes règles ni tes preuves : une ligne neuve se juge sur toutes, et se prouve où il faut ; une mesure reçue se rejoue.
+Le chroniqueur te renvoie le diff depuis ton tour. Juge chaque ligne qui y a bougé sur toutes tes règles, avec son paragraphe et tout ce qui dit la même chose ailleurs, autres chapitres compris, et prouve-la où il faut ; d'une coupe, ce qui s'y appuyait ; une mesure reçue se rejoue.
