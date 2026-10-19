@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing, suppress
 from datetime import UTC, datetime
 from functools import cache
+from itertools import pairwise
 from math import inf
 from pathlib import Path
 
@@ -194,6 +195,7 @@ _SUMMARY = f"what those traits make of the body, {_PLAIN}; never a list, a tally
 
 _SUMMARY_CAP = 400
 _SUMMARY_CAPS = {"subspecies": 500}  # a lineage's alone is given more room: a biology is born whole, where the other tiers gather their traits one by one
+_TABLE_RULE = re.compile(r"^\|\s*:?-{3,}")  # the line under a table's header, which tells that header from any row
 _TAG = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a marker as a title shows it, and as its cap counts it: its text alone, a bare one nothing
 _TAG_ID = re.compile(r"\[([a-z]) ([^\s\]]+)[^\]]*\]")  # a marker by its letter and its id, for what the id answers to
 
@@ -562,6 +564,12 @@ def _gazetteer() -> dict:
     return json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
 
 
+# The lines heading a table that hold a tag: the reader sets a column's title plain, where a marker swells into a plate wider than the column.
+def _headed_tags(prose: str) -> list[int]:
+    pairs = enumerate(pairwise(prose.splitlines()), 1)
+    return [at for at, (line, rule) in pairs if line.startswith("|") and _TABLE_RULE.match(rule) and _TAG_ID.search(line)]
+
+
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
 def _kingdom_quota(save: dict) -> int:
     sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
@@ -709,6 +717,8 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  ✗ places.json « {name} »: ({x},{y}) lies on {f'land {found}' if found else 'no counted land'}, its `island_id` saying {declared or 'none'}")
     if facts["doubled"] or facts["misplaced"]:
         print("  → set these right in history/places.json")
+    if headed := facts["headed"]:
+        print(f"  ✗ tags in a table's header: {', '.join(f'l.{line}' for line in headed)} — a column's title names plain, its marker left to the cells")
     if stray := facts["stray"]:
         print(f"  ✗ tags whose id answers nothing: {', '.join(f'l.{line} {tag}' for line, tag in stray)} — an id made up shows a blank where its icon goes")
 
@@ -894,20 +904,22 @@ def _step_five_facts(n: int, lang: str) -> dict:
     h1_length = len(_TAG.sub(lambda m: m[1] or "", h1 or ""))  # as read: a tag in the title shows its name alone, never its markup
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(text)) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
-    doubled, misplaced, stray = _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)
+    doubled, headed, misplaced, stray = _doubled_places(n), _headed_tags(prose), _misplaced_places(n), _stray_tags(n, prose)
     # A summary carried word for word was audited when written, so only a new one goes; the descriptor always, an age in it stale by the next chapter.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
+    faults = doubled or headed or owed or long or misplaced or stray
     return {
         "audited": sorted(fresh + (["favorite.descriptor"] if favorite else [])),
         "carried": carried,
         "descriptor": descriptor,
-        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not (doubled or owed or long or misplaced or stray),
+        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not faults,
         "doubled": doubled,
         "draft": draft,
         "events": _events(chapter.get("tags") or []),
         "favorite": bool(favorite),
         "h1": h1,
         "h1_length": h1_length,
+        "headed": headed,
         "length": chapter_length(prose),
         "long": long,
         "misplaced": misplaced,
