@@ -198,7 +198,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         building_id = int(target[1:])
         site = next((b for b in save.get("buildings") or [] if b.get("id") == building_id), None)
         if site is None or (tile := building_tile(site)) is None:
-            raise _AimError(absent_entity("building", "buildings", building_id, chapter))
+            raise _AimError(absent_entity("ground", "buildings", building_id, chapter, noun="building"))
         task = kept_task_target(actor) or {}
         sought = (task["x"], task["y"]) if task.get("ground") == building_id and "x" in task and "y" in task else None
         target, whom = tile, f"{site.get('asset_id')} {site.get('id')}"

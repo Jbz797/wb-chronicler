@@ -20,10 +20,12 @@ from islands import compute_islands_cached, islet_centre
 from shared import (
     DIAGONAL_EXTRA,
     ZONE_TILES,
+    absent_entity,
     actor_xy,
     arg_parser,
     bearing,
     building_family,
+    building_footprint,
     building_tile,
     chunks_apart,
     city_centre,
@@ -169,6 +171,11 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     if (wanted := ctx["island"]) is not None:  # a named land, however far down the list: the tile's own reads 0, it stands on it
         out["to_island"] = {str(wanted): round(lands.get(wanted, 0))}
     return out
+
+
+# An end of `tiles`: a building by its id, `b<id>`, else a tile `x,y`.
+def _end_arg(value: str) -> int | tuple[int, int]:
+    return int(value[1:]) if value[:1] == "b" and value[1:].isdigit() else xy_arg(value)
 
 
 # A town is its fabric, not its centre, as `to_islands` takes a land's nearest tile: at the edge of a sprawling town a body stands at the gate, not a centre away.
@@ -399,18 +406,17 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    save_path, argv, _ = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
+    save_path, argv, chapter = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
     parser = arg_parser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
-    parser.add_argument("xy", type=xy_arg, metavar="x,y", help="Tile coords (WB UI, y grows north), comma-separated — e.g. `415,117`.")
+    parser.add_argument("xy", type=_end_arg, metavar="x,y|b<id>", help="Tile coords (WB UI, y grows north), e.g. `415,117` — a building `b<id>` by a lone `--to`.")
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
     parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
     parser.add_argument(
-        "--to", type=xy_arg, metavar="x,y", help="A second tile and a `to` key, the walk from the first to it — the tiles too once sections are named."
+        "--to", type=_end_arg, metavar="x,y|b<id>", help="A second end and a `to` key, the walk from the first to it — the tiles too once sections are named."
     )
     args = parser.parse_args(argv)
-    cx, cy = args.xy
 
     try:
         # Membership only, never walked in order — the emitting `if`s below name each one. A `--to` alone answers alone, as `actor`'s does: the way, not the tiles.
@@ -419,6 +425,9 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
 
+    if any(isinstance(end, int) for end in (args.xy, args.to)) and (sections or args.radius):  # a building's ground is many tiles, a section reads one
+        print("✗ a building `b<id>` is an end of a lone `--to`: sections and `--radius` read tiles — name them `x,y`", file=sys.stderr)
+        return 2
     if args.to and args.radius:  # refused before the save is read: a call that cannot be answered should not cost the load
         print("✗ `--to` reads two tiles and `--radius` a square around one: they don't combine", file=sys.stderr)
         return 2
@@ -436,12 +445,23 @@ def main(argv: list[str]) -> int:
         print("✗ empty grid", file=sys.stderr)
         return 2
 
-    for x, y in ((cx, cy), args.to or (cx, cy)):
+    grounds = []
+    for end in (args.xy, args.to or args.xy):
+        if isinstance(end, tuple):
+            grounds.append([end])
+        elif (site := next((b for b in save.get("buildings") or [] if b.get("id") == end), None)) and (ground := building_footprint(site)):
+            grounds.append(ground)
+        else:
+            print(absent_entity("ground", "buildings", end, chapter, noun="building"), file=sys.stderr)
+            return 1
+    # A building is met at its nearest tile: the crow's shortest pair between the two grounds, the walk setting off from the first's toward all the second's.
+    (cx, cy), (tx, ty) = min(((a, b) for a in grounds[0] for b in grounds[1]), key=lambda ends: walk_tiles(ends[1][0] - ends[0][0], ends[1][1] - ends[0][1]))
+    for x, y in ((cx, cy), (tx, ty)):
         if not (0 <= x < width and 0 <= y < height):
             print(f"✗ coords ({x}, {y}) out of bounds — map is {width}×{height}", file=sys.stderr)
             return 2
 
-    coords = [(cx, cy), args.to] if args.to else _radius_tiles(cx, cy, args.radius, width, height)
+    coords = [(cx, cy), (tx, ty)] if args.to else _radius_tiles(cx, cy, args.radius, width, height)
     queried = set(coords) if args.to else {(cx, cy)}  # the tiles a reading is about: both ends of a `--to`, the centre of a sweep
     ctx = _build_context(save, save_path, sections, coords, args.island, "distances" in sections or args.to is not None)
     if args.island is not None and args.island not in ctx["island_ids"]:
@@ -478,11 +498,10 @@ def main(argv: list[str]) -> int:
             cell["tile_info"] = _tile_info_at(x, y, ctx)
         out[f"{x},{y}"] = cell
     if args.to:  # a relation between the two ends, not a trait of either: its own key, the cap read from the first toward the second
-        tx, ty = args.to
         out["to"] = {
             "chunks_apart": chunks_apart(cx, cy, tx, ty),
             "dir": bearing(tx - cx, ty - cy),
-            **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (ty * width + tx,), ctx),
+            **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (gy * width + gx for gx, gy in grounds[1]), ctx),
         }
 
     emit(out)
