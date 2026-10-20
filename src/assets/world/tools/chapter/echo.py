@@ -13,7 +13,20 @@ from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import CHAPTER_CAP, CHAPTER_FLOOR, COUNTED_AS, SAVES_DIR, TAG_MARK, chapter_length, chronicle_git, emit, i18n, latest_chapter, unmarked
+from shared import (
+    CHAPTER_CAP,
+    CHAPTER_FLOOR,
+    COUNTED_AS,
+    SAVES_DIR,
+    TAG_MARK,
+    chapter_length,
+    chronicle_git,
+    emit,
+    i18n,
+    latest_chapter,
+    short_dialogues,
+    unmarked,
+)
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _CLEAR = "`clear` speaks for words said again, figures aside: an angle, a chute, a sentence in other words or order is the eye's"  # lest a silence read as no repeat
@@ -46,7 +59,8 @@ _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined 
 _USAGE = (
     "usage: chapter/echo.py [C<n>] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before (`from` their line, "
     f"`by` its sign — {'; '.join(f'`{sign}` {gloss}' for sign, gloss in _SIGNS.items())}), `internal` runs it says twice, `terms` it coins, "
-    "`overused` families, `shape` its cast poured again; `clear` the checks that found nothing, `length` among them — a chapter out of its bounds says so with a ✗"
+    "`overused` families, `shape` its cast poured again; `clear` the checks that found nothing, `length` and `dialogue` among them — "
+    "out of its bounds or under its floor, a ✗ says so"
 )
 
 _WORD = re.compile(r"\b[^\W\d_]{1,2}['’]|\w[\w-]*(?:['’]\w[\w-]*)*")  # an elision splits, `qu'il` as `qu'` and `il`; `aujourd'hui` holds, `---` is none
@@ -444,11 +458,13 @@ def main(argv: list[str]) -> int:
         print(f"✗ no chapter.md for C{n}", file=sys.stderr)
         return 1
     # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
-    if not (held := CHAPTER_FLOOR <= (length := chapter_length(_chapter(n) or "")) <= CHAPTER_CAP):
+    if not (held := CHAPTER_FLOOR <= (length := chapter_length(prose := _chapter(n) or "")) <= CHAPTER_CAP):
         print(f"✗ chapter.md, {length} characters, {COUNTED_AS} — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
+    for fault in (short := short_dialogues(prose)):  # `--finalize`'s own floor, measured each round where the audit reads it
+        print(fault, file=sys.stderr)
     signs = sorted({sign for row in found["passages"] for match in row["matches"] for sign in match["by"]})
-    # A check gone silent found nothing: named, so it is not read as unrun — the length too, silent while it holds.
-    clear = sorted(check for check, rows in {**found, "length": not held}.items() if not rows)
+    # A check gone silent found nothing: named, so it is not read as unrun — the length and the dialogue too, silent while they hold.
+    clear = sorted(check for check, rows in {**found, "dialogue": short, "length": not held}.items() if not rows)
     told = [*(f"`{sign}` {_SIGNS[sign]}" for sign in signs), *([_CLEAR] if clear else []), *([_DELIVERED] if _changed(n) is not None else [])]
     emit({**found, "clear": clear, "info": "; ".join(told) or None})
     return 0

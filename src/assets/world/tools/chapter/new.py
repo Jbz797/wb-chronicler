@@ -56,6 +56,7 @@ from shared import (
     reader_settings,
     render,
     rounded_world_time,
+    short_dialogues,
     under_construction,
     unmarked,
     world_laws,
@@ -119,7 +120,6 @@ _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never don
 )
 
 _DIALOGUE = "chronicler.md § V, « Un dialogue quand le favori parle »"  # what the audit judges a dialogue by, in the rule's own words
-_DIALOGUE_FLOOR = 750  # characters a dialogue holds at least, as read: no dash, a tag by its text, blanks folded — under it, a line or two, not a talk
 _DRAFT_HEADINGS = {"en": "Draft", "fr": "Brouillon"}  # one per language the settings panel offers: a language added there owes its word here
 
 # Everything a reset sweeps away. `tiles` holds the ticking ones (fires, melting ice), not the ground — that lives in `tileMap`/`tileArray`/`tileAmounts`.
@@ -723,8 +723,8 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  ✗ places.json « {name} »: ({x},{y}) lies on {f'land {found}' if found else 'no counted land'}, its `island_id` saying {declared or 'none'}")
     if facts["doubled"] or facts["misplaced"]:
         print("  → set these right in history/places.json")
-    for line, length in facts["dialogues"]:
-        print(f"  ✗ dialogue l.{line}, {length} characters of {_DIALOGUE_FLOOR} at least — asides kept, dashes aside, {COUNTED_AS}")
+    for fault in facts["dialogues"]:
+        print(f"  {fault}")
     if stray := facts["stray"]:
         print(f"  ✗ tags whose id answers nothing: {', '.join(f'l.{line} {tag}' for line, tag in stray)} — an id made up shows a blank where its icon goes")
 
@@ -892,21 +892,6 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
     return None
 
 
-# Each dialogue under its floor, by its first line: two lines or more opening on a dash, parted by blank lines alone, counted as the reader reads it.
-def _short_dialogues(prose: str) -> list[tuple[int, int]]:
-    lines, last = prose.splitlines(), 0
-    runs: list[tuple[int, list[str]]] = []
-    for at, line in enumerate(lines, 1):
-        if line.startswith("—"):
-            if runs and not "".join(lines[last : at - 1]).strip():
-                runs[-1][1].append(line)
-            else:
-                runs.append((at, [line]))
-            last = at
-    said = [(at, chapter_length(" ".join(replies).replace("—", " "))) for at, replies in runs if len(replies) > 1]
-    return [(at, length) for at, length in said if length < _DIALOGUE_FLOOR]
-
-
 # Tags the chapter as an audit round reads it, `C<n>-<k>`, and returns that round with the one before — the last one again when nothing moved since it.
 def _snapshot(n: int) -> tuple[str, str | None] | None:
     # Made here the first time it is missing: a world's first round, the first since the reader's reset swept it away with the world, or the first at all.
@@ -940,7 +925,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
     h1_length = len(unmarked(h1 or ""))
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(text)) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
-    dialogues, doubled, misplaced, stray = _short_dialogues(prose), _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)
+    dialogues, doubled, misplaced, stray = short_dialogues(prose), _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)
     # A summary carried word for word was audited when written, so only a new one goes; the descriptor always, an age in it stale by the next chapter.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
     faults = dialogues or doubled or owed or long or misplaced or stray

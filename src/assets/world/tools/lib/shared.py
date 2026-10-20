@@ -24,6 +24,7 @@ CHAPTER_CAP = 12000  # a sitting's read, some 9 minutes: past it the chapter say
 CHAPTER_FLOOR = 7000  # both in no doc: `new.py`'s recap gives them, delivery and `echo.py` hold them — counted past the audit, which cuts as much as it adds
 COUNTED_AS = "tags by their name, blanks folded"  # how every length a chapter is held to counts it, said beside each figure
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
+DIALOGUE_FLOOR = 750  # characters a dialogue holds at least, counted as its ✗ says — under it, a line or two, not a talk
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
 EQUIPMENT_RACKS = {
@@ -1272,6 +1273,22 @@ def settlement_rank_getters(ctx: dict, tier: str) -> dict:
 # WB omits default values at save time: an absent `sex` IS male (0) — every species has sexed members, living swords included.
 def sex_label(actor: dict) -> str:
     return "female" if actor.get("sex") == 1 else "male"
+
+
+# Each dialogue under its floor, told by its first line: two lines or more opening on a dash, parted by blank lines alone, counted as the reader reads it.
+def short_dialogues(prose: str) -> list[str]:
+    lines, last = prose.splitlines(), 0
+    runs: list[tuple[int, list[str]]] = []
+    for at, line in enumerate(lines, 1):
+        if line.startswith("—"):
+            if runs and not "".join(lines[last : at - 1]).strip():
+                runs[-1][1].append(line)
+            else:
+                runs.append((at, [line]))
+            last = at
+    said = [(at, chapter_length(" ".join(replies).replace("—", " "))) for at, replies in runs if len(replies) > 1]
+    told = f"characters of {DIALOGUE_FLOOR} at least — asides kept, dashes aside, {COUNTED_AS}"
+    return [f"✗ dialogue l.{at}, {length} {told}" for at, length in said if length < DIALOGUE_FLOOR]
 
 
 # Spores alone and no stomach: WB lets them go off a body that `just_ate` only, a status a meal gives and sunlit skin never does — such a lineage bears no one.
