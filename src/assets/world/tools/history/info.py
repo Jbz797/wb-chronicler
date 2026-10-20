@@ -136,9 +136,8 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
     # WB's triggers average a span's states and keep a tally's highest, its value at the close: told as gains on the span before, the first since birth.
     older, before = [], dict.fromkeys(events, 0)
     for r in coarse:
-        now, first, last = {c: r[c] for c in events}, max(r["timestamp"] - r["step"], born or 1), r["timestamp"] - 1
-        span = f"y{first}–y{last}" if first < last else f"y{last}"
-        older.append({**{names[c]: r[c] for c in states if r[c]}, **_gains(before, now, events), "years": span})
+        now = {c: r[c] for c in events}
+        older.append({**{names[c]: r[c] for c in states if r[c]}, **_gains(before, now, events), "years": _span(r, born or 1)})
         before = now
     # Its first fine year is a first year only when it was born in it: a window opened later, with no coarse row before it, holds a total, not a gain.
     if not coarse and born != rows[0]["timestamp"]:
@@ -180,11 +179,21 @@ def _build_log(save: dict, since: str | None, actor: int | None, event: str | No
 def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     map_stats = save.get("mapStats") or {}
     closed = _closed_year(save)
-    columns, _, rows = _series(conn, "World", None, closed + 1)
+    columns, coarse, rows = _series(conn, "World", None, closed + 1)
     events = [c for c in columns if _EVENT_COLUMN.search(c) and c != _DEATHS_TOTAL]
     tracked = [*events, _DEATHS_TOTAL] if _DEATHS_TOTAL in columns else events
-    before: dict = dict.fromkeys(tracked, 0) if not rows or rows[0]["timestamp"] == 1 else {}
-    stood = 0 if before else None  # the bodies the year before closed on: unknown where WB's window opens past the world's first year
+    before: dict = dict.fromkeys(tracked, 0)
+    spans = []
+    # The years before the window, as `entity` tells them: gains on each span from the world's birth, its states a mean, never what a year closed on.
+    for r in coarse:
+        now = {c: r[c] for c in tracked}
+        gains, mean = _with_unknown(_gains(before, now, events), before, now), _world_states(r)
+        if gains or mean:
+            spans.append({**gains, "mean": mean or None, "years": _span(r, 1)})
+        before = now
+    if not coarse and rows and rows[0]["timestamp"] != 1:  # a window opened past the world's first year, with no span before it: its first row holds totals
+        before = {}
+    stood = 0 if before and not coarse else None  # the bodies the year before closed on: a span's are a mean, and a late window's unknown
     owed, timeline = 0, []
     for row in rows:
         now = {c: row[c] for c in tracked}
@@ -194,10 +203,7 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
         why = f"the {abs(over)} the year before closed {'over' if owed > 0 else 'under'}, made up" if over and over == -owed else _OFF_TERMS
         owed, stood = over, roll
         if gains := _with_unknown(_gains(before, now, events), before, now):
-            at_close = {_WORLD_RENAMED.get(column, column): row[column] for column in _WORLD_STATES if row.get(column)}
-            # WB's `vegetation` counts its trees in, where `snapshot` tells them apart — and a nought goes unsaid.
-            if (plants := at_close.pop("vegetation", 0) - at_close.get("trees", 0)) > 0:
-                at_close["vegetation"] = plants
+            at_close = _world_states(row)
             told = {"info": f"close is {abs(over)} {'over' if over > 0 else 'under'} its terms — {why}"} if over else {}
             timeline.append({**gains, **told, "at_close": at_close, "until": _until(row["timestamp"])})
         before = now
@@ -205,8 +211,9 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     keys = {c: _STAT_KEYS.get(c) or (c if c.startswith("deaths_") else _camel(c)) for c in tracked}
     now = {c: int(v) if (v := map_stats.get(key)) is not None else None for c, key in keys.items()}
     if gains := _with_unknown(_gains(before, now, events), before, now):
-        timeline.append({**gains, "since": f"y{closed} m12" if closed else "y1 m1", "so_far": True})
-    return timeline
+        read = closed if rows else coarse[-1]["timestamp"] - 1 if coarse else 0  # the year the last row read closed on: a span's end where no year is left
+        timeline.append({**gains, "since": f"y{read} m12" if read else "y1 m1", "so_far": True})
+    return spans + timeline
 
 
 def _camel(column: str) -> str:
@@ -274,6 +281,12 @@ def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: in
     return columns, coarse, rows
 
 
+# The years a coarse row spans, the `step` before its own, from `first` at the earliest: `y5–y9`, or one year bare.
+def _span(row: dict, first: int) -> str:
+    start, end = max(row["timestamp"] - row["step"], first), row["timestamp"] - 1
+    return f"y{start}–y{end}" if start < end else f"y{end}"
+
+
 def _until(year: int) -> str:
     return f"y{year} m11"
 
@@ -285,6 +298,14 @@ def _with_unknown(gains: dict, before: dict, now: dict) -> dict:
     if (unknown := now[_DEATHS_TOTAL] - before[_DEATHS_TOTAL] - gains.get("metamorphosis", 0) - sum((gains.get("deaths") or {}).values())) > 0:
         gains.setdefault("deaths", {})["unknown"] = unknown
     return gains
+
+
+# A world row's states under `world`'s own names. WB's `vegetation` counts its trees in, where `snapshot` tells them apart — and a nought goes unsaid.
+def _world_states(row: dict) -> dict:
+    states = {_WORLD_RENAMED.get(column, column): row[column] for column in _WORLD_STATES if row.get(column)}
+    if (plants := states.pop("vegetation", 0) - states.get("trees", 0)) > 0:
+        states["vegetation"] = plants
+    return states
 
 
 def main(argv: list[str]) -> int:
