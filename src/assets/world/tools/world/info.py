@@ -51,6 +51,7 @@ from shared import (
     arg_parser,
     asset_families,
     asset_kinds,
+    body_ref,
     breeding_mode,
     building_family,
     city_centre,
@@ -778,9 +779,9 @@ def _name_of(records: list[dict], target_id: int | None) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
 
 
-# `--nearest`'s goal: a body by its id, else a tile `x,y`.
+# `--nearest`'s goal: a body `p<id>`, else a tile `x,y`.
 def _near_arg(value: str) -> int | tuple[int, int]:
-    return int(value) if value.isdigit() else xy_arg(value)
+    return xy_arg(value) if (body := body_ref(value)) is None else body
 
 
 # Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.
@@ -874,7 +875,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--has", choices=_TALLIES, help="`roster`: the bodies with one tally above nought — `level` past 1 — and its figure, highest first")
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
     parser.add_argument("--lacks", choices=_TALLIES, help="`roster`: the bodies with none of one tally — `level` at 1 —, `--has`'s other half")
-    parser.add_argument("--nearest", type=_near_arg, metavar="x,y|id", help=f"`roster`: its {_TOP_ROWS} nearest to a tile or a body, as the crow flies")
+    parser.add_argument("--nearest", type=_near_arg, metavar="x,y|p<id>", help=f"`roster`: its {_TOP_ROWS} nearest to a tile or a body, as the crow flies")
     parser.add_argument("--patch", type=xy_arg, metavar="x,y", help="`roster`: the bodies standing on that tile's patch, one ground of one land")
     parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
     parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")

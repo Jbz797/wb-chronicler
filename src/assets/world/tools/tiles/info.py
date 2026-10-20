@@ -5,6 +5,7 @@
 # Coordinate convention: WB UI / actor coords; `grid[y][x]` (no inversion — y grows north and so does the row index).
 
 import math
+import re
 import sys
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Iterator
@@ -24,6 +25,7 @@ from shared import (
     actor_xy,
     arg_parser,
     bearing,
+    body_ref,
     building_family,
     building_footprint,
     building_tile,
@@ -33,6 +35,7 @@ from shared import (
     entity_born,
     entity_ref,
     index_by_id,
+    is_boat,
     load_save,
     parse_sections,
     take_chapter,
@@ -173,14 +176,27 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     return out
 
 
-# An end of `tiles`: a building by its id, `b<id>`, else a tile `x,y`.
-def _end_arg(value: str) -> int | tuple[int, int]:
-    return int(value[1:]) if value[:1] == "b" and value[1:].isdigit() else xy_arg(value)
+# An end of `tiles`: a building `b<id>`, a town `c<id>` or a body `p<id>`, kept as written till the save names its tiles; else a tile `x,y`.
+def _end_arg(value: str) -> str | tuple[int, int]:
+    return value if body_ref(value) is not None or re.fullmatch(r"[bc]\d+", value) else xy_arg(value)
 
 
 # A town is its fabric, not its centre, as `to_islands` takes a land's nearest tile: at the edge of a sprawling town a body stands at the gate, not a centre away.
 def _fabric_distance(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
     return round(min(walk_tiles(max(qx - x, x - qx - ZONE_TILES + 1, 0), max(qy - y, y - qy - ZONE_TILES + 1, 0)) for qx, qy in quarters))
+
+
+# The tiles a named end stands on — a building's whole ground, a town's centre, a body's tile —, or the refusal that tells why it has none.
+def _ground(end: str, save: dict, chapter: str | None) -> list[tuple[int, int]] | str:
+    kind, ref = end[0], int(end[1:])
+    if kind == "b":
+        site = next((b for b in save.get("buildings") or [] if b.get("id") == ref), None)
+        return (site and building_footprint(site)) or absent_entity("ground", "buildings", ref, chapter, noun="building")
+    if kind == "c":
+        city = next((c for c in save.get("cities") or [] if c.get("id") == ref), None)
+        return [centre] if city and (centre := city_centre(city)) else absent_entity("city", "cities", ref, chapter)
+    body = next((a for a in save.get("actors_data") or [] if a.get("id") == ref and not is_boat(a)), None)
+    return [actor_xy(body)] if body else absent_entity("actor", "actors_data", ref, chapter, lambda a: not is_boat(a))
 
 
 # One object per tile, never two — WB's `buildings` holds the flowers and the ore too, hence the family; `dated` for the tile asked about, a sweep's rows kept short.
@@ -409,12 +425,17 @@ def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
     parser = arg_parser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
-    parser.add_argument("xy", type=_end_arg, metavar="x,y|b<id>", help="Tile coords (WB UI, y grows north), e.g. `415,117` — a building `b<id>` by a lone `--to`.")
+    parser.add_argument(
+        "xy", type=_end_arg, metavar="x,y|b<id>|c<id>|p<id>", help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`."
+    )
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
     parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
     parser.add_argument(
-        "--to", type=_end_arg, metavar="x,y|b<id>", help="A second end and a `to` key, the walk from the first to it — the tiles too once sections are named."
+        "--to",
+        type=_end_arg,
+        metavar="x,y|b<id>|c<id>|p<id>",
+        help="A second end and a `to` key, the walk from the first to it — the tiles too once sections are named.",
     )
     args = parser.parse_args(argv)
 
@@ -425,8 +446,11 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
 
-    if any(isinstance(end, int) for end in (args.xy, args.to)) and (sections or args.radius):  # a building's ground is many tiles, a section reads one
-        print("✗ a building `b<id>` is an end of a lone `--to`: sections and `--radius` read tiles — name them `x,y`", file=sys.stderr)
+    if any(isinstance(end, str) for end in (args.xy, args.to)) and (sections or args.radius):  # a building lies on many tiles, a section reads one
+        print(
+            "✗ a building `b<id>`, a town `c<id>` or a body `p<id>` is an end of a lone `--to`: sections and `--radius` read tiles — name them `x,y`",
+            file=sys.stderr,
+        )
         return 2
     if args.to and args.radius:  # refused before the save is read: a call that cannot be answered should not cost the load
         print("✗ `--to` reads two tiles and `--radius` a square around one: they don't combine", file=sys.stderr)
@@ -447,13 +471,10 @@ def main(argv: list[str]) -> int:
 
     grounds = []
     for end in (args.xy, args.to or args.xy):
-        if isinstance(end, tuple):
-            grounds.append([end])
-        elif (site := next((b for b in save.get("buildings") or [] if b.get("id") == end), None)) and (ground := building_footprint(site)):
-            grounds.append(ground)
-        else:
-            print(absent_entity("ground", "buildings", end, chapter, noun="building"), file=sys.stderr)
+        if isinstance(ground := [end] if isinstance(end, tuple) else _ground(end, save, chapter), str):
+            print(ground, file=sys.stderr)
             return 1
+        grounds.append(ground)
     # A building is met at its nearest tile: the crow's shortest pair between the two grounds, the walk setting off from the first's toward all the second's.
     (cx, cy), (tx, ty) = min(((a, b) for a in grounds[0] for b in grounds[1]), key=lambda ends: walk_tiles(ends[1][0] - ends[0][0], ends[1][1] - ends[0][1]))
     for x, y in ((cx, cy), (tx, ty)):

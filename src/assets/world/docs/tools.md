@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 20/10/26 10:34</p>
+<p class="metadata">Date de mise à jour : 20/10/26 13:50</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -32,7 +32,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `--since C<n>` : ce qui a bougé depuis — `moved` : le trajet fait et son temps au plus court, au pas du corps ; `stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre ; `gone` : mort, `was_at` sa place alors ; `to.then` : ce but compté alors
 - `--kills` : ses morts données, total par chapitres, chaque hausse depuis le chapitre d'avant (ou sa venue)
 - `--statuses` : `held`, ses statuts durables par chapitre, `seen` ses chapitres ; rien d'entre deux
-- `--to <id | x,y | b<id> | c<id> | i<terre> | type>` : un corps, une tuile, un bâtiment (la plus proche de ses tuiles, celle de la tâche s'il y va : `by_task`), une cité (son centre), une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource (`nearest`, un bâtiment à sa tuile la plus proche), par virgules pour les seuls types — deux nombres font une tuile ; répété, chacun sous ses mots ; une tâche à sa tuile (`task_target`) ; son `circle`, `total_` dès deux parts ; passé 6 h de marche, `march_days` (haltes comprises) remplace les heures, sans l'eau, passée d'une traite, que `total_days` ajoute ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu.
+- `--to <p<id> | x,y | b<id> | c<id> | i<terre> | type>` : un corps, une tuile, un bâtiment (la plus proche de ses tuiles, celle de la tâche s'il y va : `by_task`), une cité (son centre), une terre abordée au moins cher (`landing`) ou le plus proche de chaque type, famille ou ressource (`nearest`, un bâtiment à sa tuile la plus proche), par virgules pour les seuls types — deux nombres font une tuile ; répété, chacun sous ses mots ; une tâche à sa tuile (`task_target`) ; son `circle`, `total_` dès deux parts ; passé 6 h de marche, `march_days` (haltes comprises) remplace les heures, sans l'eau, passée d'une traite, que `total_days` ajoute ; `with_boat` le trajet par la coque de sa couronne, jamais à additionner, `widest_crossing` son plus long bras s'il passe le souffle ; vers un corps, `from_them` : le trajet de l'autre s'il diffère ; `chunks_apart` à 0 ou 1 : tout près pour le jeu.
 
 ### `geography` :
 
@@ -49,13 +49,13 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 - `-i <id>` : une terre par son id, mesurée comme `to_islands` sous `to_island`, même hors des 5 plus proches — celle où l'on se tient vaut 0
 - `-r <n>` : rayon, de 0 à 2 — `distances` : la tuile demandée seule
-- `--to <x,y>` : cap et mesures entre lieux (d'un corps : `actor`), sous `to` si une section la rejoint ; pas avec `-r` ; un bâtiment, `b<id>`, à l'un ou l'autre bout, `--to` seul, par la plus proche de ses tuiles
+- `--to <x,y>` : cap et mesures entre lieux (d'un corps : `actor`), sous `to` si une section la rejoint ; pas avec `-r` ; à l'un ou l'autre bout, `--to` seul, un bâtiment `b<id>` (sa tuile la plus proche), une cité `c<id>` (son centre) ou un corps `p<id>`
 
 ### `world` :
 
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
 - `pairings` : par espèce (un couple ignore la lignée), la 1ʳᵉ naissance possible (`birth_on` ; `pregnant` nomme les porteuses, à la date du jeu ; sinon `now` chez des amants, faute de trace) et l'écart du couple ; `pair` : la porteuse d'abord, dont l'enfant prend la cité, sinon celle de l'autre (`drawn` : tirée au sort) ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `missing: meal`, des spores sans estomac, que seul un repas lâche ; `lovers`, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, et le corps en cause (`hungry`, `water` : à flot, `tiny_islet` : îlot de 5 tuiles au plus), ou la loi WB ; règles : `wiki:Reproduction`
-- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | id>` les plus proches à vol d'oiseau (`crow_tiles`), la marche des premiers par `actor … --to`, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--clan`…) ses membres, la terre de la cité tue ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) — d'une entité, `arrived` y entre, `left` en sort vivant ; sous `--has`, les seuls comptes changés, `[avant, après]`
+- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau (`crow_tiles`), la marche des premiers par `actor … --to`, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--clan`…) ses membres, la terre de la cité tue ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) — d'une entité, `arrived` y entre, `left` en sort vivant ; sous `--has`, les seuls comptes changés, `[avant, après]`
 
 ---
 

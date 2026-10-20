@@ -3,6 +3,7 @@
 # User-facing docs (usage, available sections) live in `docs/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
 import sys
+from argparse import ArgumentTypeError
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping
 from functools import cache
@@ -47,6 +48,7 @@ from shared import (
     asset_kinds,
     asset_sites,
     bearing,
+    body_ref,
     build_trait_ids,
     build_trait_list,
     building_footprint,
@@ -153,7 +155,7 @@ _TENURE_ROLES = {
 }
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
-_TO_USAGE = "`--to` takes a body, a tile, a building, a town, a land or a kind: `--to 42`, `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to volcano`"
+_TO_USAGE = "`--to` takes a body, a tile, a building, a town, a land or a kind: `--to p42`, `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to volcano`"
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
 _UNCOMPARED = frozenset({"island_id", "statuses_left", "task", "task_target", "x", "y"})
@@ -190,7 +192,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             # An id no body ever bore may be a building's, the two counted apart: `b<id>` aims at it, so the refusal hands that over.
             sites = (b for b in save.get("buildings") or [] if b.get("id") == target)
             if refusal.startswith("✗ unknown") and (building := next(sites, None)) is not None:
-                refusal = f"✗ {target} is no body — a {building.get('asset_id')}'s id: aim at it, `--to b{target}`"
+                refusal = f"✗ p{target} is no body — a {building.get('asset_id')}'s id: aim at it, `--to b{target}`"
             raise _AimError(refusal)
         aims, whom = [actor_xy(other)], named_body(other)
     elif isinstance(target, str) and target[:1] == "b" and target[1:].isdigit():
@@ -220,9 +222,9 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
     elif isinstance(target, str):  # a kind, a family or a resource a word, the body itself left out: each answered by the cheapest of its own reached
         families, words = asset_families(save), list(dict.fromkeys(target.split(",")))
         # Ids among the words, refused at once: bodies are aimed at one by one, and two numbers alone would have read as a tile.
-        if numbers := {word for word in words if word.lstrip("-").isdigit()}:
+        if numbers := {word for word in words if word.lstrip("-").isdigit() or (word[:1] == "p" and word[1:].isdigit())}:
             told = ", ".join(f"`{word}`" for word in words if word in numbers)
-            print(f"✗ {told}: a list takes kinds only — one `--to` per body, two numbers alone make a tile", file=sys.stderr)
+            print(f"✗ {told}: a list takes kinds only — one `--to p<id>` per body, two numbers alone make a tile", file=sys.stderr)
         for word in words:
             if word in numbers:
                 each[word] = None
@@ -965,8 +967,10 @@ def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], l
             raise ValueError(_TO_USAGE)
         value, argv = argv[at + 1], argv[:at] + argv[at + 2 :]
         x, sep, y = value.partition(",")
-        if x.lstrip("-").isdigit() and (not sep or y.lstrip("-").isdigit()):
-            targets.append((int(x), int(y)) if sep else int(x))
+        if (body := body_ref(value)) is not None:
+            targets.append(body)
+        elif x.lstrip("-").isdigit() and sep and y.lstrip("-").isdigit():
+            targets.append((int(x), int(y)))
         else:  # a land (`i7`, as `geography … islands` ids it), a building, a town, or kinds and families
             targets.append(value)
     return targets, argv
@@ -1144,11 +1148,14 @@ def main(argv: list[str]) -> int:
     upto = int(chapter[1:]) if chapter else 0
     try:
         targets, argv = _take_targets(argv)
-    except ValueError as e:
+    except (ArgumentTypeError, ValueError) as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     if not argv:
-        print("✗ usage: info.py <id> [sections] [--to <id>|<x,y>|i<land>|<kind>] [--since C<n>] [--kills] [--statuses] [C<n>] — docs/tools.md", file=sys.stderr)
+        print(
+            "✗ usage: info.py <id> [sections] [--to p<id>|<x,y>|b<id>|c<id>|i<land>|<kind>] [--since C<n>] [--kills] [--statuses] [C<n>] — docs/tools.md",
+            file=sys.stderr,
+        )
         return 2
     try:
         actor_id = int(argv[0])

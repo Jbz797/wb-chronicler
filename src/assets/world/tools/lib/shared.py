@@ -455,6 +455,13 @@ def biome_lore(biome_id: str | None) -> dict:
     return load_data("biomes.json").get(_BIOME_ALIASES.get(biome_id, biome_id)) or {}
 
 
+# A body as a tool aims at it: its marker's letter and id, `p42`, as `[p 42 …]` reads in the tale. `None` for no body; a bare number names nothing, and says so.
+def body_ref(value: str) -> int | None:
+    if value.isdigit():
+        raise argparse.ArgumentTypeError(f"`{value}` names nothing — a body is `p{value}`")
+    return int(value[1:]) if value[:1] == "p" and value[1:].isdigit() else None
+
+
 # Books sit in a settlement's hall (`buildings[].books.list_books`), so their holder is that city and its crown. Memoised: a `full` run asks twice, 15 k rows each.
 def books_held(save: dict) -> tuple[Counter, Counter, dict[int, int]]:
     if _books_memo[0] is save:
