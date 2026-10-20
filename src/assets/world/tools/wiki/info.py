@@ -40,6 +40,11 @@ def _ask(params: dict) -> dict:
         return json.load(response)
 
 
+# The names a cell answers to as `--row` weighs them: itself, and each term a break sets apart — « Close Borders / Far Borders » holds two opinions.
+def _names(cell: str) -> set[str]:
+    return {_said(cell), *(_said(term) for term in cell.split(" / "))}
+
+
 # A cell as it reads: no pictures, links down to their label, no tags, a break a « / », italics kept as `*…*` — the traits page italicises what the game hides
 def _plain(cell: str) -> str:
     text = re.sub(r"\[\[(?:File|Image):[^\]]*\]\]", "", cell)
@@ -103,7 +108,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("page", nargs="?", help="the page's title, as `wiki:<Page>` names it")
     parser.add_argument("--list", nargs="?", const="", metavar="word", help="its titles, those holding the word alone if one is given")
     parser.add_argument("--search", metavar="words", help="the pages whose text holds them, best first — where no title does")
-    parser.add_argument("--row", metavar="name", help="the table rows naming it alone, cell by cell — a trait's id works, `_` read as a space")
+    parser.add_argument("--row", metavar="name", help="the rows naming it alone, cell by cell — a trait's id works, `_` a space, a term of a cell holding several")
     args = parser.parse_args(argv)
     if args.list is None and not args.search and not args.page:  # said here rather than by `arg_parser`, whose error points to `tools.md`, where the wiki is not
         print("✗ name a page, `--list [word]` or `--search <words>` — see docs/chronicler.md § « Accès au wiki WorldBox »", file=sys.stderr)
@@ -140,13 +145,13 @@ def main(argv: list[str]) -> int:
         return 0
     wanted = _said(args.row)
     blocks, rows = [], _rows(wikitext)
-    cited = [row for row in rows if any(_said(cell) == wanted for cell in row[2])]
+    cited = [row for row in rows if any(wanted in _names(cell) for cell in row[2])]
     # A row is named by its first cell that says anything, an icon's being blank: those alone where any is, the rows that only cite the word failing one.
-    named = [row for row in cited if _said(next((cell for cell in row[2] if cell), "")) == wanted]
+    named = [row for row in cited if wanted in _names(next((cell for cell in row[2] if cell), ""))]
     for caption, header, cells in named or cited:
         # A column past the header keeps its rank for a name: the header is a help, a ragged row still prints whole.
         kept = [(column, cell) for i, cell in enumerate(cells) if cell and (column := (header[i : i + 1] or [f"#{i + 1}"])[0]).casefold() not in _UNTOLD]
-        if any(_said(cell) != wanted for _, cell in kept):  # a row left with its name alone, its only other column untold, says nothing
+        if any(wanted not in _names(cell) for _, cell in kept):  # a row left with its name alone, its only other column untold, says nothing
             blocks.append("\n".join([f"[{caption}]"] * bool(caption) + [f"{column}: {cell}" for column, cell in kept]))
     if not blocks:
         # A label the wiki cuts short — its « Spore » for WB's « Spore Reproduction » — is offered where no row answers, and sought only then.
