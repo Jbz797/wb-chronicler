@@ -428,13 +428,13 @@ def asset_set(name: str) -> frozenset[str]:
 
 
 # Every record of the kinds asked, with its tile — bodies and buildings alike, WB's omitted zero read as 0, the unsited left out.
-def asset_sites(save: dict, kinds: Collection[str]) -> list[tuple[dict, tuple[int, int]]]:
-    return [
-        (record, tile)
-        for collection, site in (("actors_data", actor_xy), ("buildings", building_tile))
-        for record in save.get(collection) or []
-        if record.get("asset_id") in kinds and (tile := site(record)) is not None
-    ]
+# `footprint` gives a building once per tile of its ground, for a walk to reach its nearest: a list of places keeps it to its own.
+def asset_sites(save: dict, kinds: Collection[str], *, footprint: bool = False) -> list[tuple[dict, tuple[int, int]]]:
+    bodies = [(record, actor_xy(record)) for record in save.get("actors_data") or [] if record.get("asset_id") in kinds]
+    built = [record for record in save.get("buildings") or [] if record.get("asset_id") in kinds]
+    if footprint:
+        return bodies + [(record, tile) for record in built for tile in building_footprint(record)]
+    return bodies + [(record, tile) for record in built if (tile := building_tile(record)) is not None]
 
 
 # The bearing as a compass point in WB's axes, y growing north: one wind or two, never a third, and none for a body on the very tile.

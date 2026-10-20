@@ -227,7 +227,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             if word in numbers:
                 each[word] = None
                 continue
-            if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word)) if record is not actor]:
+            if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word), footprint=True) if record is not actor]:
                 each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
                 continue
             each[word] = None
