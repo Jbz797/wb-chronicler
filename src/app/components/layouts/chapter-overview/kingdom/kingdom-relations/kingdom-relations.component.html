@@ -15,8 +15,8 @@
           <td>
             <nz-tag [nzColor]="statusColor[r.status]">{{ `relation_${r.status}` | translate }}</nz-tag>
           </td>
-          <td [class]="opinionClass(r.opinion.total)">
-            {{ r.opinion.total > 0 ? '+' : '' }}{{ r.opinion.total }}
+          <td [class]="opinionClass(standing(r))">
+            {{ standing(r) > 0 ? '+' : '' }}{{ standing(r) }}
             @if (trend(r); as t) {
               <span [class]="`trend trend-${t}`">{{ t === 'up' ? '↑' : '↓' }}</span>
             }

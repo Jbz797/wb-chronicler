@@ -25,12 +25,14 @@ export class KingdomRelationsComponent {
 
   public readonly relations = input.required<KingdomRelation[]>();
 
-  protected readonly sorted = computed(() => this.relations().toSorted((a, b) => b.opinion.total - a.opinion.total));
+  protected standing = (relation: KingdomRelation): number => relation.opinion.total + (relation.their_opinion ?? 0);
+
+  protected readonly sorted = computed(() => this.relations().toSorted((a, b) => this.standing(b) - this.standing(a)));
 
   // Each crown's opinion a chapter before, by id — `null` when the favourite's kingdom changed, two strangers having no standing to compare.
   private readonly _before = computed(() => {
     const previous = this._chronicler.previousChapter()?.meta.kingdom?.relations ?? [];
-    return this._chronicler.carriesOver('kingdom') ? new Map(previous.map(r => [r.kingdom.id, r.opinion.total])) : null;
+    return this._chronicler.carriesOver('kingdom') ? new Map(previous.map(r => [r.kingdom.id, this.standing(r)])) : null;
   });
 
   protected isNew = (relation: KingdomRelation): boolean => this._before()?.has(relation.kingdom.id) === false;
@@ -45,8 +47,8 @@ export class KingdomRelationsComponent {
   // Up or down since the chapter before, `null` for an opinion unchanged or a crown newly met — an arrow alone, the cell already printing the value.
   protected trend = (relation: KingdomRelation): 'down' | 'up' | null => {
     const before = this._before()?.get(relation.kingdom.id);
-    if (before === undefined || before === relation.opinion.total) return null;
-    return relation.opinion.total > before ? 'up' : 'down';
+    if (before === undefined || before === this.standing(relation)) return null;
+    return this.standing(relation) > before ? 'up' : 'down';
   };
 
 }

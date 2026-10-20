@@ -15,7 +15,7 @@ export interface Kingdom {
 }
 
 // This kingdom's diplomatic tie to one other — ally/enemy/neutral, with the net opinion score driving the tag colour.
-export interface KingdomRelation { kingdom: EntityReference; opinion: { total: number }; status: 'ally' | 'enemy' | 'neutral' }
+export interface KingdomRelation { kingdom: EntityReference; opinion: { total: number }; status: 'ally' | 'enemy' | 'neutral'; their_opinion?: number }
 
 // The ruler who opened the crown. What it officially is stays in `kingdom/info.py <id> identity`, each tier's own panel naming the favorite's.
 interface KingdomIdentity { founder?: PersonReference }

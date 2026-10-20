@@ -391,16 +391,20 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool) -> li
         status = "ally" if other_id in allies else "enemy" if other_id in enemies else "neutral"
         last_war_end = (r or {}).get("timestamp_last_war_ended")
         borders = not halo.isdisjoint(ctx["zones_by_kingdom"].get(other_id, ()))
+        # WB keeps each side's own opinion of the other (`opinion_k1`, `opinion_k2`): theirs of us, from their side — its two extremes when named, else its total
+        their_allies = {member for a in alliances if other_id in (a.get("kingdoms") or []) for member in a.get("kingdoms") or []}
+        theirs = _compute_opinion(other, _opinion_side(other, ctx, their_allies, war_sides), kingdom, ctx, r, borders, detailed=False)
 
         out.append(
             {
                 "age_years": int((ctx["world_time"] - float((r or {}).get("created_time") or 0)) / UNITS_PER_YEAR) if r else None,
                 **({"borders": True} if borders else {}),  # Chronicler-only, omitted when False: absence = kingdoms don't share a border.
-                # Chronicler-only: how far apart, edge to edge, where they do not touch — the distance a chapter puts between two crowns.
-                "gap_tiles": None if borders else _zone_gap(ours, ctx["zones_by_kingdom"].get(other_id, [])),
+                # Chronicler-only, the section named: how far apart, edge to edge, where they do not touch — the distance a chapter puts between two crowns.
+                "gap_tiles": None if borders or not detailed else _zone_gap(ours, ctx["zones_by_kingdom"].get(other_id, [])),
                 "kingdom": {"id": other_id, "name": other.get("name")},
                 "opinion": _compute_opinion(kingdom, side, other, ctx, r, borders, detailed),
                 "status": status,
+                "their_opinion": theirs if detailed else theirs["total"],
                 "years_since_last_war": int((ctx["world_time"] - float(last_war_end)) / UNITS_PER_YEAR) if last_war_end else None,
             }
         )
