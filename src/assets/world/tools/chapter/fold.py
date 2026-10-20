@@ -72,7 +72,7 @@ _AUDIT = {
     "relations": frozenset({"age_years", "borders", "gap_tiles", "years_since_last_war"}),
     # The world's stock of items, what its bodies are in the middle of and its sites — the panel counts souls, roofs and trees.
     "snapshot": frozenset({"gear", "statuses", "under_construction"}),
-    "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "max_cities", "projectiles", "recoil", "swim", "throwing_range"}),
+    "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "projectiles", "recoil", "swim", "throwing_range"}),
 }
 
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
@@ -98,11 +98,12 @@ _AUDIT_TIERS = {
     # The bodies it belongs to, each read to open its own tier block, its stock, which the portrait draws off the persons registry, and years `age` holds
     "favorite.metadata": {"age_overgrowth", "asset_id", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies"},
     "kingdom.identity": {"clan", "culture", "language", "religion", "subspecies"},  # as a town's
-    "kingdom.metadata": {"births", "ferries"},  # as a town's, and no panel asks whether a crown ferries — that answers a rule of the chronicle, not a row
+    "kingdom.metadata": {"births", "ferries", "max_cities"},  # as a town's; whether a crown ferries, what it can hold: rules of the chronicle, not rows
     "kingdom.pop": {"money"},  # as a town's
     "kingdom.ranks": {"money"},  # as a town's
     "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
     "religion.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
+    "subspecies.species": {"attack", "description", "has_soul"},  # the parent stock's own, all the chronicler's: the panel prints none of them
     "wars.metadata": {"deaths", "started_by"},  # the card sets each camp's toll and crown, never the sum or the man — `war/info.py <id>` hands over both
 }
 
@@ -212,7 +213,6 @@ def _fold_rulers(entity: dict) -> dict | None:
 # `stats` goes here rather than through `_CHRONICLER_ONLY`, which would take the favorite's own block along with it.
 def _fold_subspecies_detail(subspecies: dict) -> None:
     subspecies.pop("stats", None)
-    (subspecies.get("species") or {}).pop("description", None)  # WB's blurb on the parent stock — narrative, and the panel never prints it
 
 
 # The panels read nothing but the `total`, whichever form `full` handed over — nothing is lost, the chapter's own `map.wbox` replaying any section.

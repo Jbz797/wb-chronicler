@@ -88,10 +88,17 @@ def _build_species(subspecies: dict, save: dict) -> dict:
     totals = _species_totals(save)
     own = totals.get(asset_id) or _EMPTY_SPECIES.copy()
     ranks = competition_ranks(own, list(totals.values()), {key: itemgetter(key) for key in _EMPTY_SPECIES})
-    description = (load_data("species.json").get(asset_id) or {}).get("description")  # chronicler-only: WB's English line, which the panel never prints
+    asset = load_data("species.json").get(asset_id) or {}
 
-    # Counts drop at zero like the tier's own — a beast holds no town, and the podium is computed off the whole dict, so nothing is lost by not printing it.
-    return {**{key: value for key, value in own.items() if value}, "description": description, "id": asset_id, **({"ranks": ranks} if ranks else {})}
+    # Counts drop at zero, the podium reading the whole dict; the rest is the chronicler's: WB's line, its bare-handed weapon, its ghostly soul.
+    return {
+        **{key: value for key, value in own.items() if value},
+        "attack": asset.get("attack"),
+        "description": asset.get("description"),
+        "has_soul": asset.get("has_soul"),
+        "id": asset_id,
+        **({"ranks": ranks} if ranks else {}),
+    }
 
 
 # WB `ActorAsset.name_taxonomic_*`, lower-case in the DLL. Its `species` rank is dropped: `metadata.name` already carries it, mutated (`Banditus Nikonisum`).

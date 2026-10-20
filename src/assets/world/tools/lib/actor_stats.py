@@ -24,7 +24,6 @@ from math import inf
 
 from shared import (
     MIN_PER_CAPITA_UNITS,
-    PROFESSION_KING,
     PROFESSION_LEADER,
     PROFESSION_WARRIOR,
     SICK_TRAITS,
@@ -66,6 +65,7 @@ _BROKEN_ITEM_RATIO = 0.5  # WB `Actor.updateStats`: a worn-out piece stays worn 
 _CEIL_ON_BAD = {"attack_speed", "damage_1", "health_1", "speed_1"}  # the stats a `bad` gene rounds UP rather than down
 _CHILD_HALVED = ("damage_max", "health_max")  # WB `Actor.updateStats` halves these two on a child, and only these two — the rest it leaves at their grown size
 _CHILD_PERCENT = 0.5  # WB `Globals.KIDS_PERCENT`, truncated as C# truncates a cast to int
+_CIV_BASE_CITIES = 4  # WB `ActorAsset.civ_base_cities` where `species.json` gives none, as for a mob's crown
 _COLOR_MAP = {"A": "green", "C": "blue", "G": "yellow", "T": "red"}  # in the order of the `"ACGT"` literal that indexes it
 _DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
@@ -231,7 +231,6 @@ _OPPOSITE = {(1, 0): "left", (-1, 0): "right", (0, 1): "up", (0, -1): "down"}
 _RARITY_POINTS = {"Epic": 3, "Legendary": 4, "Normal": 1, "Rare": 2}  # WB's own ladder, weighing a carried arsenal into the « puissance » gauge.
 
 _RENAMES = {
-    "cities": "max_cities",
     "damage": "damage_max",
     "health": "health_max",
     "mana": "mana_max",
@@ -778,10 +777,10 @@ def build_actor_stats_context(save: dict) -> dict:
 def compute_actor_stats(actor: dict, ctx: dict) -> dict:
     totals = actor_stat_totals(actor, ctx)
     cleaned = _cleanup_stats(totals)
-    # Two stats WB reads off a single office-holder: `max_cities` from a king (`Kingdom.getMaxCities`), `bonus_towers` from a city leader (its watch-tower cap).
-    for stat, holder in (("bonus_towers", PROFESSION_LEADER), ("max_cities", PROFESSION_KING)):
-        if actor.get("profession") != holder:
-            cleaned.pop(stat, None)
+    # A city leader's watch-tower cap, his alone; a king's `cities` is told by his crown (`crown_max_cities`), never by him.
+    cleaned.pop("cities", None)
+    if actor.get("profession") != PROFESSION_LEADER:
+        cleaned.pop("bonus_towers", None)
     if is_baby(actor, ctx):  # WB `Actor.updateStats` halves a child's two stats, under the very test `is_baby` spells out
         for stat in _CHILD_HALVED:
             if stat in cleaned:
@@ -802,6 +801,14 @@ def crossed_at(actor: dict, threshold: float) -> float:
 
 def crossed_on(actor: dict, threshold: float) -> str:
     return world_date(crossed_at(actor, threshold))
+
+
+# WB `Kingdom.getMaxCities`: its king's species' base (the founder's, kingless) plus his `cities`, 1 at least — `totals` spares a sum already made.
+def crown_max_cities(kingdom: dict, king: dict | None, ctx: dict, totals: dict | None = None) -> int:
+    species = (king.get("asset_id") if king else kingdom.get("original_actor_asset")) or ""
+    base = (ctx["species_data"].get(species) or {}).get("civ_base_cities", _CIV_BASE_CITIES)
+    held = int((totals if totals is not None else actor_stat_totals(king, ctx)).get("cities", 0)) if king else 0
+    return max(base + held, 1)
 
 
 # What a body's arsenal weighs, each piece by its rarity — one figure for a panel's gauge and for the world's podium, where a count of pieces would say less.
@@ -1000,7 +1007,7 @@ def subspecies_stats(subspecies: dict, ctx: dict) -> dict:
     _apply_derived_stats(base)  # for `mana` alone, which the panel prints off intelligence
     _apply_multipliers(base)
     _normalize(base)  # no `_apply_damage_finalize`: folding `warfare / 5` into `damage` is `Actor.updateStats`, and the biology's own card shows damage raw
-    for office_stat in ("bonus_towers", "cities"):  # a crown's and a leader's caps — `compute_actor_stats` gates them on profession, and a biology holds no office
+    for office_stat in ("bonus_towers", "cities"):  # a leader's cap and a crown's share — no biology holds an office, as `compute_actor_stats` tells
         base.pop(office_stat, None)
     for trait_id in subspecies.get("saved_traits") or []:  # WB `base_stats_meta`: a handful of traits grant a gestation, a food cap, a colony ceiling
         for stat, value in ((ctx["subspecies_traits"].get(trait_id) or {}).get("meta_stats") or {}).items():

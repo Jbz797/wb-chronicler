@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import build_actor_stats_context, compute_actor_stats, is_baby, meta_ratios, settlement_pop
+from actor_stats import build_actor_stats_context, compute_actor_stats, crown_max_cities, is_baby, meta_ratios, settlement_pop
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -340,6 +340,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
             "id": kid,
             "islands": islands,
             "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
+            "max_cities": crown_max_cities(kingdom, ctx["actors_by_id"].get(kingdom.get("kingID")), ctx),  # chronicler-only: past it, outlying towns lose loyalty
             "name": kingdom.get("name"),
             **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
             "renown": kingdom.get("renown", 0),

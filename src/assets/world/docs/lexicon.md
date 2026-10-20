@@ -1,9 +1,10 @@
 # 🔤 Vocabulaire du récit
 
-<p class="metadata">Date de mise à jour : 20/10/26 15:58</p>
+<p class="metadata">Date de mise à jour : 20/10/26 17:51</p>
 
 ## Mots imposés
 
+- **Âme** : au sens du jeu seul, ce qu'a une espèce dont un mort, sur le sol corrompu, laisse un fantôme (`has_soul`, dans `subspecies … species`) ; jamais une tête qu'on compte : un village a des habitants, un royaume des sujets.
 - **Espèce, lignée, sang, maison, terre** : « espèce » dit l'espèce ; « lignée » la sous-espèce, jamais une famille ; le « sang » la parenté — versé, une mort, jamais une filiation —, une « maison » un toit, une « terre » une île, jamais un territoire.
 - **Particularité, don, malédiction, nature** : ce que la fiche appelle « trait », ou l'effet qu'elle donne, en clair. **Son nom et son esprit** (description, ton) colorent un corps ou un sol en nature ou en réputation (_« on la dit courte de vue »_), Intime compris ; le nom peut étiqueter l'effet de la fiche, jamais en fabriquer un.
 - **Quartiers** : ce que `territory` compte, et que WB appelle « zone » dans ses descriptions — les quartiers d'une ville, ou de toutes ses villes pour un royaume ou une alliance : dis-le comme la civilisation qui l'a bâti.
@@ -19,7 +20,7 @@
 
 ### Agglomérations (par population)
 
-Le **terme** qui accompagne la balise suit la tranche de population : ne jamais appeler « cité » un hameau de trois âmes.
+Le **terme** qui accompagne la balise suit la tranche de population : ne jamais appeler « cité » un hameau de trois habitants.
 
 | Habitants | Terme       |
 | --------- | ----------- |

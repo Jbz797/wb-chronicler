@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, kept_statuses, meta_ratios, settlement_pop
+from actor_stats import actor_stat_totals, build_actor_stats_context, compute_actor_stats, crown_max_cities, kept_statuses, meta_ratios, settlement_pop
 from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
@@ -538,8 +538,7 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
 
     # 11. Overreach: every holding past what the crown's species (and its king's `cities` stat) can govern costs the outlying towns 25.
     if not is_capital:
-        base = (ctx["species_data"].get(_kingdom_species(kingdom, ctx)) or {}).get("civ_base_cities", 4)  # WB `ActorAsset` sets 4, its civ template 5
-        allowed = max(base + int(_actor_stats(king, ctx).get("cities", 0)), 1)  # raw key, before the rename
+        allowed = crown_max_cities(kingdom, king, ctx, _actor_stats(king, ctx))
         held = len(realm["cities_by_kingdom"].get(kingdom["id"], []))
         if held > allowed:
             add("cities", (allowed - held) * 25)
@@ -679,12 +678,6 @@ def _heirs_by_kingdom(save: dict, actors_by_city: dict, leader_ids: set) -> dict
             if actor.get("clan") and actor.get("civ_kingdom_id") and (aid := actor["id"]) not in king_ids and aid not in leader_ids:
                 heirs[kid].append(actor)
     return heirs
-
-
-# WB `Kingdom.getActorAsset` — the reigning king's kind, or the founder's between reigns. Sets how many holdings the crown can govern; `""` falls to the default 5.
-def _kingdom_species(kingdom: dict, ctx: dict) -> str:
-    king = ctx["actors_by_id"].get(kingdom.get("kingID"))
-    return (king.get("asset_id") if king else kingdom.get("original_actor_asset")) or ""
 
 
 # The `loyalty_traits` an actor carries. `_cleanup_stats` drops it (nothing else reads it), so the trait tables and the statuses are summed here instead.

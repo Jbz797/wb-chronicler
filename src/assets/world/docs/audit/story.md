@@ -1,18 +1,18 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 19/10/26 23:46</p>
+<p class="metadata">Date de mise à jour : 20/10/26 17:51</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
 ## Ta tâche
 
-Lis le chapitre, puis autant de la chronique qu'il t'en faut, de `saves/C1/chapter.md` au dernier ; une âme ou un mot s'y suit par `git -C saves grep -nF '[p 46 '`. Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
+Lis le chapitre, puis autant de la chronique qu'il t'en faut, de `saves/C1/chapter.md` au dernier ; un personnage ou un mot s'y suit par `git -C saves grep -nF '[p 46 '`. Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
 
 - un fil qu'elle a ouvert et jamais refermé ;
 - une épithète ou un lien que les chapitres ne soutiennent plus (un toponyme n'en est pas une) ;
 - un mot qu'elle a défini une fois (un terme forgé, « sol », « îlot ») et qu'elle emploie aujourd'hui dans un autre sens ;
 - un motif, une cause ou un chiffre qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
-- une âme ou un lieu qu'elle a lâchés là où la chronique l'attendait.
+- un personnage ou un lieu qu'elle a lâchés là où la chronique l'attendait.
 
 Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : c'est un point à mesurer. Tu ne vérifies pas les faits ; mais un écart que tu t'apprêtes à soulever peut se mesurer d'une seule commande (`docs/tools.md`), citée avec lui ; au-delà, il est à mesurer. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Conversion temps » ; un seuil d'âge d'espèce se mesure, il se signale.
 
