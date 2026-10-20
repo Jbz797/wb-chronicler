@@ -21,8 +21,8 @@ from functools import cache, partial
 from pathlib import Path
 
 CHAPTER_CAP = 12000  # a sitting's read, some 9 minutes: past it the chapter says more than its world has done
-CHAPTER_FLOOR = 7000  # both in no doc: `new.py`'s recap gives them, delivery and `echo.py` hold them — counted past the audit, which cuts as much as it adds
-COUNTED_AS = "tags by their name, blanks folded"  # how every length a chapter is held to counts it, said beside each figure
+CHAPTER_FLOOR = 6000  # both in no doc: `new.py`'s recap gives them, delivery and `echo.py` hold them — counted past the audit, which cuts as much as it adds
+COUNTED_AS = "every visible character, tags by their name, markdown marks left out"  # how every length a chapter is held to counts it, said beside each figure
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
@@ -106,6 +106,9 @@ _ID_COUNTERS = {
 
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
+
+# Markdown's own marks, read by no one: a table's rule and a section's `---`, a heading's `#`, a quote's `>`, a list's bullet, and emphasis, columns, code.
+_MARKDOWN_MARKS = re.compile(r"(?m)^\s*(?:\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)*\|?|-{3,}|\*{3,})\s*$|^\s*(?:#{1,6}|>|[-*+]|\d+\.)\s+|[*_|`]")
 
 _MATE_BREEDINGS = frozenset({"reproduction_hermaphroditic", "reproduction_sexual"})  # the two WB asks a partner for, one of them by opposite sexes
 _MAX_REIGNS_SHOWN = 3  # a succession in `full`: the first reign and the two latest, a lighter cut than a roster's since its summary still names them
@@ -544,9 +547,9 @@ def built_by_tile(save: dict) -> dict[tuple, dict]:
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic for tile in building_footprint(b)}
 
 
-# A chapter's length as its bounds count it, `COUNTED_AS`: blanks folded as the docs' budget folds them, a marker's markup and an indent no prose.
+# A chapter's length as its bounds count it, `COUNTED_AS`: what a reader reads, its tables' frame and its blanks no more than a tag's markup.
 def chapter_length(text: str) -> int:
-    return len(re.sub(r"\s+", " ", unmarked(text)).strip())
+    return sum(not c.isspace() for c in _MARKDOWN_MARKS.sub(" ", unmarked(text)))
 
 
 # The world's hour as chapter `n` archived it, `None` where its save is gone: read off the save itself, the one record no script rewrites after the fact.
