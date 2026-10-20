@@ -47,7 +47,7 @@ PROFESSION_LEADER = 4
 PROFESSION_WARRIOR = 5
 SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `chapter/` reaches back to `C<n-1>` through it.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
-TAG_MARK = re.compile(r"\[[a-z] [^\s\]]+(?: ([^\]]+))?\]")  # a name's marker, `[p 28 Voxzen]`: read by its text alone, a bare one nothing
+TAG_MARK = re.compile(r"\[(?P<kind>[a-z]) (?P<id>[^\s\]]+)(?: (?P<text>[^\]]+))?\]")  # a name's marker, `[p 28 Voxzen]`: read by its text, a bare one nothing
 UNITS_PER_MONTH = 5  # 5 `world_time` units = 1 month, the grain WB counts an incubation and a plot in.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
 UNWRITTEN_HEALTH = 100  # WB `BaseObjectData`: the health a body, a hull or a building is born with, which a save leaves out
@@ -1375,7 +1375,7 @@ def union_root(parent: list[int], node: int) -> int:
 
 # A marked text as the reader sees it: a tag shows its name alone, never its markup — what every length a chapter is held to counts.
 def unmarked(text: str) -> str:
-    return TAG_MARK.sub(lambda m: m[1] or "", text)
+    return TAG_MARK.sub(lambda m: m["text"] or "", text)
 
 
 # Blocks too thin to rank, with their field and missed floor — unlike `{}`, a first place nobody holds; an empty block stays out, having nothing to rank

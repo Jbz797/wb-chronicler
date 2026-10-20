@@ -39,6 +39,7 @@ _LONG_RUN = 7  # words from which a run is a turn of phrase with a single word o
 _LONG_RUN_WITHIN = 6  # the same, within one chapter, where a formula said again ten lines on is heard: `jamais encore on n'avait vu`
 _MARKS = re.compile(r"[*_#>|`]")  # emphasis, headings, quotes and table rules: markup, which no reader hears
 _MIN_RUN = 4  # words a shared run must hold: three are the language's own (« il n'y a »), four start to be a turn of phrase
+_NAMELESS = frozenset("grs")  # gear, resources and species: icons a chapter strews, no one whose angle can be told twice
 _OPENING_START = 4  # words a section's first sentence is known by, a figure read as any other: `Voxzen est dans sa` 11ᵉ, then 13ᵉ année
 _OVERUSE = 1.3  # how far past the chronicle's own highest rate a family must climb to be named: a wobble is not a tic
 _RARE = 3  # uses across the whole chronicle under which a word shared with the two chapters before is an image borrowed, not the language
@@ -59,7 +60,8 @@ _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined 
 _USAGE = (
     "usage: chapter/echo.py [C<n>] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before (`from` their line, "
     f"`by` its sign — {'; '.join(f'`{sign}` {gloss}' for sign, gloss in _SIGNS.items())}), `internal` runs it says twice, `terms` it coins, "
-    "`overused` families, `shape` its cast poured again; `clear` the checks that found nothing, `length` and `dialogue` among them — "
+    "`overused` families, `shape` its cast poured again, `names` each one it tags beside the lines that did in the 2 chapters before; "
+    "`clear` the checks that found nothing, `length` and `dialogue` among them — "
     "out of its bounds or under its floor, a ✗ says so"
 )
 
@@ -164,6 +166,26 @@ def _keys(text: str) -> set[str]:
 def _lines(n: int) -> list[tuple[int, bool, list[list[_Token]]]]:
     lines = enumerate(text.splitlines(), 1) if (text := _chapter(n)) is not None else ()
     return [(number, bool(_SECTION.match(line)), [tokens for part in _SENTENCE.split(line) if (tokens := _tokens(part, number))]) for number, line in lines]
+
+
+# Each one the chapter tags, by its tag, beside the lines that tagged it in the 2 chapters before: where the same angle is likeliest taken twice.
+def _names(n: int) -> list[dict]:
+    def tagged(m: int) -> dict[str, tuple[str | None, list[int]]]:
+        found: dict[str, tuple[str | None, list[int]]] = {}
+        for at, line in enumerate((_chapter(m) or "").splitlines(), 1):
+            for tag in TAG_MARK.finditer(line):
+                if tag["kind"] not in _NAMELESS:
+                    lines = found.setdefault(f"{tag['kind']} {tag['id']}", (tag["text"], []))[1]
+                    if not lines or lines[-1] != at:
+                        lines.append(at)
+        return found
+
+    now, before = tagged(n), {m: tagged(m) for m in (n - 2, n - 1) if m >= 1}
+    rows = []
+    for tag, (name, lines) in now.items():
+        if seen := {f"C{m}": found[tag][1] for m, found in before.items() if tag in found}:
+            rows.append({**seen, "lines": lines, "name": name, "tag": tag})
+    return sorted(rows, key=lambda row: row["lines"][0])
 
 
 # Families past the chronicle's highest rate, from 2 chapters before, none it all but never used: `lignée` must overflow the chapter first telling lineages
@@ -380,7 +402,7 @@ def _telling(run: list[_Token], long_run: int = _LONG_RUN) -> bool:
 # A stretch of prose as tokens: markup gone, a tag's text kept and marked as a name, an elision split from the word it leans on.
 def _tokens(text: str, number: int) -> list[_Token]:
     text = _dates().sub(_DATE, text)
-    names = {_key(word) for tag in TAG_MARK.finditer(text) for word in _WORD.findall(tag[1] or "")}
+    names = {_key(word) for tag in TAG_MARK.finditer(text) for word in _WORD.findall(tag["text"] or "")}
     out = []
     for word in _WORD.findall(_MARKS.sub(" ", unmarked(text))):
         key = _key(word)
@@ -435,7 +457,7 @@ def echoes(n: int) -> dict | None:
     if not (words := _words(n)):
         return None
     internal, terms = _within(words, n)
-    found = {"internal": internal, "overused": _overused(words, n), "passages": _passages(words, n), "shape": _shaped(n), "terms": terms}
+    found = {"internal": internal, "names": _names(n), "overused": _overused(words, n), "passages": _passages(words, n), "shape": _shaped(n), "terms": terms}
     if (changed := _changed(n)) is None:
         return found
 
