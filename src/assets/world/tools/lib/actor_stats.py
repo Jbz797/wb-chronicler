@@ -30,8 +30,10 @@ from shared import (
     SICK_TRAITS,
     UNITS_PER_MONTH,
     UNITS_PER_YEAR,
+    UNWRITTEN_HEALTH,
     actor_age,
     equipment_rarity,
+    fertile,
     has_emotions,
     head_money,
     index_by_id,
@@ -700,6 +702,47 @@ def adult_age(actor: dict, ctx: dict) -> float:
     return _subspecies_ages(actor, ctx)[0]
 
 
+# Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
+def bears(actor: dict, ctx: dict) -> bool | None:
+    biology = lineage_traits(actor, ctx)
+    if "reproduction_sexual" in biology:
+        return actor.get("sex") == 1
+    return None if "reproduction_hermaphroditic" in biology else True  # a lone breeder bears its own
+
+
+# Onto `compute_actor_stats`' cleaned pipeline, what the save carries on the body — vitals, a gut's reserve, tallies above nought; `ctx` brings `children_by_parent`.
+def body_stats(actor: dict, ctx: dict) -> dict:
+    cleaned = compute_actor_stats(actor, ctx)
+    if not cleaned:
+        return {}
+    if bears(actor, ctx) is False:  # a sire's `offspring` only bars him from starting — his mate starts in his stead, so no count of his says what he can father
+        cleaned.pop("max_children", None)
+    if not (bearing := fertile(ctx["subspecies_by_id"].get(actor.get("subspecies")))):  # a lineage that never bears, spores with no meal: a cap on nothing
+        cleaned.pop("max_children", None)
+    cleaned.update(
+        {
+            # Life's tallies, silent at nought as every other stat is: a soul that has killed nobody and owns nothing says so by carrying none of them.
+            **({"births": n} if (n := int(actor.get("births") or 0)) else {}),
+            # Said at nought while the lineage can still bear, unsaid where it never will: the absence then says « none to come », not « none yet »
+            **({"children": n} if (n := ctx["children_by_parent"].get(actor.get("id"), 0)) or bearing else {}),
+            **({"equipment_power": n} if (n := equipment_power(actor, ctx)) else {}),
+            # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
+            **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
+            "health": int(actor.get("health", UNWRITTEN_HEALTH)),
+            **({"kills": n} if (n := int(actor.get("kills") or 0)) else {}),
+            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # every body starts at 1, WB's floor: said once earned past it
+            **({"loot": n} if (n := int(actor.get("loot") or 0)) else {}),
+            "mana": int(actor.get("mana") or 0),
+            **({"money": n} if (n := int(actor.get("money") or 0)) else {}),
+            # Its reserve only where it has a gut: on a body that never hungers WB leaves the figure standing, and it says nothing.
+            **({"nutrition": int(actor.get("nutrition") or 0)} if "nutrition_max" in cleaned else {}),
+            **({"renown": n} if (n := int(actor.get("renown") or 0)) else {}),
+            "stamina": int(actor.get("stamina") or 0),
+        }
+    )
+    return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
+
+
 # The age WB lets a body breed at, `Actor.canBreed`'s own gate — no baby form to check, WB hanging this one on the biology whatever shape it was drawn in.
 def breeding_age(actor: dict, ctx: dict) -> float:
     return _subspecies_ages(actor, ctx)[1]
@@ -821,6 +864,11 @@ def kept_task_target(actor: dict) -> dict | None:
         "y": tile.get(f"{_MOD_TASK}_tile_y"),
     }
     return {key: value for key, value in aim.items() if value is not None} or None
+
+
+# The traits a body's lineage carries — what its breeding, its gait and its swim are each read off.
+def lineage_traits(actor: dict, ctx: dict) -> tuple | list:
+    return (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
 
 
 # The months a lineage carries before a birth or a hatching: WB sums its traits' `maturation` into `base_stats_meta`.

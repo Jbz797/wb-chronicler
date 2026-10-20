@@ -14,12 +14,14 @@ from functools import cache
 from math import inf
 from operator import itemgetter
 from pathlib import Path
+from statistics import median
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import (
     actor_stat_totals,
     adult_age,
+    body_stats,
     breeding_age,
     build_actor_stats_context,
     compute_actor_stats,
@@ -54,6 +56,7 @@ from shared import (
     body_ref,
     breeding_mode,
     building_family,
+    children_by_id,
     city_centre,
     city_score_dimensions,
     civic_building_ids,
@@ -162,6 +165,7 @@ _DEATH_CAUSES = {
 }
 
 _FEATS = ("kills", "level", "money", "renown")  # what a life adds up, kept on the body itself — weighed among thinking souls as the skills are
+_FIELD_FLOORS = {"births": 0, "equipment_power": 0, "kills": 0, "level": 1, "loot": 0, "money": 0, "renown": 0}  # a tally `actor … stats` tells silent at its floor
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
 
 # Actor field => the save collection it points into, feeding its `pop` record — every actor counted, wildlife included, as each tier's medal counts its own.
@@ -177,6 +181,8 @@ _GROUP_FIELDS = {
 }
 
 _ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too small to count — `_WATER` where it floats
+_KEPT_FIELDS = ("asset_id", "island_id", "life_stage", "statuses", "task")  # what `--with` reads off the body and its ground, beside its stats
+_MAX_FIELDS = 4  # past so many fields a line reads as a sheet: `actor … stats` gives the whole of one body
 
 # What `roster` narrows to by entity: the collection its id answers in, and the body's own field that ties it there — a pact's, through the crown.
 _MEMBERSHIPS = {
@@ -227,6 +233,22 @@ _WATER = "water"  # where `roster` says a body stands, or stood, afloat — off 
 # An age's life stage off the share of its span it has run — three words and no date, the end of an age being the turn a chronicle must not see coming.
 def _age_stage(progress: float) -> str:
     return "young" if progress < _AGE_YOUNG else "waning" if progress >= _AGE_WANING else "mature"
+
+
+# What `--with` asks of a body standing `here`: its `actor … stats`, a silent tally at its floor, kind, land, stage, task, statuses — its stats named into `seen`.
+def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, seen: set[str]) -> dict:
+    if not fields:
+        return {}
+    stats = body_stats(actor, ctx) if any(field not in _KEPT_FIELDS for field in fields) else {}
+    seen.update(stats)
+    kept = {
+        "asset_id": lambda: actor.get("asset_id"),
+        "island_id": lambda: here,
+        "life_stage": lambda: _stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)),
+        "statuses": lambda: kept_statuses(actor),
+        "task": lambda: kept_task(actor),
+    }
+    return {field: kept[field]() if field in kept else stats.get(field, _FIELD_FLOORS.get(field)) for field in fields}
 
 
 # Whether a body belongs to the entity `roster` is narrowed to, read off the body itself: a pact through its crown, every other tie by its own field.
@@ -467,6 +489,7 @@ def _build_roster(
     top: str | None,
     entity: tuple[str, int] | None,
     near: tuple[tuple[int, int], int | None] | None,
+    fields: list[str],
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
     belongs = _belongs(save, entity)
@@ -546,11 +569,10 @@ def _build_roster(
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
 
     one_kind = kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
-    if not (top or near) and len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many on each land, of each kind and stage, the adults too
-        lands = Counter(here for _, here, _ in bodies)
-        by_land = {str(land): lands[land] for land in sorted(lands, key=lambda land: (isinstance(land, str), land))}
-        species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
-        stages = Counter(_stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) for actor, _, _ in bodies)
+    seen = set(_KEPT_FIELDS) | _FIELD_FLOORS.keys() if fields else set()  # every field a body of the roll can be asked, its own stats added as they come
+    if fields:
+        ctx["children_by_parent"] = children_by_id(save)  # `body_stats` counts each body's children as `actor` does
+    if not (top or near) and len(bodies) + len(gone) > MAX_LISTED:  # past the list a count, its parts what `--with` asks
         told = f"{len(bodies)} bodies"
         if once is not None:
             told = f"{len(bodies)} bodies whose {has} moved since {since}" + (f", {len(gone)} gone with theirs" if gone else "")
@@ -569,16 +591,18 @@ def _build_roster(
             ("--barred", barred),
             ("-i", land is not None),
         )
+        wanted = [_asked_fields(actor, here, fields, ctx, seen) for actor, here, _ in bodies]  # `--with` grouped over the roll, its lines too many to read
+        _refuse_unseen(fields, seen)
         free = [flag for flag, worn in filters if not worn]  # the narrowings still open: one already worn would be no way on
         ways = ", ".join(free[:-1]) + " or " * (len(free) > 1) + "".join(free[-1:])  # `a, b or c`, or `c` alone
         return {
-            "by_land": None if asked is not None else by_land,  # silent under `-i`, which names the land
-            "by_species": dict(species),
-            "by_stage": dict(stages),
             # Named while they are few, each side of a `--since` keeping its own list: it is the arrivals that crowd a census out, and the dead a chapter seeks.
             "gone": [{**row, "asset_id": None if one_kind else row["asset_id"], "gone": None} for row in gone] if few else None,
             "gone_by_species": None if few else dict(Counter(row["asset_id"] for row in gone)),
-            "info": f"{told}, past the {MAX_LISTED} a roll lists" + (f" — narrow them with {ways}" if free else ""),
+            "info": f"{told}, past the {MAX_LISTED} a roll lists"
+            + (", `--with` grouped" if fields else ", `--with asset_id,island_id,life_stage` counts them")
+            + (f" — narrow them with {ways}" if free else ""),
+            "with": {field: _grouped_field(field, [w.get(field) for w in wanted]) for field in fields} or None,
         }
     rows = []
 
@@ -604,6 +628,9 @@ def _build_roster(
     # A town's own land goes unsaid on its residents' lines, as `-i` does: the room it frees tells their stage instead
     seat = island_of.get(centre) if entity and entity[0] == "city" and (centre := city_centre(refs["city"].get(entity[1]) or {})) else None
     for actor, here, change in ranked[:_TOP_ROWS] if top or near else ranked:
+        if fields:  # the line is what was asked: who, and those fields, a filter's own figure kept — the default columns stay with the plain roll
+            rows.append({"id": actor["id"], "name": actor.get("name"), **change, **_asked_fields(actor, here, fields, ctx, seen)})
+            continue
         if entity:
             told = None if here in (asked, seat) and "was_on" not in change else here
             rows.append({**_member_row(actor, entity[0], told, refs, save, ctx, one_kind), **change})
@@ -625,6 +652,7 @@ def _build_roster(
                 **change,
             }
         )
+    _refuse_unseen(fields, seen)
 
     if (top or near) and rows:  # one shape whatever the world, its `info` keeping a lone key from coming bare: the cut said, a tie it falls in, and who holds none
         key = top or "crow_tiles"
@@ -730,6 +758,15 @@ def _gone_since(
     return sorted(rows, key=lambda row: row["id"])
 
 
+# One field of `--with` over a roll too long to list: a task or a status counted by its value, a stat by its spread — `of` the bodies it applies to.
+def _grouped_field(field: str, values: list) -> dict | None:
+    if field in _KEPT_FIELDS:  # lands by their id first, the islets and the water after, every other value by its name
+        counts = Counter(item for value in values if value for item in (value if isinstance(value, list) else [value]))
+        return {str(key): counts[key] for key in sorted(counts, key=lambda key: (isinstance(key, str), key))} or None
+    held = sorted(value for value in values if value is not None)
+    return {"max": held[-1], "median": median(held), "min": held[0], "of": len(held)} if held else None
+
+
 # A body's measure as `--has`, `--lacks` and `--top` weigh it — `level` counts past 1, WB's floor, where every body starts. A skill or an arsenal asks for `ctx`.
 def _held(actor: dict, tally: str, ctx: dict | None = None) -> int:
     if ctx is not None and tally not in _TALLIES:  # read off its stats, where a counter is the body's own
@@ -814,6 +851,12 @@ def _old_from(actor: dict, ctx: dict) -> str | None:
     return world_date(float(actor.get("created_time") or 0) + max(lifespan - (actor.get("age_overgrowth") or 0), 0) * UNITS_PER_YEAR)
 
 
+# A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
+def _refuse_unseen(fields: list[str], seen: set[str]) -> None:
+    if unknown := [field for field in fields if field not in seen]:
+        raise ValueError(f"✗ no body here has {', '.join(f'`{f}`' for f in unknown)} — `--with` takes {', '.join(sorted(seen))}")
+
+
 # The subspecies WB hangs `has_sapience` on, as a set of ids — an allegiance is not a mind, and a world can think long before it crowns anyone.
 def _sapient_subspecies(save: dict) -> frozenset:
     return frozenset(sid for sid, sub in index_by_id(save.get("subspecies") or []).items() if is_sapient(sub))
@@ -884,6 +927,9 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--top", choices=_TOP_MEASURES, help=f"`roster`: its {_TOP_ROWS} highest by one measure, a tally or a skill, each with its figure")
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster`: one kind, a family (`actors`) or a comma list")
+    parser.add_argument(
+        "--with", dest="fields", metavar="field,…", help=f"`roster`: up to {_MAX_FIELDS} of `actor … stats`, `task`, `statuses` or a line's own field, on each line"
+    )
     args = parser.parse_args(argv)
     requested = args.sections
     try:
@@ -896,6 +942,7 @@ def main(argv: list[str]) -> int:
         any((args.barred, args.has, args.lacks, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, args.type, entities))
         or args.island is not None
         or args.nearest is not None
+        or args.fields is not None
     )
     if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
         print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
@@ -904,7 +951,7 @@ def main(argv: list[str]) -> int:
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        flags = "-t, --trait, --has, --lacks, --top, --nearest, --status, --task, --patch, --sapient, --settle, --barred, -i and an entity"
+        flags = "-t, --trait, --has, --lacks, --top, --nearest, --with, --status, --task, --patch, --sapient, --settle, --barred, -i and an entity"
         print(f"✗ {flags} narrow `roster`: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
@@ -984,25 +1031,34 @@ def main(argv: list[str]) -> int:
                 print(f"✗ {args.patch[0]},{args.patch[1]} stands on no counted land — `tiles <x,y> tile_info` tells what a tile is", file=sys.stderr)
                 return 2
             patch = patch_finder(save, LazyTileGrid(save), island_of)(*args.patch)[0]
-        roster = _build_roster(
-            save,
-            island_of,
-            kinds,
-            args.trait,
-            args.island,
-            since,
-            args.sapient,
-            args.settle,
-            args.barred,
-            patch,
-            args.status,
-            args.task,
-            args.has,
-            args.lacks,
-            args.top,
-            entity,
-            near,
-        )
+        fields = args.fields.split(",") if args.fields else []
+        if len(fields) > _MAX_FIELDS:
+            print(f"✗ `--with` takes {_MAX_FIELDS} fields at most — `actor <id> stats` gives a body's whole sheet", file=sys.stderr)
+            return 2
+        try:
+            roster = _build_roster(
+                save,
+                island_of,
+                kinds,
+                args.trait,
+                args.island,
+                since,
+                args.sapient,
+                args.settle,
+                args.barred,
+                patch,
+                args.status,
+                args.task,
+                args.has,
+                args.lacks,
+                args.top,
+                entity,
+                near,
+                fields,
+            )
+        except ValueError as e:  # a field `--with` asks that no body of the roll carries
+            print(e, file=sys.stderr)
+            return 1
         if not roster:  # a filter nothing answers, never a silent `{}`
             print(_nobody(args, kinds, save, since), file=sys.stderr)
             return 1

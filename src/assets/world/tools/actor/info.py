@@ -16,11 +16,12 @@ from actor_stats import (
     MULTIPLIER_TARGETS,
     actor_stat_totals,
     adult_age,
+    bears,
+    body_stats,
     breeding_age,
     build_actor_stats_context,
     compute_actor_stats,
     crossed_on,
-    equipment_power,
     hatch_on,
     hatches_as,
     is_baby,
@@ -28,6 +29,7 @@ from actor_stats import (
     kept_statuses,
     kept_task,
     kept_task_target,
+    lineage_traits,
     status_left,
 )
 from founding import city_zones, settle_gates, settle_told
@@ -62,7 +64,6 @@ from shared import (
     entity_ref,
     equipment_entry,
     fertile,
-    has_emotions,
     index_by_id,
     is_aboard,
     is_boat,
@@ -246,19 +247,6 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
     return target, aims, mark, about, whom, each, told
 
 
-# Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
-def _bears(actor: dict, ctx: dict) -> bool | None:
-    biology = _biology(actor, ctx)
-    if "reproduction_sexual" in biology:
-        return actor.get("sex") == 1
-    return None if "reproduction_hermaphroditic" in biology else True  # a lone breeder bears its own
-
-
-# The traits a body's lineage carries — what its breeding, its gait and its swim are each read off.
-def _biology(actor: dict, ctx: dict) -> tuple | list:
-    return (ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_traits") or ()
-
-
 # Tiles a hull sails in an hour, off its trade's `speed` in `boat-assets.json` — a transport's when none is named, the one kind that ferries.
 def _boat_per_hour(hull: dict | None = None) -> float:
     kinds = load_data("boat-assets.json").get("kinds") or {}
@@ -361,7 +349,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         and age >= age_breeding
         and (not needs_food(lineage) or int(actor.get("nutrition") or 0) >= NEW_BABY_NUTRITION)
         and (
-            _bears(actor, ctx) is not True
+            bears(actor, ctx) is not True
             or ("infertile" not in (actor.get("saved_traits") or []) and ctx["children_by_parent"].get(actor.get("id"), 0) < int(snap.get("max_children") or 0))
         )
     )
@@ -471,7 +459,7 @@ def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, t
         key: _change(key, before.get(key), after.get(key)) for key in sorted((before.keys() | after.keys()) - _UNCOMPARED) if before.get(key) != after.get(key)
     }
     # A level unsaid is WB's floor, 1: left out, it would weigh as 0. No `swim`, which only follows stamina and health.
-    stats_then, stats_now = ({"level": 1, **_compute_stats(body, side)} for body, side in ((then, then_ctx), (actor, ctx)))
+    stats_then, stats_now = ({"level": 1, **body_stats(body, side)} for body, side in ((then, then_ctx), (actor, ctx)))
     names = ctx["creature_traits"]  # WB's own library, the same whichever chapter is read
     traits_then, traits_now = (sorted((names.get(tid) or {}).get("name") or tid for tid in body.get("saved_traits") or []) for body in (then, actor))
     return {**out, "changed": changed or None, "stats": moved_between(stats_then, stats_now), "traits": moved_between(traits_then, traits_now)}
@@ -667,12 +655,12 @@ def _compute_personality(actor: dict, snap: dict) -> str | None:
 # Top 3 only — UI hides the rest, no narrative use for "34th out of 114". Zero-skip like the city/kingdom ranks: no podium for a stat the actor has none of.
 def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
     same_species = ctx["actors_by_asset"].get(actor.get("asset_id"), [])
-    peers = [_compute_stats(a, ctx) for a in same_species]
+    peers = [body_stats(a, ctx) for a in same_species]
     own = next(s for a, s in zip(same_species, peers, strict=True) if a["id"] == actor["id"])
 
     getters = {stat: lambda s, st=stat: s.get(st, 0) for stat in _RANKED_STATS if stat in own}  # `st=stat` binds now, else every lambda reads the last one
     ranks = competition_ranks(own, peers, getters)
-    # Age is not in `_compute_stats` (derived from `created_time`) — ranked separately, against the raw actors.
+    # Age is not in `body_stats` (derived from `created_time`) — ranked separately, against the raw actors.
     ranks.update(competition_ranks(actor, same_species, {"age": lambda a: actor_age(a, ctx["world_time"])}))
     return ranks
 
@@ -694,39 +682,6 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
     return [role for role in _ROLE_ORDER if checks[role]]
 
 
-# Onto `compute_actor_stats`' cleaned pipeline, what the save carries on the body: its vitals, a gut's reserve, tallies above nought.
-def _compute_stats(actor: dict, ctx: dict) -> dict:
-    cleaned = compute_actor_stats(actor, ctx)
-    if not cleaned:
-        return {}
-    if _bears(actor, ctx) is False:  # a sire's `offspring` only bars him from starting — his mate starts in his stead, so no count of his says what he can father
-        cleaned.pop("max_children", None)
-    if not (bearing := fertile(ctx["subspecies_by_id"].get(actor.get("subspecies")))):  # a lineage that never bears, spores with no meal: a cap on nothing
-        cleaned.pop("max_children", None)
-    cleaned.update(
-        {
-            # Life's tallies, silent at nought as every other stat is: a soul that has killed nobody and owns nothing says so by carrying none of them.
-            **({"births": n} if (n := int(actor.get("births") or 0)) else {}),
-            # Said at nought while the lineage can still bear, unsaid where it never will: the absence then says « none to come », not « none yet »
-            **({"children": n} if (n := ctx["children_by_parent"].get(actor.get("id"), 0)) or bearing else {}),
-            **({"equipment_power": n} if (n := equipment_power(actor, ctx)) else {}),
-            # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
-            **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
-            "health": int(actor.get("health", UNWRITTEN_HEALTH)),
-            **({"kills": n} if (n := int(actor.get("kills") or 0)) else {}),
-            **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # every body starts at 1, WB's floor: said once earned past it
-            **({"loot": n} if (n := int(actor.get("loot") or 0)) else {}),
-            "mana": int(actor.get("mana") or 0),
-            **({"money": n} if (n := int(actor.get("money") or 0)) else {}),
-            # Its reserve only where it has a gut: on a body that never hungers WB leaves the figure standing, and it says nothing.
-            **({"nutrition": int(actor.get("nutrition") or 0)} if "nutrition_max" in cleaned else {}),
-            **({"renown": n} if (n := int(actor.get("renown") or 0)) else {}),
-            "stamina": int(actor.get("stamina") or 0),
-        }
-    )
-    return cleaned  # left as inserted: `render` sorts every record-shaped dict on the way out, and a ranking's peers are only ever read by key
-
-
 # A time as the chronicler reads it: whole minutes under the hour, where a tenth of an hour would round a few tiles to nought, else hours to the tenth.
 def _duration(hours: float, prefix: str = "") -> dict:
     if (minutes := round(hours * 60)) >= 60:
@@ -745,7 +700,7 @@ def _from_them(other: dict, actor: dict, to: dict, ctx: dict) -> dict | None:
 
 # How this body walks, or `None` for one the ground never holds — a flyer, a body born to the water, one aboard a hull: all keep the crow's line.
 def _gait(actor: dict, ctx: dict) -> Gait | None:
-    biology = _biology(actor, ctx)
+    biology = lineage_traits(actor, ctx)
     tags = _body_tags(actor, biology, ctx)
     if _water_free(actor, tags, ctx):
         return None
@@ -927,7 +882,7 @@ def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, ki
 
 # How far the body swims now, off the `_swim_reach` its walks use — `breath` before its wind fails, `reach` drowning too — and `rested`, what full gauges change.
 def _swim(actor: dict, stats: dict, ctx: dict) -> dict | str | None:
-    biology = _biology(actor, ctx)
+    biology = lineage_traits(actor, ctx)
     tags = _body_tags(actor, biology, ctx)
     if _water_free(actor, tags, ctx):
         return "unlimited"
@@ -1221,7 +1176,7 @@ def main(argv: list[str]) -> int:
     if "ranks_in_species" in sections:
         out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx)
     if "stats" in sections:
-        stats = _compute_stats(actor, ctx)
+        stats = body_stats(actor, ctx)
         out["stats"] = {**stats, "swim": _swim(actor, stats, ctx)} if stats else stats
     if "surroundings" in sections:
         out["surroundings"] = _build_surroundings(actor, ctx, requested)
