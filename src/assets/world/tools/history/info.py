@@ -133,17 +133,26 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
     states = [c for c in columns if c not in events and any(r[c] for r in (*coarse, *rows))]  # a state at nought all along says nothing
     names = {c: _ENTITY_RENAMED.get(c, c) for c in states}
     born = _row_year(float(living["created_time"])) if living and living.get("created_time") is not None else None
-    # Its first fine year is a first year only when it was born in it: a window opened later holds a total, not that year's gain.
-    before: dict = dict.fromkeys(events, 0) if rows and not coarse and born == rows[0]["timestamp"] else {}
+    # WB tallies from the entity's birth: the first coarse row holds all it gained till then, each later one what came since the row before.
+    older, before = [], dict.fromkeys(events, 0)
+    for r in coarse:
+        now = {c: r[c] for c in events}
+        older.append({"around_year": r["timestamp"], "step": r["step"], **{names[c]: r[c] for c in states if r[c]}, **_gains(before, now, events)})
+        before = now
+    # Its first fine year is a first year only when it was born in it: a window opened later, with no coarse row before it, holds a total, not a gain.
+    if not coarse and born != rows[0]["timestamp"]:
+        before = {}
     years, by_year = [], {row["timestamp"]: row for row in rows}
     row = rows[0] if rows else {}
     # Every year from its first to the last closed, a quiet one too: WB drops a year's row when nothing moved, and a gap would read as an end.
     for at in range(rows[0]["timestamp"], closed + 1) if rows else ():
         row = by_year.get(at, row)
         now = {c: row[c] for c in events}
-        years.append({**{names[c]: row[c] for c in states if row[c]}, **(_gains(before, now, events) if at in by_year else {}), "until": _until(at)})
+        gains = _gains(before, now, events) if at in by_year else {}
+        # The first fine row after a coarse one gains since that row's year, not over its own year alone.
+        since = {"from_year": coarse[-1]["timestamp"]} if gains and coarse and at == rows[0]["timestamp"] else {}
+        years.append({**{names[c]: row[c] for c in states if row[c]}, **gains, **since, "until": _until(at)})
         before = now
-    older = [{"around_year": r["timestamp"], "step": r["step"], **{names[c]: r[c] for c in states if r[c]}} for r in coarse]
     return older + years  # the coarse steps' approximations first, each told `around_year`, never as a date
 
 
