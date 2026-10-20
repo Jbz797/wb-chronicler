@@ -834,16 +834,22 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     return 0
 
 
-# The delivered chapters reworked since their last round, committed together, each tagged `C<n>-r<k>`: a relaunch then hands the diff since the auditor's own round.
+# Delivered chapters reworked since their last round, each tagged `C<n>-r<k>` for a relaunch's diff — one whose `chapter.json` alone moved, apart and roundless.
 def _retouch() -> int:
     if not (SAVES_DIR / ".git").exists():
         print("✗ no chronicle Git yet — `--finalize` makes it at a chapter's first round", file=sys.stderr)
         return 1
-    delivered = sorted(int(tag[1:].split("-")[0]) for tag in chronicle_git("tag", "--list", "C*-delivered").stdout.split())
-    moved = chronicle_git("status", "--porcelain", "--", *(f"C{n}" for n in delivered)).stdout
-    if not (changed := sorted({int(found) for found in re.findall(r"C(\d+)/", moved)} & set(delivered))):
+    delivered = {int(tag[1:].split("-")[0]) for tag in chronicle_git("tag", "--list", "C*-delivered").stdout.split()}
+    moved = re.findall(r"C(\d+)/(\S+)", chronicle_git("status", "--porcelain", "--", *(f"C{n}" for n in delivered)).stdout)
+    changed = sorted({int(n) for n, name in moved if name == "chapter.md"} & delivered)
+    if not (refreshed := sorted({int(n) for n, _ in moved} & delivered - set(changed))) and not changed:
         print("✗ no delivered chapter has moved since its last round — the chapter under way rounds with `--finalize`", file=sys.stderr)
         return 1
+    if refreshed:
+        _commit(f"data {', '.join(f'C{n}' for n in refreshed)}", *(f"C{n}/chapter.json" for n in refreshed))
+        print(f"✓ {', '.join(f'C{n}' for n in refreshed)} — data for the panels alone, committed with no round: nothing to read again")
+    if not changed:
+        return 0
     _commit(f"retouch {', '.join(f'C{n}' for n in changed)}", *(f"C{n}" for n in changed))
     for n in changed:
         rounds = sorted(int(tag.rsplit("-r", 1)[1]) for tag in chronicle_git("tag", "--list", f"C{n}-r*").stdout.split())
