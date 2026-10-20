@@ -1,12 +1,12 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 20/10/26 14:13</p>
+<p class="metadata">Date de mise à jour : 20/10/26 14:27</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
 | Commande          | Sections                                                                                                                               |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `actor <id>`      | `companions`, `gear`, `inventory`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`                           |
+| `actor <id>`      | `companions`, `gear`, `inventory`, `kin`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`                    |
 | `alliance <id>`   | `breakdown`, `identity`, `kingdoms`, `leaders`, `metadata`, `pop`, `ranks`, `wars`                                                     |
 | `boat <id>`       | `combat`, `crew`, `identity`, `inventory`, `metadata`, `traits`                                                                        |
 | `book <id>`       | `gains`, `metadata`, `origin`, `teaches`                                                                                               |
@@ -49,7 +49,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 - `-i <id>` : une terre par son id, mesurée comme `to_islands` sous `to_island`, même hors des 5 plus proches — celle où l'on se tient vaut 0
 - `-r <n>` : rayon, de 0 à 2 — `distances` : la tuile demandée seule
-- `--to <x,y>` : cap et mesures entre lieux (d'un corps : `actor`), sous `to` si une section la rejoint ; pas avec `-r` ; à l'un ou l'autre bout, `--to` seul, un bâtiment `b<id>` (sa tuile la plus proche), une cité `c<id>` (son centre) ou un corps `p<id>`
+- `--to <x,y>` : cap et mesures entre lieux (d'un corps : `actor`), sous `to` si une section la rejoint ; pas avec `-r` ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre) ou un corps `p<id>`
 
 ### `world` :
 
@@ -73,7 +73,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `actor … surroundings` se range à son pas, terrain pesé, `crow_tiles` par ligne ; comme `--to`, ne nage que si son but est sur une autre terre ; une coque qu'il rejoint y paraît (`boat_…`), sans être un corps : `intimate` ≤ 30 min, `common` ≤ 2 h ; `common_with_boat`, hors de sa terre, ≤ 2 h en bateau, marches comprises, si son royaume a un transport ; à bord, par l'eau puis à pied ; `water` et `islet_tiles` comme dans `tiles … tile_info`, tus sur sa terre ou son îlot. Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou par `asset_id`, sauf un pensant sans cité ou un groupe d'un seul. Seul, il donne son `nearest` à vol d'oiseau. `sapient` se tait devant `kin`, `job` ou `role`.
 - `age_overgrowth` (`actor … metadata`) : les années que `age` compte sans que le corps les ait vécues ici — un migrant appelé par le feu arrive déjà grand (entre une et deux fois l'âge de venue de son espèce), un clone, un paradoxe temporel ; `born` date sa venue.
 - `diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `wiki:Unit_Stats`.
-- `gen` (`actor … metadata`) : absent, le corps a paru sans parents ; dès 2, ils sont `parent` sous `surroundings`.
+- `gen` (`actor … metadata`) : absent, le corps a paru sans parents ; `kin` nomme `parents` (`gone` mort) et `children` vivants.
 - `happiness` (`actor … stats`) : la barre du jeu en %, seuils `wiki:Happiness`.
 - `in_building` : sous ce toit ; `at_building` : à une tuile au plus de l'une des siennes.
 - `task` : une suite d'actions, sans son étape ; il ne dort que si `statuses` dit `sleeping` (`wiki:Behaviour_Tasks`).

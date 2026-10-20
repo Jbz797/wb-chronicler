@@ -2,6 +2,7 @@
 
 # User-facing docs (usage, available sections) live in `docs/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
+import json
 import sys
 from argparse import ArgumentTypeError
 from collections import Counter, defaultdict
@@ -69,6 +70,7 @@ from shared import (
     is_boat,
     is_sapient,
     is_transport,
+    latest_chapter,
     life_stage,
     light,
     load_data,
@@ -90,7 +92,7 @@ from shared import (
 from walking import Gait, WalkMap, walk_from, walk_way, walled_in
 from waters import waters_cached
 
-_ALL_SECTIONS = ("companions", "gear", "inventory", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
+_ALL_SECTIONS = ("companions", "gear", "inventory", "kin", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
@@ -728,6 +730,18 @@ def _kill_history(actor_id: int, upto: int) -> dict | None:
     return {total: _chapter_spans(at) for total, at in totals.items()} or None
 
 
+# Whom a body was born of and whom it bore, off the parents WB writes on each body: a parent gone is named by the registry, its own dead kept; children, the living.
+def _kin(actor: dict, ctx: dict) -> dict:
+    by_id, aid = ctx["actors_by_id"], actor["id"]
+    ids = [pid for pid in (actor.get("parent_id_1"), actor.get("parent_id_2")) if pid]
+    gone = [pid for pid in ids if pid not in by_id]
+    path = SAVES_DIR / f"C{latest_chapter()}" / "persons.json"
+    known = json.loads(path.read_text()) if gone and path.exists() else {}
+    parents = [entity_ref(pid, by_id) or {"gone": True, "id": pid, "name": (known.get(str(pid)) or {}).get("name")} for pid in ids]
+    children = [entity_ref(kid, by_id) for kid in sorted(b["id"] for b in by_id.values() if aid in (b.get("parent_id_1"), b.get("parent_id_2")))]
+    return {"children": children or None, "parents": parents or None}
+
+
 # The actor's tie to another body, or `None`, off his `_ties`: WB keeps two parents and one mate each — a child names him, a sibling shares a parent.
 def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str | None:
     aid, parents, lover = ties
@@ -1169,6 +1183,8 @@ def main(argv: list[str]) -> int:
         out["gear"] = _build_gear(actor, ctx)
     if "inventory" in sections:
         out["inventory"] = _build_inventory(actor)
+    if "kin" in sections:  # its blood, where a mate or a friend is a bond: a parent gone stays (`gone`), and the section goes where it has neither
+        out["kin"] = _kin(actor, ctx)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(actor, ctx, save)
     if "plot" in sections:

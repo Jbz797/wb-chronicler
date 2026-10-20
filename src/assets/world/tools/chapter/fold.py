@@ -105,8 +105,8 @@ _AUDIT_TIERS = {
     "wars.metadata": {"deaths", "started_by"},  # the card sets each camp's toll and crown, never the sum or the man — `war/info.py <id>` hands over both
 }
 
-# No panel reads them: `report` and `info` are per-call, `taxonomy` comes from `identity.species`, `passengers` is the chronicler's own reading.
-_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "passengers", "report", "sapient", "taxonomy"})
+# No panel reads them: `report` and `info` are per-call, `taxonomy` comes from `identity.species`, `passengers` and `kin` are the chronicler's own reading.
+_CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "kin", "passengers", "report", "sapient", "taxonomy"})
 
 # `pop` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> pop`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset(
