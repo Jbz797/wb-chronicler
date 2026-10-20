@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+_ANSWERED = re.compile(r'"((?:[^"\\]|\\.)*)"="((?:[^"\\]|\\.)*)"')  # how Claude Code hands asked questions back: each one, then the option picked
 _CUTOFF = re.compile(r'\*\*`CUTOFF = "([^"]+)"`\*\*(?: — soit le [^(]*\(heure de Paris\)\.)?')  # the one line of the memory file a reading moves on
 
 # What reads as a message and is none: a sub-agent handing back its work, which the chronicler's own account follows, and the summary a long session restarts on.
@@ -33,8 +34,8 @@ def _events(cutoff: str) -> list[tuple[str, str, str, str]]:
             stamp = entry.get("timestamp") or ""
             if entry.get("type") not in ("user", "assistant") or entry.get("isSidechain") or entry.get("isMeta") or stamp <= cutoff:
                 continue
-            content = (entry.get("message") or {}).get("content")  # a string where JB typed, blocks elsewhere — of which the text alone is prose
-            parts = [content] if isinstance(content, str) else [b["text"] for b in content or [] if isinstance(b, dict) and b.get("type") == "text"]
+            content = (entry.get("message") or {}).get("content")  # a string where JB typed, blocks elsewhere — prose, a question put to JB, his answer
+            parts = [content] if isinstance(content, str) else [_said(block) for block in content or []]
             if (text := "\n".join(part for part in parts if part).strip()) and not any(noise in text for noise in _NOISE):
                 events.append((stamp, path.stem[:8], "JB  " if entry["type"] == "user" else "CHRO", text))
     return sorted(events)
@@ -50,6 +51,23 @@ def _mark(memory: Path, stamp: str) -> None:
     local = datetime.fromisoformat(stamp).astimezone(ZoneInfo("Europe/Paris"))
     line = f'**`CUTOFF = "{stamp}"`** — soit le {local:%d/%m/%y} à {local:%H:%M} (heure de Paris).'
     memory.write_text(_CUTOFF.sub(lambda _: line, memory.read_text(encoding="utf-8"), count=1), encoding="utf-8")
+
+
+# What a block tells the reader of the session: its text, a question the chronicler put to JB with its options, or the option JB picked — no tool's work else.
+def _said(block: object) -> str | None:
+    if not isinstance(block, dict):
+        return None
+    if block.get("type") == "text":
+        return block.get("text")
+    if block.get("type") == "tool_use" and block.get("name") == "AskUserQuestion":
+        asked = (block.get("input") or {}).get("questions") or []
+        return "\n".join(f"? {q.get('question')}" + "".join(f"\n  · {o.get('label')} — {o.get('description', '')}" for o in q.get("options") or []) for q in asked)
+    if block.get("type") == "tool_result":
+        result = block.get("content")
+        text = result if isinstance(result, str) else " ".join(part.get("text", "") for part in result or [] if isinstance(part, dict))
+        if "Your questions have been answered" in text:
+            return "\n".join(f"→ {picked}" for _, picked in _ANSWERED.findall(text))
+    return None
 
 
 def main(argv: list[str]) -> int:
