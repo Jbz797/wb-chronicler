@@ -129,7 +129,7 @@ _TALLIES = {
 
 # The counters « Activité récente » prints, mirroring `CUMULATIVE_STATS` (`stats.constant.ts`), `deaths` riding along for the breakdown panel below it.
 _UI_CUMULATIVE = frozenset({"books_burnt", "books_read", "cities_conquered", "cities_rebelled", "deaths", "evolutions", "metamorphosis", "plots_succeeded"})
-_UI_UNSHOWN_RECORDS = {"persons": frozenset({"equipment_power", "kills", "money"})}  # the « Palmarès » prints `renown`, which weighs what these three count
+_UI_UNSHOWN_RECORDS = {"persons": frozenset({"equipment_power"})}  # the one record the « Palmarès » (`LEADER_GROUPS`, `stats.constant.ts`) has no row for
 _UI_UNSHOWN_ZERO = frozenset({"critical_chance"})  # a floor the chronicler reads as a fact (`_KEEP_ZERO`), where the panel has nothing to show
 
 

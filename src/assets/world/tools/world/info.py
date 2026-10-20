@@ -9,7 +9,7 @@
 import argparse
 import sys
 from collections import Counter, defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools import cache
 from math import inf
 from operator import itemgetter
@@ -56,6 +56,7 @@ from shared import (
     city_centre,
     city_score_dimensions,
     civic_building_ids,
+    counted_birth,
     emit,
     entity_ref,
     fertile,
@@ -281,7 +282,8 @@ def _build_leaders(save: dict) -> dict:
     actors = save.get("actors_data") or []
     ctx = build_actor_stats_context(save)
     members: dict[str, Counter] = {coll: Counter() for coll in _GROUP_FIELDS.values()}
-    persons: dict[str, Counter] = {stat: Counter() for stat in ("equipment_power", *_FEATS, *_SKILLS)}
+    # One figure per soul, never summed: a `Counter` would type it an int, where a birth is a fraction of a year.
+    persons: dict[str, dict[int, float]] = {stat: {} for stat in ("equipment_power", "oldest", *_FEATS, *_SKILLS)}
     sapient = _sapient_subspecies(save)
     species: Counter[str] = Counter()
 
@@ -297,6 +299,7 @@ def _build_leaders(save: dict) -> dict:
             continue
         aid, stats = a["id"], compute_actor_stats(a, ctx)
         persons["equipment_power"][aid] = equipment_power(a, ctx)
+        persons["oldest"][aid] = -counted_birth(a)  # ranked on the birth, the finer clock: told in the years a fiche would give
         for stat in _FEATS:
             persons[stat][aid] = int(a.get(stat) or 0)
         for stat in _SKILLS:
@@ -305,6 +308,8 @@ def _build_leaders(save: dict) -> dict:
     # `{id, name}` apiece, `value` on a tally, the UI reading the rest (palette, banner, size, species) off the registries — `new.py` keeping the first holder.
     out: dict[str, dict] = {coll: {"pop": _count_leaders(tally, save.get(coll) or [], _MIN_PEERS.get(coll, MIN_RANK_PEERS))} for coll, tally in members.items()}
     out["persons"] = {stat: _count_leaders(tally, actors, MIN_RANK_PEERS) for stat, tally in persons.items()}
+    for ref in out["persons"]["oldest"]:
+        ref["value"] = actor_age(next(a for a in actors if a["id"] == ref["id"]), ctx["world_time"])
     out["species"] = {"pop": [{"asset_id": asset, "value": n} for asset, n in first_place(species, MIN_RANK_PEERS)]}  # `asset_id`: its icon
     for coll, dimensions in (("cities", city_score_dimensions), ("kingdoms", kingdom_score_dimensions)):
         records = save.get(coll) or []
@@ -691,7 +696,7 @@ def _carried(traits: frozenset[str]) -> bool:
     return "reproduction_strategy_viviparity" in traits if traits & _STRATEGIC else True
 
 
-def _count_leaders(counts: Counter, records: list[dict], min_peers: int) -> list[dict]:
+def _count_leaders(counts: Mapping, records: list[dict], min_peers: int) -> list[dict]:
     return [{"id": eid, "name": _name_of(records, eid), "value": n} for eid, n in first_place(counts, min_peers)]
 
 

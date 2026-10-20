@@ -24,7 +24,6 @@ CHAPTER_CAP = 12000  # a sitting's read, some 9 minutes: past it the chapter say
 CHAPTER_FLOOR = 7000  # both in no doc: `new.py`'s recap gives them, delivery and `echo.py` hold them — counted past the audit, which cuts as much as it adds
 COUNTED_AS = "tags by their name, blanks folded"  # how every length a chapter is held to counts it, said beside each figure
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
-DIALOGUE_FLOOR = 750  # characters a dialogue holds at least, counted as its ✗ says — under it, a line or two, not a talk
 
 # WB `CityData.item_storage_*` — the six racks a settlement stores gear on, keyed by the tab its « Équipement » panel shows rather than the save field.
 EQUIPMENT_RACKS = {
@@ -79,6 +78,7 @@ _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "st
 
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
+_DIALOGUE_FLOOR = 750  # characters a dialogue holds at least, counted as its ✗ says — under it, a line or two, not a talk
 _DOMINANT_AXIS = 0.4  # an axis under this share of the other drops out of the bearing: a heading mostly north reads N, not NE
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
@@ -252,8 +252,7 @@ def _leader_refs(tallies: dict, records: Mapping) -> dict:
 def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of: Callable[[dict], dict], world_time: float) -> dict:
     by_id = {actor["id"]: actor for actor in actors}
     stats = {aid: stat_of(actor) for aid, actor in by_id.items()}
-    # The birth WB counts an age from: a migrant comes with years already told (`age_overgrowth`), and is the elder of one who set foot here long before.
-    births = {aid: float(a.get("created_time") or 0) - (a.get("age_overgrowth") or 0) * UNITS_PER_YEAR for aid, a in by_id.items()}
+    births = {aid: counted_birth(a) for aid, a in by_id.items()}
     tallies = {  # measure => value per soul, the four stats as `compute_actor_stats` hands them out — a child's blows already halved there
         **{name: {aid: s.get(name, 0) for aid, s in stats.items()} for name in ("damage_max", "health_max", "intelligence", "speed")},
         "births": {aid: int(a.get("births") or 0) for aid, a in by_id.items()},
@@ -664,6 +663,11 @@ def competition_ranks(entity: dict, peers: list, getters: dict) -> dict:
         if ahead < PODIUM_PLACES and tied * 2 <= len(peers):
             ranks[stat] = ahead + 1
     return ranks
+
+
+# The birth WB counts a body's age from: a migrant comes with years already told (`age_overgrowth`), the elder of one who set foot here long before.
+def counted_birth(actor: dict) -> float:
+    return float(actor.get("created_time") or 0) - (actor.get("age_overgrowth") or 0) * UNITS_PER_YEAR
 
 
 # Deaths by cause as WB keeps them, a `deaths_<cause>` field each, none at nought — WB's `natural` told `old_age`, as `world` and `history` tell it.
@@ -1287,8 +1291,8 @@ def short_dialogues(prose: str) -> list[str]:
                 runs.append((at, [line]))
             last = at
     said = [(at, chapter_length(" ".join(replies).replace("—", " "))) for at, replies in runs if len(replies) > 1]
-    told = f"characters of {DIALOGUE_FLOOR} at least — asides kept, dashes aside, {COUNTED_AS}"
-    return [f"✗ dialogue l.{at}, {length} {told}" for at, length in said if length < DIALOGUE_FLOOR]
+    told = f"characters of {_DIALOGUE_FLOOR} at least — asides kept, dashes aside, {COUNTED_AS}"
+    return [f"✗ dialogue l.{at}, {length} {told}" for at, length in said if length < _DIALOGUE_FLOOR]
 
 
 # Spores alone and no stomach: WB lets them go off a body that `just_ate` only, a status a meal gives and sunlit skin never does — such a lineage bears no one.

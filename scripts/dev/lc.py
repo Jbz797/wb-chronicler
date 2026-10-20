@@ -47,7 +47,7 @@ def _folder(cwd: Path) -> Path:
 
 # The reading's date written back into the memory file, as it stands there: the stamp, then the same instant on JB's clock.
 def _mark(memory: Path, stamp: str) -> None:
-    local = datetime.fromisoformat(stamp.replace("Z", "+00:00")).astimezone(ZoneInfo("Europe/Paris"))
+    local = datetime.fromisoformat(stamp).astimezone(ZoneInfo("Europe/Paris"))
     line = f'**`CUTOFF = "{stamp}"`** — soit le {local:%d/%m/%y} à {local:%H:%M} (heure de Paris).'
     memory.write_text(_CUTOFF.sub(lambda _: line, memory.read_text(encoding="utf-8"), count=1), encoding="utf-8")
 

@@ -30,7 +30,7 @@ _STRING_TABLE = 0x70  # the user-string heap, as a token's top byte names it
 
 # The method body reader `dncil` wants, over the file's own bytes.
 class _Body(CilMethodBodyReaderBase):
-    def __init__(self, raw: bytes, offset: int):
+    def __init__(self, raw: bytes, offset: int) -> None:
         self._raw, self.offset = raw, offset
 
     def read(self, n: int) -> bytes:
@@ -48,7 +48,7 @@ class _Body(CilMethodBodyReaderBase):
 
 # The loaded DLL and its indexes: each method's owning type, and each body's start, so a byte offset tells which method it lies in.
 class _Dll:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
         self.pe = dnfile.dnPE(str(path))
         if (net := self.pe.net) is None or net.mdtables is None or net.user_strings is None:
             sys.exit(f"✗ {path} is no .NET assembly")

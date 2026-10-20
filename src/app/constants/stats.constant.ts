@@ -55,9 +55,9 @@ export const LEADER_FAMILY_ROWS: { icon: string; key: 'pop'; label: string }[] =
   { icon: 'assets/img/world/families.png', key: 'pop', label: 'ui_leading_family' },
 ];
 
-// The world « Palmarès », one table per group: a soul's level and skills first (in `SKILL_STATS` order), then the parent species ahead of the biology it holds.
+// The world « Palmarès », one table per group: a soul's feats and age, then its skills (in `SKILL_STATS` order); the parent species ahead of its lineages.
 export const LEADER_GROUPS: LeaderGroupConfig[] = [
-  { group: 'persons', label: 'ui_persons', measures: ['level', 'renown', 'diplomacy', 'warfare', 'stewardship', 'intelligence'] },
+  { group: 'persons', label: 'ui_persons', measures: ['level', 'renown', 'kills', 'money', 'oldest', 'diplomacy', 'warfare', 'stewardship', 'intelligence'] },
   { group: 'species', label: 'ui_species_plural', measures: ['pop'] },
   { group: 'subspecies', label: 'ui_subspecies_count', measures: ['pop'] },
   { group: 'families', label: 'ui_families', measures: ['pop'] },
@@ -73,7 +73,10 @@ export const LEADER_GROUPS: LeaderGroupConfig[] = [
 export const LEADER_MEASURES: Record<LeaderMeasure, { icon: string; label: string }> = {
   diplomacy: { icon: 'assets/img/stats/diplomacy.png', label: 'ui_diplomacy' },
   intelligence: { icon: 'assets/img/stats/intelligence.png', label: 'ui_intelligence' },
+  kills: { icon: 'assets/img/stats/kills.png', label: 'ui_deadliest' },
   level: { icon: 'assets/img/stats/level.png', label: 'ui_level' },
+  money: { icon: 'assets/img/stats/money.png', label: 'ui_wealthiest' },
+  oldest: { icon: 'assets/img/stats/age.png', label: 'ui_eldest' },
   pop: { icon: 'assets/img/world/population.png', label: 'ui_pop' },
   renown: { icon: 'assets/img/stats/renown.png', label: 'ui_renown' },
   score: { icon: 'assets/img/podium/1.png', label: 'ui_score' },
@@ -84,7 +87,7 @@ export const LEADER_MEASURES: Record<LeaderMeasure, { icon: string; label: strin
 // The souls a settlement/realm panel names, out of all the `leaders.persons` rankings: fame, power, violence, fortune, age.
 export const LEADER_PERSON_ROWS: { icon: string; key: 'kills' | 'level' | 'money' | 'oldest' | 'renown'; label: string }[] = [
   { icon: 'assets/img/world/most_renowned_person.png', key: 'renown', label: 'ui_most_renowned' },
-  { icon: 'assets/img/stats/level.png', key: 'level', label: 'ui_highest_level' },
+  { icon: 'assets/img/stats/level.png', key: 'level', label: 'ui_level' },
   { icon: 'assets/img/stats/kills.png', key: 'kills', label: 'ui_deadliest' },
   { icon: 'assets/img/stats/money.png', key: 'money', label: 'ui_wealthiest' },
   { icon: 'assets/img/stats/age.png', key: 'oldest', label: 'ui_eldest' },
