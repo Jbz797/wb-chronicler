@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 20/10/26 21:47</p>
+<p class="metadata">Date de mise à jour : 20/10/26 23:19</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -55,7 +55,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
 - `pairings` : par espèce (un couple ignore la lignée), la 1ʳᵉ naissance possible, `mates_on` (le couple en âge) plus la gestation (`birth_on` ; `pregnant` nomme les porteuses ; sinon `now` chez des amants), une date qui glisse tant que rien ne la tient, et l'écart du couple ; `pair` : la porteuse d'abord, dont l'enfant prend la cité, sinon celle de l'autre (`drawn` : tirée au sort) ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `missing: meal`, des spores sans estomac, que seul un repas lâche ; `lovers`, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, et le corps en cause (`hungry` : la conception, non la grossesse, `water` : à flot, `tiny_islet` : îlot de 5 tuiles au plus), ou la loi WB ; règles : `wiki:Reproduction`
-- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau, `--with <champs>` jusqu'à 4, d'`actor … stats` ou d'une fiche, seuls avec `id` et `name`, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--clan`…) ses membres, la terre de la cité tue ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) — d'une entité, `arrived` y entre, `left` en sort vivant ; sous `--has`, les seuls comptes changés
+- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau, `--with <champs>` jusqu'à 4, d'`actor … stats` ou d'une fiche, seuls avec `id` et `name`, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--army`…) ses membres, la terre de la cité tue ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) — d'une entité, `arrived` y entre, `left` en sort vivant ; sous `--has`, les seuls comptes changés
 
 ---
 

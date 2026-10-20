@@ -111,7 +111,7 @@ def _besieging_kingdoms(save: dict) -> dict[int, set[int]]:
     return besieging
 
 
-# The city's standing army — at most one, residents only, `None` where there is none. `captain_years` and `total_captains` stay chronicler-only.
+# The city's standing army — at most one, residents only, `None` where there is none. `captain_years`, `id` and `total_captains` stay chronicler-only.
 def _build_army(city: dict, ctx: dict) -> dict | None:
     army = ctx["armies_by_city"].get(city["id"])
     if army is None:
@@ -125,6 +125,7 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
         "captain": entity_ref(army.get("id_captain"), ctx["actors_by_id"]),
         **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
         "deaths": deaths,
+        "id": army.get("id"),  # what `world … roster --army <id>` takes to list its members
         "kills": kills,
         "melee": ctx["melee_by_city"][cid],
         "money": ctx["troop_money_by_city"][cid],

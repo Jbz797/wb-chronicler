@@ -187,6 +187,7 @@ _MAX_FIELDS = 4  # past so many fields a line reads as a sheet: `actor … stats
 # What `roster` narrows to by entity: the collection its id answers in, and the body's own field that ties it there — a pact's, through the crown.
 _MEMBERSHIPS = {
     "alliance": ("alliances", None),
+    "army": ("armies", "army"),  # a town's one force, its id given by `city … army`
     "city": ("cities", "cityID"),
     "clan": ("clans", "clan"),
     "culture": ("cultures", "culture"),
@@ -1015,7 +1016,9 @@ def main(argv: list[str]) -> int:
             return 2
         entity = entities[0] if entities else None
         if entity and entity[1] not in {record.get("id") for record in save.get(_MEMBERSHIPS[entity[0]][0]) or []}:
-            print(absent_entity(entity[0], _MEMBERSHIPS[entity[0]][0], entity[1], chapter), file=sys.stderr)
+            # An army has no tool of its own to send the refusal to: a town's names it, where `absent_entity` would point at an `army/info.py`.
+            army = f"✗ no army {entity[1]} here — `city/info.py <id> army` gives a town's"
+            print(army if entity[0] == "army" else absent_entity(entity[0], _MEMBERSHIPS[entity[0]][0], entity[1], chapter), file=sys.stderr)
             return 1
         near = None
         if isinstance(args.nearest, tuple):
