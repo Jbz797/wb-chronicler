@@ -7,7 +7,7 @@ import json
 import re
 import sqlite3
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from contextlib import closing
 from pathlib import Path
 
@@ -24,6 +24,7 @@ from shared import (
     latest_chapter,
     load_save,
     log_entries,
+    quiet_zeros,
     take_chapter,
     take_since,
     world_date,
@@ -99,18 +100,37 @@ _WORLD_STATES = (
 )
 
 
-# WB's crowns once raised, fallen ones with their dates — the one record a fallen crown keeps once its years are gone.
+# WB's fallen crowns with their dates, who passed through them and how they died, and the reigns the log names — all a crown keeps once its years are gone.
 def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict) -> list[dict]:
     now = _chapter_time(save)
-    rows = conn.execute(
-        "SELECT id, name, original_actor_asset, created_time, died_time, total_births, total_deaths, total_kills FROM KingdomData"
-        " WHERE died_time IS NOT NULL AND died_time <= ? ORDER BY died_time",
-        (now,),
-    ).fetchall()
-    return [
-        {"asset_id": asset, "births": b, "deaths": d, "fell": world_date(died), "founded": world_date(born or 0), "id": kid, "kills": k, "name": name}
-        for kid, name, asset, born, died, b, d, k in rows
-    ]
+    found = conn.execute("SELECT * FROM KingdomData WHERE died_time IS NOT NULL AND died_time <= ? ORDER BY died_time", (now,))
+    columns = [c for c, *_ in found.description]
+    crowns = [dict(zip(columns, row, strict=True)) for row in found.fetchall()]
+    fallen, reigns = {c["id"] for c in crowns}, defaultdict(list)
+    for entry in log_entries(0.0, now) if crowns else ():
+        if entry["event"].startswith("king_") and entry["kingdom_id"] in fallen:
+            reigns[entry["kingdom_id"]].append(_king_entry(entry))
+    out = []
+    for crown in crowns:
+        deaths = {"old_age" if m[1] == "natural" else m[1]: n for c, n in crown.items() if (m := _DEATH_CAUSE.match(c)) and n}
+        if (unknown := (crown["total_deaths"] or 0) - (crown["metamorphosis"] or 0) - sum(deaths.values())) > 0:
+            deaths["unknown"] = unknown
+        tallies = {key: crown[key] or 0 for key in ("joined", "left", "migrated", "moved")}
+        out.append(
+            {
+                **quiet_zeros(tallies),
+                "asset_id": crown["original_actor_asset"],
+                "births": crown["total_births"],
+                "deaths": deaths or None,
+                "fell": world_date(crown["died_time"]),
+                "founded": world_date(crown["created_time"] or 0),
+                "id": crown["id"],
+                "kills": crown["total_kills"],
+                "name": crown["name"],
+                "reigns": reigns.get(crown["id"]),
+            }
+        )
+    return out
 
 
 # One entity's years: its states as they closed each year, and what its tallies gained in it; older years, coarse, their states alone and never as a date.
@@ -241,6 +261,15 @@ def _gains(before: dict, now: dict, events: list[str]) -> dict:
         elif column != "deaths" or not by_cause:
             out[_WORLD_RENAMED.get(column, column)] = gain
     return out
+
+
+# A king's line in the log, under the names it was written with: a murder's body is its killer, every other entry's the king himself.
+def _king_entry(entry: dict) -> dict:
+    body, at = entry["actor_id"], {"date": entry["date"], "event": entry["event"]}
+    if entry["event"] == "king_killed":
+        return {**at, "killer": {"id": body, "name": entry.get("killer")}, "name": entry.get("king")}
+    names = entry.get("names") or []
+    return {**at, "id": body, "name": names[1] if len(names) > 1 else None}
 
 
 # The persons and crowns named by id in the latest chapter's registries — the dead kept, whom no save carries any more.
