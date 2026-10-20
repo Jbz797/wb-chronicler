@@ -1,10 +1,10 @@
 # 🔤 Vocabulaire du récit
 
-<p class="metadata">Date de mise à jour : 19/10/26 23:09</p>
+<p class="metadata">Date de mise à jour : 20/10/26 15:58</p>
 
 ## Mots imposés
 
-- **Espèce, lignée, sang, maison, terre** : « espèce » dit l'espèce ; « lignée » la sous-espèce, jamais une famille ; le « sang » la parenté, une « maison » un toit, une « terre » une île, jamais un territoire.
+- **Espèce, lignée, sang, maison, terre** : « espèce » dit l'espèce ; « lignée » la sous-espèce, jamais une famille ; le « sang » la parenté — versé, une mort, jamais une filiation —, une « maison » un toit, une « terre » une île, jamais un territoire.
 - **Particularité, don, malédiction, nature** : ce que la fiche appelle « trait », ou l'effet qu'elle donne, en clair. **Son nom et son esprit** (description, ton) colorent un corps ou un sol en nature ou en réputation (_« on la dit courte de vue »_), Intime compris ; le nom peut étiqueter l'effet de la fiche, jamais en fabriquer un.
 - **Quartiers** : ce que `territory` compte, et que WB appelle « zone » dans ses descriptions — les quartiers d'une ville, ou de toutes ses villes pour un royaume ou une alliance : dis-le comme la civilisation qui l'a bâti.
 
