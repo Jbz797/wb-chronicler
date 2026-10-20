@@ -70,6 +70,7 @@ from shared import (
     is_boat,
     is_sapient,
     is_transport,
+    kept_army_since,
     kept_city_since,
     latest_chapter,
     life_stage,
@@ -367,6 +368,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"age_overgrowth": n} if (n := int(actor.get("age_overgrowth") or 0)) else {}),
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
+        "army_since": kept_army_since(actor),  # Chronicler-only: the month it joined its army, the mod's stamp
         "asset_id": actor.get("asset_id"),
         "born": entity_born(actor),  # the month WB set it on the map, dated as the chronicle dates: who came first, and when
         # Chronicler-only, and only while it still bites: the date WB opens a body's own line — `adult_on` lifts a bridling and lets it found a town, never bear.

@@ -70,6 +70,7 @@ from shared import (
     is_aboard,
     is_boat,
     is_sapient,
+    kept_army_since,
     kingdom_score_dimensions,
     land_arg,
     life_stage,
@@ -799,6 +800,8 @@ def _member_row(actor: dict, kind: str, here: int | str | None, refs: dict, save
         "name": actor.get("name"),
         "sex": sex_label(actor),
     }
+    if kind == "army":  # its own town's, every one of them: the line tells when each joined instead
+        return {**row, "army_since": kept_army_since(actor), "island_id": here}
     if kind == "city":  # the town is the filter: its roof is what a line can still tell, `ground/info.py <id>` behind it
         return {**row, "home": actor.get("homeBuildingID"), "island_id": here}
     if kind == "family":  # kin under a roof: the generation and the house, the land left to `actor`

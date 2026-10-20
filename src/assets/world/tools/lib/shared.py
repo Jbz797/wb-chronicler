@@ -242,6 +242,14 @@ def _has_meta_tag(subspecies: dict | None, tag: str) -> bool:
     return not _tagged_traits(tag).isdisjoint((subspecies or {}).get("saved_traits") or [])
 
 
+# The date Faithful Saves stamped a body joining what its `field` holds, `faithful_<kind>_of` naming which: a stamp left by one it has since left dates nothing.
+def _kept_since(actor: dict, field: str, kind: str) -> str | None:
+    held, since = actor.get(field), (actor.get("custom_data_float") or {}).get(f"faithful_{kind}_since")
+    if held is None or since is None or (actor.get("custom_data_long") or {}).get(f"faithful_{kind}_of") != held:
+        return None
+    return world_date(since)
+
+
 # Each measure's first place off its tally, as `{id, name, value}` refs — a measure nobody holds drops out, and `emit` a `name` WB never wrote.
 def _leader_refs(tallies: dict, records: Mapping) -> dict:
     refs = {}
@@ -805,12 +813,14 @@ def is_transport(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_transport")
 
 
-# The date a body settled in the town it holds, as the Faithful Saves mod stamped it: a stamp left by a town it has since lost dates nothing.
+# The date a body joined the army it serves in, as the Faithful Saves mod stamped it.
+def kept_army_since(actor: dict) -> str | None:
+    return _kept_since(actor, "army", "army")
+
+
+# The date a body settled in the town it holds, as the Faithful Saves mod stamped it.
 def kept_city_since(actor: dict) -> str | None:
-    held, since = actor.get("cityID"), (actor.get("custom_data_float") or {}).get("faithful_city_since")
-    if held is None or since is None or (actor.get("custom_data_long") or {}).get("faithful_city_of") != held:
-        return None
-    return world_date(since)
+    return _kept_since(actor, "cityID", "city")
 
 
 # The building the Faithful Saves mod found a body inside, by its id. WB keeps `is_inside_building` on the runtime actor alone: no save without the mod says it.

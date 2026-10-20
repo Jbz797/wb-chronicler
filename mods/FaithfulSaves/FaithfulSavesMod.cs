@@ -23,10 +23,11 @@ namespace FaithfulSaves
             _declare = pModDecl;
             _gameObject = pGameObject;
             Harmony harmony = new Harmony(pModDecl.UID);
+            harmony.PatchAll(typeof(ArmyPatches));
             harmony.PatchAll(typeof(CityPatches));
             harmony.PatchAll(typeof(HistoryPatches));
             harmony.PatchAll(typeof(SavePatches));
-            LogService.LogInfo($"[{pModDecl.Name}]: a save now keeps statuses, tasks, roofs, long waits, clocks and town arrivals; history years run January to December");
+            LogService.LogInfo($"[{pModDecl.Name}]: a save now keeps statuses, tasks, roofs, long waits, clocks, town arrivals and enlistments; history years run January to December");
         }
     }
 }
