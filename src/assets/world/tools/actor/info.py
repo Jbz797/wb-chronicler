@@ -49,6 +49,7 @@ from shared import (
     bearing,
     build_trait_ids,
     build_trait_list,
+    building_footprint,
     building_tile,
     built_by_tile,
     chunks_apart,
@@ -179,9 +180,9 @@ def _absorbed(actor: dict, trait: dict, ctx: dict, totals: dict) -> list[str] | 
     return sorted(stat for stat in moved if round(totals.get(key := MULTIPLIER_TARGETS.get(stat, stat), 0), 6) == round(without.get(key, 0), 6)) or None
 
 
-# Where one `--to` aims: its goal as both chapters read it, the tiles a walk seeks, how its end is told, and each word of a list of kinds — a refusal raised.
+# Where one `--to` aims: its goal in both chapters, the tiles a walk seeks, how its end is told, each word of a list of kinds, what the trip adds — a refusal raised.
 def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict, chapter: str | None) -> tuple:
-    aims, mark, about, whom = [], None, {}, ""
+    aims, mark, about, whom, told = [], None, {}, "", {}
     each: dict[str, tuple[list, dict] | None] = {}  # the words of a `--to` naming kinds, each with its sites, `None` where it has none: a question apiece
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
@@ -193,12 +194,15 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             raise _AimError(refusal)
         aims, whom = [actor_xy(other)], named_body(other)
     elif isinstance(target, str) and target[:1] == "b" and target[1:].isdigit():
-        # A building by its id, aimed at its own tile as a kind is: from there on a point, the same goal in either chapter, for a building never moves.
+        # A building by its id, aimed at the nearest tile of its ground — or the one its task seeks there —, the same goal in either chapter: it never moves.
         building_id = int(target[1:])
         site = next((b for b in save.get("buildings") or [] if b.get("id") == building_id), None)
         if site is None or (tile := building_tile(site)) is None:
             raise _AimError(absent_entity("building", "buildings", building_id, chapter))
-        target, aims, whom = tile, [tile], f"{site.get('asset_id')} {site.get('id')}"
+        task = kept_task_target(actor) or {}
+        sought = (task["x"], task["y"]) if task.get("ground") == building_id and "x" in task and "y" in task else None
+        target, whom = tile, f"{site.get('asset_id')} {site.get('id')}"
+        aims, told = ([sought], {"by_task": kept_task(actor)}) if sought else (building_footprint(site), {})
     elif isinstance(target, str) and target[:1] == "c" and target[1:].isdigit():
         # A town by its id, aimed at its centre as `tiles … distances` aims at a capital: one point, the same goal in either chapter while it stands.
         city = ctx["cities_by_id"].get(city_id := int(target[1:]))
@@ -237,7 +241,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             raise _AimError(f"✗ coords {target} out of bounds — map is {width}×{height}", 2)
         aims, whom = [target], f"{target[0]},{target[1]}"
 
-    return target, aims, mark, about, whom, each
+    return target, aims, mark, about, whom, each, told
 
 
 # Who bears when two make one, per WB `BehCheckForBabiesFromSexualReproduction`: a sexed pair's female `True`, its male `False`, a hermaphrodite `None` (by lot).
@@ -1001,11 +1005,11 @@ def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
 
 # One `--to` answered: the walk, the way back from a body, the same goal in the chapter `--since` names — `None` where its refusal was told.
 def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict, since: str | None) -> dict | None:
-    target, aims, mark, about, whom, each = aim
+    target, aims, mark, about, whom, each, told = aim
     trip: dict | None = None
     if aims:
         try:
-            trip = _build_to(actor, aims, whom, ctx, mark, about)
+            trip = {**_build_to(actor, aims, whom, ctx, mark, about), **told}
             if isinstance(target, int):
                 trip["from_them"] = _from_them(ctx["actors_by_id"][target], actor, trip, ctx)
         except _UnreachableError as e:
@@ -1014,8 +1018,8 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
         if then is not None and isinstance(target, int) and target not in then_ctx["actors_by_id"]:
             print(f"✗ no `then`: {whom} not yet in {since}", file=sys.stderr)
         elif then is not None and not isinstance(target, str):
-            goal = target if isinstance(target, tuple) else actor_xy(then_ctx["actors_by_id"][target])
-            trip["then"] = _trip_then(then, goal, whom, then_ctx)
+            goals = aims if isinstance(target, tuple) else [actor_xy(then_ctx["actors_by_id"][target])]
+            trip["then"] = _trip_then(then, goals, whom, then_ctx)
     if isinstance(target, str) and then is not None:  # a land's numbers and a kind's sites are redrawn from save to save: the goal then would be another
         print("✗ no `then`: only a point or a body is the same goal in both chapters", file=sys.stderr)
     if each:
@@ -1042,9 +1046,9 @@ def _trip_back(actor: dict, was: tuple[int, int], ctx: dict) -> dict:
 
 
 # The same goal timed in the chapter `--since` names: from where the body stood then, at its pace and on its ground of then — the two times side by side.
-def _trip_then(then: dict, goal: tuple[int, int], whom: str, then_ctx: dict) -> dict:
+def _trip_then(then: dict, goals: list[tuple[int, int]], whom: str, then_ctx: dict) -> dict:
     try:
-        trip = _build_to(then, [goal], whom, then_ctx, None, {})
+        trip = _build_to(then, goals, whom, then_ctx, None, {})
     except _UnreachableError:
         return {"circle": "far"}
     return {key: value for key, value in trip.items() if key == "crow_tiles" or key not in _GOAL_ONLY}

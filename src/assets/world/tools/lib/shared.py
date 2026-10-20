@@ -502,7 +502,7 @@ def build_trait_list(trait_ids: list[str], traits_data: dict) -> list[dict]:
     return sorted(out, key=lambda t: t["id"])
 
 
-# The built structure a body stands at: on its own tile or one of the eight round it, the nearest first, the body's own roof before another as near.
+# The built structure a body stands at: within a tile of its ground, the nearest first, the body's own roof before another as near.
 def building_at(actor: dict, by_tile: Mapping[tuple, dict]) -> dict | None:
     x, y = actor_xy(actor)
     home = actor.get("homeBuildingID")
@@ -516,16 +516,25 @@ def building_family(asset: str) -> str:
     return "buildings" if asset in civic_building_ids() else (load_data("buildings.json").get(asset) or {}).get("category") or "other"
 
 
+# The tiles a building covers, per WB `Building::fillTiles`: its own tile widened by its model's `fundament`, `[left, right, top, bottom]`.
+def building_footprint(building: dict) -> list[tuple[int, int]]:
+    if (tile := building_tile(building)) is None:
+        return []
+    x, y = tile
+    left, right, top, bottom = (load_data("buildings.json").get(building.get("asset_id")) or {}).get("fundament") or (0, 0, 0, 0)
+    return [(x + dx, y + dy) for dx in range(-left, right + 1) for dy in range(-bottom, top + 1)]
+
+
 # A building's tile. WB omits a zero at save time, so a lone missing coordinate reads 0 — the first row writes no `mainY` — and neither written leaves it unsited.
 def building_tile(building: dict) -> tuple[int, int] | None:
     x, y = building.get("mainX"), building.get("mainY")
     return None if x is None and y is None else (x or 0, y or 0)  # WB writes both as ints, so no `int()` to pay on every building of the world
 
 
-# Built structures by their own tile. Nature files under `buildings` too, and nobody stands at a field as at a fire.
+# Built structures by every tile of their ground. Nature files under `buildings` too, and nobody stands at a field as at a fire.
 def built_by_tile(save: dict) -> dict[tuple, dict]:
     civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
-    return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic and (tile := building_tile(b)) is not None}
+    return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic for tile in building_footprint(b)}
 
 
 # A chapter's length as its bounds count it, `COUNTED_AS`: blanks folded as the docs' budget folds them, a marker's markup and an indent no prose.
