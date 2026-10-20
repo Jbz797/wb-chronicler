@@ -460,6 +460,7 @@ def _build_roster(
     lacks: str | None,
     top: str | None,
     entity: tuple[str, int] | None,
+    near: tuple[tuple[int, int], int | None] | None,
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
     belongs = _belongs(save, entity)
@@ -492,7 +493,11 @@ def _build_roster(
     floor = 1 if has == "level" else 0
     bodies, still, unranked = [], 0, 0
 
+    (nx, ny), near_id = near or ((0, 0), None)
+    far: dict[int, float] = {}  # each body's unrounded length, ranked on: two read alike may still stand apart
     for actor in save.get("actors_data") or []:
+        if near and actor["id"] == near_id:  # the body ranked around stands nearest to itself
+            continue
         borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
         if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or not borne or (thinking is not None and actor.get("subspecies") not in thinking):
             continue
@@ -513,6 +518,10 @@ def _build_roster(
             continue
         here = _standing(actor, island_of, grid, save["tileMap"])
         change: dict = {weighed: held if once is None else [max(before, floor), max(held, floor)]} if has or top else {}
+        if near:
+            x, y = actor_xy(actor)
+            far[actor["id"]] = walk_tiles(x - nx, y - ny)
+            change["crow_tiles"] = round(far[actor["id"]])
         if was is not None and actor["id"] in known and not has:  # one unseen then was born or set down since, and says so by standing in the roll at all
             if (then := was[actor["id"]]) == here:
                 still += land is None or asked == here  # stood still: nothing for `since` to say of it, but that it was left out
@@ -531,7 +540,7 @@ def _build_roster(
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
 
     one_kind = kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
-    if not top and len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many on each land, of each kind and of each stage, the adults counted too
+    if not (top or near) and len(bodies) + len(gone) > MAX_LISTED:  # a census past the list: how many on each land, of each kind and stage, the adults too
         lands = Counter(here for _, here, _ in bodies)
         by_land = {str(land): lands[land] for land in sorted(lands, key=lambda land: (isinstance(land, str), land))}
         species = Counter(actor.get("asset_id") for actor, _, _ in bodies)
@@ -569,6 +578,8 @@ def _build_roster(
 
     # Land by land, off every land last — the founders by who founds first, the barred by the gate told
     def order(body: tuple[dict, int | str, dict]) -> tuple:
+        if near:
+            return far[body[0]["id"]], body[0]["id"]
         if barred:  # the steadiest kind first, then who comes nearest to passing it
             return settle_rank(body[2]["settle"]), body[0]["id"]
         if settle:  # the grown first, whose youth is past, then by the date each comes of age
@@ -580,13 +591,13 @@ def _build_roster(
         return isinstance(body[1], str), body[1], body[0]["id"]
 
     lineages = ctx["subspecies_by_id"]
-    # Unsaid where a view never reads it — `--barred`'s gates, a measure's figure, `--since`'s blocks — whose lines it would push past inline
-    breeds_said = not (barred or has or top or since)
+    # Unsaid where a view never reads it — `--barred`'s gates, a measure's figure, a distance, `--since`'s blocks — whose lines it would push past inline
+    breeds_said = not (barred or has or top or near or since)
     ranked = sorted(bodies, key=order)
     refs = {"city": index_by_id(save.get("cities") or []), "family": index_by_id(save.get("families") or [])} if entity else {}
     # A town's own land goes unsaid on its residents' lines, as `-i` does: the room it frees tells their stage instead
     seat = island_of.get(centre) if entity and entity[0] == "city" and (centre := city_centre(refs["city"].get(entity[1]) or {})) else None
-    for actor, here, change in ranked[:_TOP_ROWS] if top else ranked:
+    for actor, here, change in ranked[:_TOP_ROWS] if top or near else ranked:
         if entity:
             told = None if here in (asked, seat) and "was_on" not in change else here
             rows.append({**_member_row(actor, entity[0], told, refs, save, ctx, one_kind), **change})
@@ -595,7 +606,7 @@ def _build_roster(
         stage = _stage(actor, ctx, age, adult)
         rows.append(
             {
-                "adult_on": crossed_on(actor, adult) if age < adult else None,
+                "adult_on": crossed_on(actor, adult) if age < adult and not near else None,  # beside a distance, `life_stage` tells the youth
                 "asset_id": None if one_kind else actor.get("asset_id"),
                 "breeds_on": crossed_on(actor, breeding) if breeds_said and age < breeding and fertile(lineages.get(actor.get("subspecies"))) else None,
                 "id": actor["id"],
@@ -609,12 +620,14 @@ def _build_roster(
             }
         )
 
-    if top and rows:  # one shape whatever the world, its `info` keeping a lone key from coming bare: the cut said, a tie it falls in, and who holds none
+    if (top or near) and rows:  # one shape whatever the world, its `info` keeping a lone key from coming bare: the cut said, a tie it falls in, and who holds none
+        key = top or "crow_tiles"
         if len(ranked) <= _TOP_ROWS:
-            told = f"all {len(ranked)} by {top}, none cut"
+            told = f"all {len(ranked)} by {top}, none cut" if top else f"all {len(ranked)}, nearest first, none cut"
         else:
-            tied = sum(body[2][top] == ranked[_TOP_ROWS - 1][2][top] for body in ranked[_TOP_ROWS:])  # a tenth place shared would read as one body's own
-            told = f"{_TOP_ROWS} highest of {len(ranked)} by {top}" + (f" — {tied} more share the last figure" if tied else "")
+            tied = sum(body[2][key] == ranked[_TOP_ROWS - 1][2][key] for body in ranked[_TOP_ROWS:])  # a tenth place shared would read as one body's own
+            told = f"{_TOP_ROWS} highest of {len(ranked)} by {top}" if top else f"{_TOP_ROWS} nearest of {len(ranked)}"
+            told += f" — {tied} more share the last figure" if tied else ""
         return {"info": told + (f"; {unranked} with no {top}, left out" if unranked else ""), "roster": rows}
 
     gone = [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
@@ -760,6 +773,11 @@ def _name_of(records: list[dict], target_id: int | None) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
 
 
+# `--nearest`'s goal: a body by its id, else a tile `x,y`.
+def _near_arg(value: str) -> int | tuple[int, int]:
+    return int(value) if value.isdigit() else xy_arg(value)
+
+
 # Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.
 def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since: str | None) -> str:
     said = [
@@ -851,6 +869,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--has", choices=_TALLIES, help="`roster`: the bodies with one tally above nought — `level` past 1 — and its figure, highest first")
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
     parser.add_argument("--lacks", choices=_TALLIES, help="`roster`: the bodies with none of one tally — `level` at 1 —, `--has`'s other half")
+    parser.add_argument("--nearest", type=_near_arg, metavar="x,y|id", help=f"`roster`: its {_TOP_ROWS} nearest to a tile or a body, as the crow flies")
     parser.add_argument("--patch", type=xy_arg, metavar="x,y", help="`roster`: the bodies standing on that tile's patch, one ground of one land")
     parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
     parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
@@ -870,6 +889,7 @@ def main(argv: list[str]) -> int:
     narrowing = (
         any((args.barred, args.has, args.lacks, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, args.type, entities))
         or args.island is not None
+        or args.nearest is not None
     )
     if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
         print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
@@ -878,7 +898,7 @@ def main(argv: list[str]) -> int:
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        flags = "-t, --trait, --has, --lacks, --top, --status, --task, --patch, --sapient, --settle, --barred, -i and an entity"
+        flags = "-t, --trait, --has, --lacks, --top, --nearest, --status, --task, --patch, --sapient, --settle, --barred, -i and an entity"
         print(f"✗ {flags} narrow `roster`: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
@@ -887,8 +907,11 @@ def main(argv: list[str]) -> int:
     if args.top and (other := next((flag for flag in ("has", "lacks", "settle", "barred") if getattr(args, flag)), None)):
         print(f"✗ `--top` ranks a roll by one measure: ask `--{other}` apart", file=sys.stderr)
         return 2
-    if args.top and since:  # two rankings are read side by side, each off its own chapter
-        print(f"✗ `--top` ranks one chapter: read the other by its suffix, `{since}`", file=sys.stderr)
+    if args.top and args.nearest is not None:
+        print("✗ `--top` and `--nearest` each rank a roll: ask one", file=sys.stderr)
+        return 2
+    if (ranked := "--top" if args.top else "--nearest" if args.nearest is not None else None) and since:  # each read off its own chapter
+        print(f"✗ `{ranked}` ranks one chapter: read the other by its suffix, `{since}`", file=sys.stderr)
         return 2
     if since and (alone := next((flag for flag in ("lacks", "patch", "status", "task") if getattr(args, flag)), None)):
         print(f"✗ `--{alone}` reads one chapter: ask `--since` apart", file=sys.stderr)  # the dead stood, wore and did what no later save tells
@@ -941,6 +964,14 @@ def main(argv: list[str]) -> int:
         if entity and entity[1] not in {record.get("id") for record in save.get(_MEMBERSHIPS[entity[0]][0]) or []}:
             print(absent_entity(entity[0], _MEMBERSHIPS[entity[0]][0], entity[1], chapter), file=sys.stderr)
             return 1
+        near = None
+        if isinstance(args.nearest, tuple):
+            near = args.nearest, None
+        elif args.nearest is not None:
+            if (body := next((a for a in save.get("actors_data") or [] if a["id"] == args.nearest and not is_boat(a)), None)) is None:
+                print(absent_entity("actor", "actors_data", args.nearest, chapter, lambda a: not is_boat(a)), file=sys.stderr)
+                return 1
+            near = actor_xy(body), args.nearest
         patch = None
         if args.patch:
             if island_of.get(args.patch) is None:  # off the map as on the water: a patch is one ground of one counted land
@@ -964,6 +995,7 @@ def main(argv: list[str]) -> int:
             args.lacks,
             args.top,
             entity,
+            near,
         )
         if not roster:  # a filter nothing answers, never a silent `{}`
             print(_nobody(args, kinds, save, since), file=sys.stderr)
