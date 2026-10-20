@@ -65,6 +65,29 @@ The chronicle runs on two [NeoModLoader](https://steamcommunity.com/sharedfiles/
 
 [Installing them](mods/README.md) links each folder into the game's `Mods` folder, so that a `git pull` keeps it up to date.
 
+## World laws
+
+The laws the chronicle is played under, by tab of the game's _World Laws_ window and in its order:
+
+| Tab           | Enable                                                                  | Disable                                                     |
+| ------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Harmony       | —                                                                       | 100 People, Gaia's Covenant                                 |
+| Diplomacy     | Diplomacy, Magic Rites, Rebellions, Stealing Borders                    | —                                                           |
+| Civilizations | Terramorphing, Kingdom Expansion, Civ Babies, Handsome Migrants, Armies | Glitched Noosphere, Angry Villagers                         |
+| Units         | Hunger, Old age                                                         | Gene Spaghetti, Mutant Box                                  |
+| Mobs          | Animal Babies, Forever Creep                                            | Peaceful Monsters                                           |
+| Spawn         | Drop of Thoughts, Animal Spawn, Clouds of Life                          | —                                                           |
+| Nature        | Random Seeds, Minerals                                                  | Roots without Borders, Erosion, High Flora Density          |
+| Trees         | Trees Growth, Entanglewood                                              | Fast Trees Growth, Bark Bites Back                          |
+| Plants        | Plants Growth                                                           | Fast Plants Growth, Plants Tickles, Root Pranks, Nectar Nap |
+| Fungi         | Fungi Growth                                                            | Fast Fungi Growth, Exploding Mushrooms                      |
+| Biomes        | Grow Grass                                                              | Biomes Overgrowth                                           |
+| Weather       | —                                                                       | Eternal Lava, Forever Cold                                  |
+| Disasters     | Natural Disasters, Other Disasters, Rat King                            | —                                                           |
+| Other         | Evolution Events                                                        | —                                                           |
+
+**Drop of Thoughts** sows thinking peoples into the young world: once enough crowns stand, the chronicler asks you to turn it off.
+
 ## Getting started
 
 To write the chronicle, open the chronicler in its own directory:
