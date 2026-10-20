@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 20/10/26 14:42</p>
+<p class="metadata">Date de mise à jour : 20/10/26 15:50</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -36,26 +36,26 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ### `geography` :
 
-- `--since C<n>` : ce qui a bougé, `[avant, après]`, `new` ou `gone` ; des soldes : un passage se lit dans `roster --since` — sauf `positions`, qui nomme chacun par son id
+- `--since C<n>` : ce qui a bougé, des soldes : un passage se lit dans `roster --since` — sauf `positions`, qui nomme chacun par son id
 - `-i <id>` : une seule terre dans les sections rangées par terre, ou `islets` et `water` là où elles les comptent
 - `-t <type>` : sous `positions`, types, familles (`trees`…) et ressources, par virgules, hors corps ; sous `biomes -i`, un biome ou un sol, ses 5 plus grandes parcelles
 
 ### `history` :
 
-- `entity <type> <id>` : les années d'une entité, son refus liste les types
+- `entity <type> <id>` : les années d'une entité
 - `log` : `--since C<n>` depuis un chapitre, `--actor <id>` les entrées qui nomment un corps, `-t <event>` un type (`kingdom_new`…)
 
 ### `tiles` :
 
 - `-i <id>` : une terre par son id, mesurée comme `to_islands` sous `to_island`, même hors des 5 plus proches — celle où l'on se tient vaut 0
-- `-r <n>` : rayon, de 0 à 2 — `distances` : la tuile demandée seule
-- `--to <x,y>` : cap et mesures entre lieux (d'un corps : `actor`), sous `to` si une section la rejoint ; pas avec `-r` ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre) ou un corps `p<id>`
+- `-r <n>` : rayon — `distances` : la tuile demandée seule
+- `--to <x,y>` : cap et mesures entre lieux, sous `to` si une section la rejoint ; pas avec `-r` ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre) ou un corps `p<id>`
 
 ### `world` :
 
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
-- `pairings` : par espèce (un couple ignore la lignée), la 1ʳᵉ naissance possible (`birth_on` ; `pregnant` nomme les porteuses, à la date du jeu ; sinon `now` chez des amants, faute de trace) et l'écart du couple ; `pair` : la porteuse d'abord, dont l'enfant prend la cité, sinon celle de l'autre (`drawn` : tirée au sort) ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `missing: meal`, des spores sans estomac, que seul un repas lâche ; `lovers`, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, et le corps en cause (`hungry`, `water` : à flot, `tiny_islet` : îlot de 5 tuiles au plus), ou la loi WB ; règles : `wiki:Reproduction`
-- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau, `--with <champs>` jusqu'à 4, d'`actor … stats` ou d'une fiche (`task`, `statuses`, `island_id`…), seuls avec `id` et `name`, regroupés passé 50, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--clan`…) ses membres, la terre de la cité tue ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) — d'une entité, `arrived` y entre, `left` en sort vivant ; sous `--has`, les seuls comptes changés, `[avant, après]`
+- `pairings` : par espèce (un couple ignore la lignée), la 1ʳᵉ naissance possible, `on` (le couple en âge) plus la gestation (`birth_on` ; `pregnant` nomme les porteuses, à la date du jeu ; sinon `now` chez des amants, faute de trace), une date qui glisse d'un chapitre à l'autre tant que rien ne la tient, et l'écart du couple ; `pair` : la porteuse d'abord, dont l'enfant prend la cité, sinon celle de l'autre (`drawn` : tirée au sort) ; `barren`, par lignée, les corps qui n'enfanteront jamais ; `missing: meal`, des spores sans estomac, que seul un repas lâche ; `lovers`, choisis d'abord ; `barred`, ce qui arrête la naissance, pas la rencontre, et le corps en cause (`hungry`, `water` : à flot, `tiny_islet` : îlot de 5 tuiles au plus), ou la loi WB ; règles : `wiki:Reproduction`
+- `roster` : chaque vivant, `life_stage` hors adultes ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau, `--with <champs>` jusqu'à 4, d'`actor … stats` ou d'une fiche (`task`, `statuses`, `island_id`…), seuls avec `id` et `name`, regroupés passé 50, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--clan`…) ses membres, la terre de la cité tue ; `--since C<n>` : `arrived`, `moved` (`was_on`) et `gone` (`old_from` : la vieillesse exclue avant) — d'une entité, `arrived` y entre, `left` en sort vivant ; sous `--has`, les seuls comptes changés
 
 ---
 
