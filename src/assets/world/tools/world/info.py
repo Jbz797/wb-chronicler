@@ -432,6 +432,8 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
                 walk_map = walk_map or WalkMap(save)
                 if (way := walk_way(walk_map, walk_map.gait(None, frozenset()), ax, ay, {by * walk_map.width + bx})) is not None:
                     row["walk_tiles"] = round(way[3])  # the tiles trodden between them, not the way's cost
+                    if row["walk_tiles"] == row["crow_tiles"]:  # a straight way says its length once
+                        del row["crow_tiles"]
         elif not mating and not lone:  # no lineage of the kind holds a breeding trait: it never breeds
             row["missing"] = "reproduction"
         elif mating:  # a partner wanted, none to be had: a sexed kind of one sex says which, else blood or pledges bar every pair
