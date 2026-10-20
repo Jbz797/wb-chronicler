@@ -1,18 +1,18 @@
 # Faithful Saves
 
-A save keeps what every creature was in the middle of: a pregnancy, an egg, a sleep, a fire, a mood, a task, and the wait before its next sleep. Loading no longer wipes them.
+A save keeps what every creature was in the middle of: a pregnancy, an egg, a sleep, a fire, a mood, a task, and the wait before its next sleep. Loading no longer wipes them. It also dates each creature's arrival in its town, and closes each history year in January.
 
 ## Why
 
-Vanilla WorldBox writes no status into a save, so every load quietly resets them, and a world loaded often drifts from the one the game means to run:
+Vanilla WorldBox writes no status into a save, so every load quietly resets them, and a world saved and loaded often drifts away from the one the game means to run:
 
-- **Pregnancy.** A load before the birth ends it: a kind that carries 21 months, loaded every 2 years, loses nearly 9 pregnancies in 10.
+- **Pregnancy.** A load before the mother is due ends it, with no birth. A kind that carries 21 months, loaded every 2 years, loses nearly 9 pregnancies in 10.
 - **Eggs.** An egg hatches the moment the world loads, however long it had left.
 - **Afterglow.** The wait between two matings, 90 seconds for most kinds, is lifted.
 - **Sleep.** Every sleeper wakes.
-- **Harm.** Every burning creature is put out, the poisoned and the cursed are cured: a death the game was dealing never comes.
+- **Harm.** Fires go out, the poisoned and the cursed are cured: a death under way never comes.
 - **Moods.** A tantrum, a rage, a dream, a fresh love: all gone.
-- **Tasks.** Every creature drops what it was doing and picks a task anew.
+- **Tasks.** Every creature drops what it was doing.
 - **Roofs.** Every creature indoors is set back on its doorstep.
 
 WorldBox also redraws two kinds of timers on every load:
@@ -24,27 +24,23 @@ WorldBox also redraws two kinds of timers on every load:
 
 - **On save**, each creature keeps what is left of its statuses and of its long waits (90 seconds or more), its task (the step reached, the time spent, its aim: a prey, a tile, a building) and the building it is inside; a boat, the shore it was ferrying to; the world, the time left on its two clocks.
 - **On load**, each is handed back for exactly the time it had left, and each creature takes its task up at that very step: a woodcutter carrying his logs walks on to the store, a hunter keeps its prey, a sleeper stays under its roof.
+- **A creature settling in a new town**, by birth, migration, founding or a move, is stamped with the world's time.
+- **The world's history** closes each year in January, under the year that ended: a row is a calendar year.
 
-Nothing else changes: no status lasts longer or shorter than in vanilla, none is added. A status handed back does not replay its first effects (a change of mood, a sound).
+Nothing else changes: no status is lengthened, shortened or added, and none replays its first effects (a mood, a sound).
 
 **Not kept:** the `possessed` status, your own hand on a creature; a boat's errand to fetch passengers, asked for again by those waiting; short waits, soon sat out; and what a town was in the middle of (a capture, a building site).
 
 ## Installation
 
-Install [NeoModLoader](https://steamcommunity.com/sharedfiles/filedetails/?id=3080294469) first, as described in the [Wandering Clouds](../WanderingClouds/README.md#1-install-neomodloader-once) notes.
-
-1. From the root of this repository, link this folder into NML's `Mods` folder, so a `git pull` updates the mod:
-   - **macOS**: `ln -s "$PWD/mods/FaithfulSaves" ~/"Library/Application Support/Steam/steamapps/common/worldbox/Mods/FaithfulSaves"`
-   - **Linux**: the same, with your own Steam path (often `~/.steam/steam/steamapps/common/worldbox/Mods/FaithfulSaves`)
-   - **Windows** (as administrator): `mklink /D "<Steam>\steamapps\common\worldbox\Mods\FaithfulSaves" "%CD%\mods\FaithfulSaves"`
-
-   Without a clone, copy `mod.json`, `icon.png` and the two `.cs` files into `Mods/FaithfulSaves/`.
-2. Launch WorldBox. NML compiles the mod as the game starts: it shows in the _Mods_ window, and the game log reads `[Faithful Saves]: a save now keeps statuses, tasks, roofs, long waits and the world's clocks`.
-
-**To uninstall**, disable the mod in NML's _Mods_ window, or delete its link from `Mods`.
+Install it with the other mods of this repository, as [mods/README.md](../README.md) describes. The game log then reads `[Faithful Saves]: a save now keeps…`.
 
 ## Notes
 
-- **Compatibility:** the mod replaces no game code. It works with other mods unless they also store data under a `faithful_` key.
-- **What it writes into your saves:** keys prefixed `faithful_`, in each creature's custom data and in the world's (`faithful_saved_at` tells this repository's chronicle the mod wrote the save). A save made with the mod loads fine without it: vanilla ignores those keys.
-- **A save made before the mod:** its first load still wipes everything; all is kept from the next save on.
+- **Compatibility:** the mod replaces no game code, and works with other mods unless they also use `faithful_` keys or reshape the history's yearly close.
+- **What it writes into your saves:** keys prefixed `faithful_`, per creature (statuses, waits, task, roof, town) and per world (clocks, and `faithful_saved_at`, by which this repository's chronicle knows the mod wrote the save). Vanilla ignores them.
+- **A save made before the mod:** its first load still wipes everything; all is kept from the next save on, and its first history year after the mod runs 13 months.
+
+## For modders
+
+Six hooks. `SavePatches.cs` writes in prefixes on `Actor.prepareForSave()` and `SaveManager.currentWorldToSavedMap()`, and hands back in postfixes on `SaveManager.randomDecisionCooldowns()` (statuses, waits, clocks) and `MapBox.finishingUpLoading()` (tasks and roofs, once the buildings stand). `CityPatches.cs` stamps in a postfix on `Actor.setCity`, skipping the town already stamped, so a load moves nothing. `HistoryPatches.cs` transpiles `MapBox.updateMetaHistory`: its month 12 becomes 1, its row is filed under the year before; finding neither, it leaves the method whole and logs a warning.

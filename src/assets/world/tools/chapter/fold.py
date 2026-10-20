@@ -15,6 +15,7 @@ _AUDIT = {
             "born",  # when WB set it on the map, a soul or a people — for the chronicler's « who came first », no panel dating either
             "breeds_on",
             "can_reproduce",
+            "city_since",
             "clan_chief_years",
             "date",  # the world's day as the chronicler reads it — the panels take the clock through `index.json`
             "deaths_by_cause",

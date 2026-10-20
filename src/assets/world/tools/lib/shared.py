@@ -802,6 +802,19 @@ def is_transport(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_transport")
 
 
+# The date a body settled in the town it holds, as the Faithful Saves mod stamped it: a stamp left by a town it has since lost dates nothing.
+def kept_city_since(actor: dict) -> str | None:
+    held, since = actor.get("cityID"), (actor.get("custom_data_float") or {}).get("faithful_city_since")
+    if held is None or since is None or (actor.get("custom_data_long") or {}).get("faithful_city_of") != held:
+        return None
+    return world_date(since)
+
+
+# The building the Faithful Saves mod found a body inside, by its id. WB keeps `is_inside_building` on the runtime actor alone: no save without the mod says it.
+def kept_roof(actor: dict) -> int | None:
+    return (actor.get("custom_data_long") or {}).get("faithful_inside")
+
+
 # `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces the ones nothing else covers.
 def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     kingdoms = save.get("kingdoms") or []
@@ -880,11 +893,6 @@ def land_arg(value: str) -> int | str:
     if not value.isdigit():
         raise argparse.ArgumentTypeError(f"{value!r} is no land — a land's id, `islets` or `water`")
     return int(value)
-
-
-# The building the Faithful Saves mod found a body inside, by its id. WB keeps `is_inside_building` on the runtime actor alone: no save without the mod says it.
-def kept_roof(actor: dict) -> int | None:
-    return (actor.get("custom_data_long") or {}).get("faithful_inside")
 
 
 # The last chapter standing, 0 where none does yet. Three callers glob these dirs, and a chapter is `C<n>` on disk and nowhere else.

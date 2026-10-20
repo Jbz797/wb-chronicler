@@ -63,7 +63,7 @@ The chronicle runs on two [NeoModLoader](https://steamcommunity.com/sharedfiles/
 - [Wandering Clouds](mods/WanderingClouds/) — vanilla clouds all rise on the west edge of the map, and they seed a young world's thinking peoples: its first civilizations start out crowded in the west. This mod lets clouds rise anywhere and drift either way, so peoples arise all over the map. Install it **before creating the world**.
 - [Faithful Saves](mods/FaithfulSaves/) — vanilla saves keep no status, so every load ends the pregnancies under way, hatches every egg, wakes every sleeper and redraws how long each creature waits before its next sleep. This mod writes them into the save and hands them back on load.
 
-Each mod's page tells how to link its folder into the game's `Mods` folder, so that a `git pull` keeps it up to date.
+[Installing them](mods/README.md) links each folder into the game's `Mods` folder, so that a `git pull` keeps it up to date.
 
 ## Getting started
 

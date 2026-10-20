@@ -70,6 +70,7 @@ from shared import (
     is_boat,
     is_sapient,
     is_transport,
+    kept_city_since,
     latest_chapter,
     life_stage,
     light,
@@ -373,6 +374,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # Said only when they hold, as every flag the tools emit: a body that cannot is most of the world, beasts and children first.
         **({"can_reproduce": True} if can_reproduce else {}),
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
+        "city_since": kept_city_since(actor),  # Chronicler-only: the month it settled there, the mod's stamp
         "clan": entity_ref(actor.get("clan"), ctx["clans_by_id"]),  # a ref, not a bare name: `clan/info.py <id>` can be called on it, as on `family`
         "clan_chief_years": _tenures(_CLAN_CHIEF_ROLE, save, ctx["world_time"]).get(actor["id"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
         "culture": entity_ref(actor.get("culture"), ctx["cultures_by_id"]),  # a ref like `clan`: `culture/info.py <id>` reads the customs it was raised in
