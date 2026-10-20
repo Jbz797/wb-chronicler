@@ -8,11 +8,12 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { RELATION_STATUS_NZ_COLORS } from '../../../../../constants';
 import { KingdomRelation } from '../../../../../interfaces';
 import { ChroniclerService } from '../../../../../services';
+import { NewBadgeComponent } from '../../new-badge/new-badge.component';
 import { KingdomTagComponent } from '../../tags';
 
 @Component({
   selector: 'app-kingdom-relations',
-  imports: [KingdomTagComponent, NzTableModule, NzTagModule, TranslatePipe],
+  imports: [KingdomTagComponent, NewBadgeComponent, NzTableModule, NzTagModule, TranslatePipe],
   templateUrl: './kingdom-relations.component.html',
   styleUrl: './kingdom-relations.component.scss',
 })
@@ -26,11 +27,13 @@ export class KingdomRelationsComponent {
 
   protected readonly sorted = computed(() => this.relations().toSorted((a, b) => b.opinion.total - a.opinion.total));
 
-  // Each crown's opinion a chapter before, by id — none when the favourite's kingdom changed, two strangers having no standing to compare.
+  // Each crown's opinion a chapter before, by id — `null` when the favourite's kingdom changed, two strangers having no standing to compare.
   private readonly _before = computed(() => {
-    const previous = this._chronicler.carriesOver('kingdom') ? this._chronicler.previousChapter()?.meta.kingdom?.relations : undefined;
-    return new Map((previous ?? []).map(r => [r.kingdom.id, r.opinion.total]));
+    const previous = this._chronicler.previousChapter()?.meta.kingdom?.relations ?? [];
+    return this._chronicler.carriesOver('kingdom') ? new Map(previous.map(r => [r.kingdom.id, r.opinion.total])) : null;
   });
+
+  protected isNew = (relation: KingdomRelation): boolean => this._before()?.has(relation.kingdom.id) === false;
 
   // 4-tier coloring: ≥+50 = `.tier-full` (vert), ≥0 = `.tier-high` (or), ≥-50 = `.tier-mid` (info), < -50 = `.tier-low` (rouge).
   protected opinionClass = (total: number): string => {
@@ -41,7 +44,7 @@ export class KingdomRelationsComponent {
 
   // Up or down since the chapter before, `null` for an opinion unchanged or a crown newly met — an arrow alone, the cell already printing the value.
   protected trend = (relation: KingdomRelation): 'down' | 'up' | null => {
-    const before = this._before().get(relation.kingdom.id);
+    const before = this._before()?.get(relation.kingdom.id);
     if (before === undefined || before === relation.opinion.total) return null;
     return relation.opinion.total > before ? 'up' : 'down';
   };

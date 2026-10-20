@@ -20,6 +20,7 @@
             @if (trend(r); as t) {
               <span [class]="`trend trend-${t}`">{{ t === 'up' ? '↑' : '↓' }}</span>
             }
+            <app-new-badge [show]="isNew(r)" />
           </td>
         </tr>
       }
