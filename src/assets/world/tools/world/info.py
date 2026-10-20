@@ -411,7 +411,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
             default=None,
         )
         if best:
-            apart, _, row["on"], crow, a, b, barred = best
+            apart, _, row["mates_on"], crow, a, b, barred = best
             sexual = sexed[a["id"]] or sexed[b["id"]]
             bearer, other = (b, a) if sexual and b.get("sex") == 1 else (a, b)  # a sexed pair's mother carries (WB `checkForBabies`)
             row |= {
@@ -423,7 +423,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
             }
             # Lovers may carry already, unseen, where the save keeps no status; where it does, they wait out the afterglow of their last kiss.
             glow = max(status_left(a, "afterglow") or 0, status_left(b, "afterglow") or 0)
-            conceived = max(row["on"], now + glow) if apart or status_left(bearer, "pregnant") is not None else row["on"]
+            conceived = max(row["mates_on"], now + glow) if apart or status_left(bearer, "pregnant") is not None else row["mates_on"]
             births.append(max(conceived + carry.get(bearer.get("subspecies"), 0), now))
             (ax, ay), (bx, by) = where[a["id"]], where[b["id"]]
             if (land := island_of.get((ax, ay))) is not None and land == island_of.get((bx, by)):
@@ -449,7 +449,7 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         rows.append((row.get("birth_on", inf), row))  # the first birth leads: what the chronicle asks is when a body is born, not when two come of age
 
     for _, row in rows:  # the hours dated only once sorted on: `now` for what already holds
-        for key in ("alone_on", "birth_on", "on"):
+        for key in ("alone_on", "birth_on", "mates_on"):
             if key in row:
                 row[key] = "now" if row[key] <= now else world_date(row[key])
 
