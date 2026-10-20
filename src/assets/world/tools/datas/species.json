@@ -9,6 +9,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "A roiling mass of acidic slime",
+    "evolution_id": "civ_acid_gentleman",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -51,6 +52,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "Alpacas are social animals, always sticking close to their herd",
+    "evolution_id": "civ_alpaca",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -171,6 +173,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "Living tanks that curl into impenetrable spheres",
+    "evolution_id": "civ_armadillo",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -231,6 +234,7 @@
     "attack": "claws",
     "baby_form": true,
     "description": "Large and hairy animal",
+    "evolution_id": "civ_bear",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -272,6 +276,7 @@
   "beetle": {
     "attack": "base_attack",
     "description": "Tiny insect",
+    "evolution_id": "civ_beetle",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -849,6 +854,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "Shaggy behemoth of the Great Plains",
+    "evolution_id": "civ_buffalo",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -891,6 +897,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "This water-loving rodent is as relaxed as it is large",
+    "evolution_id": "civ_capybara",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -911,6 +918,7 @@
     "attack": "claws",
     "baby_form": true,
     "description": "Cute little carnivore",
+    "evolution_id": "civ_cat",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -931,6 +939,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "Have you heard about this bird?",
+    "evolution_id": "civ_chicken",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1747,6 +1756,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "It goes moo, doesn't say meow",
+    "evolution_id": "civ_cow",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1767,6 +1777,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "A tiny animal that loves to rave",
+    "evolution_id": "civ_crab",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1793,6 +1804,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "The boring dinosaur",
+    "evolution_id": "civ_crocodile",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1813,6 +1825,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "Sharp as the sea and twice as salty",
+    "evolution_id": "civ_crystal_golem",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -1853,6 +1866,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "Woof woof",
+    "evolution_id": "civ_dog",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2117,6 +2131,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "It may look pretty, but it has the personality of a cactus",
+    "evolution_id": "civ_liliar",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2160,6 +2175,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "What does the fox say?",
+    "evolution_id": "civ_fox",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2180,6 +2196,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "Fun fact. Frog eat bug",
+    "evolution_id": "civ_frog",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2201,6 +2218,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "Has a bite as strong as its smell",
+    "evolution_id": "civ_garlic_man",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2240,6 +2258,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "Known for its playful headbutts and endless curiosity",
+    "evolution_id": "civ_goat",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2330,6 +2349,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "Known for laughing at their prey",
+    "evolution_id": "civ_hyena",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2367,6 +2387,7 @@
   "lemon_snail": {
     "attack": "base_attack",
     "baby_form": true,
+    "evolution_id": "civ_lemon_man",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2456,6 +2477,7 @@
     "attack": "rocks",
     "baby_form": true,
     "description": "It can throw rocks. What next?",
+    "evolution_id": "civ_monkey",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2599,6 +2621,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "A bird that was built for swimming",
+    "evolution_id": "civ_penguin",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2619,6 +2642,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "Predatory fish. Swimming & killing",
+    "evolution_id": "civ_piranha",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2688,6 +2712,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "Small animal with huge ears",
+    "evolution_id": "civ_rabbit",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2708,6 +2733,7 @@
     "attack": "claws",
     "baby_form": true,
     "description": "A furry bandit, sneaking through the lands in search of treasures (or snacks)",
+    "evolution_id": "bandit",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2728,6 +2754,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "Small rat",
+    "evolution_id": "civ_rat",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2748,6 +2775,7 @@
     "attack": "base_attack",
     "baby_form": true,
     "description": "It can't see very well",
+    "evolution_id": "civ_rhino",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2789,6 +2817,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "Silent and swift, the scorpion uses its venomous sting to defend and attack",
+    "evolution_id": "civ_scorpion",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2809,6 +2838,7 @@
     "attack": "bite",
     "baby_form": true,
     "description": "Children of storm and sea",
+    "evolution_id": "civ_seal",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2828,6 +2858,7 @@
   "sheep": {
     "attack": "base_attack",
     "baby_form": true,
+    "evolution_id": "civ_sheep",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2867,6 +2898,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "A terrifying creature that spreads death and destruction purely for fun",
+    "evolution_id": "civ_candy_man",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2887,6 +2919,7 @@
     "attack": "bite",
     "baby_form": true,
     "description": "Cute little venomous snek",
+    "evolution_id": "civ_snake",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2963,6 +2996,7 @@
     "attack": "jaws",
     "baby_form": true,
     "description": "Living shield on tiny legs",
+    "evolution_id": "civ_turtle",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -2983,6 +3017,7 @@
     "attack": "bite",
     "baby_form": true,
     "description": "Magic included, sparkles optional",
+    "evolution_id": "civ_unicorn",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,
@@ -3030,6 +3065,7 @@
   "wolf": {
     "attack": "jaws",
     "baby_form": true,
+    "evolution_id": "civ_wolf",
     "stats": {
       "accuracy": 1,
       "area_of_effect": 0.1,

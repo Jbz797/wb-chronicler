@@ -88,13 +88,16 @@ def _build_species(subspecies: dict, save: dict) -> dict:
     totals = _species_totals(save)
     own = totals.get(asset_id) or _EMPTY_SPECIES.copy()
     ranks = competition_ranks(own, list(totals.values()), {key: itemgetter(key) for key in _EMPTY_SPECIES})
-    asset = load_data("species.json").get(asset_id) or {}
+    species = load_data("species.json")
+    asset = species.get(asset_id) or {}
 
-    # Counts drop at zero, the podium reading the whole dict; the rest is the chronicler's: WB's line, its bare-handed weapon, its ghostly soul.
+    # Counts drop at zero, the podium reads them all; the panel shows `evolved_from` alone, `evolution_id` read from its other end — the rest is the chronicler's.
     return {
         **{key: value for key, value in own.items() if value},
         "attack": asset.get("attack"),
         "description": asset.get("description"),
+        "evolution_id": asset.get("evolution_id"),
+        "evolved_from": min((beast for beast, spec in species.items() if spec.get("evolution_id") == asset_id), default=None),  # one beast a kind, in WB's lists
         "has_soul": asset.get("has_soul"),
         "id": asset_id,
         **({"ranks": ranks} if ranks else {}),

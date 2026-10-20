@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 20/10/26 18:21</p>
+<p class="metadata">Date de mise à jour : 20/10/26 21:47</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou refus `✗` seul sur stderr, citée en abrégé : `kingdom … metadata`. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -81,7 +81,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 ### Entités et comptes :
 
 - `armies` (`world … snapshot`) : les armées levées dans le monde, une par cité au plus, en paix comme en guerre : `wiki:Armies`.
-- `attack` (`subspecies … species`) : l'arme sans lame (`base_attack` : sans nom) .
+- `attack` (`subspecies … species`) : l'arme sans lame (`base_attack` : sans nom) ; une bête a `evolution_id`, l'espèce pensante qu'elle devient, celle-ci `evolved_from`.
 - `attractivity` (`city … metadata`) : les corps gagnés, moins ceux partis vivants, fondateur et migrants à part.
 - `buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose, que `born` date ; nommée, `city … buildings` les liste, chantier marqué : ce qu'elle tait, la cité ne l'a pas.
 - `creatures_created` (`cumulative`) : ce qui paraît sans naître : semé, migrant, invoqué, changé d'espèce, coque.
@@ -89,20 +89,20 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `eaters` (`pop`) : les bouches, quand un corps n'a pas d'estomac, entre qui `food_per_capita` partage les vivres.
 - `gap_tiles` (`kingdom … relations`) : de bord à bord des quartiers, à vol d'oiseau, tu s'ils se touchent ; `opinion`, la sienne, `their_opinion`, celle d'en face.
 - `ground … metadata` : `cost`, pris à la réserve dès la pose (`wiki:Buildings`) ; `health` ne sort que blessé, près de `health_max` ; un arbre tombe d'un coup (`wiki:Wood`).
-- `history` (WB) : `world`, ce que chaque année (`year`, l'en-cours `so_far`) a vu naître, mourir ou s'éteindre, une année absente : rien de neuf, les ~20 dernières, l'avant par plages `years` comme `entity`, ses états en moyenne (`mean`) ; `entity`, ses états (noms nus : `pop`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`) — d'une cité ou d'un royaume, même tombé (`dead_kingdoms`, `reigns` du journal), `joined` les corps sans attache qui y entrent, fondateurs compris, `moved` venus d'une autre cité ou couronne, `left` partis vivants, `migrated` appelés par le feu, à part, ni naissance ni coque —, l'avant de la fenêtre par plages d'années (`years`) : leurs états en moyenne, `money`, `renown`, `kings` et `leaders` à leur plus haut, leurs gains sur la plage, la première depuis la naissance, et `from_year` sur une année qui suit une plage close plus tôt ; une cité n'a pas de `kills` par année, que le jeu ne tient que pour un royaume ou un clan, valables pour elle s'ils couvrent les mêmes tueurs ; ceux d'un clan resté à `pop` 1 sont ceux de son seul membre. De quoi meurt le monde : `world … cumulative` ou `history world`, jamais la somme des `deaths_by_cause` des lignées. `unknown` : ce que le jeu ne range nulle part
+- `history` (WB) : `world`, ce que chaque année (`year`, l'en-cours `so_far`) a vu naître, mourir ou s'éteindre, une année absente : rien de neuf, l'avant par plages `years` comme `entity`, ses états en moyenne (`mean`) ; `entity`, ses états (noms nus : `pop`…) et ses gains de l'année (`births`, `deaths`, `kills`, `…_created`) — d'une cité ou d'un royaume, même tombé (`dead_kingdoms`, `reigns` du journal), `joined` les corps sans attache qui y entrent, fondateurs compris, `moved` venus d'une autre cité ou couronne, `left` partis vivants, `migrated` appelés par le feu, à part, ni naissance ni coque —, l'avant de la fenêtre par plages d'années (`years`) : leurs états en moyenne, `money`, `renown`, `kings` et `leaders` à leur plus haut, leurs gains sur la plage, la première depuis la naissance, et `from_year` sur une année qui suit une plage close plus tôt ; une cité n'a pas de `kills` par année, que le jeu ne tient que pour un royaume ou un clan, valables pour elle s'ils couvrent les mêmes tueurs ; ceux d'un clan resté à `pop` 1 sont ceux de son seul membre. De quoi meurt le monde : `world … cumulative` ou `history world`, jamais la somme des `deaths_by_cause` des lignées. `unknown` : ce que le jeu ne range nulle part
 - `kingdom … metadata` : une seule coque (`ferries`) sert tout le royaume.
 - `max_cities` (`kingdom … metadata`) : les cités tenues avant que les lointaines perdent en loyauté, espèce du roi et roi compris.
 - `migrants` (`city … metadata`) : ce qui retient la loi d'en amener, sinon `soon` ou `later` (`wiki:World_Laws`).
 - `religion … metadata` : `cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles : `wiki:Religions`.
 - `report` parle par images : « No fire, no warmth » dit le bois qui manque, pas le feu.
-- `rulers` (cité, royaume) : la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain : `pop.ruler_money`.
+- `rulers` : la succession, datée comme en jeu — le premier d'un royaume l'a fondé ; bourse du souverain : `pop.ruler_money`.
 - `top_drivers` ne garde que les deux extrêmes et ne somme à rien ; `drivers`, complet, somme au `total` ; chaque terme, par son id : `wiki:Loyalty`, ou `wiki:Kingdom_Opinions` pour une opinion.
 - `world … cumulative,snapshot --since C<n>` rend les écarts ; celui de `snapshot` est un solde, jamais un compte d'événements : naissances et extinctions se lisent dans `cumulative`, qui ne fait que monter ; `gone_without_death` : les corps partis sans mort comptée (`deaths_without_body`, l'inverse).
 - Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).
 
 ### Lieux et trajets :
 
-- `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions (une diagonale compte 1,41), à citer tel quel, jamais refait à la règle ; pas un compte de pas.
+- `crow_tiles` (`to`, `distances`, `moved`) : à vol d'oiseau sur 8 directions, à citer tel quel, jamais refait à la règle ; pas un compte de pas.
 - `geography … frozen` : par terre, la part gelée puis ses tuiles : `permafrost`, le biome gelé en toute saison ; `snow` et `ice`, la neige et la glace de la carte même ; `frost`, le gel passager.
 - `ground` (`biomes`) : le sol sans biome ; `rock` joint monts et sommets, sa plus grande parcelle est un massif.
 - `heart` (`islands`, `waters`) : le point le plus loin des rives.

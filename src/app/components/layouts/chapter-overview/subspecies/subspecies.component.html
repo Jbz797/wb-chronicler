@@ -53,6 +53,14 @@
         {{ `species_${s.species.id}` | translate }}
       </span>
     </nz-descriptions-item>
+    @if (s.species.evolved_from; as beast) {
+      <nz-descriptions-item [nzTitle]="evolvedFromTitle">
+        <span>
+          <img class="species-icon" [src]="`assets/img/species/${beast}.png`" />
+          {{ `species_${beast}` | translate }}
+        </span>
+      </nz-descriptions-item>
+    }
     @if (biomeName(); as b) {
       <nz-descriptions-item [nzTitle]="biomeTitle">{{ b }}</nz-descriptions-item>
     }
@@ -84,6 +92,10 @@
   <ng-template #citiesTitle>
     <img src="assets/img/world/cities.png" />
     <span>{{ 'ui_cities' | translate }}</span>
+  </ng-template>
+  <ng-template #evolvedFromTitle>
+    <img src="assets/img/world/wild_creatures.png" />
+    <span>{{ 'ui_evolved_from' | translate }}</span>
   </ng-template>
   <ng-template #fedPctTitle>
     <img src="assets/img/world/fed.png" />

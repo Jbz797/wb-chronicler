@@ -103,7 +103,7 @@ _AUDIT_TIERS = {
     "kingdom.ranks": {"money"},  # as a town's
     "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
     "religion.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
-    "subspecies.species": {"attack", "description", "has_soul"},  # the parent stock's own, all the chronicler's: the panel prints none of them
+    "subspecies.species": {"attack", "description", "evolution_id", "has_soul"},  # the parent stock's own, all the chronicler's: the panel prints none of them
     "wars.metadata": {"deaths", "started_by"},  # the card sets each camp's toll and crown, never the sum or the man — `war/info.py <id>` hands over both
 }
 

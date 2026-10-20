@@ -1,7 +1,11 @@
 import { Leaders, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
 // The stock's standing among the world's species — flat counts beside its own podium; `id` stays out of `SpeciesTotals`, which the podium reads as `keyof`.
-export interface SpeciesStanding extends SpeciesTotals { id: string; ranks?: Partial<SpeciesTotals> }
+export interface SpeciesStanding extends SpeciesTotals {
+  evolved_from?: string; // the beast a thinking kind rises from (WB `evolution_id`, by a monolith or an ascension)
+  id: string;
+  ranks?: Partial<SpeciesTotals>;
+}
 
 // Living counts over a whole species, those the panel shows plus the biologies WB mutated out of it. Each drops at zero, so panels read them via `?? 0`.
 export interface SpeciesTotals {
