@@ -765,6 +765,14 @@ def _purge_history(s3db: Path) -> None:
         cursor.execute("VACUUM")
 
 
+# Whether the prose a delivered chapter's record carries has moved since its last commit: a descriptor or a summary is audited, a panel's data never.
+def _record_prose_moved(n: int) -> bool:
+    committed = chronicle_git("show", f"HEAD:C{n}/chapter.json")
+    path = SAVES_DIR / f"C{n}" / "chapter.json"
+    before = json.loads(committed.stdout) if not committed.returncode else {}
+    return path.exists() and _written_prose(json.loads(path.read_text())) != _written_prose(before)
+
+
 # What the favorite line adds, so the chronicler need not deduce it — a favorite gone from `actors_data` is dead, and nothing else says so. Silent when it holds.
 def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -> str:
     if n == 1:
@@ -834,15 +842,16 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     return 0
 
 
-# Delivered chapters reworked since their last round, each tagged `C<n>-r<k>` for a relaunch's diff — one whose `chapter.json` alone moved, apart and roundless.
+# Delivered chapters reworked since their last round, each tagged `C<n>-r<k>` for a relaunch's diff — one whose panels' data alone moved, apart and roundless.
 def _retouch() -> int:
     if not (SAVES_DIR / ".git").exists():
         print("✗ no chronicle Git yet — `--finalize` makes it at a chapter's first round", file=sys.stderr)
         return 1
     delivered = {int(tag[1:].split("-")[0]) for tag in chronicle_git("tag", "--list", "C*-delivered").stdout.split()}
     moved = re.findall(r"C(\d+)/(\S+)", chronicle_git("status", "--porcelain", "--", *(f"C{n}" for n in delivered)).stdout)
-    changed = sorted({int(n) for n, name in moved if name == "chapter.md"} & delivered)
-    if not (refreshed := sorted({int(n) for n, _ in moved} & delivered - set(changed))) and not changed:
+    touched = {int(n) for n, _ in moved} & delivered
+    changed = sorted(n for n in touched if (str(n), "chapter.md") in moved or _record_prose_moved(n))  # its tale, or the prose its record carries
+    if not (refreshed := sorted(touched - set(changed))) and not changed:
         print("✗ no delivered chapter has moved since its last round — the chapter under way rounds with `--finalize`", file=sys.stderr)
         return 1
     if refreshed:
@@ -1032,6 +1041,12 @@ def _write_world(save: dict) -> None:
         "width": int(save.get("width") or 0) * _MAP_BLOCK,
     }
     _WORLD_JSON.write_text(render(world) + "\n")  # `render` like every other file the bootstrap writes, so a short blurb would inline as they do
+
+
+# The prose the chronicler writes into a `chapter.json`, which the audit reads as it reads the chapter: the favourite's descriptor, each tier's trait summary.
+def _written_prose(record: dict) -> dict:
+    summaries = {f"{tier}.traits": summary for tier in _TRAIT_SOURCES if isinstance(summary := (record.get(tier) or {}).get("traits"), str)}
+    return {**summaries, "favorite.descriptor": (record.get("favorite") or {}).get("descriptor")}
 
 
 def main(argv: list[str]) -> int:
