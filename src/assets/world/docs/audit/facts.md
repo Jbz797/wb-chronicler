@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 21/10/26 19:35</p>
+<p class="metadata">Date de mise à jour : 21/10/26 23:26</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche pour ce qui s'y vérifie ; la forme qu'il demande (un dialogue dû, sa longueur) est à la conformité.
 
@@ -15,7 +15,7 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 - **Un nombre juste ne prouve que sa question** : avant de conclure, vérifie que la commande compte le même ensemble que la phrase (tous les corps ou les pensants, le monde ou une terre), avec le champ que la doc prescrit pour ce fait.
 - **Un test d'existence ne se tronque jamais** : compte ou imprime entier : une sortie coupée ne prouve rien.
 - **Une affirmation sur tout le monde** (« seul », « aucun », « ce monde n'a que », une mort, « il n'en est plus question ») se vérifie sur le monde entier, `world … roster` pour les corps, `geography … positions -t` pour le reste, jamais sur ce que le texte nomme.
-- **Une distance** se vérifie sur ce que la phrase dit : un km nu à vol d'oiseau, « de marche » à pied ; le choix entre les deux est à la conformité.
+- **Une distance** se vérifie comme la phrase la dit : un km nu à vol d'oiseau, « de marche » à pied, une tournure par la mesure qu'elle suppose.
 - **Une forme** (une chaîne, une mer ouverte au sud) se lit sur la carte (`docs/tools.md` § Carte).
 - **Une phrase à deux lectures dont l'une est fausse** est un écart : cite celle-ci.
 - **Une phrase que le texte donne pour incertaine n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.

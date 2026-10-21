@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 21/10/26 22:18</p>
+<p class="metadata">Date de mise à jour : 21/10/26 23:26</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -16,7 +16,7 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut, de `saves/C1/chapt
 
 Un doute qui tient au monde (vit-il encore ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : c'est un point à mesurer. Tu ne vérifies pas les faits ; mais un écart que tu t'apprêtes à soulever peut se mesurer d'une seule commande (`docs/tools.md`), citée avec lui ; au-delà, il est à mesurer. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Conversion temps » ; un seuil d'âge d'espèce se mesure, il se signale.
 
-Dis-le là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage manquant, un angle neuf), comme une direction, jamais de la prose écrite, sauf un dialogue, bâti à deux : à lui les faits, à toi ce que la chronique sait du favori.
+Dis-le là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage manquant, un angle neuf), comme une direction, jamais de la prose écrite, sauf un dialogue, bâti à deux : à lui les faits, à toi ce que la chronique sait du favori, et le passage d'une veille.
 
 Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peut le réparer, ou si la chronique le porte de plus loin. N'écris dans aucun autre fichier.
 
@@ -26,11 +26,12 @@ Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le : ses seule
 
 - **Chiffres** : le registre n'en porte aucun, pas même une date à venir — un article ou une locution (_« un singe »_, _« nul des deux »_) n'en est pas un : une veille dit son fil, le chapitre porte le fait.
 - **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` : rien ne garde son issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas reste telle quelle.
-- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · ouverte (C1) · son sujet en une ligne »_. Le sort avec son chapitre : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille (les bêtes qu'on craignait mortes, la menace sur la cité passe aux morts qui marchent sur leur sol). Les noms s'y balisent comme dans un chapitre.
+- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · ouverte (C1) · son sujet en une ligne »_. Le sort avec son chapitre : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille (les bêtes qu'on craignait mortes, la menace passe aux morts qui marchent sur leur sol). Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles d'un même fil se fondent en une, reconduite au chapitre qui les lie, sinon elles restent deux ; la plus ancienne garde son ouverture.
-- **Plafond** : au-delà de 10 veilles, abandonne celles qui pèsent le moins, dorment depuis le plus longtemps et ont le moins de chances de se refermer, une candidate comprise, et dis-le au chroniqueur : abandonnée, une veille sort et n'est plus un écart. Sous 10, aucune ne s'abandonne : elle se solde ou reste.
+- **Plafond** : au-delà de 6 veilles, abandonne celles qui pèsent le moins, dorment depuis le plus longtemps et ont le moins de chances de se refermer, une candidate comprise, et dis-le au chroniqueur : abandonnée, une veille sort et n'est plus un écart. Sous 6, aucune ne s'abandonne : elle se solde ou reste.
+- **Récit** : à chaque changement de sort d'une veille, dis au chroniqueur s'il faut en parler et comment : une direction, et si tu veux 2 ou 3 phrases, qu'il réécrit ou écarte ; une abandonnée se referme sur la page.
 - **Réserves** : une veille garde celles du chapitre (`docs/chronicler.md` § « Prudence et rigueur »).
-- **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer ni seulement mentionnée se signale au chroniqueur, à reconduire ou à abandonner, avec un récit qui la reprendrait.
+- **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer ni seulement mentionnée se signale au chroniqueur, à reconduire ou à abandonner.
 - **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand l'une de ses questions s'y solde ou que le fil se détourne, l'ouverture gardée.
 
 ## Au réaudit
