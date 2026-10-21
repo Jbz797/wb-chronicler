@@ -1,8 +1,8 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 21/10/26 10:17</p>
+<p class="metadata">Date de mise à jour : 21/10/26 19:35</p>
 
-Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche.
+Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche pour ce qui s'y vérifie ; la forme qu'il demande (un dialogue dû, sa longueur) est à la conformité.
 
 ## Ta tâche
 
