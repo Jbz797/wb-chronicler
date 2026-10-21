@@ -591,7 +591,7 @@ def _build_roster(
             # Named while they are few, each side of a `--since` keeping its own list: it is the arrivals that crowd a census out, and the dead a chapter seeks.
             "gone": [{**row, "asset_id": None if one_kind else row["asset_id"], "gone": None} for row in gone] if few else None,
             "gone_by_species": None if few else dict(Counter(row["asset_id"] for row in gone)),
-            "info": told,  # the counts alone: what a cut roll is and how to narrow it are glossed (`gloss roster.cut`)
+            "info": told,  # the counts alone: what a cut roll is and how to narrow it are glossed (`gloss roster.info`)
             "with": {field: _grouped_field(field, [w.get(field) for w in wanted]) for field in fields} or None,
         }
     rows = []
