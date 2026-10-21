@@ -123,6 +123,7 @@
   "world.cumulative.creatures_created": "Ce qui paraît sans naître : semé, migrant, invoqué, changé d'espèce, coque ; jamais une naissance (`creatures_born`).",
   "world.cumulative.deaths_without_body": "Des morts comptées sans corps parti : l'inverse de `gone_without_death` ; `info` en donne les comptes.",
   "world.cumulative.gone_without_death": "Des corps partis sans mort comptée : WB n'en compte pas pour une métamorphose, un ovni qui tombe, un ver, une araignée des sables, une imprimante, un doigt divin.",
+  "world.cumulative.wars_started": "Le compte du jeu des guerres ouvertes depuis la naissance du monde ; absent, il n'y en a jamais eu : pas un filtre, le témoin lui-même.",
   "world.pairings": "Par espèce, la 1ʳᵉ naissance au plus tôt et le couple qui la porterait ; un couple ignore la lignée (`wiki:Reproduction`).",
   "world.pairings.barred": "Ce qui arrête la naissance, non la rencontre, et le corps en cause : `hungry`, `tiny_islet`, `water`, ou une loi WB.",
   "world.pairings.barred.hungry": "La faim arrête la conception, non une grossesse en cours.",
@@ -145,5 +146,6 @@
   "world.roster.since": "`arrived` paru depuis, `moved` déplacé (`was_on` : sa terre), `gone` mort (`old_from` : la vieillesse exclue avant) ; sous `--has`, les seuls comptes changés.",
   "world.roster.with": "`--with` : jusqu'à 4 champs d'`actor … stats` ou d'une fiche (`task`, `statuses`, `island_id`…), seuls avec `id` et `name`.",
   "world.since": "`cumulative,snapshot --since C<n>` : les écarts ; celui de `snapshot` est un solde, pas un compte d'événements : naissances et extinctions sont dans `cumulative`.",
-  "world.snapshot.armies": "Les armées levées dans le monde, une par cité au plus, en paix comme en guerre (`wiki:Armies`)."
+  "world.snapshot.armies": "Les armées levées dans le monde, une par cité au plus, en paix comme en guerre (`wiki:Armies`).",
+  "world.snapshot.wars": "Les guerres en cours, sans vainqueur ; tu à 0 : absent, aucune ne se livre. Celles d'une couronne : `kingdom … wars`."
 }
