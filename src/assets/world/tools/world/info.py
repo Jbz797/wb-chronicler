@@ -7,6 +7,7 @@
 # Exception: WB-native names kept verbatim for raw-save fields (e.g. `asset_id`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
 import argparse
+import re
 import sys
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping
@@ -62,6 +63,7 @@ from shared import (
     civic_building_ids,
     counted_birth,
     emit,
+    entity_born,
     entity_ref,
     fertile,
     first_place,
@@ -71,6 +73,7 @@ from shared import (
     is_boat,
     is_sapient,
     kept_army_since,
+    kept_city_since,
     kingdom_score_dimensions,
     land_arg,
     life_stage,
@@ -182,7 +185,7 @@ _GROUP_FIELDS = {
 }
 
 _ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too small to count — `_WATER` where it floats
-_KEPT_FIELDS = ("asset_id", "island_id", "life_stage", "statuses", "task")  # what `--with` reads off the body and its ground, beside its stats
+_KEPT_FIELDS = ("age_overgrowth", "asset_id", "born", "city_since", "island_id", "life_stage", "statuses", "task")  # what `--with` reads off the body and its ground
 _MAX_FIELDS = 4  # past so many fields a line reads as a sheet: `actor … stats` gives the whole of one body
 
 # What `roster` narrows to by entity: the collection its id answers in, and the body's own field that ties it there — a pact's, through the crown.
@@ -244,7 +247,10 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
     stats = body_stats(actor, ctx) if any(field not in _KEPT_FIELDS for field in fields) else {}
     seen.update(stats)
     kept = {
+        "age_overgrowth": lambda: int(actor.get("age_overgrowth") or 0) or None,  # a migrant's mark, `born` its arrival
         "asset_id": lambda: actor.get("asset_id"),
+        "born": lambda: entity_born(actor),
+        "city_since": lambda: kept_city_since(actor),
         "island_id": lambda: here,
         "life_stage": lambda: _stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)),
         "statuses": lambda: kept_statuses(actor),
@@ -750,9 +756,9 @@ def _gone_since(
 
 # One field of `--with` over a roll too long to list: a task or a status counted by its value, a stat by its spread — `of` the bodies it applies to.
 def _grouped_field(field: str, values: list) -> dict | None:
-    if field in _KEPT_FIELDS:  # lands by their id first, the islets and the water after, every other value by its name
+    if field in _KEPT_FIELDS:  # lands by their id first, the islets and the water after, every other value by its name, a date's figures as numbers
         counts = Counter(item for value in values if value for item in (value if isinstance(value, list) else [value]))
-        return {str(key): counts[key] for key in sorted(counts, key=lambda key: (isinstance(key, str), key))} or None
+        return {str(key): counts[key] for key in sorted(counts, key=lambda key: (isinstance(key, str), _natural(key)))} or None
     held = sorted(value for value in values if value is not None)
     return {"max": held[-1], "median": median(held), "min": held[0], "of": len(held)} if held else None
 
@@ -806,6 +812,11 @@ def _member_row(actor: dict, kind: str, here: int | str | None, refs: dict, save
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.
 def _name_of(records: list[dict], target_id: int | None) -> str | None:
     return next((r.get("name") for r in records if r.get("id") == target_id), None)
+
+
+# A value as `--with` ranks it, its figures as numbers: `y2 m7` before `y10 m3`, an id 9 before 10.
+def _natural(value: object) -> list:
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", str(value))]
 
 
 # `--nearest`'s goal: a body `p<id>`, else a tile `x,y`.
