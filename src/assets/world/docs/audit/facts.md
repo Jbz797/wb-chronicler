@@ -1,12 +1,12 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 19/10/26 23:58</p>
+<p class="metadata">Date de mise à jour : 21/10/26 10:17</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche.
 
 ## Ta tâche
 
-Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, comparaison avec le passé, absolu, mécanisme, cause… Utilise les outils de `docs/tools.md`, sur la save dont parle l'affirmation (`C<n>` pour « il y a N ans »). De `docs/chronicler.md`, lis § IV, « Le passé du monde » et « Prudence et rigueur » : le reste est la manière, hors de ton rôle : vu en passant, un écart s'y dit en une ligne.
+Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, comparaison avec le passé, absolu, mécanisme, cause… Utilise les outils de `docs/tools.md` (`gloss` pour le sens d'un champ), sur la save dont parle l'affirmation (`C<n>` pour « il y a N ans »). De `docs/chronicler.md`, lis § IV, « Le passé du monde » et « Prudence et rigueur » : le reste est la manière, hors de ton rôle : vu en passant, un écart s'y dit en une ligne.
 
 - **La save brute omet ses zéros** : tes scripts y contredisent un outil, l'écart rendu avec les deux valeurs, ou y comptent ce qu'aucun ne donne, à signaler. Une eau ou une marche qu'un outil rend ne s'y balaie pas.
 - **Le silence du wiki ne dément rien** : une condition qu'il ne donne ni ne nie reste ouverte, à signaler comme telle, jamais comme fausse. La page consacrée à la chose l'emporte sur un tableau qui la résume.

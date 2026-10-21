@@ -585,27 +585,13 @@ def _build_roster(
             parts = ((len(bodies) - moved, "arrived"), (moved, "moved"), (len(gone), "gone"))
             told = f"{', '.join(f'{n} {word}' for n, word in parts if n)} since {since}" + (f" — {still} stood still, left out" if still else "")
         few = len(gone) <= MAX_LISTED
-        filters = (
-            ("-t", kinds),
-            ("--trait", trait),
-            ("--has", has),
-            ("--lacks", lacks),
-            ("--sapient", sapient),
-            ("--settle", settle),
-            ("--barred", barred),
-            ("-i", land is not None),
-        )
         wanted = [_asked_fields(actor, here, fields, ctx, seen) for actor, here, _ in bodies]  # `--with` grouped over the roll, its lines too many to read
         _refuse_unseen(fields, seen)
-        free = [flag for flag, worn in filters if not worn]  # the narrowings still open: one already worn would be no way on
-        ways = ", ".join(free[:-1]) + " or " * (len(free) > 1) + "".join(free[-1:])  # `a, b or c`, or `c` alone
         return {
             # Named while they are few, each side of a `--since` keeping its own list: it is the arrivals that crowd a census out, and the dead a chapter seeks.
             "gone": [{**row, "asset_id": None if one_kind else row["asset_id"], "gone": None} for row in gone] if few else None,
             "gone_by_species": None if few else dict(Counter(row["asset_id"] for row in gone)),
-            "info": f"{told}, past the {MAX_LISTED} a roll lists"
-            + (", `--with` grouped" if fields else ", `--with asset_id,island_id,life_stage` counts them")
-            + (f" — narrow them with {ways}" if free else ""),
+            "info": told,  # the counts alone: what a cut roll is and how to narrow it are glossed (`gloss roster.cut`)
             "with": {field: _grouped_field(field, [w.get(field) for w in wanted]) for field in fields} or None,
         }
     rows = []
@@ -903,9 +889,8 @@ def _unseen_deaths(saves: list[dict], since: str, unseen: int) -> dict:
     died = int((saves[-1].get("mapStats") or {}).get("deaths") or 0) - int((saves[0].get("mapStats") or {}).get("deaths") or 0)
     if not (off := gone + unseen - died):
         return {}
-    # `Actor.die` skips the count (`pCountDeath` false) for a body removed by a metamorphosis, `dieAndDestroy` and `dieSimpleNone`; a save holds no dying body.
-    why = " — WB counts no death for a body changing kind, a falling UFO, a worm, a sand spider, a printer, a god finger's flip" if off > 0 else ""
-    told = f"{gone} bodies gone since {since} and {unseen} passed unseen for {died} deaths counted{why}"
+    # The counts alone, the why glossed: `Actor.die` skips the count (`pCountDeath` false) on a metamorphosis, `dieAndDestroy` and `dieSimpleNone`.
+    told = f"{gone} bodies gone since {since} and {unseen} passed unseen for {died} deaths counted"
     return {"deaths_without_body" if off < 0 else "gone_without_death": abs(off), "info": told}
 
 

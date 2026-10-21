@@ -29,9 +29,7 @@ from shared import (
 )
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
-_CLEAR = "`clear` speaks for words said again, figures aside: an angle, a chute, a sentence in other words or order is the eye's"  # lest a silence read as no repeat
 _DATE = "Dᴀᴛᴇ"  # a date as the chronicle must write one, read as a single name: the manual's own form, never a turn said again
-_DELIVERED = "delivered: only the lines changed since are weighed, its chapter-wide counts weighed at delivery"
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 12 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
@@ -47,22 +45,14 @@ _REFRAIN = 3  # chapters a run of words must be said in to be the chronicle's ow
 _SCARCE = 8  # uses across the whole chronicle under which a word can carry a chute: `monde` or `terre` would join any two sentences
 _SECTION = re.compile(r"^(##\s|---\s*$)")  # a heading or a separator: where a section, and so its chute, ends
 _SENTENCE = re.compile(r"(?<=[.!?…])\s+")  # where a sentence ends inside a line
-
-_SIGNS = {  # what a match's `by` names, glossed in the output for the signs it shows
-    "borrowed": "a rare word set between the same neighbours",
-    "chute": "a section's last sentence in the chapter before, at `from`, taken up again on this line",
-    "echo": "a run of words said again",
-    "refrain": f"said in {_REFRAIN} chapters or more, the chronicle's own voice",
-}
-
 _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined — `le bras du couchant`, a place with no name —, told apart as a refrain is
 
 _USAGE = (
     "usage: chapter/echo.py [C<n>] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before (`from` their line, "
-    f"`by` its sign — {'; '.join(f'`{sign}` {gloss}' for sign, gloss in _SIGNS.items())}), `internal` runs it says twice, `terms` it coins, "
+    "`by` its sign), `internal` runs it says twice, `terms` it coins, "
     "`overused` families, `shape` its cast poured again, `names` each one it tags beside the lines that did in the 2 chapters before; "
     "`clear` the checks that found nothing, `length` and `dialogue` among them — "
-    "out of its bounds or under its floor, a ✗ says so"
+    "out of its bounds or under its floor, a ✗ says so; every field glossed by `gloss/info.py echo`"
 )
 
 _WORD = re.compile(r"\b[^\W\d_]{1,2}['’]|\w[\w-]*(?:['’]\w[\w-]*)*")  # an elision splits, `qu'il` as `qu'` and `il`; `aujourd'hui` holds, `---` is none
@@ -484,11 +474,9 @@ def main(argv: list[str]) -> int:
         print(f"✗ chapter.md, {length} characters, {COUNTED_AS} — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
     for fault in (short := short_dialogues(prose)):  # `--finalize`'s own floor, measured each round where the audit reads it
         print(fault, file=sys.stderr)
-    signs = sorted({sign for row in found["passages"] for match in row["matches"] for sign in match["by"]})
     # A check gone silent found nothing: named, so it is not read as unrun — the length and the dialogue too, silent while they hold.
     clear = sorted(check for check, rows in {**found, "dialogue": short, "length": not held}.items() if not rows)
-    told = [*(f"`{sign}` {_SIGNS[sign]}" for sign in signs), *([_CLEAR] if clear else []), *([_DELIVERED] if _changed(n) is not None else [])]
-    emit({**found, "clear": clear, "info": "; ".join(told) or None})
+    emit({**found, "clear": clear, "delivered": _changed(n) is not None or None})
     return 0
 
 

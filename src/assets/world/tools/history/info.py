@@ -59,8 +59,6 @@ _FINE_STEP = 1  # WB's yearly table: a row a year, the only one whose `timestamp
 _MAX_LOG = 50  # past so many entries the journal is read by its kinds of event, not line by line: `-t` or `--actor` narrow it back
 
 # WB's `world_statistics_beasts` walks every unit, the dying and the hulls with it, where `Actor.die` counts a death at the blow and none for a metamorphosis.
-_OFF_TERMS = "WB keeps a body it has counted dead on its roll until its death ends, counts a hull as a beast, and takes no death for a body changing kind"
-
 _ROLL = ("population_beasts", "population_civ")  # the two columns a year's bodies stand in
 _ROLL_TERMS = {"creatures_born": 1, "creatures_created": 1, _DEATHS_TOTAL: -1}  # and what moves them, by its sign
 _SECTIONS = ("dead_kingdoms", "entity", "log", "world")
@@ -182,7 +180,7 @@ def _build_log(save: dict, since: str | None, actor: int | None, event: str | No
         return "✗ nothing logged" + (f" since {since}" if since else "") + (" for that body" if actor is not None else "") + (f" as {event}" if event else "")
     if len(entries) > _MAX_LOG:
         counts = Counter(e["event"] for e in entries)
-        return {"by_event": dict(sorted(counts.items())), "info": f"{len(entries)} entries — `-t <event>` or `--actor <id>` lists them"}
+        return {"by_event": dict(sorted(counts.items()))}
     persons, crowns = _registry("persons"), _registry("kingdoms")
     for entry in entries:
         if event:  # the one `-t` asked for, so no entry repeats it — nor the body `--actor` named
@@ -219,12 +217,10 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
         roll = sum(row.get(column) or 0 for column in _ROLL)
         over = roll - stood - sum(sign * (now[c] - before[c]) for c, sign in _ROLL_TERMS.items() if c in now) if stood is not None else 0
         # A gap the next year takes back is one body counted a year off, and says so: the two years together fall right.
-        why = f"the {abs(over)} the year before closed {'over' if owed > 0 else 'under'}, made up" if over and over == -owed else _OFF_TERMS
+        gap = {"close_gap": over, "made_up": over == -owed or None} if over else {}
         owed, stood = over, roll
         if gains := _with_unknown(_gains(before, now, events), before, now):
-            at_close = _world_states(row)
-            told = {"info": f"close is {abs(over)} {'over' if over > 0 else 'under'} its terms — {why}"} if over else {}
-            timeline.append({**gains, **told, "at_close": at_close, "year": f"y{row['timestamp']}"})
+            timeline.append({**gains, **gap, "at_close": _world_states(row), "year": f"y{row['timestamp']}"})
         before = now
     # WB's `mapStats` holds the same tallies in camelCase, the deaths snake-cased — two of them under names of their own.
     keys = {c: _STAT_KEYS.get(c) or (c if c.startswith("deaths_") else _camel(c)) for c in tracked}

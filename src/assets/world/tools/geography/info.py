@@ -247,10 +247,10 @@ def _build_gear(save: dict, save_path: Path) -> dict:
     return out
 
 
-# Up to `MAX_LISTED`, or all on `-i`'s land, each by `id`, land else islet else water, `asset_id` if kinds mix; past it, a tally by land. `only`: `--since`'s ids.
+# Up to `MAX_LISTED`, or all on `-i`'s land, each by `id`, land else islet else water, `asset_id` if kinds mix; past it, by land and `total`. `only`: `--since`'s.
 def _build_positions(
     save: dict, save_path: Path, kinds: set[str], land: int | str | None, only: Collection[int] | None = None
-) -> list[dict] | dict[str, str] | None:
+) -> list[dict] | dict[str, str | int] | None:
     sites = [(record, tile) for record, tile in asset_sites(save, kinds) if only is None or record.get("id") in only]
     if not sites:  # the lookup below costs 0.2 s cold, so a kind nobody built never pays for it
         return None
@@ -264,7 +264,7 @@ def _build_positions(
         for record, tile in sites:
             by_land[_site_key(tile, island_of, grid, tile_map)][record.get("asset_id")] += 1
         tally = {key: " | ".join(f"{n} {kind}" for kind, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
-        return {**tally, "info": f"{len(sites)} in all — `-i` lists one land's, the `islets`' or the `water`'s one by one"}
+        return {**tally, "total": len(sites)}
     # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
     mixed = len(kinds) > 1
     out = [
@@ -394,7 +394,7 @@ def _ground_lands(biomes: dict, kind: str) -> dict | None:
         if row := _ground_row(rows, kind):
             name = "biome" if "biome" in row else "ground"
             lands[land] = {key: value for key, value in row.items() if key != name}
-    return {name: kind, "info": f"`-i <land>` sites its {_TOP_PATCHES} largest patches there", "islands": lands} if lands else None
+    return {name: kind, "islands": lands} if lands else None
 
 
 # The row of one ground among a land's, asked by its biome or its bare ground alike — `None` where the land bears none.
@@ -492,7 +492,7 @@ def _surveyed(biomes: dict) -> dict:
         minor = rows[len(kept) :]  # the rows come largest first, so the lesser ones close the list
         others = {"others": sorted(row.get("biome") or row["ground"] for row in minor), "tiles": sum(row["tiles"] for row in minor)}
         lands[land] = kept + ([others] if minor else [])
-    return {"info": "`-i <land>` lists every ground of a land and describes its biomes, `-t <ground>` every land a ground lies on", "islands": lands}
+    return {"islands": lands}
 
 
 # A ground's `_TOP_PATCHES` largest patches placed on its land, ties in size to the lower `(x, y)`, each with its box as a land's `bounds` — the rest is a count.
@@ -624,12 +624,9 @@ def main(argv: list[str]) -> int:
         return 1
 
     if "biomes" in shown and "biomes" not in bare:
-        if wanted is None and args.island is None:
-            shown = shown | {"biomes": _surveyed(shown["biomes"])}
-        elif wanted is None:
-            shown = shown | {
-                "biomes": {**shown["biomes"], "info": f"`-t <ground>` sites one ground's {_TOP_PATCHES} largest patches, each with its bounds and what borders it"}
-            }
+        if wanted is None:
+            if args.island is None:  # `-i` alone keeps its land whole
+                shown = shown | {"biomes": _surveyed(shown["biomes"])}
         elif args.island is None:
             if (found := _ground_lands(shown["biomes"], wanted)) is None:
                 print(f"✗ no {wanted} in this world — `biomes -i <land>` lists a land's grounds", file=sys.stderr)
