@@ -15,10 +15,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     CHAPTER_CAP,
-    CHAPTER_FLOOR,
     COUNTED_AS,
     SAVES_DIR,
     TAG_MARK,
+    chapter_floor,
     chapter_length,
     chronicle_git,
     emit,
@@ -518,8 +518,9 @@ def main(argv: list[str]) -> int:
         print(f"✗ no chapter.md for C{n}", file=sys.stderr)
         return 1
     # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
-    if not (held := CHAPTER_FLOOR <= (length := chapter_length(prose := _chapter(n) or "")) <= CHAPTER_CAP):
-        print(f"✗ chapter.md, {length} characters, {COUNTED_AS} — its bounds are {CHAPTER_FLOOR} to {CHAPTER_CAP}", file=sys.stderr)
+    floor, length = chapter_floor(n), chapter_length(prose := _chapter(n) or "")
+    if not (held := floor <= length <= CHAPTER_CAP):
+        print(f"✗ chapter.md, {length} characters, {COUNTED_AS} — its bounds are {floor} to {CHAPTER_CAP}", file=sys.stderr)
     for fault in (short := short_dialogues(prose)):  # `--finalize`'s own floor, measured each round where the audit reads it
         print(fault, file=sys.stderr)
     # A check gone silent found nothing: named, so it is not read as unrun — the length and the dialogue too, silent while they hold.

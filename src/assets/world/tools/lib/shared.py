@@ -20,8 +20,7 @@ from contextlib import closing
 from functools import cache, partial
 from pathlib import Path
 
-CHAPTER_CAP = 12000  # a sitting's read, some 9 minutes: past it the chapter says more than its world has done
-CHAPTER_FLOOR = 6000  # both in no doc: `new.py`'s recap gives them, delivery and `echo.py` hold them — counted past the audit, which cuts as much as it adds
+CHAPTER_CAP = 12000  # a sitting's read, past which a chapter says more than its world did; in no doc, as `chapter_floor`: the recap gives both, delivery holds them
 COUNTED_AS = "every visible character, tags by their name, markdown marks left out"  # how every length a chapter is held to counts it, said beside each figure
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
 
@@ -71,6 +70,7 @@ _BODY_LINKS = {
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_DIR = Path(__file__).parent.parent / ".cache"  # the save pickles and every sweep of the map, a slot per save each; gitignored via the root `.gitignore`
 _CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
+_CHAPTER_FLOOR = 6000  # counted past the audit, which cuts as much as it adds
 _CHUNK_TILES = 16  # WB `MapChunk` side: 4 to a save's 64-tile block (`MapChunkManager.prepare`)
 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
@@ -83,6 +83,7 @@ _DOMINANT_AXIS = 0.4  # an axis under this share of the other drops out of the b
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
+_FRESH_FLOOR = 3000  # a world's first chapter right after a reset: a bare world, with little to tell that would not be padding
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _HELP_WIDTH = 78  # what argparse gives a piped run, its 80 columns less 2: the help the chronicler has always read
 _IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `--since` weighs a land, a site or a biome against itself
@@ -553,6 +554,11 @@ def building_tile(building: dict) -> tuple[int, int] | None:
 def built_by_tile(save: dict) -> dict[tuple, dict]:
     civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic for tile in building_footprint(b)}
+
+
+# The fewest characters chapter `n` holds: a world's first, its clock under a year as only a reset leaves it, has little yet to tell.
+def chapter_floor(n: int) -> int:
+    return _FRESH_FLOOR if n == 1 and (time := chapter_world_time(1)) is not None and time < UNITS_PER_YEAR else _CHAPTER_FLOOR
 
 
 # A chapter's length as its bounds count it, `COUNTED_AS`: what a reader reads, its tables' frame and its blanks no more than a tag's markup.

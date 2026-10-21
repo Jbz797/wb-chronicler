@@ -33,13 +33,13 @@ from grid import LazyTileGrid, tile_layer, tile_runs
 from islands import compute_islands_cached
 from shared import (
     CHAPTER_CAP,
-    CHAPTER_FLOOR,
     COUNTED_AS,
     HISTORY_S3DB,
     SAVES_DIR,
     UNITS_PER_YEAR,
     actor_age,
     asset_set,
+    chapter_floor,
     chapter_length,
     chapter_world_time,
     chronicle_git,
@@ -413,12 +413,13 @@ def _deliver() -> int:
     _tidy_cards(n)
     facts = _step_five_facts(n, settings.get("lang", ""))
     length = facts["length"]
-    short, long = length < CHAPTER_FLOOR, length > CHAPTER_CAP
+    floor = chapter_floor(n)
+    short, long = length < floor, length > CHAPTER_CAP
     if short or long or not facts["done"]:
         print(f"✗ C{n} — not yet deliverable")
         _print_step_five(n, facts)
         if short:
-            print(f"  ✗ chapter.md, {length} characters of {CHAPTER_FLOOR} at least, {COUNTED_AS} — what the tale gains goes back to the audit")
+            print(f"  ✗ chapter.md, {length} characters of {floor} at least, {COUNTED_AS} — what the tale gains goes back to the audit")
         elif long:
             print(f"  ✗ chapter.md, {length} characters of {CHAPTER_CAP} at most, {COUNTED_AS} — cut whole passages, the least-borne first, never a correction")
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
@@ -653,7 +654,7 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `saves/watches.md`")
     told = "" if fav_id else " — no favorite, so the world itself, in two parts and no circle:"
-    print(f"  → step 4, the writing: {CHAPTER_FLOOR} to {CHAPTER_CAP} characters, {COUNTED_AS}, counted at delivery, past the audit{told}")
+    print(f"  → step 4, the writing: {chapter_floor(n)} to {CHAPTER_CAP} characters, {COUNTED_AS}, counted at delivery, past the audit{told}")
     if not fav_id:
         _print_bullets(_WORLD_ONLY)
     # In no doc: the cycle is the script's to tell, step by step. A chapter still under its draft title reads as unfinished, to the reader and to `--finalize`.
