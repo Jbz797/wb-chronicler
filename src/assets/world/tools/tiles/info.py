@@ -430,7 +430,7 @@ def main(argv: list[str]) -> int:
     )
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
-    parser.add_argument("--radius", "-r", type=int, default=0, choices=range(_MAX_RADIUS + 1), help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
+    parser.add_argument("--radius", "-r", type=int, default=0, help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
     parser.add_argument(
         "--to",
         type=_end_arg,
@@ -449,6 +449,13 @@ def main(argv: list[str]) -> int:
     if any(isinstance(end, str) for end in (args.xy, args.to)) and (sections or args.radius):  # a building lies on many tiles, a section reads one
         print(
             "✗ a building `b<id>`, a town `c<id>` or a body `p<id>` is an end of a lone `--to`: sections and `--radius` read tiles — name them `x,y`",
+            file=sys.stderr,
+        )
+        return 2
+    if not 0 <= args.radius <= _MAX_RADIUS:  # past it, a count or a search answers better than a sheet per tile: said where to go, not merely that it is refused
+        print(
+            f"✗ `--radius` reads at most {_MAX_RADIUS} tiles around: past that, `world … roster --nearest x,y` finds bodies, "
+            "`geography … positions -t <kind>` things, `map/show.py x,y --zoom <n>` the lay of the land",
             file=sys.stderr,
         )
         return 2
