@@ -32,6 +32,8 @@ _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one t
 _DATE = "Dᴀᴛᴇ"  # a date as the chronicle must write one, read as a single name: the manual's own form, never a turn said again
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 12 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
+_FORMULA_LINES = 4  # lines of one chapter a figured turn must come back on to be a tic: `il y a 3 ans`, six times in C11's first draft
+_FORMULA_WORDS = 3  # words a figured turn holds at least, the figure among them; from `_LONG_RUN_WITHIN` up, `internal` hears it already
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
 _LONG_RUN = 7  # words from which a run is a turn of phrase with a single word of its own: `et ce qui verdit au ras du sol`, `à l'entrée de l'an 5`
 _LONG_RUN_WITHIN = 6  # the same, within one chapter, where a formula said again ten lines on is heard: `jamais encore on n'avait vu`
@@ -49,7 +51,7 @@ _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined 
 
 _USAGE = (
     "usage: chapter/echo.py [C<n>] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before (`from` their line, "
-    "`by` its sign), `internal` runs it says twice, `terms` it coins, "
+    "`by` its sign), `internal` runs it says twice, `terms` it coins, `formulas` figured turns it keeps coming back to, "
     "`overused` families, `shape` its cast poured again, `names` each one it tags beside the lines that did in the 2 chapters before; "
     "`clear` the checks that found nothing, `length` and `dialogue` among them — "
     "out of its bounds or under its floor, a ✗ says so; every field glossed by `gloss/info.py echo`"
@@ -118,6 +120,28 @@ def _dates() -> re.Pattern[str]:
     return re.compile(rf"\b(?:(?:en|au|à)\s+)?(?:{months})\s+de\s+l['’]an\s+\d+", re.IGNORECASE)
 
 
+# A figured turn chapter `n` keeps coming back to — `il y a 3 ans`, `plus de 5` —, figures as one: a date or a measure aside, whose form the manual sets.
+def _formulas(n: int) -> list[dict]:
+    said: defaultdict[tuple[str, ...], dict[int, str]] = defaultdict(dict)
+    for number, _, sentences in _lines(n):
+        if number in _table_rows(n):
+            continue
+        for tokens in sentences:
+            for at, token in enumerate(tokens):
+                after = tokens[at + 1].key if at + 1 < len(tokens) else ""
+                if token.key != "N" or after in _measures() or (at and tokens[at - 1].key == "an"):
+                    continue
+                for size in range(_FORMULA_WORDS, _LONG_RUN_WITHIN):
+                    for start in range(max(0, at - size + 1), min(at, len(tokens) - size) + 1):
+                        run = tokens[start : start + size]
+                        if not any(t.name for t in run[1:]):  # a name inside is a tag's or a place's, said again by nature; a capital first is a sentence's
+                            said[tuple(t.key for t in run)].setdefault(number, " ".join(t.surface for t in run))
+    kept = {run: lines for run, lines in said.items() if len(lines) >= _FORMULA_LINES}
+    # A turn held whole by a longer one on the same lines is that one, told once.
+    longest = [run for run in kept if not any(len(other) > len(run) and kept[other].keys() == kept[run].keys() and _inside(run, other) for other in kept)]
+    return sorted(({"lines": sorted(kept[run]), "text": next(iter(kept[run].values()))} for run in longest), key=lambda row: (-len(row["lines"]), row["text"]))
+
+
 # The words just before and after word `i`, as a pair: a borrowing keeps both — `au flanc de` —, where one alone is too often the language's `le` or `de`.
 def _frame(words: list[_Token], i: int) -> tuple[str, str]:
     return words[i - 1].key if i else "", words[i + 1].key if i + 1 < len(words) else ""
@@ -141,6 +165,11 @@ def _imposed() -> frozenset[str]:
     return frozenset(word[:_FAMILY_ROOT] for word in i18n("words.json").get("terms", ()))
 
 
+# Whether run `run` sits inside run `other`, word for word.
+def _inside(run: tuple[str, ...], other: tuple[str, ...]) -> bool:
+    return any(other[at : at + len(run)] == run for at in range(len(other) - len(run) + 1))
+
+
 # A word as compared: lower-case, its elision's apostrophe gone, each figure as `N` — `21 sont morts` and `15 sont morts` are one mould.
 def _key(word: str) -> str:
     return re.sub(r"\d+", "N", word.lower().rstrip("'’"))
@@ -156,6 +185,12 @@ def _keys(text: str) -> set[str]:
 def _lines(n: int) -> list[tuple[int, bool, list[list[_Token]]]]:
     lines = enumerate(text.splitlines(), 1) if (text := _chapter(n)) is not None else ()
     return [(number, bool(_SECTION.match(line)), [tokens for part in _SENTENCE.split(line) if (tokens := _tokens(part, number))]) for number, line in lines]
+
+
+# The units a measure is said in — `words.json`, per language: a figure before one is a measure, its form the manual's.
+@cache
+def _measures() -> frozenset[str]:
+    return frozenset(i18n("words.json").get("measures", ()))
 
 
 # Each one the chapter tags, by its tag, beside the lines that tagged it in the 2 chapters before: where the same angle is likeliest taken twice.
@@ -384,6 +419,12 @@ def _species_roots() -> frozenset[str]:
     return frozenset(word[:4].lower() for name in names for word in re.findall(r"[\wÀ-ÿ-]+", name) if len(word) >= 4)
 
 
+# The lines of chapter `n` that are a table's rows: cast alike by design, so never a repeat of one another.
+@cache
+def _table_rows(n: int) -> frozenset[int]:
+    return frozenset(number for number, line in enumerate((_chapter(n) or "").splitlines(), 1) if line.lstrip().startswith("|"))
+
+
 # The words a run must carry to be a turn of phrase rather than the language: two that say something of their own, one from `long_run` words.
 def _telling(run: list[_Token], long_run: int = _LONG_RUN) -> bool:
     return sum(token.content for token in run) >= (1 if len(run) >= long_run else 2)
@@ -414,8 +455,7 @@ def _weight(before: int, matches: list[dict]) -> tuple[int, int, int]:
 
 # What chapter `n` says twice itself, and apart the terms it coins: a turn said on `_TERM` lines or more, its variants joined by the words they carry.
 def _within(words: list[_Token], n: int) -> tuple[list[dict], list[dict]]:
-    # A table's rows are cast alike by design, so never a repeat of one another.
-    rows = {number for number, line in enumerate((_chapter(n) or "").splitlines(), 1) if line.lstrip().startswith("|")}
+    rows = _table_rows(n)
     said: defaultdict[frozenset[str], list[tuple[int, int, str]]] = defaultdict(list)
     for (line, at), texts in _runs(words, words).items():
         if not (line in rows and at in rows):
@@ -447,7 +487,15 @@ def echoes(n: int) -> dict | None:
     if not (words := _words(n)):
         return None
     internal, terms = _within(words, n)
-    found = {"internal": internal, "names": _names(n), "overused": _overused(words, n), "passages": _passages(words, n), "shape": _shaped(n), "terms": terms}
+    found = {
+        "formulas": _formulas(n),
+        "internal": internal,
+        "names": _names(n),
+        "overused": _overused(words, n),
+        "passages": _passages(words, n),
+        "shape": _shaped(n),
+        "terms": terms,
+    }
     if (changed := _changed(n)) is None:
         return found
 

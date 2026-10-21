@@ -52,6 +52,7 @@
   "chapter.echo.clear": "Les contrôles qui n'ont rien trouvé, `length` et `dialogue` compris : un contrôle absent d'ici n'a pas été sauté, il a trouvé.",
   "chapter.echo.delivered": "Chapitre livré : seules les lignes changées depuis sont pesées ; ses comptes sur tout le chapitre l'ont été à la livraison.",
   "chapter.echo.echo": "Une suite de mots redite.",
+  "chapter.echo.formulas": "Une tournure chiffrée revenue sur 4 lignes ou plus (`il y a 3 ans`), les chiffres pour un seul ; dates et mesures à part, leur forme étant imposée.",
   "chapter.echo.refrain": "Dite dans 3 chapitres ou plus : la voix propre de la chronique, pas une redite.",
   "city.army": "L'armée de la cité, une au plus (`wiki:Armies`) ; son `id` sert à `world … roster --army <id>`.",
   "city.buildings": "`buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose (`born`) ; la section les liste, chantier marqué : ce qu'elle tait, la cité ne l'a pas.",

@@ -1,6 +1,6 @@
 # 📐 Audit de conformité
 
-<p class="metadata">Date de mise à jour : 21/10/26 16:48</p>
+<p class="metadata">Date de mise à jour : 21/10/26 18:28</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets après le chapitre, ce que le script a demandé à ce chapitre-là : cela vaut comme le § III.
 
@@ -14,7 +14,7 @@ Confronte tes cibles aux parties § I à § V de `docs/chronicler.md` et à `doc
 - **Tes outils** : ceux-là seuls, `--to` et `surroundings` pour le favori, `tiles … --to` pour une mesure sans marcheur (d'un bâtiment `b<id>`, d'une cité, d'une tuile), `metadata` et `pop` pour les balises de tes cibles, `echo.py`, et `gloss` pour le sens d'un champ — leur syntaxe : `docs/tools.md`.
 - **Noms** : une espèce, un biome ou un mois se lit dans `i18n/<lang>/`, un lieu dans `history/places.json` : `places` porte les lieux forgés, ses autres blocs les terres et les eaux comptées ; les ids de balise sont au script.
 - **Pistes** : suivre celles d'un chapitre passé revient à l'auditeur de récit.
-- **Redites et longueur** : `python tools/chapter/echo.py C<n>` montre les mots repris — 4 d'affilée, un mot rare, une chute aux mêmes mots —, et d'un ✗ un chapitre hors bornes. Lui échappent un angle, une chute ou un moule de phrase redits autrement, une tournure courte (_« contre les braises »_) : relis pour eux, des 2 chapitres d'avant, les seules sections répondant à celles de ta cible (même place, même sujet, ou que `shape` désigne), et les lignes où `names` met les mêmes noms.
+- **Redites et longueur** : `python tools/chapter/echo.py C<n>` montre les mots repris — 4 d'affilée, un mot rare, une chute aux mêmes mots, une tournure chiffrée qui revient —, et d'un ✗ un chapitre hors bornes. Lui échappent un angle, une chute ou un moule de phrase redits autrement, une tournure courte (_« contre les braises »_) : relis pour eux, des 2 chapitres d'avant, les seules sections répondant à celles de ta cible (même place, même sujet, ou que `shape` désigne), et les lignes où `names` met les mêmes noms.
 
 Ne rends que les écarts, et ce qu'on te demande : chacun avec sa partie, sa ligne, sa citation et ce que tu attendais — ce qui enfreint une règle à corriger, le reste en mieux possible. N'écris dans aucun fichier ; les tiens vont dans ton sous-dossier du scratchpad.
 
