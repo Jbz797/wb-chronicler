@@ -676,7 +676,7 @@ def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime
     # A law the player turned since the chapter before changes what the world may do, and `world … laws` is no part of `full`: nothing else would say it.
     then = prev_world.get("laws") or {}
     if turned := sorted(f"{_LAW_NAMES.get(law, law)} {'on' if on else 'off'}" for law, on in world_laws(live).items() if law in then and then[law] != on):
-        print(f"  ⚖ world laws turned since C{n - 1}: {', '.join(turned)} — `tools/wiki/info.py World_Laws --row <law>` says what each rules")
+        print(f"  ⚖ world laws turned since C{n - 1}: {', '.join(turned)} — `tools/wiki/info.py World_Laws --entry <law>` says what each rules")
         print(_RECAP_RULE)
     # The one source naming a killer, printed so a king's fall needn't wait on the file; none at C1, whose whole past would pour out: `history log`'s to give.
     journal = log_entries(float(prev_world.get("world_time") or 0)) if n > 1 else []

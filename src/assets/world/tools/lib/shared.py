@@ -407,10 +407,10 @@ def actor_xy(actor: dict) -> tuple[int, int]:
 
 
 # argparse's refusals, marked as every other script's are: its bare `usage:` and `error:` pair would be the one refusal a chronicler reads unflagged.
-def arg_parser(prog: str, description: str) -> argparse.ArgumentParser:
+def arg_parser(prog: str, description: str, docs: str = "docs/tools.md") -> argparse.ArgumentParser:
     # A width said: left to the terminal, argparse loads `shutil` and three compressors to measure it, at the first `add_argument` of every run.
     parser = argparse.ArgumentParser(prog=prog, description=description, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH))
-    parser.error = lambda message: parser.exit(2, f"✗ {message} — see docs/tools.md\n")
+    parser.error = lambda message: parser.exit(2, f"✗ {message} — see {docs}\n")
     return parser
 
 

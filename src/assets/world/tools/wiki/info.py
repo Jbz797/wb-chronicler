@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Reads the official WorldBox wiki through its MediaWiki API, the one door its 403 leaves open. User-facing docs: `docs/chronicler.md` § « Accès au wiki ».
-# `<Page>` prints its wikitext, a redirect followed to the section it names; `--row <name>` only the table rows naming it, cell by cell under its column;
+# `<Page>` prints its wikitext, a redirect followed to the section it names; `--entry <name>` the table rows naming it, cell by cell, else list items opening on it;
 # `--list [word]` its titles, every batch of the listing walked, filtered on a word when one is given; `--search <words>` the pages whose text holds them.
 
 import html
@@ -20,6 +20,7 @@ _API = "https://the-official-worldbox-wiki.fandom.com/api.php"
 _BATCH = 500  # the most titles one `allpages` call hands back
 _CELL_ATTRS = re.compile(r'^\s*(?:[\w-]+\s*=\s*"[^"]*"\s*)+\|(?!\|)')  # `| style="…" | text`: a cell's own styling, before its single pipe
 _CHANGELOG = re.compile(r"^\d+\.\d")  # a version's release notes, `0.7.0 - Crabs and Sorcery`: the game's history, never its rules as they stand
+_DOCS = "docs/chronicler.md § « Accès au wiki WorldBox »"  # where every refusal points: the manual tells the wiki, `tools.md` does not
 _FOUND = 10  # pages `--search` hands back, best first: past them the wiki only grazes the words
 _HEADERS = {"User-Agent": "Mozilla/5.0"}  # the wiki turns away a request that names no browser, 403 and nothing else
 _LABEL_WORDS = 3  # words past which a cell is prose, not a label: « Spore », « Mushroom Production »
@@ -40,9 +41,14 @@ def _ask(params: dict) -> dict:
         return json.load(response)
 
 
-# The names a cell answers to as `--row` weighs them: itself, and each term a break sets apart — « Close Borders / Far Borders » holds two opinions.
+# The names a cell answers to as `--entry` weighs them: itself, and each term a break sets apart — « Close Borders / Far Borders » holds two opinions.
 def _names(cell: str) -> set[str]:
     return {_said(cell), *(_said(term) for term in cell.split(" / "))}
+
+
+# Whether a list item opens on the asked name, a whole word of it: `nutrition (hunger) value…` on `nutrition`, never `nutritional`.
+def _opens_on(item: str, asked: str) -> bool:
+    return item.startswith(asked) and not item[len(asked) : len(asked) + 1].isalnum()
 
 
 # A cell as it reads: no pictures, links down to their label, no tags, a break a « / », italics kept as `*…*` — the traits page italicises what the game hides
@@ -77,7 +83,7 @@ def _rows(wikitext: str) -> list[tuple[str, list[str], list[str]]]:
     return rows
 
 
-# A cell as `--row` weighs it: case aside, and a `_` a space, as the asked name is read — a table of ids (`random_move`) answers like one of labels.
+# A cell as `--entry` weighs it: case aside, and a `_` a space, as the asked name is read — a table of ids (`random_move`) answers like one of labels.
 def _said(cell: str) -> str:
     return cell.casefold().replace("_", " ")
 
@@ -104,14 +110,14 @@ def _titles() -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    parser = arg_parser(prog="wiki/info.py", description="Read a page of the official WorldBox wiki, list its titles or search its text.")
+    parser = arg_parser(prog="wiki/info.py", description="Read a page of the official WorldBox wiki, list its titles or search its text.", docs=_DOCS)
     parser.add_argument("page", nargs="?", help="the page's title, as `wiki:<Page>` names it")
     parser.add_argument("--list", nargs="?", const="", metavar="word", help="its titles, those holding the word alone if one is given")
     parser.add_argument("--search", metavar="words", help="the pages whose text holds them, best first — where no title does")
-    parser.add_argument("--row", metavar="name", help="the rows naming it alone, cell by cell — a trait's id works, `_` a space, a term of a cell holding several")
+    parser.add_argument("--entry", metavar="name", help="the rows naming it, else list items opening on it — a trait's id, `_` a space, one term of a cell")
     args = parser.parse_args(argv)
-    if args.list is None and not args.search and not args.page:  # said here rather than by `arg_parser`, whose error points to `tools.md`, where the wiki is not
-        print("✗ name a page, `--list [word]` or `--search <words>` — see docs/chronicler.md § « Accès au wiki WorldBox »", file=sys.stderr)
+    if args.list is None and not args.search and not args.page:  # one of three, which argparse cannot ask for
+        print(f"✗ name a page, `--list [word]` or `--search <words>` — see {_DOCS}", file=sys.stderr)
         return 2
     page = (args.page or "").removeprefix("wiki:")  # the docs write a page as `wiki:<Page>`, and that prefix is no part of its title
     try:
@@ -135,7 +141,7 @@ def main(argv: list[str]) -> int:
         return 1
     parsed = answer["parse"]
     wikitext = parsed["wikitext"]["*"]
-    if args.row is None:
+    if args.entry is None:
         # A title that points into a page is read where it points: `Renown` is one section of `Unit Stats`, not its 550 lines.
         fragment = next((turn["tofragment"] for turn in parsed.get("redirects") or [] if turn.get("tofragment")), None)
         if fragment and (part := _section(wikitext, parsed.get("sections") or [], fragment)):
@@ -143,7 +149,7 @@ def main(argv: list[str]) -> int:
             wikitext = part
         print(wikitext)
         return 0
-    wanted = _said(args.row)
+    wanted = _said(args.entry)
     blocks, rows = [], _rows(wikitext)
     cited = [row for row in rows if any(wanted in _names(cell) for cell in row[2])]
     # A row is named by its first cell that says anything, an icon's being blank: those alone where any is, the rows that only cite the word failing one.
@@ -153,12 +159,14 @@ def main(argv: list[str]) -> int:
         kept = [(column, cell) for i, cell in enumerate(cells) if cell and (column := (header[i : i + 1] or [f"#{i + 1}"])[0]).casefold() not in _UNTOLD]
         if any(wanted not in _names(cell) for _, cell in kept):  # a row left with its name alone, its only other column untold, says nothing
             blocks.append("\n".join([f"[{caption}]"] * bool(caption) + [f"{column}: {cell}" for column, cell in kept]))
+    if not blocks:  # a rule the wiki keeps as a list, not a table — Reproduction's conditions: the items that open on the name
+        blocks = [item for line in wikitext.splitlines() if line.startswith(("*", "#")) and _opens_on(_said(item := _plain(line.lstrip("*#: "))), wanted)]
     if not blocks:
         # A label the wiki cuts short — its « Spore » for WB's « Spore Reproduction » — is offered where no row answers, and sought only then.
         asked = wanted.split()
         near = sorted({cell for _, _, cells in rows for cell in cells if _akin(cell.casefold().split(), asked)})
         like = f"; near it: {', '.join(near)}" if near else ""
-        print(f"✗ no row of `{page}` names « {args.row} » — a table names a thing by its in-game label{like}", file=sys.stderr)
+        print(f"✗ no row or list item of `{page}` names « {args.entry} » — the wiki names a thing by its in-game label{like}", file=sys.stderr)
         return 1
     print("\n\n".join(blocks))
     return 0
