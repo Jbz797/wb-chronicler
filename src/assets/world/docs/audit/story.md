@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 20/10/26 17:51</p>
+<p class="metadata">Date de mise à jour : 21/10/26 19:37</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire.
 
@@ -26,7 +26,7 @@ Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le : ses seule
 
 - **Chiffres** : le registre n'en porte aucun, pas même une date à venir — un article ou une locution (_« un singe »_, _« nul des deux »_) n'en est pas un : une veille dit son fil, le chapitre porte le fait.
 - **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` : rien ne garde son issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas reste telle quelle.
-- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · ouverte (C1) · son sujet en une ligne »_. Le sort avec son chapitre : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille. Les noms s'y balisent comme dans un chapitre.
+- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · ouverte (C1) · son sujet en une ligne »_. Le sort avec son chapitre : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille (au C11, les licornes du sol corrompu mortes, la menace sur [c 1 Umazp] passe aux morts qui y marchent). Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles d'un même fil se fondent en une, reconduite au chapitre qui les lie, sinon elles restent deux ; la plus ancienne garde son ouverture.
 - **Plafond** : au-delà de 10 veilles, abandonne celles qui pèsent le moins, dorment depuis le plus longtemps et ont le moins de chances de se refermer, une candidate comprise, et dis-le au chroniqueur : abandonnée, une veille sort et n'est plus un écart. Sous 10, aucune ne s'abandonne : elle se solde ou reste.
 - **Réserves** : une veille garde celles du chapitre (`docs/chronicler.md` § « Prudence et rigueur »).
