@@ -1,6 +1,6 @@
 # 📐 Audit de conformité
 
-<p class="metadata">Date de mise à jour : 21/10/26 18:28</p>
+<p class="metadata">Date de mise à jour : 21/10/26 19:07</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le nom de cette fiche, il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets après le chapitre, ce que le script a demandé à ce chapitre-là : cela vaut comme le § III.
 
@@ -9,7 +9,7 @@ Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Après le 
 Confronte tes cibles aux parties § I à § V de `docs/chronicler.md` et à `docs/lexicon.md`, sous-section par sous-section. **Juge la manière, pas la vérité** : ce que le texte affirme ne relève pas de toi. Un jugement qui s'appuierait sur un fait, pour valider comme pour réfuter, ne se tranche ni à l'œil ni par une lecture hors de tes cibles : ce fait est un point à mesurer, une contradiction de tes cibles aussi.
 
 - **`descriptor`** : sa longueur est au script ; prose sans balise, il suit le § V comme le chapitre, qu'il peut redire : il se lit seul.
-- **Cercle** : l'entité dont relève une balise se lit dans son `actor <id> metadata` (cité, famille, clan, royaume…) ; ce qui ne relève d'aucune entité du favori se classe au `circle` d'`actor <favori> --to`, ou de `surroundings`, qui les donne tous, jamais en reconvertissant les heures de la prose. D'un type, `--to` ne rend que le plus proche : tout autre est un point à mesurer, sauf si celui-là est déjà `far`.
+- **Cercle** : l'entité dont relève une balise se lit dans son `actor <id> metadata` (cité, famille, clan, royaume…) ; ce qui ne relève d'aucune entité du favori se classe au `circle` d'`actor <favori> --to`, ou de `surroundings`, qui les donne tous, jamais en reconvertissant les heures de la prose. D'un type, `--to` ne rend que le plus proche : tout autre est un point à mesurer, sauf si celui-là est déjà `far`. Un même fait dit dans deux cercles est à toi : redit, il est de trop ; il n'a qu'une place, celle de l'entité dont il relève ; dit autrement, c'est une contradiction, un point à mesurer.
 - **Barèmes** : le mot d'une agglomération suit le `total` de `city <id> pop`, celui d'une couronne les `cities` de `kingdom <id> metadata`.
 - **Tes outils** : ceux-là seuls, `--to` et `surroundings` pour le favori, `tiles … --to` pour une mesure sans marcheur (d'un bâtiment `b<id>`, d'une cité, d'une tuile), `metadata` et `pop` pour les balises de tes cibles, `echo.py`, et `gloss` pour le sens d'un champ — leur syntaxe : `docs/tools.md`.
 - **Noms** : une espèce, un biome ou un mois se lit dans `i18n/<lang>/`, un lieu dans `history/places.json` : `places` porte les lieux forgés, ses autres blocs les terres et les eaux comptées ; les ids de balise sont au script.
