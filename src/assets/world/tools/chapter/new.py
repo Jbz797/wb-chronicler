@@ -154,7 +154,7 @@ _GROWN = frozenset({"adult", "teen"})  # the stages a kind may be counted on: pa
 _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
-_LAND_PER_KINGDOM = 52_044  # a quarter of what a map carries once grown — measured at ~12k land tiles per crown on two worlds
+_LAND_PER_KINGDOM = 56_222  # above a quarter of a grown map's crowns (~12k land tiles each on two worlds): at that, too many rose before the alert
 _LAW_NAMES = load_data("world-laws.json")  # WB's own English title of each law, the label a wiki row goes by
 
 # A trial, in no doc: what a lineage's summary skips of `subspecies … traits` — the four WB makes it think by, every favorite's lot, and what its bodies wear.
