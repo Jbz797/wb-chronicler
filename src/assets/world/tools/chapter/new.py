@@ -104,7 +104,7 @@ _DESCRIPTOR_CAP = 64
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
     "announce it to the player with `tools/map/show.py <x,y>`: only the map finds it among a thousand",
     "his word given (you will embody it), have him close WorldBox: `tools/chapter/favorite.py <id>` rebuilds this chapter around it",
-    "refused: another if one is worth it, never of the kind turned down — else the chapter goes without, the question returning next save",
+    "refused: the next best, never of a kind turned down, until one is taken — the world has enough thinking souls, so the chapter never goes without",
 )
 
 _DEV_NOTE = (  # what a developer's closing note may hold — flagged, never done by the chronicler's own hand
@@ -155,6 +155,7 @@ _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds 
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
 _LAND_PER_KINGDOM = 56_222  # above a quarter of a grown map's crowns (~12k land tiles each on two worlds): at that, too many rose before the alert
+_LAND_PER_THINKER = 53_410  # dry ground per thinking soul a world raises before a favorite is picked: ten on a world of half a million land tiles
 _LAW_NAMES = load_data("world-laws.json")  # WB's own English title of each law, the label a wiki row goes by
 
 # A trial, in no doc: what a lineage's summary skips of `subspecies … traits` — the four WB makes it think by, every favorite's lot, and what its bodies wear.
@@ -217,6 +218,7 @@ _TAG_REGISTRIES = {
 }
 
 _TALKS = frozenset({"socialize_do_talk", "socialize_receiving"})  # WB's two talking tasks: the favorite speaking, the favorite spoken to
+_THINKER_FLOOR = 3  # thinking souls a pick waits for even on the smallest map: with fewer, the choice is made before the world has one to offer
 _TIERS = ("alliance", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies")  # the favorite's bodies; each is optional
 _TOOLS = Path(__file__).parent.parent
 
@@ -475,6 +477,12 @@ def _draft_heading(lang: str | None = None) -> str:
     return _DRAFT_HEADINGS.get(reader_settings().get("lang", "") if lang is None else lang, "Draft")
 
 
+# The tiles of dry ground a world holds, ocean aside: what its crowns and its thinking souls are weighed against — summed off its runs, a fifth of its tiles.
+def _dry_land(save: dict) -> int:
+    sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
+    return sum(length for tile, length in tile_runs(save) if not sea[tile])
+
+
 # Whether the crown was drawn into a war begun after `since`, on either side and ended or not — the declaration is the event the chapter owes, not the fighting.
 def _entered_war(save: dict, kingdom_id: int, since: float) -> bool:
     return any(
@@ -579,9 +587,7 @@ def _gazetteer() -> dict:
 
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
 def _kingdom_quota(save: dict) -> int:
-    sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
-    land = sum(length for tile, length in tile_runs(save) if not sea[tile])  # counted off the runs: a map holds five times more tiles than it does runs
-    return max(_KINGDOM_FLOOR, int(land / _LAND_PER_KINGDOM + 0.5))  # nearest, not ceiling — `round` breaks ties to the even number
+    return max(_KINGDOM_FLOOR, int(_dry_land(save) / _LAND_PER_KINGDOM + 0.5))  # nearest, not ceiling — `round` breaks ties to the even number
 
 
 # WB's `life_dna` seeds a world's genetics, redrawn on the hour so a reused map never repopulates with the lineages before it. WB's format: `YYYYMMDDHH`, UTC.
@@ -630,16 +636,22 @@ def _print_bullets(lines: tuple[str, ...]) -> None:
 
 # The recap's closing lines: a favorite's choice first, then step 3's commands and files, step 4's bounds — its shape while no favorite stands — and step 5.
 def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) -> None:
-    # No favorite while a thinking soul stands: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
-    thinking = index_by_id(live.get("subspecies") or [])
+    # No favorite while enough thinking souls stand: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     if forgotten:
         print(f"  → chronicler: {forgotten} sub-agents of earlier work deleted — forget their ids")
-    if favorite is None and any(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a)):
-        print("  → chronicler: choose a favorite before a single word — your pick, not the player's:")
+    thinkers = wanted = 0  # a favorite standing, no pick to weigh
+    if favorite is None:  # a pick waits for a people to choose from, the world told alone meanwhile
+        thinking = index_by_id(live.get("subspecies") or [])
+        thinkers = sum(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a))
+        wanted = _thinkers_wanted(live)
+    if 0 < thinkers < wanted:
+        print(f"  → no favorite yet: {thinkers} thinking souls of the {wanted} this world's ground wants before one is picked")
+    if favorite is None and thinkers >= wanted:
+        print("  → chronicler: choose a favorite before a single word, the best of those there are — your pick, not the player's:")
         _print_bullets(_CHOICE)
         print("  → then put it to the player:")
         _print_bullets(_DESIGNATION)
-        print("  → without one, step 3, the analysis, before the first word and not to be hurried:")
+        print("  → once he is marked, step 3, the analysis, before the first word and not to be hurried:")
     else:
         print("  → chronicler: step 3, the analysis, before the first word and not to be hurried:")
     fav_id = ((favorite or {}).get("metadata") or {}).get("id")
@@ -780,7 +792,7 @@ def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -
     if n == 1:
         return "first chapter"
     if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
-        # The pick itself is the closing block's, printed only while a thinking soul is left to pick.
+        # The pick itself is the closing block's, printed only while enough thinking souls are left to pick from.
         return f"{'the favorite has' if fav_id is None else 'successor to one who has'} left the world — {_DEATH}"
     return "yet to be designated" if fav_id is None else ""
 
@@ -983,6 +995,11 @@ def _stray_tags(n: int, prose: str) -> list[tuple[int, str]]:
 
     tags = ((at, tag) for at, line in enumerate(prose.splitlines(), 1) for tag in _TAG_ID.finditer(line))
     return [(at, tag[0]) for at, tag in tags if (ids := known(tag[1])) is not None and tag[2] not in ids]
+
+
+# How many thinking souls a world raises before its favorite is picked: one per `_LAND_PER_THINKER` of dry ground, never under the floor.
+def _thinkers_wanted(save: dict) -> int:
+    return max(_THINKER_FLOOR, int(_dry_land(save) / _LAND_PER_THINKER + 0.5))
 
 
 # The chronicler writes into `chapter.json` and `places.json` by hand, with whatever encoder comes to him: each put back in the project's layout, no word moved.
