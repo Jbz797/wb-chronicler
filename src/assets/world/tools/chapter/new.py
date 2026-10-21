@@ -96,6 +96,13 @@ _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a worl
 # What the chronicle's own git keeps (`shared.chronicle_git`): each chapter's prose and the chronicler's fields — never a save, a picture or a registry.
 _CHRONICLE_KEPT = "*\n!*/\n!C*/chapter.md\n!C*/chapter.json\n!watches.md\n"
 
+# The story auditor's counsel before a word, its sheet standing by it as by a target's brackets — in no doc; the same sub-agent audits the text after.
+_COUNSEL = (
+    "Read docs/audit/story.md — before C{n} is written: <the turning points and the major changes of your analysis>. Answer short: the turning point that "
+    "carries the chapter, the watch it settles or tips, the angle, what must not be dropped; directions, never prose. At the audit you will judge the text "
+    "as it stands, not its faithfulness to your counsel; the register moves only at the audit."
+)
+
 # What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
 _DEATH = "the death section opens the chapter: how he died, pieced together as far as the data allow (§ Déduction des meurtres), what he leaves, the handover"
 
@@ -656,15 +663,19 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
         print("  → chronicler: step 3, the analysis, before the first word and not to be hurried:")
     fav_id = ((favorite or {}).get("metadata") or {}).get("id")
     if n > 1:
-        order = ", the favorite first, then circle by circle:" if fav_id else ","  # the chapter's own order, so the analysis lands already sorted by tier
+        order = ", the favorite first, then thread by thread:" if fav_id else ","  # the chapter's own order, so the analysis lands already sorted by thread
         print(f"    · the deltas since C{n - 1}{order} what moved as much as what held — `geography bodies C{n}` shows a land newly peopled")
     print("    · the thresholds just crossed: the first times, the levels reached")
+    since = f"since C{n - 1}" if n > 1 else "since the world began"
+    print(f"    · the turning points, what tipped {since} — a death, a crown, a first time, a watch the world settled: one at least becomes a scene")
     if fav_id:
         if n > 1:
             print(f"    · what changed on the favorite: `actor {fav_id} --since C{n - 1} C{n}` — its walk and its gates, read before a word of it")
         print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id: names repeat")
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `saves/watches.md`")
+    print("  → then, before a word, the story auditor's counsel — a sub-agent launched now, its id kept for the audit:")
+    print(f"    `{_COUNSEL.format(n=n)}`")
     told = "" if fav_id else " — no favorite, so the world itself, in two parts and no circle:"
     print(f"  → step 4, the writing: {chapter_floor(n)} to {CHAPTER_CAP} characters, {COUNTED_AS}, counted at delivery, past the audit{told}")
     if not fav_id:

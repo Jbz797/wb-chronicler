@@ -1,16 +1,16 @@
 # 🔍 Relecture
 
-<p class="metadata">Date de mise à jour : 19/10/26 23:46</p>
+<p class="metadata">Date de mise à jour : 22/10/26 01:01</p>
 
 Ce que tu fais du chapitre une fois l'étape 5 bouclée, jusqu'à `--deliver`. Les auditeurs n'en savent rien : ne leur en cite rien.
 
 ## Lancer l'audit
 
-Lance 4 sous-agents neufs pour ce chapitre, en même temps. Chacun reçoit sa ligne telle quelle, rien de ton analyse ni de tes notes ; `<cibles>` sont celles que `--finalize` te donne :
+Lance 3 sous-agents neufs pour ce chapitre, en même temps, et relance par message l'auditeur du récit que tu as consulté avant d'écrire. Chacun reçoit sa ligne telle quelle, rien de ton analyse ni de tes notes ; `<cibles>` sont celles que `--finalize` te donne :
 
 - conformité : `Lis docs/audit/compliance.md — <cibles>`
 - faits, deux fois, chacun de son côté : `Lis docs/audit/facts.md — <cibles>`
-- récit : `Lis docs/audit/story.md — saves/C<n>/chapter.md`, le chapitre seul : la chronique est son terrain
+- récit, relancé : `Lis docs/audit/story.md — saves/C<n>/chapter.md`, le chapitre seul : la chronique est son terrain
 
 `docs/audit/` est à eux : ne le lis jamais, tu écris pour ton lecteur, pas pour l'audit.
 
