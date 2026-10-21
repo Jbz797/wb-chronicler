@@ -45,6 +45,7 @@ _AUDIT = {
             "tax_tribute",
             "traits",
             "under_construction",  # a town's and a crown's sites, counted among the `buildings` the panel prints
+            "victims",
         }
     ),
     "ranks": frozenset(

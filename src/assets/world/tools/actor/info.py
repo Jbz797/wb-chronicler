@@ -72,6 +72,7 @@ from shared import (
     is_transport,
     kept_army_since,
     kept_city_since,
+    kept_victims,
     latest_chapter,
     life_stage,
     light,
@@ -416,6 +417,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "tenure_years": tenure,
         # WB `isInsideSomething`: a save keeps the boat half, never the building. A plain ref, souls boarding transports alone — `boat/info.py <id>` spells it out.
         **({"transport": entity_ref(actor.get("transportID"), ctx["actors_by_id"])} if is_aboard(actor) else {}),
+        "victims": kept_victims(actor),  # Chronicler-only: the latest deaths it dealt, the mod's stamp — WB counts them, never whom
         "x": tile[0],
         "y": tile[1],
     }

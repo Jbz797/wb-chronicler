@@ -1,6 +1,6 @@
 # Faithful Saves
 
-A save keeps what every creature was in the middle of: a pregnancy, an egg, a sleep, a fire, a mood, a task, and the wait before its next sleep. Loading no longer wipes them. It also dates each creature's arrival in its town and its army, and closes each history year in January.
+A save keeps what every creature was in the middle of: a pregnancy, an egg, a sleep, a fire, a mood, a task, and the wait before its next sleep. Loading no longer wipes them. It also dates each creature's arrival in its town and its army, names its latest victims, and closes each history year in January.
 
 ## Why
 
@@ -24,7 +24,7 @@ WorldBox also redraws two kinds of timers on every load:
 
 - **On save**, each creature keeps what is left of its statuses and of its long waits (90 seconds or more), its task (the step reached, the time spent, its aim: a prey, a tile, a building) and the building it is inside; a boat, the shore it was ferrying to; the world, the time left on its two clocks.
 - **On load**, each is handed back for exactly the time it had left, and each creature takes its task up at that very step: a woodcutter carrying his logs walks on to the store, a hunter keeps its prey, a sleeper stays under its roof.
-- **A creature settling in a new town**, by birth, migration, founding or a move, **or joining an army**, is stamped with the world's time.
+- **A creature settling in a new town**, by birth, migration, founding or a move, **or joining an army**, is stamped with the world's time; **a killer** keeps its last 3 victims (kind, name, time).
 - **The world's history** closes each year in January, under the year that ended: a row is a calendar year.
 
 Nothing else changes: no status is lengthened, shortened or added, and none replays its first effects (a mood, a sound): those were felt before the save.
@@ -38,10 +38,10 @@ Install it with the other mods of this repository, as [mods/README.md](../README
 ## Notes
 
 - **Compatibility:** the mod replaces no game method (it reshapes one, see below), and works with other mods unless they also use `faithful_` keys or reshape the history's yearly close.
-- **What it writes into your saves:** keys prefixed `faithful_`, per creature (statuses, waits, task, roof, town, army) and per world (clocks, and `faithful_saved_at`, by which this repository's chronicle knows the mod wrote the save). Vanilla ignores them.
+- **What it writes into your saves:** keys prefixed `faithful_`, per creature (statuses, waits, task, roof, town, army, victims) and per world (clocks, and `faithful_saved_at`, by which this repository's chronicle knows the mod wrote the save). Vanilla ignores them.
 - **A save made before the mod:** its first load still wipes everything; all is kept from the next save on, and its first history year after the mod runs 13 months.
-- **What the log says:** each load names what it handed back (`handed back 12 statuses, 34 long waits and 2 clocks`, `handed back 17 tasks, 3 roofs and 0 courses`) and, as a warning, whatever it could not: nothing a save was given is dropped in silence.
+- **What the log says:** each load names what it handed back (`handed back 12 statuses, 34 long waits and 2 clocks`) and, as a warning, whatever it could not: nothing a save was given is dropped in silence.
 
 ## For modders
 
-Seven hooks. `SavePatches.cs` writes in prefixes on `Actor.prepareForSave()` and `SaveManager.currentWorldToSavedMap()`, and hands back in postfixes on `SaveManager.randomDecisionCooldowns()` (statuses, waits, clocks) and `MapBox.finishingUpLoading()`, the very last step of a load (tasks and roofs: buildings load after the creatures, and WorldBox, seating each king and leader anew, cancels the task they hold). `CityPatches.cs` and `ArmyPatches.cs` stamp in postfixes on `Actor.setCity` and `Actor.setArmy`, skipping what is already stamped, so a load moves nothing. `HistoryPatches.cs` transpiles `MapBox.updateMetaHistory`: its month 12 becomes 1, its row is filed under the year before; finding neither, it leaves the method whole and logs a warning.
+Eight hooks. `SavePatches.cs` writes in prefixes on `Actor.prepareForSave()` and `SaveManager.currentWorldToSavedMap()`, and hands back in postfixes on `SaveManager.randomDecisionCooldowns()` (statuses, waits, clocks) and `MapBox.finishingUpLoading()`, the very last step of a load (tasks and roofs: buildings load after the creatures, and WorldBox, seating each king and leader anew, cancels the task they hold). `CityPatches.cs` and `ArmyPatches.cs` stamp in postfixes on `Actor.setCity` and `Actor.setArmy`, skipping what is already stamped, so a load moves nothing; `KillPatches.cs`, on `Actor.newKillAction`. `HistoryPatches.cs` transpiles `MapBox.updateMetaHistory`: its month 12 becomes 1, its row is filed under the year before; finding neither, it leaves the method whole and logs a warning.

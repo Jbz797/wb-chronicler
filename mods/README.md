@@ -3,7 +3,7 @@
 Two mods for WorldBox, both run by [NeoModLoader](https://steamcommunity.com/sharedfiles/filedetails/?id=3080294469) (NML):
 
 - [Wandering Clouds](WanderingClouds/README.md): clouds rise anywhere in the sky and drift either way, so the seeds of life fall all over the world.
-- [Faithful Saves](FaithfulSaves/README.md): a save keeps what every creature was in the middle of, stamps when it settled in its town and joined its army, and closes each year of history in January.
+- [Faithful Saves](FaithfulSaves/README.md): a save keeps what every creature was in the middle of, stamps when it settled in its town and joined its army, names its latest victims, and closes each year of history in January.
 
 The chronicle this repository builds needs both: `tools/chapter/new.py` refuses a save that either did not write.
 

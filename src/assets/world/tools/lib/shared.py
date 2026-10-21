@@ -828,6 +828,14 @@ def kept_roof(actor: dict) -> int | None:
     return (actor.get("custom_data_long") or {}).get("faithful_inside")
 
 
+# The latest deaths a body dealt, oldest first, as the Faithful Saves mod kept them: WB counts them alone, never whom — a beast's name absent, as WB wrote none.
+def kept_victims(actor: dict) -> list[dict] | None:
+    if not (held := (actor.get("custom_data_string") or {}).get("faithful_kills")):  # most bodies never killed: no split for them, a roster's thousands
+        return None
+    victims = [line.split("\t") for line in held.split("\n") if line.count("\t") == 3]
+    return [{"asset_id": asset, "date": world_date(float(at)), "id": int(victim), "name": name or None} for victim, asset, name, at in victims] or None
+
+
 # `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces the ones nothing else covers.
 def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     kingdoms = save.get("kingdoms") or []

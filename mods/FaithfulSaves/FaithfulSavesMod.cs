@@ -26,6 +26,7 @@ namespace FaithfulSaves
             harmony.PatchAll(typeof(ArmyPatches));
             harmony.PatchAll(typeof(CityPatches));
             harmony.PatchAll(typeof(HistoryPatches));
+            harmony.PatchAll(typeof(KillPatches));
             harmony.PatchAll(typeof(SavePatches));
             LogService.LogInfo($"[{pModDecl.Name}]: a save now keeps statuses, tasks, roofs, long waits, clocks, town arrivals and enlistments; history years run January to December");
         }
