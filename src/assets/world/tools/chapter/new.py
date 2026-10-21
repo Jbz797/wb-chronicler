@@ -726,7 +726,8 @@ def _print_step_five(n: int, facts: dict) -> None:
     for fault in facts["dialogues"]:
         print(f"  {fault}")
     if stray := facts["stray"]:
-        print(f"  ✗ tags whose id answers nothing: {', '.join(f'l.{line} {tag}' for line, tag in stray)} — an id made up shows a blank where its icon goes")
+        tags = ", ".join(f"l.{line} {tag}" for line, tag in stray)
+        print(f"  ✗ tags whose id answers nothing: {tags} — an id made up, or one only `history` knows, shows a blank where its icon goes")
 
 
 # One scan of prior chapters for all they arbitrate: a first hull, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.
