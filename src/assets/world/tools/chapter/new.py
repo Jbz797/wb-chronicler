@@ -85,7 +85,10 @@ _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a ti
 _ALERTS = {"DISABLE_DROP_OF_THOUGHTS": "world_law_drop_of_thoughts"}  # each alert by the law it asks the player to cut — a state while that law stays on
 
 # What a baptism's check weighs — in no doc, a world being named once: handed to the audit with its target, as a chapter's asks are.
-_BAPTISM = "a world's name and description are checked as a chapter is, and the name is worth what it says of the ground"
+_BAPTISM = (
+    "a world's name and description are checked as a chapter is, and the name is worth what it says of the ground;"
+    " what the description takes from the player's lore is told as belief where the ground does not show it"
+)
 
 _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a world's start and at a favorite's death alone, in no doc
     "a thinking body only: `sapient: true` in `actor … metadata`",
@@ -192,8 +195,10 @@ _RESET_PROMPT = (
     "  → no: `tools/chapter/new.py --reset-asked`",
     "  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries",
     '  → reset and naming: `tools/chapter/new.py --reset --name "…" --description "…"`',
-    "    the name is forged after a survey of its geography, the one thing the reset spares: in the chronicle's own voice, on the ground,",
+    "    then a second question, before a word is forged: « Would you add a few lines of lore of your own — its myths, its gods, its mood — for it to carry? »",
+    "    The name is forged after a survey of its geography, the one thing the reset spares: in the chronicle's own voice, on the ground,",
     "    the mood or whatever outlasts the ages, never the age itself. Yours alone to choose — his yes was the agreement.",
+    "    The description is written as ever, after that survey, his lore woven in if he wrote some.",
 )
 
 _SEEDED = ("islands", "lakes", "rivers", "seas")  # the gazetteer's books the survey seeds by id, `places` being the chronicler's own
