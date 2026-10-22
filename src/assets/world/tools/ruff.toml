@@ -2,6 +2,7 @@
 # Blank lines are `ruff format`'s business — the E30x lint twins catch none of them, tested, so there is no rule here for what it already settles.
 
 line-length = 165
+target-version = "py315"  # the README's floor: an import read for annotations alone is `lazy` (PEP 810), never loaded
 
 [lint]
 # The signs our comments and outputs write on purpose; any other look-alike in a string or a comment is still told (`RUF001`, `RUF003`).

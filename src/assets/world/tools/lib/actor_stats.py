@@ -18,9 +18,9 @@
 
 import math
 from collections import Counter
-from collections.abc import Collection
 from functools import cache
 from math import inf
+lazy from collections.abc import Collection
 
 from shared import (
     MIN_PER_CAPITA_UNITS,

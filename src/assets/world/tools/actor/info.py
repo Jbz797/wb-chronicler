@@ -6,10 +6,10 @@ import json
 import sys
 from argparse import ArgumentTypeError
 from collections import Counter, defaultdict
-from collections.abc import Callable, Mapping
 from functools import cache
 from math import inf
 from pathlib import Path
+lazy from collections.abc import Callable, Mapping
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 

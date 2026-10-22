@@ -8,11 +8,11 @@ import math
 import re
 import sys
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Iterator
 from functools import cache
 from heapq import heapify, heappop, heappush
 from itertools import compress
 from pathlib import Path
+lazy from collections.abc import Iterable, Iterator
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 

@@ -12,8 +12,8 @@ import re
 import sys
 from array import array
 from collections import Counter, defaultdict, deque
-from collections.abc import Iterator
-from pathlib import Path
+lazy from collections.abc import Iterator
+lazy from pathlib import Path
 
 from grid import HEART_CELL, decode_tile_grid, hearts, tile_block, tile_kind, tile_layer
 from shared import pickle_cached, union_root

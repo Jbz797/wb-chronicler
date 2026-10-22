@@ -6,16 +6,16 @@
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names kept verbatim for raw-save fields (e.g. `asset_id`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
-import argparse
 import re
 import sys
 from collections import Counter, defaultdict
-from collections.abc import Callable, Mapping
 from functools import cache
 from math import inf
 from operator import itemgetter
 from pathlib import Path
 from statistics import median
+lazy import argparse
+lazy from collections.abc import Callable, Mapping
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 

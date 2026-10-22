@@ -9,10 +9,10 @@
 #    Entanglewood takes a fifth off the pace under a tree, the water nothing until the breath runs out. The speed is floored at 1 before WB's common 0.4.
 # 4. `ActorMove.goTo` lets no body swim toward a spot of its own island — it walks round the bay —, and none the water burns at all: `Gait.ashore`.
 
-from collections.abc import Iterator
 from heapq import heappop, heappush
 from itertools import islice
 from math import inf
+lazy from collections.abc import Iterator
 
 from grid import tile_block, tile_layer, tile_mask
 from shared import DIAGONAL_EXTRA, building_tile, world_laws
@@ -93,7 +93,7 @@ _WIDE_TREES = {
 
 
 # The goals' box steers the search at the cheapest pace a step takes; no goal lies nearer than its box, so a lone tile or a shore is still reached cheapest.
-def _aim(walk_map: "WalkMap", gait: "Gait", goals: set[int]) -> tuple[int, int, int, int, float] | None:
+def _aim(walk_map: WalkMap, gait: Gait, goals: set[int]) -> tuple[int, int, int, int, float] | None:
     if not goals:
         return None
     rows, cols = zip(*(divmod(goal, walk_map.width) for goal in goals), strict=True)
@@ -102,7 +102,7 @@ def _aim(walk_map: "WalkMap", gait: "Gait", goals: set[int]) -> tuple[int, int, 
 
 # Each tile once, cheapest first, with its way's water, widest crossing and their count; a step costs its length × its tiles' mean pace — less swum, water is redone.
 def _settle(
-    walk_map: "WalkMap", gait: "Gait", x0: int, y0: int, limit: float, aim: tuple[int, int, int, int, float] | None, told: bool = False
+    walk_map: WalkMap, gait: Gait, x0: int, y0: int, limit: float, aim: tuple[int, int, int, int, float] | None, told: bool = False
 ) -> Iterator[tuple[int, float, float, float, float, float, int]]:
     # Both classes' own fields, bound once for the loop below: a method on either would still read the other's.
     classes, trees, walled, width, height = walk_map._classes, walk_map._trees, walk_map._walled, walk_map.width, walk_map._height  # noqa: SLF001
@@ -218,7 +218,7 @@ class Gait:
     def __init__(self, land: list[float], tangled: list[float], swim: float, tired: float, breath: float, reach: float) -> None:
         self._land, self._swim, self._tangled, self._tired, self.breath, self.reach = land, swim, tangled, tired, breath, reach
 
-    def ashore(self) -> "Gait":
+    def ashore(self) -> Gait:
         return Gait(self._land, self._tangled, self._swim, self._tired, 0.0, 0.0)
 
     # The cheapest a tile costs this gait, the bound on how far a cost reaches: a swift swimmer's water, else a plain tile.
@@ -227,11 +227,11 @@ class Gait:
         return min(self._swim, 1.0)
 
     # The same feet, and a hull on the water at `pace` a tile, for as long as the crossing lasts: walked to a shore, sailed, walked on.
-    def sailing(self, pace: float) -> "Gait":
+    def sailing(self, pace: float) -> Gait:
         return Gait(self._land, self._tangled, pace, pace, inf, inf)
 
     # The same swimmer with breath for any crossing: what stops it then is the rock alone.
-    def tireless(self) -> "Gait":
+    def tireless(self) -> Gait:
         return Gait(self._land, self._tangled, self._swim, self._swim, inf, inf)
 
 

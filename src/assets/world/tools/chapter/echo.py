@@ -32,7 +32,7 @@ _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one t
 _DATE = "Dᴀᴛᴇ"  # a date as the chronicle must write one, read as a single name: the manual's own form, never a turn said again
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 12 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
-_FORMULA_LINES = 4  # lines of one chapter a figured turn must come back on to be a tic: `il y a 3 ans`, six times in C11's first draft
+_FORMULA_LINES = 4  # lines of one chapter a figured turn must come back on to be a tic: `il y a 3 ans` said on line after line
 _FORMULA_WORDS = 3  # words a figured turn holds at least, the figure among them; from `_LONG_RUN_WITHIN` up, `internal` hears it already
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
 _LONG_RUN = 7  # words from which a run is a turn of phrase with a single word of its own: `et ce qui verdit au ras du sol`, `à l'entrée de l'an 5`
@@ -291,7 +291,7 @@ def _refrain(text: str) -> bool:
     return any(tuple(keys[i : i + _MIN_RUN]) in _refrains() for i in range(len(keys) - _MIN_RUN + 1))
 
 
-# Whether a chute's words are heard together in `_REFRAIN` chapters of the chronicle or more — `voit court` in C2, C3 and C4: its refrain, not a repeat.
+# Whether a chute's words are heard together in `_REFRAIN` chapters of the chronicle or more — `voit court` in three chapters running: its refrain, not a repeat.
 def _refrain_chute(words: frozenset[str]) -> bool:
     return sum(any(words <= heard for _, heard in _heard(k)) for k in range(1, latest_chapter() + 1)) >= _REFRAIN
 

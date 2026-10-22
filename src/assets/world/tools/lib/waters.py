@@ -4,11 +4,11 @@ import re
 import zlib
 from array import array
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Sequence
 from functools import cache
 from heapq import heappop, heappush
-from pathlib import Path
 from typing import NamedTuple
+lazy from collections.abc import Callable, Iterable, Sequence
+lazy from pathlib import Path
 
 from grid import HEART_CELL, hearts, tile_block, tile_layer, tile_mask
 from islands import TileIslands, compute_islands_cached

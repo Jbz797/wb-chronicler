@@ -1,24 +1,23 @@
 # Cross-domain constants + helpers — one of the `tools/lib/` libraries every entry point puts on its `sys.path` (see each bootstrap).
 # Rule: a symbol lives here only if ≥2 scripts need it — directly, or through another exported symbol that does. Single-script helpers live in that script.
 
-__lazy_modules__ = ["random", "sqlite3", "subprocess"]  # Python 3.15 loads these at first use — a report's draw, the history base, one process check.
 
 import argparse
 import json
 import os
 import pickle
-import random
 import re
-import sqlite3
-import subprocess
 import sys
 import zlib
 from bisect import bisect_right
 from collections import Counter, defaultdict
-from collections.abc import Callable, Collection, Mapping, Sequence
 from contextlib import closing
 from functools import cache, partial
 from pathlib import Path
+lazy import random  # loaded at first use, as the two below — a report's draw
+lazy import sqlite3  # the history base
+lazy import subprocess  # one process check
+lazy from collections.abc import Callable, Collection, Mapping, Sequence
 
 CHAPTER_CAP = 12000  # a sitting's read, past which a chapter says more than its world did; in no doc, as `chapter_floor`: the recap gives both, delivery holds them
 COUNTED_AS = "every visible character, tags by their name, markdown marks left out"  # how every length a chapter is held to counts it, said beside each figure
@@ -1148,7 +1147,7 @@ def quiet_zeros(block: dict, said: Collection[str] = ()) -> dict:
 def reader_settings() -> dict:
     try:
         return json.loads(_SETTINGS_JSON.read_text())
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return {}
 
 

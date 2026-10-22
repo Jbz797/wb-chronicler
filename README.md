@@ -53,7 +53,7 @@ The model's **1M-token context window** lets that single thread run a long way b
 - **Claude Code**, with a Claude subscription — Pro or higher is recommended, the chronicler reading, cross-checking and writing a multi-section chapter on every save
 - **Opus 5.5** at **high** effort for the chronicler, recommended — the depth a chapter's cross-checks need, without the cost of `xhigh` or `max`
 - **Node** 22+ and **Yarn** for the reader
-- **Python** 3.12+ for the `tools/` extractors — the standard library, plus **Pillow** for `map/show.py` (`pip install pillow`)
+- **Python** 3.15+ for the `tools/` extractors — the standard library, plus **Pillow** for `map/show.py` (`pip install pillow`)
 - **WorldBox** (Steam) and a save to follow
 
 ## Mods

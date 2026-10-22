@@ -1,11 +1,9 @@
 # Tile-level primitives. No save-wide state, no module cache — just functions over a tile name, the rows the save folds away as runs, or the tiles it lists by id.
 
-from collections.abc import Callable, Iterator, Sequence
 from itertools import chain, compress, repeat
-from typing import TYPE_CHECKING
+lazy from collections.abc import Callable, Iterator, Sequence
 
-if TYPE_CHECKING:  # `islands` imports this module: the type alone, never the code
-    from islands import TileIslands
+lazy from islands import TileIslands  # `islands` imports this module: the type alone, never loaded
 
 BARE = "~"  # marks a ground no biome grows on among the biomes' own names, none of which could start so
 HEART_CELL = 4  # tiles a side of the cells `hearts` reads on a land or a sea, one tile standing for each: a name needs no finer, the sweep sixteen times lighter
@@ -65,7 +63,7 @@ def _tile_rows(save: dict) -> Iterator[tuple[list[int], list[int]]]:
 
 
 def _unfold(ids: list[int], runs: list[int]) -> list[int]:
-    return list(chain.from_iterable(map(repeat, ids, runs)))
+    return list(chain.from_iterable(map(repeat, ids, runs, strict=True)))
 
 
 # The grid unfolded a row at a time, on first read: a caller that looks at a few tiles never pays for the whole map, some thirty-five milliseconds of it.
@@ -132,7 +130,7 @@ def off_land(tile_name: str) -> str:
 
 
 # The patch a land tile lies in, as `geography … biomes -t` cuts and sites it: one ground on one land, corners joining → its tiles, its size and its own middle tile.
-def patch_finder(save: dict, grid: LazyTileGrid, island_of: "TileIslands") -> Callable[[int, int], tuple[set[tuple[int, int]], dict]]:
+def patch_finder(save: dict, grid: LazyTileGrid, island_of: TileIslands) -> Callable[[int, int], tuple[set[tuple[int, int]], dict]]:
     grounds = [tile_ground(name) for name in save.get("tileMap") or []]
     masks: dict[str | None, list[bytes]] = {}  # a ground's own tiles, each row a mask C built, asked once however many tiles of a window stand on it
     filled: list[tuple[set[tuple[int, int]], dict]] = []  # a patch two tiles of a window share is filled once

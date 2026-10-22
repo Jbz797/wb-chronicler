@@ -14,13 +14,13 @@ import subprocess
 import sys
 import time
 from collections import Counter
-from collections.abc import Collection
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing, suppress
 from datetime import UTC, datetime
 from functools import cache
 from math import inf
 from pathlib import Path
+lazy from collections.abc import Collection
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
