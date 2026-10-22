@@ -117,7 +117,7 @@ _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no
     "refused: the next best, never of a kind turned down, until one is taken — the world has enough thinking souls, so the chapter never goes without",
 )
 
-_DEV_NOTE = (  # what a developer's closing note may hold — flagged, never done by the chronicler's own hand
+_DEV_NOTE = (  # what a developer's note may hold, before a pick as at delivery — flagged, never done by the chronicler's own hand
     "doc adjustment: a passage of docs/ unclear, contradictory, out of date, or a term to harmonise — flagged, never corrected by your hand",
     "script improvement spotted on the way: a bug, a field misread, a wrong formula, an awkward output — name the file; no code change of your own",
     "doc and recap at odds: the recap is right for now, but one of the two needs fixing — say which",
@@ -454,7 +454,7 @@ def _deliver() -> int:
         # The auditors walk the docs and the outputs claim by claim: their snags are the dev's to hear too, asked once the audit is settled.
         print(
             "  → mode: developer — ask the auditors whether anything got in their way, then you may close on a brief note of the frictions met,"
-            " theirs and yours, crossed where they meet — none at all if there are none. What may go in it:"
+            " theirs and yours not yet raised, crossed where they meet — none at all if there are none. What may go in it:"
         )
         _print_bullets(_DEV_NOTE)
         # Asked at every delivery, not once for all: a wrong only one fact auditor saw is what a lone one would have published.
@@ -659,6 +659,10 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
     if 0 < thinkers < wanted:
         print(f"  → no favorite yet: {thinkers} thinking souls of the {wanted} this world's ground wants before one is picked")
     if favorite is None and thinkers >= wanted:
+        if reader_settings().get("dev"):  # a misread would steer the pick, so his snags are heard before it — his alone, no draft having met an auditor yet
+            print("  → mode: developer — first, a brief note of your own frictions so far, none at all if there are none. What may go in it:")
+            _print_bullets(_DEV_NOTE)
+            print("    a note given, wait for the player's word before the pick: what he clears up may change it")
         print("  → chronicler: choose a favorite before a single word, the best of those there are — your pick, not the player's:")
         _print_bullets(_CHOICE)
         print("  → then put it to the player:")
