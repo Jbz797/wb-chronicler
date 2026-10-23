@@ -82,7 +82,6 @@ _DOMINANT_AXIS = 0.4  # an axis under this share of the other drops out of the b
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
-_FRESH_FLOOR = 3000  # a world's first chapter right after a reset: a bare world, with little to tell that would not be padding
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
 _HELP_WIDTH = 78  # what argparse gives a piped run, its 80 columns less 2: the help the chronicler has always read
 _IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `--since` weighs a land, a site or a biome against itself
@@ -161,6 +160,7 @@ _RANK_FLOORS = {"attractivity": 0, "cities": 1, "kingdoms": 1, "level": 1}  # wh
 _SETTINGS_JSON = SAVES_DIR.parent / "history" / "settings.json"  # where the reader records the live save, WorldBox keeping it elsewhere on every OS
 _SURVIVORS_NAMED = 5  # past it, a gone thing's survivors are counted and no longer named: a razed town may leave a crowd
 _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower | 1 herb` or `38 bodies · 23 sapient`, cut once at import
+_THOUGHTLESS_FLOOR = 3000  # a world with no thinking soul: beasts and ground alone, little to tell that would not be padding
 _UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
 _VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy", "to_islands"})  # shapes whose key order carries meaning: stores heaviest-first, lands nearest-first
 
@@ -555,9 +555,11 @@ def built_by_tile(save: dict) -> dict[tuple, dict]:
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic for tile in building_footprint(b)}
 
 
-# The fewest characters chapter `n` holds: a world's first, its clock under a year as only a reset leaves it, has little yet to tell.
+# The fewest characters chapter `n` holds, off its own save: a world where no thinking soul stands, at its start or after the last, has less to tell.
 def chapter_floor(n: int) -> int:
-    return _FRESH_FLOOR if n == 1 and (time := chapter_world_time(1)) is not None and time < UNITS_PER_YEAR else _CHAPTER_FLOOR
+    if not (path := SAVES_DIR / f"C{n}" / "map.wbox").exists():
+        return _CHAPTER_FLOOR
+    return _CHAPTER_FLOOR if thinking_souls(load_save(path)) else _THOUGHTLESS_FLOOR
 
 
 # A chapter's length as its bounds count it, `COUNTED_AS`: what a reader reads, its tables' frame and its blanks no more than a tag's markup.
@@ -1393,6 +1395,12 @@ def take_since(argv: list[str]) -> tuple[str | None, list[str]]:
     if not (value[:1] == "C" and value[1:].isdigit()):
         raise ValueError("`--since` takes a chapter, e.g. `--since C2`")
     return value, argv[:at] + argv[at + 2 :]
+
+
+# The bodies whose lineage thinks, hulls aside: what a favorite is picked among, and what lifts a chapter's floor.
+def thinking_souls(save: dict) -> int:
+    lineages = index_by_id(save.get("subspecies") or [])
+    return sum(is_sapient(lineages.get(a.get("subspecies"))) for a in save.get("actors_data") or [] if not is_boat(a))
 
 
 # A site still rising: WB flags a town's building the day it is laid — the day its `created_time` and `housesBuilt` count it — and lifts the flag at its completion.

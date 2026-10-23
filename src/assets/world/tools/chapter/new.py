@@ -44,7 +44,6 @@ from shared import (
     chapter_world_time,
     chronicle_git,
     i18n,
-    index_by_id,
     is_boat,
     is_sapient,
     latest_chapter,
@@ -57,6 +56,7 @@ from shared import (
     render,
     rounded_world_time,
     short_dialogues,
+    thinking_souls,
     under_construction,
     unmarked,
     world_laws,
@@ -664,11 +664,8 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
     # No favorite while enough thinking souls stand: the pick comes first, `favorite.py` erasing the chapter, prose and all, to rebuild it around the one chosen.
     if forgotten:
         print(f"  → chronicler: {forgotten} sub-agents of earlier work deleted — forget their ids")
-    thinkers = wanted = 0  # a favorite standing, no pick to weigh
-    if favorite is None:  # a pick waits for a people to choose from, the world told alone meanwhile
-        thinking = index_by_id(live.get("subspecies") or [])
-        thinkers = sum(is_sapient(thinking.get(a.get("subspecies"))) for a in live.get("actors_data") or [] if not is_boat(a))
-        wanted = _thinkers_wanted(live)
+    # A pick waits for a people to choose from, the world told alone meanwhile; a favorite standing, there is no pick to weigh.
+    thinkers, wanted = (thinking_souls(live), _thinkers_wanted(live)) if favorite is None else (0, 0)
     if 0 < thinkers < wanted:
         print(f"  → no favorite yet: {thinkers} thinking souls of the {wanted} this world's ground wants before one is picked")
     if favorite is None and thinkers >= wanted:
