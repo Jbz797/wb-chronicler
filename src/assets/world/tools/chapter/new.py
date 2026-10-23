@@ -185,13 +185,15 @@ _PLACE = "a place named this chapter is checked as the chapter is: its point fal
 
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 _PLAIN = "plain text with no tag"  # what a field of `chapter.json` is written in: its panel prints it as it stands, brackets and all
+_README = Path(__file__).resolve().parents[5] / "README.md"  # its World laws table, the player's guide and the reset's alike: one table, no copy
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
 
 # Put to the player at the first chapter, before a line is written. The three commands answer it, and the naming brief rides with the third.
 _RESET_PROMPT = (
     "? first chapter — nothing is written until the player has answered. Put this to him, in one go:",
     "  « Do you want to start over from a bare map — relief, biomes, volcanoes and geysers kept, everything else erased (creatures, trees, plants, ores,",
-    "    buildings, kingdoms…), back to year 1 of the Age of Hope with a new genetic seed? And if so, shall I name it too? »",
+    "    buildings, kingdoms…), back to year 1 of the Age of Hope with a new genetic seed and the README's world laws?",
+    "    And if so, shall I name it too? »",
     "  → no: `tools/chapter/new.py --reset-asked`",
     "  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries",
     '  → reset and naming: `tools/chapter/new.py --reset --name "…" --description "…"`',
@@ -799,6 +801,22 @@ def _purge_history(s3db: Path) -> None:
         cursor.execute("VACUUM")
 
 
+# The README's World laws table by law id, on or off, and the titles in it WB knows no law by — a typo that must refuse the reset, not pass unset.
+def _readme_laws() -> tuple[dict[str, bool], list[str]]:
+    text = _README.read_text()
+    table = text[text.index("## World laws") :].split("\n## ", 1)[0]
+    ids = {title: law for law, title in _LAW_NAMES.items()}
+    laws, unknown = {}, []
+    for row in re.findall(r"^\|[^|\n]+\|([^|\n]+)\|([^|\n]+)\|$", table, re.MULTILINE)[2:]:  # the header and its rule first
+        for cell, on in zip(row, (True, False), strict=True):
+            for title in map(str.strip, cell.split(",")):
+                if title in ids:
+                    laws[ids[title]] = on
+                elif title not in {"", "—"}:
+                    unknown.append(title)
+    return laws, unknown
+
+
 # Whether the prose a delivered chapter's record carries has moved since its last commit: a descriptor or a summary is audited, a panel's data never.
 def _record_prose_moved(n: int) -> bool:
     committed = chronicle_git("show", f"HEAD:C{n}/chapter.json")
@@ -852,9 +870,14 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     if worldbox_running():
         print("✗ WorldBox is running — quit the game before resetting, or it will write its own save back over this one", file=sys.stderr)
         return 1
+    laws, unknown = _readme_laws()
+    if unknown:
+        print(f"✗ README.md, World laws: no law of WB goes by {', '.join(unknown)} — its titles are the game's own, in English", file=sys.stderr)
+        return 1
 
     save = load_save(live_wbox)
     _bare_world(save, name, description)
+    turned = _set_laws(save, laws)
     stats = save["mapStats"]
     write_save(live_wbox, save)
     _write_world(save)  # off the save, not off the arguments: a world that kept its name keeps it here too
@@ -864,6 +887,7 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     landmarks = ", ".join(f"{count} {asset}" for asset, count in sorted(Counter(b["asset_id"] for b in save["buildings"]).items()))
     print(f"✓ world reset — year 1 of the Age of Hope, {stats['current_world_ages_duration'] / UNITS_PER_YEAR:.0f} years long")
     print(f"  map kept, {f'with its landmarks: {landmarks}' if landmarks else 'no landmark on it'}")
+    print(f"  world laws as the README sets them{f', turned: {", ".join(turned)}' if turned else ', none to turn'}")
     print(f"  named: {stats['name'] or '—'}")
     if name or description:  # his own words, written before any audit stood and read by none after: checked here, the game still closed for the mending
         target = f"history/world.json (description, name) [{_BAPTISM}]"
@@ -939,6 +963,17 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
     return None
+
+
+# Sets each law the README names, appending one an older save lacks → each law it turned, by WB's title.
+def _set_laws(save: dict, laws: dict[str, bool]) -> list[str]:
+    held = world_laws(save)
+    entries = save.setdefault("worldLaws", {}).setdefault("list", [])
+    for entry in entries:
+        if entry["name"] in laws:  # every entry is named, as `world_laws` reads them
+            entry["boolVal"] = laws[entry["name"]]
+    entries.extend({"name": law, "boolVal": on} for law, on in laws.items() if law not in held)
+    return sorted(f"{_LAW_NAMES[law]} {'on' if on else 'off'}" for law, on in laws.items() if held.get(law) != on)
 
 
 # Tags the chapter as an audit round reads it, `C<n>-<k>`, and returns that round with the one before — the last one again when nothing moved since it.
