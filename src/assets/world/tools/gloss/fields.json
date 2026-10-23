@@ -81,7 +81,7 @@
   "geography.ridges": "Là où deux terres se touchent sans eau, une crête de roche infranchissable ; `at` est sa tuile du milieu.",
   "geography.since": "`--since C<n>` : des soldes, `biomes` par sol, sa part si elle bouge, sinon ses tuiles s'il change de 10 % ; un passage : `roster --since`, sauf `positions`, par id.",
   "geography.totals": "Les sommes du monde qu'aucune liste n'additionne : l'eau, la terre (terres comptées et îlots), le gel, la côte ; chaque part, de ce qui la contient.",
-  "geography.totals.shore": "La côte, en tuiles de terre au bord de l'eau, et la part de sable (`beach`) : l'érosion, si elle est active, pose une plage d'une tuile le long du reste.",
+  "geography.totals.shore": "Le rivage de toute eau, mer, lacs, rivières et mares, en tuiles de terre qui la bordent, et sa part de sable (`beach`) ; l'érosion pose une plage sur le reste.",
   "geography.waters": "`seas` touche un bord du monde, `rivers` chaîne par les coins les eaux larges de moins de 3 tuiles, `lakes` le reste dès 64 ; `-i <terre>`, celles qu'elle borde.",
   "geography.waters.unlisted": "Compte les mares de moins de 64 tuiles (`pond_tiles`) et écarte les détroits de plus de 1 024 tuiles.",
   "ground.metadata.cost": "Pris à la réserve dès la pose du chantier (`wiki:Buildings`).",
