@@ -34,7 +34,7 @@ from actor_stats import (
     status_left,
 )
 from founding import city_zones, settle_gates, settle_told
-from grid import LazyTileGrid, off_land
+from grid import LazyTileGrid, listed_tiles, off_land
 from islands import compute_islands_cached, islet_centre
 from shared import (
     NEW_BABY_NUTRITION,
@@ -162,8 +162,8 @@ _TENURE_ROLES = {
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
 _TO_USAGE = (
-    "`--to` takes a body, a tile, a building, a town, a land, every land or a kind: `--to p42`, `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to lands`,"
-    " `--to volcano`"
+    "`--to` takes a body, a tile, a building, a town, a land, every land, the nearest fire or a kind: `--to p42`, `--to 415,117`, `--to b219`, `--to c3`, `--to i7`,"
+    " `--to lands`, `--to burning`, `--to volcano`"
 )
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
@@ -229,6 +229,10 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if ctx["island_lookup"]().get(actor_xy(actor)) == land:
             raise _AimError(f"✗ {named_body(actor)} already stands on land {land}")
         aims, mark, whom = _shore(land, ctx), "landing", f"land {land}"
+    elif target == "burning":  # a fire's nearest flame, where `geography … burning` sites its middle: what a body would meet first
+        if not (aims := list(listed_tiles(save, "fire"))):
+            raise _AimError("✗ nothing burns in this world")
+        mark, whom = "burning", "the nearest fire"
     elif isinstance(target, str):  # a kind, a family or a resource a word, the body itself left out: each answered by the cheapest of its own reached
         families, words = asset_families(save), list(dict.fromkeys(target.split(",")))
         # Ids among the words, refused at once: bodies are aimed at one by one, and two numbers alone would have read as a tile.
@@ -970,7 +974,7 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
-# Every `--to` on the line, in its order: a body, a tile, a building, a town, a land, or kinds — the option repeats where a list of ids would read as a tile.
+# Every `--to` on the line, in its order: a body, a tile, a building, a town, a land, the fire, or kinds — the option repeats where a list of ids reads as a tile.
 def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], list[str]]:
     targets: list[int | tuple[int, int] | str] = []
     while "--to" in argv:
@@ -983,7 +987,7 @@ def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], l
             targets.append(body)
         elif x.lstrip("-").isdigit() and sep and y.lstrip("-").isdigit():
             targets.append((int(x), int(y)))
-        else:  # a land (`i7`, as `geography … islands` ids it), a building, a town, or kinds and families
+        else:  # a land (`i7`, as `geography … islands` ids it), every land, a building, a town, the fire, or kinds and families
             targets.append(value)
     return targets, argv
 

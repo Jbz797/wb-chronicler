@@ -52,6 +52,7 @@ _ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info
 _AIMED_WATER = re.compile(r"(lake|river|sea)(\d+)")  # a water by the id `geography waters` lists it under, as `places.json` keeps it
 _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
 _BARE = {"actors": "no body", "ground": "nothing built or grown"}  # what a tile lacks, said when `actors` or `ground` is all the call asked
+_BURNING = "burning"  # what `-g` takes for the fires, no ground: `geography … burning` names them so
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
 _LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
@@ -178,9 +179,10 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     if (water := ctx.get("aimed_water")) is not None:  # one water's shore, where `to_water` takes the nearest of all — a lake two rivers further off
         grid, layer_by_id, body = ctx["grid"], ctx["layer_by_id"], ctx["water_body"]()
         out["to_body"] = {**water, **(_nearest(x, y, ctx, lambda nx, ny: layer_by_id[grid[ny][nx]] == "Ocean" and body(nx, ny) == water) or {})}
-    if (ground := ctx.get("aimed_ground")) is not None:  # a ground's nearest tile — the rock at a range's foot, a biome's edge
-        grid, grounds = ctx["grid"], ctx["ground_by_id"]
-        out["to_ground"] = {"ground": ground, **(_nearest(x, y, ctx, lambda nx, ny: grounds[grid[ny][nx]] == ground) or {})}
+    if (ground := ctx.get("aimed_ground")) is not None:  # a ground's nearest tile — the rock at a range's foot, a biome's edge, a fire's nearest flame
+        grid, grounds, fires = ctx["grid"], ctx.get("ground_by_id", ()), ctx.get("fire_tiles", frozenset())
+        hit = (lambda nx, ny: (nx, ny) in fires) if ground == _BURNING else (lambda nx, ny: grounds[grid[ny][nx]] == ground)
+        out["to_ground"] = {"ground": ground, **(_nearest(x, y, ctx, hit) or {})}
     return out
 
 
@@ -450,7 +452,7 @@ def main(argv: list[str]) -> int:
         "xy", type=_end_arg, metavar="x,y|b<id>|c<id>|p<id>", help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`."
     )
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
-    parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `geography … biomes` names it, its nearest tile measured in `distances`.")
+    parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `geography … biomes` names it, or `burning`: its nearest tile, in `distances`.")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
     parser.add_argument("--radius", "-r", type=int, default=0, help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
     parser.add_argument(
@@ -529,12 +531,17 @@ def main(argv: list[str]) -> int:
             print(f"✗ no {kind} with id {ref} — `geography … waters` lists them", file=sys.stderr)
             return 2
         ctx["aimed_water"] = {kind: int(ref)}
-    if args.ground is not None:
+    if args.ground == _BURNING:  # no ground's: the save lists the burning tiles apart
+        ctx["fire_tiles"] = set(listed_tiles(save, "fire"))
+        if not ctx["fire_tiles"]:
+            print("✗ nothing burns in this world", file=sys.stderr)
+            return 2
+    elif args.ground is not None:
         ctx["ground_by_id"] = [(tile_ground(name) or "").removeprefix(BARE) for name in ctx["tile_map"]]
         if args.ground not in ctx["ground_by_id"]:
             print(f"✗ no {args.ground} in this world — `geography … biomes -i <land>` lists a land's grounds", file=sys.stderr)
             return 2
-        ctx["aimed_ground"] = args.ground
+    ctx["aimed_ground"] = args.ground
     if sections == {"islet"} and not ctx["tile_to_island"].islet_size((cx, cy)):  # asked alone, an empty block would read as an islet with nothing on it
         land = ctx["tile_to_island"].get((cx, cy))
         print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands -i {land}`' if land else 'water'}", file=sys.stderr)
