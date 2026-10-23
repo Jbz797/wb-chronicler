@@ -29,7 +29,7 @@ from actor_stats import adult_age, build_actor_stats_context, is_egg, kept_task,
 from echo import echoes
 from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_world
 from founding import city_zones, settle_gates
-from grid import LazyTileGrid, decode_tile_grid, tile_layer, tile_runs
+from grid import LazyTileGrid, shore_tally, tile_layer, tile_runs
 from islands import compute_islands_cached
 from shared import (
     CHAPTER_CAP,
@@ -310,21 +310,11 @@ def _bare_world(save: dict, name: str, description: str) -> None:
     stats["world_ages_slots"] = list(_AGE_SLOTS)
 
 
-# The share of the shore already beach: sand among the ground beside water, what erosion turns to sand in time — the figure the reset's question quotes.
+# The share of the shore already beach, `grid.shore_tally`'s, whole for the player — the figure the reset's question quotes.
 def _beach_pct(save: dict) -> str:
-    names = save.get("tileMap") or []
-    layers, sandy = [tile_layer(name) for name in names], [name.partition(":")[0] == "sand" for name in names]
-    grid = decode_tile_grid(save)
-    water = [[layers[tile] == "Ocean" for tile in row] for row in grid]
-    shore = beach = 0
-    for y, row in enumerate(grid):
-        rims = [water[y + dy] for dy in (-1, 1) if 0 <= y + dy < len(grid)]
-        for x, tile in enumerate(row):
-            if layers[tile] == "Ground" and ((x and water[y][x - 1]) or (x + 1 < len(row) and water[y][x + 1]) or any(rim[x] for rim in rims)):
-                shore += 1
-                beach += sandy[tile]
+    shore, beach = shore_tally(save)
     pct = round(beach / shore * 100) if shore else 0
-    return "under 1" if beach and not pct else str(pct)  # a whole figure for the player, a trace of sand never rounded to none
+    return "under 1" if beach and not pct else str(pct)  # a trace of sand never rounded to none
 
 
 # Carries last chapter's trait summaries over wherever neither the entity nor its traits moved — what stays bare is owed, and `--finalize` names it.

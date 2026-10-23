@@ -19,6 +19,7 @@ from grid import (
     frozen_tally,
     listed_tiles,
     off_land,
+    shore_tally,
     tile_biome,
     tile_count,
     tile_frost,
@@ -291,14 +292,15 @@ def _build_positions(
     return sorted(out, key=lambda r: (r["y"], r["x"]))
 
 
-# The map's own sums, which no list adds up: its water, its land, and that land split between the counted lands and the islets too small to be one.
+# The map's own sums, which no list adds up: its water, its land split between the counted lands and the islets too small to be one, its shore.
 def _build_totals(save: dict, save_path: Path) -> dict:
     islands, island_of = compute_islands_cached(save, save_path)
     # `(size, x, y)` each, the largest first and ties to the lower `(x, y)`: counted here so that no reader sweeps the map for a tally of rocks.
     rocks = sorted(island_of.islets(), key=lambda rock: (-rock[0], rock[1], rock[2]))
     frozen, tiles = frozen_tally(save)
     (land, goo, water), counted, tiles = _surfaces(save), sum(island["size"] for island in islands), tiles or 1
-    # Each share of what holds it: the land, the water and the frozen of the map, the counted lands and the islets of the land. Goo, its own layer, where it spread.
+    shore, beach = shore_tally(save)
+    # Each share of what holds it: the land, water and frozen of the map, the counted lands and islets of the land, the beach of the shore. Goo where it spread.
     return {
         "frozen": {"pct": round(frozen / tiles * 100, 1), "tiles": frozen},
         "goo": {"pct": round(goo / tiles * 100, 1), "tiles": goo} if goo else None,
@@ -314,6 +316,7 @@ def _build_totals(save: dict, save_path: Path) -> dict:
             "pct": round(land / tiles * 100, 1),
             "tiles": land,
         },
+        "shore": {"beach": {"pct": round(beach / (shore or 1) * 100, 1), "tiles": beach} if beach else None, "tiles": shore},
         "water": {"pct": round(water / tiles * 100, 1), "tiles": water},
     }
 
