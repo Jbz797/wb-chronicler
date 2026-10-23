@@ -12,11 +12,11 @@ from functools import cache
 from heapq import heapify, heappop, heappush
 from itertools import compress
 from pathlib import Path
-lazy from collections.abc import Iterable, Iterator
+lazy from collections.abc import Callable, Iterable, Iterator
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import LazyTileGrid, listed_tiles, off_land, patch_finder, tile_biome, tile_block, tile_elevation, tile_frost, tile_kind, tile_layer
+from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_biome, tile_block, tile_elevation, tile_frost, tile_ground, tile_kind, tile_layer
 from islands import compute_islands_cached, islet_centre
 from shared import (
     DIAGONAL_EXTRA,
@@ -45,9 +45,10 @@ from shared import (
     zone_xy,
 )
 from walking import WalkMap, walk_way, walled_in
-from waters import water_bodies
+from waters import water_bodies, waters_cached
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info")
+_AIMED_WATER = re.compile(r"(lake|river|sea)(\d+)")  # a water by the id `geography waters` lists it under, as `places.json` keeps it
 _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
 _BARE = {"actors": "no body", "ground": "nothing built or grown"}  # what a tile lacks, said when `actors` or `ground` is all the call asked
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
@@ -173,6 +174,12 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     out |= _nearest_lands(lands)
     if (wanted := ctx["island"]) is not None:  # a named land, however far down the list: the tile's own reads 0, it stands on it
         out["to_island"] = {str(wanted): round(lands.get(wanted, 0))}
+    if (water := ctx.get("aimed_water")) is not None:  # one water's shore, where `to_water` takes the nearest of all — a lake two rivers further off
+        grid, layer_by_id, body = ctx["grid"], ctx["layer_by_id"], ctx["water_body"]()
+        out["to_body"] = {**water, **(_nearest(x, y, ctx, lambda nx, ny: layer_by_id[grid[ny][nx]] == "Ocean" and body(nx, ny) == water) or {})}
+    if (ground := ctx.get("aimed_ground")) is not None:  # a ground's nearest tile — the rock at a range's foot, a biome's edge
+        grid, grounds = ctx["grid"], ctx["ground_by_id"]
+        out["to_ground"] = {"ground": ground, **(_nearest(x, y, ctx, lambda nx, ny: grounds[grid[ny][nx]] == ground) or {})}
     return out
 
 
@@ -360,22 +367,31 @@ def _nearest_lands(nearest: dict[int, float]) -> dict:
     return out
 
 
-# Rings widen until the sea is met, every cell walkable — a coastal tile ends in two or three, where a BFS would carry a front. Nothing where no water is found.
-def _nearest_water(x: int, y: int, ctx: dict) -> dict | None:
-    grid, layer_by_id = ctx["grid"], ctx["layer_by_id"]
+# Rings widen until a tile `hit` takes is met, every cell walkable — a tile near its aim ends in two or three, where a BFS would carry a front. `None` where none is.
+def _nearest(x: int, y: int, ctx: dict, hit: Callable[[int, int], bool]) -> dict | None:
+    grid = ctx["grid"]
     height, width, best, at = grid.height, grid.width, None, (x, y)
-    # A ring holds tiles worth `r` walked to `r * √2`, so the first water met may still be beaten one ring out — the search stops once no ring left can.
+    # A ring holds tiles worth `r` walked to `r * √2`, so the first tile met may still be beaten one ring out — the search stops once no ring left can.
     for r in range(max(width, height)):
         if best is not None and r >= best:
             break
         for nx, ny in _ring_tiles(x, y, r, width, height):
-            if layer_by_id[grid[ny][nx]] == "Ocean" and (walked := walk_tiles(nx - x, ny - y)) < (best if best is not None else walked + 1):
+            if hit(nx, ny) and (walked := walk_tiles(nx - x, ny - y)) < (best if best is not None else walked + 1):
                 best, at = walked, (nx, ny)
     if best is None:
         return None
-    # Which water, by the id `geography waters` lists it under — and its tile, a goal `actor … --to` walks a body to: none on the water itself, the tile asked.
+    # Its tile, a goal `actor … --to` walks a body to: none on the very tile asked.
     spot = {"x": at[0], "y": at[1]} if at != (x, y) else {}
-    return {**ctx["water_body"]()(*at), **spot, "crow_tiles": round(best), "dir": bearing(at[0] - x, at[1] - y)}
+    return {**spot, "crow_tiles": round(best), "dir": bearing(at[0] - x, at[1] - y)}
+
+
+# The nearest water of any kind, by the id `geography waters` lists it under: the first tile of it met, its shore.
+def _nearest_water(x: int, y: int, ctx: dict) -> dict | None:
+    grid, layer_by_id = ctx["grid"], ctx["layer_by_id"]
+    if (reach := _nearest(x, y, ctx, lambda nx, ny: layer_by_id[grid[ny][nx]] == "Ocean")) is None:
+        return None
+    at = (reach.get("x", x), reach.get("y", y))
+    return {**ctx["water_body"]()(*at), **reach}
 
 
 def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
@@ -429,6 +445,7 @@ def main(argv: list[str]) -> int:
         "xy", type=_end_arg, metavar="x,y|b<id>|c<id>|p<id>", help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`."
     )
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
+    parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `geography … biomes` names it, its nearest tile measured in `distances`.")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
     parser.add_argument("--radius", "-r", type=int, default=0, help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
     parser.add_argument(
@@ -437,6 +454,7 @@ def main(argv: list[str]) -> int:
         metavar="x,y|b<id>|c<id>|p<id>",
         help="A second end and a `to` key, the walk from the first to it — the tiles too once sections are named.",
     )
+    parser.add_argument("--water", "-w", metavar="lake<id>|river<id>|sea<id>", help="One water by its id, its shore measured in `distances`.")
     args = parser.parse_args(argv)
 
     try:
@@ -462,8 +480,13 @@ def main(argv: list[str]) -> int:
     if args.to and args.radius:  # refused before the save is read: a call that cannot be answered should not cost the load
         print("✗ `--to` reads two tiles and `--radius` a square around one: they don't combine", file=sys.stderr)
         return 2
-    if args.island is not None and "distances" not in sections:
-        print("✗ `--island` answers in `distances`: name that section, or `full`", file=sys.stderr)
+    aimed = [flag for flag, given in (("--ground", args.ground), ("--island", args.island), ("--water", args.water)) if given is not None]
+    if aimed and "distances" not in sections:
+        print(f"✗ {', '.join(aimed)} answer{'s' if len(aimed) == 1 else ''} in `distances`: name that section, or `full`", file=sys.stderr)
+        return 2
+    water = _AIMED_WATER.fullmatch(args.water) if args.water is not None else None
+    if args.water is not None and water is None:
+        print(f"✗ --water {args.water}: a water is `lake<id>`, `river<id>` or `sea<id>`, as `geography … waters` lists them", file=sys.stderr)
         return 2
 
     save = load_save(save_path)
@@ -495,6 +518,18 @@ def main(argv: list[str]) -> int:
     if args.island is not None and args.island not in ctx["island_ids"]:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
         return 2
+    if water is not None:
+        kind, ref = water.groups()
+        if int(ref) not in {body["id"] for body in waters_cached(save, save_path)[f"{kind}s"]}:
+            print(f"✗ no {kind} with id {ref} — `geography … waters` lists them", file=sys.stderr)
+            return 2
+        ctx["aimed_water"] = {kind: int(ref)}
+    if args.ground is not None:
+        ctx["ground_by_id"] = [(tile_ground(name) or "").removeprefix(BARE) for name in ctx["tile_map"]]
+        if args.ground not in ctx["ground_by_id"]:
+            print(f"✗ no {args.ground} in this world — `geography … biomes -i <land>` lists a land's grounds", file=sys.stderr)
+            return 2
+        ctx["aimed_ground"] = args.ground
     if sections == {"islet"} and not ctx["tile_to_island"].islet_size((cx, cy)):  # asked alone, an empty block would read as an islet with nothing on it
         land = ctx["tile_to_island"].get((cx, cy))
         print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands -i {land}`' if land else 'water'}", file=sys.stderr)

@@ -111,6 +111,8 @@
   "subspecies.species.evolved_from": "D'une espèce pensante : la bête dont elle vient.",
   "subspecies.stats.maturation_months": "Les mois de la conception à la naissance ou à l'éclosion, que les traits de la lignée (gestation, œufs) additionnent ; `birth_on` les ajoute à `mates_on`.",
   "tiles.distances.strait_to_land": "L'eau à nager (`swim_tiles`) depuis tout le rocher, écueils à sec gratuits ; de rive à rive : `islet … to_islands`.",
+  "tiles.distances.to_body": "`-w <eau>` : la rive la plus proche de cette eau, à vol d'oiseau, là où `to_water` prend l'eau la plus proche de toutes ; ids de `geography waters`.",
+  "tiles.distances.to_ground": "`-g <sol>` : la tuile la plus proche de ce sol, nommé comme dans `geography biomes` (`rock` au pied d'un massif) ; sans cap ni tuile sur le sol même.",
   "tiles.distances.to_island": "`-i <id>` : une terre mesurée comme sous `to_islands`, même hors des 5 plus proches ; celle où l'on se tient vaut 0.",
   "tiles.distances.to_islands": "Les 5 terres les plus proches, à vol d'oiseau jusqu'à leur tuile la plus proche.",
   "tiles.distances.to_nearest_city": "La cité la plus proche par son `edge`, un quartier ; `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.",
