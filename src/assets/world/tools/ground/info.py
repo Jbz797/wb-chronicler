@@ -79,7 +79,7 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         # What WB took from the town's stock as the site was laid (`CityBehBuild.tryToBuild`), a raised tier paying its own — nothing said of a free one.
         "cost": asset.get("cost"),
-        # A volcano or a geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops`, until lightning or the player flips it.
+        # A volcano or geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops` — set by cold, flipped by lightning (`gloss`).
         "dormant": "stop_spawn_drops" in flags or None,
         "families": len({fid for a in dwellers if (fid := a.get("family"))}) or None,  # none says nothing of who sleeps there: `occupants` does
         "health": int(health) if hurt or (whole is None and "health" in house) else None,  # an asset the tables do not know keeps what the save wrote
