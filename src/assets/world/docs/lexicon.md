@@ -1,6 +1,6 @@
 # 🔤 Vocabulaire du récit
 
-<p class="metadata">Date de mise à jour : 23/10/26 16:12</p>
+<p class="metadata">Date de mise à jour : 23/10/26 17:51</p>
 
 ## Mots imposés
 
@@ -13,7 +13,7 @@
 
 - **« 0 an »** : un `age` de 0 dit une vie de moins d'un an — raconte la naissance récente.
 - **Continent, océan** : la plus vaste terre n'est jamais un continent, ni la plus vaste eau un océan.
-- **Jeu, sauvegarde, joueur, partie, moteur**, ni rien du cadre technique : un compte dit ce qu'il compte, jamais qu'on compte.
+- **Jeu, sauvegarde, joueur, partie, moteur**, ni rien du cadre technique : un compte dit ce qu'il compte, jamais qu'on compte (_« elles sont 348 »_, pas _« on en compte 348 »_).
 - **Tuile**, et **aucune unité ne la remplace une pour une**, ni « pas » (_« à 12 pas »_), « arpent » ou « hectare » — _« à quelques pas »_, sans chiffre, dit le tout-près, sous 2 tuiles : une distance ou une aire se dit par l'échelle (`chronicler.md` § Échelle), une aire aussi par sa part d'une terre ou d'une eau.
 
 ## Barèmes
