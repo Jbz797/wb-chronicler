@@ -191,8 +191,8 @@ _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — t
 # Put to the player at the first chapter, before a line is written. The three commands answer it, and the naming brief rides with the third.
 _RESET_PROMPT = (
     "? first chapter — nothing is written until the player has answered. Put this to him, in one go:",
-    "  « Do you want to start over from a bare map — relief, biomes, volcanoes and geysers kept, everything else erased (creatures, trees, plants, ores,",
-    "    buildings, kingdoms…), back to year 1 of the Age of Hope with a new genetic seed and the README's world laws?",
+    "  « Do you want to start over from a bare map — relief, biomes, volcanoes — some woken — and geysers kept, everything else erased (creatures,",
+    "    trees, plants, ores, buildings, kingdoms…), back to year 1 of the Age of Hope with a new genetic seed and the README's world laws?",
     "    And if so, shall I name it too? »",
     "  → no: `tools/chapter/new.py --reset-asked`",
     "  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries",
@@ -877,7 +877,8 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
 
     save = load_save(live_wbox)
     _bare_world(save, name, description)
-    turned = _set_laws(save, laws)
+    woken, volcanoes = _wake_volcanoes(save)
+    turned = _set_laws(save, {**laws, "world_law_forever_lava": not volcanoes})  # the README leaves it to the reset: no volcano, no lava but the map's own to keep
     stats = save["mapStats"]
     write_save(live_wbox, save)
     _write_world(save)  # off the save, not off the arguments: a world that kept its name keeps it here too
@@ -887,6 +888,7 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     landmarks = ", ".join(f"{count} {asset}" for asset, count in sorted(Counter(b["asset_id"] for b in save["buildings"]).items()))
     print(f"✓ world reset — year 1 of the Age of Hope, {stats['current_world_ages_duration'] / UNITS_PER_YEAR:.0f} years long")
     print(f"  map kept, {f'with its landmarks: {landmarks}' if landmarks else 'no landmark on it'}")
+    print(f"  volcanoes: {woken} of {volcanoes} woken, erupting till lightning or a cold aura stills them" if volcanoes else "  no volcano: its lava kept for good")
     print(f"  world laws as the README sets them{f', turned: {", ".join(turned)}' if turned else ', none to turn'}")
     print(f"  named: {stats['name'] or '—'}")
     if name or description:  # his own words, written before any audit stood and read by none after: checked here, the game still closed for the mending
@@ -1091,6 +1093,17 @@ def _unnamed(features: list[dict]) -> dict:
 
 def _value(argv: list[str], flag: str) -> str:
     return argv[i] if flag in argv and (i := argv.index(flag) + 1) < len(argv) else ""
+
+
+# Wakes between one and two thirds of the volcanoes, the rest put to sleep → (woken, volcanoes). An awake one erupts for good: two thirds leave the world some calm.
+def _wake_volcanoes(save: dict) -> tuple[int, int]:
+    volcanoes = [b for b in save["buildings"] if b["asset_id"] == "volcano"]  # landmarks alone, each named by `_bare_world`'s own filter
+    random.shuffle(volcanoes)  # the local list alone: `buildings` keeps its order
+    woken = random.randint(1, max(1, len(volcanoes) * 2 // 3)) if volcanoes else 0
+    for rank, volcano in enumerate(volcanoes):
+        flags = [flag for flag in volcano.get("custom_data_flags") or [] if flag != "stop_spawn_drops"]
+        volcano["custom_data_flags"] = flags if rank < woken else [*flags, "stop_spawn_drops"]
+    return woken, len(volcanoes)
 
 
 # Every chapter in one file: what the nav prints beside a slug, and nothing else. Rewritten whole each time, so a chapter deleted by hand drops out on the next run.

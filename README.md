@@ -82,10 +82,12 @@ The laws the chronicle is played under, by tab of the game's _World Laws_ window
 | Plants              | Plants Growth                                                           | Fast Plants Growth, Plants Tickles, Root Pranks, Nectar Nap |
 | Fungi               | Fungi Growth                                                            | Fast Fungi Growth, Exploding Mushrooms                      |
 | Biomes              | Grow Grass                                                              | Biomes Overgrowth                                           |
-| Weather             | —                                                                       | Eternal Lava, Forever Cold                                  |
+| Weather             | —                                                                       | Forever Cold                                                |
 | Disasters           | Natural Disasters, Other Disasters, Rat King                            | —                                                           |
 | Other               | Evolution Events                                                        | —                                                           |
 | Forbidden Knowledge | —                                                                       | Forbidden Knowledge                                         |
+
+**Eternal Lava** is the reset's call: on where the map has no volcano, its lava kept as it lies; off otherwise, with one to two thirds of the volcanoes woken — an awake one erupts until lightning or a cold aura stills it.
 
 **Drop of Thoughts** sows thinking peoples into the young world: once enough crowns stand, the chronicler asks you to turn it off.
 
