@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 23/10/26 12:38</p>
+<p class="metadata">Date de mise à jour : 23/10/26 12:41</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire, ou, avant lui, ses tournants.
 
@@ -23,9 +23,9 @@ Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peu
 
 ## Le registre des veilles
 
-Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le : ses seules puces. Mets-le à jour à chaque passe : le chroniqueur en lit les changements, ton rapport n'a pas à les redire. Une veille sortie (soldée, abandonnée, fondue) se retrouve, avec son chapitre, par `git -C saves log -p -- watches.md` : pèse-la aussi quand tu cherches un fil jamais refermé.
+Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton premier audit : ses seules puces. Mets-le à jour à chaque passe : le chroniqueur en lit les changements, ton rapport n'a pas à les redire. Une veille sortie (soldée, abandonnée, fondue) se retrouve, avec son chapitre, par `git -C saves log -p -- watches.md` : pèse-la aussi quand tu cherches un fil jamais refermé.
 
-- **Chiffres** : le registre n'en porte aucun, pas même une date à venir (un article n'en est pas un) : une veille dit son fil, le chapitre porte le fait.
+- **Chiffres** : le registre n'en porte aucun, pas même une date à venir : une veille dit son fil, le chapitre porte le fait.
 - **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` : rien ne garde son issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas reste telle quelle.
 - **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · reconduite · son sujet en une ligne »_, en gras le chapitre de son ouverture. Son sort : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille (les bêtes qu'on craignait mortes, la menace passe aux morts qui marchent sur leur sol). Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles d'un même fil se fondent en une, reconduite au chapitre qui les lie, sinon elles restent deux ; la plus ancienne garde son ouverture.
