@@ -60,7 +60,7 @@
   "city.buildings": "`buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose (`born`) ; la section les liste, chantier marqué : ce qu'elle tait, la cité ne l'a pas.",
   "city.metadata.attractivity": "Les corps gagnés, moins ceux partis vivants ; le fondateur et les migrants à part.",
   "city.metadata.migrants": "Ce qui retient la loi d'en amener, sinon `soon` ou `later` (`wiki:World_Laws`).",
-  "crow_tiles": "À vol d'oiseau sur 8 directions (une diagonale compte 1,41) : à citer tel quel, jamais refait à la règle ; pas un compte de pas.",
+  "crow_tiles": "À vol d'oiseau sur 8 directions (une diagonale compte 1,41), arrondi à la tuile : à citer tel quel, jamais refait à la règle ; pas un compte de pas.",
   "cursed": "`cursed` rabat la santé à la moitié ; le sol corrompu maudit à 5 % par pas. Levé, il laisse `health` sous `health_max`.",
   "deaths_by_cause": "D'une lignée, il omet des morts (un maudit relevé) : celles du monde sont dans `world … cumulative` ou `history world` ; hors du journal, au `pop` annuel.",
   "drivers": "`drivers`, complet, somme au `total` ; `top_drivers` n'en garde que les deux extrêmes et ne somme à rien. Ses termes : `wiki:Loyalty`, `wiki:Kingdom_Opinions`.",
