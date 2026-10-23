@@ -110,7 +110,7 @@ def _build_taxonomy(subspecies: dict) -> dict:
     return {rank: name.capitalize() for rank in _TAXONOMY_RANKS if (name := ranks.get(rank))}
 
 
-# Two libraries on one axis: `biology` what WB mutated the subspecies into, `birth` what its newborns inherit — both keyed by trait group, at any size.
+# Two libraries: `biology` what WB mutated the subspecies into, `birth` what its newborns inherit — lists as `actor`'s, each id with its group under `full`.
 def _build_traits(subspecies: dict, detailed: bool) -> dict:
     build = build_trait_list if detailed else partial(build_trait_ids, key="group")
     # WB reads a biology's faculties off its traits' tags (`Subspecies.cacheTags`) — each spelled-out entry carries its own, so they ride the named section alone.

@@ -121,6 +121,7 @@
   "subspecies.species.evolution_id": "D'une bête : l'espèce pensante qu'elle devient.",
   "subspecies.species.evolved_from": "D'une espèce pensante : la bête dont elle vient.",
   "subspecies.stats.maturation_months": "Les mois de la conception à la naissance ou à l'éclosion, que les traits de la lignée (gestation, œufs) additionnent ; `birth_on` les ajoute à `mates_on`.",
+  "subspecies.traits": "Deux listes, chacune comme `actor … traits` : `biology`, ce que la lignée a muté, et `birth`, ce que ses petits reçoivent en naissant.",
   "tiles.distances.strait_to_land": "L'eau à nager (`swim_tiles`) depuis tout le rocher, écueils à sec gratuits ; de rive à rive : `islet … to_islands`.",
   "tiles.distances.to_body": "`-w <eau>` : la rive la plus proche de cette eau, à vol d'oiseau, là où `to_water` prend l'eau la plus proche de toutes ; ids de `geography waters`.",
   "tiles.distances.to_ground": "`-g <sol>` : la tuile la plus proche de ce sol, nommé comme dans `geography biomes` (`rock` au pied d'un massif) ; sans cap ni tuile sur le sol même.",
