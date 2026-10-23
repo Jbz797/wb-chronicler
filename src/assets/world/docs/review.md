@@ -1,6 +1,6 @@
 # 🔍 Relecture
 
-<p class="metadata">Date de mise à jour : 22/10/26 01:01</p>
+<p class="metadata">Date de mise à jour : 23/10/26 12:35</p>
 
 Ce que tu fais du chapitre une fois l'étape 5 bouclée, jusqu'à `--deliver`. Les auditeurs n'en savent rien : ne leur en cite rien.
 
@@ -16,7 +16,7 @@ Lance 3 sous-agents neufs pour ce chapitre, en même temps, et relance par messa
 
 ## Entre deux tours
 
-1. Attends tous les rapports, sans toucher à `chapter.md` tant qu'un auditeur lit ; un message du joueur ou du dev attend aussi. Corrige chaque écart confirmé : celui qu'un seul vérificateur de faits lève se vérifie quand même, et un outil tranche un désaccord. Un point à mesurer ne s'écrit qu'une fois mesuré, par toi ou par les faits ; mesuré, il retourne à qui l'a levé avec sa commande et sa valeur.
+1. Attends tous les rapports, sans toucher à `chapter.md` tant qu'un auditeur lit ; un message du joueur ou du dev attend aussi. Les veilles changées se lisent par `git -C saves add -N watches.md && git -C saves diff -- watches.md`, le `-N` montrant aussi un registre neuf. Corrige chaque écart confirmé : celui qu'un seul vérificateur de faits lève se vérifie quand même, et un outil tranche un désaccord. Un point à mesurer ne s'écrit qu'une fois mesuré, par toi ou par les faits ; mesuré, il retourne à qui l'a levé avec sa commande et sa valeur.
 2. Répare d'abord ce sur quoi une section repose (son fil de clôture, un absolu, une absence, une cause, une date), puisque sa chute réécrit le reste. Ne réécris que ce qu'une correction ne peut réparer, et lis sur un outil toute affirmation qu'une correction amène, jamais sur le brouillon, un rapport ou ta mémoire. Seule exception : ce qu'un vérificateur de faits a tiré de la save par ses propres scripts, faute d'outil, vaut une sortie — signale au dev l'outil qui manque.
 3. Cherche ensuite partout la même valeur, le même mot ou la même tournure : `chapter.md` avec son titre et son épigraphe, et ta prose dans `chapter.json` ; un mot ne se remplace jamais partout où il revient.
 4. Les propositions du récit et les « mieux possible » de la conformité sont à prendre ou à laisser, de ta main. Un dialogue se bâtit avec le récit, par messages : donne-lui les faits et ce que vit l'interlocuteur, il apporte ce que la chronique sait du favori. Ton premier jet en porte l'esquisse ; échangez sujet et répliques jusqu'à l'accord, puis écris-le de ta main.
