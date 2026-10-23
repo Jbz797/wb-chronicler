@@ -60,6 +60,7 @@ _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
 _DETAIL = ("borders", "bounds")  # what `-t` alone tells of a patch, the wide view keeping to where it lies
+_FIRE_REACH = 16  # tiles between two burning ones of a single fire: twice a volcano's longest throw (`spawn_drop_max_radius`), its lava falling all round it
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 
 _NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault, or as a word mistyped
@@ -168,17 +169,20 @@ def _build_bodies(save: dict, save_path: Path) -> dict:
 
 
 # A fire WB saves tile by tile, counted land by land, then on the islets and on the water — each tile by its biome, else by its ground as `islands` names it.
-def _build_burning(save: dict, save_path: Path) -> dict:
+def _build_burning(save: dict, save_path: Path, island: int | str | None) -> dict:
     if not (positions := list(listed_tiles(save, "fire"))):  # nothing listed, nothing to site: the islands are never unpickled
         return {}
-    _, island_of = compute_islands_cached(save, save_path)
+    islands, island_of = compute_islands_cached(save, save_path)
     grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
-    by_land: defaultdict[str, Counter] = defaultdict(Counter)
+    by_land: defaultdict[str, dict[tuple[int, int], str]] = defaultdict(dict)
     for x, y in positions:
         name = tile_map[grid[y][x]]
-        by_land[_land_key(island_of.get((x, y)), name)][tile_biome(name) or tile_kind(name)] += 1
+        by_land[_land_key(island_of.get((x, y)), name)][x, y] = tile_biome(name) or tile_kind(name)
     # Counts, not the shares `islands` gives: a few dozen tiles read better whole than as percentages of themselves.
-    return {key: " | ".join(f"{n} {ground}" for ground, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
+    out: dict[str, str | dict] = {key: _tally(burning.values()) for key, burning in sorted(by_land.items(), key=_land_order)}
+    if island is not None and (key := str(island)) in by_land:  # `-i` alone tells its land's fires apart, the world count staying one line a land
+        out[key] = {"grounds": out[key], **_fires(by_land[key], next((row for row in islands if str(row["id"]) == key), None))}
+    return out
 
 
 # Every kind the save holds, by family: `shared.asset_families`, which `actor … --to` and `positions -t` read, so that a name listed here is one they take.
@@ -322,7 +326,7 @@ def _collect(save: dict, save_path: Path, sections: tuple[str, ...], kinds: set[
     if "bodies" in sections:
         out["bodies"] = _build_bodies(save, save_path)
     if "burning" in sections:
-        out["burning"] = _build_burning(save, save_path)
+        out["burning"] = _build_burning(save, save_path, island)
     if "entity_types" in sections:
         out["entity_types"] = _build_entity_types(save)
     if "frozen" in sections:
@@ -395,6 +399,37 @@ def _ground_lands(biomes: dict, kind: str) -> dict | None:
             name = "biome" if "biome" in row else "ground"
             lands[land] = {key: value for key, value in row.items() if key != name}
     return {name: kind, "islands": lands} if lands else None
+
+
+# A land's burning tiles as fires, those within `_FIRE_REACH` of one another one fire: its tile nearest its middle, its heading on the land, grounds and size.
+def _fires(burning: dict[tuple[int, int], str], land: dict | None) -> dict:
+    cells: defaultdict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)  # the tiles by square of `_FIRE_REACH`: a tile's kin lie in its 9 squares
+    for x, y in burning:
+        cells[x // _FIRE_REACH, y // _FIRE_REACH].append((x, y))
+    fires, seen = [], set()
+    for start in sorted(burning):
+        if start in seen:
+            continue
+        seen.add(start)
+        stack, fire = [start], []
+        while stack:
+            x, y = stack.pop()
+            fire.append((x, y))
+            cx, cy = x // _FIRE_REACH, y // _FIRE_REACH
+            for near in (tile for dx in (-1, 0, 1) for dy in (-1, 0, 1) for tile in cells.get((cx + dx, cy + dy), ())):
+                if near not in seen and max(abs(near[0] - x), abs(near[1] - y)) <= _FIRE_REACH:
+                    seen.add(near)
+                    stack.append(near)
+        fires.append(fire)
+    fires.sort(key=lambda fire: (-len(fire), min(fire)))
+    told = []
+    for fire in fires[:_TOP_PATCHES]:
+        mean_x, mean_y = sum(x for x, _ in fire) / len(fire), sum(y for _, y in fire) / len(fire)
+        x, y = min(fire, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
+        side = _side({"x": x, "y": y}, land) if land else {}
+        told.append({"x": x, "y": y, **side, "grounds": _tally(burning[tile] for tile in fire), "tiles": len(fire)})
+    rest = fires[_TOP_PATCHES:]
+    return {"fires": told, "unlisted": {"fires": len(rest), "tiles": sum(map(len, rest))} if rest else None}
 
 
 # The row of one ground among a land's, asked by its biome or its bare ground alike — `None` where the land bears none.
@@ -493,6 +528,10 @@ def _surveyed(biomes: dict) -> dict:
         others = {"others": sorted(row.get("biome") or row["ground"] for row in minor), "tiles": sum(row["tiles"] for row in minor)}
         lands[land] = kept + ([others] if minor else [])
     return {"islands": lands}
+
+
+def _tally(grounds: Iterable[str]) -> str:
+    return " | ".join(f"{n} {ground}" for ground, n in Counter(grounds).most_common())
 
 
 # A ground's `_TOP_PATCHES` largest patches placed on its land, ties in size to the lower `(x, y)`, each with its box as a land's `bounds` — the rest is a count.
