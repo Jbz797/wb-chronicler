@@ -69,6 +69,7 @@ _BODY_LINKS = {
 _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its readings — ours to set, WB scores books nowhere.
 _CACHE_DIR = Path(__file__).parent.parent / ".cache"  # the save pickles and every sweep of the map, a slot per save each; gitignored via the root `.gitignore`
 _CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
+_CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a point still reads as its centre rather than a side
 _CHAPTER_FLOOR = 6000  # counted past the audit, which cuts as much as it adds
 _CHUNK_TILES = 16  # WB `MapChunk` side: 4 to a save's 64-tile block (`MapChunkManager.prepare`)
 
@@ -921,6 +922,15 @@ def land_arg(value: str) -> int | str:
     if not value.isdigit():
         raise argparse.ArgumentTypeError(f"{value!r} is no land — a land's id, `islets` or `water`")
     return int(value)
+
+
+# Where a point lies on a land (« the desert covers its north-east »): its heading from the land's centroid, `centre` within a quarter of each half-span.
+def land_side(x: int, y: int, land: dict) -> str | None:
+    (west, east), (south, north), middle = land["bounds"]["x"], land["bounds"]["y"], land["centroid"]
+    dx, dy = x - middle["x"], y - middle["y"]
+    if (dx / max((east - west) / 2, 1)) ** 2 + (dy / max((north - south) / 2, 1)) ** 2 < _CENTRE_SHARE**2:
+        return "centre"
+    return bearing(dx, dy)
 
 
 # The last chapter standing, 0 where none does yet. Three callers glob these dirs, and a chapter is `C<n>` on disk and nowhere else.

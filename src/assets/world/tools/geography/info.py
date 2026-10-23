@@ -37,13 +37,13 @@ from shared import (
     asset_families,
     asset_kinds,
     asset_sites,
-    bearing,
     biome_lore,
     emit,
     index_by_id,
     is_boat,
     is_sapient,
     land_arg,
+    land_side,
     load_save,
     moved_between,
     parse_sections,
@@ -59,7 +59,6 @@ _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear"
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
 _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
-_CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a patch still reads as its centre rather than a side
 _DETAIL = ("borders", "bounds")  # what `-t` alone tells of a patch, the wide view keeping to where it lies
 _FIRE_REACH = 16  # tiles between two burning ones of a single fire: twice a volcano's longest throw (`spawn_drop_max_radius`), its lava falling all round it
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
@@ -435,7 +434,7 @@ def _fires(burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict
         home = [tile for tile in fire if burning[tile][0] == key]  # sited on its own land, where the heading is read
         mean_x, mean_y = sum(x for x, _ in home) / len(home), sum(y for _, y in home) / len(home)
         x, y = min(home, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
-        side = _side({"x": x, "y": y}, land) if land else {}
+        side = {"dir": land_side(x, y, land)} if land else {}
         spills = {land_key: n for land_key, n in lands.items() if land_key != key} or None
         told.append({"x": x, "y": y, **side, "grounds": _tally(burning[tile][1] for tile in fire), "spills": spills, "tiles": len(fire)})
     rest = fires[_TOP_PATCHES:]
@@ -497,15 +496,6 @@ def _patch_detail(save: dict, save_path: Path, land: int | str, kind: str) -> di
     return {**{key: value for key, value in row.items() if key != "largest"}, **told, "unlisted": rest if rest["patches"] else None}
 
 
-# Where a patch lies on its land (« the desert covers its north-east »): its heading from the land's centroid, `centre` within a quarter of each half-span
-def _side(patch: dict, land: dict) -> dict:
-    (west, east), (south, north), middle = land["bounds"]["x"], land["bounds"]["y"], land["centroid"]
-    dx, dy = patch["x"] - middle["x"], patch["y"] - middle["y"]
-    if math.hypot(dx / max((east - west) / 2, 1), dy / max((north - south) / 2, 1)) < _CENTRE_SHARE:
-        return {"dir": "centre"}
-    return {"dir": bearing(dx, dy)}
-
-
 # A patch's own tile nearest its middle, ties to the lower `(x, y)` — a mean alone could fall on another ground, or at sea. Each run offers its nearest column.
 def _site(mean_x: float, mean_y: float, runs: list[tuple[int, int, int]]) -> dict:
     column, offers = math.ceil(mean_x - 0.5), []  # the column nearest the mean, a tie going west as `(x, y)` orders it
@@ -551,7 +541,7 @@ def _top_patches(found: list[list], land: dict | None, grounds: list[bytes], kin
     return [
         {
             **site,
-            **(_side(site, land) if land else {}),
+            **({"dir": land_side(site["x"], site["y"], land)} if land else {}),
             "borders": _borders(runs, grounds, kinds),
             "bounds": {"x": [min(a for _, a, _ in runs), max(b for *_, b in runs) - 1], "y": [runs[0][0], runs[-1][0]]},  # the runs come south to north
             "tiles": size,

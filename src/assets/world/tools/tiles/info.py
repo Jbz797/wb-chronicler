@@ -36,6 +36,7 @@ from shared import (
     entity_ref,
     index_by_id,
     is_boat,
+    land_side,
     load_save,
     parse_sections,
     take_chapter,
@@ -114,7 +115,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     # `distances` needs it too, to say how far a rock lies from a land a city could hold, and a walk what land it keeps to
     if walks or {"islet", "tile_info"} & sections:
         islands, ctx["tile_to_island"] = compute_islands_cached(save, save_path)
-        ctx["island"], ctx["island_ids"] = island, {land["id"] for land in islands}
+        ctx["island"], ctx["lands"] = island, {land["id"]: land for land in islands}
 
     if "tile_info" in sections:
         ctx["burning_set"] = wanted.intersection(listed_tiles(save, "fire"))
@@ -283,6 +284,10 @@ def _islet_at(x: int, y: int, ctx: dict) -> dict:
             continue
         if (tiles_to := min(walk_tiles(ex - sx, ey - sy) for sx, sy in shore)) < nearest.get(island, _FARTHER):
             nearest[island] = tiles_to
+    # The land it lies off, and on which side of it: past `_LAND_REACH`, open sea, an islet off no shore.
+    land = min(nearest, key=lambda island: (nearest[island], island), default=None)
+    if land is not None and nearest[land] <= _LAND_REACH:
+        out["off"] = {"island_id": land, "side": land_side(cx, cy, ctx["lands"][land])}
     return out | _nearest_lands(nearest)
 
 
@@ -515,7 +520,7 @@ def main(argv: list[str]) -> int:
     coords = [(cx, cy), (tx, ty)] if args.to else _radius_tiles(cx, cy, args.radius, width, height)
     queried = set(coords) if args.to else {(cx, cy)}  # the tiles a reading is about: both ends of a `--to`, the centre of a sweep
     ctx = _build_context(save, save_path, sections, coords, args.island, "distances" in sections or args.to is not None)
-    if args.island is not None and args.island not in ctx["island_ids"]:
+    if args.island is not None and args.island not in ctx["lands"]:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
         return 2
     if water is not None:
