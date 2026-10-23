@@ -575,8 +575,7 @@ def _finalize() -> int:
     # The text tagged as this round reads it, so a relaunch hands over what moved since the auditor's own round rather than a list, or a memory.
     if (rounds := _snapshot(n)) is not None:
         tag, before = rounds
-        relaunch = f" — a relaunch hands each auditor `git -C saves diff <the round it last read> {tag} -- C{n}`, the one before: {before}"
-        print(f"  → this text is round {tag}{relaunch if before else ''}")
+        print(f"  → this text is round {tag}{f' — {_relaunch(n, tag, before)}' if before else ''}")
     return 0
 
 
@@ -843,6 +842,10 @@ def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -
     return "yet to be designated" if fav_id is None else ""
 
 
+def _relaunch(n: int, tag: str, before: str) -> str:
+    return f"a relaunch hands each auditor `git -C saves diff <its last round> {tag} -- C{n}`, both tags for any git read; the one before: {before}"
+
+
 # Rewrites the world's name or blurb in the live save and on its card, the other left as it stands: what the check after the naming mends.
 def _rename_world(live_wbox: Path, name: str, description: str) -> int:
     if not (name or description):
@@ -934,7 +937,7 @@ def _retouch() -> int:
         rounds = sorted(int(tag.rsplit("-r", 1)[1]) for tag in chronicle_git("tag", "--list", f"C{n}-r*").stdout.split())
         chronicle_git("tag", tag := f"C{n}-r{rounds[-1] + 1 if rounds else 1}")
         before = f"C{n}-r{rounds[-1]}" if rounds else f"C{n}-delivered"
-        print(f"✓ C{n} — round {tag}: a relaunch hands each auditor `git -C saves diff <the round it last read> {tag} -- C{n}`, the one before: {before}")
+        print(f"✓ C{n} — round {tag}: {_relaunch(n, tag, before)}")
     return 0
 
 
