@@ -175,14 +175,17 @@ def _build_burning(save: dict, save_path: Path, island: int | str | None) -> dic
         return {}
     islands, island_of = compute_islands_cached(save, save_path)
     grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
-    by_land: defaultdict[str, dict[tuple[int, int], str]] = defaultdict(dict)
+    burning: dict[tuple[int, int], tuple[str, str]] = {}  # each tile's land and ground, the map's whole fire: a blaze spans a shore, never a land alone
     for x, y in positions:
         name = tile_map[grid[y][x]]
-        by_land[_land_key(island_of.get((x, y)), name)][x, y] = tile_biome(name) or tile_kind(name)
+        burning[x, y] = (_land_key(island_of.get((x, y)), name), tile_biome(name) or tile_kind(name))
+    by_land: defaultdict[str, list[str]] = defaultdict(list)
+    for key, ground in burning.values():
+        by_land[key].append(ground)
     # Counts, not the shares `islands` gives: a few dozen tiles read better whole than as percentages of themselves.
-    out: dict[str, str | dict] = {key: _tally(burning.values()) for key, burning in sorted(by_land.items(), key=_land_order)}
+    out: dict[str, str | dict] = {key: _tally(grounds) for key, grounds in sorted(by_land.items(), key=_land_order)}
     if island is not None and (key := str(island)) in by_land:  # `-i` alone tells its land's fires apart, the world count staying one line a land
-        out[key] = {"grounds": out[key], **_fires(by_land[key], next((row for row in islands if str(row["id"]) == key), None))}
+        out[key] = {"grounds": out[key], **_fires(burning, key, next((row for row in islands if str(row["id"]) == key), None))}
     return out
 
 
@@ -404,8 +407,8 @@ def _ground_lands(biomes: dict, kind: str) -> dict | None:
     return {name: kind, "islands": lands} if lands else None
 
 
-# A land's burning tiles as fires, those within `_FIRE_REACH` of one another one fire: its tile nearest its middle, its heading on the land, grounds and size.
-def _fires(burning: dict[tuple[int, int], str], land: dict | None) -> dict:
+# The map's burning tiles as fires, those within `_FIRE_REACH` of one another one fire, each told under the land holding most of it: the rest is `spills`.
+def _fires(burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict | None) -> dict:
     cells: defaultdict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)  # the tiles by square of `_FIRE_REACH`: a tile's kin lie in its 9 squares
     for x, y in burning:
         cells[x // _FIRE_REACH, y // _FIRE_REACH].append((x, y))
@@ -423,16 +426,20 @@ def _fires(burning: dict[tuple[int, int], str], land: dict | None) -> dict:
                 if near not in seen and max(abs(near[0] - x), abs(near[1] - y)) <= _FIRE_REACH:
                     seen.add(near)
                     stack.append(near)
-        fires.append(fire)
-    fires.sort(key=lambda fire: (-len(fire), min(fire)))
+        lands = Counter(burning[tile][0] for tile in fire)
+        if min(lands, key=lambda land_key: (-lands[land_key], _land_order((land_key, None)))) == key:  # a tie to the first land, so no fire is told twice
+            fires.append((fire, lands))
+    fires.sort(key=lambda told_fire: (-len(told_fire[0]), min(told_fire[0])))
     told = []
-    for fire in fires[:_TOP_PATCHES]:
-        mean_x, mean_y = sum(x for x, _ in fire) / len(fire), sum(y for _, y in fire) / len(fire)
-        x, y = min(fire, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
+    for fire, lands in fires[:_TOP_PATCHES]:
+        home = [tile for tile in fire if burning[tile][0] == key]  # sited on its own land, where the heading is read
+        mean_x, mean_y = sum(x for x, _ in home) / len(home), sum(y for _, y in home) / len(home)
+        x, y = min(home, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
         side = _side({"x": x, "y": y}, land) if land else {}
-        told.append({"x": x, "y": y, **side, "grounds": _tally(burning[tile] for tile in fire), "tiles": len(fire)})
+        spills = {land_key: n for land_key, n in lands.items() if land_key != key} or None
+        told.append({"x": x, "y": y, **side, "grounds": _tally(burning[tile][1] for tile in fire), "spills": spills, "tiles": len(fire)})
     rest = fires[_TOP_PATCHES:]
-    return {"fires": told, "unlisted": {"fires": len(rest), "tiles": sum(map(len, rest))} if rest else None}
+    return {"fires": told, "unlisted": {"fires": len(rest), "tiles": sum(len(fire) for fire, _ in rest)} if rest else None}
 
 
 # The row of one ground among a land's, asked by its biome or its bare ground alike — `None` where the land bears none.
