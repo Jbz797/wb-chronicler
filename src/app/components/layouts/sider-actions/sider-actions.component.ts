@@ -10,6 +10,8 @@ import { BOOT_SETTINGS, RESET_ENDPOINT } from '../../../constants';
 import { ChroniclerService } from '../../../services';
 import { SettingsComponent } from '../settings/settings.component';
 
+const rebuildGraceMs = 30_000; // how long a wipe waits on `ng serve`'s own reload before reloading itself — a production rebuild takes its time
+
 @Component({
   selector: 'app-sider-actions',
   imports: [NzButtonModule, NzModalModule, NzTooltipModule, TranslatePipe],
@@ -63,12 +65,19 @@ export class SiderActionsComponent {
     if (!inject(BOOT_SETTINGS).savePath) this.openSettings();
   }
 
-  // The browser cannot reach the filesystem: `scripts/watch-saves.mjs` does the erasing, and it only runs under `yarn start`.
+  // `scripts/watch-saves.mjs` erases what the browser cannot reach, under `yarn start` alone; `ng serve`'s rebuild then reloads: one here would load twice.
   private async _wipe(): Promise<void> {
     try {
       const answer = await fetch(RESET_ENDPOINT, { method: 'POST' });
       if (!answer.ok) throw new Error(String(answer.status));
-      globalThis.location.assign('/'); // back to the chronicler's own page, not the chapter that has just ceased to exist
+      const { removed } = (await answer.json()) as { removed: number };
+      globalThis.history.replaceState(null, '', '/'); // where the reload lands: the chronicler's own page, not a chapter that has just ceased to exist
+      if (removed) { // the confirm button spins until `ng serve` reloads, or the grace runs out
+        await new Promise((resolve) => {
+          setTimeout(resolve, rebuildGraceMs);
+        });
+      }
+      globalThis.location.reload();
     } catch {
       this._modal.error({
         nzContent: this._translate.instant('ui_service_silent', { endpoint: RESET_ENDPOINT }) as string,

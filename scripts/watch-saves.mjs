@@ -32,6 +32,16 @@ const entriesIn = async (base) => {
   }
 };
 
+// A file already gone is no error to a wipe, only nothing for `ng serve` to rebuild over.
+const exists = async (file) => {
+  try {
+    await stat(file);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 // Never written, or left half-written: both come back as an empty object for the caller to read through.
 const readJson = async (file) => {
   try {
@@ -55,7 +65,7 @@ class LocalService {
   constructor(scout, store) {
     this.#routes = {
       'GET /saves': () => scout.list(),
-      'POST /reset': async () => ({ chapters: await store.wipe() }),
+      'POST /reset': () => store.wipe(),
       'POST /settings': async (body) => {
         await store.record(body.dev, body.lang, body.savePath);
         return { dev: body.dev, lang: body.lang, savePath: body.savePath };
@@ -198,15 +208,16 @@ class WorldStore {
     await writeFile(this.#settings, `${JSON.stringify({ dev: development, lang, savePath }, undefined, 2)}\n`);
   }
 
-  // Empties `saves/`, its Git too, not removing it — angular.json declares it, `new.py` writes into it — then `history/`; what outlives a world sits elsewhere.
+  // Empties `saves/` and its Git, the folder kept for angular.json, then `history/`; `removed` tells the reader whether `ng serve` has a rebuild, a reload, coming.
   async wipe() {
     const entries = await entriesIn(SAVES);
     const history = [
       `${this.#history}/map_stats.s3db`, `${this.#history}/places.json`, `${this.#history}/world.json`, this.#settings,
     ];
-    const doomed = [...entries.map((entry) => `${SAVES}/${entry}`), ...history];
+    const held = await Promise.all(history.map(async (file) => ((await exists(file)) ? file : '')));
+    const doomed = [...entries.map((entry) => `${SAVES}/${entry}`), ...held.filter(Boolean)];
     await Promise.all(doomed.map((entry) => rm(entry, { force: true, recursive: true })));
-    return entries.filter((entry) => /^C\d+$/.test(entry)).length; // `saves/` also holds the chapter index, which is swept along but was never a chapter
+    return { removed: doomed.length };
   }
 }
 
