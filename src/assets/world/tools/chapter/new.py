@@ -198,8 +198,9 @@ _RESET_PROMPT = (
     "  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries",
     '  → reset and naming: `tools/chapter/new.py --reset --name "…" --description "…"`',
     "    then a second question, before a word is forged: « Would you add a few lines of lore of your own — its myths, its gods, its mood — for it to carry? »",
-    "    The name is forged after a survey of its geography, the one thing the reset spares: in the chronicle's own voice, on the ground,",
-    "    the mood or whatever outlasts the ages, never the age itself. Yours alone to choose — his yes was the agreement.",
+    "    The name is forged after a survey of its geography, the one thing the reset spares, by `tools/geography/info.py` — the picture only places what it says,",
+    "    a bare summit showing white as snow does. In the chronicle's own voice, on the ground, the mood or whatever outlasts the ages, never the age itself;",
+    "    a name with the ring of an old tongue, coined or compounded, never a plain word for the shape it sees. Yours alone to choose — his yes was the agreement.",
     "    The description is written as ever, after that survey, his lore woven in if he wrote some.",
 )
 
@@ -897,7 +898,8 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
         print('    a gap is fixed with `tools/chapter/new.py --name "…" --description "…"`, either alone leaving the other; the first chapter deletes the sub-agent')
 
     # The game alone redraws preview.png and has the mods stamp the save: hence the re-save, which is the one the chapter archives.
-    print("  → player: reopen the save in WorldBox and save again — the chapter then archives the world as it now stands")
+    when = ", once that check is done and mended — never while it runs" if name or description else ""
+    print(f"  → player{when}: reopen the save in WorldBox and save again — the chapter then archives the world as it now stands")
     print("  → chronicler: once he has, `tools/chapter/new.py --reset-asked` writes the first chapter, on the bare world as it stands")
     return 0
 
