@@ -1425,7 +1425,10 @@ def unsited_reason(families: dict[str, Counter], words: str) -> str | None:
         return "; ".join(f"nothing here yields `{word}` — it comes of {', '.join(sources)}" for word, sources in barren.items())
     if near := sorted({kind for kind in here for word in asked if word in kind}):
         return f"`{words}` names no kind here — like it: {', '.join(near)}"
-    known = load_data("species.json").keys() | load_data("buildings.json").keys() | civic_building_ids()  # every kind WB has, hulls aside
+    buildings = load_data("buildings.json")
+    known = load_data("species.json").keys() | buildings.keys() | civic_building_ids()  # every kind WB has, hulls aside
+    # And every family, present or not: on a bare world `trees` is no typo, only none.
+    known |= {"actors", "buildings", "other"} | {(entry or {}).get("category") for entry in buildings.values()}
     if strange := [word for word in asked if not (word in known or word.startswith("boat_"))]:
         return f"`{', '.join(strange)}` names no kind nor resource"
     return None
