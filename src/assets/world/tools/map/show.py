@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from PIL import Image, ImageDraw, ImageFont
 
-from grid import LazyTileGrid, tile_layer
+from grid import BARE, LazyTileGrid, listed_tiles, tile_frost, tile_ground, tile_layer
 from islands import compute_islands_cached
 from shared import arg_parser, load_save, take_chapter
 
@@ -19,7 +19,7 @@ _MAPS_DIR = Path(__file__).parent.parent / ".cache" / "maps"  # inside the chron
 _MAPS_KEPT = 20  # the latest pictures kept, as many as `shared`'s cache slots: a map redraws in an instant, so the oldest gives way
 _NORTH_UP = "north up (y grows upward)"  # both maps say it where they are read: a picture's rows count down, the world's y counts up
 _RADIUS = 46  # wide enough to be seen on a map two thousand tiles across, tight enough to leave the spot itself readable
-_SHARE_OF_LAYER = {"Block": "rock", "Ground": "ground", "Lava": "lava"}  # how `--zoom` names a layer in its shares, any other being water
+_SHARES_NAMED = 6  # the shares a zoom names, the rest summed as `others`: past a handful, the line lists more than it tells
 _STROKE = 6  # thick enough to survive the shrinking a viewer applies to a map this wide
 _TICK_INNER = 60  # where each arm starts, clear of the ring, so the marked tile stays in the open
 _TICK_OUTER = 110  # and where it ends, far enough out to catch the eye scanning the whole map
@@ -45,20 +45,31 @@ def _saved(image: Image.Image, name: str) -> Path:
     return out
 
 
-# What the zoomed square is made of, by share of its tiles on the map — the numbers beside the picture, the square the same: water, ground, rock, lava, islets.
+# What the zoomed square is made of, by share of its tiles — the numbers beside the picture: each ground as `biomes` names it, then fire, snowcap, ice, frost.
 def _shares(save_path: Path, x: int, y: int, span: int) -> str:
     save = load_save(save_path)
     grid, island_of = LazyTileGrid(save), compute_islands_cached(save, save_path)[1]
-    kind = [_SHARE_OF_LAYER.get(tile_layer(name), "water") for name in save.get("tileMap") or []]
-    counts: Counter[str] = Counter()
-    for row in range(max(y - span, 0), min(y + span, grid.height - 1) + 1):
-        for col in range(max(x - span, 0), min(x + span, grid.width - 1) + 1):
-            if (what := kind[grid[row][col]]) == "ground" and island_of.get((col, row)) is None:
-                what = "islets"  # ground too small to count as a land, as `geography` buckets it; rock and lava belong to no land either way
-            counts[what] += 1
+    # Each tile by its ground as `geography … biomes` names it, a biome or a bare ground, rock and lava among them; water where no ground is.
+    names = save.get("tileMap") or []
+    ground = [(tile_ground(name) or "").removeprefix(BARE) or "water" for name in names]
+    soil, frost = [tile_layer(name) == "Ground" for name in names], [tile_frost(name) for name in names]
+    counts, cover = Counter[str](), Counter[str]()  # the grounds, then what lies over them: a snowcap hides its rock, ice its sea, so both are told beside
+    rows, cols = range(max(y - span, 0), min(y + span, grid.height - 1) + 1), range(max(x - span, 0), min(x + span, grid.width - 1) + 1)
+    for row in rows:
+        for col in cols:
+            tile = grid[row][col]
+            counts["islets" if soil[tile] and island_of.get((col, row)) is None else ground[tile]] += 1  # soil too small to be a land, as `geography` buckets it
+            if frost[tile] and frost[tile] != ground[tile]:  # bare snow is a ground of its own, already a share
+                cover[frost[tile]] += 1
     total = sum(counts.values())
-    shown = " · ".join(f"{what} {round(n * 100 / total) or '<1'}%" for what, n in counts.most_common())  # `<1%` where a few tiles stand: never read as none
-    return shown + f" — of the {total:,} tiles shown".replace(",", " ")
+    ranked = counts.most_common()
+    if len(ranked) > _SHARES_NAMED:  # a wide square holds a score of grounds: the lesser ones read as one
+        ranked = [*ranked[: _SHARES_NAMED - 1], ("others", sum(n for _, n in ranked[_SHARES_NAMED - 1 :]))]
+    shown = " · ".join(f"{what} {round(n * 100 / total) or '<1'}%" for what, n in ranked)  # `<1%` where a few tiles stand: never read as none
+    # The fire and the passing frost, as `geography` names them: the save lists their tiles, the square counts its own.
+    cover["burning"], cover["frost"] = (sum(col in cols and row in rows for col, row in listed_tiles(save, key)) for key in ("fire", "frozen_tiles"))
+    told = "".join(f", {n} {what}" for what, n in sorted(cover.items()) if n)
+    return shown + f" — of the {total:,} tiles shown".replace(",", " ") + told
 
 
 # A square of `span` tiles each way around the spot, blown up by whole pixels so each tile stays a crisp block: the tile ringed, north and the scale marked.
@@ -113,7 +124,6 @@ def main(argv: list[str]) -> int:
         out = _saved(_zoomed(image, px, py, args.zoom), f"{chapter}_{x}_{y}_zoom{args.zoom}.png")
         print(f"✓ {chapter} — ({x},{y}) and {args.zoom} tiles each way, {_NORTH_UP}, the white bar {_ZOOM_BAR} tiles\n  {out}")
         print(f"  {_shares(save_path, x, y, args.zoom)}")
-        print("  → chronicler: this one is yours to read, for the lie of the ground — open it for the player only if he is to see it")
         return 0
     draw = ImageDraw.Draw(image)
     draw.ellipse([px - _RADIUS, py - _RADIUS, px + _RADIUS, py + _RADIUS], outline=_INK, width=_STROKE)
