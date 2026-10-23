@@ -43,6 +43,7 @@
   "actor.to.landing": "Vers une terre `i<id>` : le point où l'aborder au moins cher.",
   "actor.to.march_days": "Passé 6 h de marche, les jours de marche, haltes comprises, à la place des heures ; sans l'eau, passée d'une traite, que `total_days` ajoute.",
   "actor.to.nearest": "Vers un type, une famille ou une ressource : le plus proche de chacun ; un bâtiment, à sa tuile la plus proche.",
+  "actor.to.reachable": "`--to lands` : chaque terre que le corps gagne à pied et à la nage, mesurée comme `--to i<id>`, la plus proche d'abord ; `unreachable` compte les autres.",
   "actor.to.task_target": "La tuile où la tâche en cours mène le corps.",
   "actor.to.then": "`--since` : le même but compté au chapitre nommé.",
   "actor.to.widest_crossing": "Le plus long bras d'eau du trajet, dit seulement s'il passe le souffle du corps.",

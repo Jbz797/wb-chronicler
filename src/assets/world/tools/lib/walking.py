@@ -80,6 +80,9 @@ _TREES = frozenset(
     }
 )  # WB `BuildingLibrary.addTrees` bar `mushroom_tree` (a fungus) and the three `flower_tree_*` (plants): Entanglewood binds trees alone
 
+# A way as `walk_way` tells it: its cost, the cost swum, tiles swum and trodden, the widest crossing, the goal reached, the crossings.
+type Way = tuple[float, float, float, float, float, int, int]
+
 _WALLED_DELTAS = tuple((dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1))  # a wall's own tile and its eight neighbours, all walked straight
 
 _WIDE_TREES = {
@@ -285,9 +288,21 @@ def walk_from(walk_map: WalkMap, gait: Gait, x: int, y: int, limit: float, goals
 
 
 # A walk to the nearest of `goals` (tile indices), told whole: its cost, what of it was swum, tiles swum and trodden, the widest crossing, the goal, the crossings.
-def walk_way(walk_map: WalkMap, gait: Gait, x: int, y: int, goals: set[int], limit: float = inf) -> tuple[float, float, float, float, float, int, int] | None:
+def walk_way(walk_map: WalkMap, gait: Gait, x: int, y: int, goals: set[int], limit: float = inf) -> Way | None:
     ways = _settle(walk_map, gait, x, y, limit, _aim(walk_map, gait, goals), told=True)
     return next(((cost, water, swam, trod, widest, tile, crossings) for tile, cost, water, widest, swam, trod, crossings in ways if tile in goals), None)
+
+
+# The walk to the nearest goal of each land, one settling for all: `{land: way}` as `walk_way` tells a way, a land the walk never reaches left out.
+def walk_ways(walk_map: WalkMap, gait: Gait, x: int, y: int, land_of: dict[int, int]) -> dict[int, Way]:
+    ways: dict[int, Way] = {}
+    lands = len(set(land_of.values()))
+    for tile, cost, water, widest, swam, trod, crossings in _settle(walk_map, gait, x, y, inf, None, told=True):
+        if (land := land_of.get(tile)) is not None and land not in ways:
+            ways[land] = (cost, water, swam, trod, widest, tile, crossings)
+            if len(ways) == lands:  # every land met: the rest of the world is no nearer to any
+                break
+    return ways
 
 
 # Whether rock, lava or goo shut a tile in: a swimmer no breath stops, leaving it, runs out of ground and water alike before `_POCKET` tiles.

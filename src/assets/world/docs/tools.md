@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 23/10/26 15:15</p>
+<p class="metadata">Date de mise à jour : 23/10/26 15:27</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`. Ses coordonnées croissent vers l'est (x) et le nord (y), un `dir` aussi. Une sortie se lit entière : coupée (`head`), le JSON ne se lit plus ; des sections lourdes se demandent une à une. Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -36,7 +36,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `--since C<n>` : ce qui a bougé depuis (`gloss:actor.since`, `gloss:to.then`)
 - `--kills` : ses morts données, par chapitre (`gloss:actor.kills`)
 - `--statuses` : ses statuts durables, par chapitre (`gloss:actor.statuses`)
-- `--to <p<id> | x,y | b<id> | c<id> | i<terre> | type>` : un corps, une tuile, un bâtiment, une cité (son centre), une terre ou le plus proche de chaque type, famille ou ressource, par virgules pour les seuls types ; répété, chacun sous ses mots. `gloss:actor.to`.
+- `--to <p<id> | x,y | b<id> | c<id> | i<terre> | lands | type>` : un corps, une tuile, un bâtiment, une cité (son centre), une terre, toutes les terres qu'il peut gagner, ou le plus proche de chaque type, famille ou ressource, par virgules pour les seuls types ; répété, chacun sous ses mots. `gloss:actor.to`.
 
 ### `geography` :
 

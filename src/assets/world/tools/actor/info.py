@@ -92,7 +92,7 @@ from shared import (
     whereabouts,
     world_laws,
 )
-from walking import Gait, WalkMap, walk_from, walk_way, walled_in
+from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_in
 from waters import waters_cached
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "kin", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
@@ -161,7 +161,10 @@ _TENURE_ROLES = {
 }
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
-_TO_USAGE = "`--to` takes a body, a tile, a building, a town, a land or a kind: `--to p42`, `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to volcano`"
+_TO_USAGE = (
+    "`--to` takes a body, a tile, a building, a town, a land, every land or a kind: `--to p42`, `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to lands`,"
+    " `--to volcano`"
+)
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
 _UNCOMPARED = frozenset({"island_id", "statuses_left", "task", "task_target", "x", "y"})
@@ -217,14 +220,15 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if city is None or (tile := city_centre(city)) is None:
             raise _AimError(absent_entity("city", "cities", city_id, chapter))
         target, aims, whom = tile, [tile], city.get("name") or f"city {city_id}"
+    elif target == "lands":  # every land but its own, each tried as `i<id>` is: `_trip` answers with those reached
+        whom = "every land"
     elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():
         land, sizes = int(target[1:]), ctx["island_sizes"]()
         if land not in sizes:
             raise _AimError(f"✗ unknown land: {land} — the counted lands run 1 to {max(sizes, default=0)}")
         if ctx["island_lookup"]().get(actor_xy(actor)) == land:
             raise _AimError(f"✗ {named_body(actor)} already stands on land {land}")
-        barred = ctx["walk_map"]().barred  # a land owns its rock, where no body lands: its shore is the ground of its rim
-        aims, mark, whom = [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land and not barred(x, y)], "landing", f"land {land}"
+        aims, mark, whom = _shore(land, ctx), "landing", f"land {land}"
     elif isinstance(target, str):  # a kind, a family or a resource a word, the body itself left out: each answered by the cheapest of its own reached
         families, words = asset_families(save), list(dict.fromkeys(target.split(",")))
         # Ids among the words, refused at once: bodies are aimed at one by one, and two numbers alone would have read as a tile.
@@ -796,6 +800,33 @@ def _per_hour(actor: dict, ctx: dict) -> float:
     return _HOURLY_TILES_PER_SPEED * (compute_actor_stats(actor, ctx).get("speed") or 1)
 
 
+# Every land the body can gain, the nearest first, each by its cheapest shore as `--to i<id>` lands it: its heading, time and swim — the rest counted.
+def _reachable_lands(actor: dict, ctx: dict) -> dict:
+    (cx, cy), island_of, per_hour = actor_xy(actor), ctx["island_lookup"](), _per_hour(actor, ctx)
+    home, barred = island_of.get((cx, cy)), ctx["walk_map"]().barred
+    shores: defaultdict[int, list[tuple[int, int]]] = defaultdict(list)  # every land's rim in one sweep of the edges, as `_shore` reads one
+    for x, y, owner in island_of.edges():
+        if owner != home and owner is not None and not barred(x, y):
+            shores[owner].append((x, y))
+    if (gait := _gait(actor, ctx)) is None:  # flown, swum or sailed at will: every land reached on the straight line, as `--to` times it
+        rows = []
+        for land, rim in shores.items():
+            to = _heading(cx, cy, *min(rim, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2), "landing", {})
+            rows.append({"dir": to["dir"], "island_id": land, **_trip_time(per_hour, to["crow_tiles"])})
+        return {"reachable": sorted(rows, key=_told_time) or None}
+    walk_map = ctx["walk_map"]()
+    land_of = {y * walk_map.width + x: land for land, rim in shores.items() for x, y in rim}
+    ways = walk_ways(walk_map, gait, cx, cy, land_of)  # one settling for every land: a walk apiece would cross the world once a land
+    rows = []
+    for land, way in ways.items():
+        tile = way[5]
+        times = {key: value for key, value in _way_parts(way, per_hour, "swim").items() if not key.endswith("_tiles") and key.startswith(("swim_", "total_"))}
+        rows.append({"dir": _heading(cx, cy, tile % walk_map.width, tile // walk_map.width, "landing", {})["dir"], "island_id": land, **times})
+    rows.sort(key=_told_time)  # by the time as told, days counting a march's halts: the way's raw cost would file a long swim after a longer walk
+    lands = sum(land != home for land in ctx["island_sizes"]())  # a land rimmed by rock alone has no shore, and counts as out of reach
+    return {"reachable": rows or None, "unreachable": lands - len(ways) or None}
+
+
 # The circle a time falls in, read as `_duration` tells it, so a row printed « 2 h » stands in the common circle though its walk ran to 2.04 — `None` past them.
 def _ring(hours: float) -> str | None:
     told = minutes if (minutes := round(hours * 60)) < 60 else round(hours, 1) * 60
@@ -805,6 +836,12 @@ def _ring(hours: float) -> str | None:
 # The longest time still told within `minutes`, as `_ring` files by the rounded time: the bound a sweep of the circles walks to.
 def _ring_bound(minutes: int) -> float:
     return (minutes + 0.5) / 60 if minutes < 60 else minutes / 60 + 0.05
+
+
+# The tiles a land is landed on: the ground of its rim, a land owning its rock, where no body sets foot.
+def _shore(land: int, ctx: dict) -> list[tuple[int, int]]:
+    barred = ctx["walk_map"]().barred
+    return [(x, y) for x, y, owner in ctx["island_lookup"]().edges() if owner == land and not barred(x, y)]
 
 
 # The body's own species record in `species.json` — WB's `ActorAsset` flags that no save carries.
@@ -982,9 +1019,19 @@ def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
 
 
+# A trip's time as told, for sorting: minutes before hours before days, each read by its own figure — the whole trip's, or a flyer's march.
+def _told_time(row: dict) -> tuple[int, float, int]:
+    for rank, key in ((0, "total_minutes"), (1, "total_hours"), (2, "total_days"), (2, "march_days")):
+        if key in row:
+            return rank, row[key], row["island_id"]
+    return 3, 0.0, row["island_id"]
+
+
 # One `--to` answered: the walk, the way back from a body, the same goal in the chapter `--since` names — `None` where its refusal was told.
 def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict, since: str | None) -> dict | None:
     target, aims, mark, about, whom, each, told = aim
+    if target == "lands":
+        return _reachable_lands(actor, ctx)
     trip: dict | None = None
     if aims:
         try:
