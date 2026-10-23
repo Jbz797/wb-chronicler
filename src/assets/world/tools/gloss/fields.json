@@ -119,6 +119,7 @@
   "rulers": "La succession, datée comme en jeu ; le premier d'un royaume l'a fondé. La bourse du souverain : `pop.ruler_money`.",
   "subspecies.metadata.biome": "Le sol dont la lignée a pris forme en naissant (sa toison, son nom) ; la save ne garde aucune lignée mère, `born` dit quand elle est apparue.",
   "subspecies.species.attack": "L'arme d'un corps sans lame ; `base_attack` : celle d'un coup sans nom.",
+  "subspecies.species.description": "L'ambiance du jeu, que le wiki reprend : ce qu'elle prête à l'espèce (le dard venimeux du scorpion) n'agit que porté par un trait (`traits`) ou son arme (`attack`).",
   "subspecies.species.evolution_id": "D'une bête : l'espèce pensante qu'elle devient.",
   "subspecies.species.evolved_from": "D'une espèce pensante : la bête dont elle vient.",
   "subspecies.stats.maturation_months": "Les mois de la conception à la naissance ou à l'éclosion, que les traits de la lignée (gestation, œufs) additionnent ; `birth_on` les ajoute à `mates_on`.",
