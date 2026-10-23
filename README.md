@@ -67,7 +67,7 @@ The chronicle runs on two [NeoModLoader](https://steamcommunity.com/sharedfiles/
 
 ## World laws
 
-The laws the chronicle is played under, by tab of the game's _World Laws_ window and in its order. A reset by the chronicler sets them for you, from this very table: keep its titles the game's own, in English.
+The laws the chronicle is played under, by tab of the game's _World Laws_ window and in its order. A reset by the chronicler sets them for you, from this very table.
 
 | Tab                 | Enable                                                                  | Disable                                                     |
 | ------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
@@ -77,7 +77,7 @@ The laws the chronicle is played under, by tab of the game's _World Laws_ window
 | Units               | Hunger, Old age                                                         | Gene Spaghetti, Mutant Box                                  |
 | Mobs                | Animal Babies, Forever Creep                                            | Peaceful Monsters                                           |
 | Spawn               | Drop of Thoughts, Animal Spawn, Clouds of Life                          | —                                                           |
-| Nature              | Random Seeds, Minerals                                                  | Roots without Borders, Erosion, High Flora Density          |
+| Nature              | Random Seeds, Minerals                                                  | Roots without Borders, High Flora Density                   |
 | Trees               | Trees Growth, Entanglewood                                              | Fast Trees Growth, Bark Bites Back                          |
 | Plants              | Plants Growth                                                           | Fast Plants Growth, Plants Tickles, Root Pranks, Nectar Nap |
 | Fungi               | Fungi Growth                                                            | Fast Fungi Growth, Exploding Mushrooms                      |
@@ -87,9 +87,9 @@ The laws the chronicle is played under, by tab of the game's _World Laws_ window
 | Other               | Evolution Events                                                        | —                                                           |
 | Forbidden Knowledge | —                                                                       | Forbidden Knowledge                                         |
 
-**Eternal Lava** is the reset's call: on where the map has no volcano, its lava kept as it lies; off otherwise, with one to two thirds of the volcanoes woken — an awake one erupts until lightning or a cold aura stills it.
-
-**Drop of Thoughts** sows thinking peoples into the young world: once enough crowns stand, the chronicler asks you to turn it off.
+- **Drop of Thoughts** sows thinking peoples into the young world: once enough crowns stand, the chronicler asks you to turn it off.
+- **Erosion** is the player's call at the reset, the chronicler quoting how much of the shore is already beach: on, it slowly lays a beach a tile deep along the rest, each tile losing its biome.
+- **Eternal Lava** is the reset's call: on where the map has no volcano, its lava kept as it lies; off otherwise, with one to two thirds of the volcanoes woken — an awake one erupts until lightning or a cold aura stills it.
 
 ## Getting started
 

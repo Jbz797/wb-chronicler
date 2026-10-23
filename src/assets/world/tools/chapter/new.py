@@ -29,7 +29,7 @@ from actor_stats import adult_age, build_actor_stats_context, is_egg, kept_task,
 from echo import echoes
 from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_world
 from founding import city_zones, settle_gates
-from grid import LazyTileGrid, tile_layer, tile_runs
+from grid import LazyTileGrid, decode_tile_grid, tile_layer, tile_runs
 from islands import compute_islands_cached
 from shared import (
     CHAPTER_CAP,
@@ -158,7 +158,7 @@ _EMPTIED = (
 )
 
 _EVENT = "an event the chapter owes its reader, glossed in docs/tags.md"  # said to the chronicler at the recap, and to his auditors with their targets
-_FLAGS = frozenset({"--deliver", "--description", "--finalize", "--name", "--reset", "--reset-asked", "--retouch"})  # all `main` reads, others refused as typos
+_FLAGS = frozenset({"--deliver", "--description", "--erosion", "--finalize", "--name", "--reset", "--reset-asked", "--retouch"})  # all `main` reads
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _GROWN = frozenset({"adult", "teen"})  # the stages a kind may be counted on: past childhood, an elder read as the adult it is — its span is not asked
 _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
@@ -193,7 +193,8 @@ _RESET_PROMPT = (
     "? first chapter — nothing is written until the player has answered. Put this to him, in one go:",
     "  « Do you want to start over from a bare map — relief, biomes, volcanoes — some woken — and geysers kept, everything else erased (creatures,",
     "    trees, plants, ores, buildings, kingdoms…), back to year 1 of the Age of Hope with a new genetic seed and the README's world laws?",
-    "    And if so, shall I name it too? »",
+    "    And if so, shall I name it too? And turn erosion on? {beach}% of its shore is beach: erosion slowly lays one along the rest, a tile deep, each",
+    "    tile losing its biome. »",
     "  → no: `tools/chapter/new.py --reset-asked`",
     "  → reset alone: `tools/chapter/new.py --reset`, and the world keeps the name and description it carries",
     '  → reset and naming: `tools/chapter/new.py --reset --name "…" --description "…"`',
@@ -202,6 +203,7 @@ _RESET_PROMPT = (
     "    a bare summit showing white as snow does. In the chronicle's own voice, on the ground, the mood or whatever outlasts the ages, never the age itself;",
     "    a name with the ring of an old tongue, coined or compounded, never a plain word for the shape it sees. Yours alone to choose — his yes was the agreement.",
     "    The description is written as ever, after that survey, his lore woven in if he wrote some.",
+    "  → erosion, if he wants it: `--erosion` added to the reset, either kind — without it, erosion stays off",
 )
 
 _SEEDED = ("islands", "lakes", "rivers", "seas")  # the gazetteer's books the survey seeds by id, `places` being the chronicler's own
@@ -306,6 +308,23 @@ def _bare_world(save: dict, name: str, description: str) -> None:
     stats["world_age_id"] = _AGE_SLOTS[0]
     stats["world_age_slot_index"] = 0
     stats["world_ages_slots"] = list(_AGE_SLOTS)
+
+
+# The share of the shore already beach: sand among the ground beside water, what erosion turns to sand in time — the figure the reset's question quotes.
+def _beach_pct(save: dict) -> str:
+    names = save.get("tileMap") or []
+    layers, sandy = [tile_layer(name) for name in names], [name.partition(":")[0] == "sand" for name in names]
+    grid = decode_tile_grid(save)
+    water = [[layers[tile] == "Ocean" for tile in row] for row in grid]
+    shore = beach = 0
+    for y, row in enumerate(grid):
+        rims = [water[y + dy] for dy in (-1, 1) if 0 <= y + dy < len(grid)]
+        for x, tile in enumerate(row):
+            if layers[tile] == "Ground" and ((x and water[y][x - 1]) or (x + 1 < len(row) and water[y][x + 1]) or any(rim[x] for rim in rims)):
+                shore += 1
+                beach += sandy[tile]
+    pct = round(beach / shore * 100) if shore else 0
+    return "under 1" if beach and not pct else str(pct)  # a whole figure for the player, a trace of sand never rounded to none
 
 
 # Carries last chapter's trait summaries over wherever neither the entity nor its traits moved — what stays bare is owed, and `--finalize` names it.
@@ -867,7 +886,7 @@ def _reset_counters(stats: dict) -> None:
 
 
 # Unmakes the world the player asked to be rid of, its map alone left standing. No chapter is written here: the bare world it hands back is what C1 opens on.
-def _reset_world(live_wbox: Path, name: str, description: str) -> int:
+def _reset_world(live_wbox: Path, name: str, description: str, erosion: bool) -> int:
     if worldbox_running():
         print("✗ WorldBox is running — quit the game before resetting, or it will write its own save back over this one", file=sys.stderr)
         return 1
@@ -879,7 +898,8 @@ def _reset_world(live_wbox: Path, name: str, description: str) -> int:
     save = load_save(live_wbox)
     _bare_world(save, name, description)
     woken, volcanoes = _wake_volcanoes(save)
-    turned = _set_laws(save, {**laws, "world_law_forever_lava": not volcanoes})  # the README leaves it to the reset: no volcano, no lava but the map's own to keep
+    # The README leaves two to the reset: no volcano, no lava but the map's own to keep; erosion, the player's own answer.
+    turned = _set_laws(save, {**laws, "world_law_erosion": erosion, "world_law_forever_lava": not volcanoes})
     stats = save["mapStats"]
     write_save(live_wbox, save)
     _write_world(save)  # off the save, not off the arguments: a world that kept its name keeps it here too
@@ -1153,6 +1173,10 @@ def main(argv: list[str]) -> int:
         print(f"✗ no live save at {live_wbox} — ask the player to update the path, from the Settings button below the map", file=sys.stderr)
         return 2
 
+    if "--erosion" in argv and "--reset" not in argv:  # a law the reset sets, read nowhere else: alone it would pass and do nothing
+        print("✗ --erosion rides with --reset alone — on a world kept as it is, the player sets it in WorldBox's world laws", file=sys.stderr)
+        return 2
+
     # A world's name and blurb are set at its reset; alone, the two flags mend what the check that follows faults in them, and nothing past the first chapter.
     resetting = "--reset" in argv
     n = latest_chapter() + 1
@@ -1168,10 +1192,10 @@ def main(argv: list[str]) -> int:
             print("✗ the chronicle has begun — a reset would erase the world its chapters tell of", file=sys.stderr)
             print("  → player: to start over, from the New game button below the map", file=sys.stderr)
             return 1
-        return _reset_world(live_wbox, _value(argv, "--name"), _value(argv, "--description"))
+        return _reset_world(live_wbox, _value(argv, "--name"), _value(argv, "--description"), "--erosion" in argv)
 
     if n == 1 and "--reset-asked" not in argv:  # a reset would throw away whatever is written here, so nothing is, until the player has had his say
-        print("\n".join(_RESET_PROMPT))
+        print("\n".join(_RESET_PROMPT).format(beach=_beach_pct(load_save(live_wbox))))
         return 0
 
     live = load_save(live_wbox)
