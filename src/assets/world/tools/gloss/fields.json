@@ -81,7 +81,7 @@
   "geography.since": "`--since C<n>` : des soldes ; un passage se lit dans `roster --since`, sauf sous `positions`, qui nomme chacun par son id.",
   "geography.totals": "Les sommes du monde qu'aucune liste n'additionne : l'eau, la terre (terres comptées et îlots), le gel, la côte ; chaque part, de ce qui la contient.",
   "geography.totals.shore": "La côte, en tuiles de terre au bord de l'eau, et la part de sable (`beach`) : l'érosion, si elle est active, pose une plage d'une tuile le long du reste.",
-  "geography.waters": "`seas` touche un bord du monde, `rivers` chaîne par les coins les eaux larges de moins de 3 tuiles, `lakes` est le reste, dès 64 tuiles.",
+  "geography.waters": "`seas` touche un bord du monde, `rivers` chaîne par les coins les eaux larges de moins de 3 tuiles, `lakes` le reste dès 64 ; `-i <terre>`, celles qu'elle borde.",
   "geography.waters.unlisted": "Compte les mares de moins de 64 tuiles (`pond_tiles`) et écarte les détroits de plus de 1 024 tuiles.",
   "ground.metadata.cost": "Pris à la réserve dès la pose du chantier (`wiki:Buildings`).",
   "ground.metadata.dormant": "Volcan ou geyser endormi : la foudre le réveille ou le rendort, le froid (`cold_aura`) l'endort ; éveillé, il crache sans fin — un volcan, sa lave à 2 à 8 tuiles.",
