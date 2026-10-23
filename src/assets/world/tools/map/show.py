@@ -3,7 +3,6 @@
 # Rings a spot on the chapter's map, or blows up the ground around it, and hands back the path — no other way finds a tile by its numbers. Docs: `docs/tools.md`.
 
 import sys
-import tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -16,6 +15,8 @@ from islands import compute_islands_cached
 from shared import arg_parser, load_save, take_chapter
 
 _INK = (255, 30, 30)  # a red no biome wears, so the ring never sinks into the ground it marks
+_MAPS_DIR = Path(__file__).parent.parent / ".cache" / "maps"  # inside the chronicler's own directory, read without a prompt; gitignored with the other caches
+_MAPS_KEPT = 20  # the latest pictures kept, as many as `shared`'s cache slots: a map redraws in an instant, so the oldest gives way
 _NORTH_UP = "north up (y grows upward)"  # both maps say it where they are read: a picture's rows count down, the world's y counts up
 _RADIUS = 46  # wide enough to be seen on a map two thousand tiles across, tight enough to leave the spot itself readable
 _SHARE_OF_LAYER = {"Block": "rock", "Ground": "ground", "Lava": "lava"}  # how `--zoom` names a layer in its shares, any other being water
@@ -31,6 +32,17 @@ _ZOOM_SIDE = 720  # pixels the zoomed square is blown up to, whatever its span: 
 # The map is drawn north-up while the save counts y northward, so the two run against each other — the one conversion this script exists to get right.
 def _pixel(y: int, height: int) -> int:
     return height - 1 - y
+
+
+# A picture into the maps' cache, the oldest beyond `_MAPS_KEPT` let go → its path.
+def _saved(image: Image.Image, name: str) -> Path:
+    _MAPS_DIR.mkdir(parents=True, exist_ok=True)
+    out = _MAPS_DIR / name
+    image.save(out)
+    others = sorted((f for f in _MAPS_DIR.glob("*.png") if f != out), key=lambda f: f.stat().st_mtime, reverse=True)  # the one just drawn is never let go
+    for stale in others[_MAPS_KEPT - 1 :]:
+        stale.unlink(missing_ok=True)
+    return out
 
 
 # What the zoomed square is made of, by share of its tiles on the map — the numbers beside the picture, the square the same: water, ground, rock, lava, islets.
@@ -98,8 +110,7 @@ def main(argv: list[str]) -> int:
 
     px, py = x, _pixel(y, height)
     if args.zoom is not None:
-        out = Path(tempfile.gettempdir()) / f"{chapter}_{x}_{y}_zoom{args.zoom}.png"
-        _zoomed(image, px, py, args.zoom).save(out)
+        out = _saved(_zoomed(image, px, py, args.zoom), f"{chapter}_{x}_{y}_zoom{args.zoom}.png")
         print(f"✓ {chapter} — ({x},{y}) and {args.zoom} tiles each way, {_NORTH_UP}, the white bar {_ZOOM_BAR} tiles\n  {out}")
         print(f"  {_shares(save_path, x, y, args.zoom)}")
         print("  → chronicler: this one is yours to read, for the lie of the ground — open it for the player only if he is to see it")
@@ -110,8 +121,7 @@ def main(argv: list[str]) -> int:
         draw.line([px + near, py, px + far, py], fill=_INK, width=_STROKE)
         draw.line([px, py + near, px, py + far], fill=_INK, width=_STROKE)
 
-    out = Path(tempfile.gettempdir()) / f"{chapter}_{x}_{y}.png"  # chapter and tile name it whole: two maps of the same spot are the same picture
-    image.save(out)
+    out = _saved(image, f"{chapter}_{x}_{y}.png")  # chapter and tile name it whole: two maps of the same spot are the same picture
     print(f"✓ {chapter} — ({x},{y}) ringed on a map of {width}×{height}, {_NORTH_UP}\n  {out}")
     # Said here rather than in the manual: the picture is for the player's screen, and a chronicler who only reads it has done half the errand.
     print("  → chronicler: open it on the player's screen — looking at it yourself shows him nothing")
