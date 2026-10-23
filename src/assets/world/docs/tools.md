@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 23/10/26 15:42</p>
+<p class="metadata">Date de mise à jour : 23/10/26 16:28</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`. Ses coordonnées croissent vers l'est (x) et le nord (y), un `dir` aussi. Une sortie se lit entière : coupée (`head`), le JSON ne se lit plus ; des sections lourdes se demandent une à une. Trop large, elle se résume (un compte par terre au lieu d'une liste) pour rester lisible : le détail se demande par ses filtres (`-i`, `-t`, une section). Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -27,7 +27,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ## Gloses :
 
-`python tools/gloss/info.py <clé>` glose un champ en une ligne ; une balise **`gloss:<clé>`** y renvoie, comme `wiki:` au wiki. La clé suit la sortie, `<outil>.<section>.<champ>`, ou le champ seul s'il sert à plusieurs ; un fragment suffit (`pairings` rend la section entière). Avant de te servir d'un outil, `gloss <outil>` rend toutes ses gloses, les champs partagés compris.
+`python tools/gloss/info.py <clé>` glose un champ en une ligne ; une balise **`gloss:<clé>`** y renvoie, comme `wiki:` au wiki. La clé suit la sortie, `<outil>.<section>.<champ>`, ou le champ seul s'il sert à plusieurs ; un fragment suffit (`pairings` rend la section entière). Avant de te servir d'un outil, `gloss <outil>` rend toutes ses gloses, les champs partagés compris ; plusieurs par virgules (`gloss world,actor`), chaque glose une fois.
 
 ## Options :
 
