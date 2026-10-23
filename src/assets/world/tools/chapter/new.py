@@ -188,7 +188,7 @@ _PLAIN = "plain text with no tag"  # what a field of `chapter.json` is written i
 _README = Path(__file__).resolve().parents[5] / "README.md"  # its World laws table, the player's guide and the reset's alike: one table, no copy
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
 
-# Put to the player at the first chapter, before a line is written. The three commands answer it, and the naming brief rides with the third.
+# Put to the player at the first chapter, before a line is written. Three commands answer it, the naming brief riding with the third, erosion a flag on either reset.
 _RESET_PROMPT = (
     "? first chapter — nothing is written until the player has answered. Put this to him, in one go:",
     "  « Do you want to start over from a bare map — relief, biomes, volcanoes — some woken — and geysers kept, everything else erased (creatures,",
@@ -201,7 +201,8 @@ _RESET_PROMPT = (
     "    then a second question, before a word is forged: « Would you add a few lines of lore of your own — its myths, its gods, its mood — for it to carry? »",
     "    The name is forged after a survey of its geography, the one thing the reset spares, by `tools/geography/info.py` — the picture only places what it says,",
     "    a bare summit showing white as snow does. In the chronicle's own voice, on the ground, the mood or whatever outlasts the ages, never the age itself;",
-    "    a name with the ring of an old tongue, coined or compounded, never a plain word for the shape it sees. Yours alone to choose — his yes was the agreement.",
+    "    a name with the ring of an old tongue, coined or compounded, never a plain word for the shape it sees. Yours alone to choose — his yes was the agreement —",
+    "    unless his lore already names the world: that name then stands, and you offer to forge another.",
     "    The description is written as ever, after that survey, his lore woven in if he wrote some.",
     "  → erosion, if he wants it: `--erosion` added to the reset, either kind — without it, erosion stays off",
 )
