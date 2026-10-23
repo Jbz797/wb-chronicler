@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 23/10/26 12:35</p>
+<p class="metadata">Date de mise à jour : 23/10/26 12:38</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire, ou, avant lui, ses tournants.
 
@@ -27,12 +27,12 @@ Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le : ses seule
 
 - **Chiffres** : le registre n'en porte aucun, pas même une date à venir (un article n'en est pas un) : une veille dit son fil, le chapitre porte le fait.
 - **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` : rien ne garde son issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas reste telle quelle.
-- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · ouverte (C1) · son sujet en une ligne »_. Le sort avec son chapitre : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille (les bêtes qu'on craignait mortes, la menace passe aux morts qui marchent sur leur sol). Les noms s'y balisent comme dans un chapitre.
+- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · reconduite · son sujet en une ligne »_, en gras le chapitre de son ouverture. Son sort : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille (les bêtes qu'on craignait mortes, la menace passe aux morts qui marchent sur leur sol). Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles d'un même fil se fondent en une, reconduite au chapitre qui les lie, sinon elles restent deux ; la plus ancienne garde son ouverture.
 - **Plafond** : au-delà de 6 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, une candidate comprise : abandonnée, une veille sort et n'est plus un écart. Sous 6, aucune ne s'abandonne.
 - **Récit** : à chaque changement de sort d'une veille, dis au chroniqueur s'il faut en parler et comment : une direction, et si tu veux 2 ou 3 phrases, qu'il réécrit ou écarte ; une abandonnée se referme sur la page.
 - **Réserves** : une veille garde celles du chapitre (`docs/chronicler.md` § « Prudence et rigueur »).
-- **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer ni seulement mentionnée se signale au chroniqueur, à reconduire ou à abandonner.
+- **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer (son `log`) ni seulement mentionnée se signale au chroniqueur, à reconduire ou à abandonner.
 - **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand l'une de ses questions s'y solde ou que le fil se détourne, l'ouverture gardée.
 
 ## Au réaudit
