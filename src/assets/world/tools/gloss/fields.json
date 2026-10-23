@@ -114,6 +114,7 @@
   "religion.metadata.kingdoms": "Une cité ne prend une foi que si son chef y croit, un royaume que si son roi la décrète (`wiki:Religions`).",
   "report": "Parle par images : « No fire, no warmth » dit le bois qui manque, pas le feu.",
   "rulers": "La succession, datée comme en jeu ; le premier d'un royaume l'a fondé. La bourse du souverain : `pop.ruler_money`.",
+  "subspecies.metadata.biome": "Le sol dont la lignée a pris forme en naissant (sa toison, son nom) ; la save ne garde aucune lignée mère, `born` dit quand elle est apparue.",
   "subspecies.species.attack": "L'arme d'un corps sans lame ; `base_attack` : celle d'un coup sans nom.",
   "subspecies.species.evolution_id": "D'une bête : l'espèce pensante qu'elle devient.",
   "subspecies.species.evolved_from": "D'une espèce pensante : la bête dont elle vient.",

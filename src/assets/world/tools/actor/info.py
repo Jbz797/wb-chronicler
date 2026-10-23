@@ -1215,6 +1215,9 @@ def main(argv: list[str]) -> int:
         return 1
     if trips:  # several `--to` keep each its words, where one alone comes bare
         out["to"] = trips if len(trips) > 1 else next(iter(trips.values()))
+    if out.keys() == {"kin"} and not any(out["kin"].values()):  # asked alone, a bare `{}` would read as a field gone missing
+        print(f"✗ no kin — {named_body(actor)} appeared, born of none, and none is born of it", file=sys.stderr)
+        return 1
 
     emit(out)
     return 0
