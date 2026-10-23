@@ -7,7 +7,7 @@
       [class]="`pin pin-${pin.kind}`"
       [nzTooltipTitle]="tip"
       [nzTooltipTitleContext]="{ $implicit: pin }"
-      [style.font-size.cqw]="pin.fontSize"
+      [style.font-size.cqw]="pin.fontSize && pin.fontSize * (shrinks()[pin.key] ?? 1)"
       [style.left.%]="pin.left"
       [style.top.%]="pin.top"
       [style.translate]="nudge(pin.key)"

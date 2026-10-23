@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { afterRenderEffect, Component, computed, ElementRef, inject, input, signal, viewChild, viewChildren } from '@angular/core';
+import { afterRenderEffect, Component, computed, ElementRef, inject, input, signal, untracked, viewChild, viewChildren } from '@angular/core';
 
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
@@ -50,12 +50,12 @@ export class WorldMapComponent {
   // Read at each opening, the chronicler baptising between two chapters: what the picture shows is the gazetteer as it stands.
   protected readonly places = httpResource<Places>(() => PLACES_FILE);
 
-  // A name grows with the root of its extent — the width a land spans, not its area —, from the smallest named land or water to the largest, in `cqw`.
+  // A name grows with the log of its extent, from the smallest named land or water to the largest, in `cqw`: a small land stands apart from a smaller one.
   private readonly _sizer = (sizes: number[]): (size: number) => number => {
     const [low, high] = [0.7, 0.7 * 3];
-    const roots = sizes.map(size => Math.sqrt(size));
-    const [least, most] = [Math.min(...roots), Math.max(...roots)];
-    return size => most === least ? high : low + ((Math.sqrt(size) - least) / (most - least)) * (high - low);
+    const logs = sizes.map(size => Math.log(size));
+    const [least, most] = [Math.min(...logs), Math.max(...logs)];
+    return size => most === least ? high : low + ((Math.log(size) - least) / (most - least)) * (high - low);
   };
 
   // The gazetteer's named entries alone, each as a chapter up to the one read has named it — a later baptism is not yet known here.
@@ -67,7 +67,7 @@ export class WorldMapComponent {
     const isKnown = (given: string): boolean => given !== '' && Number(given.slice(1)) <= chapter;
     const named = (book: Record<string, PlaceArea>): [string, PlaceArea][] => Object.entries(book).filter(([, entry]) => isKnown(entry.chapter));
     const [islands, lakes, rivers, seas] = [named(places.islands), named(places.lakes), named(places.rivers ?? {}), named(places.seas ?? {})];
-    // Lands and waters on one scale: no water outgrows a wider land.
+    // Lands and waters on one scale, a name too wide for the map shrunk after it is drawn (`shrinks`).
     const fontSize = this._sizer([...islands, ...lakes, ...rivers, ...seas].map(([, entry]) => entry.size));
     const areas = (kind: Exclude<MapPinKind, 'spot'>, entries: [string, PlaceArea][]): MapPin[] => entries.map(([id, entry]) => ({
       ...this._at(entry.centroid, extent), area: entry.size * this._tileKm2, fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name,
@@ -85,6 +85,8 @@ export class WorldMapComponent {
         })),
     ];
   });
+  // The share of its font a name keeps to stay inside the map, centred on its point and `_gap` off its edge — only those that would spill over, once drawn.
+  protected readonly shrinks = signal<Record<string, number>>({});
 
   private readonly _favoriteTag = viewChild<unknown, ElementRef<HTMLElement>>('favoriteTag', { read: ElementRef });
   private readonly _gap = 0.3; // the room left between two names, in `cqw`
@@ -109,10 +111,16 @@ export class WorldMapComponent {
       const box = frame.getBoundingClientRect();
       const unit = box.width / 100; // one `cqw`, in pixels
       const ratio = extent.height / extent.width;
+      const shown = untracked(this.shrinks); // the share each name is drawn at now, to read its full size back: read untracked, or setting it would loop
+      const shrinks: Record<string, number> = {};
       const boxes: LabelBox[] = pins.map((pin, index) => {
         const { height = 0, width = 0 } = tags[index]?.nativeElement.getBoundingClientRect() ?? {};
-        return { fixed: pin.kind === 'island', h: height / unit, key: pin.key, w: width / unit, x: pin.left, y: pin.top * ratio };
+        const [w, h, x, y] = [width / unit / (shown[pin.key] ?? 1), height / unit / (shown[pin.key] ?? 1), pin.left, pin.top * ratio];
+        const share = Math.min(1, (2 * (Math.min(x, 100 - x) - this._gap)) / w, (2 * (Math.min(y, 100 * ratio - y) - this._gap)) / h);
+        if (share < 1) shrinks[pin.key] = share;
+        return { fixed: pin.kind === 'island', h: h * share, key: pin.key, w: w * share, x, y };
       });
+      this.shrinks.set(shrinks);
       const favorite = this._favoriteTag()?.nativeElement.getBoundingClientRect();
       if (favorite) {
         const [x, y] = [(favorite.left + favorite.width / 2 - box.left) / unit, (favorite.top + favorite.height / 2 - box.top) / unit];
