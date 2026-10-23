@@ -21,9 +21,13 @@ _TOOLS = frozenset(path.parent.name for path in Path(__file__).parents[1].glob("
 # One key's glosses, or its refusal told: the fields it names, a tool's whole with the shared ones, or the neighbour whose gloss tells it.
 def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]) -> dict[str, str]:
     asked = wanted.split(".")
-    # A tool asked whole brings the fields it shares with the others, keyed bare, `actor` its `crow_tiles` with it: one call before the first read of its output.
-    shared = len(asked) == 1 and asked[0] in _TOOLS
-    found = {key: glosses[key] for key, segments in segmented.items() if _holds(segments, asked) or (shared and segments[0] not in _TOOLS)}
+    # The bare keys a tool shares, on what is asked of it: all for the whole tool (`actor` its `crow_tiles`), a section's own (`actor.traits`, `traits.absorbed`).
+    section = asked[1:] if asked[0] in _TOOLS else None
+    found = {
+        key: glosses[key]
+        for key, segments in segmented.items()
+        if _holds(segments, asked) or (section is not None and segments[0] not in _TOOLS and segments[: len(section)] == section)
+    }
     # A field that has no key of its own is told inside a neighbour's gloss: `their_opinion` within `opinion`'s, `was_at` within `gone`'s.
     found = found or {key: gloss for key, gloss in glosses.items() if f"`{asked[-1]}`" in gloss}
     if not found:
