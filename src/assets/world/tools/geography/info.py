@@ -7,8 +7,10 @@ import re
 import statistics
 import sys
 from collections import Counter, defaultdict
+from functools import partial
+from heapq import heapify, heappop, heappush
 from pathlib import Path
-lazy from collections.abc import Collection, Iterable
+lazy from collections.abc import Callable, Collection, Iterable
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
@@ -30,6 +32,7 @@ from grid import (
 )
 from islands import TileIslands, compute_islands_cached
 from shared import (
+    DIAGONAL_EXTRA,
     MAX_LISTED,
     SAVES_DIR,
     actor_xy,
@@ -53,7 +56,7 @@ from shared import (
     union_root,
     unsited_reason,
 )
-from waters import waters_cached
+from waters import water_bodies, waters_cached
 
 _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
@@ -76,6 +79,8 @@ _NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault
 }
 
 _PERMAFROST_RUN = re.compile(rb"\x03+")  # a row's unbroken permafrost in the frost mask
+_SHORE_REACH = 60  # tiles past which a fire is off every water, as `tiles` holds the open sea
+_STEPS = tuple((dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)  # the eight ways a crow-flown search widens
 _SURVEY_PCT = 1  # the share of its land under which a ground is only named in the world-wide `biomes`: half its rows weigh less, and `-i` has them all
 _TOP_PATCHES = 5  # the patches `biomes -t` sites of one ground — a second massif, a frost in two halves: past a handful, the row's count says the rest
 
@@ -185,7 +190,11 @@ def _build_burning(save: dict, save_path: Path, island: int | str | None) -> dic
     # Counts, not the shares `islands` gives: a few dozen tiles read better whole than as percentages of themselves.
     out: dict[str, str | dict] = {key: _tally(grounds) for key, grounds in sorted(by_land.items(), key=_land_order)}
     if island is not None and (key := str(island)) in by_land:  # `-i` alone tells its land's fires apart, the world count staying one line a land
-        out[key] = {"grounds": out[key], **_fires(burning, key, next((row for row in islands if str(row["id"]) == key), None))}
+        wet, bodies = [tile_layer(name) == "Ocean" for name in tile_map], water_bodies(save, save_path)
+        water = partial(_water_near, grid=grid, wet=wet, bodies=bodies)  # handed down, so `_fires` needs no save
+        fires = _fires(burning, key, next((row for row in islands if str(row["id"]) == key), None), water)
+        lone = len(fires["fires"]) == 1 and fires["fires"][0]["grounds"] == out[key]  # one fire holding the land's whole burning: its line says it once
+        out[key] = {"grounds": None if lone else out[key], **fires}
     return out
 
 
@@ -408,7 +417,7 @@ def _ground_lands(biomes: dict, kind: str) -> dict | None:
 
 
 # The map's burning tiles as fires, those within `_FIRE_REACH` of one another one fire, each told under the land holding most of it: the rest is `spills`.
-def _fires(burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict | None) -> dict:
+def _fires(burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict | None, water: Callable[[list], dict | None]) -> dict:
     cells: defaultdict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)  # the tiles by square of `_FIRE_REACH`: a tile's kin lie in its 9 squares
     for x, y in burning:
         cells[x // _FIRE_REACH, y // _FIRE_REACH].append((x, y))
@@ -437,7 +446,8 @@ def _fires(burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict
         x, y = min(home, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
         side = {"dir": land_side(x, y, land)} if land else {}
         spills = {land_key: n for land_key, n in lands.items() if land_key != key} or None
-        told.append({"x": x, "y": y, **side, "grounds": _tally(burning[tile][1] for tile in fire), "spills": spills, "tiles": len(fire)})
+        row = {"x": x, "y": y, **side, "grounds": _tally(burning[tile][1] for tile in fire), "spills": spills, "tiles": len(fire), "to_water": water(fire)}
+        told.append(row)
     rest = fires[_TOP_PATCHES:]
     return {"fires": told, "unlisted": {"fires": len(rest), "tiles": sum(len(fire) for fire, _ in rest)} if rest else None}
 
@@ -572,6 +582,26 @@ def _top_patches(found: list[list], land: dict | None, grounds: list[bytes], kin
         }
         for size, site, runs in sorted(sited, key=lambda p: (-p[0], p[1]["x"], p[1]["y"]))[:_TOP_PATCHES]
     ]
+
+
+# The water nearest a fire's edge, crow-flown from its every tile at once and named as `tiles … distances` names it — none past `_SHORE_REACH`.
+def _water_near(fire: list[tuple[int, int]], grid: LazyTileGrid, wet: list[bool], bodies: Callable[[int, int], dict]) -> dict | None:
+    best = dict.fromkeys(fire, 0.0)
+    heap = [(0.0, x, y) for x, y in fire]
+    heapify(heap)
+    while heap:
+        cost, x, y = heappop(heap)
+        if cost > best[x, y]:
+            continue
+        if wet[grid[y][x]]:
+            return {**bodies(x, y), "crow_tiles": round(cost)}
+        for dx, dy in _STEPS:
+            nx, ny = x + dx, y + dy
+            step = cost + (DIAGONAL_EXTRA + 1 if dx and dy else 1.0)
+            if 0 <= nx < grid.width and 0 <= ny < grid.height and step <= _SHORE_REACH and step < best.get((nx, ny), math.inf):
+                best[nx, ny] = step
+                heappush(heap, (step, nx, ny))
+    return None
 
 
 # The box of every patch of one ground on a land, as a land's `bounds` — `None` for a lone patch.

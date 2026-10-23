@@ -70,6 +70,7 @@
   "geography.burning": "Les tuiles que le jeu tient en feu, par sol, pas la lave posée, que `biomes` donne (sol `lava`) ; `-i <terre>` en fait des foyers (`fires`).",
   "geography.burning.fires": "Un foyer : les tuiles en feu à 16 au plus l'une de l'autre, sur toute la carte ; les 5 plus grands, le reste en `unlisted`.",
   "geography.burning.spills": "La part d'un foyer hors de sa terre (un îlot collé, une terre voisine) : un foyer se range sous la terre qui en porte le plus, jamais compté deux fois.",
+  "geography.burning.to_water": "L'eau la plus proche du bord d'un foyer, depuis sa tuile la plus proche, nommée comme sous `tiles … distances` : 1, le feu touche la rive ; rien au-delà de 60.",
   "geography.entity_types": "Toutes les sortes que porte la save, par famille (`actors`, `trees`, `nature`…) : une famille absente n'a rien dans ce monde ; ses noms valent pour `positions -t`.",
   "geography.frozen": "Par terre, la part gelée puis ses tuiles : `permafrost` le biome gelé en toute saison, `snow` et `ice` la neige et la glace de la carte, `frost` le gel passager.",
   "geography.heart": "`heart` (`islands`, `waters`) : le point le plus loin des rives.",
