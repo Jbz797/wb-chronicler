@@ -100,7 +100,7 @@
   "history.log.by_event": "Passé 50 entrées, le compte par type d'événement ; `-t <event>` ou `--actor <id>` les liste.",
   "history.unknown": "Les morts que le jeu ne range sous aucune cause (fièvre des Cendres…).",
   "history.world": "Par an (`year`, l'en-cours `so_far`), ce qui naît, meurt ou s'éteint ; année absente : rien de neuf. Avant la fenêtre : des plages `years`, états moyens (`mean`).",
-  "history.world.at_close": "Les comptes du monde à la clôture de l'année : arbres (`trees`), autres plantes (`vegetation`), bêtes, lignées… ; la 1ʳᵉ année au-dessus de 0 date leur venue.",
+  "history.world.at_close": "Les comptes du monde à la clôture, en janvier : « à la fin de l'an N » se lit ici, pas sur une save de y(N+1) m1 ; la 1ʳᵉ année au-dessus de 0 date leur venue.",
   "history.world.close_gap": "Les corps dont la clôture de l'année s'écarte de ses termes (+ trop) : WB garde un mort compté tant qu'il meurt, compte une coque en bête, ignore une métamorphose.",
   "history.world.made_up": "L'écart reprend celui de l'année d'avant : un corps compté un an à côté, les deux années justes ensemble.",
   "kingdom.metadata.ferries": "Une seule coque de transport sert tout le royaume.",
