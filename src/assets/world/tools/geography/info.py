@@ -61,6 +61,7 @@ _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _DETAIL = ("borders", "bounds")  # what `-t` alone tells of a patch, the wide view keeping to where it lies
 _FIRE_REACH = 16  # tiles between two burning ones of a single fire: twice a volcano's longest throw (`spawn_drop_max_radius`), its lava falling all round it
+_GROUND_SWING = 0.1  # a ground's own change past which `biomes --since` tells it, its land's share still: a field doubled, a tenth of a forest burnt
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 
 _NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault, or as a word mistyped
@@ -441,6 +442,29 @@ def _fires(burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict
     return {"fires": told, "unlisted": {"fires": len(rest), "tiles": sum(len(fire) for fire, _ in rest)} if rest else None}
 
 
+# `biomes --since`: each land's grounds by name, a ground told where it gained or lost tiles — its share where that moved, else its tiles past `_GROUND_SWING`.
+def _ground_balance(then: dict, now: dict) -> dict | None:
+    def grounds(biomes: dict) -> dict[str, dict[str, dict]]:
+        return {land: {row.get("biome") or row.get("ground") or "others": row for row in rows} for land, rows in (biomes.get("islands") or {}).items()}
+
+    before, after, lands = grounds(then), grounds(now), {}
+    for land in sorted({*before, *after}, key=lambda key: _land_order((key, None))):
+        old, new, kept = before.get(land, {}), after.get(land, {}), {}
+        for ground in sorted({*old, *new}):
+            was, came = old.get(ground) or {}, new.get(ground) or {}
+            tiles = [was.get("tiles") or 0, came.get("tiles") or 0]
+            pct = [was.get("pct") or 0, came.get("pct") or 0]  # a share under a tenth goes unwritten: it is 0
+            if tiles[0] == tiles[1]:  # a share that moves with the land's total alone, the ground's own tiles still, is no balance of it
+                continue
+            if pct[0] != pct[1]:
+                kept[ground] = {"pct": pct}
+            elif abs(tiles[1] - tiles[0]) >= _GROUND_SWING * max(tiles[0], 1):
+                kept[ground] = {"tiles": tiles}
+        if kept:
+            lands[land] = kept
+    return {"islands": lands} if lands else None
+
+
 # The row of one ground among a land's, asked by its biome or its bare ground alike — `None` where the land bears none.
 def _ground_row(rows: Iterable[dict], kind: str) -> dict | None:
     return next((row for row in rows if kind in (row.get("biome"), row.get("ground"))), None)
@@ -630,7 +654,10 @@ def main(argv: list[str]) -> int:
         then = _collect(earlier, then_path, tuple(out), kinds, args.island)
         if args.island is not None:
             out, then = _narrowed(out, args.island), _narrowed(then, args.island)
+        balance = _ground_balance(then.pop("biomes"), out.pop("biomes")) if "biomes" in out else None  # its own balance, ground by ground
         moved = found if isinstance(found := moved_between(then, out), dict) else {}  # both readings are dicts, so what moved is one, or nothing
+        if balance:
+            moved = {**moved, "biomes": balance}
         if "positions" in sections and kinds is not None:
             was, now = ({record["id"] for record, _ in asset_sites(reading, kinds)} for reading in (earlier, save))
             gone, came = _build_positions(earlier, then_path, kinds, args.island, was - now), _build_positions(save, save_path, kinds, args.island, now - was)
