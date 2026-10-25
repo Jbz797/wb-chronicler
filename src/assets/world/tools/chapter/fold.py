@@ -34,7 +34,9 @@ _AUDIT = {
             "islet",
             "mass",
             "motto",
+            "near_places",
             "peace_time",
+            "place",
             "settle",  # the chronicler's « why no town yet »: no panel says who could found one
             "settle_more",
             "statuses",

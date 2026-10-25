@@ -181,7 +181,10 @@ _MODS = {"Faithful Saves": "faithful_saved_at", "Wandering Clouds": "wandering_c
 _MODS_DIR = "../../../mods"  # from the chronicler's own directory, where he runs this script
 
 # What a place's check weighs — in no doc: handed to the audit with the names a chapter gave, which no auditor was sent to before.
-_PLACE = "a place named this chapter: the facts check that its point falls on what its kind names; its kind and sign say what the chapter says of it"
+_PLACE = (
+    "a place named this chapter: the facts check that its point falls on what its kind names, a spreading one's `box` on its extent;"
+    " its kind and sign say what the chapter says of it"
+)
 
 _PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 _PLAIN = "plain text with no tag"  # what a field of `chapter.json` is written in: its panel prints it as it stands, brackets and all

@@ -41,6 +41,12 @@ class _Pool(NamedTuple):
         return max(self.box[1] - self.box[0], self.box[3] - self.box[2]) + 1
 
 
+# The bodies' mask as `_waters` keeps it, a code a tile, with the width and height of the map it is laid out on.
+def _body_mask(save: dict, save_path: Path) -> tuple[array, int, int]:
+    body_at, height = array("H", zlib.decompress(_waters(save, save_path)["body_at"])), len(save.get("tileArray") or [])
+    return body_at, len(body_at) // (height or 1), height
+
+
 # A pool's index to the id it goes by, read in C over a whole row: one slot more than there are pools, that the `-1` of a dry tile land on a `0` of its own.
 def _by_pool(id_of: dict[int, int], pools: int) -> Callable[[int], int]:
     ids = [0] * (pools + 1)
@@ -109,6 +115,10 @@ def _compute_waters(save: dict, save_path: Path) -> dict:
         # What the lists leave out, said in the data so that an absence never reads as a count: the waters under the floor, the crossings no body could swim.
         "unlisted": {"lakes": {"count": len(pools) - len(code_of), "smaller_than": _MIN_LAKE_TILES}, "straits": {"wider_than": 2 * _FARTHEST_SWIM}},
     }
+
+
+def _decoded(code: int) -> tuple[str, int]:
+    return _KINDS[code >> _ID_BITS], code & ((1 << _ID_BITS) - 1)
 
 
 # An enclosed water is named by the shores that ring it, and holds as its own any land no other water touches — the isles a chronicle reaches last, or never.
@@ -369,21 +379,19 @@ def _water_rows(save: dict) -> list[bytes]:
     return tile_mask(save, [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []])
 
 
-# Every stretch of water the map holds, read once per save since the map never moves — the bodies' mask with it, which only `water_bodies` reads.
+# Every stretch of water the map holds, read once per save since the map never moves — the bodies' mask with it, which only `water_bodies` and `water_tiles` read.
 def _waters(save: dict, save_path: Path) -> dict:
     return pickle_cached("waters_v16", save_path, lambda: _compute_waters(save, save_path))
 
 
 # What water a tile lies in — a `sea`, a `lake` or a `river` by id, read off the mask — or `pond_tiles`, a water under their floor filled from the tile.
 def water_bodies(save: dict, save_path: Path) -> Callable[[int, int], dict]:
-    body_at = array("H", zlib.decompress(_waters(save, save_path)["body_at"]))
-    height = len(save.get("tileArray") or [])
-    width = len(body_at) // (height or 1)
+    body_at, width, height = _body_mask(save, save_path)
     rows = cache(lambda: _water_rows(save))  # read for a pond alone: most water a tile is asked of is a sea, which the mask names at once
 
     def body(x: int, y: int) -> dict:
         if code := body_at[y * width + x]:
-            return {_KINDS[code >> _ID_BITS]: code & ((1 << _ID_BITS) - 1)}
+            return dict([_decoded(code)])
         seen, todo = {(x, y)}, [(x, y)]
         while todo:
             cx, cy = todo.pop()
@@ -396,6 +404,20 @@ def water_bodies(save: dict, save_path: Path) -> Callable[[int, int], dict]:
     return body
 
 
+# Every tile of one water, off the bodies' mask: what a walk to its nearest shore seeks — none for an id the map does not hold.
+def water_tiles(save: dict, save_path: Path, kind: str, water_id: int) -> list[tuple[int, int]]:
+    (body_at, width, _), code = _body_mask(save, save_path), _code(kind, water_id)
+    return [(at % width, at // width) for at, held in enumerate(body_at) if held == code]
+
+
 # The seas, the lakes, the rivers, the straits between the lands and the necks between the seas, as `geography … waters` prints them.
 def waters_cached(save: dict, save_path: Path) -> dict:
     return {key: value for key, value in _waters(save, save_path).items() if key != "body_at"}
+
+
+# The waters with a tile in a window of the map, bounds included and clipped, each `(kind, id)` off the bodies' mask — a pond, numbered by none, left out.
+def waters_within(save: dict, save_path: Path, x0: int, y0: int, x1: int, y1: int) -> set[tuple[str, int]]:
+    body_at, width, height = _body_mask(save, save_path)
+    left, right = max(x0, 0), min(x1, width - 1) + 1
+    codes = {code for y in range(max(y0, 0), min(y1, height - 1) + 1) for code in body_at[y * width + left : y * width + right]} - {0}
+    return {_decoded(code) for code in codes}

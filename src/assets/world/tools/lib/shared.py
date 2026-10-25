@@ -594,6 +594,17 @@ def chronicle_git(*args: str) -> subprocess.CompletedProcess:
         return subprocess.CompletedProcess(command, 127, "", "")
 
 
+# The tiles `chunks_apart` holds close to one, `x0, y0, x1, y1` bounds included: its chunk and the eight round it, unclipped to the map.
+def chunk_window(x: int, y: int) -> tuple[int, int, int, int]:
+    cx, cy = x // _CHUNK_TILES, y // _CHUNK_TILES
+    return (cx - 1) * _CHUNK_TILES, (cy - 1) * _CHUNK_TILES, (cx + 2) * _CHUNK_TILES - 1, (cy + 2) * _CHUNK_TILES - 1
+
+
+# How many chunks lie between two tiles, 0 in the same one: WB's rules look « nearby » by chunk, a body's own and those round it (`Finder.getUnitsFromChunk`).
+def chunks_apart(ax: int, ay: int, bx: int, by: int) -> int:
+    return max(abs(ax // _CHUNK_TILES - bx // _CHUNK_TILES), abs(ay // _CHUNK_TILES - by // _CHUNK_TILES))
+
+
 # WB's own anchor for a town (`updateCityCenter`), so what sites one and what distances aim at: the zone centre closest to their average, nudged 2 tiles north.
 def city_centre(city: dict) -> tuple[int, int] | None:
     zones = [(zx * ZONE_TILES + ZONE_TILES // 2, zy * ZONE_TILES + ZONE_TILES // 2) for zx, zy in map(zone_xy, city.get("zones") or [])]
@@ -653,11 +664,6 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
         "warriors": warriors,
         "wealth": {c["id"]: money[c["id"]] + gold[c["id"]] for c in cities},
     }
-
-
-# How many chunks lie between two tiles, 0 in the same one: WB's rules look « nearby » by chunk, a body's own and those round it (`Finder.getUnitsFromChunk`).
-def chunks_apart(ax: int, ay: int, bx: int, by: int) -> int:
-    return max(abs(ax // _CHUNK_TILES - bx // _CHUNK_TILES), abs(ay // _CHUNK_TILES - by // _CHUNK_TILES))
 
 
 # Built structures (a `civ_*` category in `datas/buildings.json`), nature excluded — plus the `fishing_docks_*` that manifest omits, derived from `docks_*`.
