@@ -54,6 +54,7 @@ from shared import (
     arg_parser,
     asset_families,
     asset_kinds,
+    biome_lore,
     body_ref,
     breeding_mode,
     building_family,
@@ -94,6 +95,7 @@ from shared import (
     take_since,
     under_construction,
     unranked,
+    unsited_reason,
     walk_tiles,
     wants_detail,
     world_date,
@@ -205,7 +207,7 @@ _MEMBERSHIPS = {
 # The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
-_ON_REQUEST = ("laws", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll of bodies is no chapter's to carry
+_ON_REQUEST = ("laws", "lineages", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll is no chapter's to carry
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
 _SINCE_SECTIONS = ("cumulative", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll, and two counts weighed chapter against chapter
 
@@ -349,6 +351,25 @@ def _build_leaders(save: dict) -> dict:
     if short := unranked({**pools, "persons": (len(persons["level"]), MIN_RANK_PEERS), "species": (len(species), MIN_RANK_PEERS)}):
         out["unranked"] = short
     return out
+
+
+# Every living lineage by its id, a line each as `subspecies … metadata` tells it: its kind, name, members, the biome that shaped it, its month — `-t` narrows.
+def _build_lineages(save: dict, kinds: set[str] | None) -> dict:
+    members = Counter(actor.get("subspecies") for actor in save.get("actors_data") or [] if not is_boat(actor))
+    rows = {}
+    for lineage in sorted(save.get("subspecies") or [], key=lambda s: s["id"]):
+        if kinds is not None and lineage.get("species_id") not in kinds:
+            continue
+        biome = (lineage.get("biome_variant") or "").removeprefix("biome_")
+        rows[str(lineage["id"])] = {
+            "asset_id": lineage.get("species_id"),
+            **({"biome": biome} if biome_lore(biome) else {}),
+            "born": entity_born(lineage),
+            "members": members[lineage["id"]],
+            "name": lineage.get("name"),
+            **({"sapient": True} if is_sapient(lineage) else {}),
+        }
+    return rows
 
 
 # The world's day and its age — how far that age has run, never when it ends: WB's UI counts the moons left, and a chronicle told the month would foretell it.
@@ -928,7 +949,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--task", help="`roster`: the bodies at one task the instant of the save, by its id — what a body does, where a status is what it wears")
     parser.add_argument("--top", choices=_TOP_MEASURES, help=f"`roster`: its {_TOP_ROWS} highest by one measure, a tally or a skill, each with its figure")
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
-    parser.add_argument("--type", "-t", help="`roster`: one kind, a family (`actors`) or a comma list")
+    parser.add_argument("--type", "-t", help="`roster` and `lineages`: one kind, a family (`actors`) or a comma list")
     parser.add_argument(
         "--with", dest="fields", metavar="field,…", help=f"`roster`: up to {_MAX_FIELDS} of `actor … stats`, `task`, `statuses` or a line's own field, on each line"
     )
@@ -941,7 +962,8 @@ def main(argv: list[str]) -> int:
         return 2
     entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None]
     narrowing = (
-        any((args.barred, args.has, args.lacks, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, args.type, entities))
+        any((args.barred, args.has, args.lacks, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, entities))
+        or (args.type and "lineages" not in sections)
         or args.island is not None
         or args.nearest is not None
         or args.fields is not None
@@ -954,7 +976,7 @@ def main(argv: list[str]) -> int:
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
         flags = "-t, --trait, --has, --lacks, --top, --nearest, --with, --status, --task, --patch, --sapient, --settle, --barred, -i and an entity"
-        print(f"✗ {flags} narrow `roster`: name it", file=sys.stderr)
+        print(f"✗ {flags} narrow `roster`, `-t` `lineages` too: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
         print("✗ --has and --lacks split a roll in two: name one", file=sys.stderr)
@@ -989,6 +1011,14 @@ def main(argv: list[str]) -> int:
         out["laws"] = _build_laws(save)
     if "leaders" in sections:
         out["leaders"] = _build_leaders(save)
+    if "lineages" in sections:
+        families = asset_families(save) if args.type else {}  # swept for `-t` alone: every body and every building
+        if not (lineages := _build_lineages(save, asset_kinds(families, args.type) if args.type else None)):
+            # A mistyped word told apart from a kind with no lineage left, as `roster` tells it
+            why = (args.type and unsited_reason(families, args.type)) or f"no living lineage{f' of {args.type}' if args.type else ''} in this world"
+            print(f"✗ {why}", file=sys.stderr)
+            return 1
+        out["lineages"] = lineages
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)
     if "pairings" in sections:

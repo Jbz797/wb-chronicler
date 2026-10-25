@@ -150,6 +150,7 @@
   "world.cumulative.deaths_without_body": "Des morts comptées sans corps parti : l'inverse de `gone_without_death` ; `info` en donne les comptes.",
   "world.cumulative.gone_without_death": "Des corps partis sans mort comptée : WB n'en compte pas pour une métamorphose, un ovni qui tombe, un ver, une araignée des sables, une imprimante, un doigt divin.",
   "world.cumulative.wars_started": "Le compte du jeu des guerres ouvertes depuis la naissance du monde ; absent, il n'y en a jamais eu : pas un filtre, le témoin lui-même.",
+  "world.lineages": "Chaque lignée vivante par son id, comme `subspecies <id> metadata` la dit : son espèce, son biome de naissance, son mois, ses vivants (`members`).",
   "world.pairings": "Par espèce, la 1ʳᵉ naissance au plus tôt et le couple qui la porterait ; un couple ignore la lignée (`wiki:Reproduction`).",
   "world.pairings.barred": "Ce qui arrête la naissance, non la rencontre, et le corps en cause : `hungry` (`wiki:Reproduction`), `tiny_islet` (îlot ≤ 5 tuiles), `water` (à flot) ou une loi WB.",
   "world.pairings.barren": "Par lignée, les corps qui n'enfanteront jamais.",
