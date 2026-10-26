@@ -29,6 +29,7 @@ from actor_stats import (
     crossed_at,
     crossed_on,
     equipment_power,
+    hatch_on,
     is_egg,
     is_hungry,
     kept_statuses,
@@ -187,7 +188,25 @@ _GROUP_FIELDS = {
 }
 
 _ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too small to count — `_WATER` where it floats
-_KEPT_FIELDS = ("age_overgrowth", "asset_id", "born", "city_since", "island_id", "life_stage", "statuses", "task")  # what `--with` reads off the body and its ground
+
+# What `--with` reads off the body and its ground, a line's own fields among them, and its lineage by id: `world … lineages` names it
+_KEPT_FIELDS = (
+    "adult_on",
+    "age_overgrowth",
+    "asset_id",
+    "born",
+    "breeds_on",
+    "city_since",
+    "gen",
+    "hatch_on",
+    "island_id",
+    "life_stage",
+    "sex",
+    "statuses",
+    "subspecies",
+    "task",
+)
+
 _MAX_FIELDS = 4  # past so many fields a line reads as a sheet: `actor … stats` gives the whole of one body
 
 # What `roster` narrows to by entity: the collection its id answers in, and the body's own field that ties it there — a pact's, through the crown.
@@ -248,14 +267,22 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         return {}
     stats = body_stats(actor, ctx) if any(field not in _KEPT_FIELDS for field in fields) else {}
     seen.update(stats)
+    age, lineage = actor_age(actor, ctx["world_time"]), ctx["subspecies_by_id"].get(actor.get("subspecies"))
     kept = {
+        "adult_on": lambda: crossed_on(actor, adult) if age < (adult := adult_age(actor, ctx)) else None,
         "age_overgrowth": lambda: int(actor.get("age_overgrowth") or 0) or None,  # a migrant's mark, `born` its arrival
         "asset_id": lambda: actor.get("asset_id"),
         "born": lambda: entity_born(actor),
+        # Its lineage's own line, as on the roll: none to come where it never bears
+        "breeds_on": lambda: crossed_on(actor, breeding) if age < (breeding := breeding_age(actor, ctx)) and fertile(lineage) else None,
         "city_since": lambda: kept_city_since(actor),
+        "gen": lambda: int(actor.get("generation") or 1),
+        "hatch_on": lambda: hatch_on(actor, ctx),
         "island_id": lambda: here,
-        "life_stage": lambda: _stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)),
+        "life_stage": lambda: _stage(actor, ctx, age, adult_age(actor, ctx)),
+        "sex": lambda: sex_label(actor),
         "statuses": lambda: kept_statuses(actor),
+        "subspecies": lambda: actor.get("subspecies"),
         "task": lambda: kept_task(actor),
     }
     return {field: kept[field]() if field in kept else stats.get(field, _FIELD_FLOORS.get(field)) for field in fields}
@@ -951,7 +978,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster` and `lineages`: one kind, a family (`actors`) or a comma list")
     parser.add_argument(
-        "--with", dest="fields", metavar="field,…", help=f"`roster`: up to {_MAX_FIELDS} of `actor … stats`, `task`, `statuses` or a line's own field, on each line"
+        "--with", dest="fields", metavar="field,…", help=f"`roster`: up to {_MAX_FIELDS} of `actor … stats`, `task`, `subspecies` or a line's own field on each line"
     )
     args = parser.parse_args(argv)
     requested = args.sections
