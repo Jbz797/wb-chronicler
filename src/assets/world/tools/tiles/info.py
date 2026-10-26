@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_biome, tile_block, tile_elevation, tile_frost, tile_ground, tile_kind, tile_layer
 from islands import compute_islands_cached, islet_centre
+from places import PlaceError, named_place
 from shared import (
     DIAGONAL_EXTRA,
     ZONE_TILES,
@@ -54,12 +55,14 @@ _ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info
 _AIMED_WATER = re.compile(r"(lake|river|sea)(\d+)")  # a water by the id `geography waters` lists it under, as `places.json` keeps it
 _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
 _BARE = {"actors": "no body", "ground": "nothing built or grown"}  # what a tile lacks, said when `actors` or `ground` is all the call asked
+_BRUTE_PAIRS = 20_000  # tile pairs two grounds are weighed by one by one: a building and a body, never a land and a lake
 _BURNING = "burning"  # what `-g` takes for the fires, no ground: `geography … burning` names them so
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
 _LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
+_PAIR_CELL = 16  # the side of the cells a large ground is hashed into for `_closest_pair`, a chunk's
 _REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its way is the one the scale's pace would take, never timed
 # The eight steps a tide takes, each with its length — a slanted one being longer than a straight one, the least water is not the nearest in rings.
 _WEIGHTED_DELTAS = tuple(((dx, dy), 1.0 if dx == 0 or dy == 0 else 1 + DIAGONAL_EXTRA) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)
@@ -142,6 +145,31 @@ def _city_at(x: int, y: int, ctx: dict) -> dict | None:
     return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
 
 
+# The crow's nearest pair between two grounds, their rims alone: past `_BRUTE_PAIRS`, the larger hashed by `_PAIR_CELL`, searched ring by ring from the smaller.
+def _closest_pair(first: list[tuple[int, int]], second: list[tuple[int, int]]) -> tuple[tuple[int, int], tuple[int, int]]:
+    if shared := set(first) & set(second):
+        return (tile := min(shared)), tile
+    first, second = _rim(first), _rim(second)
+    if len(first) * len(second) <= _BRUTE_PAIRS:
+        return min(((a, b) for a in first for b in second), key=lambda ends: walk_tiles(ends[1][0] - ends[0][0], ends[1][1] - ends[0][1]))
+    flip = len(first) > len(second)
+    small, large = (second, first) if flip else (first, second)
+    cells: defaultdict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)
+    for x, y in large:
+        cells[x // _PAIR_CELL, y // _PAIR_CELL].append((x, y))
+    wide, high = (max(tile[axis] for tile in (*small, *large)) // _PAIR_CELL + 1 for axis in (0, 1))
+    best, pair = math.inf, (small[0], large[0])
+    for sx, sy in small:
+        for r in range(max(wide, high)):
+            if (r - 1) * _PAIR_CELL >= best:  # a cell r rings off holds no tile nearer than its inner edge: none can beat the best past it
+                break
+            for gx, gy in _ring_tiles(sx // _PAIR_CELL, sy // _PAIR_CELL, r, wide, high):
+                for tx, ty in cells.get((gx, gy), ()):
+                    if (crow := walk_tiles(tx - sx, ty - sy)) < best:
+                        best, pair = crow, ((sx, sy), (tx, ty))
+    return (pair[1], pair[0]) if flip else pair
+
+
 # `{}` on unclaimed ground, which `emit` strips from the cell.
 def _context_at(x: int, y: int, ctx: dict) -> dict:
     city = _city_at(x, y, ctx)
@@ -188,9 +216,9 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     return out
 
 
-# An end of `tiles`: a building `b<id>`, a town `c<id>` or a body `p<id>`, kept as written till the save names its tiles; else a tile `x,y`.
+# An end of `tiles`: a building `b<id>`, a town `c<id>`, a body `p<id>` or a name of `places.json`, kept as written till the save sites it; else a tile `x,y`.
 def _end_arg(value: str) -> str | tuple[int, int]:
-    return value if body_ref(value) is not None or re.fullmatch(r"[bc]\d+", value) else xy_arg(value)
+    return xy_arg(value) if body_ref(value) is None and re.fullmatch(r"-?\d+,-?\d+", value) else value
 
 
 # A town is its fabric, not its centre, as `to_islands` takes a land's nearest tile: at the edge of a sprawling town a body stands at the gate, not a centre away.
@@ -198,17 +226,24 @@ def _fabric_distance(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
     return round(min(walk_tiles(max(qx - x, x - qx - ZONE_TILES + 1, 0), max(qy - y, y - qy - ZONE_TILES + 1, 0)) for qx, qy in quarters))
 
 
-# The tiles a named end stands on — a building's whole ground, a town's centre, a body's tile —, or the refusal that tells why it has none.
-def _ground(end: str, save: dict, chapter: str | None) -> list[tuple[int, int]] | str:
+# The tiles a named end stands on — a building's whole ground, a town's centre, a body's tile, a place's own as `actor … --to` reads it — and what a place
+# aimed at, or the refusal that tells why it has none.
+def _ground(end: str, save: dict, save_path: Path, chapter: str | None) -> tuple[list[tuple[int, int]], str | None] | str:
+    if not re.fullmatch(r"[bcp]\d+", end):
+        try:
+            found = named_place(end, save, save_path, compute_islands_cached(save, save_path)[1], WalkMap(save))
+        except PlaceError as e:
+            return str(e)
+        return found or f"✗ `{end}` is no end — a tile `x,y`, a building `b<id>`, a town `c<id>`, a body `p<id>` or a name of places.json"
     kind, ref = end[0], int(end[1:])
     if kind == "b":
         site = next((b for b in save.get("buildings") or [] if b.get("id") == ref), None)
-        return (site and building_footprint(site)) or absent_entity("ground", "buildings", ref, chapter, noun="building")
+        return (site and (building_footprint(site), None)) or absent_entity("ground", "buildings", ref, chapter, noun="building")
     if kind == "c":
         city = next((c for c in save.get("cities") or [] if c.get("id") == ref), None)
-        return [centre] if city and (centre := city_centre(city)) else absent_entity("city", "cities", ref, chapter)
+        return ([centre], None) if city and (centre := city_centre(city)) else absent_entity("city", "cities", ref, chapter)
     body = next((a for a in save.get("actors_data") or [] if a.get("id") == ref and not is_boat(a)), None)
-    return [actor_xy(body)] if body else absent_entity("actor", "actors_data", ref, chapter, lambda a: not is_boat(a))
+    return ([actor_xy(body)], None) if body else absent_entity("actor", "actors_data", ref, chapter, lambda a: not is_boat(a))
 
 
 # One object per tile, never two — WB's `buildings` holds the flowers and the ore too, hence the family; `dated` for the tile asked about, a sweep's rows kept short.
@@ -409,6 +444,12 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
 
+# The tiles of a ground touching its outside: two grounds meet nearest on their rims, which a land's edges already are.
+def _rim(tiles: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    own = set(tiles)
+    return [(x, y) for x, y in tiles if (x + 1, y) not in own or (x - 1, y) not in own or (x, y + 1) not in own or (x, y - 1) not in own]
+
+
 # The square ring at Chebyshev radius `r` around a tile, clipped to the map — the shape an 8-way search grows by, whatever it then costs a body to walk.
 def _ring_tiles(x: int, y: int, r: int, width: int, height: int) -> Iterator[tuple[int, int]]:
     x0, x1, y0, y1 = x - r, x + r, y - r, y + r
@@ -453,7 +494,7 @@ def main(argv: list[str]) -> int:
 
     parser = arg_parser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
     parser.add_argument(
-        "xy", type=_end_arg, metavar="x,y|b<id>|c<id>|p<id>", help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`."
+        "xy", type=_end_arg, metavar="x,y|b<id>|c<id>|p<id>|<place>", help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`."
     )
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `geography … biomes` names it, or `burning`: its nearest tile, in `distances`.")
@@ -462,7 +503,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--to",
         type=_end_arg,
-        metavar="x,y|b<id>|c<id>|p<id>",
+        metavar="x,y|b<id>|c<id>|p<id>|<place>",
         help="A second end and a `to` key, the walk from the first to it — the tiles too once sections are named.",
     )
     parser.add_argument("--water", "-w", metavar="lake<id>|river<id>|sea<id>", help="One water by its id, its shore measured in `distances`.")
@@ -477,7 +518,7 @@ def main(argv: list[str]) -> int:
 
     if any(isinstance(end, str) for end in (args.xy, args.to)) and (sections or args.radius):  # a building lies on many tiles, a section reads one
         print(
-            "✗ a building `b<id>`, a town `c<id>` or a body `p<id>` is an end of a lone `--to`: sections and `--radius` read tiles — name them `x,y`",
+            "✗ a building `b<id>`, a town `c<id>`, a body `p<id>` or a place's name ends a lone `--to`: sections and `--radius` read tiles — name them `x,y`",
             file=sys.stderr,
         )
         return 2
@@ -510,14 +551,21 @@ def main(argv: list[str]) -> int:
         print("✗ empty grid", file=sys.stderr)
         return 2
 
-    grounds = []
+    grounds, aimed = [], []
     for end in (args.xy, args.to or args.xy):
-        if isinstance(ground := [end] if isinstance(end, tuple) else _ground(end, save, chapter), str):
-            print(ground, file=sys.stderr)
+        if isinstance(found := ([end], None) if isinstance(end, tuple) else _ground(end, save, save_path, chapter), str):
+            print(found, file=sys.stderr)
             return 1
-        grounds.append(ground)
-    # A building is met at its nearest tile: the crow's shortest pair between the two grounds, the walk setting off from the first's toward all the second's.
-    (cx, cy), (tx, ty) = min(((a, b) for a in grounds[0] for b in grounds[1]), key=lambda ends: walk_tiles(ends[1][0] - ends[0][0], ends[1][1] - ends[0][1]))
+        grounds.append(found[0])
+        aimed.append(found[1])
+    # A land is held by its rim: the other end standing on it meets it where it stands, no shore away
+    for at, place in enumerate(aimed):
+        if place and place[:1] == "i" and place[1:].isdigit():
+            island_of = compute_islands_cached(save, save_path)[1]
+            if inside := next((tile for tile in grounds[1 - at] if island_of.get(tile) == int(place[1:])), None):
+                grounds[at] = [inside]
+    # A building, a town or a place is met at its nearest tile, the walk setting off from the first's toward all the second's
+    (cx, cy), (tx, ty) = _closest_pair(grounds[0], grounds[1])
     for x, y in ((cx, cy), (tx, ty)):
         if not (0 <= x < width and 0 <= y < height):
             print(f"✗ coords ({x}, {y}) out of bounds — map is {width}×{height}", file=sys.stderr)
@@ -580,7 +628,9 @@ def main(argv: list[str]) -> int:
         out["to"] = {
             "chunks_apart": chunks_apart(cx, cy, tx, ty),
             "dir": bearing(tx - cx, ty - cy),
+            **({"from": {"aimed": aimed[0], "x": cx, "y": cy}} if aimed[0] else {}),
             **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (gy * width + gx for gx, gy in grounds[1]), ctx),
+            **({"reached": {"aimed": aimed[1], "x": tx, "y": ty}} if aimed[1] else {}),
         }
 
     emit(out)

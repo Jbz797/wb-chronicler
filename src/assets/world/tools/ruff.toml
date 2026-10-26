@@ -34,4 +34,4 @@ ignore = [
 select = ["ALL"]
 
 [lint.isort]
-known-first-party = ["actor_stats", "echo", "fold", "founding", "grid", "islands", "registries", "shared", "walking", "waters"]
+known-first-party = ["actor_stats", "echo", "fold", "founding", "grid", "islands", "places", "registries", "shared", "walking", "waters"]

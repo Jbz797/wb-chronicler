@@ -2,7 +2,6 @@
 
 # User-facing docs (usage, available sections) live in `docs/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
-import difflib
 import json
 import sys
 from argparse import ArgumentTypeError
@@ -35,8 +34,9 @@ from actor_stats import (
     status_left,
 )
 from founding import city_zones, settle_gates, settle_told
-from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_ground
+from grid import LazyTileGrid, listed_tiles, off_land
 from islands import compute_islands_cached, islet_centre
+from places import PLACE_REACH, PlaceError, named_place, place_tiles
 from shared import (
     NEW_BABY_NUTRITION,
     PROFESSION_KING,
@@ -97,7 +97,7 @@ from shared import (
     world_laws,
 )
 from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_in
-from waters import water_bodies, water_tiles, waters_cached, waters_within
+from waters import water_bodies, waters_cached, waters_within
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "kin", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
@@ -110,9 +110,7 @@ _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_c
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
-_LANDMARKS = ("geyser", "volcano")  # the words of the buildings a forged place names by its point: `acid_geyser` too, the world's own landmarks
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
-_PLACE_REACH = 8  # tiles from a forged place's point its landmark may stand: the chronicler sets it on the cone he sees, not on the building's tile
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
@@ -156,7 +154,6 @@ _ROLE_ORDER = (
 )
 
 _SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
-_SEEDED_BOOKS = {"islands": "i", "lakes": "lake", "rivers": "river", "seas": "sea"}  # the gazetteer's counted lands and waters, by the prefix their ids take
 _SPENT_BREATH_PACE = 0.4  # WB's own multiplier for a body out of breath: it still swims, at two fifths of its pace
 _STAMINA_PER_SECOND = 10.0  # `spendStaminaWithCooldown` takes 1 to 5 points every 0.3s — `Randy.randomInt` leaves its top out, so three on average
 _STATUS_SPANS = ((3 * UNITS_PER_MONTH, "soon"), (UNITS_PER_YEAR, "months"))  # a status's time left as a state: under 3 months, under a year, else `years`
@@ -237,7 +234,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if ctx["island_lookup"]().get(actor_xy(actor)) == land:
             raise _AimError(f"✗ {named_body(actor)} already stands on land {land}")
         aims, mark, whom = _shore(land, ctx), "landing", f"land {land}"
-    elif isinstance(target, str) and (place := _place_aim(target, actor, ctx, save)) is not None:
+    elif isinstance(target, str) and (place := _place_aim(target, actor, ctx)) is not None:
         (aims, aimed), mark, whom = place, "reached", target
         told = {"place": {"aimed": aimed, "name": target}}
     elif target == "burning":  # a fire's nearest flame, where `geography … burning` sites its middle: what a body would meet first
@@ -284,30 +281,6 @@ def _body_tags(actor: dict, biology: tuple | list, ctx: dict) -> frozenset[str]:
     return frozenset(tag for traits, library in sources for trait in traits for tag in (library.get(trait) or {}).get("tags") or ())
 
 
-# Of a place's `box`, the tiles that are its own: the water its point lies in, its point's patch of the ground it names (rock too), else its point's land.
-def _boxed(name: str, spot: dict, x: int, y: int, ctx: dict, save: dict) -> list[tuple[int, int]]:
-    walk_map, box, height = ctx["walk_map"](), spot["box"], len(save.get("tileArray") or [])
-    (x0, x1), (y0, y1) = sorted((box["x0"], box["x1"])), sorted((box["y0"], box["y1"]))
-    span = {(bx, by) for by in range(max(y0, 0), min(y1, height - 1) + 1) for bx in range(max(x0, 0), min(x1, walk_map.width - 1) + 1)}
-    if ground := spot.get("ground"):  # the patch its point stands on, the range itself: a lone rock at its foot, a patch of its own, comes nearer
-        grid, what = ctx["tile_grid"](), ground
-        if (tile_ground(ctx["tile_map"][grid[y][x]]) or "").removeprefix(BARE) != ground:
-            raise _AimError(f"✗ {name}'s point stands off its ground, {ground}")
-        tiles = [tile for tile in patch_finder(save, grid, ctx["island_lookup"]())(x, y)[0] if tile in span]
-    elif walk_map.wet(x, y):
-        ((kind, water_id),) = ctx["water_body"]()(x, y).items()
-        if kind == "pond_tiles":  # a pond has no id to name it by: its box is no gulf
-            raise _AimError(f"✗ {name}'s point lies in a pond — `--to {x},{y}`")
-        what, tiles = f"{kind} {water_id}", [tile for tile in ctx["water_tiles"](kind, water_id) if tile in span]
-    else:
-        island_of = ctx["island_lookup"]()
-        what, land = "its point's land", island_of.get((x, y))
-        tiles = [(bx, by) for bx, by in span if island_of.get((bx, by)) == land and not walk_map.wet(bx, by)]
-    if not tiles:
-        raise _AimError(f"✗ {name}'s box holds none of {what}")
-    return tiles
-
-
 # One home for every index the sections read, so no caller rolls its own. Actor loop = one pass: id, asset_id, children-per-parent (`get_current_children_count`).
 def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_asset: defaultdict[str, list[dict]] = defaultdict(list)
@@ -325,7 +298,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
         if parent := actor.get("parent_id_2"):
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
-    islands = cache(lambda: compute_islands_cached(save, save_path))
+    islands, walk_map = cache(lambda: compute_islands_cached(save, save_path)), cache(lambda: WalkMap(save))
     return {
         **build_actor_stats_context(save),
         "actors_by_asset": actors_by_asset,
@@ -342,15 +315,16 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "island_lookup": cache(lambda: islands()[1]),  # tile → island id, called not stored: `metadata` and `surroundings` alone ask
         "island_sizes": cache(lambda: {land["id"]: land["size"] for land in islands()[0]}),
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
+        "named_place": lambda name: named_place(name, save, save_path, islands()[1], walk_map()),  # a name of `places.json`, for `--to "<place>"`
         "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
+        "place_tiles": lambda name, spot: place_tiles(name, spot, save, save_path, islands()[1], walk_map()),  # a forged place's, for `metadata`'s `place`
         "religions_by_id": index_by_id(save.get("religions") or []),
         # Called not stored: only a `--to` the water bars asks, to say how wide it is, and the sweep of the water costs a second on a save not yet cached.
         "strait_gaps": cache(lambda: {tuple(s["between"]): s["swim_tiles"] for s in waters_cached(save, save_path)["straits"]}),
         "tile_grid": cache(lambda: LazyTileGrid(save)),  # rows decoded as read: `settle` reads a zone's eight
         "tile_map": save["tileMap"],
-        "walk_map": cache(lambda: WalkMap(save)),  # called not stored: `surroundings` and `--to` alone walk
+        "walk_map": walk_map,  # called not stored: `surroundings` and `--to` alone walk
         "water_body": cache(lambda: water_bodies(save, save_path)),  # what water a tile lies in: a gulf's `box`, the water a body swims in
-        "water_tiles": lambda kind, water_id: water_tiles(save, save_path, kind, water_id),  # one water's, for a `--to` that names it
         "waters_within": lambda *window: waters_within(save, save_path, *window),  # the named waters by a body, for `metadata`'s `near_places`
         "world_laws": world_laws(save),
     }
@@ -445,7 +419,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in
         "life_stage": life_stage(age, age_adult, lifespan, is_egg(actor, ctx)),
         "mass": _compute_mass(actor, ctx),
-        **_places_at(actor, ctx, save),  # Chronicler-only: the named place it stands on, those it stands close to
+        **_places_at(actor, ctx),  # Chronicler-only: the named place it stands on, those it stands close to
         "name": actor.get("name"),  # absent, not a placeholder, where WB never named them — `emit` strips it and the panels drop the row
         "personality": _compute_personality(actor, snap),
         "religion": entity_ref(actor.get("religion"), ctx["religions_by_id"]),  # a ref, not a bare name: `religion/info.py <id>` reads the creed it holds
@@ -848,54 +822,35 @@ def _per_hour(actor: dict, ctx: dict) -> float:
     return _HOURLY_TILES_PER_SPEED * (compute_actor_stats(actor, ctx).get("speed") or 1)
 
 
-# A name of `places.json` as `--to` aims at it: a land to its landing, a water to its shore, a forged place to its own tiles (`_place_tiles`) — `None`: a kind.
-def _place_aim(name: str, actor: dict, ctx: dict, save: dict) -> tuple[list[tuple[int, int]], str] | None:
-    toponyms = gazetteer()
-    for book, prefix in _SEEDED_BOOKS.items():
-        if (key := next((key for key, entry in (toponyms.get(book) or {}).items() if entry.get("name") == name), None)) is None:
-            continue
-        if book != "islands":
-            return ctx["water_tiles"](prefix, int(key)), f"{prefix}{key}"
-        if ctx["island_lookup"]().get(actor_xy(actor)) == int(key):
-            raise _AimError(f"✗ {named_body(actor)} already stands on {name}")
-        return _shore(int(key), ctx), f"i{key}"
-    if (spot := (toponyms.get("places") or {}).get(name)) is None:
-        if name.replace(",", "").replace("_", "").isalnum() and name.islower():  # a kind's word, `sheep` or `iron_ore,gold_ore`, left to the kinds
+# A name of `places.json` as `--to` aims at it (`places.named_place`), a land landed on its walkable rim and never the one the body stands on — `None`: a kind.
+def _place_aim(name: str, actor: dict, ctx: dict) -> tuple[list[tuple[int, int]], str] | None:
+    try:
+        if (found := ctx["named_place"](name)) is None:
             return None
-        names = [*(toponyms.get("places") or {}), *(entry["name"] for book in _SEEDED_BOOKS for entry in (toponyms.get(book) or {}).values() if entry.get("name"))]
-        near = difflib.get_close_matches(name, names, n=3)
-        raise _AimError(f"✗ no place named {name} in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
-    return _place_tiles(name, spot, ctx, save)
-
-
-# A forged place's own tiles: its `box` first (`_boxed`), a gulf by a volcano being the gulf, then a landmark by its point before its islet, a cone in lava one.
-def _place_tiles(name: str, spot: dict, ctx: dict, save: dict) -> tuple[list[tuple[int, int]], str]:
-    x, y = place_point(spot)
-    if spot.get("box"):
-        return _boxed(name, spot, x, y, ctx, save), "box"
-    landmarks = (site for site in save.get("buildings") or [] if any(word in (site.get("asset_id") or "") for word in _LANDMARKS))
-    near = [(walk_tiles(tx - x, ty - y), site) for site in landmarks for tx, ty in building_footprint(site)]
-    if near and (closest := min(near, key=lambda pair: pair[0]))[0] <= _PLACE_REACH:
-        return building_footprint(closest[1]), f"b{closest[1]['id']}"
-    if islet := ctx["island_lookup"]().islet_tiles((x, y)):
-        return islet, "islet"
-    raise _AimError(f"✗ {name} has no `box` in places.json: its extent is unknown, its point alone — `--to {x},{y}`")
+    except PlaceError as e:
+        raise _AimError(str(e)) from None
+    tiles, aimed = found
+    if aimed[:1] == "i" and aimed[1:].isdigit():
+        if ctx["island_lookup"]().get(actor_xy(actor)) == (land := int(aimed[1:])):
+            raise _AimError(f"✗ {named_body(actor)} already stands on {name}")
+        tiles = _shore(land, ctx)
+    return tiles, aimed
 
 
 # The named places a body stands on, and those the game would call close (`chunks_apart` ≤ 1) — of the forged, only those whose box or point is in reach.
-def _places_at(actor: dict, ctx: dict, save: dict) -> dict:
+def _places_at(actor: dict, ctx: dict) -> dict:
     (ax, ay), on, near = actor_xy(actor), [], []
     for name, spot in (gazetteer().get("places") or {}).items():
         box, (px, py) = spot.get("box"), place_point(spot)
         if box:
             reach = all(min(box[f"{a}0"], box[f"{a}1"]) - _NEAR_REACH <= at <= max(box[f"{a}0"], box[f"{a}1"]) + _NEAR_REACH for a, at in (("x", ax), ("y", ay)))
         else:
-            reach = walk_tiles(px - ax, py - ay) <= _NEAR_REACH + _PLACE_REACH
+            reach = walk_tiles(px - ax, py - ay) <= _NEAR_REACH + PLACE_REACH
         if not reach:
             continue
         try:
-            tiles = _place_tiles(name, spot, ctx, save)[0]
-        except _AimError:  # a place `--to` refuses has no tiles to stand on or by: its refusal is `--to`'s to tell
+            tiles = ctx["place_tiles"](name, spot)[0]
+        except PlaceError:  # a place `--to` refuses has no tiles to stand on or by: its refusal is `--to`'s to tell
             continue
         if (ax, ay) in set(tiles):
             on.append(name)

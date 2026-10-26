@@ -141,6 +141,7 @@
   "tiles.tile_info.block": "Ce qui barre la marche sur la tuile.",
   "tiles.tile_info.islet_tiles": "Le sol seul de la masse où se tient la tuile, moins de 300 pour un îlot ; `islet … size` compte le rocher entier.",
   "tiles.tile_info.water": "Sur l'eau, `sea`, `lake` ou `river` (leur id), sinon `pond_tiles` ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.",
+  "tiles.to.from": "Un bout nommé par `places.json`, lu comme `actor … --to \"<lieu>\"` : ce qu'il vise (`aimed`) et sa tuile la plus proche de l'autre bout ; `reached`, l'autre bout.",
   "tiles.walk_tiles": "Hors d'`actor`, sans nage ni temps : absente sans terre qui joigne les deux bouts.",
   "traits": "`description` et `flavor` sont l'ambiance ; l'effet tient dans `stats`, `dormant` endormies par l'ère, `absorbed` sans effet ici (`wiki:Creature_Traits`).",
   "traits.absorbed": "Les stats que le trait bouge sans changer le total, une borne l'ayant bu (`-5` de précision sur un plancher de 1) : sans effet sur ce corps tant qu'elle tient.",

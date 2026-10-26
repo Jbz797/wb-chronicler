@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 26/10/26 10:55</p>
+<p class="metadata">Date de mise à jour : 26/10/26 16:38</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`. Un champ absent vaut rien : un compte à 0, une liste ou un bloc vides se taisent, sauf où une glose dit le contraire. Ses coordonnées croissent vers l'est (x) et le nord (y), un `dir` aussi. Une sortie se lit entière : coupée (`head`), le JSON ne se lit plus ; des sections lourdes se demandent une à une. Trop large, elle se résume (un compte par terre au lieu d'une liste) pour rester lisible : le détail se demande par ses filtres (`-i`, `-t`, une section). Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -54,7 +54,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `-g <sol>` : un sol tel que `biomes` le nomme, ou `burning` (`gloss:to_ground`)
 - `-i <id>` : une terre par son id (`gloss:to_island`)
 - `-r <n>` : rayon — `distances` : la tuile demandée seule ; **2 au plus, à dessein** : au-delà, des centaines de fiches noieraient ce qu'on cherche — les abords se lisent par `tools/map/show.py --zoom`, `geography burning -i`, `distances -w`/`-g`
-- `--to <x,y>` : cap et mesures entre lieux, sous `to` si une section la rejoint ; pas avec `-r` ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre) ou un corps `p<id>`
+- `--to <x,y>` : cap et mesures entre lieux, sous `to` si une section la rejoint ; pas avec `-r` ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre), un corps `p<id>` ou un `"<lieu>"` (`gloss:to.from`)
 - `-w <eau>` : une eau par son id, `lake<id>`, `river<id>` ou `sea<id>` (`gloss:to_body`)
 
 ### `world` :
