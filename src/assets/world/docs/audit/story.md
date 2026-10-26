@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 26/10/26 22:04</p>
+<p class="metadata">Date de mise à jour : 26/10/26 22:08</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants : ce message dit alors ta tâche.
 
@@ -33,7 +33,7 @@ Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton prem
 - **Récit** : à chaque changement de sort d'une veille, dis au chroniqueur s'il faut en parler et comment : une direction, et si tu veux 2 ou 3 phrases, qu'il réécrit ou écarte ; une abandonnée se referme sur la page.
 - **Réserves** : une veille garde celles du chapitre (`docs/chronicler.md` § « Prudence et rigueur »).
 - **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer (son `log`) ni seulement mentionnée se signale au chroniqueur, à reconduire ou à abandonner.
-- **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand l'une de ses questions s'y solde ou que le fil se détourne, l'ouverture gardée.
+- **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand l'une de ses questions s'y solde ou que le fil se détourne, l'ouverture gardée. Une loi se solde dès qu'un chapitre la montre à l'œuvre.
 
 ## Au réaudit
 
