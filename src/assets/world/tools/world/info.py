@@ -189,7 +189,7 @@ _GROUP_FIELDS = {
 
 _ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too small to count — `_WATER` where it floats
 
-# What `--with` reads off the body and its ground, a line's own fields among them, and its lineage by id: `world … lineages` names it
+# What `--with` reads off the body and its ground, a line's own fields among them, its tile as `metadata` gives it, and its lineage by id: `lineages` names it
 _KEPT_FIELDS = (
     "adult_on",
     "age_overgrowth",
@@ -205,6 +205,8 @@ _KEPT_FIELDS = (
     "statuses",
     "subspecies",
     "task",
+    "x",
+    "y",
 )
 
 _MAX_FIELDS = 4  # past so many fields a line reads as a sheet: `actor … stats` gives the whole of one body
@@ -284,6 +286,8 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "statuses": lambda: kept_statuses(actor),
         "subspecies": lambda: actor.get("subspecies"),
         "task": lambda: kept_task(actor),
+        "x": lambda: actor_xy(actor)[0],
+        "y": lambda: actor_xy(actor)[1],
     }
     return {field: kept[field]() if field in kept else stats.get(field, _FIELD_FLOORS.get(field)) for field in fields}
 
