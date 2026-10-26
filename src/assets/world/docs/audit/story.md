@@ -1,8 +1,8 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 23/10/26 18:04</p>
+<p class="metadata">Date de mise à jour : 26/10/26 22:04</p>
 
-Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne, après le nom de cette fiche, le **chapitre** à lire, ou, avant lui, ses tournants.
+Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants : ce message dit alors ta tâche.
 
 ## Ta tâche
 
@@ -23,7 +23,7 @@ Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peu
 
 ## Le registre des veilles
 
-Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton premier audit : ses seules puces. Mets-le à jour à chaque passe : le chroniqueur en lit les changements, ton rapport n'a pas à les redire. Une veille sortie (soldée, abandonnée, fondue) se retrouve, avec son chapitre, par `git -C saves log -p -- watches.md` : pèse-la aussi quand tu cherches un fil jamais refermé.
+Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton premier audit : ses seules puces. Mets-le à jour à chaque audit : le chroniqueur en lit les changements, ton rapport n'a pas à les redire. Une veille sortie (soldée, abandonnée, fondue) se retrouve, avec son chapitre, par `git -C saves log -p -- watches.md` : pèse-la aussi quand tu cherches un fil jamais refermé.
 
 - **Chiffres** : le registre n'en porte aucun, pas même une date à venir : une veille dit son fil, le chapitre porte le fait.
 - **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` : rien ne garde son issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas reste telle quelle.
