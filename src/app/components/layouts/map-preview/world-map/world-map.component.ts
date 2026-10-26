@@ -5,13 +5,15 @@ import { afterRenderEffect, Component, computed, ElementRef, inject, input, sign
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { PLACES_FILE, SPECIES_COLORS } from '../../../../constants';
 import { LabelBox, MapPin, MapPinKind, PlaceArea, Places, TileExtent, TilePoint } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 
 @Component({
   selector: 'app-world-map',
-  imports: [DecimalPipe, NzTagModule, NzTooltipModule],
+  imports: [DecimalPipe, NzTagModule, NzTooltipModule, TranslatePipe],
   templateUrl: './world-map.component.html',
   styleUrl: './world-map.component.scss',
 })

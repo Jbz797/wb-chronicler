@@ -20,7 +20,7 @@
   }
   @if (favorite(); as f) {
     <span class="favorite" [style.--favorite]="f.color" [style.left.%]="f.left" [style.top.%]="f.top">
-      <nz-tag #favoriteTag class="favorite-name">{{ f.name }}</nz-tag>
+      <nz-tag #favoriteTag class="favorite-name">{{ f.name ?? ('anonymous' | translate) }}</nz-tag>
     </span>
   }
 </div>
