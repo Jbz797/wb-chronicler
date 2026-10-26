@@ -21,6 +21,11 @@ class PlaceError(ValueError):
     pass
 
 
+# A name `places.json` holds nowhere: a `--to` list of goals written as one, which a caller may read word by word.
+class UnknownPlaceError(PlaceError):
+    pass
+
+
 # Of a place's `box`, the tiles that are its own: the water its point lies in, its point's patch of the ground it names (rock too), else its point's land.
 def _boxed(name: str, spot: dict, point: tuple[int, int], save: dict, save_path: Path, island_of: TileIslands, walk_map: WalkMap) -> list[tuple[int, int]]:
     (x, y), box, height = point, spot["box"], len(save.get("tileArray") or [])
@@ -56,7 +61,7 @@ def _find(name: str) -> tuple[str, str, dict]:
         raise PlaceError(f"✗ {name} names {' and '.join(hit[3] for hit in found)} — write it whole")
     if not found:
         near = difflib.get_close_matches(name, [hit[3] for hit in every], n=3)
-        raise PlaceError(f"✗ no place named {name} in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
+        raise UnknownPlaceError(f"✗ no place named {name} in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
     return found[0][:3]
 
 
@@ -64,9 +69,13 @@ def _key(name: str) -> str:
     return _ARTICLE.sub("", name.strip().replace("\u2019", "'")).casefold()
 
 
+def kind_word(word: str) -> bool:
+    return word.replace("_", "").isalnum() and word.islower()
+
+
 # A name of `places.json`, article and case aside (`_key`), to its tiles and `aimed`: a land its rim, a water all, a forged place its own — `None`: a kind.
 def named_place(name: str, save: dict, save_path: Path, island_of: TileIslands, walk_map: WalkMap) -> tuple[list[tuple[int, int]], str] | None:
-    if name.replace(",", "").replace("_", "").isalnum() and name.islower():  # a kind's word, `sheep` or `iron_ore,gold_ore`, left to the kinds
+    if all(map(kind_word, name.split(","))):  # a kind's word, `sheep` or `iron_ore,gold_ore`, left to the kinds
         return None
     book, key, entry = _find(name)
     if book == "places":

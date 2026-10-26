@@ -37,7 +37,7 @@ from actor_stats import (
 from founding import city_zones, settle_gates, settle_told
 from grid import BARE, LazyTileGrid, listed_tiles, off_land, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_centre
-from places import PLACE_REACH, PlaceError, named_place, place_tiles
+from places import PLACE_REACH, PlaceError, UnknownPlaceError, kind_word, named_place, place_tiles
 from shared import (
     NEW_BABY_NUTRITION,
     PROFESSION_KING,
@@ -111,6 +111,7 @@ _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_c
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
+_LONE_ID = re.compile(r"\d+|(?:[bcip]|lake|river|sea)\d+")  # the ids a `--to` aims at alone: a body, a building, a town, a land, a water — a bare number too
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -250,13 +251,13 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             raise _AimError("✗ nothing burns in this world")
         mark, whom = "burning", "the nearest fire"
     elif isinstance(target, str):  # a kind, a family, a resource or a ground a word, the body itself left out: each answered by the cheapest of its own reached
-        families, words = asset_families(save), list(dict.fromkeys(target.split(",")))
-        # Ids among the words, refused at once: bodies are aimed at one by one, and two numbers alone would have read as a tile.
-        if numbers := {word for word in words if word.lstrip("-").isdigit() or (word[:1] == "p" and word[1:].isdigit())}:
-            told = ", ".join(f"`{word}`" for word in words if word in numbers)
-            print(f"✗ {told}: a list takes kinds only — one `--to p<id>` per body, two numbers alone make a tile", file=sys.stderr)
+        families, words = asset_families(save), list(dict.fromkeys(filter(None, (word.strip() for word in target.split(",")))))
+        # The lone goals among the words, refused at once with the line to type: each is aimed at by its own `--to`, the kinds answered still.
+        if lone := [word for word in words if _lone_target(word)]:
+            told, again = ", ".join(f"`{word}`" for word in lone), " ".join(f"--to {_retyped(word)}" for word in lone)
+            print(f"✗ {told}: a list takes kinds, grounds and waters only — one `--to` each: `{again}`", file=sys.stderr)
         for word in words:
-            if word in numbers:
+            if word in lone:
                 each[word] = None
                 continue
             if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word), footprint=True) if record is not actor]:
@@ -810,6 +811,11 @@ def _land_of(body: dict, ctx: dict) -> int | str:
     return ctx["island_lookup"]().get(actor_xy(body)) or ("water" if "water" in _off_land_at(body, ctx) else "islet")
 
 
+# A word a `--to` list cannot hold: an id, the fire, every land or a place's name — each a goal aimed at by its own `--to`.
+def _lone_target(word: str) -> bool:
+    return bool(_LONE_ID.fullmatch(word)) or word in {"burning", "lands"} or not kind_word(word)
+
+
 # A counted land's or water's name in `places.json`, `None` while the chronicler has not named it.
 def _named(toponyms: dict, book: str, entry_id: int) -> str | None:
     return ((toponyms.get(book) or {}).get(str(entry_id)) or {}).get("name") or None
@@ -851,6 +857,8 @@ def _place_aim(name: str, actor: dict, ctx: dict) -> tuple[list[tuple[int, int]]
         if (found := ctx["named_place"](name)) is None:
             return None
     except PlaceError as e:
+        if isinstance(e, UnknownPlaceError) and "," in name:  # a list of goals, kinds or not: the kinds tell each word apart
+            return None
         raise _AimError(str(e)) from None
     tiles, aimed = found
     if aimed[:1] == "i" and aimed[1:].isdigit():
@@ -914,6 +922,11 @@ def _reachable_lands(actor: dict, ctx: dict) -> dict:
     rows.sort(key=_told_time)  # by the time as told, days counting a march's halts: the way's raw cost would file a long swim after a longer walk
     lands = sum(land != home for land in ctx["island_sizes"]())  # a land rimmed by rock alone has no shore, and counts as out of reach
     return {"reachable": rows or None, "unreachable": lands - len(ways) or None}
+
+
+# A goal of a `--to` list as its own `--to` takes it: a number is a body's, a name with a space or a capital is a place's, quoted.
+def _retyped(word: str) -> str:
+    return f"p{word}" if word.isdigit() else word if kind_word(word) else f'"{word}"'
 
 
 # The circle a time falls in, read as `_duration` tells it, so a row printed « 2 h » stands in the common circle though its walk ran to 2.04 — `None` past them.
