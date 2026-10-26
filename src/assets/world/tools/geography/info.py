@@ -281,7 +281,7 @@ def _build_positions(
         for record, tile in sites:
             by_land[_site_key(tile, island_of, grid, tile_map)][record.get("asset_id")] += 1
         tally = {key: " | ".join(f"{n} {kind}" for kind, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
-        return {**tally, "total": len(sites)}
+        return {**tally, "info": f"past {MAX_LISTED} sites, a count by land — `-i <land>` or one kind lists each by id", "total": len(sites)}
     # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
     mixed = len(kinds) > 1
     out = [
