@@ -4,10 +4,11 @@ import re
 import zlib
 from array import array
 from collections import defaultdict
+from collections.abc import Mapping
 from functools import cache
 from heapq import heappop, heappush
 from typing import NamedTuple
-lazy from collections.abc import Callable, Iterable, Sequence
+lazy from collections.abc import Callable, Iterable, Iterator, Sequence
 lazy from pathlib import Path
 
 from grid import HEART_CELL, hearts, tile_block, tile_layer, tile_mask
@@ -25,6 +26,23 @@ _RUN = re.compile(rb"\x01+")  # a row's unbroken water, which the mask's dry bor
 _STEP = 10_000  # a tide counts a straight step in ten-thousandths of a tile, so its two costs stay whole and its depths can be walked in order
 _STEP_SLANT = round(_STEP * 2**0.5)  # what a slanted stretch of sea costs a swimmer, against one for its straight neighbour
 _UNREACHED = 1 << 40  # deeper than any tide runs, so the first to claim a tile always undercuts it
+
+
+# Which water a tile of a family lies in, decoded off the mask when asked: a walk reads the one it reaches, where a dict would hold a sea's half million.
+class _BodyAt(Mapping):
+    def __init__(self, body_at: array, width: int, kinds: set[int], tiles: list[tuple[int, int]]) -> None:
+        self._body_at, self._kinds, self._tiles, self._width = body_at, kinds, tiles, width
+
+    def __getitem__(self, tile: tuple[int, int]) -> dict:
+        if (code := self._body_at[tile[1] * self._width + tile[0]]) >> _ID_BITS not in self._kinds:
+            raise KeyError(tile)
+        return dict([_decoded(code)])
+
+    def __iter__(self) -> Iterator[tuple[int, int]]:
+        return iter(self._tiles)
+
+    def __len__(self) -> int:
+        return len(self._tiles)
 
 
 # A water side by side: its size, its mean, whether land encloses it, the map edges it reaches — a bit for west, east, south and north —, its box, its longer side.
@@ -402,6 +420,14 @@ def water_bodies(save: dict, save_path: Path) -> Callable[[int, int], dict]:
         return {"pond_tiles": len(seen)}
 
     return body
+
+
+# Every tile of a family of waters — `sea`, `lake`, `river`, or `water` for all three —, a pond left out, and which water each is: what `--to lake` seeks.
+def water_family(save: dict, save_path: Path, family: str) -> tuple[list[tuple[int, int]], Mapping[tuple[int, int], dict]]:
+    body_at, width, _ = _body_mask(save, save_path)
+    kinds = set(range(1, len(_KINDS))) if family == "water" else {_KINDS.index(family)}
+    tiles = [(at % width, at // width) for at, held in enumerate(body_at) if held >> _ID_BITS in kinds]
+    return tiles, _BodyAt(body_at, width, kinds, tiles)
 
 
 # Every tile of one water, off the bodies' mask: what a walk to its nearest shore seeks — none for an id the map does not hold.

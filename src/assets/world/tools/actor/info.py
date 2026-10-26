@@ -3,6 +3,7 @@
 # User-facing docs (usage, available sections) live in `docs/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
 import json
+import re
 import sys
 from argparse import ArgumentTypeError
 from collections import Counter, defaultdict
@@ -97,7 +98,7 @@ from shared import (
     world_laws,
 )
 from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_in
-from waters import water_bodies, waters_cached, waters_within
+from waters import water_bodies, water_family, water_tiles, waters_cached, waters_within
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "kin", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
@@ -167,12 +168,14 @@ _TENURE_ROLES = {
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
 _TO_USAGE = (
-    "`--to` takes a body, a tile, a building, a town, a land, every land, a named place, the nearest fire, a kind or a ground: `--to p42`, `--to 415,117`,"
-    ' `--to b219`, `--to c3`, `--to i7`, `--to lands`, `--to "<place>"`, `--to burning`, `--to volcano`, `--to lava`'
+    "`--to` takes a body, a tile, a building, a town, a land, every land, a named place, a water, the nearest fire, a kind or a ground: `--to p42`,"
+    ' `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to lands`, `--to "<place>"`, `--to lake4`, `--to lake`, `--to burning`, `--to volcano`, `--to lava`'
 )
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
 _UNCOMPARED = frozenset({"island_id", "near_places", "place", "statuses_left", "task", "task_target", "x", "y"})
+_WATER_ID = re.compile(r"(lake|river|sea)(\d+)")  # one water by its id, as `geography … waters` numbers it: `lake4`, `sea1`
+_WATERS = ("lake", "river", "sea", "water")  # the families a `--to` word may name: the nearest numbered water of one, `water` of any
 
 
 # A `--to` that names no goal — a body, a building, a town or a land unknown, a kind nowhere: its message, and the exit it calls for.
@@ -199,7 +202,7 @@ def _absorbed(actor: dict, trait: dict, ctx: dict, totals: dict) -> list[str] | 
 # Where one `--to` aims: its goal in both chapters, the tiles a walk seeks, how its end is told, each word of a list of kinds, what the trip adds — a refusal raised.
 def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict, chapter: str | None) -> tuple:
     aims, mark, about, whom, told = [], None, {}, "", {}
-    each: dict[str, tuple[list, dict] | None] = {}  # the words of a `--to` naming kinds, each with its sites, `None` where it has none: a question apiece
+    each: dict[str, tuple[list, Mapping] | None] = {}  # the words of a `--to` naming kinds, each with its sites, `None` where it has none: a question apiece
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
             refusal = absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a))
@@ -234,6 +237,11 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if ctx["island_lookup"]().get(actor_xy(actor)) == land:
             raise _AimError(f"✗ {named_body(actor)} already stands on land {land}")
         aims, mark, whom = _shore(land, ctx), "landing", f"land {land}"
+    elif isinstance(target, str) and (water := _WATER_ID.fullmatch(target)):  # a water by its id: its nearest tile, the shore a walk ends on
+        kind, water_id = water[1], int(water[2])
+        if not (aims := ctx["water_tiles"](kind, water_id)):
+            raise _AimError(f"✗ no {kind} {water_id} — `geography … waters` lists them")
+        mark, whom = "reached", _named(gazetteer(), f"{kind}s", water_id) or f"{kind} {water_id}"
     elif isinstance(target, str) and (place := _place_aim(target, actor, ctx)) is not None:
         (aims, aimed), mark, whom = place, "reached", target
         told = {"place": {"aimed": aimed, "name": target}}
@@ -254,12 +262,15 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word), footprint=True) if record is not actor]:
                 each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
                 continue
+            if word in _WATERS and (waters := ctx["water_family"](word))[0]:  # no kind, a family of waters: its nearest numbered one, a pond left out
+                each[word] = waters
+                continue
             if grounds := _ground_tiles(save, word):  # no kind, a ground as `biomes` names it: lava, rock, sand — its nearest tile, a wall's edge
                 each[word] = grounds, {tile: {"ground": word} for tile in grounds}
                 continue
             each[word] = None
             none = unsited_reason(families, word) or f"no {word} in this world, {named_body(actor)} aside"
-            print(f"✗ {none} — the families: {', '.join(sorted(families))}", file=sys.stderr)
+            print(f"✗ {none} — the families: {', '.join(sorted(families))}; the waters: {', '.join(_WATERS)}", file=sys.stderr)
         if not any(each.values()):
             raise _AimError("")
     else:  # a tile, `x,y`
@@ -328,6 +339,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "tile_map": save["tileMap"],
         "walk_map": walk_map,  # called not stored: `surroundings` and `--to` alone walk
         "water_body": cache(lambda: water_bodies(save, save_path)),  # what water a tile lies in: a gulf's `box`, the water a body swims in
+        "water_family": lambda family: water_family(save, save_path, family),  # `--to lake`'s tiles and which water each is
+        "water_tiles": lambda kind, water_id: water_tiles(save, save_path, kind, water_id),  # `--to lake4`'s
         "waters_within": lambda *window: waters_within(save, save_path, *window),  # the named waters by a body, for `metadata`'s `near_places`
         "world_laws": world_laws(save),
     }
@@ -1046,7 +1059,7 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
-# Every `--to` on the line, in its order: a body, a tile, a building, a town, a land, the fire, kinds or grounds — repeated where a list of ids would read as a tile.
+# Every `--to` on the line, in order: a body, a tile, a building, a town, a land, a water, fire, kinds or grounds — repeated where a list of ids would be a tile.
 def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], list[str]]:
     targets: list[int | tuple[int, int] | str] = []
     while "--to" in argv:
@@ -1059,7 +1072,7 @@ def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], l
             targets.append(body)
         elif x.lstrip("-").isdigit() and sep and y.lstrip("-").isdigit():
             targets.append((int(x), int(y)))
-        else:  # a land (`i7`, as `geography … islands` ids it), every land, a building, a town, the fire, or kinds, families and grounds
+        else:  # a land (`i7`, as `geography … islands` ids it), every land, a building, a town, a water, the fire, or kinds, families and grounds
             targets.append(value)
     return targets, argv
 
