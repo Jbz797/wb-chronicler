@@ -54,6 +54,7 @@
   "actor.to.widest_crossing": "Le plus long bras d'eau du trajet, dit seulement s'il passe le souffle du corps.",
   "actor.to.with_boat": "Le trajet par la coque de sa couronne : une autre route que la marche, jamais à additionner à elle.",
   "breakdown": "Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).",
+  "came_and_went": "Les corps nés puis partis entre les deux saves, que nulle ne garde ni leur espèce : tant qu'il y en a, une absence sur la période (« aucun rat ») ne se prouve pas.",
   "chapter.echo.borrowed": "Un mot rare posé entre les mêmes voisins que dans un chapitre d'avant.",
   "chapter.echo.chute": "La dernière phrase d'une section du chapitre d'avant, à `from`, reprise sur cette ligne.",
   "chapter.echo.clear": "Les contrôles qui n'ont rien trouvé, `length` et `dialogue` compris : un contrôle absent d'ici n'a pas été sauté, il a trouvé.",

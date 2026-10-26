@@ -952,6 +952,12 @@ def _score_leaders(totals: Counter, records: list[dict]) -> list[dict]:
     return [{"id": eid, "name": _name_of(records, eid)} for eid, _ in first_place(field, MIN_SCORE_PEERS)]
 
 
+# The saves after `since` up to this one: a body a chapter in between held was seen, and is gone rather than passed unseen.
+def _since_saves(since: str, chapter: str | None, save: dict) -> list[dict]:
+    later = [SAVES_DIR / f"C{n}" / "map.wbox" for n in range(int(since[1:]) + 1, int(chapter[1:]) if chapter else 0)]
+    return [*(load_save(path) for path in later if path.exists()), save]
+
+
 # A body's stage off its raw span alone, as `surroundings` reads one: a roster line and a census say it alike.
 def _stage(actor: dict, ctx: dict, age: int, adult: float) -> str:
     lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))
@@ -1166,9 +1172,13 @@ def main(argv: list[str]) -> int:
         except ValueError as e:  # a field `--with` asks that no body of the roll carries
             print(e, file=sys.stderr)
             return 1
+        # The bodies born and gone between the two saves, no roll's to name: an absence over the span is unproven while any passed (`came_and_went`)
+        unseen = passed_unseen(load_save(SAVES_DIR / since / "map.wbox"), _since_saves(since, chapter, save)).get("bodies_and_hulls") if since else None
         if not roster:  # a filter nothing answers, never a silent `{}`
-            print(_nobody(args, kinds, save, since), file=sys.stderr)
+            print(_nobody(args, kinds, save, since) + (f" — {unseen} more came and went unseen, of no kind a save keeps" if unseen else ""), file=sys.stderr)
             return 1
+        if unseen and isinstance(roster, dict):
+            roster["came_and_went"] = unseen
         out["roster"] = roster
     if "snapshot" in sections:
         out["snapshot"] = _build_snapshot(save)
@@ -1180,9 +1190,7 @@ def main(argv: list[str]) -> int:
             if isinstance(moved := moved_between(readings[section](then), out.pop(section)), dict):
                 out[section] = moved
         if "cumulative" in out:
-            # The chapters in between count: a body one of them held was seen, and is gone rather than passed unseen.
-            later = [SAVES_DIR / f"C{n}" / "map.wbox" for n in range(int(since[1:]) + 1, int(chapter[1:]) if chapter else 0)]
-            since_then = [*(load_save(path) for path in later if path.exists()), save]
+            since_then = _since_saves(since, chapter, save)
             unseen = passed_unseen(then, since_then)
             out["cumulative"] |= {"came_and_went": unseen or None, **_unseen_deaths([then, *since_then], since, unseen.get("bodies_and_hulls", 0))}
         if not out:
