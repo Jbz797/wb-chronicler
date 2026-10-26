@@ -40,6 +40,7 @@ from actor_stats import (
 from founding import city_zones, settle_gates, settle_rank, settle_told
 from grid import LazyTileGrid, frozen_tally, off_land, patch_finder
 from islands import TileIslands, compute_islands_cached
+from places import PlaceIndex
 from shared import (
     MAX_LISTED,
     MIN_RANK_PEERS,
@@ -202,6 +203,7 @@ _KEPT_FIELDS = (
     "hatch_on",
     "island_id",
     "life_stage",
+    "place",
     "sex",
     "statuses",
     "subspecies",
@@ -284,6 +286,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "hatch_on": lambda: hatch_on(actor, ctx),
         "island_id": lambda: here,
         "life_stage": lambda: _stage(actor, ctx, age, adult_age(actor, ctx)),
+        "place": lambda: ctx["place_index"].at(*actor_xy(actor)),
         "sex": lambda: sex_label(actor),
         "statuses": lambda: kept_statuses(actor),
         "subspecies": lambda: actor.get("subspecies"),
@@ -539,6 +542,7 @@ def _build_plots(save: dict) -> list[dict]:
 # Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
 def _build_roster(
     save: dict,
+    save_path: Path,
     island_of: TileIslands,
     kinds: set[str] | None,
     trait: str | None,
@@ -570,6 +574,8 @@ def _build_roster(
     if patch and land is None:
         asked = island_of.get(next(iter(patch)))  # a patch lies on one land, which then goes unsaid as `-i`'s does
     ctx = build_actor_stats_context(save)
+    if "place" in fields:  # each forged place drawn once for the whole roll, as `metadata` draws it for one body
+        ctx["place_index"] = PlaceIndex(save, save_path, island_of, WalkMap(save))
     if settle or barred:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
         ctx |= {
             "city_zones": cache(lambda: city_zones(save, island_of)),
@@ -1151,6 +1157,7 @@ def main(argv: list[str]) -> int:
         try:
             roster = _build_roster(
                 save,
+                save_path,
                 island_of,
                 kinds,
                 args.trait,

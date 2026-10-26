@@ -37,7 +37,7 @@ from actor_stats import (
 from founding import city_zones, settle_gates, settle_told
 from grid import BARE, LazyTileGrid, listed_tiles, off_land, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_centre
-from places import PLACE_REACH, PlaceError, UnknownPlaceError, kind_word, named_place, place_tiles
+from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, kind_word, named_place
 from shared import (
     NEW_BABY_NUTRITION,
     PROFESSION_KING,
@@ -332,14 +332,14 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "named_place": lambda name: named_place(name, save, save_path, islands()[1], walk_map()),  # a name of `places.json`, for `--to "<place>"`
         "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
-        "place_tiles": lambda name, spot: place_tiles(name, spot, save, save_path, islands()[1], walk_map()),  # a forged place's, for `metadata`'s `place`
+        "place_index": cache(lambda: PlaceIndex(save, save_path, islands()[1], walk_map())),  # what a body stands on, for `metadata`'s `place`
         "religions_by_id": index_by_id(save.get("religions") or []),
         # Called not stored: only a `--to` the water bars asks, to say how wide it is, and the sweep of the water costs a second on a save not yet cached.
         "strait_gaps": cache(lambda: {tuple(s["between"]): s["swim_tiles"] for s in waters_cached(save, save_path)["straits"]}),
         "tile_grid": cache(lambda: LazyTileGrid(save)),  # rows decoded as read: `settle` reads a zone's eight
         "tile_map": save["tileMap"],
         "walk_map": walk_map,  # called not stored: `surroundings` and `--to` alone walk
-        "water_body": cache(lambda: water_bodies(save, save_path)),  # what water a tile lies in: a gulf's `box`, the water a body swims in
+        "water_body": cache(lambda: water_bodies(save, save_path)),  # what water a tile lies in: the one a body swims in, struck from its `near_places`
         "water_family": lambda family: water_family(save, save_path, family),  # `--to lake`'s tiles and which water each is
         "water_tiles": lambda kind, water_id: water_tiles(save, save_path, kind, water_id),  # `--to lake4`'s
         "waters_within": lambda *window: waters_within(save, save_path, *window),  # the named waters by a body, for `metadata`'s `near_places`
@@ -870,7 +870,7 @@ def _place_aim(name: str, actor: dict, ctx: dict) -> tuple[list[tuple[int, int]]
 
 # The named places a body stands on, and those the game would call close (`chunks_apart` ≤ 1) — of the forged, only those whose box or point is in reach.
 def _places_at(actor: dict, ctx: dict) -> dict:
-    (ax, ay), on, near = actor_xy(actor), [], []
+    (ax, ay), index, near = actor_xy(actor), ctx["place_index"](), []
     for name, spot in (gazetteer().get("places") or {}).items():
         box, (px, py) = spot.get("box"), place_point(spot)
         if box:
@@ -879,22 +879,16 @@ def _places_at(actor: dict, ctx: dict) -> dict:
             reach = walk_tiles(px - ax, py - ay) <= _NEAR_REACH + PLACE_REACH
         if not reach:
             continue
-        try:
-            tiles = ctx["place_tiles"](name, spot)[0]
-        except PlaceError:  # a place `--to` refuses has no tiles to stand on or by: its refusal is `--to`'s to tell
-            continue
-        if (ax, ay) in set(tiles):
-            on.append(name)
-        elif min(chunks_apart(ax, ay, tx, ty) for tx, ty in tiles) <= 1:
+        if (tiles := index.tiles(name, spot)) and (ax, ay) not in tiles and min(chunks_apart(ax, ay, tx, ty) for tx, ty in tiles) <= 1:
             near.append(name)
     # The named waters and the other named lands with a tile in the chunks round it, read off the masks of that window alone, the sea's half million spared.
     toponyms, island_of, (x0, y0, x1, y1) = gazetteer(), ctx["island_lookup"](), chunk_window(ax, ay)
     named = {(kind, water_id): name for kind, water_id in ctx["waters_within"](x0, y0, x1, y1) if (name := _named(toponyms, f"{kind}s", water_id))}
-    if ctx["walk_map"]().wet(ax, ay) and (inside := named.pop(next(iter(ctx["water_body"]()(ax, ay).items())), None)) and not on:
-        on.append(inside)  # a water it is in, where no forged place holds it: the most precise, a gulf before its sea
+    if ctx["walk_map"]().wet(ax, ay):  # the water it is in is no neighbour: `place` names it, where no forged place holds it
+        named.pop(next(iter(ctx["water_body"]()(ax, ay).items())), None)
     lands = {land for y in range(max(y0, 0), y1 + 1) for land in island_of.row(y)[max(x0, 0) : x1 + 1]} - {0, island_of.get((ax, ay))}
     near += [*named.values(), *filter(None, (_named(toponyms, "islands", land) for land in lands))]
-    return {**({"near_places": sorted(set(near))} if near else {}), **({"place": on[0] if len(on) == 1 else sorted(on)} if on else {})}
+    return {**({"near_places": sorted(set(near))} if near else {}), **({"place": on} if (on := index.at(ax, ay)) else {})}
 
 
 # Every land the body can gain, the nearest first, each by its cheapest shore as `--to i<id>` lands it: its heading, time and swim — the rest counted.

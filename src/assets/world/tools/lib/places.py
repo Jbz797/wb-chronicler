@@ -1,7 +1,8 @@
-# The places the chronicler named in `places.json`, read as the tools measure them: a name to the tiles it covers, for `actor … --to` and `tiles … --to` alike.
+# The places the chronicler named in `places.json`, read as the tools measure them: a name to its tiles for both `--to`, a tile to what it stands on.
 
 import difflib
 import re
+lazy from collections.abc import Callable
 lazy from pathlib import Path
 
 from grid import BARE, LazyTileGrid, patch_finder, tile_ground
@@ -19,6 +20,34 @@ _SEEDED_BOOKS = {"islands": "i", "lakes": "lake", "rivers": "river", "seas": "se
 # A name no tile answers, or answers wrongly: its message, the `✗` included, for the caller to tell as its own refusals.
 class PlaceError(ValueError):
     pass
+
+
+# What a point stands on among the named places, each forged place's tiles drawn once when first weighed: `metadata`'s `place` and `roster --with place` alike.
+class PlaceIndex:
+    def __init__(self, save: dict, save_path: Path, island_of: TileIslands, walk_map: WalkMap) -> None:
+        self._held: dict[str, frozenset[tuple[int, int]] | None] = {}
+        self._save, self._save_path, self._island_of, self._walk_map = save, save_path, island_of, walk_map
+        self._water_at: Callable[[int, int], dict] | None = None
+
+    # The forged places holding the tile — a box weighed only round its own span —, else the named water it lies in: one name, a list where places overlap.
+    def at(self, x: int, y: int) -> str | list[str] | None:
+        on = [name for name, spot in (gazetteer().get("places") or {}).items() if _spans(spot, x, y) and (x, y) in (self.tiles(name, spot) or ())]
+        if on:
+            return on[0] if len(on) == 1 else sorted(on)
+        if not self._walk_map.wet(x, y):
+            return None
+        self._water_at = self._water_at or water_bodies(self._save, self._save_path)
+        ((kind, water_id),) = self._water_at(x, y).items()
+        return ((gazetteer().get(f"{kind}s") or {}).get(str(water_id)) or {}).get("name") or None  # a pond, numbered by none, named by none
+
+    # A forged place's own tiles as `--to` aims at them (`place_tiles`), `None` for one it refuses: its refusal is `--to`'s to tell.
+    def tiles(self, name: str, spot: dict) -> frozenset[tuple[int, int]] | None:
+        if name not in self._held:
+            try:
+                self._held[name] = frozenset(place_tiles(name, spot, self._save, self._save_path, self._island_of, self._walk_map)[0])
+            except PlaceError:
+                self._held[name] = None
+        return self._held[name]
 
 
 # A name `places.json` holds nowhere: a `--to` list of goals written as one, which a caller may read word by word.
@@ -67,6 +96,13 @@ def _find(name: str) -> tuple[str, str, dict]:
 
 def _key(name: str) -> str:
     return _ARTICLE.sub("", name.strip().replace("\u2019", "'")).casefold()
+
+
+# Whether a tile lies in a place's `box`, its bounds included — a place without one may hold any, its tiles then weighed alone.
+def _spans(spot: dict, x: int, y: int) -> bool:
+    if not (box := spot.get("box")):
+        return True
+    return min(box["x0"], box["x1"]) <= x <= max(box["x0"], box["x1"]) and min(box["y0"], box["y1"]) <= y <= max(box["y0"], box["y1"])
 
 
 def kind_word(word: str) -> bool:
