@@ -164,7 +164,7 @@ _SURVIVORS_NAMED = 5  # past it, a gone thing's survivors are counted and no lon
 _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower | 1 herb` or `38 bodies · 23 sapient`, cut once at import
 _THOUGHTLESS_FLOOR = 3000  # a world with no thinking soul: beasts and ground alone, little to tell that would not be padding
 _UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
-_VALUE_ORDERED = frozenset({"drivers", "inventory", "taxonomy", "to_islands"})  # shapes whose key order carries meaning: stores heaviest-first, lands nearest-first
+_VALUE_ORDERED = frozenset({"across", "drivers", "inventory", "taxonomy", "to_islands"})  # key order means: chapters in turn, stores heaviest-, lands nearest-first
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 _captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
