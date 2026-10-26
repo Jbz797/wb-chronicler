@@ -53,6 +53,7 @@ from shared import (
     load_data,
     load_save,
     log_entries,
+    named_body,
     reader_settings,
     render,
     rounded_world_time,
@@ -709,9 +710,9 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
 def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime: str, tags: list[str], prev_world: dict) -> None:
     age_label = i18n("ages.json").get(age_id) or age_id  # recap line only, in the chronicle's own words — the chapter carries the id alone
     year = int(rounded_world_time(live["mapStats"]) / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
-    fav_name = ((favorite or {}).get("metadata") or {}).get("name")
+    fav = (favorite or {}).get("metadata")  # by `named_body`: a favorite WB never named, the chronicler's own epithet aside, goes by its kind and id
     print(f"✓ C{n} — year {year}, {age_label}")
-    print(f"  favorite: {fav_name or 'none'}{f' — {regime}' if regime else ''}")
+    print(f"  favorite: {named_body(fav) if fav else 'none'}{f' — {regime}' if regime else ''}")
     print(_RECAP_RULE)
     if events := _events(tags):  # a tag in `chapter.json` alone never reaches the chronicler
         for code in events:
