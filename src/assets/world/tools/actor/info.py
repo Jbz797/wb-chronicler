@@ -34,7 +34,7 @@ from actor_stats import (
     status_left,
 )
 from founding import city_zones, settle_gates, settle_told
-from grid import LazyTileGrid, listed_tiles, off_land
+from grid import BARE, LazyTileGrid, listed_tiles, off_land, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_centre
 from places import PLACE_REACH, PlaceError, named_place, place_tiles
 from shared import (
@@ -167,8 +167,8 @@ _TENURE_ROLES = {
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
 _TO_USAGE = (
-    "`--to` takes a body, a tile, a building, a town, a land, every land, a named place, the nearest fire or a kind: `--to p42`, `--to 415,117`, `--to b219`,"
-    ' `--to c3`, `--to i7`, `--to lands`, `--to "<place>"`, `--to burning`, `--to volcano`'
+    "`--to` takes a body, a tile, a building, a town, a land, every land, a named place, the nearest fire, a kind or a ground: `--to p42`, `--to 415,117`,"
+    ' `--to b219`, `--to c3`, `--to i7`, `--to lands`, `--to "<place>"`, `--to burning`, `--to volcano`, `--to lava`'
 )
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
@@ -241,7 +241,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if not (aims := list(listed_tiles(save, "fire"))):
             raise _AimError("✗ nothing burns in this world")
         mark, whom = "burning", "the nearest fire"
-    elif isinstance(target, str):  # a kind, a family or a resource a word, the body itself left out: each answered by the cheapest of its own reached
+    elif isinstance(target, str):  # a kind, a family, a resource or a ground a word, the body itself left out: each answered by the cheapest of its own reached
         families, words = asset_families(save), list(dict.fromkeys(target.split(",")))
         # Ids among the words, refused at once: bodies are aimed at one by one, and two numbers alone would have read as a tile.
         if numbers := {word for word in words if word.lstrip("-").isdigit() or (word[:1] == "p" and word[1:].isdigit())}:
@@ -253,6 +253,9 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
                 continue
             if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word), footprint=True) if record is not actor]:
                 each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
+                continue
+            if grounds := _ground_tiles(save, word):  # no kind, a ground as `biomes` names it: lava, rock, sand — its nearest tile, a wall's edge
+                each[word] = grounds, {tile: {"ground": word} for tile in grounds}
                 continue
             each[word] = None
             none = unsited_reason(families, word) or f"no {word} in this world, {named_body(actor)} aside"
@@ -743,7 +746,14 @@ def _gait(actor: dict, ctx: dict) -> Gait | None:
     return gait
 
 
-# The bearing and the crow's tiles to a point — and, where the goal was many, which one: a land's `landing`, the `nearest` of some kinds with its kind and id.
+# Every tile of one ground as `geography … biomes` names it, for `--to <ground>` — none where the world bears none, the word then left to the kinds' refusal.
+def _ground_tiles(save: dict, ground: str) -> list[tuple[int, int]]:
+    if ground not in (names := [(tile_ground(name) or "").removeprefix(BARE) for name in save.get("tileMap") or []]):
+        return []
+    return [(x, y) for y, row in enumerate(tile_mask(save, [own == ground for own in names])) for x, held in enumerate(row) if held]
+
+
+# The bearing and the crow's tiles to a point — and, where the goal was many, which one: a land's `landing`, the `nearest` of a kind with its id, or of a ground.
 def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mapping[tuple[int, int], dict]) -> dict:
     to = {"chunks_apart": chunks_apart(cx, cy, gx, gy), "crow_tiles": round(walk_tiles(gx - cx, gy - cy)), "dir": bearing(gx - cx, gy - cy)}
     return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
@@ -1036,7 +1046,7 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
-# Every `--to` on the line, in its order: a body, a tile, a building, a town, a land, the fire, or kinds — the option repeats where a list of ids reads as a tile.
+# Every `--to` on the line, in its order: a body, a tile, a building, a town, a land, the fire, kinds or grounds — repeated where a list of ids would read as a tile.
 def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], list[str]]:
     targets: list[int | tuple[int, int] | str] = []
     while "--to" in argv:
@@ -1049,7 +1059,7 @@ def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], l
             targets.append(body)
         elif x.lstrip("-").isdigit() and sep and y.lstrip("-").isdigit():
             targets.append((int(x), int(y)))
-        else:  # a land (`i7`, as `geography … islands` ids it), every land, a building, a town, the fire, or kinds and families
+        else:  # a land (`i7`, as `geography … islands` ids it), every land, a building, a town, the fire, or kinds, families and grounds
             targets.append(value)
     return targets, argv
 
