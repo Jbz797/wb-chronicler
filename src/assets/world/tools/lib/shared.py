@@ -165,6 +165,7 @@ _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower 
 _THOUGHTLESS_FLOOR = 3000  # a world with no thinking soul: beasts and ground alone, little to tell that would not be padding
 _UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
 _VALUE_ORDERED = frozenset({"across", "drivers", "inventory", "taxonomy", "to_islands"})  # key order means: chapters in turn, stores heaviest-, lands nearest-first
+_WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # `-w` as `geography … waters` ids a water, `lake4` — or its family alone, `lake`
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 _captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
@@ -1111,7 +1112,7 @@ def passed_unseen(then: dict, saves: list[dict]) -> dict:
 
 
 def place_point(spot: dict) -> tuple[int, int]:
-    return int((point := spot.get("centroid") or {}).get("x") or 0), int(point.get("y") or 0)
+    return int((point := spot.get("heart") or {}).get("x") or 0), int(point.get("y") or 0)
 
 
 # A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.
@@ -1480,6 +1481,13 @@ def walk_tiles(dx: int, dy: int) -> float:
 # Spelled out because the section was named, or too small for a summary to earn the call it forces — only where that summary is a pure signpost, never traits.
 def wants_detail(requested: str | None, count: int) -> bool:
     return not _asks_full(requested) or count < _MIN_SUMMARY_ENTRIES
+
+
+# `-w` as a water's kind and id, `lake4` → `("lake", 4)`, or its family alone, `lake` → `("lake", None)`, for a tool that takes one.
+def water_arg(value: str) -> tuple[str, int | None]:
+    if not (found := _WATER_ARG.fullmatch(value)):
+        raise argparse.ArgumentTypeError(f"{value!r} is no water — `lake<id>`, `river<id>` or `sea<id>` as `geography … waters` lists them, or a family: `lake`")
+    return found[1], int(found[2]) if found[2] else None
 
 
 # Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.

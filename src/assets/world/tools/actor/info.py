@@ -36,7 +36,7 @@ from actor_stats import (
 )
 from founding import city_zones, settle_gates, settle_told
 from grid import BARE, LazyTileGrid, listed_tiles, off_land, tile_ground, tile_mask
-from islands import compute_islands_cached, islet_centre
+from islands import compute_islands_cached, islet_heart
 from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, kind_word, named_place
 from shared import (
     NEW_BABY_NUTRITION,
@@ -429,8 +429,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         # Chronicler-only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks a fighter left out.
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
         "island_id": land,  # Chronicler-only: its land (geography/info.py), else `water` or `islet`
-        # Chronicler-only: which islet, by its centre as `tiles … islet` gives it — the same from a chapter to the next while the rock holds its shape
-        **({"islet": {"x": at[0], "y": at[1]}} if land == "islet" and (at := islet_centre(ctx["island_lookup"]().islet_tiles(tile))) else {}),
+        # Chronicler-only: which islet, by its `heart` as `tiles … islet` gives it — the same from a chapter to the next while the rock holds its shape
+        **({"islet": {"x": at[0], "y": at[1]}} if land == "islet" and (at := islet_heart(ctx["island_lookup"]().islet_tiles(tile))) else {}),
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in

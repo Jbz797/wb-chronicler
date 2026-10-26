@@ -54,6 +54,7 @@ from shared import (
     load_save,
     log_entries,
     named_body,
+    place_point,
     reader_settings,
     render,
     rounded_world_time,
@@ -494,9 +495,8 @@ def _doubled_places(n: int) -> list[tuple[str, int, int, str]]:
     held: dict[tuple[int, int], list[str]] = {}
     for book in ("places", *_SEEDED):
         for key, entry in (gazetteer.get(book) or {}).items():
-            centroid = entry.get("centroid") or {}
             if name := key if book == "places" else entry.get("name"):  # a seeded land or water goes by its id until it is named, and shows nothing till then
-                held.setdefault((int(centroid.get("x") or 0), int(centroid.get("y") or 0)), []).append(name)
+                held.setdefault(place_point(entry), []).append(name)
     fresh = {name for name, spot in (gazetteer.get("places") or {}).items() if spot.get("chapter") == f"C{n}"}
     return [(name, x, y, other) for (x, y), names in held.items() for name in names if name in fresh for other in names if other != name]
 
@@ -623,7 +623,7 @@ def _life_dna() -> int:
     return int(datetime.now(UTC).strftime("%Y%m%d%H"))
 
 
-# The places this chapter baptised whose centroid stands off the land their `island_id` names — none named means off every counted land: the sea, or an islet.
+# The places this chapter baptised whose heart stands off the land their `island_id` names — none named means off every counted land: the sea, or an islet.
 def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | None]]:
     spots = _gazetteer().get("places") or {}
     if not (fresh := [(name, spot) for name, spot in spots.items() if spot.get("chapter") == f"C{n}"]):
@@ -632,8 +632,7 @@ def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | Non
     _, land_of = compute_islands_cached(load_save(save_path), save_path)
     misplaced = []
     for name, spot in fresh:
-        centroid = spot.get("centroid") or {}
-        x, y, declared = int(centroid.get("x") or 0), int(centroid.get("y") or 0), spot.get("island_id")
+        (x, y), declared = place_point(spot), spot.get("island_id")
         if (found := land_of.get((x, y))) != declared:
             misplaced.append((name, x, y, found, declared))
     return misplaced
@@ -1107,7 +1106,7 @@ def _trait_fingerprint(save: dict, tier: str, entity_id: int | None) -> tuple | 
 
 # A surveyed feature stripped to what a toponym needs: where its name sits — its heart, else its mean —, its size, and the two fields the chronicler fills.
 def _unnamed(features: list[dict]) -> dict:
-    return {str(f["id"]): {"centroid": f.get("heart") or f["centroid"], "chapter": "", "name": "", "size": f["size"]} for f in features}
+    return {str(f["id"]): {"chapter": "", "heart": f.get("heart") or f["centroid"], "name": "", "size": f["size"]} for f in features}
 
 
 def _value(argv: list[str], flag: str) -> str:

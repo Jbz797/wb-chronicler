@@ -307,8 +307,8 @@ def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], Til
     return pickle_cached("islands_v21", save_path, lambda: _compute_islands(save))
 
 
-# An islet's own tile nearest the mean of all its tiles — a mean alone could fall at sea, off a crescent of rock: its mark from a chapter to the next.
-def islet_centre(tiles: list[tuple[int, int]]) -> tuple[int, int] | None:
+# An islet's heart, its own tile nearest the mean of all its tiles — a mean alone could fall at sea, off a crescent of rock: its mark from a chapter to the next.
+def islet_heart(tiles: list[tuple[int, int]]) -> tuple[int, int] | None:
     if not tiles:
         return None
     mean_x, mean_y = sum(x for x, _ in tiles) / len(tiles), sum(y for _, y in tiles) / len(tiles)

@@ -72,7 +72,7 @@ export class WorldMapComponent {
     // Lands and waters on one scale, a name too wide for the map shrunk after it is drawn (`shrinks`).
     const fontSize = this._sizer([...islands, ...lakes, ...rivers, ...seas].map(([, entry]) => entry.size));
     const areas = (kind: Exclude<MapPinKind, 'spot'>, entries: [string, PlaceArea][]): MapPin[] => entries.map(([id, entry]) => ({
-      ...this._at(entry.centroid, extent), area: entry.size * this._tileKm2, fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name,
+      ...this._at(entry.heart, extent), area: entry.size * this._tileKm2, fontSize: fontSize(entry.size), key: `${kind}-${id}`, kind, name: entry.name,
     }));
 
     return [
@@ -83,7 +83,7 @@ export class WorldMapComponent {
       ...Object.entries(places.places)
         .filter(([, spot]) => isKnown(spot.chapter))
         .map(([name, spot]): MapPin => ({
-          ...this._at(spot.centroid, extent), emoji: spot.emoji, key: `spot-${name}`, kind: 'spot', name, spotKind: spot.kind,
+          ...this._at(spot.heart, extent), emoji: spot.emoji, key: `spot-${name}`, kind: 'spot', name, spotKind: spot.kind,
         })),
     ];
   });

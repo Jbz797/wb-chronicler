@@ -17,7 +17,7 @@ lazy from collections.abc import Callable, Iterable, Iterator
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_biome, tile_block, tile_elevation, tile_frost, tile_ground, tile_kind, tile_layer
-from islands import compute_islands_cached, islet_centre
+from islands import compute_islands_cached, islet_heart
 from places import PlaceError, named_place, place_centre
 from shared import (
     DIAGONAL_EXTRA,
@@ -45,6 +45,7 @@ from shared import (
     take_chapter,
     under_construction,
     walk_tiles,
+    water_arg,
     xy_arg,
     zone_xy,
 )
@@ -52,7 +53,6 @@ from walking import WalkMap, walk_way, walled_in
 from waters import water_bodies, waters_cached
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info")
-_AIMED_WATER = re.compile(r"(lake|river|sea)(\d+)")  # a water by the id `geography waters` lists it under, as `places.json` keeps it
 _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
 _BARE = {"actors": "no body", "ground": "nothing built or grown"}  # what a tile lacks, said when `actors` or `ground` is all the call asked
 _BRUTE_PAIRS = 20_000  # tile pairs two grounds are weighed by one by one: a building and a body, never a land and a lake
@@ -307,12 +307,12 @@ def _islet_at(x: int, y: int, ctx: dict) -> dict:
     kinds, biomes = Counter(map(tile_kind, names)), Counter(filter(None, map(tile_biome, names)))
     xs, ys = [tx for tx, _ in tiles], [ty for _, ty in tiles]
     mean_x, mean_y = sum(xs) / len(tiles), sum(ys) / len(tiles)
-    cx, cy = islet_centre(tiles) or (x, y)
+    cx, cy = islet_heart(tiles) or (x, y)
     out = {
         "biomes": _shares(biomes, sum(biomes.values())),
         "bounds": {"x": [min(xs), max(xs)], "y": [min(ys), max(ys)]},
-        "centroid": {"x": cx, "y": cy},
         "ground": _shares(kinds, len(tiles)),
+        "heart": {"x": cx, "y": cy},
         # The forged place whose point stands on it: an islet the chronicler named, as `actor … metadata`'s `place` names it
         "name": next((name for name, spot in (gazetteer().get("places") or {}).items() if place_point(spot) in own), None),
         "size": len(tiles),  # the rock whole, as a land's counts its own — the islets it touches in, where `islet_tiles` weighs one mass's ground
@@ -508,7 +508,7 @@ def main(argv: list[str]) -> int:
         metavar="x,y|b<id>|c<id>|p<id>|<place>",
         help="A second end and a `to` key, the walk from the first to it — the tiles too once sections are named.",
     )
-    parser.add_argument("--water", "-w", metavar="lake<id>|river<id>|sea<id>", help="One water by its id, its shore measured in `distances`.")
+    parser.add_argument("--water", "-w", type=water_arg, metavar="lake<id>|river<id>|sea<id>", help="One water by its id, its shore measured in `distances`.")
     args = parser.parse_args(argv)
 
     try:
@@ -538,9 +538,8 @@ def main(argv: list[str]) -> int:
     if aimed and "distances" not in sections:
         print(f"✗ {', '.join(aimed)} answer{'s' if len(aimed) == 1 else ''} in `distances`: name that section, or `full`", file=sys.stderr)
         return 2
-    water = _AIMED_WATER.fullmatch(args.water) if args.water is not None else None
-    if args.water is not None and water is None:
-        print(f"✗ --water {args.water}: a water is `lake<id>`, `river<id>` or `sea<id>`, as `geography … waters` lists them", file=sys.stderr)
+    if args.water is not None and args.water[1] is None:  # a family is `geography … waters`'s to list: a shore is one water's
+        print(f"✗ --water {args.water[0]}: `distances` measures one water's shore — `{args.water[0]}<id>`, as `geography … waters` lists them", file=sys.stderr)
         return 2
 
     save = load_save(save_path)
@@ -579,12 +578,12 @@ def main(argv: list[str]) -> int:
     if args.island is not None and args.island not in ctx["lands"]:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
         return 2
-    if water is not None:
-        kind, ref = water.groups()
-        if int(ref) not in {body["id"] for body in waters_cached(save, save_path)[f"{kind}s"]}:
-            print(f"✗ no {kind} with id {ref} — `geography … waters` lists them", file=sys.stderr)
+    if args.water is not None:
+        kind, ref = args.water
+        if ref not in {body["id"] for body in waters_cached(save, save_path)[f"{kind}s"]}:
+            print(f"✗ no {kind} {ref} — `geography … waters` lists them", file=sys.stderr)
             return 2
-        ctx["aimed_water"] = {kind: int(ref)}
+        ctx["aimed_water"] = {kind: ref}
     if args.ground == _BURNING:  # no ground's: the save lists the burning tiles apart
         ctx["fire_tiles"] = set(listed_tiles(save, "fire"))
         if not ctx["fire_tiles"]:

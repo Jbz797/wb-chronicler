@@ -55,6 +55,7 @@ from shared import (
     take_since,
     union_root,
     unsited_reason,
+    water_arg,
 )
 from waters import water_bodies, waters_cached
 
@@ -514,10 +515,21 @@ def _narrowed(out: dict, land: int | str) -> dict:
         narrowed["waters"] = {
             **waters,
             **{kind: [body for body in waters[kind] if land in body["shores"]] for kind in ("lakes", "rivers", "seas")},
+            # The ponds are counted world-wide, none sited on a land: their floor alone holds for one
+            "unlisted": {**waters["unlisted"], "lakes": {key: value for key, value in waters["unlisted"]["lakes"].items() if key != "count"}},
             "necks": [{key: value for key, value in neck.items() if key != "island"} for neck in waters["necks"] if neck["island"] == land],
             "straits": [strait for strait in waters["straits"] if land in strait["between"]],
         }
     return narrowed
+
+
+# The `waters` block cut by `-w`: one water's row, or one family with the count it leaves unlisted — `None` where this reading holds none.
+def _one_water(waters: dict, water: tuple[str, int | None]) -> dict | None:
+    family, water_id = f"{water[0]}s", water[1]
+    if water_id is None:
+        held = waters[family]
+        return {family: held, **({"unlisted": {family: unlisted}} if (unlisted := waters["unlisted"].get(family)) else {})} if held else None
+    return next((body for body in waters[family] if body["id"] == water_id), None)
 
 
 # One ground of a land told whole: its row, the one `largest` giving way to its largest patches, and what they leave unlisted — `None` where the land bears none.
@@ -629,6 +641,9 @@ def main(argv: list[str]) -> int:
         f"Under `biomes`, one biome or ground: the lands it lies on, or with `-i <land>` its {_TOP_PATCHES} largest patches.",
     )
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="One land alone in the sections that go land by land, or `islets` or `water`.")
+    parser.add_argument(
+        "--water", "-w", type=water_arg, metavar="lake<id>|lake|…", help="`waters` cut to one water by its id, or to one family: `lake`, `river`, `sea`."
+    )
     args = parser.parse_args(argv)
 
     if args.sections == "full":  # No `full` here, unlike the other tools: these sections answer unrelated questions, and no reading wants them all.
@@ -648,6 +663,10 @@ def main(argv: list[str]) -> int:
 
     if args.island is not None and not set(_BY_LAND) & set(sections):  # refused before the save is read
         print(f"✗ `--island` narrows {', '.join(_BY_LAND)}: name one of them", file=sys.stderr)
+        return 2
+
+    if args.water is not None and "waters" not in sections:
+        print("✗ `--water` narrows `waters`: name that section", file=sys.stderr)
         return 2
 
     bucketed = {*_BUCKETED, "biomes"} if args.island == "islets" else set(_BUCKETED)  # the islets bear grounds too, the water none
@@ -684,6 +703,8 @@ def main(argv: list[str]) -> int:
         then = _collect(earlier, then_path, tuple(out), kinds, args.island)
         if args.island is not None:
             out, then = _narrowed(out, args.island), _narrowed(then, args.island)
+        if args.water is not None:  # a water the earlier reading lacks came since: every field of it new
+            out["waters"], then["waters"] = _one_water(out["waters"], args.water) or {}, _one_water(then["waters"], args.water) or {}
         balance = _ground_balance(then.pop("biomes"), out.pop("biomes")) if "biomes" in out else None  # its own balance, ground by ground
         moved = found if isinstance(found := moved_between(then, out), dict) else {}  # both readings are dicts, so what moved is one, or nothing
         if balance:
@@ -710,6 +731,11 @@ def main(argv: list[str]) -> int:
         return 1
 
     shown = out if args.island is None else _narrowed(out, args.island)
+    if args.water is not None:
+        if (one := _one_water(shown["waters"], args.water)) is None:
+            print(f"✗ no {' '.join(map(str, filter(None, args.water)))} {where} — `geography … waters` lists them", file=sys.stderr)
+            return 1
+        shown = shown | {"waters": one}
     # An empty section says so, the command failing only where all asked are, as `positions` does — a dict of empty blocks counts: `biomes` on a bare land.
     bare = [s for s in sections if s in _NONE and not (any(shown[s].values()) if isinstance(shown[s], dict) else shown[s])]
 
