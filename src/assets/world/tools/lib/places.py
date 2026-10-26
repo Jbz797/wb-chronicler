@@ -1,6 +1,7 @@
 # The places the chronicler named in `places.json`, read as the tools measure them: a name to the tiles it covers, for `actor … --to` and `tiles … --to` alike.
 
 import difflib
+import re
 lazy from pathlib import Path
 
 from grid import BARE, LazyTileGrid, patch_finder, tile_ground
@@ -10,6 +11,7 @@ lazy from islands import TileIslands
 lazy from walking import WalkMap
 
 PLACE_REACH = 8  # tiles from a forged place's point its landmark may stand: the chronicler sets it on the cone he sees, not on the building's tile
+_ARTICLE = re.compile(r"^(?:l'|(?:le|la|les|the)\s+)", re.IGNORECASE)  # the article a sentence contracts or drops: `du Lac`, `au Socle`
 _LANDMARKS = ("geyser", "volcano")  # the words of the buildings a forged place names by its point: `acid_geyser` too, the world's own landmarks
 _SEEDED_BOOKS = {"islands": "i", "lakes": "lake", "rivers": "river", "seas": "sea"}  # the gazetteer's counted lands and waters, by the prefix their ids take
 
@@ -42,22 +44,31 @@ def _boxed(name: str, spot: dict, point: tuple[int, int], save: dict, save_path:
     return tiles
 
 
-# A name of `places.json` to its tiles and what they are (`aimed`): a land its rim, a water all of it, a forged place its own (`place_tiles`) — `None`: a kind.
+def _key(name: str) -> str:
+    return _ARTICLE.sub("", name.strip().replace("\u2019", "'")).casefold()
+
+
+# A name of `places.json`, article and case aside (`_key`), to its tiles and `aimed`: a land its rim, a water all, a forged place its own — `None`: a kind.
 def named_place(name: str, save: dict, save_path: Path, island_of: TileIslands, walk_map: WalkMap) -> tuple[list[tuple[int, int]], str] | None:
-    toponyms = gazetteer()
-    for book, prefix in _SEEDED_BOOKS.items():
-        if (key := next((key for key, entry in (toponyms.get(book) or {}).items() if entry.get("name") == name), None)) is None:
-            continue
-        entry_id = int(key)
-        tiles = [(x, y) for x, y, owner in island_of.edges() if owner == entry_id] if book == "islands" else water_tiles(save, save_path, prefix, entry_id)
-        return tiles, f"{prefix}{key}"
-    if (spot := (toponyms.get("places") or {}).get(name)) is None:
-        if name.replace(",", "").replace("_", "").isalnum() and name.islower():  # a kind's word, `sheep` or `iron_ore,gold_ore`, left to the kinds
-            return None
-        names = [*(toponyms.get("places") or {}), *(entry["name"] for book in _SEEDED_BOOKS for entry in (toponyms.get(book) or {}).values() if entry.get("name"))]
-        near = difflib.get_close_matches(name, names, n=3)
+    if name.replace(",", "").replace("_", "").isalnum() and name.islower():  # a kind's word, `sheep` or `iron_ore,gold_ore`, left to the kinds
+        return None
+    toponyms, wanted = gazetteer(), _key(name)
+    every = [(book, key, entry["name"]) for book in _SEEDED_BOOKS for key, entry in (toponyms.get(book) or {}).items() if entry.get("name")]
+    every += [("places", key, key) for key in toponyms.get("places") or {}]
+    found = [hit for hit in every if _key(hit[2]) == wanted]
+    if len(found) > 1 and len(exact := [hit for hit in found if hit[2] == name]) == 1:
+        found = exact
+    if len(found) > 1:
+        raise PlaceError(f"✗ {name} names {' and '.join(hit[2] for hit in found)} — write it whole")
+    if not found:
+        near = difflib.get_close_matches(name, [hit[2] for hit in every], n=3)
         raise PlaceError(f"✗ no place named {name} in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
-    return place_tiles(name, spot, save, save_path, island_of, walk_map)
+    book, key, _ = found[0]
+    if book == "places":
+        return place_tiles(key, toponyms["places"][key], save, save_path, island_of, walk_map)
+    prefix, entry_id = _SEEDED_BOOKS[book], int(key)
+    tiles = [(x, y) for x, y, owner in island_of.edges() if owner == entry_id] if book == "islands" else water_tiles(save, save_path, prefix, entry_id)
+    return tiles, f"{prefix}{key}"
 
 
 # A forged place's own tiles: its `box` first (`_boxed`), a gulf by a volcano being the gulf, then a landmark by its point before its islet, a cone in lava one.
