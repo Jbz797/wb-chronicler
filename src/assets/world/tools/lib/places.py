@@ -44,6 +44,22 @@ def _boxed(name: str, spot: dict, point: tuple[int, int], save: dict, save_path:
     return tiles
 
 
+# The record a name of `places.json` stands for, article and case aside (`_key`), the exact name first: its book, key and entry — refused where none or two.
+def _find(name: str) -> tuple[str, str, dict]:
+    toponyms, wanted = gazetteer(), _key(name)
+    every = [(book, key, entry, entry["name"]) for book in _SEEDED_BOOKS for key, entry in (toponyms.get(book) or {}).items() if entry.get("name")]
+    every += [("places", key, spot, key) for key, spot in (toponyms.get("places") or {}).items()]
+    found = [hit for hit in every if _key(hit[3]) == wanted]
+    if len(found) > 1 and len(exact := [hit for hit in found if hit[3] == name]) == 1:
+        found = exact
+    if len(found) > 1:
+        raise PlaceError(f"✗ {name} names {' and '.join(hit[3] for hit in found)} — write it whole")
+    if not found:
+        near = difflib.get_close_matches(name, [hit[3] for hit in every], n=3)
+        raise PlaceError(f"✗ no place named {name} in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
+    return found[0][:3]
+
+
 def _key(name: str) -> str:
     return _ARTICLE.sub("", name.strip().replace("\u2019", "'")).casefold()
 
@@ -52,23 +68,16 @@ def _key(name: str) -> str:
 def named_place(name: str, save: dict, save_path: Path, island_of: TileIslands, walk_map: WalkMap) -> tuple[list[tuple[int, int]], str] | None:
     if name.replace(",", "").replace("_", "").isalnum() and name.islower():  # a kind's word, `sheep` or `iron_ore,gold_ore`, left to the kinds
         return None
-    toponyms, wanted = gazetteer(), _key(name)
-    every = [(book, key, entry["name"]) for book in _SEEDED_BOOKS for key, entry in (toponyms.get(book) or {}).items() if entry.get("name")]
-    every += [("places", key, key) for key in toponyms.get("places") or {}]
-    found = [hit for hit in every if _key(hit[2]) == wanted]
-    if len(found) > 1 and len(exact := [hit for hit in found if hit[2] == name]) == 1:
-        found = exact
-    if len(found) > 1:
-        raise PlaceError(f"✗ {name} names {' and '.join(hit[2] for hit in found)} — write it whole")
-    if not found:
-        near = difflib.get_close_matches(name, [hit[2] for hit in every], n=3)
-        raise PlaceError(f"✗ no place named {name} in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
-    book, key, _ = found[0]
+    book, key, entry = _find(name)
     if book == "places":
-        return place_tiles(key, toponyms["places"][key], save, save_path, island_of, walk_map)
+        return place_tiles(key, entry, save, save_path, island_of, walk_map)
     prefix, entry_id = _SEEDED_BOOKS[book], int(key)
     tiles = [(x, y) for x, y, owner in island_of.edges() if owner == entry_id] if book == "islands" else water_tiles(save, save_path, prefix, entry_id)
     return tiles, f"{prefix}{key}"
+
+
+def place_centre(name: str) -> tuple[int, int]:
+    return place_point(_find(name)[2])
 
 
 # A forged place's own tiles: its `box` first (`_boxed`), a gulf by a volcano being the gulf, then a landmark by its point before its islet, a cone in lava one.

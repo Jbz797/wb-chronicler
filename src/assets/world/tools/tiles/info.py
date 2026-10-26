@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_biome, tile_block, tile_elevation, tile_frost, tile_ground, tile_kind, tile_layer
 from islands import compute_islands_cached, islet_centre
-from places import PlaceError, named_place
+from places import PlaceError, named_place, place_centre
 from shared import (
     DIAGONAL_EXTRA,
     ZONE_TILES,
@@ -64,6 +64,8 @@ _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles dr
 _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
 _PAIR_CELL = 16  # the side of the cells a large ground is hashed into for `_closest_pair`, a chunk's
 _REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its way is the one the scale's pace would take, never timed
+_SPREAD = re.compile(r"i\d+|(?:lake|river|sea)\d+|box")  # what a place aimed at spreads over, edge and middle apart: a land, a water, a box
+
 # The eight steps a tide takes, each with its length — a slanted one being longer than a straight one, the least water is not the nearest in rings.
 _WEIGHTED_DELTAS = tuple(((dx, dy), 1.0 if dx == 0 or dy == 0 else 1 + DIAGONAL_EXTRA) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)
 
@@ -632,6 +634,12 @@ def main(argv: list[str]) -> int:
             **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (gy * width + gx for gx, gy in grounds[1]), ctx),
             **({"reached": {"aimed": aimed[1], "x": tx, "y": ty}} if aimed[1] else {}),
         }
+        # A place that spreads is read off its edge, and a sentence may read it off its middle: the second cap said wherever the two part
+        centres = [place_centre(end) if place and _SPREAD.fullmatch(place) else None for end, place in zip((args.xy, args.to), aimed, strict=True)]
+        if any(centres) and (cx, cy) != (tx, ty):
+            (fx, fy), (gx, gy) = centres[0] or (cx, cy), centres[1] or (tx, ty)
+            if (turn := bearing(gx - fx, gy - fy)) != out["to"]["dir"]:
+                out["to"]["centre_dir"] = turn
 
     emit(out)
     return 0
