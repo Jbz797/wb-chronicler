@@ -64,6 +64,7 @@ from shared import (
     city_score_dimensions,
     civic_building_ids,
     counted_birth,
+    death_causes,
     emit,
     entity_born,
     entity_ref,
@@ -785,6 +786,20 @@ def _count_leaders(counts: Mapping, records: list[dict], min_peers: int) -> list
     return [{"id": eid, "name": _name_of(records, eid), "value": n} for eid, n in first_place(counts, min_peers)]
 
 
+# The causes each lineage's deaths rose by between two saves — under `None`, the world's past every living lineage's: those of the lineages that died out.
+def _death_rises(then: dict, now: dict) -> dict[int | None, list[str]]:
+    before = {sub["id"]: death_causes(sub) for sub in then.get("subspecies") or []}
+    rises, counted = {}, Counter()
+    for sub in now.get("subspecies") or []:
+        was = before.get(sub["id"], {})
+        rose = {cause: n - was.get(cause, 0) for cause, n in death_causes(sub).items() if n > was.get(cause, 0)}
+        rises[sub["id"]] = sorted(rose)
+        counted.update(rose)
+    world_then, world_now = _world_deaths(then), _world_deaths(now)
+    rises[None] = sorted(cause for cause, n in world_now.items() if n - world_then.get(cause, 0) > counted[cause])
+    return rises
+
+
 # The dead since an earlier chapter, as it knew them — WB keeps no dead, so a body gone from the save is one gone from the world: filtered as the living are.
 def _gone_since(
     save: dict,
@@ -799,7 +814,7 @@ def _gone_since(
     alive = {actor["id"] for actor in save.get("actors_data") or []}
     thinking = _sapient_subspecies(then) if sapient is not None else None
     bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
-    ctx = build_actor_stats_context(then)
+    ctx, rises, now = build_actor_stats_context(then), _death_rises(then, save), float((save.get("mapStats") or {}).get("world_time") or 0)
     rows = []
     for actor in then.get("actors_data") or []:
         if actor["id"] in alive or actor["id"] not in was or (kinds and actor.get("asset_id") not in kinds) or not belongs(actor):
@@ -809,7 +824,13 @@ def _gone_since(
         if (thinking is not None and (actor.get("subspecies") in thinking) != sapient) or (asked is not None and was[actor["id"]] != asked):
             continue
         # `was_on` silent under `-i`, which names the land it held
-        row = {"asset_id": actor.get("asset_id"), "gone": True, "id": actor["id"], "name": actor.get("name"), "old_from": _old_from(actor, ctx)}
+        old = _old_at(actor, ctx)
+        row = {"asset_id": actor.get("asset_id"), "gone": True, "id": actor["id"], "name": actor.get("name"), "old_from": None if old is None else world_date(old)}
+        # The cause its lineage's counters rose by, the world's past the living lineages' where it died out: one alone is its own, several what it may have
+        # died of — old age struck off where the body could not have reached it by the later save
+        causes = [cause for cause in rises.get(actor.get("subspecies"), rises[None]) if cause != "old_age" or (old is not None and old <= now)]
+        if causes:
+            row["died_of"] = causes[0] if len(causes) == 1 else causes
         rows.append({**row, "was_on": None if asked else was[actor["id"]]})
     return sorted(rows, key=lambda row: row["id"])
 
@@ -906,12 +927,12 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
     return f"✗ no living {thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
 
 
-# WB `checkNaturalDeath`: old age takes no body before its age passes its span, and never an immortal — the date that bars it as a cause, or opens it.
-def _old_from(actor: dict, ctx: dict) -> str | None:
+# WB `checkNaturalDeath`: old age takes no body before its age passes its span, and never an immortal — the time that bars it as a cause, or opens it.
+def _old_at(actor: dict, ctx: dict) -> float | None:
     lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))
     if not lifespan or "immortal" in (actor.get("saved_traits") or ()):
         return None
-    return world_date(float(actor.get("created_time") or 0) + max(lifespan - (actor.get("age_overgrowth") or 0), 0) * UNITS_PER_YEAR)
+    return float(actor.get("created_time") or 0) + max(lifespan - (actor.get("age_overgrowth") or 0), 0) * UNITS_PER_YEAR
 
 
 # A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
@@ -963,6 +984,15 @@ def _unseen_deaths(saves: list[dict], since: str, unseen: int) -> dict:
     # The counts alone, the why glossed: `Actor.die` skips the count (`pCountDeath` false) on a metamorphosis, `dieAndDestroy` and `dieSimpleNone`.
     told = f"{gone} bodies gone since {since} and {unseen} passed unseen for {died} deaths counted"
     return {"deaths_without_body" if off < 0 else "gone_without_death": abs(off), "info": told}
+
+
+# The world's deaths by cause as `mapStats` keeps them, named as a lineage's are (`death_causes`): WB writes the world's old age `age`, a lineage's `natural`.
+def _world_deaths(save: dict) -> dict[str, int]:
+    return {
+        "old_age" if (cause := key.removeprefix("deaths_")) == "age" else cause: n
+        for key, n in (save.get("mapStats") or {}).items()
+        if key.startswith("deaths_") and n
+    }
 
 
 def main(argv: list[str]) -> int:
