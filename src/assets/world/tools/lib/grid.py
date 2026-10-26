@@ -153,9 +153,11 @@ def patch_finder(save: dict, grid: LazyTileGrid, island_of: TileIslands) -> Call
                     if row[nx] and own[nx] == land and (nx, ny) not in seen:
                         seen.add((nx, ny))
                         todo.append((nx, ny))
-        mean_x, mean_y = sum(tx for tx, _ in seen) / len(seen), sum(ty for _, ty in seen) / len(seen)
+        xs, ys = [tx for tx, _ in seen], [ty for _, ty in seen]
+        mean_x, mean_y = sum(xs) / len(seen), sum(ys) / len(seen)
         at_x, at_y = min(seen, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))  # ties to the lower `(x, y)`, as the sweep's
-        filled.append((seen, {"tiles": len(seen), "x": at_x, "y": at_y}))
+        # Its reach as `biomes -t` gives a listed patch's: how far a pocket spreads round a point, which its size and middle alone never say
+        filled.append((seen, {"bounds": {"x": [min(xs), max(xs)], "y": [min(ys), max(ys)]}, "tiles": len(seen), "x": at_x, "y": at_y}))
         return filled[-1]
 
     return patch

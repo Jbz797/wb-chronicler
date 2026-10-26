@@ -140,6 +140,7 @@
   "tiles.islet.size": "Le rocher entier : son sol, sa roche, sa lave et les îlots accolés, comme une terre compte sa taille ; `islet_tiles` n'en pèse que le sol.",
   "tiles.tile_info.block": "Ce qui barre la marche sur la tuile.",
   "tiles.tile_info.islet_tiles": "Le sol seul de la masse où se tient la tuile, moins de 300 pour un îlot ; `islet … size` compte le rocher entier.",
+  "tiles.tile_info.patch": "La parcelle de la tuile, un seul sol d'un seul tenant sur une terre, comme `biomes -t` la coupe : sa taille, son milieu et son emprise (`bounds`).",
   "tiles.tile_info.water": "Sur l'eau, `sea`, `lake` ou `river` (leur id), sinon `pond_tiles` ; `snow`, `ice` et `frozen` comme dans `geography … frozen`.",
   "tiles.to.from": "Un bout nommé par `places.json`, lu comme `actor … --to \"<lieu>\"` : ce qu'il vise (`aimed`) et sa tuile la plus proche de l'autre bout ; `reached`, l'autre bout.",
   "tiles.walk_tiles": "Hors d'`actor`, sans nage ni temps : absente sans terre qui joigne les deux bouts.",
