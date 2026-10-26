@@ -135,6 +135,7 @@
   "tiles.distances.to_island": "`-i <id>` : une terre mesurée comme sous `to_islands`, même hors des 5 plus proches ; celle où l'on se tient vaut 0.",
   "tiles.distances.to_islands": "Les 5 terres les plus proches, à vol d'oiseau jusqu'à leur tuile la plus proche.",
   "tiles.distances.to_nearest_city": "La cité la plus proche par son `edge`, un quartier ; `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.",
+  "tiles.islet.name": "Le lieu de `places.json` dont le point tombe sur cet îlot : l'îlot baptisé, ou le cône d'un volcan cerné de lave ; absent, l'îlot n'a pas de nom.",
   "tiles.islet.off": "La terre dont l'îlot est au large, s'il est à 60 tuiles ou moins, et son côté (`side`) : le cap de son centre depuis celui de la terre, `centre` au cœur.",
   "tiles.islet.size": "Le rocher entier : son sol, sa roche, sa lave et les îlots accolés, comme une terre compte sa taille ; `islet_tiles` n'en pèse que le sol.",
   "tiles.tile_info.block": "Ce qui barre la marche sur la tuile.",

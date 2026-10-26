@@ -67,6 +67,7 @@ from shared import (
     entity_ref,
     equipment_entry,
     fertile,
+    gazetteer,
     index_by_id,
     is_aboard,
     is_boat,
@@ -84,6 +85,7 @@ from shared import (
     named_body,
     needs_food,
     parse_sections,
+    place_point,
     resolve_profession,
     sex_label,
     take_chapter,
@@ -111,7 +113,6 @@ _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generat
 _LANDMARKS = ("geyser", "volcano")  # the words of the buildings a forged place names by its point: `acid_geyser` too, the world's own landmarks
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
 _PLACE_REACH = 8  # tiles from a forged place's point its landmark may stand: the chronicler sets it on the cone he sees, not on the building's tile
-_PLACES = SAVES_DIR.parent / "history" / "places.json"  # the chronicler's gazetteer: `--to "<place>"` and `metadata`'s `place` read it
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
@@ -768,12 +769,6 @@ def _gait(actor: dict, ctx: dict) -> Gait | None:
     return gait
 
 
-# `places.json` as the chronicler left it, read once a run: `metadata` and `--to` both ask.
-@cache
-def _gazetteer() -> dict:
-    return json.loads(_PLACES.read_text()) if _PLACES.exists() else {}
-
-
 # The bearing and the crow's tiles to a point — and, where the goal was many, which one: a land's `landing`, the `nearest` of some kinds with its kind and id.
 def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mapping[tuple[int, int], dict]) -> dict:
     to = {"chunks_apart": chunks_apart(cx, cy, gx, gy), "crow_tiles": round(walk_tiles(gx - cx, gy - cy)), "dir": bearing(gx - cx, gy - cy)}
@@ -819,8 +814,8 @@ def _land_of(body: dict, ctx: dict) -> int | str:
 
 
 # A counted land's or water's name in `places.json`, `None` while the chronicler has not named it.
-def _named(gazetteer: dict, book: str, entry_id: int) -> str | None:
-    return ((gazetteer.get(book) or {}).get(str(entry_id)) or {}).get("name") or None
+def _named(toponyms: dict, book: str, entry_id: int) -> str | None:
+    return ((toponyms.get(book) or {}).get(str(entry_id)) or {}).get("name") or None
 
 
 # The body nearest him as the crow flies, wherever it stands — for one whose circles hold nobody. No hull: a boat is no neighbour.
@@ -855,19 +850,19 @@ def _per_hour(actor: dict, ctx: dict) -> float:
 
 # A name of `places.json` as `--to` aims at it: a land to its landing, a water to its shore, a forged place to its own tiles (`_place_tiles`) — `None`: a kind.
 def _place_aim(name: str, actor: dict, ctx: dict, save: dict) -> tuple[list[tuple[int, int]], str] | None:
-    gazetteer = _gazetteer()
+    toponyms = gazetteer()
     for book, prefix in _SEEDED_BOOKS.items():
-        if (key := next((key for key, entry in (gazetteer.get(book) or {}).items() if entry.get("name") == name), None)) is None:
+        if (key := next((key for key, entry in (toponyms.get(book) or {}).items() if entry.get("name") == name), None)) is None:
             continue
         if book != "islands":
             return ctx["water_tiles"](prefix, int(key)), f"{prefix}{key}"
         if ctx["island_lookup"]().get(actor_xy(actor)) == int(key):
             raise _AimError(f"✗ {named_body(actor)} already stands on {name}")
         return _shore(int(key), ctx), f"i{key}"
-    if (spot := (gazetteer.get("places") or {}).get(name)) is None:
+    if (spot := (toponyms.get("places") or {}).get(name)) is None:
         if name.replace(",", "").replace("_", "").isalnum() and name.islower():  # a kind's word, `sheep` or `iron_ore,gold_ore`, left to the kinds
             return None
-        names = [*(gazetteer.get("places") or {}), *(entry["name"] for book in _SEEDED_BOOKS for entry in (gazetteer.get(book) or {}).values() if entry.get("name"))]
+        names = [*(toponyms.get("places") or {}), *(entry["name"] for book in _SEEDED_BOOKS for entry in (toponyms.get(book) or {}).values() if entry.get("name"))]
         near = difflib.get_close_matches(name, names, n=3)
         raise _AimError(f"✗ no place named {name} in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
     return _place_tiles(name, spot, ctx, save)
@@ -875,7 +870,7 @@ def _place_aim(name: str, actor: dict, ctx: dict, save: dict) -> tuple[list[tupl
 
 # A forged place's own tiles: its `box` first (`_boxed`), a gulf by a volcano being the gulf, then a landmark by its point before its islet, a cone in lava one.
 def _place_tiles(name: str, spot: dict, ctx: dict, save: dict) -> tuple[list[tuple[int, int]], str]:
-    x, y = int(spot["centroid"]["x"]), int(spot["centroid"]["y"])
+    x, y = place_point(spot)
     if spot.get("box"):
         return _boxed(name, spot, x, y, ctx, save), "box"
     landmarks = (site for site in save.get("buildings") or [] if any(word in (site.get("asset_id") or "") for word in _LANDMARKS))
@@ -890,12 +885,12 @@ def _place_tiles(name: str, spot: dict, ctx: dict, save: dict) -> tuple[list[tup
 # The named places a body stands on, and those the game would call close (`chunks_apart` ≤ 1) — of the forged, only those whose box or point is in reach.
 def _places_at(actor: dict, ctx: dict, save: dict) -> dict:
     (ax, ay), on, near = actor_xy(actor), [], []
-    for name, spot in (_gazetteer().get("places") or {}).items():
-        box, point = spot.get("box"), spot.get("centroid") or {}
+    for name, spot in (gazetteer().get("places") or {}).items():
+        box, (px, py) = spot.get("box"), place_point(spot)
         if box:
             reach = all(min(box[f"{a}0"], box[f"{a}1"]) - _NEAR_REACH <= at <= max(box[f"{a}0"], box[f"{a}1"]) + _NEAR_REACH for a, at in (("x", ax), ("y", ay)))
         else:
-            reach = walk_tiles(int(point.get("x") or 0) - ax, int(point.get("y") or 0) - ay) <= _NEAR_REACH + _PLACE_REACH
+            reach = walk_tiles(px - ax, py - ay) <= _NEAR_REACH + _PLACE_REACH
         if not reach:
             continue
         try:
@@ -907,12 +902,12 @@ def _places_at(actor: dict, ctx: dict, save: dict) -> dict:
         elif min(chunks_apart(ax, ay, tx, ty) for tx, ty in tiles) <= 1:
             near.append(name)
     # The named waters and the other named lands with a tile in the chunks round it, read off the masks of that window alone, the sea's half million spared.
-    gazetteer, island_of, (x0, y0, x1, y1) = _gazetteer(), ctx["island_lookup"](), chunk_window(ax, ay)
-    named = {(kind, water_id): name for kind, water_id in ctx["waters_within"](x0, y0, x1, y1) if (name := _named(gazetteer, f"{kind}s", water_id))}
+    toponyms, island_of, (x0, y0, x1, y1) = gazetteer(), ctx["island_lookup"](), chunk_window(ax, ay)
+    named = {(kind, water_id): name for kind, water_id in ctx["waters_within"](x0, y0, x1, y1) if (name := _named(toponyms, f"{kind}s", water_id))}
     if ctx["walk_map"]().wet(ax, ay) and (inside := named.pop(next(iter(ctx["water_body"]()(ax, ay).items())), None)) and not on:
         on.append(inside)  # a water it is in, where no forged place holds it: the most precise, a gulf before its sea
     lands = {land for y in range(max(y0, 0), y1 + 1) for land in island_of.row(y)[max(x0, 0) : x1 + 1]} - {0, island_of.get((ax, ay))}
-    near += [*named.values(), *filter(None, (_named(gazetteer, "islands", land) for land in lands))]
+    near += [*named.values(), *filter(None, (_named(toponyms, "islands", land) for land in lands))]
     return {**({"near_places": sorted(set(near))} if near else {}), **({"place": on[0] if len(on) == 1 else sorted(on)} if on else {})}
 
 

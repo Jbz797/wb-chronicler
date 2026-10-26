@@ -35,6 +35,7 @@ from shared import (
     CHAPTER_CAP,
     COUNTED_AS,
     HISTORY_S3DB,
+    PLACES_JSON,
     SAVES_DIR,
     UNITS_PER_YEAR,
     actor_age,
@@ -186,7 +187,6 @@ _PLACE = (
     " its kind and sign say what the chapter says of it"
 )
 
-_PLACES_JSON = SAVES_DIR.parent / "history" / "places.json"  # the toponyms the chronicler coins — seeded with the world's isles at C1, his thereafter
 _PLAIN = "plain text with no tag"  # what a field of `chapter.json` is written in: its panel prints it as it stands, brackets and all
 _README = Path(__file__).resolve().parents[5] / "README.md"  # its World laws table, the player's guide and the reset's alike: one table, no copy
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
@@ -430,7 +430,7 @@ def _dated_places(n: int) -> list[str]:
     for entry in fresh:
         entry["chapter"] = f"C{n}"
     if fresh:
-        _PLACES_JSON.write_text(render(places) + "\n")
+        PLACES_JSON.write_text(render(places) + "\n")
     return [entry["name"] for entry in fresh]
 
 
@@ -609,7 +609,7 @@ def _forget_subagents() -> int:
 
 # `places.json` as it stands, read afresh at each call: the chronicler writes it between two runs, and `--finalize` itself dates it on the way.
 def _gazetteer() -> dict:
-    return json.loads(_PLACES_JSON.read_text()) if _PLACES_JSON.exists() else {}
+    return json.loads(PLACES_JSON.read_text()) if PLACES_JSON.exists() else {}
 
 
 # How many crowns a world must raise before it feeds itself: one per `_LAND_PER_KINGDOM` of dry ground, never under the floor. Ocean is no one's to rule.
@@ -977,7 +977,7 @@ def _scaffold(chapter: str, chapter_dir: Path, live_wbox: Path, live: dict) -> s
             return "geography/info.py islands,waters"
         found = {**(surveyed.get("waters") or {}), "islands": surveyed.get("islands")}
         places = {"places": {}, **places, **{book: _unnamed(found.get(book) or []) for book in missing}}
-        _PLACES_JSON.write_text(render(places) + "\n")
+        PLACES_JSON.write_text(render(places) + "\n")
 
     registries.ensure(chapter, live)  # `live` is handed over so it spares itself a re-parse of the save we already hold
     return None
@@ -1088,7 +1088,7 @@ def _tidy(card: Path) -> None:
 
 # The two files the chronicler writes into by hand, tidied before step 5 reads them — `places.json` only once the first chapter has seeded it.
 def _tidy_cards(n: int) -> None:
-    for card in (SAVES_DIR / f"C{n}" / "chapter.json", _PLACES_JSON):
+    for card in (SAVES_DIR / f"C{n}" / "chapter.json", PLACES_JSON):
         if card.exists():
             _tidy(card)
 

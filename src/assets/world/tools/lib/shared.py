@@ -39,6 +39,7 @@ MIN_PER_CAPITA_UNITS = 4  # Below four souls a per-head ratio or a share measure
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
 MIN_SCORE_PEERS = 3  # The one exception, for a town and a crown: a world raises them by the handful, so three rivals already make a place worth naming.
 NEW_BABY_NUTRITION = 50  # WB `SimGlobalAsset.nutrition_cost_new_baby`: what a body must still carry to feed one more mouth, `canBreed` refusing under it
+PLACES_JSON = Path(__file__).parents[2] / "history" / "places.json"  # the chronicler's gazetteer: the lands, waters and places he named
 PODIUM_PLACES = 3  # gold, silver, bronze — and the widest tie a place can hold, past which the medal marks the field, not the one who takes it.
 PROFESSION_KING = 3  # WB `profession` ints — see `_PROFESSIONS` for the full map.
 PROFESSION_LEADER = 4
@@ -786,6 +787,12 @@ def first_place(values: Mapping, min_peers: int) -> list[tuple]:
     return [] if len(tied) * 2 > len(values) else [(key, best) for key in tied]
 
 
+# `places.json` as the chronicler left it, read once a run: what the tools that name a place read — `new.py`, which writes it, reads it afresh.
+@cache
+def gazetteer() -> dict:
+    return json.loads(PLACES_JSON.read_text()) if PLACES_JSON.exists() else {}
+
+
 # WB `Actor.hasEmotions`, which reads its biology's `has_emotions` meta tag — a single trait grants it, and without it a soul is never happy nor unhappy.
 def has_emotions(actor: dict, subspecies_by_id: dict) -> bool:
     return _has_meta_tag(subspecies_by_id.get(actor.get("subspecies")), "has_emotions")
@@ -1101,6 +1108,10 @@ def passed_unseen(then: dict, saves: list[dict]) -> dict:
         return [i for i in range(int(then["mapStats"].get(counter) or 1), int(saves[-1]["mapStats"].get(counter) or 1)) if i not in held]
 
     return {kind: found for kind, found in (("bodies_and_hulls", len(ids("actors_data"))), *((kind, ids(kind)) for kind in _UNSEEN_KINDS)) if found}
+
+
+def place_point(spot: dict) -> tuple[int, int]:
+    return int((point := spot.get("centroid") or {}).get("x") or 0), int(point.get("y") or 0)
 
 
 # A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.

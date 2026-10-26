@@ -34,11 +34,13 @@ from shared import (
     emit,
     entity_born,
     entity_ref,
+    gazetteer,
     index_by_id,
     is_boat,
     land_side,
     load_save,
     parse_sections,
+    place_point,
     take_chapter,
     under_construction,
     walk_tiles,
@@ -274,6 +276,8 @@ def _islet_at(x: int, y: int, ctx: dict) -> dict:
         "bounds": {"x": [min(xs), max(xs)], "y": [min(ys), max(ys)]},
         "centroid": {"x": cx, "y": cy},
         "ground": _shares(kinds, len(tiles)),
+        # The forged place whose point stands on it: an islet the chronicler named, as `actor … metadata`'s `place` names it
+        "name": next((name for name, spot in (gazetteer().get("places") or {}).items() if place_point(spot) in own), None),
         "size": len(tiles),  # the rock whole, as a land's counts its own — the islets it touches in, where `islet_tiles` weighs one mass's ground
         **_lie(tiles, mean_x, mean_y),
     }
