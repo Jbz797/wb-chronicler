@@ -250,6 +250,7 @@ _SNAPSHOT_COLLECTIONS = {
     "subspecies": "subspecies",
 }
 
+_SOULBORNE = "reproduction_soulborne"  # a lineage born of the souls it strikes: `action_attack_target` harvests one off a body that `has_soul`
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` and `--lacks` weigh: a body's own counters, named as `actor … stats` names them
 _TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "equipment_power")))  # what `--top` ranks by: those counters, a skill, an arsenal
@@ -443,8 +444,10 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         row: dict = {"asset_id": kind}
         births = []
         lone = [actor for actor in bodies if mode.get(actor.get("subspecies")) == "alone"]
-        if fed := [actor for actor in lone if actor.get("subspecies") not in unfed]:  # a lineage breeding alone needs no one
+        if fed := [actor for actor in lone if actor.get("subspecies") not in unfed]:  # a lineage breeding alone needs no partner
             row["alone_on"] = min(ready[actor["id"]] for actor in fed)
+            if any(_SOULBORNE in traits.get(actor.get("subspecies"), empty) for actor in fed):  # WB births it once a blow has struck a soul
+                row["needs"] = "soul"
             births += [max(ready[actor["id"]] + carry.get(actor.get("subspecies"), 0), now) for actor in fed]
         sexed = {actor["id"]: _SEXED in traits.get(actor.get("subspecies"), empty) for actor in mating}
         bars = {actor["id"]: _breeding_bars(actor, ctx, island_of, grid, save["tileMap"]) for actor in mating}
