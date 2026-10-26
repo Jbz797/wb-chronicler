@@ -4745,9 +4745,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:22.6.9":
-  version: 22.6.9
-  resolution: "eslint-config-angular-strict@npm:22.6.9"
+"eslint-config-angular-strict@npm:22.6.10":
+  version: 22.6.10
+  resolution: "eslint-config-angular-strict@npm:22.6.10"
   dependencies:
     "@angular-eslint/builder": "npm:22.6.0"
     "@angular-eslint/eslint-plugin": "npm:22.6.0"
@@ -4764,9 +4764,9 @@ __metadata:
     eslint-plugin-import-x: "npm:4.17.1"
     eslint-plugin-perfectionist: "npm:5.13.0"
     eslint-plugin-toml: "npm:1.5.0"
-    eslint-plugin-unicorn: "npm:78.0.0"
+    eslint-plugin-unicorn: "npm:79.0.0"
     eslint-plugin-yml: "npm:3.9.0"
-  checksum: 10c0/2d5d6a610d2eb36ace3a0e6f086e317ba0c1366896a8bfefbf64ba4d2fdae0d38e9b0e5fbb143e44345fb48896d33e0123371cc9e755fccf702caf663d4af39f
+  checksum: 10c0/1f913583579ddfa166e85919056ce588e88e8f43a8754d3cf93fc838539707249e20cee20567cbc2620be5936dc0a41f7c966e270f5226051430935c134ae1e9
   languageName: node
   linkType: hard
 
@@ -5036,9 +5036,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-unicorn@npm:78.0.0":
-  version: 78.0.0
-  resolution: "eslint-plugin-unicorn@npm:78.0.0"
+"eslint-plugin-unicorn@npm:79.0.0":
+  version: 79.0.0
+  resolution: "eslint-plugin-unicorn@npm:79.0.0"
   dependencies:
     "@eslint-community/eslint-utils": "npm:^4.10.1"
     "@eslint/css-tree": "npm:^4.1.1"
@@ -5068,7 +5068,7 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10c0/9d9fd5f73b2b7b8816e3cf886d81086512550fb989fa22d8cf25201ca8f36270190ce3826a2430dbaa45ea45e6e1de965b697d7b32d9900b9cf71ca2b376e6f9
+  checksum: 10c0/0500ca6e90d38e8fa0285ac08b12e2e6dbb5a416645dd31b6f62e64a80651e6ee4c939f30dd69275f316e4c722ced39d49d14d36177f9d4778853bd7cd797885
   languageName: node
   linkType: hard
 
@@ -9949,7 +9949,7 @@ __metadata:
     "@ngx-translate/core": "npm:18.0.0"
     chokidar: "npm:6.0.0"
     concurrently: "npm:10.0.6"
-    eslint-config-angular-strict: "npm:22.6.9"
+    eslint-config-angular-strict: "npm:22.6.10"
     less: "npm:4.9.1"
     marked: "npm:18.1.1"
     ng-zorro-antd: "npm:22.1.2"

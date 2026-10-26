@@ -103,7 +103,7 @@ _CHRONICLE_KEPT = "*\n!*/\n!C*/chapter.md\n!C*/chapter.json\n!watches.md\n"
 
 # The story auditor's counsel before a word, its sheet standing by it as by a target's brackets — in no doc; the same sub-agent audits the text after.
 _COUNSEL = (
-    "Read docs/audit/story.md — before C{n} is written: <the turning points and the major changes of your analysis>. Answer short: the turning point that "
+    "Read docs/audit/story.md — before C{n} is written: <the turning points and the major changes of your analysis{measured}>. Answer short: the turning point that "
     "carries the chapter, the watch it settles or tips, the angle, what must not be dropped; directions, never prose. At the audit you will judge the text "
     "as it stands, not its faithfulness to your counsel; the register moves only at the audit."
 )
@@ -697,7 +697,9 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `saves/watches.md`")
     print("  → then, before a word, the story auditor's counsel — a sub-agent launched now, its id kept for the audit:")
-    print(f"    `{_COUNSEL.format(n=n)}`")
+    # Each place the brief names measured from the favorite, lest a counsel be built on a north that is a south: a world with no favorite has none to measure from
+    measured = f', each place named with its measure from the favorite (actor {fav_id} --to "<place>")' if fav_id else ""
+    print(f"    `{_COUNSEL.format(n=n, measured=measured)}`")
     told = "" if fav_id else " — no favorite, so the world itself, in two parts and no circle:"
     print(f"  → step 4, the writing: {chapter_floor(n)} to {CHAPTER_CAP} characters, {COUNTED_AS}, counted at delivery, past the audit{told}")
     if not fav_id:
