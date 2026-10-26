@@ -543,7 +543,7 @@ def _build_roster(
     trait: str | None,
     land: int | str | None,
     since: str | None,
-    sapient: bool,
+    sapient: bool | None,
     settle: bool,
     barred: bool,
     patch: set[tuple[int, int]] | None,
@@ -563,7 +563,7 @@ def _build_roster(
     members_then = {a["id"] for a in earlier.get("actors_data") or [] if belonged(a)} if entity and earlier is not None else None
     known = was if members_then is None else members_then
     weighed = has or lacks or top  # one measure each: `--has` keeps whoever holds any, `--lacks` whoever holds none, `--top` the highest alone
-    thinking = _sapient_subspecies(save) if sapient else None
+    thinking = _sapient_subspecies(save) if sapient is not None else None  # `--sapient` keeps the minds, `--beasts` the rest
     grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
     asked = _ISLET if land == "islets" else land  # `-i islets` names the islets as a body stands on one, `islet`
     if patch and land is None:
@@ -593,7 +593,12 @@ def _build_roster(
         if near and actor["id"] == near_id:  # the body ranked around stands nearest to itself
             continue
         borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
-        if is_boat(actor) or (kinds and actor.get("asset_id") not in kinds) or not borne or (thinking is not None and actor.get("subspecies") not in thinking):
+        if (
+            is_boat(actor)
+            or (kinds and actor.get("asset_id") not in kinds)
+            or not borne
+            or (thinking is not None and (actor.get("subspecies") in thinking) != sapient)
+        ):
             continue
         if (patch is not None and actor_xy(actor) not in patch) or not belongs(actor):
             continue
@@ -788,11 +793,11 @@ def _gone_since(
     kinds: set[str] | None,
     trait: str | None,
     asked: int | str | None,
-    sapient: bool,
+    sapient: bool | None,
     belongs: Callable[[dict], bool],
 ) -> list[dict]:
     alive = {actor["id"] for actor in save.get("actors_data") or []}
-    thinking = _sapient_subspecies(then) if sapient else None
+    thinking = _sapient_subspecies(then) if sapient is not None else None
     bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
     ctx = build_actor_stats_context(then)
     rows = []
@@ -801,7 +806,7 @@ def _gone_since(
             continue
         if trait and trait not in (actor.get("saved_traits") or ()) and actor.get("subspecies") not in bearing:
             continue
-        if (thinking is not None and actor.get("subspecies") not in thinking) or (asked is not None and was[actor["id"]] != asked):
+        if (thinking is not None and (actor.get("subspecies") in thinking) != sapient) or (asked is not None and was[actor["id"]] != asked):
             continue
         # `was_on` silent under `-i`, which names the land it held
         row = {"asset_id": actor.get("asset_id"), "gone": True, "id": actor["id"], "name": actor.get("name"), "old_from": _old_from(actor, ctx)}
@@ -895,7 +900,7 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
         *(f"of {kind} {entity_id}" for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None),
         (f"whose {args.has} moved since {since}" if args.has else f"arrived, moved or died since {since}") if since else None,
     ]
-    thinking = "thinking " if args.sapient or args.settle or args.barred else ""
+    thinking = "thinking " if args.sapient or args.settle or args.barred else "unthinking " if args.beasts else ""
     unborn = kinds is not None and not any(a.get("asset_id") in kinds for a in save.get("actors_data") or [] if not is_boat(a))
     hint = " — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds" if unborn else ""
     return f"✗ no living {thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
@@ -972,6 +977,7 @@ def main(argv: list[str]) -> int:
     for kind in _MEMBERSHIPS:
         parser.add_argument(f"--{kind}", type=int, metavar="id", help=f"`roster`: the members of one {kind}, in the line its own list kept")
     parser.add_argument("--barred", action="store_true", help="`roster`: the thinkers something besides their age keeps from founding, and what")
+    parser.add_argument("--beasts", action="store_true", help="`roster`: the bodies of no thinking lineage alone, `--sapient`'s other half")
     parser.add_argument("--has", choices=_TALLIES, help="`roster`: the bodies with one tally above nought — `level` past 1 — and its figure, highest first")
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
     parser.add_argument("--lacks", choices=_TALLIES, help="`roster`: the bodies with none of one tally — `level` at 1 —, `--has`'s other half")
@@ -996,7 +1002,7 @@ def main(argv: list[str]) -> int:
         return 2
     entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None]
     narrowing = (
-        any((args.barred, args.has, args.lacks, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, entities))
+        any((args.barred, args.beasts, args.has, args.lacks, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, entities))
         or (args.type and "lineages" not in sections)
         or args.island is not None
         or args.nearest is not None
@@ -1005,11 +1011,14 @@ def main(argv: list[str]) -> int:
     if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
         print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
         return 2
+    if args.beasts and (other := next((flag for flag in ("sapient", "settle", "barred") if getattr(args, flag)), None)):  # minds and the rest: none in both
+        print(f"✗ --beasts and --{other} split the bodies in two: name one", file=sys.stderr)
+        return 2
     if args.settle and args.barred:  # the two halves of the thinkers: together they name no one
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        flags = "-t, --trait, --has, --lacks, --top, --nearest, --with, --status, --task, --patch, --sapient, --settle, --barred, -i and an entity"
+        flags = "-t, --trait, --has, --lacks, --top, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --settle, --barred, -i and an entity"
         print(f"✗ {flags} narrow `roster`, `-t` `lineages` too: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
@@ -1111,7 +1120,7 @@ def main(argv: list[str]) -> int:
                 args.trait,
                 args.island,
                 since,
-                args.sapient,
+                True if args.sapient else False if args.beasts else None,
                 args.settle,
                 args.barred,
                 patch,

@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 26/10/26 17:03</p>
+<p class="metadata">Date de mise à jour : 26/10/26 17:14</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`. Un champ absent vaut rien : un compte à 0, une liste ou un bloc vides se taisent, sauf où une glose dit le contraire. Ses coordonnées croissent vers l'est (x) et le nord (y), un `dir` aussi. Une sortie se lit entière : coupée (`head`), le JSON ne se lit plus ; des sections lourdes se demandent une à une. Trop large, elle se résume (un compte par terre au lieu d'une liste) pour rester lisible : le détail se demande par ses filtres (`-i`, `-t`, une section). Un seul bloc nommé (une section, `--to`, une tuile) sort nu ; plusieurs gardent leur clé. Ce que fixe un filtre (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre. Un compte à 0 et un drapeau faux se taisent : absent, il vaut 0 — ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe). `sections` = liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings` et `roster`, à nommer) ; le suffixe **`C<n>`** lit ce chapitre ; sans lui, le dernier.
 
@@ -62,7 +62,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
 - `lineages` : chaque lignée vivante, `-t` celles d'une espèce. `gloss:lineages`.
 - `pairings` : par espèce, la 1ʳᵉ naissance au plus tôt et son couple. `gloss:pairings`.
-- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau, `--with <champs>` jusqu'à 4, d'`actor … stats` ou d'une fiche, `--status`/`--task <id>`, `--sapient`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--army`…) ses membres, `--since C<n>` ce qui a changé. `gloss:roster`.
+- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau, `--with <champs>` jusqu'à 4, d'`actor … stats` ou d'une fiche, `--status`/`--task <id>`, `--sapient` ou `--beasts`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--army`…) ses membres, `--since C<n>` ce qui a changé. `gloss:roster`.
 
 ---
 
