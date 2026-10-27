@@ -14,6 +14,7 @@ lazy from walking import WalkMap
 PLACE_REACH = 8  # tiles from a forged place's point its landmark may stand: the chronicler sets it on the cone he sees, not on the building's tile
 _ARTICLE = re.compile(r"^(?:l'|(?:le|la|les|the)\s+)", re.IGNORECASE)  # the article a sentence contracts or drops: `du Lac`, `au Socle`
 _LANDMARKS = ("geyser", "volcano")  # the words of the buildings a forged place names by its point: `acid_geyser` too, the world's own landmarks
+_QUOTES = {'"': '"', "'": "'", "«": "»", "“": "”"}  # the pairs a name may come wrapped in when a caller's shell left them on: `"La Carapace"`
 _SEEDED_BOOKS = {"islands": "i", "lakes": "lake", "rivers": "river", "seas": "sea"}  # the gazetteer's counted lands and waters, by the prefix their ids take
 
 
@@ -137,3 +138,9 @@ def place_tiles(name: str, spot: dict, save: dict, save_path: Path, island_of: T
     if islet := island_of.islet_tiles((x, y)):
         return islet, "islet"
     raise PlaceError(f"✗ {name} has no `box` in places.json: its extent is unknown, its point alone — `--to {x},{y}`")
+
+
+# A name off the quotes a caller's shell left round it, a whole pair alone: `L'Arche` keeps its apostrophe, a lone `"` stays.
+def unquoted(value: str) -> str:
+    text = value.strip()
+    return text[1:-1].strip() if len(text) > 1 and _QUOTES.get(text[0]) == text[-1] else text

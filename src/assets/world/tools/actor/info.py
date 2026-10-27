@@ -37,7 +37,7 @@ from actor_stats import (
 from founding import city_zones, settle_gates, settle_told
 from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_heart
-from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, kind_word, named_place
+from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, kind_word, named_place, unquoted
 from shared import (
     NEW_BABY_NUTRITION,
     PROFESSION_KING,
@@ -251,7 +251,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             raise _AimError("✗ nothing burns in this world")
         mark, whom = "burning", "the nearest fire"
     elif isinstance(target, str):  # a kind, a family, a resource or a ground a word, the body itself left out: each answered by the cheapest of its own reached
-        families, words = asset_families(save), list(dict.fromkeys(filter(None, (word.strip() for word in target.split(",")))))
+        families, words = asset_families(save), list(dict.fromkeys(filter(None, map(unquoted, target.split(",")))))
         # The lone goals among the words, refused at once with the line to type: each is aimed at by its own `--to`, the kinds answered still.
         if lone := [word for word in words if _lone_target(word)]:
             told, again = ", ".join(f"`{word}`" for word in lone), " ".join(f"--to {_retyped(word)}" for word in lone)
@@ -1074,7 +1074,7 @@ def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], l
         at = argv.index("--to")
         if at + 1 == len(argv):
             raise ValueError(_TO_USAGE)
-        value, argv = argv[at + 1], argv[:at] + argv[at + 2 :]
+        value, argv = unquoted(argv[at + 1]), argv[:at] + argv[at + 2 :]
         x, sep, y = value.partition(",")
         if (body := body_ref(value)) is not None:
             targets.append(body)

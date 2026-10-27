@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_biome, tile_block, tile_elevation, tile_frost, tile_ground, tile_kind, tile_layer
 from islands import compute_islands_cached, islet_heart
-from places import PlaceError, named_place, place_centre
+from places import PlaceError, named_place, place_centre, unquoted
 from shared import (
     DIAGONAL_EXTRA,
     ZONE_TILES,
@@ -229,8 +229,9 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     return out
 
 
-# An end of `tiles`: a building `b<id>`, a town `c<id>`, a body `p<id>`, a water `lake<id>` or a name of `places.json`, kept as written; else a tile `x,y`.
+# An end of `tiles`: a building `b<id>`, a town `c<id>`, a body `p<id>`, a water `lake<id>` or a name of `places.json`, its quotes off; else a tile `x,y`.
 def _end_arg(value: str) -> str | tuple[int, int]:
+    value = unquoted(value)
     return xy_arg(value) if body_ref(value) is None and re.fullmatch(r"-?\d+,-?\d+", value) else value
 
 
