@@ -94,6 +94,7 @@ from shared import (
     unsited_reason,
     walk_tiles,
     wants_detail,
+    water_ref,
     whereabouts,
     world_laws,
 )
@@ -111,7 +112,7 @@ _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_c
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
-_LONE_ID = re.compile(r"\d+|(?:[bcip]|lake|river|sea)\d+")  # the ids a `--to` aims at alone: a body, a building, a town, a land, a water — a bare number too
+_LONE_ID = re.compile(r"[bcip]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): a body, a building, a town, a land — a bare number too
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
@@ -175,7 +176,6 @@ _TO_USAGE = (
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
 _UNCOMPARED = frozenset({"island_id", "near_places", "place", "statuses_left", "task", "task_target", "x", "y"})
-_WATER_ID = re.compile(r"(lake|river|sea)(\d+)")  # one water by its id, as `geography … waters` numbers it: `lake4`, `sea1`
 _WATERS = ("lake", "river", "sea", "water")  # the families a `--to` word may name: the nearest numbered water of one, `water` of any
 
 
@@ -238,8 +238,8 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if ctx["island_lookup"]().get(actor_xy(actor)) == land:
             raise _AimError(f"✗ {named_body(actor)} already stands on land {land}")
         aims, mark, whom = _shore(land, ctx), "landing", f"land {land}"
-    elif isinstance(target, str) and (water := _WATER_ID.fullmatch(target)):  # a water by its id: its nearest tile, the shore a walk ends on
-        kind, water_id = water[1], int(water[2])
+    elif isinstance(target, str) and (water := water_ref(target)):  # a water by its id: its nearest tile, the shore a walk ends on
+        kind, water_id = water
         if not (aims := ctx["water_tiles"](kind, water_id)):
             raise _AimError(f"✗ no {kind} {water_id} — `geography … waters` lists them")
         mark, whom = "reached", _named(gazetteer(), f"{kind}s", water_id) or f"{kind} {water_id}"
@@ -813,7 +813,7 @@ def _land_of(body: dict, ctx: dict) -> int | str:
 
 # A word a `--to` list cannot hold: an id, the fire, every land or a place's name — each a goal aimed at by its own `--to`.
 def _lone_target(word: str) -> bool:
-    return bool(_LONE_ID.fullmatch(word)) or word in {"burning", "lands"} or not kind_word(word)
+    return bool(_LONE_ID.fullmatch(word) or water_ref(word)) or word in {"burning", "lands"} or not kind_word(word)
 
 
 # A counted land's or water's name in `places.json`, `None` while the chronicler has not named it.

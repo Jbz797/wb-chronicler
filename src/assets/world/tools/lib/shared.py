@@ -165,7 +165,7 @@ _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower 
 _THOUGHTLESS_FLOOR = 3000  # a world with no thinking soul: beasts and ground alone, little to tell that would not be padding
 _UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
 _VALUE_ORDERED = frozenset({"across", "drivers", "inventory", "taxonomy", "to_islands"})  # key order means: chapters in turn, stores heaviest-, lands nearest-first
-_WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # `-w` as `geography … waters` ids a water, `lake4` — or its family alone, `lake`
+_WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # a water as `geography … waters` ids it, `lake4`, or its family, `lake`: for `-w` and any `--to` end alike
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 _captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
@@ -1488,6 +1488,11 @@ def water_arg(value: str) -> tuple[str, int | None]:
     if not (found := _WATER_ARG.fullmatch(value)):
         raise argparse.ArgumentTypeError(f"{value!r} is no water — `lake<id>`, `river<id>` or `sea<id>` as `geography … waters` lists them, or a family: `lake`")
     return found[1], int(found[2]) if found[2] else None
+
+
+# A water by its id as `geography … waters` numbers it, `lake4` → `("lake", 4)` — `None` for any other word, a family `lake` among them.
+def water_ref(value: str) -> tuple[str, int] | None:
+    return (found[1], int(found[2])) if (found := _WATER_ARG.fullmatch(value)) and found[2] else None
 
 
 # Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.

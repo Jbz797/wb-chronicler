@@ -46,11 +46,12 @@ from shared import (
     under_construction,
     walk_tiles,
     water_arg,
+    water_ref,
     xy_arg,
     zone_xy,
 )
 from walking import WalkMap, walk_way, walled_in
-from waters import water_bodies, waters_cached
+from waters import water_bodies, water_tiles, waters_cached
 
 _ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info")
 _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
@@ -142,6 +143,14 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
     return ctx
 
 
+# The middle of an end that spreads: a water named by its id at its `heart`, as `geography … waters` sites it; any other by its point in `places.json`.
+def _centre(end: str, save: dict, save_path: Path) -> tuple[int, int]:
+    if not (water := water_ref(end)):
+        return place_centre(end)
+    heart = next(body["heart"] for body in waters_cached(save, save_path)[f"{water[0]}s"] if body["id"] == water[1])
+    return heart["x"], heart["y"]
+
+
 # WB claims land by the zone, never by the tile — so a tile's town is its zone's, and both sections that ask read it the one way.
 def _city_at(x: int, y: int, ctx: dict) -> dict | None:
     return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
@@ -218,7 +227,7 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     return out
 
 
-# An end of `tiles`: a building `b<id>`, a town `c<id>`, a body `p<id>` or a name of `places.json`, kept as written till the save sites it; else a tile `x,y`.
+# An end of `tiles`: a building `b<id>`, a town `c<id>`, a body `p<id>`, a water `lake<id>` or a name of `places.json`, kept as written; else a tile `x,y`.
 def _end_arg(value: str) -> str | tuple[int, int]:
     return xy_arg(value) if body_ref(value) is None and re.fullmatch(r"-?\d+,-?\d+", value) else value
 
@@ -228,15 +237,17 @@ def _fabric_distance(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
     return round(min(walk_tiles(max(qx - x, x - qx - ZONE_TILES + 1, 0), max(qy - y, y - qy - ZONE_TILES + 1, 0)) for qx, qy in quarters))
 
 
-# The tiles a named end stands on — a building's whole ground, a town's centre, a body's tile, a place's own as `actor … --to` reads it — and what a place
-# aimed at, or the refusal that tells why it has none.
+# A named end's tiles — a building's ground, a town's centre, a body's tile, a water's or a place's as `actor … --to` reads them —, what it aimed at, else why none.
 def _ground(end: str, save: dict, save_path: Path, chapter: str | None) -> tuple[list[tuple[int, int]], str | None] | str:
+    if water := water_ref(end):  # by its id, as its name in `places.json` would: a water yet unnamed is measured all the same
+        tiles = water_tiles(save, save_path, *water)
+        return (tiles, end) if tiles else f"✗ no {water[0]} {water[1]} — `geography … waters` lists them"
     if not re.fullmatch(r"[bcp]\d+", end):
         try:
             found = named_place(end, save, save_path, compute_islands_cached(save, save_path)[1], WalkMap(save))
         except PlaceError as e:
             return str(e)
-        return found or f"✗ `{end}` is no end — a tile `x,y`, a building `b<id>`, a town `c<id>`, a body `p<id>` or a name of places.json"
+        return found or f"✗ `{end}` is no end — a tile `x,y`, a building `b<id>`, a town `c<id>`, a body `p<id>`, a water `lake<id>` or a name of places.json"
     kind, ref = end[0], int(end[1:])
     if kind == "b":
         site = next((b for b in save.get("buildings") or [] if b.get("id") == ref), None)
@@ -496,7 +507,10 @@ def main(argv: list[str]) -> int:
 
     parser = arg_parser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
     parser.add_argument(
-        "xy", type=_end_arg, metavar="x,y|b<id>|c<id>|p<id>|<place>", help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`."
+        "xy",
+        type=_end_arg,
+        metavar="x,y|b<id>|c<id>|p<id>|lake<id>|<place>",
+        help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`.",
     )
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `geography … biomes` names it, or `burning`: its nearest tile, in `distances`.")
@@ -505,7 +519,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--to",
         type=_end_arg,
-        metavar="x,y|b<id>|c<id>|p<id>|<place>",
+        metavar="x,y|b<id>|c<id>|p<id>|lake<id>|<place>",
         help="A second end and a `to` key, the walk from the first to it — the tiles too once sections are named.",
     )
     parser.add_argument("--water", "-w", type=water_arg, metavar="lake<id>|river<id>|sea<id>", help="One water by its id, its shore measured in `distances`.")
@@ -634,7 +648,7 @@ def main(argv: list[str]) -> int:
             **({"reached": {"aimed": aimed[1], "x": tx, "y": ty}} if aimed[1] else {}),
         }
         # A place that spreads is read off its edge, and a sentence may read it off its middle: the second cap said wherever the two part
-        centres = [place_centre(end) if place and _SPREAD.fullmatch(place) else None for end, place in zip((args.xy, args.to), aimed, strict=True)]
+        centres = [_centre(end, save, save_path) if place and _SPREAD.fullmatch(place) else None for end, place in zip((args.xy, args.to), aimed, strict=True)]
         if any(centres) and (cx, cy) != (tx, ty):
             (fx, fy), (gx, gy) = centres[0] or (cx, cy), centres[1] or (tx, ty)
             if (turn := bearing(gx - fx, gy - fy)) != out["to"]["dir"]:
