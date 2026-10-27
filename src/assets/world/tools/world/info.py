@@ -10,7 +10,7 @@ import re
 import sys
 from collections import Counter, defaultdict
 from functools import cache
-from math import inf
+from math import floor, inf
 from operator import itemgetter
 from pathlib import Path
 from statistics import median
@@ -20,8 +20,8 @@ lazy from collections.abc import Callable, Mapping
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from actor_stats import (
-    actor_stat_totals,
     adult_age,
+    body_lifespan,
     body_stats,
     breeding_age,
     build_actor_stats_context,
@@ -933,12 +933,12 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
     return f"✗ no living {thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
 
 
-# WB `checkNaturalDeath`: old age takes no body before its age passes its span, and never an immortal — the time that bars it as a cause, or opens it.
+# WB `checkNaturalDeath`: no old age before the age, counted from 1, passes the whole span (an insect's half year opens it at once), nor ever for an immortal.
 def _old_at(actor: dict, ctx: dict) -> float | None:
-    lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))
+    lifespan = body_lifespan(actor, ctx)
     if not lifespan or "immortal" in (actor.get("saved_traits") or ()):
         return None
-    return float(actor.get("created_time") or 0) + max(lifespan - (actor.get("age_overgrowth") or 0), 0) * UNITS_PER_YEAR
+    return float(actor.get("created_time") or 0) + max(floor(lifespan - 1 - (actor.get("age_overgrowth") or 0)) + 1, 0) * UNITS_PER_YEAR
 
 
 # A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
@@ -966,8 +966,7 @@ def _since_saves(since: str, chapter: str | None, save: dict) -> list[dict]:
 
 # A body's stage off its raw span alone, as `surroundings` reads one: a roster line and a census say it alike.
 def _stage(actor: dict, ctx: dict, age: int, adult: float) -> str:
-    lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))
-    return life_stage(age, adult, lifespan, is_egg(actor, ctx))
+    return life_stage(age, adult, body_lifespan(actor, ctx), is_egg(actor, ctx))
 
 
 # Where a body stands as `roster` tells it: its land, else `water` where it floats and `islet` on an islet too small to count, as `surroundings` splits them.

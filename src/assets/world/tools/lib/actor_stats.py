@@ -579,7 +579,7 @@ def _subspecies_ages(actor: dict, ctx: dict) -> tuple[float, float]:
     if sub_id not in memo:
         actor_stat_totals(actor, ctx, lifespan_only=True)  # fills the context's cache; the base is species + chromosomes + the biology's own traits
         base = (ctx["subspecies_base_cache"].get(sub_id) or ({}, {}))[0]
-        memo[sub_id] = _age_thresholds(int(base.get("lifespan") or 0), is_sapient(ctx["subspecies_by_id"].get(sub_id)))
+        memo[sub_id] = _age_thresholds(float(base.get("lifespan") or 0), is_sapient(ctx["subspecies_by_id"].get(sub_id)))
     return memo[sub_id]
 
 
@@ -707,6 +707,11 @@ def bears(actor: dict, ctx: dict) -> bool | None:
     if "reproduction_sexual" in biology:
         return actor.get("sex") == 1
     return None if "reproduction_hermaphroditic" in biology else True  # a lone breeder bears its own
+
+
+# A body's own span in years, raw totals narrowed to it — whole, an insect's half year too: truncated, it would read as no span and no old age.
+def body_lifespan(actor: dict, ctx: dict) -> float:
+    return float(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))
 
 
 # Onto `compute_actor_stats`' cleaned pipeline, what the save carries on the body — vitals, a gut's reserve, tallies above nought; `ctx` brings `children_by_parent`.
@@ -910,7 +915,7 @@ def pop_of(actors: list[dict], ctx: dict) -> dict:
     for a in actors:
         age = actor_age(a, world_time)
         # Raw totals, and equipment skipped: only `lifespan` is read, so neither the cleanup's rename-and-sort nor the item walk earns its keep here.
-        lifespan = int(actor_stat_totals(a, ctx, lifespan_only=True).get("lifespan", 0))
+        lifespan = body_lifespan(a, ctx)
         # `adult_age` and not this body's own span: WB hangs the coming of age on the biology, and answers 0 where the species was drawn no baby form.
         stages[life_stage(age, adult_age(a, ctx), lifespan, is_egg(a, ctx))] += 1
         generations.append(a.get("generation") or 1)  # WB counts a first child 2, so a parentless founder is its 1 — a default the save omits rather than writes.
@@ -1018,7 +1023,7 @@ def subspecies_stats(subspecies: dict, ctx: dict) -> dict:
     if (months := out["base"].pop(_MATURATION, None)) is not None:  # WB counts it in months, conception to birth or to hatching: the unit rides on the key
         out["base"]["maturation_months"] = months
     # The ages the lineage hands every body it bears, whole as WB weighs them against the years begun — none for a stock `adult_age()` finds grown from birth.
-    adult, breeding = _age_thresholds(int(base["lifespan"]), is_sapient(subspecies))
+    adult, breeding = _age_thresholds(float(base["lifespan"]), is_sapient(subspecies))
     if (ctx["species_data"].get(subspecies.get("species_id")) or {}).get("baby_form"):
         out["base"]["adult_age"] = math.ceil(adult)
     out["base"]["breeding_age"] = math.ceil(breeding)

@@ -19,6 +19,7 @@ from actor_stats import (
     actor_stat_totals,
     adult_age,
     bears,
+    body_lifespan,
     body_stats,
     breeding_age,
     build_actor_stats_context,
@@ -374,7 +375,7 @@ def _build_inventory(actor: dict) -> dict:
 # The actor's identity card: civic ties (city/kingdom/culture/family…), body (age tier, mass), posts held and their tenure.
 def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     snap = compute_actor_stats(actor, ctx)
-    lifespan = int(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))  # its own span, as a roster reads a stage: no status makes a body young
+    lifespan = body_lifespan(actor, ctx)  # its own span, as a roster reads a stage: no status makes a body young
     age = actor_age(actor, ctx["world_time"])
 
     # Both off the biology, as WB writes them onto the subspecies — never off this body's own span. `age_adult` is nil where no baby form was ever drawn.
@@ -1004,7 +1005,7 @@ def _surroundings_row(other: dict, ctx: dict, dx: int, dy: int, home: int | None
     if is_boat(other):  # a hull: always afloat, sexless and thoughtless — its asset already says what it carries
         return row
     # Raw totals narrowed to `lifespan`, as `pop_of` reads a stage: it alone is kept, and the whole pipeline doubled the sweep.
-    age, lifespan = actor_age(other, ctx["world_time"]), int(actor_stat_totals(other, ctx, lifespan_only=True).get("lifespan", 0))
+    age, lifespan = actor_age(other, ctx["world_time"]), body_lifespan(other, ctx)
     # Why a line stands in full, where the reason tells a story: the tie before the post, a crown before a clan. Each marks a thinker, so `sapient` falls silent.
     job = None if tie else _POSTS.get(other.get("profession", 0))  # WB omits `profession` at 0, its « nothing »
     mark = {"kin": tie} if tie else {"job": job} if job else {"role": "clan_chief"} if other["id"] in ctx["clan_chiefs"] else {}
