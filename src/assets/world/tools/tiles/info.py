@@ -223,7 +223,9 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     if (ground := ctx.get("aimed_ground")) is not None:  # a ground's nearest tile — the rock at a range's foot, a biome's edge, a fire's nearest flame
         grid, grounds, fires = ctx["grid"], ctx.get("ground_by_id", ()), ctx.get("fire_tiles", frozenset())
         hit = (lambda nx, ny: (nx, ny) in fires) if ground == _BURNING else (lambda nx, ny: grounds[grid[ny][nx]] == ground)
-        out["to_ground"] = {"ground": ground, **(_nearest(x, y, ctx, hit) or {})}
+        near = _nearest(x, y, ctx, hit) or {}
+        patch = {} if ground == _BURNING else {"patch": ctx["patch_at"](near.get("x", x), near.get("y", y))[1]["tiles"]}
+        out["to_ground"] = {"ground": ground, **near, **patch}
     return out
 
 
@@ -608,6 +610,7 @@ def main(argv: list[str]) -> int:
         if args.ground not in ctx["ground_by_id"]:
             print(f"✗ no {args.ground} in this world — `geography … biomes -i <land>` lists a land's grounds", file=sys.stderr)
             return 2
+        ctx.setdefault("patch_at", patch_finder(save, ctx["grid"], ctx["tile_to_island"]))  # the size of the patch reached: a lone rock is no range's foot
     ctx["aimed_ground"] = args.ground
     if sections == {"islet"} and not ctx["tile_to_island"].islet_size((cx, cy)):  # asked alone, an empty block would read as an islet with nothing on it
         land = ctx["tile_to_island"].get((cx, cy))

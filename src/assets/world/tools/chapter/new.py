@@ -476,11 +476,6 @@ def _deliver() -> int:
             " theirs and yours not yet raised, crossed where they meet — none at all if there are none. What may go in it:"
         )
         _print_bullets(_DEV_NOTE)
-        # Asked at every delivery, not once for all: a wrong only one fact auditor saw is what a lone one would have published.
-        print(
-            "  → then your verdict, with its figures: are two fact auditors still worth it? The wrongs only one of the two saw, counted apart"
-            " — on a line you had flagged as unmeasured, on any other line —, then your call"
-        )
     else:
         print("  → mode: player — the chapter and that account, nothing else")
     # A world law's alert asks the player at the close, where the errand is due: raised at step 2, it would have to outlast the whole audit to be remembered.

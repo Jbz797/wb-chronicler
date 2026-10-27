@@ -35,7 +35,7 @@ from actor_stats import (
     status_left,
 )
 from founding import city_zones, settle_gates, settle_told
-from grid import BARE, LazyTileGrid, listed_tiles, off_land, tile_ground, tile_mask
+from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_heart
 from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, kind_word, named_place
 from shared import (
@@ -313,7 +313,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
         if parent := actor.get("parent_id_2"):
             children_by_parent[parent] = children_by_parent.get(parent, 0) + 1
-    islands, walk_map = cache(lambda: compute_islands_cached(save, save_path)), cache(lambda: WalkMap(save))
+    islands, walk_map, grid = cache(lambda: compute_islands_cached(save, save_path)), cache(lambda: WalkMap(save)), cache(lambda: LazyTileGrid(save))
     return {
         **build_actor_stats_context(save),
         "actors_by_asset": actors_by_asset,
@@ -332,11 +332,12 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "named_place": lambda name: named_place(name, save, save_path, islands()[1], walk_map()),  # a name of `places.json`, for `--to "<place>"`
         "pact_of": {kid: a["id"] for a in save.get("alliances") or [] for kid in a.get("kingdoms") or []},  # a realm sits in one pact at most
+        "patch_at": cache(lambda: patch_finder(save, grid(), islands()[1])),  # the patch a `--to <ground>` reaches, sized
         "place_index": cache(lambda: PlaceIndex(save, save_path, islands()[1], walk_map())),  # what a body stands on, for `metadata`'s `place`
         "religions_by_id": index_by_id(save.get("religions") or []),
         # Called not stored: only a `--to` the water bars asks, to say how wide it is, and the sweep of the water costs a second on a save not yet cached.
         "strait_gaps": cache(lambda: {tuple(s["between"]): s["swim_tiles"] for s in waters_cached(save, save_path)["straits"]}),
-        "tile_grid": cache(lambda: LazyTileGrid(save)),  # rows decoded as read: `settle` reads a zone's eight
+        "tile_grid": grid,  # rows decoded as read: `settle` reads a zone's eight
         "tile_map": save["tileMap"],
         "walk_map": walk_map,  # called not stored: `surroundings` and `--to` alone walk
         "water_body": cache(lambda: water_bodies(save, save_path)),  # what water a tile lies in: the one a body swims in, struck from its `near_places`
@@ -1149,6 +1150,8 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
         for word, goal in each.items():  # out of reach, it says so and leaves the others their answer: the command fails where none has one
             try:
                 reached[word] = goal and _build_to(actor, goal[0], f"the nearest {word}", ctx, "nearest", goal[1])
+                if reached[word] and "ground" in (near := reached[word]["nearest"]):  # its patch's size: a lone rock is no range's foot
+                    near["patch"] = ctx["patch_at"]()(near["x"], near["y"])[1]["tiles"]
             except _UnreachableError as e:
                 print(f"{e} — `circle`: far", file=sys.stderr)
         if not any(reached.values()):
