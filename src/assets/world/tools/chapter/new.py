@@ -938,11 +938,17 @@ def _retouch() -> int:
     if not changed:
         return 0
     _commit(f"retouch {', '.join(f'C{n}' for n in changed)}", *(f"C{n}" for n in changed))
+    latest = latest_chapter()
     for n in changed:
         rounds = sorted(int(tag.rsplit("-r", 1)[1]) for tag in chronicle_git("tag", "--list", f"C{n}-r*").stdout.split())
         chronicle_git("tag", tag := f"C{n}-r{rounds[-1] + 1 if rounds else 1}")
         before = f"C{n}-r{rounds[-1]}" if rounds else f"C{n}-delivered"
-        print(f"✓ C{n} — round {tag}: {_relaunch(n, tag, before)}")
+        if n < latest:  # its auditors went when the next chapter opened (`_forget_subagents`): the latest's read it, fresh ones costing a whole context each
+            told = f"its auditors left with C{latest}'s opening: relaunch C{latest}'s by message on C{n}, handing `git -C saves diff {before} {tag} -- C{n}`"
+            told += " and both tags — fresh ones only if none is alive yet"
+        else:
+            told = _relaunch(n, tag, before)
+        print(f"✓ C{n} — round {tag}: {told}")
     return 0
 
 
