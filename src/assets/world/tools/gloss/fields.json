@@ -20,7 +20,7 @@
   "actor.metadata.task": "Une suite d'actions, sans son étape ; le corps ne dort que si `statuses` dit `sleeping` (`wiki:Behaviour_Tasks`).",
   "actor.metadata.victims": "Ses 3 dernières morts données, la plus ancienne d'abord ; absent, aucune n'a été gardée : le jeu n'en compte que le nombre (`--kills`), jamais qui.",
   "actor.since.gone": "Le corps est mort depuis le chapitre nommé ; `was_at` dit sa place alors.",
-  "actor.since.moved": "Le trajet fait depuis le chapitre nommé, et son temps au plus court, au pas du corps.",
+  "actor.since.moved": "D'où il était au chapitre nommé à où il est : cap et distance à vol d'oiseau, puis le plus court trajet entre les deux, au pas du corps ; jamais le chemin fait.",
   "actor.since.stats": "`stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre eux.",
   "actor.stats": "Des valeurs déjà agrégées, socle, niveau (santé, mana et endurance seulement) et compétences compris : n'y ajoute rien.",
   "actor.stats.damage": "`damage_*` dit la force d'un coup, `warfare` compris ; `diplomacy` et `stewardship` ne servent qu'aux rois et aux chefs.",
