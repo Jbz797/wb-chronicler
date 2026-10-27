@@ -62,6 +62,7 @@
   "chapter.echo.echo": "Une suite de mots redite.",
   "chapter.echo.formulas": "Une tournure chiffrée revenue sur 4 lignes ou plus (`il y a 3 ans`), les chiffres pour un seul ; dates et mesures à part, leur forme étant imposée.",
   "chapter.echo.refrain": "Dite dans 3 chapitres ou plus : la voix propre de la chronique, pas une redite.",
+  "chapter.echo.shape": "Un moule repris des 2 chapitres d'avant (`chapters`) : `title`, `heading`, `opening` (début de section), `paragraph` (4 premiers mots d'un paragraphe), `closing`.",
   "city.army": "L'armée de la cité, une au plus (`wiki:Armies`) ; son `id` sert à `world … roster --army <id>`.",
   "city.buildings": "`buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose (`born`) ; la section les liste, chantier marqué : ce qu'elle tait, la cité ne l'a pas.",
   "city.metadata.attractivity": "Les corps gagnés, moins ceux partis vivants ; le fondateur et les migrants à part.",

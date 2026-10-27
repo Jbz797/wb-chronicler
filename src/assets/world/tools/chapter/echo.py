@@ -2,7 +2,7 @@
 
 # What a chapter says again, for `chronicler.md` § V « Ne te répète pas »: each passage it takes back from the two chapters before — a run of words, a
 # rare word framed alike, a chute —, the runs it says twice itself and the terms it coins, the families it leans on past anything the chronicle did
-# before, and the cast it is poured in again: a title, a heading, a section begun alike. It points, the eye judges: an angle taken again slips past it.
+# before, and the cast it is poured in again: a title, a heading, a section or paragraph begun alike. It points, the eye judges: an angle taken again slips past it.
 
 import re
 import sys
@@ -366,7 +366,7 @@ def _sentences(n: int) -> list[tuple[int, list[_Token] | None]]:
     return [pair for number, edge, sentences in _lines(n) for pair in ([(number, None)] if edge else [(number, tokens) for tokens in sentences])]
 
 
-# What chapter `n` is cast in: its title's start, each heading's, each section's first and last sentence's first words, and its sections between `---`.
+# What chapter `n` is cast in: its title's start, each heading's, each section's first and last sentence's first words, each paragraph's, its sections between `---`.
 @cache
 def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], tuple[int, ...]]:
     marks: dict[tuple[str, tuple[str, ...]], tuple[int, str]] = {}
@@ -393,12 +393,14 @@ def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], 
         elif line.strip() and line[0] not in "|<":  # a table or a tag line opens nothing and closes nothing: prose does
             if opening:
                 mark("opening", _SENTENCE.split(line)[0], number, _OPENING_START)  # its first sentence alone: `Crabanvier, an 15.` whatever follows
+            # Every paragraph too, a section's first among them: a mould taken again mid-section, `Loin à l'ouest, la` before a name no run weighs
+            mark("paragraph", _SENTENCE.split(line)[0], number, _OPENING_START)
             opening, last = False, (number, line)
     close()
     return marks, tuple(movements)
 
 
-# The cast chapter `n` takes back from the two before, which no run of words shows: a title, a heading or a section begun alike, the same cut three times over.
+# The cast chapter `n` takes back from the two before, which no run of words shows: a title, a heading, a section or paragraph begun alike, the same cut thrice.
 def _shaped(n: int) -> list[dict]:
     marks, movements = _shape(n)
     before = [k for k in (n - 2, n - 1) if k >= 1 and _chapter(k) is not None]
@@ -407,6 +409,8 @@ def _shaped(n: int) -> list[dict]:
         for (what, key), (line, text) in marks.items()
         if key and (said := [f"C{k}" for k in before if (what, key) in _shape(k)[0]])
     ]
+    opened = {row["line"] for row in rows if row["what"] == "opening"}
+    rows = [row for row in rows if row["what"] != "paragraph" or row["line"] not in opened]  # a section's opening, told once
     if len(before) == 2 and all(_shape(k)[1] == movements for k in before):  # twice may be chance, three times is a mould
         rows.append({"chapters": [f"C{k}" for k in before], "text": " | ".join(str(count) for count in movements), "what": "sections per movement"})
     return sorted(rows, key=lambda row: row.get("line", 0))
