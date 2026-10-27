@@ -1043,13 +1043,13 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
     entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None]
-    narrowing = (
+    # What keeps only some bodies of the roll: `-t` among them, though it narrows `lineages` too, and `--with` none — it adds fields to every line
+    filtered = (
         any((args.barred, args.beasts, args.has, args.lacks, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, entities))
-        or (args.type and "lineages" not in sections)
         or args.island is not None
         or args.nearest is not None
-        or args.fields is not None
     )
+    narrowing = filtered or (args.type and "lineages" not in sections) or args.fields is not None
     if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
         print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
         return 2
@@ -1182,10 +1182,11 @@ def main(argv: list[str]) -> int:
         # The bodies born and gone between the two saves, no roll's to name: an absence over the span is unproven while any passed (`came_and_went`)
         unseen = passed_unseen(load_save(SAVES_DIR / since / "map.wbox"), _since_saves(since, chapter, save)).get("bodies_and_hulls") if since else None
         if not roster:  # a filter nothing answers, never a silent `{}`
-            print(_nobody(args, kinds, save, since) + (f" — {unseen} more came and went unseen, of no kind a save keeps" if unseen else ""), file=sys.stderr)
+            print(_nobody(args, kinds, save, since) + (f" — {unseen} more came and went unseen in the world, kind unknown" if unseen else ""), file=sys.stderr)
             return 1
         if unseen and isinstance(roster, dict):
-            roster["came_and_went"] = unseen
+            # The world's, whatever the filter: no save keeps what they were, so a filtered roll says whose count it is — yet keeps it, an absence unproven
+            roster["came_and_went"] = {"world": unseen} if filtered or args.type else unseen
         out["roster"] = roster
     if "snapshot" in sections:
         out["snapshot"] = _build_snapshot(save)
