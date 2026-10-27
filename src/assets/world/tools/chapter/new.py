@@ -39,7 +39,6 @@ from shared import (
     SAVES_DIR,
     UNITS_PER_YEAR,
     actor_age,
-    asset_set,
     chapter_floor,
     chapter_length,
     chapter_world_time,
@@ -165,6 +164,8 @@ _FLAGS = frozenset({"--deliver", "--description", "--erosion", "--finalize", "--
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _GROWN = frozenset({"adult", "teen"})  # the stages a kind may be counted on: past childhood, an elder read as the adult it is — its span is not asked
 _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
+_ICON_TAGS = {"g": "gear", "r": "resources", "s": "species"}  # the tags drawn as an icon, by their folder in `_ICONS`
+_ICONS = Path(__file__).resolve().parents[3] / "img"  # the reader's icons: a tag whose id names none shows a blank where it goes
 _INDEX_JSON = SAVES_DIR / "index.json"  # the chapter list the reader's nav reads, so it need not open every `chapter.json` to name them
 _KINGDOM_FLOOR = 2  # even a Tiny map must raise two crowns before it stands alone: one war would else leave a single people
 _LAND_PER_KINGDOM = 56_222  # above a quarter of a grown map's crowns (~12k land tiles each on two worlds): at that, too many rose before the alert
@@ -774,7 +775,7 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  {fault}")
     if stray := facts["stray"]:
         tags = ", ".join(f"l.{line} {tag}" for line, tag in stray)
-        print(f"  ✗ tags whose id answers nothing: {tags} — an id made up, or one only `history` knows, shows a blank where its icon goes")
+        print(f"  ✗ tags whose id answers nothing: {tags} — an id made up, one only `history` knows, or what grows or is built: no icon, a blank where it goes")
 
 
 # One scan of prior chapters for all they arbitrate: a first hull, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.
@@ -1062,14 +1063,12 @@ def _step_five_facts(n: int, lang: str) -> dict:
     }
 
 
-# The chapter's tags whose id answers nothing, by line: an entity's is read in the chapter's registry, a kind's in WB's own data.
+# The chapter's tags whose id answers nothing, by line: an entity's is read in the chapter's registry, an icon's among the icons the reader holds.
 def _stray_tags(n: int, prose: str) -> list[tuple[int, str]]:
-    kinds = {"g": load_data("equipment.json")["items"], "r": asset_set("resources"), "s": load_data("species.json")}
-
     @cache
     def known(letter: str) -> Collection[str] | None:
-        if letter in kinds:
-            return kinds[letter]
+        if folder := _ICON_TAGS.get(letter):  # what the reader can draw, not what WB lists: a weapon template or a boat holds no icon
+            return {icon.stem for icon in (_ICONS / folder).glob("*.png")}
         if (name := _TAG_REGISTRIES.get(letter)) is None:
             return None
         return json.loads(path.read_text()) if (path := SAVES_DIR / f"C{n}" / f"{name}.json").exists() else {}
