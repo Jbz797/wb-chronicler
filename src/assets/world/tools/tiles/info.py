@@ -16,7 +16,21 @@ lazy from collections.abc import Callable, Iterable, Iterator
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_biome, tile_block, tile_elevation, tile_frost, tile_ground, tile_kind, tile_layer
+from grid import (
+    BARE,
+    LazyTileGrid,
+    frozen_tiles,
+    listed_tiles,
+    off_land,
+    patch_finder,
+    tile_biome,
+    tile_block,
+    tile_elevation,
+    tile_frost,
+    tile_ground,
+    tile_kind,
+    tile_layer,
+)
 from islands import compute_islands_cached, islet_heart
 from places import PlaceError, named_place, place_centre, unquoted
 from shared import (
@@ -59,6 +73,7 @@ _BARE = {"actors": "no body", "ground": "nothing built or grown"}  # what a tile
 _BRUTE_PAIRS = 20_000  # tile pairs two grounds are weighed by one by one: a building and a body, never a land and a lake
 _BURNING = "burning"  # what `-g` takes for the fires, no ground: `geography … burning` names them so
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
+_FROZEN = "frozen"  # what `-g` takes for every frost, no ground: snow, ice, permafrost and the passing frost, as `geography … frozen` counts them
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
 _LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
@@ -227,11 +242,16 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
         grid, layer_by_id, body = ctx["grid"], ctx["layer_by_id"], ctx["water_body"]()
         out["to_body"] = {**water, **(_nearest(x, y, ctx, lambda nx, ny: layer_by_id[grid[ny][nx]] == "Ocean" and body(nx, ny) == water) or {})}
     if (ground := ctx.get("aimed_ground")) is not None:  # a ground's nearest tile — the rock at a range's foot, a biome's edge, a fire's nearest flame
-        grid, grounds, fires = ctx["grid"], ctx.get("ground_by_id", ()), ctx.get("fire_tiles", frozenset())
-        hit = (lambda nx, ny: (nx, ny) in fires) if ground == _BURNING else (lambda nx, ny: grounds[grid[ny][nx]] == ground)
+        grid, grounds, aimed = ctx["grid"], ctx.get("ground_by_id", ()), ctx.get("aimed_tiles") or {}
+        hit = (lambda nx, ny: (nx, ny) in aimed) if ground in (_BURNING, _FROZEN) else (lambda nx, ny: grounds[grid[ny][nx]] == ground)
         near = _nearest(x, y, ctx, hit) or {}
-        patch = {} if ground == _BURNING else {"patch": ctx["patch_at"](near.get("x", x), near.get("y", y))[1]["tiles"]}
-        out["to_ground"] = {"ground": ground, **near, **patch}
+        if ground == _FROZEN:  # the sort of frost reached, a patch being no frost's
+            told = {"frozen": aimed.get((near.get("x"), near.get("y")))}
+        elif ground == _BURNING:
+            told = {}
+        else:
+            told = {"patch": ctx["patch_at"](near.get("x", x), near.get("y", y))[1]["tiles"]}
+        out["to_ground"] = {"ground": ground, **near, **told}
     return out
 
 
@@ -549,7 +569,7 @@ def main(argv: list[str]) -> int:
         help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`.",
     )
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
-    parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `geography … biomes` names it, or `burning`: its nearest tile, in `distances`.")
+    parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `biomes` names it, `burning` or `frozen`: its nearest tile, in `distances`.")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
     parser.add_argument("--radius", "-r", type=int, default=0, help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
     parser.add_argument(
@@ -634,10 +654,10 @@ def main(argv: list[str]) -> int:
             print(f"✗ no {kind} {ref} — `geography … waters` lists them", file=sys.stderr)
             return 2
         ctx["aimed_water"] = {kind: ref}
-    if args.ground == _BURNING:  # no ground's: the save lists the burning tiles apart
-        ctx["fire_tiles"] = set(listed_tiles(save, "fire"))
-        if not ctx["fire_tiles"]:
-            print("✗ nothing burns in this world", file=sys.stderr)
+    if args.ground in (_BURNING, _FROZEN):  # no ground's: the save lists the burning tiles apart, the frost partly
+        ctx["aimed_tiles"] = dict.fromkeys(listed_tiles(save, "fire"), "fire") if args.ground == _BURNING else frozen_tiles(save)
+        if not ctx["aimed_tiles"]:
+            print(f"✗ nothing {'burns' if args.ground == _BURNING else 'is frozen'} in this world", file=sys.stderr)
             return 2
     elif args.ground is not None:
         ctx["ground_by_id"] = [(tile_ground(name) or "").removeprefix(BARE) for name in ctx["tile_map"]]

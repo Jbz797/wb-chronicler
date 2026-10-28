@@ -36,7 +36,7 @@ from actor_stats import (
     status_left,
 )
 from founding import city_zones, settle_gates, settle_told
-from grid import BARE, LazyTileGrid, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
+from grid import BARE, LazyTileGrid, frozen_tiles, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_heart
 from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, kind_word, named_place, unquoted
 from shared import (
@@ -173,7 +173,7 @@ _TENURE_ROLES = {
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
 _TO_USAGE = (
     "`--to` takes a body, a tile, a building, a town, a land, every land, a named place, a water, the nearest fire, a kind or a ground: `--to p42`,"
-    ' `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to lands`, `--to "<place>"`, `--to lake4`, `--to lake`, `--to burning`, `--to volcano`, `--to lava`'
+    ' `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to lands`, `--to "<place>"`, `--to lake4`, `--to burning`, `--to frozen`, `--to volcano`, `--to lava`'
 )
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
@@ -266,6 +266,9 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word), footprint=True) if record is not actor]:
                 sited = {tile: {"asset_id": record.get("asset_id"), "dormant": dormant(record), "id": record.get("id")} for record, tile in sites}
                 each[word] = [tile for _, tile in sites], sited
+                continue
+            if word == "frozen" and (frosts := frozen_tiles(save)):  # no kind, the frost as `geography … frozen` counts it: its nearest tile and its sort
+                each[word] = list(frosts), {tile: {"frozen": sort} for tile, sort in frosts.items()}
                 continue
             if word in _WATERS and (waters := ctx["water_family"](word))[0]:  # no kind, a family of waters: its nearest numbered one, a pond left out
                 each[word] = waters
