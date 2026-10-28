@@ -743,14 +743,14 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
     return [role for role in _ROLE_ORDER if checks[role]]
 
 
-# The site nearest as the crow flies, where the walk reached another: one the way bars or makes dearer, by its id for `--to` to say why — a tie is no other.
-def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple[int, int], dict], near: dict) -> dict | None:
+# The nearest as the crow flies, where the walk reached another: a site the way bars or makes dearer, by its id; `whole`, a water's or place's own tile — no tie.
+def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple[int, int], dict], near: dict, whole: bool = False) -> dict | None:
     (cx, cy), reached = actor_xy(actor), (near["x"], near["y"])
     gx, gy = min(aims, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2)
-    crow = walk_tiles(gx - cx, gy - cy)
-    if (site := about.get((gx, gy))) is None or site == about.get(reached) or crow >= walk_tiles(reached[0] - cx, reached[1] - cy):
+    crow, walked, site = walk_tiles(gx - cx, gy - cy), walk_tiles(reached[0] - cx, reached[1] - cy), about.get((gx, gy))
+    if round(crow) >= round(walked) if whole else site is None or site == about.get(reached) or crow >= walked:
         return None
-    return {**site, "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
+    return {**(site or {}), "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
 
 
 # A time as the chronicler reads it: whole minutes under the hour, where a tenth of an hour would round a few tiles to nought, else hours to the tenth.
@@ -1159,6 +1159,8 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
     if aims:
         try:
             trip = {**_build_to(actor, aims, whom, ctx, mark, about), **told}
+            if mark == "reached" and (crow := _crow_nearest(actor, aims, about, trip["reached"], whole=True)):  # a water's or a place's nearest tile
+                trip["crow_nearest"] = crow
             if isinstance(target, int):
                 trip["from_them"] = _from_them(ctx["actors_by_id"][target], actor, trip, ctx)
         except _UnreachableError as e:
@@ -1180,7 +1182,7 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
                     continue
                 if "ground" in (near := found["nearest"]):  # its patch's size: a lone rock is no range's foot
                     near["patch"] = ctx["patch_at"]()(near["x"], near["y"])[1]["tiles"]
-                elif crow := _crow_nearest(actor, goal[0], goal[1], near):
+                elif crow := _crow_nearest(actor, goal[0], goal[1], near, whole=word in _WATERS):
                     found["crow_nearest"] = crow
                 if "asset_id" in near and word in ctx["grounds"]():  # the bare word aimed at the kind: the ground of its name is another `--to`
                     found["info"] = f"{word} is also a ground: `--to {_GROUND_PREFIX}{word}`"
