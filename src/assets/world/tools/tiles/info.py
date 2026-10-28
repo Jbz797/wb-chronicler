@@ -63,8 +63,11 @@ _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no lo
 _LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
 _MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
 _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
+_ON_REQUEST = ("reach",)  # named only: eight rays per tile, which a `--radius` sweep or a `full` would multiply for nothing
 _PAIR_CELL = 16  # the side of the cells a large ground is hashed into for `_closest_pair`, a chunk's
+_REACH = 60  # tiles a ray of `reach` walks at most: past that the relief is a region's, which `geography … islands` and `biomes` measure
 _REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its way is the one the scale's pace would take, never timed
+_RELIEF = {"mountains": "mountain", "snow_block": "mountain", "snow_summit": "mountain", "summit": "mountain"}  # a wall and its peak, one relief
 _SPREAD = re.compile(r"i\d+|(?:lake|river|sea)\d+|box")  # what a place aimed at spreads over, edge and middle apart: a land, a water, a box
 
 # The eight steps a tide takes, each with its length — a slanted one being longer than a straight one, the least water is not the nearest in rings.
@@ -115,8 +118,10 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
         ctx["kingdoms_by_id"] = index_by_id(save.get("kingdoms") or [])
 
-    if {"distances", "islet", "tile_info"} & sections:
+    if {"distances", "islet", "reach", "tile_info"} & sections:
         ctx["grid"] = LazyTileGrid(save)
+    if "reach" in sections:
+        ctx["map_size"] = sum((save.get("tileAmounts") or [[]])[0]), len(save.get("tileArray") or [])
 
     if {"context", "distances"} & sections:
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
@@ -460,6 +465,25 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
     return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
 
 
+# How far the tile's relief runs in each of the eight headings before another ground stops it, and which: a wall seen from its foot, never the whole range.
+def _reach_at(x: int, y: int, ctx: dict) -> dict:
+    width, height = ctx["map_size"]
+
+    def relief(tx: int, ty: int) -> str:
+        name = ctx["tile_map"][ctx["grid"][ty][tx]]
+        return _RELIEF.get(block, block) if (block := tile_block(name)) else tile_kind(name)
+
+    ground, rays = relief(x, y), {}
+    for dx, dy in ((0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)):
+        rays[heading := bearing(dx, dy)] = f"{_REACH}+"
+        for k in range(1, int(_REACH / walk_tiles(dx, dy)) + 1):  # the reach in tiles as the crow flies, a diagonal step its 1.41
+            tx, ty = x + k * dx, y + k * dy
+            if (beyond := relief(tx, ty) if 0 <= tx < width and 0 <= ty < height else "edge") != ground:  # the map's rim stops a ray as a ground does
+                rays[heading] = [round(walk_tiles((k - 1) * dx, (k - 1) * dy)), beyond]
+                break
+    return {"ground": ground, "rays": rays}
+
+
 # The tiles of a ground touching its outside: two grounds meet nearest on their rims, which a land's edges already are.
 def _rim(tiles: list[tuple[int, int]]) -> list[tuple[int, int]]:
     own = set(tiles)
@@ -530,7 +554,7 @@ def main(argv: list[str]) -> int:
 
     try:
         # Membership only, never walked in order — the emitting `if`s below name each one. A `--to` alone answers alone, as `actor`'s does: the way, not the tiles.
-        sections = set(parse_sections(args.sections or "full", _ALL_SECTIONS)) if args.sections or not args.to else set()
+        sections = set(parse_sections(args.sections or "full", (*_ALL_SECTIONS, *_ON_REQUEST), full=_ALL_SECTIONS)) if args.sections or not args.to else set()
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -640,6 +664,8 @@ def main(argv: list[str]) -> int:
             cell["ground"] = _ground_at(x, y, ctx, (x, y) in queried)
         if "islet" in sections and (x, y) in queried:  # the islet whole, said once for the tile asked about as `distances` is
             cell["islet"] = _islet_at(x, y, ctx)
+        if "reach" in sections and (x, y) in queried:
+            cell["reach"] = _reach_at(x, y, ctx)
         if "tile_info" in sections:
             cell["tile_info"] = _tile_info_at(x, y, ctx)
         out[f"{x},{y}"] = cell
