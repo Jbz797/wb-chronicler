@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 28/10/26 13:18</p>
+<p class="metadata">Date de mise à jour : 28/10/26 13:21</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -8,8 +8,8 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - **Ce que fixe un filtre** (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre.
 - **Les coordonnées** croissent vers l'est (x) et le nord (y), un `dir` aussi.
 - **`sections`** : liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings` et `roster`, à nommer) ; un seul bloc nommé (une section, `--to`, une tuile) sort nu, plusieurs gardent leur clé.
-- **Le suffixe `C<n>`** lit ce chapitre ; sans lui, le dernier ; `across Cx-Cx <outil> …` pose la question à chacun, la réponse rangée par chapitre.
-- **Une sortie se lit entière** : coupée (`head`), le JSON ne se lit plus ; des sections lourdes se demandent une à une. Trop large, elle se résume (un compte par terre au lieu d'une liste) : le détail se demande par ses filtres (`-i`, `-t`, une section).
+- **Le suffixe `C<n>`** lit ce chapitre ; sans lui, le dernier ; l'outil `across` (`across C3-C7 actor 23 metadata`) pose la question à chacun, rangée par chapitre.
+- **Une sortie se lit entière** : coupée (`head`), le JSON ne se lit plus ; des sections lourdes se demandent une à une. Trop large, elle se résume (un compte par terre) : le détail se demande par ses filtres (`-i`, `-t`, une section).
 
 | Commande          | Sections                                                                                                                               |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |

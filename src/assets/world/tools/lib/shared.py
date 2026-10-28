@@ -262,6 +262,16 @@ def _leader_refs(tallies: dict, records: Mapping) -> dict:
     return refs
 
 
+# A span asked of one tool as if `across` were its option (`world/info.py across C6-C7 metadata`): the line to type instead, `None` where no `across` is.
+def _misplaced_across() -> str | None:
+    if "across" not in (asked := sys.argv[1:]):
+        return None
+    words, tool = [word for word in asked if word != "across"], Path(sys.argv[0]).parent.name
+    span = [word for word in words if re.fullmatch(r"C\d+-C\d+", word)]
+    rest = [word for word in words if word not in span and word != tool]
+    return f"`across` is a tool of its own, the tool asked after the span: `tools/across/info.py {' '.join([*span, tool, *rest])}`"
+
+
 # The standout souls. `hungriest` skips a body with no gut, which carries no `nutrition_max` to fall short of; the combat stats share one pass, that being the cost.
 def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of: Callable[[dict], dict], world_time: float) -> dict:
     by_id = {actor["id"]: actor for actor in actors}
@@ -413,7 +423,7 @@ def actor_xy(actor: dict) -> tuple[int, int]:
 def arg_parser(prog: str, description: str, docs: str = "docs/tools.md") -> argparse.ArgumentParser:
     # A width said: left to the terminal, argparse loads `shutil` and three compressors to measure it, at the first `add_argument` of every run.
     parser = argparse.ArgumentParser(prog=prog, description=description, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH))
-    parser.error = lambda message: parser.exit(2, f"✗ {message} — see {docs}\n")
+    parser.error = lambda message: parser.exit(2, f"✗ {_misplaced_across() or message} — see {docs}\n")
     return parser
 
 
@@ -1102,6 +1112,8 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: b
     requested = tuple(s.strip() for s in (arg or "").split(",") if s.strip())
     named = tuple(s for s in requested if not (allow_full and s == "full"))  # a caller with no `full` to offer (`geography`) reads the word as unknown
     if unknown := [s for s in named if s not in all_sections]:
+        if across := _misplaced_across():
+            raise ValueError(f"✗ {across}")
         moved = "".join(gloss for section, gloss in _MOVED_SECTIONS.items() if section in unknown)
         raise ValueError(f"✗ unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}{moved}")
     return (*lot, *(s for s in named if s not in lot)) if len(named) < len(requested) else named
