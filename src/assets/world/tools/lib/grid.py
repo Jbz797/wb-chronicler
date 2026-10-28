@@ -1,11 +1,13 @@
 # Tile-level primitives. No save-wide state, no module cache — just functions over a tile name, the rows the save folds away as runs, or the tiles it lists by id.
 
+from collections import defaultdict
 from itertools import chain, compress, repeat
-lazy from collections.abc import Callable, Iterator, Sequence
+lazy from collections.abc import Callable, Collection, Iterator, Sequence
 
 lazy from islands import TileIslands  # `islands` imports this module: the type alone, never loaded
 
 BARE = "~"  # marks a ground no biome grows on among the biomes' own names, none of which could start so
+FIRE_REACH = 16  # tiles between two burning ones of a single fire: twice a volcano's longest throw (`spawn_drop_max_radius`), its lava falling all round it
 HEART_CELL = 4  # tiles a side of the cells `hearts` reads on a land or a sea, one tile standing for each: a name needs no finer, the sweep sixteen times lighter
 LAND_LAYERS = frozenset({"Block", "Ground", "Lava"})  # what a foot stands on, and all `totals` counts as land: off it, the rare goo included, a tile is water
 
@@ -85,6 +87,31 @@ class LazyTileGrid(dict):
 # The save's runs unfolded into a 2D `grid[y][x]` of tile ids — `y` IS the WB-actor y, north-growing, so no caller has to flip it.
 def decode_tile_grid(save: dict) -> list[list[int]]:
     return [_unfold(ids, runs) for ids, runs in _tile_rows(save)]
+
+
+# The burning tiles as fires, those within `FIRE_REACH` of one another one fire, each in its tiles' order — a tile reached leaves its square, never scanned again.
+def fire_clusters(burning: Collection[tuple[int, int]]) -> list[list[tuple[int, int]]]:
+    cells: defaultdict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)
+    for x, y in burning:
+        cells[x // FIRE_REACH, y // FIRE_REACH].append((x, y))
+    clusters, seen = [], set()
+    for start in sorted(burning):
+        if start in seen:
+            continue
+        seen.add(start)
+        cells[start[0] // FIRE_REACH, start[1] // FIRE_REACH].remove(start)
+        stack, fire = [start], []
+        while stack:
+            x, y = stack.pop()
+            fire.append((x, y))
+            cx, cy = x // FIRE_REACH, y // FIRE_REACH
+            for square in ((cx + dx, cy + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                if (cell := cells.get(square)) and any(near := [max(abs(tx - x), abs(ty - y)) <= FIRE_REACH for tx, ty in cell]):
+                    stack += compress(cell, near)
+                    seen.update(compress(cell, near))
+                    cells[square] = [tile for tile, held in zip(cell, near, strict=True) if not held]
+        clusters.append(fire)
+    return clusters
 
 
 # Every frozen tile by its sort, as `geography … frozen` counts them: the map's snow, ice and permafrost, else the passing frost the save lists apart.

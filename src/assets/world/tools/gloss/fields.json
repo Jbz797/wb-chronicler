@@ -52,6 +52,7 @@
   "actor.to.landing": "Vers une terre `i<id>` : le point où l'aborder au moins cher.",
   "actor.to.march_days": "Passé 6 h de marche, les jours de marche, haltes comprises, à la place des heures ; sans l'eau, passée d'une traite, que `total_days` ajoute.",
   "actor.to.nearest": "Vers un type, une famille, une ressource, un sol (`ground`, nommé par `biomes`) ou une eau (`lake`, `water`…, hors mares) : le plus proche ; un bâtiment, à sa tuile.",
+  "actor.to.other_fires": "Sous `--to burning`, les autres foyers (`geography … fires`), chacun par sa flamme la plus proche, à vol d'oiseau, les 4 plus près ; leur trajet : `--to x,y`.",
   "actor.to.patch": "Vers un sol, la taille de la parcelle atteinte, comme `biomes` la compte : `1`, une tuile isolée ; le pied d'un relief nommé se mesure par son nom (`--to \"<lieu>\"`).",
   "actor.to.place": "`--to \"<lieu>\"` : ce qu'il vise (`aimed`), une terre `i<id>`, une eau, un volcan `b<id>`, un îlot, ou dans sa `box` l'eau de son point, son `ground` ou sa terre.",
   "actor.to.reachable": "`--to lands` : chaque terre que le corps gagne à pied et à la nage, mesurée comme `--to i<id>`, la plus proche d'abord ; `unreachable` compte les autres.",
