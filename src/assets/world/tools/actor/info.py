@@ -36,7 +36,7 @@ from actor_stats import (
     status_left,
 )
 from founding import city_zones, settle_gates, settle_told
-from grid import BARE, LazyTileGrid, frozen_tiles, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
+from grid import BARE, LazyTileGrid, fire_clusters, frozen_tiles, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_heart
 from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, kind_word, named_place, unquoted
 from shared import (
@@ -117,6 +117,7 @@ _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which 
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _LONE_ID = re.compile(r"[bcip]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): a body, a building, a town, a land — a bare number too
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
+_OTHER_FIRES = 4  # past the fire met first, as many as `geography … fires` lists in all: its five largest
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
 
 # Competition rank (1,2,2,4) per stat among `asset_id` peers. Mostly maps to `RankedStatKind` (types.ts; UI: RankedStatComponent). `births` chronicler-only.
@@ -873,6 +874,13 @@ def _off_land_at(body: dict, ctx: dict) -> dict:
     return {"islet_tiles": ctx["island_lookup"]().islet_size((x, y))}
 
 
+# Every fire but the one whose flame the walk met, each by its flame nearest the body as the crow flies, nearest first: a walk to one is `--to x,y`.
+def _other_fires(actor: dict, flames: list[tuple[int, int]], met: tuple[int, int]) -> list[dict] | None:
+    cx, cy = actor_xy(actor)
+    nearest = sorted((min((walk_tiles(x - cx, y - cy), x, y) for x, y in fire), len(fire)) for fire in fire_clusters(flames) if met not in fire)
+    return [{"crow_tiles": round(crow), "dir": bearing(x - cx, y - cy), "tiles": size, "x": x, "y": y} for (crow, x, y), size in nearest[:_OTHER_FIRES]] or None
+
+
 # Tiles walked in an hour at the body's own pace — a passenger's too, the unit his hull's sailing is counted in (`_gait`).
 def _per_hour(actor: dict, ctx: dict) -> float:
     return _HOURLY_TILES_PER_SPEED * (compute_actor_stats(actor, ctx).get("speed") or 1)
@@ -1161,6 +1169,8 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
             trip = {**_build_to(actor, aims, whom, ctx, mark, about), **told}
             if mark == "reached" and (crow := _crow_nearest(actor, aims, about, trip["reached"], whole=True)):  # a water's or a place's nearest tile
                 trip["crow_nearest"] = crow
+            elif mark == "burning" and (others := _other_fires(actor, aims, (trip["burning"]["x"], trip["burning"]["y"]))):
+                trip["other_fires"] = others
             if isinstance(target, int):
                 trip["from_them"] = _from_them(ctx["actors_by_id"][target], actor, trip, ctx)
         except _UnreachableError as e:

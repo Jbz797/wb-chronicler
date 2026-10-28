@@ -16,8 +16,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from grid import (
     BARE,
+    FIRE_REACH,
     LAND_LAYERS,
     LazyTileGrid,
+    fire_clusters,
     frozen_tally,
     listed_tiles,
     off_land,
@@ -66,7 +68,6 @@ _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one
 _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
 _DETAIL = ("borders", "bounds")  # what `-t` alone tells of a patch, the wide view keeping to where it lies
-_FIRE_REACH = 16  # tiles between two burning ones of a single fire: twice a volcano's longest throw (`spawn_drop_max_radius`), its lava falling all round it
 _GROUND_SWING = 0.1  # a ground's own change past which `biomes --since` tells it, its land's share still: a field doubled, a tenth of a forest burnt
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 
@@ -414,36 +415,13 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island, "patches": top_patches}
 
 
-# Each fire's tiles by square of `_FIRE_REACH`, to the fire's index in `clusters`: a tile's kin lie in its 9 squares.
+# Each fire's tiles by square of `FIRE_REACH`, to the fire's index in `clusters`: a tile's kin lie in its 9 squares.
 def _fire_cells(clusters: list[list[tuple[int, int]]]) -> dict[tuple[int, int], list[tuple[tuple[int, int], int]]]:
     cells: defaultdict[tuple[int, int], list[tuple[tuple[int, int], int]]] = defaultdict(list)
     for index, fire in enumerate(clusters):
         for x, y in fire:
-            cells[x // _FIRE_REACH, y // _FIRE_REACH].append(((x, y), index))
+            cells[x // FIRE_REACH, y // FIRE_REACH].append(((x, y), index))
     return cells
-
-
-# The burning tiles as fires, those within `_FIRE_REACH` of one another one fire, each in its tiles' order.
-def _fire_clusters(burning: Collection[tuple[int, int]]) -> list[list[tuple[int, int]]]:
-    cells: defaultdict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)
-    for x, y in burning:
-        cells[x // _FIRE_REACH, y // _FIRE_REACH].append((x, y))
-    clusters, seen = [], set()
-    for start in sorted(burning):
-        if start in seen:
-            continue
-        seen.add(start)
-        stack, fire = [start], []
-        while stack:
-            x, y = stack.pop()
-            fire.append((x, y))
-            cx, cy = x // _FIRE_REACH, y // _FIRE_REACH
-            for near in (tile for dx in (-1, 0, 1) for dy in (-1, 0, 1) for tile in cells.get((cx + dx, cy + dy), ())):
-                if near not in seen and max(abs(near[0] - x), abs(near[1] - y)) <= _FIRE_REACH:
-                    seen.add(near)
-                    stack.append(near)
-        clusters.append(fire)
-    return clusters
 
 
 # The land a fire is told under, the one holding most of it — a tie to the first land, so no fire is told twice.
@@ -471,7 +449,7 @@ def _fire_turnover(then: dict[tuple[int, int], tuple[str, str]], now: dict[tuple
     return {key: {"tiles": dict(sides)} for key, sides in counts.items() if island is None or key == str(island)}
 
 
-# The map's burning tiles as fires, those within `_FIRE_REACH` of one another one fire, each told under the land holding most of it: the rest is `spills`.
+# The map's burning tiles as fires, those within `FIRE_REACH` of one another one fire, each told under the land holding most of it: the rest is `spills`.
 def _fires(
     burning: dict[tuple[int, int], tuple[str, str]],
     key: str,
@@ -479,13 +457,13 @@ def _fires(
     water: Callable[[list], dict | None],
     before: dict[tuple[int, int], tuple[str, str]] | None,
 ) -> dict:
-    clusters = _fire_clusters(burning)
+    clusters = fire_clusters(burning)
     homed = sorted((i for i, fire in enumerate(clusters) if _fire_home(fire, burning) == key), key=lambda i: (-len(clusters[i]), min(clusters[i])))
     told = [{**_fire_row(clusters[i], burning, key, land), "to_water": water(clusters[i])} for i in homed[:_TOP_PATCHES]]
     rest, gone = [clusters[i] for i in homed[_TOP_PATCHES:]], None
     if before is not None:  # `--since`: an earlier fire's tiles gone out held by the fire now nearest it, else that earlier fire gone out whole
         owner, held, out = _fire_cells(clusters), Counter(), []
-        for earlier in _fire_clusters(before):
+        for earlier in fire_clusters(before):
             if reaches := [found for tile in earlier if (found := _nearest_fire(tile, owner)) is not None]:
                 held[min(reaches)[1]] += sum(tile not in burning for tile in earlier)
             elif _fire_home(earlier, before) == key:
@@ -577,12 +555,12 @@ def _narrowed(out: dict, land: int | str) -> dict:
     return narrowed
 
 
-# The fire nearest `tile` within `_FIRE_REACH`, as its reach and its index in the clusters `owner` was built from — none past that reach.
+# The fire nearest `tile` within `FIRE_REACH`, as its reach and its index in the clusters `owner` was built from — none past that reach.
 def _nearest_fire(tile: tuple[int, int], owner: dict[tuple[int, int], list[tuple[tuple[int, int], int]]]) -> tuple[int, int] | None:
     x, y = tile
-    cx, cy = x // _FIRE_REACH, y // _FIRE_REACH
+    cx, cy = x // FIRE_REACH, y // FIRE_REACH
     cells = (found for dx in (-1, 0, 1) for dy in (-1, 0, 1) for found in owner.get((cx + dx, cy + dy), ()))
-    return min(((reach, index) for (fx, fy), index in cells if (reach := max(abs(fx - x), abs(fy - y))) <= _FIRE_REACH), default=None)
+    return min(((reach, index) for (fx, fy), index in cells if (reach := max(abs(fx - x), abs(fy - y))) <= FIRE_REACH), default=None)
 
 
 # The `waters` block cut by `-w`: one water's row, or one family with the count it leaves unlisted — `None` where this reading holds none.
