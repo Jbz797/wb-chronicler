@@ -158,7 +158,7 @@
   "tiles.islet.name": "Le lieu de `places.json` dont le point tombe sur cet îlot : l'îlot baptisé, ou le cône d'un volcan cerné de lave ; absent, l'îlot n'a pas de nom.",
   "tiles.islet.off": "La terre dont l'îlot est au large, s'il est à 60 tuiles ou moins, et son côté (`side`) : le cap de son `heart` depuis le `centroid` de la terre, `centre` au cœur.",
   "tiles.islet.size": "Le rocher entier : son sol, sa roche, sa lave et les îlots accolés, comme une terre compte sa taille ; `islet_tiles` n'en pèse que le sol.",
-  "tiles.reach": "Dans les 8 directions, les tuiles du même relief (la montagne, cime comprise, sinon le sol) puis ce qui l'arrête ; `60+` au-delà, `edge` au bord de la carte.",
+  "tiles.reach": "Par direction, les tuiles du même relief (montagne et cime ensemble, une eau par son id) puis ce qui l'arrête, `edge`, `60+` ; d'une rivière, ses 2 bouts (`ends`).",
   "tiles.tile_info.block": "Ce qui barre la marche sur la tuile.",
   "tiles.tile_info.islet_tiles": "Le sol seul de la masse où se tient la tuile, moins de 300 pour un îlot ; `islet … size` compte le rocher entier.",
   "tiles.tile_info.patch": "La parcelle de la tuile, un seul sol d'un seul tenant sur une terre, comme `biomes -t` la coupe : sa taille, son milieu et son emprise (`bounds`).",
