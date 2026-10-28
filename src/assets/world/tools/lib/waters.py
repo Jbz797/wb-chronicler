@@ -3,7 +3,7 @@
 import re
 import zlib
 from array import array
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Mapping
 from functools import cache
 from heapq import heappop, heappush
@@ -15,6 +15,8 @@ from grid import HEART_CELL, hearts, tile_block, tile_layer, tile_mask
 from islands import TileIslands, compute_islands_cached
 from shared import bearing, pickle_cached, union_root
 
+_BRANCH = 10  # tiles of water an arm must run off the water already traced to end on its own: a kilometre, so neither a bulge nor a corner's spur passes for one
+_DELTAS_8 = tuple((dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)  # a tile's eight neighbours, corners too, as a river chains
 _DRY = bytes([1, 0]) + bytes(254)  # the water's mask turned over: the land a tide raised from the seas runs through, which no lake lets by
 _FARTHEST_SWIM = 512  # two tides make a crossing, so none past twice this is kept — breath then drowning carry a body far (`actor/info.py`), and the sweep 20 ms
 _ID_BITS = 14  # a body's code on each of its tiles holds its kind above its id: sixteen thousand seas, lakes or rivers, which no map comes near
@@ -139,6 +141,11 @@ def _decoded(code: int) -> tuple[str, int]:
     return _KINDS[code >> _ID_BITS], code & ((1 << _ID_BITS) - 1)
 
 
+# The tile the most steps away, ties to the greater tile: one answer whatever order a walk met them in.
+def _farthest(steps: dict[tuple[int, int], int]) -> tuple[int, int]:
+    return max(steps, key=lambda tile: (steps[tile], tile))
+
+
 # An enclosed water is named by the shores that ring it, and holds as its own any land no other water touches — the isles a chronicle reaches last, or never.
 def _lakes(
     pools: list[_Pool], pool_at: list[int], coast: list[tuple[int, int]], water: bytearray, stride: int, lake_of: dict[int, int], shores: dict[int, set[int]]
@@ -235,6 +242,18 @@ def _pool_map(water: bytearray, stride: int, corners: int = 0) -> tuple[list[int
     ]
 
 
+# A river's ends along its water, corners walked: its course's two, farthest apart, then each arm running `_BRANCH` off the water traced, not off the ends alone.
+def _river_ends(tiles: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    held = set(tiles).__contains__
+    first = _farthest(_water_steps(held, [min(tiles)]))
+    ends = sorted((first, last := _farthest(along := _water_steps(held, [first]))))
+    steps = _water_steps(held, _way(along, last))
+    while steps[arm := _farthest(steps)] >= _BRANCH:
+        ends.append(arm)
+        _water_steps(held, _way(steps, arm), steps)
+    return ends
+
+
 # The rivers: thin waters chained wherever two touch by a corner, a river leaving the sea side by side then winding on slantwise — named from the lakes' floor up.
 def _rivers(
     pools: list[_Pool], pool_at: list[int], stride: int, thin: set[int], sea_of: dict[int, int], lake_of: dict[int, int]
@@ -264,19 +283,20 @@ def _rivers(
         river_of |= dict.fromkeys(chain, river)
         own = [(i % stride - 1, i // stride - 1) for p in chain for i in tiles[p]]
         mean_x, mean_y = sum(x for x, _ in own) / size, sum(y for _, y in own) / size
-        # Sited on its own tile nearest its mean — every tile of a ribbon lies as far from the shore — and ended at both tips of its longer side.
+        # Sited on its own tile nearest its mean — every tile of a ribbon lies as far from the shore — and ended where its water runs out (`_river_ends`).
         heart = min(own, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
-        (west, south), (east, north) = map(min, zip(*own, strict=True)), map(max, zip(*own, strict=True))
-        tips = (min(own), max(own)) if east - west >= north - south else (min(own, key=lambda tile: tile[::-1]), max(own, key=lambda tile: tile[::-1]))
+        tips = _river_ends(own)
         touched = {other for p in chain for other in met[p]}
         rivers.append(
             {
-                "ends": [{"x": x, "y": y} for x, y in tips],
+                "arms": len(tips) - 2 or None,  # a count: a large river runs several, which the map reads, where `tiles … to_river_ends` names the nearest
+                "ends": [{"x": x, "y": y} for x, y in tips[:2]],
                 "heart": {"x": heart[0], "y": heart[1]},
                 "id": river,
                 "lakes": sorted(lake_of[other] for other in touched if other in lake_of),
                 "seas": sorted(sea_of[other] for other in touched if other in sea_of),
                 "size": size,
+                "tips": tips,  # every end, the arms' too: `tiles … to_river_ends` asks the ones nearest a tile, never a whole delta
                 "waters": len(chain),
             }
         )
@@ -397,9 +417,42 @@ def _water_rows(save: dict) -> list[bytes]:
     return tile_mask(save, [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []])
 
 
+# Each tile `held` by its steps from the nearest of `sources`, corners walked, a length on the water — lowered in place from `steps`, a new end walking only nearer.
+def _water_steps(
+    held: Callable[[tuple[int, int]], bool], sources: list[tuple[int, int]], steps: dict[tuple[int, int], int] | None = None
+) -> dict[tuple[int, int], int]:
+    steps, queue = {} if steps is None else steps, deque(sources)
+    steps.update(dict.fromkeys(sources, 0))
+    while queue:
+        x, y = queue.popleft()
+        step = steps[x, y] + 1
+        for near in ((x + dx, y + dy) for dx, dy in _DELTAS_8):
+            if step < steps.get(near, step + 1) and held(near):
+                steps[near] = step
+                queue.append(near)
+    return steps
+
+
 # Every stretch of water the map holds, read once per save since the map never moves — the bodies' mask with it, which only `water_bodies` and `water_tiles` read.
 def _waters(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v16", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v20", save_path, lambda: _compute_waters(save, save_path))
+
+
+# The tiles from `tile` back to the nearest source of a walk, a step down each time: the water a new end is joined to the rest by.
+def _way(steps: dict[tuple[int, int], int], tile: tuple[int, int]) -> list[tuple[int, int]]:
+    way = [tile]
+    while steps[tile]:
+        tile = next(near for near in ((tile[0] + dx, tile[1] + dy) for dx, dy in _DELTAS_8) if steps.get(near) == steps[tile] - 1)
+        way.append(tile)
+    return way
+
+
+# The ends of one river nearest a tile of it along its water, arms' too, each with its steps there: where it runs out from here, never a whole delta's list.
+def river_ends_near(save: dict, save_path: Path, river_id: int, tile: tuple[int, int], most: int) -> list[tuple[tuple[int, int], int]]:
+    tips = next((river["tips"] for river in _waters(save, save_path)["rivers"] if river["id"] == river_id), [])
+    (body_at, width, height), code = _body_mask(save, save_path), _code("river", river_id)
+    steps = _water_steps(lambda near: 0 <= near[0] < width and 0 <= near[1] < height and body_at[near[1] * width + near[0]] == code, [tile])
+    return sorted(((tip, steps[tip]) for tip in tips if tip in steps), key=lambda found: (found[1], found[0]))[:most]
 
 
 # What water a tile lies in — a `sea`, a `lake` or a `river` by id, read off the mask — or `pond_tiles`, a water under their floor filled from the tile.
@@ -438,7 +491,8 @@ def water_tiles(save: dict, save_path: Path, kind: str, water_id: int) -> list[t
 
 # The seas, the lakes, the rivers, the straits between the lands and the necks between the seas, as `geography … waters` prints them.
 def waters_cached(save: dict, save_path: Path) -> dict:
-    return {key: value for key, value in _waters(save, save_path).items() if key != "body_at"}
+    found = {key: value for key, value in _waters(save, save_path).items() if key != "body_at"}
+    return {**found, "rivers": [{key: value for key, value in river.items() if key != "tips"} for river in found["rivers"]]}
 
 
 # The waters with a tile in a window of the map, bounds included and clipped, each `(kind, id)` off the bodies' mask — a pond, numbered by none, left out.
