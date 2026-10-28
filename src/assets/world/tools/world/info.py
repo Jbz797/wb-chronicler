@@ -10,6 +10,7 @@ import re
 import sys
 from collections import Counter, defaultdict
 from functools import cache
+from itertools import pairwise
 from math import floor, inf
 from operator import itemgetter
 from pathlib import Path
@@ -554,6 +555,7 @@ def _build_roster(
     trait: str | None,
     land: int | str | None,
     since: str | None,
+    later: list[dict],
     sapient: bool | None,
     settle: bool,
     barred: bool,
@@ -664,7 +666,7 @@ def _build_roster(
     gone = []
 
     if earlier is not None and was is not None and not (settle or barred):  # the dead found nothing
-        gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient, belonged, stage)
+        gone = _gone_since(save, earlier, later, was, kinds, trait, asked, sapient, belonged, stage)
         if once is not None:  # the dead that held the tally, each with what it takes away: where it stood and what took it are another question's
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
         if near:  # the dead measured from where the earlier save last saw them, no later one keeping their place
@@ -864,6 +866,7 @@ def _death_causes(then: dict, now: dict, ctx: dict) -> dict[int, list[str]]:
 def _gone_since(
     save: dict,
     then: dict,
+    later: list[dict],
     was: dict[int, int | str],
     kinds: set[str] | None,
     trait: str | None,
@@ -876,7 +879,9 @@ def _gone_since(
     thinking = _sapient_subspecies(then) if sapient is not None else None
     bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
     ctx = build_actor_stats_context(then)
-    died = _death_causes(then, save, ctx)
+    died: dict[int, list[str]] = {}
+    for before, after in pairwise([then, *later]):  # each death weighed in the span it fell in: that span's counts, the victims its saves still kept
+        died |= _death_causes(before, after, ctx if before is then else build_actor_stats_context(before))
     rows = []
     for actor in then.get("actors_data") or []:
         if actor["id"] in alive or actor["id"] not in was or (kinds and actor.get("asset_id") not in kinds) or not belongs(actor):
@@ -1222,7 +1227,7 @@ def main(argv: list[str]) -> int:
     if "plots" in sections:
         out["plots"] = _build_plots(save)
     if "roster" in sections:
-        kinds = bred
+        kinds, later = bred, _since_saves(since, chapter, save) if since else []  # the saves after `since`, read once: the dead weighed span by span, the unseen
         lands, island_of = compute_islands_cached(save, save_path)  # loaded once: the land `-i` names is checked against the lookup the roll then reads
         if isinstance(args.island, int) and args.island not in {land["id"] for land in lands}:
             print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
@@ -1274,6 +1279,7 @@ def main(argv: list[str]) -> int:
                 args.trait,
                 args.island,
                 since,
+                later,
                 True if args.sapient else False if args.beasts else None,
                 args.settle,
                 args.barred,
@@ -1292,7 +1298,7 @@ def main(argv: list[str]) -> int:
             print(e, file=sys.stderr)
             return 1
         # The bodies born and gone between the two saves, no roll's to name: an absence over the span is unproven while any passed (`came_and_went`)
-        unseen = passed_unseen(load_save(SAVES_DIR / since / "map.wbox"), _since_saves(since, chapter, save)).get("bodies_and_hulls") if since else None
+        unseen = passed_unseen(load_save(SAVES_DIR / since / "map.wbox"), later).get("bodies_and_hulls") if since else None
         if not roster:  # a filter nothing answers, never a silent `{}`
             print(_nobody(args, kinds, save, since) + (f" — {unseen} more came and went unseen in the world, kind unknown" if unseen else ""), file=sys.stderr)
             return 1
