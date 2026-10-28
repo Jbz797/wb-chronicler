@@ -1,7 +1,7 @@
 {
   "actor.companions.lover": "Le seul lien qui fait un couple ; `best_friend` n'en fait pas un.",
   "actor.kills": "`--kills` : ses morts données, le total par chapitre et chaque hausse depuis le chapitre d'avant, ou depuis sa venue.",
-  "actor.kin": "`parents` (`gone` : mort) et `children` vivants.",
+  "actor.kin": "`parents` (`gone` : mort) et `children` vivants, le sang seul : le compagnon est dans `companions` (`lover`).",
   "actor.metadata.age_overgrowth": "Les années que `age` compte sans les avoir vécues ici : un migrant appelé par le feu arrive grand (1 à 2 fois l'âge de venue de son espèce), un clone, un paradoxe.",
   "actor.metadata.army_since": "Le mois où le corps est entré dans son armée.",
   "actor.metadata.at_building": "Le corps se tient à une tuile au plus d'un des bâtiments nommés, sans y être entré.",
