@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 28/10/26 09:49</p>
+<p class="metadata">Date de mise à jour : 28/10/26 12:33</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -70,7 +70,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
 - `lineages` : chaque lignée vivante, `-t` celles d'une espèce. `gloss:lineages`.
 - `pairings` : par espèce, la 1ʳᵉ naissance au plus tôt et son couple. `gloss:pairings`.
-- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau, `--with <champs>` jusqu'à 4, d'`actor … stats` ou d'une fiche, `--status`/`--task <id>`, `--sapient` ou `--beasts`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--army`…) ses membres, `--since C<n>` ce qui a changé. `gloss:roster`.
+- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--top <mesure>`, `--nearest <x,y | p<id>>` les plus proches à vol d'oiseau, `--with <champs>` jusqu'à 4, d'`actor … stats` ou d'une fiche, `--status`/`--task <id>`, `--stage <palier>`, `--sapient` ou `--beasts`, `--settle` (`settle` vrai ou `child`) et `--barred`, l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`…) ses membres, `--since C<n>` ce qui a changé. `gloss:roster`.
 
 ---
 

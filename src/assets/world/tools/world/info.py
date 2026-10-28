@@ -214,6 +214,7 @@ _KEPT_FIELDS = (
     "y",
 )
 
+_LIFE_STAGES = ("egg", "baby", "child", "teen", "adult", "elder")  # `shared.life_stage`'s, in the order a body passes them — what `--stage` takes
 _MAX_FIELDS = 4  # past so many fields a line reads as a sheet: `actor … stats` gives the whole of one body
 
 # What `roster` narrows to by entity: the collection its id answers in, and the body's own field that ties it there — a pact's, through the crown.
@@ -563,8 +564,12 @@ def _build_roster(
     entity: tuple[str, int] | None,
     near: tuple[tuple[int, int], int | None] | None,
     fields: list[str],
+    stage: str | None,
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
+    # Each body's stage then, under `--since`: one that grew from a child to a teen changed as one that changed land did
+    once_ctx = build_actor_stats_context(earlier) if earlier is not None else {}
+    then_bodies = {a["id"]: a for a in earlier.get("actors_data") or []} if earlier is not None else {}
     belongs = _belongs(save, entity)
     belonged = _belongs(earlier, entity) if earlier is not None else belongs  # the same tie read off the earlier save, a pact's crowns as they stood
     # Under an entity, `--since` weighs who belonged then: a body that joined arrives, one alive elsewhere has left, though the world saw both all along.
@@ -621,6 +626,9 @@ def _build_roster(
             continue
         if task and kept_task(actor) != task:
             continue
+        grown = _stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) if stage or was is not None else None
+        if stage and grown != stage:
+            continue
         held = _held(actor, weighed, ctx) if weighed else 0
         before = once.get(actor["id"], 0) if once is not None else 0  # with no `--since`, a tally is weighed against nought
         if (has and held == before) or (lacks and held):  # `--top` counts a body with none once every other filter has had its say
@@ -636,10 +644,16 @@ def _build_roster(
             far[actor["id"]] = crow(*actor_xy(actor))
             change["crow_tiles"] = round(far[actor["id"]])
         if was is not None and actor["id"] in known and not has:  # one unseen then was born or set down since, and says so by standing in the roll at all
-            if (then := was[actor["id"]]) == here:
+            past = then_bodies[actor["id"]]
+            was_stage = _stage(past, once_ctx, actor_age(past, once_ctx["world_time"]), adult_age(past, once_ctx))
+            if (then := was[actor["id"]]) == here and was_stage == grown:
                 still += land is None or asked == here  # stood still: nothing for `since` to say of it, but that it was left out
                 continue
-            change = {"was_on": then} | ({"crow_tiles": change["crow_tiles"]} if near else {})
+            change = (
+                ({"was_on": then} if then != here else {})
+                | ({"life_stage": [was_stage, grown]} if was_stage != grown else {})
+                | ({"crow_tiles": change["crow_tiles"]} if near else {})
+            )
         if land is None or asked in (here, change.get("was_on")):
             if top and held == before:  # holds none of the measure: left out of the ranking, and said so
                 unranked += 1
@@ -648,7 +662,7 @@ def _build_roster(
     gone = []
 
     if earlier is not None and was is not None and not (settle or barred):  # the dead found nothing
-        gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient, belonged)
+        gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient, belonged, stage)
         if once is not None:  # the dead that held the tally, each with what it takes away: where it stood and what took it are another question's
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
         if near:  # the dead measured from where the earlier save last saw them, no later one keeping their place
@@ -666,7 +680,8 @@ def _build_roster(
             told = f"{len(bodies)} bodies whose {has} moved since {since}" + (f", {len(gone)} gone with theirs" if gone else "")
         elif since:  # the roll then holds what changed alone: told by its parts, lest its total read as the world's
             moved = sum("was_on" in change for _, _, change in bodies)
-            parts = ((len(bodies) - moved, "arrived"), (moved, "moved"), (len(gone), "gone"))
+            grew = sum("life_stage" in change and "was_on" not in change for _, _, change in bodies)
+            parts = ((len(bodies) - moved - grew, "arrived"), (grew, "grew"), (moved, "moved"), (len(gone), "gone"))
             told = f"{', '.join(f'{n} {word}' for n, word in parts if n)} since {since}" + (f" — {still} stood still, left out" if still else "")
         few = len(gone) <= MAX_LISTED
         wanted = [_asked_fields(actor, here, fields, ctx, seen) for actor, here, _ in bodies]  # `--with` grouped over the roll, its lines too many to read
@@ -734,7 +749,8 @@ def _build_roster(
 
     gone = [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
     if since and not has:  # each body filed by what befell it, the block saying it: an arrival bears no mark of its own, read off the others it would be guessed
-        parts = {"arrived": [r for r in rows if "was_on" not in r], "gone": [{**r, "gone": None} for r in gone], "moved": [r for r in rows if "was_on" in r]}
+        filed = [("moved" if "was_on" in change else "grew" if "life_stage" in change else "arrived", row) for (_, _, change), row in zip(ranked, rows, strict=True)]
+        parts = {part: [row for filed_as, row in filed if filed_as == part] for part in ("arrived", "grew", "moved")} | {"gone": [{**r, "gone": None} for r in gone]}
         if members_then is not None and entity:  # alive and elsewhere now: left the entity, which a death alone does not say
             leavers = sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id"))
             parts["left"] = [_member_row(a, entity[0], _standing(a, island_of, grid, save["tileMap"]), refs, save, ctx, one_kind) for a in leavers]
@@ -852,6 +868,7 @@ def _gone_since(
     asked: int | str | None,
     sapient: bool | None,
     belongs: Callable[[dict], bool],
+    stage: str | None,
 ) -> list[dict]:
     alive = {actor["id"] for actor in save.get("actors_data") or []}
     thinking = _sapient_subspecies(then) if sapient is not None else None
@@ -865,6 +882,8 @@ def _gone_since(
         if trait and trait not in (actor.get("saved_traits") or ()) and actor.get("subspecies") not in bearing:
             continue
         if (thinking is not None and (actor.get("subspecies") in thinking) != sapient) or (asked is not None and was[actor["id"]] != asked):
+            continue
+        if stage and _stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) != stage:  # the stage it last stood at
             continue
         # `was_on` silent under `-i`, which names the land it held
         old = _old_at(actor, ctx)
@@ -984,12 +1003,13 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
         f"with any {args.top}" if args.top else None,
         f"wearing {args.status}" if args.status else None,
         f"at {args.task}" if args.task else None,
+        f"at the {args.stage} stage" if args.stage else None,
         "that could found a town where it stands" if args.settle else None,
         "kept from founding by more than its age" if args.barred else None,
         (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
         f"on the patch of {args.patch[0]},{args.patch[1]}" if args.patch else None,
         *(f"of {kind} {entity_id}" for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None),
-        (f"whose {args.has} moved since {since}" if args.has else f"arrived, moved or died since {since}") if since else None,
+        (f"whose {args.has} moved since {since}" if args.has else f"arrived, grew, moved or died since {since}") if since else None,
     ]
     thinking = "thinking " if args.sapient or args.settle or args.barred else "unthinking " if args.beasts else ""
     unborn = kinds is not None and not any(a.get("asset_id") in kinds for a in save.get("actors_data") or [] if not is_boat(a))
@@ -1103,6 +1123,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--patch", type=xy_arg, metavar="x,y", help="`roster`: the bodies standing on that tile's patch, one ground of one land")
     parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
     parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
+    parser.add_argument("--stage", choices=_LIFE_STAGES, help="`roster`: the bodies at one life stage — under `--since`, at it now, a dead one at its last")
     parser.add_argument("--status", help="`roster`: the bodies wearing one status, by its id — what a body wears now, where a trait is what it is")
     parser.add_argument("--task", help="`roster`: the bodies at one task the instant of the save, by its id — what a body does, where a status is what it wears")
     parser.add_argument("--top", choices=_TOP_MEASURES, help=f"`roster`: its {_TOP_ROWS} highest by one measure, a tally or a skill, each with its figure")
@@ -1121,7 +1142,8 @@ def main(argv: list[str]) -> int:
     entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None]
     # What keeps only some bodies of the roll: `-t` among them, though it narrows `lineages` too, and `--with` none — it adds fields to every line
     filtered = (
-        any((args.barred, args.beasts, args.has, args.lacks, args.patch, args.sapient, args.settle, args.status, args.task, args.top, args.trait, entities))
+        any((args.barred, args.beasts, args.has, args.lacks, args.patch, args.sapient, args.settle, args.stage, args.status, args.task, args.top, args.trait))
+        or bool(entities)
         or args.island is not None
         or args.nearest is not None
     )
@@ -1262,6 +1284,7 @@ def main(argv: list[str]) -> int:
                 entity,
                 near,
                 fields,
+                args.stage,
             )
         except ValueError as e:  # a field `--with` asks that no body of the roll carries
             print(e, file=sys.stderr)
