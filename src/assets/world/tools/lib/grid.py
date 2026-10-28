@@ -87,6 +87,19 @@ def decode_tile_grid(save: dict) -> list[list[int]]:
     return [_unfold(ids, runs) for ids, runs in _tile_rows(save)]
 
 
+# Every frozen tile by its sort, as `geography … frozen` counts them: the map's snow, ice and permafrost, else the passing frost the save lists apart.
+def frozen_tiles(save: dict) -> dict[tuple[int, int], str]:
+    sorts = [tile_frost(name) or ("permafrost" if tile_biome(name) == "permafrost" else None) for name in save.get("tileMap") or []]
+    frozen = dict.fromkeys(listed_tiles(save, "frozen_tiles"), "frost")
+    for y, (ids, runs) in enumerate(_tile_rows(save)):  # off the runs, never a mask: a frozen run alone is unfolded into its tiles
+        x = 0
+        for tile, n in zip(ids, runs, strict=True):
+            if sort := sorts[tile]:
+                frozen.update(dict.fromkeys(((x + i, y) for i in range(n)), sort))
+            x += n
+    return frozen
+
+
 # The map's frozen tiles, and all its tiles: permafrost, frozen for good in WB's eyes, the map's snow and ice, the passing frost a save lists — never one twice.
 def frozen_tally(save: dict) -> tuple[int, int]:
     frozen = tile_count(save, [bool(tile_frost(name) or tile_biome(name) == "permafrost") for name in save.get("tileMap") or []])
