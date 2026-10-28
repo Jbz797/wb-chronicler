@@ -408,14 +408,18 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island, "patches": top_patches}
 
 
-# One ground the world over: every land that bears it, the islets too, each with its row — the whole of it, which a « nowhere else » stands on. `None` for none.
-def _ground_lands(biomes: dict, kind: str) -> dict | None:
-    lands, name = {}, "ground"
-    for land, rows in biomes["islands"].items():
-        if row := _ground_row(rows, kind):
-            name = "biome" if "biome" in row else "ground"
-            lands[land] = {key: value for key, value in row.items() if key != name}
-    return {name: kind, "islands": lands} if lands else None
+# What burned between two saves, land by land: the tiles caught since (`caught`) and those gone out (`out`) — two instants, a tile out and caught again unseen.
+def _fire_turnover(earlier: dict, then_path: Path, save: dict, save_path: Path, island: int | str | None) -> dict[str, dict]:
+    burnt = []
+    for reading, path in ((earlier, then_path), (save, save_path)):
+        island_of, grid, tile_map = compute_islands_cached(reading, path)[1], LazyTileGrid(reading), reading.get("tileMap") or []
+        burnt.append({tile: _land_key(island_of.get(tile), tile_map[grid[tile[1]][tile[0]]]) for tile in listed_tiles(reading, "fire")})
+    then, now = burnt
+    counts: defaultdict[str, Counter] = defaultdict(Counter)
+    for side, tiles, land_of in (("caught", now.keys() - then.keys(), now), ("out", then.keys() - now.keys(), then)):
+        for tile in tiles:
+            counts[land_of[tile]][side] += 1
+    return {key: {"tiles": dict(sides)} for key, sides in counts.items() if island is None or key == str(island)}
 
 
 # The map's burning tiles as fires, those within `_FIRE_REACH` of one another one fire, each told under the land holding most of it: the rest is `spills`.
@@ -475,6 +479,16 @@ def _ground_balance(then: dict, now: dict) -> dict | None:
         if kept:
             lands[land] = kept
     return {"islands": lands} if lands else None
+
+
+# One ground the world over: every land that bears it, the islets too, each with its row — the whole of it, which a « nowhere else » stands on. `None` for none.
+def _ground_lands(biomes: dict, kind: str) -> dict | None:
+    lands, name = {}, "ground"
+    for land, rows in biomes["islands"].items():
+        if row := _ground_row(rows, kind):
+            name = "biome" if "biome" in row else "ground"
+            lands[land] = {key: value for key, value in row.items() if key != name}
+    return {name: kind, "islands": lands} if lands else None
 
 
 # The row of one ground among a land's, asked by its biome or its bare ground alike — `None` where the land bears none.
@@ -710,6 +724,10 @@ def main(argv: list[str]) -> int:
         moved = found if isinstance(found := moved_between(then, out), dict) else {}  # both readings are dicts, so what moved is one, or nothing
         if balance:
             moved = {**moved, "biomes": balance}
+        if "burning" in sections and (turnover := _fire_turnover(earlier, then_path, save, save_path, args.island)):  # the balance alone hides what went out
+            fires: dict[str, dict] = moved.get("burning") or {}
+            lands = sorted({*fires, *turnover}, key=lambda key: _land_order((key, None)))
+            moved = {**moved, "burning": {key: {**(fires.get(key) or {}), **turnover.get(key, {})} for key in lands}}
         if "positions" in sections and kinds is not None:
             was, now = ({record["id"] for record, _ in asset_sites(reading, kinds)} for reading in (earlier, save))
             gone, came = _build_positions(earlier, then_path, kinds, args.island, was - now), _build_positions(save, save_path, kinds, args.island, now - was)
