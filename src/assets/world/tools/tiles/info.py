@@ -122,6 +122,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["grid"] = LazyTileGrid(save)
     if "reach" in sections:
         ctx["map_size"] = sum((save.get("tileAmounts") or [[]])[0]), len(save.get("tileArray") or [])
+        ctx["rivers"] = cache(lambda: {river["id"]: river for river in waters_cached(save, save_path)["rivers"]})
 
     if {"context", "distances"} & sections:
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
@@ -136,7 +137,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["frozen_set"] = wanted.intersection(listed_tiles(save, "frozen_tiles"))
         ctx["patch_at"] = patch_finder(save, ctx["grid"], ctx["tile_to_island"])
 
-    if {"distances", "tile_info"} & sections:
+    if {"distances", "reach", "tile_info"} & sections:
         ctx["water_body"] = cache(lambda: water_bodies(save, save_path))  # called not stored: a tile on dry land never asks what water it lies in
 
     if "distances" in sections:
@@ -469,8 +470,13 @@ def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> lis
 def _reach_at(x: int, y: int, ctx: dict) -> dict:
     width, height = ctx["map_size"]
 
+    # A tile's relief, a water by its id as `waters` and `tile_info` name it: the river a ray runs along, the lake it falls into
+    @cache
     def relief(tx: int, ty: int) -> str:
         name = ctx["tile_map"][ctx["grid"][ty][tx]]
+        if tile_layer(name) == "Ocean":
+            ((kind, ref),) = ctx["water_body"]()(tx, ty).items()
+            return "pond" if kind == "pond_tiles" else f"{kind}{ref}"
         return _RELIEF.get(block, block) if (block := tile_block(name)) else tile_kind(name)
 
     ground, rays = relief(x, y), {}
@@ -481,7 +487,10 @@ def _reach_at(x: int, y: int, ctx: dict) -> dict:
             if (beyond := relief(tx, ty) if 0 <= tx < width and 0 <= ty < height else "edge") != ground:  # the map's rim stops a ray as a ground does
                 rays[heading] = [round(walk_tiles((k - 1) * dx, (k - 1) * dy)), beyond]
                 break
-    return {"ground": ground, "rays": rays}
+    # A river winds where a ray runs straight: its two ends, as `waters -w` gives them, said from the tile — WB keeps no flow, so neither is its source
+    ends = (ctx["rivers"]().get(water[1]) or {}).get("ends") if (water := water_ref(ground)) and water[0] == "river" else None
+    told = [{"crow_tiles": round(walk_tiles(end["x"] - x, end["y"] - y)), "dir": bearing(end["x"] - x, end["y"] - y), **end} for end in ends or ()]
+    return {"ends": told or None, "ground": ground, "rays": rays}
 
 
 # The tiles of a ground touching its outside: two grounds meet nearest on their rims, which a land's edges already are.
