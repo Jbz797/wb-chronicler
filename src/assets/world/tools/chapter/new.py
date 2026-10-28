@@ -451,14 +451,10 @@ def _deliver() -> int:
     _tidy_cards(n)
     facts = _step_five_facts(n, settings.get("lang", ""))
     length = facts["length"]
-    floor = chapter_floor(n)
-    short, long = length < floor, length > CHAPTER_CAP
-    if short or long or not facts["done"]:
+    if (long := length > CHAPTER_CAP) or not facts["done"]:
         print(f"✗ C{n} — not yet deliverable")
         _print_step_five(n, facts)
-        if short:
-            print(f"  ✗ chapter.md, {length} characters of {floor} at least, {COUNTED_AS} — what the tale gains goes back to the audit")
-        elif long:
+        if long:  # the cap alone waits for delivery: a long tale is cut at the end, where the floor holds at every round
             print(f"  ✗ chapter.md, {length} characters of {CHAPTER_CAP} at most, {COUNTED_AS} — cut whole passages, the least-borne first, never a correction")
         print("  → set these right, then run `tools/chapter/new.py --deliver` again")
         return 1
@@ -697,7 +693,7 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
     measured = f', each place named with its measure from the favorite (actor {fav_id} --to "<place>")' if fav_id else ""
     print(f"    `{_COUNSEL.format(n=n, measured=measured)}`")
     told = "" if fav_id else " — no favorite, so the world itself, in two parts and no circle:"
-    print(f"  → step 4, the writing: {chapter_floor(n)} to {CHAPTER_CAP} characters, {COUNTED_AS}, counted at delivery, past the audit{told}")
+    print(f"  → step 4, the writing: {chapter_floor(n)} to {CHAPTER_CAP} characters, {COUNTED_AS}, the floor held at each round, the cap at delivery{told}")
     if not fav_id:
         _print_bullets(_WORLD_ONLY)
     # In no doc: the cycle is the script's to tell, step by step. A chapter still under its draft title reads as unfinished, to the reader and to `--finalize`.
@@ -743,6 +739,8 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  → trait summaries owed ({', '.join(owed)}): one string each under the block's own `traits` key, read off {reads}")
         lineage = f", a lineage's {_SUMMARY_CAPS['subspecies']} — {_LINEAGE}" if "subspecies" in owed else ""
         print(f"    {_SUMMARY}; {_SUMMARY_CAP} characters at most{lineage}")
+    if facts["length"] < (floor := facts["floor"]):  # held before the round, so a correction and the gain it costs go to the audit together
+        print(f"  ✗ chapter.md, {facts['length']} characters of {floor} at least, {COUNTED_AS} — the gain goes with this round's corrections, before the audit")
     if long := facts["long"]:
         print(f"  ✗ trait summaries, in characters: {', '.join(f'{tier} {told}' for tier, told in long.items())}")
     if sized:
@@ -1023,7 +1021,8 @@ def _step_five_facts(n: int, lang: str) -> dict:
     dialogues, doubled, misplaced, stray = short_dialogues(prose), _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)
     # A summary carried word for word was audited when written, so only a new one goes.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
-    faults = dialogues or doubled or owed or long or misplaced or stray
+    length, floor = chapter_length(prose), chapter_floor(n)
+    faults = dialogues or doubled or owed or long or misplaced or stray or length < floor
     return {
         "audited": fresh,
         "dialogues": dialogues,
@@ -1034,7 +1033,8 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "favorite": bool(favorite),
         "h1": h1,
         "h1_length": h1_length,
-        "length": chapter_length(prose),
+        "floor": floor,
+        "length": length,
         "long": long,
         "misplaced": misplaced,
         "mourned": bool(before) and not same,
