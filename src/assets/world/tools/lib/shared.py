@@ -71,7 +71,7 @@ _BOOK_POINTS = 12  # what authoring one is worth in `book_reach`, before its rea
 _CACHE_DIR = Path(__file__).parent.parent / ".cache"  # the save pickles and every sweep of the map, a slot per save each; gitignored via the root `.gitignore`
 _CACHE_KEEP = 20  # slots for a world's chapters plus the live save, a few Mo each: chapters sharing a `map.wbox` share one, so a long game still fits
 _CENTRE_SHARE = 0.25  # how near its land's centroid, in halves of that land's span, a point still reads as its centre rather than a side
-_CHAPTER_FLOOR = 6000  # counted past the audit, which cuts as much as it adds
+_CHAPTER_FLOOR = 6000  # held at every round, before the audit: a correction and the gain it costs are read together
 _CHUNK_TILES = 16  # WB `MapChunk` side: 4 to a save's 64-tile block (`MapChunkManager.prepare`)
 
 # The seven verdicts only a settlement can answer, WB slotting them between the moods and the headcounts — a biology or a band keeps no granary to run dry.
