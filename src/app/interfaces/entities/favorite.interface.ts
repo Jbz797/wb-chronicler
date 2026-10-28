@@ -1,10 +1,9 @@
 import { EntityReference, PersonReference } from '../entity.interface';
 import { LifeStage } from '../types';
 
-// Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key. `descriptor` is authored by the chronicler.
+// Absent, never null: `emit` strips `None`/`[]`/`{}` — no lover, no plot, an empty bag or no top-3 rank means no key.
 export interface Favorite {
   companions?: Companions;
-  descriptor: string;
   inventory?: Record<string, number>;
   metadata: FavoriteMetadata;
   plot?: Plot;

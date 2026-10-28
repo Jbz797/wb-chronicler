@@ -83,14 +83,13 @@ export class FavoriteComponent {
     const current = this.currentChapter()?.meta.favorite;
     // A successor aboard is not a man who has taken to the sea — the hull is only news against the same soul's last landfall.
     const isBoarded = !!previous && !!this.currentChapter()?.meta.boat && !this._chronicler.previousChapter()?.meta.boat;
-    if (!previous || !current) return { bestFriend: false, boat: isBoarded, descriptor: false, lover: false, plot: false, role: false };
+    if (!previous || !current) return { bestFriend: false, boat: isBoarded, lover: false, plot: false, role: false };
 
     const hasPlotChanged = !!current.plot && previous.plot?.type.id !== current.plot.type.id;
 
     return {
       bestFriend: !!current.companions?.best_friend && current.companions.best_friend.id !== previous.companions?.best_friend?.id,
       boat: isBoarded,
-      descriptor: current.descriptor !== previous.descriptor,
       lover: !!current.companions?.lover && current.companions.lover.id !== previous.companions?.lover?.id,
       plot: hasPlotChanged,
       role: this.roleTags().some(tag => tag.isNew),

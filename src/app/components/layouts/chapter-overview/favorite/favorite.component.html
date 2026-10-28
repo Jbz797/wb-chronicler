@@ -1,7 +1,6 @@
 @let c = currentChapter();
 @if (c && c.meta.favorite; as fav) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
-    <nz-descriptions-item [nzTitle]="descriptorTitle">{{ fav.descriptor }}</nz-descriptions-item>
     @if (roleTags().length) {
       <nz-descriptions-item [nzTitle]="rolesTitle">
         @for (tag of roleTags(); track tag.label) {
@@ -63,10 +62,6 @@
   <ng-template #childrenTitle>
     <img src="assets/img/stats/children.png" />
     <span>{{ 'ui_children' | translate }}</span>
-  </ng-template>
-  <ng-template #descriptorTitle>
-    {{ 'ui_title' | translate }}
-    <app-new-badge [show]="changedFields().descriptor" />
   </ng-template>
   <ng-template #equipmentPowerTitle>
     <img src="assets/img/stats/equipment_power.png" />

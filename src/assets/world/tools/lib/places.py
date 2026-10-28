@@ -41,11 +41,11 @@ class PlaceIndex:
         ((kind, water_id),) = self._water_at(x, y).items()
         return ((gazetteer().get(f"{kind}s") or {}).get(str(water_id)) or {}).get("name") or None  # a pond, numbered by none, named by none
 
-    # A forged place's own tiles as `--to` aims at them (`place_tiles`), `None` for one it refuses: its refusal is `--to`'s to tell.
+    # A forged place's own tiles as `--to` aims at them (`_place_tiles`), `None` for one it refuses: its refusal is `--to`'s to tell.
     def tiles(self, name: str, spot: dict) -> frozenset[tuple[int, int]] | None:
         if name not in self._held:
             try:
-                self._held[name] = frozenset(place_tiles(name, spot, self._save, self._save_path, self._island_of, self._walk_map)[0])
+                self._held[name] = frozenset(_place_tiles(name, spot, self._save, self._save_path, self._island_of, self._walk_map)[0])
             except PlaceError:
                 self._held[name] = None
         return self._held[name]
@@ -99,6 +99,20 @@ def _key(name: str) -> str:
     return _ARTICLE.sub("", name.strip().replace("\u2019", "'")).casefold()
 
 
+# A forged place's own tiles: its `box` first (`_boxed`), a gulf by a volcano being the gulf, then a landmark by its point before its islet, a cone in lava one.
+def _place_tiles(name: str, spot: dict, save: dict, save_path: Path, island_of: TileIslands, walk_map: WalkMap) -> tuple[list[tuple[int, int]], str]:
+    x, y = place_point(spot)
+    if spot.get("box"):
+        return _boxed(name, spot, (x, y), save, save_path, island_of, walk_map), "box"
+    landmarks = (site for site in save.get("buildings") or [] if any(word in (site.get("asset_id") or "") for word in _LANDMARKS))
+    near = [(walk_tiles(tx - x, ty - y), site) for site in landmarks for tx, ty in building_footprint(site)]
+    if near and (closest := min(near, key=lambda pair: pair[0]))[0] <= PLACE_REACH:
+        return building_footprint(closest[1]), f"b{closest[1]['id']}"
+    if islet := island_of.islet_tiles((x, y)):
+        return islet, "islet"
+    raise PlaceError(f"✗ {name} has no `box` in places.json: its extent is unknown, its point alone — `--to {x},{y}`")
+
+
 # Whether a tile lies in a place's `box`, its bounds included — a place without one may hold any, its tiles then weighed alone.
 def _spans(spot: dict, x: int, y: int) -> bool:
     if not (box := spot.get("box")):
@@ -116,7 +130,7 @@ def named_place(name: str, save: dict, save_path: Path, island_of: TileIslands, 
         return None
     book, key, entry = _find(name)
     if book == "places":
-        return place_tiles(key, entry, save, save_path, island_of, walk_map)
+        return _place_tiles(key, entry, save, save_path, island_of, walk_map)
     prefix, entry_id = _SEEDED_BOOKS[book], int(key)
     tiles = [(x, y) for x, y, owner in island_of.edges() if owner == entry_id] if book == "islands" else water_tiles(save, save_path, prefix, entry_id)
     return tiles, f"{prefix}{key}"
@@ -124,20 +138,6 @@ def named_place(name: str, save: dict, save_path: Path, island_of: TileIslands, 
 
 def place_centre(name: str) -> tuple[int, int]:
     return place_point(_find(name)[2])
-
-
-# A forged place's own tiles: its `box` first (`_boxed`), a gulf by a volcano being the gulf, then a landmark by its point before its islet, a cone in lava one.
-def place_tiles(name: str, spot: dict, save: dict, save_path: Path, island_of: TileIslands, walk_map: WalkMap) -> tuple[list[tuple[int, int]], str]:
-    x, y = place_point(spot)
-    if spot.get("box"):
-        return _boxed(name, spot, (x, y), save, save_path, island_of, walk_map), "box"
-    landmarks = (site for site in save.get("buildings") or [] if any(word in (site.get("asset_id") or "") for word in _LANDMARKS))
-    near = [(walk_tiles(tx - x, ty - y), site) for site in landmarks for tx, ty in building_footprint(site)]
-    if near and (closest := min(near, key=lambda pair: pair[0]))[0] <= PLACE_REACH:
-        return building_footprint(closest[1]), f"b{closest[1]['id']}"
-    if islet := island_of.islet_tiles((x, y)):
-        return islet, "islet"
-    raise PlaceError(f"✗ {name} has no `box` in places.json: its extent is unknown, its point alone — `--to {x},{y}`")
 
 
 # A name off the quotes a caller's shell left round it, a whole pair alone: `L'Arche` keeps its apostrophe, a lone `"` stays.
