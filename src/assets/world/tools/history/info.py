@@ -22,6 +22,7 @@ from shared import (
     emit,
     entity_ref,
     latest_chapter,
+    load_data,
     load_save,
     log_entries,
     quiet_zeros,
@@ -176,8 +177,11 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
 # WB's own log up to the chapter, its bodies and crowns named off the registries — past `_MAX_LOG` entries, a count by kind of event.
 def _build_log(save: dict, since: str | None, actor: int | None, event: str | None) -> dict | list[dict] | str:
     start = _chapter_time(load_save(SAVES_DIR / since / "map.wbox")) if since else 0.0
-    if not (entries := log_entries(start, _chapter_time(save), actor, event)):
-        return "✗ nothing logged" + (f" since {since}" if since else "") + (" for that body" if actor is not None else "") + (f" as {event}" if event else "")
+    if not (entries := log_entries(start, end := _chapter_time(save), actor, event)):
+        told = "✗ nothing logged" + (f" since {since}" if since else "") + (" for that body" if actor is not None else "") + (f" as {event}" if event else "")
+        # A kind WB knows but this world never logged, told beside what it did log: the kind exists, its day has not come
+        others = Counter(e["event"] for e in log_entries(start, end, actor, None)) if event else None
+        return told + (" — logged here: " + ", ".join(f"{kind} {n}" for kind, n in sorted(others.items())) if others else "")
     if len(entries) > _MAX_LOG:
         counts = Counter(e["event"] for e in entries)
         return {"by_event": dict(sorted(counts.items()))}
@@ -339,7 +343,8 @@ def main(argv: list[str]) -> int:
     parser.add_argument("section", help=f"Valid: {', '.join(_SECTIONS)}")
     parser.add_argument("entity", nargs="*", help=f"`entity`: its kind and id, `entity family 12` — kinds: {', '.join(_ENTITIES)}")
     parser.add_argument("--actor", type=int, metavar="id", help="`log`: the entries naming one body")
-    parser.add_argument("--type", "-t", metavar="event", help="`log`: one kind of entry, by WB's id (`kingdom_new`…)")
+    kinds = sorted(load_data("world-log.json"))  # WB's own kinds of entry: a word outside them is a typo, refused with the list, never a quiet nothing
+    parser.add_argument("--type", "-t", choices=kinds, metavar="event", help=f"`log`: one kind of entry, by WB's id — {', '.join(kinds)}")
     args = parser.parse_args(argv)
     if args.section not in _SECTIONS:
         hint = f"an entity's years: `entity {args.section} <id>`" if args.section in _ENTITIES else f"valid: {', '.join(_SECTIONS)}"
