@@ -52,6 +52,7 @@ from shared import (
     moved_between,
     parse_sections,
     pickle_cached,
+    quiet_zeros,
     take_chapter,
     take_since,
     union_root,
@@ -178,26 +179,22 @@ def _build_bodies(save: dict, save_path: Path) -> dict:
 
 
 # A fire WB saves tile by tile, counted land by land, then on the islets and on the water — each tile by its biome, else by its ground as `islands` names it.
-def _build_burning(save: dict, save_path: Path, island: int | str | None) -> dict:
-    if not (positions := list(listed_tiles(save, "fire"))):  # nothing listed, nothing to site: the islands are never unpickled
+def _build_burning(save: dict, save_path: Path, island: int | str | None, before: dict[tuple[int, int], tuple[str, str]] | None = None) -> dict:
+    if not (burning := _burning_tiles(save, save_path)) and not before:  # nothing listed, nothing to site: the islands are never unpickled
         return {}
-    islands, island_of = compute_islands_cached(save, save_path)
-    grid, tile_map = LazyTileGrid(save), save.get("tileMap") or []
-    burning: dict[tuple[int, int], tuple[str, str]] = {}  # each tile's land and ground, the map's whole fire: a blaze spans a shore, never a land alone
-    for x, y in positions:
-        name = tile_map[grid[y][x]]
-        burning[x, y] = (_land_key(island_of.get((x, y)), name), tile_biome(name) or tile_kind(name))
+    islands, grid, tile_map = compute_islands_cached(save, save_path)[0], LazyTileGrid(save), save.get("tileMap") or []
     by_land: defaultdict[str, list[str]] = defaultdict(list)
     for key, ground in burning.values():
         by_land[key].append(ground)
     # Counts, not the shares `islands` gives: a few dozen tiles read better whole than as percentages of themselves.
     out: dict[str, str | dict] = {key: _tally(grounds) for key, grounds in sorted(by_land.items(), key=_land_order)}
-    if island is not None and (key := str(island)) in by_land:  # `-i` alone tells its land's fires apart, the world count staying one line a land
+    # `-i` alone tells its land's fires apart, the world count staying one line a land — under `--since`, a land whose fires all went out too
+    if island is not None and ((key := str(island)) in by_land or any(land == key for land, _ in (before or {}).values())):
         wet, bodies = [tile_layer(name) == "Ocean" for name in tile_map], water_bodies(save, save_path)
         water = partial(_water_near, grid=grid, wet=wet, bodies=bodies)  # handed down, so `_fires` needs no save
-        fires = _fires(burning, key, next((row for row in islands if str(row["id"]) == key), None), water)
-        lone = len(fires["fires"]) == 1 and fires["fires"][0]["grounds"] == out[key]  # one fire holding the land's whole burning: its line says it once
-        out[key] = {"grounds": None if lone else out[key], **fires}
+        fires = _fires(burning, key, next((row for row in islands if str(row["id"]) == key), None), water, before)
+        lone = len(fires["fires"]) == 1 and fires["fires"][0]["grounds"] == out.get(key)  # one fire holding the land's whole burning: its line says it once
+        out[key] = {"grounds": None if lone else out.get(key), **fires}
     return out
 
 
@@ -336,6 +333,14 @@ def _build_totals(save: dict, save_path: Path) -> dict:
     }
 
 
+# The map's burning tiles, each with its land and ground — the whole fire: a blaze spans a shore, never a land alone.
+def _burning_tiles(save: dict, save_path: Path) -> dict[tuple[int, int], tuple[str, str]]:
+    if not (positions := list(listed_tiles(save, "fire"))):
+        return {}
+    island_of, grid, tile_map = compute_islands_cached(save, save_path)[1], LazyTileGrid(save), save.get("tileMap") or []
+    return {(x, y): (_land_key(island_of.get((x, y)), name := tile_map[grid[y][x]]), tile_biome(name) or tile_kind(name)) for x, y in positions}
+
+
 # Every section asked of one save, as `main` prints it — `positions` left `None` where nothing answers, for `main` to refuse or `--since` to read as none.
 def _collect(save: dict, save_path: Path, sections: tuple[str, ...], kinds: set[str] | None, island: int | str | None) -> dict:
     out: dict = {}
@@ -409,26 +414,21 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island, "patches": top_patches}
 
 
-# What burned between two saves, land by land: the tiles caught since (`caught`) and those gone out (`out`) — two instants, a tile out and caught again unseen.
-def _fire_turnover(earlier: dict, then_path: Path, save: dict, save_path: Path, island: int | str | None) -> dict[str, dict]:
-    burnt = []
-    for reading, path in ((earlier, then_path), (save, save_path)):
-        island_of, grid, tile_map = compute_islands_cached(reading, path)[1], LazyTileGrid(reading), reading.get("tileMap") or []
-        burnt.append({tile: _land_key(island_of.get(tile), tile_map[grid[tile[1]][tile[0]]]) for tile in listed_tiles(reading, "fire")})
-    then, now = burnt
-    counts: defaultdict[str, Counter] = defaultdict(Counter)
-    for side, tiles, land_of in (("caught", now.keys() - then.keys(), now), ("out", then.keys() - now.keys(), then)):
-        for tile in tiles:
-            counts[land_of[tile]][side] += 1
-    return {key: {"tiles": dict(sides)} for key, sides in counts.items() if island is None or key == str(island)}
+# Each fire's tiles by square of `_FIRE_REACH`, to the fire's index in `clusters`: a tile's kin lie in its 9 squares.
+def _fire_cells(clusters: list[list[tuple[int, int]]]) -> dict[tuple[int, int], list[tuple[tuple[int, int], int]]]:
+    cells: defaultdict[tuple[int, int], list[tuple[tuple[int, int], int]]] = defaultdict(list)
+    for index, fire in enumerate(clusters):
+        for x, y in fire:
+            cells[x // _FIRE_REACH, y // _FIRE_REACH].append(((x, y), index))
+    return cells
 
 
-# The map's burning tiles as fires, those within `_FIRE_REACH` of one another one fire, each told under the land holding most of it: the rest is `spills`.
-def _fires(burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict | None, water: Callable[[list], dict | None]) -> dict:
-    cells: defaultdict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)  # the tiles by square of `_FIRE_REACH`: a tile's kin lie in its 9 squares
+# The burning tiles as fires, those within `_FIRE_REACH` of one another one fire, each in its tiles' order.
+def _fire_clusters(burning: Collection[tuple[int, int]]) -> list[list[tuple[int, int]]]:
+    cells: defaultdict[tuple[int, int], list[tuple[int, int]]] = defaultdict(list)
     for x, y in burning:
         cells[x // _FIRE_REACH, y // _FIRE_REACH].append((x, y))
-    fires, seen = [], set()
+    clusters, seen = [], set()
     for start in sorted(burning):
         if start in seen:
             continue
@@ -442,21 +442,59 @@ def _fires(burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict
                 if near not in seen and max(abs(near[0] - x), abs(near[1] - y)) <= _FIRE_REACH:
                     seen.add(near)
                     stack.append(near)
-        lands = Counter(burning[tile][0] for tile in fire)
-        if min(lands, key=lambda land_key: (-lands[land_key], _land_order((land_key, None)))) == key:  # a tie to the first land, so no fire is told twice
-            fires.append((fire, lands))
-    fires.sort(key=lambda told_fire: (-len(told_fire[0]), min(told_fire[0])))
-    told = []
-    for fire, lands in fires[:_TOP_PATCHES]:
-        home = [tile for tile in fire if burning[tile][0] == key]  # sited on its own land, where the heading is read
-        mean_x, mean_y = sum(x for x, _ in home) / len(home), sum(y for _, y in home) / len(home)
-        x, y = min(home, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
-        side = {"dir": land_side(x, y, land)} if land else {}
-        spills = {land_key: n for land_key, n in lands.items() if land_key != key} or None
-        row = {"x": x, "y": y, **side, "grounds": _tally(burning[tile][1] for tile in fire), "spills": spills, "tiles": len(fire), "to_water": water(fire)}
-        told.append(row)
-    rest = fires[_TOP_PATCHES:]
-    return {"fires": told, "unlisted": {"fires": len(rest), "tiles": sum(len(fire) for fire, _ in rest)} if rest else None}
+        clusters.append(fire)
+    return clusters
+
+
+# The land a fire is told under, the one holding most of it — a tie to the first land, so no fire is told twice.
+def _fire_home(fire: list[tuple[int, int]], burning: dict[tuple[int, int], tuple[str, str]]) -> str:
+    lands = Counter(burning[tile][0] for tile in fire)
+    return min(lands, key=lambda land_key: (-lands[land_key], _land_order((land_key, None))))
+
+
+# A fire's line, sited on its own land's tile nearest its middle, where the heading is read; the rest of it is `spills`.
+def _fire_row(fire: list[tuple[int, int]], burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict | None) -> dict:
+    home = [tile for tile in fire if burning[tile][0] == key]
+    mean_x, mean_y = sum(x for x, _ in home) / len(home), sum(y for _, y in home) / len(home)
+    x, y = min(home, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
+    spills = Counter(burning[tile][0] for tile in fire if burning[tile][0] != key)
+    side = {"dir": land_side(x, y, land)} if land else {}
+    return {"x": x, "y": y, **side, "grounds": _tally(burning[tile][1] for tile in fire), "spills": dict(spills) or None, "tiles": len(fire)}
+
+
+# What burned between two saves, land by land: the tiles caught since (`caught`) and those gone out (`out`) — two instants, a tile out and caught again unseen.
+def _fire_turnover(then: dict[tuple[int, int], tuple[str, str]], now: dict[tuple[int, int], tuple[str, str]], island: int | str | None) -> dict[str, dict]:
+    counts: defaultdict[str, Counter] = defaultdict(Counter)
+    for side, tiles, land_of in (("caught", now.keys() - then.keys(), now), ("out", then.keys() - now.keys(), then)):
+        for tile in tiles:
+            counts[land_of[tile][0]][side] += 1
+    return {key: {"tiles": dict(sides)} for key, sides in counts.items() if island is None or key == str(island)}
+
+
+# The map's burning tiles as fires, those within `_FIRE_REACH` of one another one fire, each told under the land holding most of it: the rest is `spills`.
+def _fires(
+    burning: dict[tuple[int, int], tuple[str, str]],
+    key: str,
+    land: dict | None,
+    water: Callable[[list], dict | None],
+    before: dict[tuple[int, int], tuple[str, str]] | None,
+) -> dict:
+    clusters = _fire_clusters(burning)
+    homed = sorted((i for i, fire in enumerate(clusters) if _fire_home(fire, burning) == key), key=lambda i: (-len(clusters[i]), min(clusters[i])))
+    told = [{**_fire_row(clusters[i], burning, key, land), "to_water": water(clusters[i])} for i in homed[:_TOP_PATCHES]]
+    rest, gone = [clusters[i] for i in homed[_TOP_PATCHES:]], None
+    if before is not None:  # `--since`: an earlier fire's tiles gone out held by the fire now nearest it, else that earlier fire gone out whole
+        owner, held, out = _fire_cells(clusters), Counter(), []
+        for earlier in _fire_clusters(before):
+            if reaches := [found for tile in earlier if (found := _nearest_fire(tile, owner)) is not None]:
+                held[min(reaches)[1]] += sum(tile not in burning for tile in earlier)
+            elif _fire_home(earlier, before) == key:
+                out.append(earlier)
+        for row, i in zip(told, homed, strict=False):
+            caught = sum(tile not in before for tile in clusters[i])
+            row["since"] = quiet_zeros({"caught": caught, "out": held[i], "still": len(clusters[i]) - caught})
+        gone = [_fire_row(fire, before, key, land) for fire in sorted(out, key=lambda fire: (-len(fire), min(fire)))[:_TOP_PATCHES]] or None
+    return {"fires": told, "gone": gone, "unlisted": {"fires": len(rest), "tiles": sum(map(len, rest))} if rest else None}
 
 
 # `biomes --since`: each land's grounds by name, a ground told where it gained or lost tiles — its share where that moved, else its tiles past `_GROUND_SWING`.
@@ -537,6 +575,14 @@ def _narrowed(out: dict, land: int | str) -> dict:
             "straits": [strait for strait in waters["straits"] if land in strait["between"]],
         }
     return narrowed
+
+
+# The fire nearest `tile` within `_FIRE_REACH`, as its reach and its index in the clusters `owner` was built from — none past that reach.
+def _nearest_fire(tile: tuple[int, int], owner: dict[tuple[int, int], list[tuple[tuple[int, int], int]]]) -> tuple[int, int] | None:
+    x, y = tile
+    cx, cy = x // _FIRE_REACH, y // _FIRE_REACH
+    cells = (found for dx in (-1, 0, 1) for dy in (-1, 0, 1) for found in owner.get((cx + dx, cy + dy), ()))
+    return min(((reach, index) for (fx, fy), index in cells if (reach := max(abs(fx - x), abs(fy - y))) <= _FIRE_REACH), default=None)
 
 
 # The `waters` block cut by `-w`: one water's row, or one family with the count it leaves unlisted — `None` where this reading holds none.
@@ -725,10 +771,18 @@ def main(argv: list[str]) -> int:
         moved = found if isinstance(found := moved_between(then, out), dict) else {}  # both readings are dicts, so what moved is one, or nothing
         if balance:
             moved = {**moved, "biomes": balance}
-        if "burning" in sections and (turnover := _fire_turnover(earlier, then_path, save, save_path, args.island)):  # the balance alone hides what went out
+        then_fire, now_fire = (_burning_tiles(earlier, then_path), _burning_tiles(save, save_path)) if "burning" in sections else ({}, {})
+        if "burning" in sections and (turnover := _fire_turnover(then_fire, now_fire, args.island)):  # the balance alone hides what went out
             fires: dict[str, dict] = moved.get("burning") or {}
             lands = sorted({*fires, *turnover}, key=lambda key: _land_order((key, None)))
             moved = {**moved, "burning": {key: {**(fires.get(key) or {}), **turnover.get(key, {})} for key in lands}}
+            # Under `-i`, a fire is one line, its own balance on it — never a row gone and one new for a blaze that only grew
+            if args.island is not None and (key := str(args.island)) in moved["burning"]:
+                told = _build_burning(save, save_path, args.island, then_fire).get(key)
+                kept = {part: told[part] for part in ("fires", "gone", "unlisted") if isinstance(told, dict) and told.get(part)}
+                # The land's grounds off its tiles, both sides: a lone fire's line holds them in its reading, which would weigh as a land gone out
+                grounds = (_tally(ground for land, ground in tiles.values() if land == key) for tiles in (then_fire, now_fire))
+                moved["burning"][key] = {"grounds": moved_between(*grounds), "tiles": moved["burning"][key].get("tiles"), **kept}
         if "positions" in sections and kinds is not None:
             was, now = ({record["id"] for record, _ in asset_sites(reading, kinds)} for reading in (earlier, save))
             gone, came = _build_positions(earlier, then_path, kinds, args.island, was - now), _build_positions(save, save_path, kinds, args.island, now - was)
