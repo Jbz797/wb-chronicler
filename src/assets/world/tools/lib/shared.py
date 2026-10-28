@@ -709,6 +709,11 @@ def death_causes(record: dict) -> dict[str, int]:
     return {"old_age" if (cause := k.removeprefix("deaths_")) == "natural" else cause: v for k, v in record.items() if k.startswith("deaths_") and v}
 
 
+# A volcano or geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops` — set by cold, flipped by lightning (`gloss`).
+def dormant(site: dict) -> bool | None:
+    return "stop_spawn_drops" in (site.get("custom_data_flags") or ()) or None
+
+
 # One block the command named (a section, `--to`, a tile) comes bare, its key only repeating the question; several named stay keyed, even one left empty.
 def emit(out: dict) -> None:
     asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}

@@ -43,6 +43,7 @@
   "actor.to.chunks_apart": "L'écart en chunks de 16 tuiles : à 0 ou 1, le jeu tient les deux pour tout près.",
   "actor.to.circle": "Le cercle du but, au pas du corps : `intimate` ≤ 30 min, `common` ≤ 2 h, sinon `far` ; `total_` préfixe un compte dès deux parts.",
   "actor.to.crow_nearest": "Le site le plus proche à vol d'oiseau quand la marche en atteint un autre, muré ou plus coûteux : `--to` sur son id dit pourquoi ; absent, `nearest` l'est aussi.",
+  "actor.to.dormant": "Un volcan ou un geyser visé qui dort, dans `nearest`, `crow_nearest` ou sous `--to b<id>`, comme `ground.metadata.dormant` le dit ; éveillé, rien.",
   "actor.to.from_them": "Vers un corps : le trajet de l'autre jusqu'à lui, dit s'il diffère (pas, terrain).",
   "actor.to.landing": "Vers une terre `i<id>` : le point où l'aborder au moins cher.",
   "actor.to.march_days": "Passé 6 h de marche, les jours de marche, haltes comprises, à la place des heures ; sans l'eau, passée d'une traite, que `total_days` ajoute.",

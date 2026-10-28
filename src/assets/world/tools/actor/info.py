@@ -64,6 +64,7 @@ from shared import (
     chunks_apart,
     city_centre,
     competition_ranks,
+    dormant,
     emit,
     entity_born,
     entity_ref,
@@ -223,7 +224,8 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         task = kept_task_target(actor) or {}
         sought = (task["x"], task["y"]) if task.get("ground") == building_id and "x" in task and "y" in task else None
         target, whom = tile, f"{site.get('asset_id')} {site.get('id')}"
-        aims, told = ([sought], {"by_task": kept_task(actor)}) if sought else (building_footprint(site), {})
+        asleep = {"dormant": dormant(site)}  # a volcano or geyser asleep, as `ground … metadata` tells it
+        aims, told = ([sought], {"by_task": kept_task(actor), **asleep}) if sought else (building_footprint(site), asleep)
     elif isinstance(target, str) and target[:1] == "c" and target[1:].isdigit():
         # A town by its id, aimed at its centre as `tiles … distances` aims at a capital: one point, the same goal in either chapter while it stands.
         city = ctx["cities_by_id"].get(city_id := int(target[1:]))
@@ -262,7 +264,8 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
                 each[word] = None
                 continue
             if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word), footprint=True) if record is not actor]:
-                each[word] = [tile for _, tile in sites], {tile: {"asset_id": record.get("asset_id"), "id": record.get("id")} for record, tile in sites}
+                sited = {tile: {"asset_id": record.get("asset_id"), "dormant": dormant(record), "id": record.get("id")} for record, tile in sites}
+                each[word] = [tile for _, tile in sites], sited
                 continue
             if word in _WATERS and (waters := ctx["water_family"](word))[0]:  # no kind, a family of waters: its nearest numbered one, a pond left out
                 each[word] = waters

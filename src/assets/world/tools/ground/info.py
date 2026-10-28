@@ -19,6 +19,7 @@ from shared import (
     building_tile,
     built_by_tile,
     civic_building_ids,
+    dormant,
     emit,
     entity_age,
     entity_born,
@@ -66,7 +67,6 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
 
     # A wall torn mid-tick, left unsited, never pays for the island map at all — `building_tile` already reads a lone missing coordinate as WB's omitted zero.
     island_id = ctx["island_lookup"]().get(tile) if tile is not None else None
-    flags = house.get("custom_data_flags") or ()
     asset = load_data("buildings.json").get(house.get("asset_id")) or {}
     # WB writes a health whole or hurt alike: only one under its asset's own tells a hurt.
     health, whole = house.get("health", UNWRITTEN_HEALTH), asset.get("health")
@@ -79,8 +79,7 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         # What WB took from the town's stock as the site was laid (`CityBehBuild.tryToBuild`), a raised tier paying its own — nothing said of a free one.
         "cost": asset.get("cost"),
-        # A volcano or geyser asleep: WB `BuildingEffectSpawnDrop.update` spawns nothing under `stop_spawn_drops` — set by cold, flipped by lightning (`gloss`).
-        "dormant": "stop_spawn_drops" in flags or None,
+        "dormant": dormant(house),
         "families": len({fid for a in dwellers if (fid := a.get("family"))}) or None,  # none says nothing of who sleeps there: `occupants` does
         "health": int(health) if hurt or (whole is None and "health" in house) else None,  # an asset the tables do not know keeps what the save wrote
         "health_max": whole if hurt else None,

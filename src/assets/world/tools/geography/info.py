@@ -41,6 +41,7 @@ from shared import (
     asset_kinds,
     asset_sites,
     biome_lore,
+    dormant,
     emit,
     index_by_id,
     is_boat,
@@ -288,7 +289,7 @@ def _build_positions(
     out = [
         {
             "asset_id": record.get("asset_id") if mixed else None,
-            "dormant": "stop_spawn_drops" in (record.get("custom_data_flags") or ()) or None,
+            "dormant": dormant(record),
             "id": record.get("id"),
             "name": record.get("name"),
             "x": x,
