@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
-# Per-cell inspector at (x, y) with optional radius (0..2) — feeds the chronicler ad-hoc tile investigations (battle sites, neighbours, frontier scouting).
-# Output: dict keyed by `"x,y"`, each value contains the requested sections for that tile.
+# Per-tile inspector at (x, y), or both ends of a `--to` — feeds the chronicler ad-hoc tile investigations (battle sites, neighbours, frontier scouting).
+# Output: dict keyed by `"x,y"`, each value contains the requested sections for that tile; a lone tile comes out bare.
 # Coordinate convention: WB UI / actor coords; `grid[y][x]` (no inversion — y grows north and so does the row index).
 
+import argparse
 import math
 import re
 import sys
 from collections import Counter, defaultdict
-from functools import cache
+from functools import cache, partial
 from heapq import heapify, heappop, heappush
-from itertools import compress
+from itertools import compress, count
 from pathlib import Path
 lazy from collections.abc import Callable, Iterable, Iterator
 
@@ -65,9 +66,9 @@ from shared import (
     zone_xy,
 )
 from walking import WalkMap, walk_way, walled_in
-from waters import water_bodies, water_tiles, waters_cached
+from waters import river_ends_near, water_bodies, water_tiles, waters_cached
 
-_ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "tile_info")
+_ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "rays", "tile_info")
 _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
 _BARE = {"actors": "no body", "ground": "nothing built or grown"}  # what a tile lacks, said when `actors` or `ground` is all the call asked
 _BRUTE_PAIRS = 20_000  # tile pairs two grounds are weighed by one by one: a building and a body, never a land and a lake
@@ -76,11 +77,9 @@ _FARTHER = float("inf")  # the standing best before any land is seen, so the fir
 _FROZEN = "frozen"  # what `-g` takes for every frost, no ground: snow, ice, permafrost and the passing frost, as `geography … frozen` counts them
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
 _LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
-_MAX_RADIUS = 2  # a 5×5 sweep, the most a reading can hold before the tiles drown what was being looked for
+_NEAR_ENDS = 3  # a river's ends `to_river_ends` names from a tile, nearest along its water: where it runs out from here, a delta's dozens left to the map
 _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the rest are the far side of the world whatever the tile
-_ON_REQUEST = ("reach",)  # named only: eight rays per tile, which a `--radius` sweep or a `full` would multiply for nothing
 _PAIR_CELL = 16  # the side of the cells a large ground is hashed into for `_closest_pair`, a chunk's
-_REACH = 60  # tiles a ray of `reach` walks at most: past that the relief is a region's, which `geography … islands` and `biomes` measure
 _REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its way is the one the scale's pace would take, never timed
 _RELIEF = {"mountains": "mountain", "snow_block": "mountain", "snow_summit": "mountain", "summit": "mountain"}  # a wall and its peak, one relief
 _SPREAD = re.compile(r"i\d+|(?:lake|river|sea)\d+|box")  # what a place aimed at spreads over, edge and middle apart: a land, a water, a box
@@ -89,7 +88,7 @@ _SPREAD = re.compile(r"i\d+|(?:lake|river|sea)\d+|box")  # what a place aimed at
 _WEIGHTED_DELTAS = tuple(((dx, dy), 1.0 if dx == 0 or dy == 0 else 1 + DIAGONAL_EXTRA) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)
 
 
-# Identity and allegiance only — the chronicler follows up with `actor/info.py <id>` for the rest, so a tile sweep stays readable at 25 cells.
+# Identity and allegiance only — the chronicler follows up with `actor/info.py <id>` for the rest, so a reading stays short.
 def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
     return [
         {
@@ -101,6 +100,11 @@ def _actors_at(x: int, y: int, ctx: dict) -> list[dict]:
         }
         for a in ctx["actors_by_pos"].get((x, y), ())
     ]
+
+
+# A tile's biome as `rays` reads it, else the bare ground `biomes` names, a water by its id as its relief is.
+def _biome_of(x: int, y: int, ctx: dict) -> str:
+    return (tile_ground(ctx["tile_map"][ctx["grid"][y][x]]) or "").removeprefix(BARE) or _water_named(x, y, ctx)
 
 
 # One home for every index, each built only for the sections that asked — every building and actor in the world, for the handful of tiles queried.
@@ -133,11 +137,11 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
         ctx["kingdoms_by_id"] = index_by_id(save.get("kingdoms") or [])
 
-    if {"distances", "islet", "reach", "tile_info"} & sections:
+    if {"distances", "islet", "rays", "tile_info"} & sections:
         ctx["grid"] = LazyTileGrid(save)
-    if "reach" in sections:
+    if "rays" in sections:  # each tile named once, though two tiles' rays cross it
+        ctx["biome_of"], ctx["relief_of"] = cache(lambda tx, ty: _biome_of(tx, ty, ctx)), cache(lambda tx, ty: _relief_of(tx, ty, ctx))
         ctx["map_size"] = sum((save.get("tileAmounts") or [[]])[0]), len(save.get("tileArray") or [])
-        ctx["rivers"] = cache(lambda: {river["id"]: river for river in waters_cached(save, save_path)["rivers"]})
 
     if {"context", "distances"} & sections:
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
@@ -152,11 +156,12 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["frozen_set"] = wanted.intersection(listed_tiles(save, "frozen_tiles"))
         ctx["patch_at"] = patch_finder(save, ctx["grid"], ctx["tile_to_island"])
 
-    if {"distances", "reach", "tile_info"} & sections:
+    if {"distances", "rays", "tile_info"} & sections:
         ctx["water_body"] = cache(lambda: water_bodies(save, save_path))  # called not stored: a tile on dry land never asks what water it lies in
 
     if "distances" in sections:
         ctx["layer_by_id"] = [tile_layer(name) for name in ctx["tile_map"]]
+        ctx["river_ends"] = partial(river_ends_near, save, save_path)
 
     if walks:  # called not stored: a walk is drawn only where both ends stand on one land
         ctx["walk_map"], ctx["width"] = cache(lambda: WalkMap(save)), sum(save["tileAmounts"][0])
@@ -210,9 +215,13 @@ def _context_at(x: int, y: int, ctx: dict) -> dict:
     return {"city": {"id": city["id"], "name": city.get("name")}, "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"])}
 
 
-# Every reading counts steps, WB walking its eight directions — and the whole section answers for the queried tile, a neighbour two steps over reading the same.
+# Every reading counts steps, WB walking its eight directions.
 def _distances_at(x: int, y: int, ctx: dict) -> dict:
     out: dict = {"to_water": _nearest_water(x, y, ctx)}
+    # A river winds where a ray runs straight: on one, its ends nearest along its water, an arm's dead end too — none a source, WB keeps no flow
+    if (here := out["to_water"]) and here.get("crow_tiles") == 0 and (river := here.get("river")) is not None:
+        ends = ctx["river_ends"](river, (x, y), _NEAR_ENDS)
+        out["to_river_ends"] = [{"dir": bearing(ex - x, ey - y), "water_tiles": steps, "x": ex, "y": ey} for (ex, ey), steps in ends] or None
     if (land := _land_distance(x, y, ctx)) is not None:
         # A land owns its rock: a pocket of ground that rock shuts in touches the land with no water between, and a strait there would read as a way out.
         walk_map = ctx["walk_map"]()
@@ -288,14 +297,14 @@ def _ground(end: str, save: dict, save_path: Path, chapter: str | None) -> tuple
     return ([actor_xy(body)], None) if body else absent_entity("actor", "actors_data", ref, chapter, lambda a: not is_boat(a))
 
 
-# One object per tile, never two — WB's `buildings` holds the flowers and the ore too, hence the family; `dated` for the tile asked about, a sweep's rows kept short.
-def _ground_at(x: int, y: int, ctx: dict, dated: bool) -> dict:
+# One object per tile, never two — WB's `buildings` holds the flowers and the ore too, hence the family.
+def _ground_at(x: int, y: int, ctx: dict) -> dict:
     if (b := ctx["ground_by_pos"].get((x, y))) is None:
         return {}
     asset = b.get("asset_id")
     family = building_family(asset)  # named as `geography` names them
-    # `born` dates the laying, not the roof: a site still rising says so, on the tile asked about as on a sweep's.
-    return {"asset_id": asset, **({"born": entity_born(b)} if dated else {}), "id": b.get("id"), "type": family, "under_construction": under_construction(b) or None}
+    # `born` dates the laying, not the roof: a site still rising says so.
+    return {"asset_id": asset, "born": entity_born(b), "id": b.get("id"), "type": family, "under_construction": under_construction(b) or None}
 
 
 # Quarters are held by their corner tile, a town being the ground they cover — while a crown's seat stays the one centre `city/info.py` sites a capital by.
@@ -482,35 +491,28 @@ def _nearest_water(x: int, y: int, ctx: dict) -> dict | None:
     return {**ctx["water_body"]()(*at), **reach}
 
 
-def _radius_tiles(cx: int, cy: int, radius: int, width: int, height: int) -> list[tuple[int, int]]:
-    return [(x, y) for dy in range(-radius, radius + 1) for dx in range(-radius, radius + 1) if 0 <= (x := cx + dx) < width and 0 <= (y := cy + dy) < height]
-
-
-# How far the tile's relief runs in each of the eight headings before another ground stops it, and which: a wall seen from its foot, never the whole range.
-def _reach_at(x: int, y: int, ctx: dict) -> dict:
-    width, height = ctx["map_size"]
-
-    # A tile's relief, a water by its id as `waters` and `tile_info` name it: the river a ray runs along, the lake it falls into
-    @cache
-    def relief(tx: int, ty: int) -> str:
-        name = ctx["tile_map"][ctx["grid"][ty][tx]]
-        if tile_layer(name) == "Ocean":
-            ((kind, ref),) = ctx["water_body"]()(tx, ty).items()
-            return "pond" if kind == "pond_tiles" else f"{kind}{ref}"
-        return _RELIEF.get(block, block) if (block := tile_block(name)) else tile_kind(name)
-
-    ground, rays = relief(x, y), {}
+# What each of the eight headings runs into, as the crow flies to the tile reached: the relief's change, after the biome's if sooner — a wall seen from its foot.
+def _rays_at(x: int, y: int, ctx: dict) -> dict:
+    (width, height), relief, biome = ctx["map_size"], ctx["relief_of"], ctx["biome_of"]
+    here, own, rays = relief(x, y), biome(x, y), {}
     for dx, dy in ((0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)):
-        rays[heading := bearing(dx, dy)] = f"{_REACH}+"
-        for k in range(1, int(_REACH / walk_tiles(dx, dy)) + 1):  # the reach in tiles as the crow flies, a diagonal step its 1.41
+        stops: list[int | str] = []
+        for k in count(1):  # never past the map's rim, which stops a ray as a ground does
             tx, ty = x + k * dx, y + k * dy
-            if (beyond := relief(tx, ty) if 0 <= tx < width and 0 <= ty < height else "edge") != ground:  # the map's rim stops a ray as a ground does
-                rays[heading] = [round(walk_tiles((k - 1) * dx, (k - 1) * dy)), beyond]
+            if (met := relief(tx, ty) if 0 <= tx < width and 0 <= ty < height else "edge") != here:
+                stops += [round(walk_tiles(k * dx, k * dy)), met]  # a diagonal step its 1.41
                 break
-    # A river winds where a ray runs straight: its two ends, as `waters -w` gives them, said from the tile — WB keeps no flow, so neither is its source
-    ends = (ctx["rivers"]().get(water[1]) or {}).get("ends") if (water := water_ref(ground)) and water[0] == "river" else None
-    told = [{"crow_tiles": round(walk_tiles(end["x"] - x, end["y"] - y)), "dir": bearing(end["x"] - x, end["y"] - y), **end} for end in ends or ()]
-    return {"ends": told or None, "ground": ground, "rays": rays}
+            if not stops and (other := biome(tx, ty)) != own:
+                stops += [round(walk_tiles(k * dx, k * dy)), other]
+        rays[bearing(dx, dy)] = stops
+    return rays
+
+
+# A tile's relief as `rays` reads it, mountain and summit one, a water by its id as `waters` names it: the river a ray runs along, the lake it falls into.
+def _relief_of(x: int, y: int, ctx: dict) -> str:
+    if tile_layer(name := ctx["tile_map"][ctx["grid"][y][x]]) == "Ocean":
+        return _water_named(x, y, ctx)
+    return _RELIEF.get(block, block) if (block := tile_block(name)) else tile_kind(name)
 
 
 # The tiles of a ground touching its outside: two grounds meet nearest on their rims, which a land's edges already are.
@@ -558,10 +560,16 @@ def _tile_info_at(x: int, y: int, ctx: dict) -> dict:
     return out
 
 
+# A water by its id, as `geography … waters` lists it; a pond, numbered by none, as such.
+def _water_named(x: int, y: int, ctx: dict) -> str:
+    ((kind, ref),) = ctx["water_body"]()(x, y).items()
+    return "pond" if kind == "pond_tiles" else f"{kind}{ref}"
+
+
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
-    parser = arg_parser(prog="tiles/info.py", description="Inspect tile(s) at (x, y) with optional radius. Output is keyed by `'x,y'`.")
+    parser = arg_parser(prog="tiles/info.py", description="Inspect a tile at (x, y), or both ends of a `--to`. Output is keyed by `'x,y'`.")
     parser.add_argument(
         "xy",
         type=_end_arg,
@@ -571,7 +579,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `biomes` names it, `burning` or `frozen`: its nearest tile, in `distances`.")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
-    parser.add_argument("--radius", "-r", type=int, default=0, help=f"Radius around (x, y) — 0..{_MAX_RADIUS} (default 0).")
+    parser.add_argument("--radius", "-r", help=argparse.SUPPRESS)  # retired: refused below with what answers instead
     parser.add_argument(
         "--to",
         type=_end_arg,
@@ -583,26 +591,20 @@ def main(argv: list[str]) -> int:
 
     try:
         # Membership only, never walked in order — the emitting `if`s below name each one. A `--to` alone answers alone, as `actor`'s does: the way, not the tiles.
-        sections = set(parse_sections(args.sections or "full", (*_ALL_SECTIONS, *_ON_REQUEST), full=_ALL_SECTIONS)) if args.sections or not args.to else set()
+        sections = set(parse_sections(args.sections or "full", _ALL_SECTIONS)) if args.sections or not args.to else set()
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
 
-    if any(isinstance(end, str) for end in (args.xy, args.to)) and (sections or args.radius):  # a building lies on many tiles, a section reads one
+    if args.radius is not None:  # a sweep drowned what it looked for: said where each answer now lies, not merely that it is refused
         print(
-            "✗ a building `b<id>`, a town `c<id>`, a body `p<id>` or a place's name ends a lone `--to`: sections and `--radius` read tiles — name them `x,y`",
+            "✗ `--radius` is gone: what borders the tile is in its `rays`, the nearest ground or water under `-g` and `distances`, "
+            "bodies around by `world … roster --nearest x,y`, the lay of the land by `map/show.py x,y --zoom <n>`",
             file=sys.stderr,
         )
         return 2
-    if not 0 <= args.radius <= _MAX_RADIUS:  # past it, a count or a search answers better than a sheet per tile: said where to go, not merely that it is refused
-        print(
-            f"✗ `--radius` reads at most {_MAX_RADIUS} tiles around: past that, `world … roster --nearest x,y` finds bodies, "
-            "`geography … positions -t <kind>` things, `map/show.py x,y --zoom <n>` the lay of the land",
-            file=sys.stderr,
-        )
-        return 2
-    if args.to and args.radius:  # refused before the save is read: a call that cannot be answered should not cost the load
-        print("✗ `--to` reads two tiles and `--radius` a square around one: they don't combine", file=sys.stderr)
+    if any(isinstance(end, str) for end in (args.xy, args.to)) and sections:  # a building lies on many tiles, a section reads one
+        print("✗ a building `b<id>`, a town `c<id>`, a body `p<id>` or a place's name ends a lone `--to`: sections read tiles — name them `x,y`", file=sys.stderr)
         return 2
     aimed = [flag for flag, given in (("--ground", args.ground), ("--island", args.island), ("--water", args.water)) if given is not None]
     if aimed and "distances" not in sections:
@@ -642,8 +644,7 @@ def main(argv: list[str]) -> int:
             print(f"✗ coords ({x}, {y}) out of bounds — map is {width}×{height}", file=sys.stderr)
             return 2
 
-    coords = [(cx, cy), (tx, ty)] if args.to else _radius_tiles(cx, cy, args.radius, width, height)
-    queried = set(coords) if args.to else {(cx, cy)}  # the tiles a reading is about: both ends of a `--to`, the centre of a sweep
+    coords = [(cx, cy), (tx, ty)] if args.to else [(cx, cy)]
     ctx = _build_context(save, save_path, sections, coords, args.island, "distances" in sections or args.to is not None)
     if args.island is not None and args.island not in ctx["lands"]:
         print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
@@ -670,14 +671,14 @@ def main(argv: list[str]) -> int:
         land = ctx["tile_to_island"].get((cx, cy))
         print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands -i {land}`' if land else 'water'}", file=sys.stderr)
         return 2
-    # Asked alone, a sweep with no town in it would read as a failure rather than open ground — every tile weighed, a neighbour's town counting.
+    # Asked alone, a tile in no town would read as a failure rather than open ground.
     if sections == {"context"} and not any(_context_at(x, y, ctx) for x, y in coords):
-        print(f"✗ ({cx}, {cy}){' and the tiles around lie' if args.radius else ' lies'} in no town", file=sys.stderr)
+        print(f"✗ ({cx}, {cy}) lies in no town", file=sys.stderr)
         return 2
 
     # The same for what lives or stands there: asked with nothing else, a tile with neither says so, an empty answer reading as a tool gone wrong.
     if sections and sections <= _BARE.keys() and not any(ctx[f"{section}_by_pos"] for section in sections):  # each index holds the tiles asked alone
-        print(f"✗ {' and '.join(_BARE[s] for s in sorted(sections))} on ({cx}, {cy}){' or the tiles around' if args.radius else ''}", file=sys.stderr)
+        print(f"✗ {' and '.join(_BARE[s] for s in sorted(sections))} on ({cx}, {cy})", file=sys.stderr)
         return 2
 
     out: dict = {}
@@ -687,14 +688,14 @@ def main(argv: list[str]) -> int:
             cell["actors"] = _actors_at(x, y, ctx)
         if "context" in sections:
             cell["context"] = _context_at(x, y, ctx)
-        if "distances" in sections and (x, y) in queried:  # what a sweep's neighbours would repeat to the tile, said once for the tile asked about
+        if "distances" in sections:
             cell["distances"] = _distances_at(x, y, ctx)
         if "ground" in sections:
-            cell["ground"] = _ground_at(x, y, ctx, (x, y) in queried)
-        if "islet" in sections and (x, y) in queried:  # the islet whole, said once for the tile asked about as `distances` is
+            cell["ground"] = _ground_at(x, y, ctx)
+        if "islet" in sections:
             cell["islet"] = _islet_at(x, y, ctx)
-        if "reach" in sections and (x, y) in queried:
-            cell["reach"] = _reach_at(x, y, ctx)
+        if "rays" in sections:
+            cell["rays"] = _rays_at(x, y, ctx)
         if "tile_info" in sections:
             cell["tile_info"] = _tile_info_at(x, y, ctx)
         out[f"{x},{y}"] = cell

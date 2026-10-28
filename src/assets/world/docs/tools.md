@@ -1,13 +1,13 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 28/10/26 13:59</p>
+<p class="metadata">Date de mise à jour : 28/10/26 19:18</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
 - **Un champ absent vaut rien** : un compte à 0, un drapeau faux, une liste ou un bloc vides se taisent, sauf où une glose dit le contraire ; absent, un compte vaut 0, ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe).
 - **Ce que fixe un filtre** (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre.
 - **Les coordonnées** croissent vers l'est (x) et le nord (y), un `dir` aussi.
-- **`sections`** : liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings`, `roster` et `tiles … reach`, à nommer) ; un bloc nommé seul (section, `--to`, tuile) sort nu, plusieurs gardent leur clé.
+- **`sections`** : liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings` et `roster`, à nommer) ; un bloc nommé seul (section, `--to`, tuile) sort nu, plusieurs gardent leur clé.
 - **Le suffixe `C<n>`** lit ce chapitre ; sans lui, le dernier ; l'outil `across` (`across C3-C7 actor 23 metadata --keep task`) pose la question à chacun, rangée par chapitre.
 - **Une sortie se lit entière** : coupée (`head`), le JSON ne se lit plus ; les sections lourdes, une à une. Trop large, elle se résume (un compte par terre) : le détail se demande par ses filtres (`-i`, `-t`, une section).
 
@@ -28,7 +28,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 | `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
 | `religion <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
 | `subspecies <id>` | `breakdown`, `leaders`, `metadata`, `pop`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                                           |
-| `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `islet`, `reach`, `tile_info`                                                              |
+| `tiles <x,y>`     | `actors`, `context`, `distances`, `ground`, `islet`, `rays`, `tile_info`                                                               |
 | `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                                   |
 | `world`           | `boats`, `cumulative`, `laws`, `leaders`, `lineages`, `metadata`, `pairings`, `plots`, `roster`, `snapshot`                            |
 
@@ -62,8 +62,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 - `-g <sol>` : un sol tel que `biomes` le nomme, `burning` ou `frozen` (`gloss:to_ground`)
 - `-i <id>` : une terre par son id (`gloss:to_island`)
-- `-r <n>` : rayon — `distances` : la tuile demandée seule ; **2 au plus, à dessein** : au-delà, les fiches noieraient ce qu'on cherche — les abords se lisent par `tools/map/show.py --zoom`, `geography burning -i`, `distances -w`/`-g`
-- `--to <x,y>` : cap et mesures, sous `to` si une section la rejoint ; pas avec `-r` ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre), un corps `p<id>`, une eau `lake<id>` ou un `"<lieu>"` (`gloss:to.from`)
+- `--to <x,y>` : cap et mesures, sous `to` si une section la rejoint ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre), un corps `p<id>`, une eau `lake<id>` ou un `"<lieu>"` (`gloss:to.from`)
 - `-w <eau>` : une eau, `lake<id>`, `river<id>` ou `sea<id>` (`gloss:to_body`)
 
 ### `world` :
