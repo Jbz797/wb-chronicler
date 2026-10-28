@@ -111,6 +111,7 @@ _DAILY_TILES_PER_SPEED = 24.0  # chronicler.md § Échelle: `speed` 10 walks 240
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 _FLOORS = {"gen": 1}  # a count `--since` reads unsaid as its floor: WB counts a founder its first generation
 _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # a goal's words: `moved` keeps its own heading and length
+_GROUND_PREFIX = "g:"  # `--to g:flower`: a ground by its `biomes` name alone, where a kind shares it (`flower`, `tumor`) and wins the bare word
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
@@ -174,6 +175,7 @@ _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step
 _TO_USAGE = (
     "`--to` takes a body, a tile, a building, a town, a land, every land, a named place, a water, the nearest fire, a kind or a ground: `--to p42`,"
     ' `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to lands`, `--to "<place>"`, `--to lake4`, `--to burning`, `--to frozen`, `--to volcano`, `--to lava`'
+    ", `--to g:flower` (a ground whose name a kind holds)"
 )
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
@@ -246,7 +248,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if not (aims := ctx["water_tiles"](kind, water_id)):
             raise _AimError(f"✗ no {kind} {water_id} — `geography … waters` lists them")
         mark, whom = "reached", _named(gazetteer(), f"{kind}s", water_id) or f"{kind} {water_id}"
-    elif isinstance(target, str) and (place := _place_aim(target, actor, ctx)) is not None:
+    elif isinstance(target, str) and _GROUND_PREFIX not in target and (place := _place_aim(target, actor, ctx)) is not None:
         (aims, aimed), mark, whom = place, "reached", target
         told = {"place": {"aimed": aimed, "name": target}}
     elif target == "burning":  # a fire's nearest flame, where `geography … burning` sites its middle: what a body would meet first
@@ -263,20 +265,24 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             if word in lone:
                 each[word] = None
                 continue
-            if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word), footprint=True) if record is not actor]:
-                sited = {tile: {"asset_id": record.get("asset_id"), "dormant": dormant(record), "id": record.get("id")} for record, tile in sites}
-                each[word] = [tile for _, tile in sites], sited
-                continue
-            if word == "frozen" and (frosts := frozen_tiles(save)):  # no kind, the frost as `geography … frozen` counts it: its nearest tile and its sort
-                each[word] = list(frosts), {tile: {"frozen": sort} for tile, sort in frosts.items()}
-                continue
-            if word in _WATERS and (waters := ctx["water_family"](word))[0]:  # no kind, a family of waters: its nearest numbered one, a pond left out
-                each[word] = waters
-                continue
-            if grounds := _ground_tiles(save, word):  # no kind, a ground as `biomes` names it: lava, rock, sand — its nearest tile, a wall's edge
-                each[word] = grounds, {tile: {"ground": word} for tile in grounds}
+            if (ground := word.removeprefix(_GROUND_PREFIX)) == word:  # `g:` asks the ground alone, a kind of its name aside
+                if sites := [(record, tile) for record, tile in asset_sites(save, asset_kinds(families, word), footprint=True) if record is not actor]:
+                    sited = {tile: {"asset_id": record.get("asset_id"), "dormant": dormant(record), "id": record.get("id")} for record, tile in sites}
+                    each[word] = [tile for _, tile in sites], sited
+                    continue
+                if word == "frozen" and (frosts := frozen_tiles(save)):  # no kind, the frost as `geography … frozen` counts it: its nearest tile and its sort
+                    each[word] = list(frosts), {tile: {"frozen": sort} for tile, sort in frosts.items()}
+                    continue
+                if word in _WATERS and (waters := ctx["water_family"](word))[0]:  # no kind, a family of waters: its nearest numbered one, a pond left out
+                    each[word] = waters
+                    continue
+            if grounds := _ground_tiles(save, ground):  # no kind, a ground as `biomes` names it: lava, rock, sand — its nearest tile, a wall's edge
+                each[word] = grounds, {tile: {"ground": ground} for tile in grounds}
                 continue
             each[word] = None
+            if ground != word:
+                print(f"✗ no {ground} ground in this world — `geography … biomes` names them", file=sys.stderr)
+                continue
             none = unsited_reason(families, word) or f"no {word} in this world, {named_body(actor)} aside"
             print(f"✗ {none} — the families: {', '.join(sorted(families))}; the waters: {', '.join(_WATERS)}", file=sys.stderr)
         if not any(each.values()):
@@ -334,6 +340,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "families_by_id": index_by_id(save.get("families") or []),
         "ferrying_kingdoms": ferrying,  # the crowns a transport boat serves: only their people reach, and are measured, past the common circle
         "city_zones": cache(lambda: city_zones(save, islands()[1])),  # called not stored: `settle` alone asks, and only of a thinking soul
+        "grounds": cache(lambda: {(tile_ground(name) or "").removeprefix(BARE) for name in save["tileMap"]}),  # the grounds a kind's name may also be
         "island_lookup": cache(lambda: islands()[1]),  # tile → island id, called not stored: `metadata` and `surroundings` alone ask
         "island_sizes": cache(lambda: {land["id"]: land["size"] for land in islands()[0]}),
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
@@ -829,8 +836,10 @@ def _land_of(body: dict, ctx: dict) -> int | str:
     return ctx["island_lookup"]().get(actor_xy(body)) or ("water" if "water" in _off_land_at(body, ctx) else "islet")
 
 
-# A word a `--to` list cannot hold: an id, the fire, every land or a place's name — each a goal aimed at by its own `--to`.
+# A word a `--to` list cannot hold: an id, the fire, every land or a place's name — each a goal aimed at by its own `--to`; a `g:` ground never is.
 def _lone_target(word: str) -> bool:
+    if word.startswith(_GROUND_PREFIX):
+        return False
     return bool(_LONE_ID.fullmatch(word) or water_ref(word)) or word in {"burning", "lands"} or not kind_word(word)
 
 
@@ -1173,6 +1182,8 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
                     near["patch"] = ctx["patch_at"]()(near["x"], near["y"])[1]["tiles"]
                 elif crow := _crow_nearest(actor, goal[0], goal[1], near):
                     found["crow_nearest"] = crow
+                if "asset_id" in near and word in ctx["grounds"]():  # the bare word aimed at the kind: the ground of its name is another `--to`
+                    found["info"] = f"{word} is also a ground: `--to {_GROUND_PREFIX}{word}`"
             except _UnreachableError as e:
                 print(f"{e} — `circle`: far", file=sys.stderr)
         if not any(reached.values()):

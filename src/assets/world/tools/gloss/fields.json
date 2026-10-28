@@ -48,6 +48,7 @@
   "actor.to.dormant": "Un volcan ou un geyser visé qui dort, dans `nearest`, `crow_nearest` ou sous `--to b<id>`, comme `ground.metadata.dormant` le dit ; éveillé, rien.",
   "actor.to.from_them": "Vers un corps : le trajet de l'autre jusqu'à lui, dit s'il diffère (pas, terrain).",
   "actor.to.frozen": "Vers le gel (`--to frozen`) : sa tuile gelée la plus proche et sa sorte, `frost` passager, `snow`, `ice`, `permafrost`, comme `geography … frozen` les compte.",
+  "actor.to.ground": "Vers un sol dont un type porte le nom (`flower`, `tumor`), `--to g:<sol>` : le mot nu vise le type, et son `info` le signale.",
   "actor.to.landing": "Vers une terre `i<id>` : le point où l'aborder au moins cher.",
   "actor.to.march_days": "Passé 6 h de marche, les jours de marche, haltes comprises, à la place des heures ; sans l'eau, passée d'une traite, que `total_days` ajoute.",
   "actor.to.nearest": "Vers un type, une famille, une ressource, un sol (`ground`, nommé par `biomes`) ou une eau (`lake`, `water`…, hors mares) : le plus proche ; un bâtiment, à sa tuile.",
