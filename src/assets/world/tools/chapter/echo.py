@@ -44,6 +44,7 @@ _MARKS = re.compile(r"[*_#>|`]")  # emphasis, headings, quotes and table rules: 
 _MIN_RUN = 4  # words a shared run must hold: three are the language's own (« il n'y a »), four start to be a turn of phrase
 _NAMELESS = frozenset("grs")  # gear, resources and species: icons a chapter strews, no one whose angle can be told twice
 _OPENING_START = 4  # words a section's first sentence is known by, a figure read as any other: `Voxzen est dans sa` 11ᵉ, then 13ᵉ année
+_OPENING_WORDS = 2  # words of its own a chapter's first sentence must share with one before to pour its mould again: one alone is the chronicle's subject
 _OVERUSE = 1.3  # how far past the chronicle's own highest rate a family must climb to be named: a wobble is not a tic
 _RARE = 3  # uses across the whole chronicle under which a word shared with the two chapters before is an image borrowed, not the language
 _REFRAIN = 3  # chapters a run of words must be said in to be the chronicle's own refrain — `par la taille`, `n'obéissent à rien` — told apart, never dropped
@@ -244,6 +245,16 @@ def _names(n: int) -> list[dict]:
         if seen := {f"C{m}": found[tag][1] for m, found in before.items() if tag in found}:
             rows.append({**seen, "lines": lines, "name": name, "tag": tag})
     return sorted(rows, key=lambda row: row["lines"][0])
+
+
+# Chapter `n`'s first sentence, its line and the words of its own it carries, each by its family's root: what a mould taken again with other words still keeps.
+@cache
+def _opening(n: int) -> tuple[int, dict[str, str]] | None:
+    for number, line in enumerate((_chapter(n) or "").splitlines(), 1):
+        if line.strip() and line[0] not in "|<#" and line.strip() != "---":
+            words = (token for token in _tokens(_SENTENCE.split(line)[0], number) if token.content)
+            return number, {token.key[:_FAMILY_ROOT]: token.surface for token in words}
+    return None
 
 
 # Families past the chronicle's highest rate, from 2 chapters before, none it all but never used: `lignée` must overflow the chapter first telling lineages
@@ -447,6 +458,11 @@ def _shaped(n: int) -> list[dict]:
         for example, (line, text) in _example_lines(n).items()
         if (said := [f"C{k}" for k in before if example in _example_lines(k)])
     ]
+    if (first := _opening(n)) is not None:  # the chapter's opening against theirs: the words it keeps, whatever else was rewritten
+        line, roots = first
+        for k in before:
+            if (theirs := _opening(k)) and len(shared := sorted(roots.keys() & theirs[1].keys())) >= _OPENING_WORDS:
+                rows.append({"chapters": [f"C{k}"], "line": line, "text": ", ".join(roots[root] for root in shared), "what": "opening_words"})
     opened = {row["line"] for row in rows if row["what"] == "opening"}
     rows = [row for row in rows if row["what"] != "paragraph" or row["line"] not in opened]  # a section's opening, told once
     if len(before) == 2 and all(_shape(k)[1] == movements for k in before):  # twice may be chance, three times is a mould

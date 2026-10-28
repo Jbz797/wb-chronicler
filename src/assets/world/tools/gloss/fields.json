@@ -65,6 +65,7 @@
   "chapter.echo.delivered": "Chapitre livré : seules les lignes changées depuis sont pesées ; ses comptes sur tout le chapitre l'ont été à la livraison.",
   "chapter.echo.echo": "Une suite de mots redite.",
   "chapter.echo.formulas": "Une tournure chiffrée revenue sur 4 lignes ou plus (`il y a 3 ans`), les chiffres pour un seul ; dates et mesures à part, leur forme étant imposée.",
+  "chapter.echo.opening_words": "Dans `shape` : la première phrase du chapitre garde 2 mots porteurs ou plus de l'ouverture d'un des 2 d'avant, par leur racine — un moule repris, mots changés.",
   "chapter.echo.refrain": "Dite dans 3 chapitres ou plus : la voix propre de la chronique, pas une redite.",
   "chapter.echo.shape": "Un moule repris des 2 chapitres d'avant : `title`, `heading`, `opening`, `paragraph` (4 premiers mots), `closing`, `example` (un exemple de la doc redit).",
   "city.army": "L'armée de la cité, une au plus (`wiki:Armies`) ; son `id` sert à `world … roster --army <id>`.",
