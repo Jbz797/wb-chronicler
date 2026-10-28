@@ -78,6 +78,7 @@ from shared import (
     is_sapient,
     kept_army_since,
     kept_city_since,
+    kept_victims,
     kingdom_score_dimensions,
     land_arg,
     latest_chapter,
@@ -809,18 +810,36 @@ def _cut_told(figures: list, top: str | None) -> str:
     return told + (f" — {tied} more share the last figure" if tied else "")
 
 
-# The causes each lineage's deaths rose by between two saves — under `None`, the world's past every living lineage's: those of the lineages that died out.
-def _death_rises(then: dict, now: dict) -> dict[int | None, list[str]]:
+# What each body gone since `then` may have died of: its lineage's rises, the world's if died out, struck by old age unreached, victims and rises filled
+def _death_causes(then: dict, now: dict, ctx: dict) -> dict[int, list[str]]:
     before = {sub["id"]: death_causes(sub) for sub in then.get("subspecies") or []}
-    rises, counted = {}, Counter()
-    for sub in now.get("subspecies") or []:
-        was = before.get(sub["id"], {})
-        rose = {cause: n - was.get(cause, 0) for cause, n in death_causes(sub).items() if n > was.get(cause, 0)}
-        rises[sub["id"]] = sorted(rose)
-        counted.update(rose)
-    world_then, world_now = _world_deaths(then), _world_deaths(now)
-    rises[None] = sorted(cause for cause, n in world_now.items() if n - world_then.get(cause, 0) > counted[cause])
-    return rises
+    rose = {sub["id"]: Counter(death_causes(sub)) - Counter(before.get(sub["id"], {})) for sub in now.get("subspecies") or []}
+    world = Counter(_world_deaths(now)) - Counter(_world_deaths(then))
+    budgets: dict[int | None, Counter] = {**rose, None: world - sum(rose.values(), Counter())}  # `None`: the lineages died out, the world's share past the living
+    alive, hour = {actor["id"] for actor in now.get("actors_data") or []}, float((now.get("mapStats") or {}).get("world_time") or 0)
+    slain = {victim["id"] for reading in (then, now) for actor in reading.get("actors_data") or [] for victim in kept_victims(actor) or ()}
+    causes: dict[int, list[str]] = {}
+    members: defaultdict[int | None, list[int]] = defaultdict(list)
+    for actor in then.get("actors_data") or []:
+        if actor["id"] in alive or is_boat(actor):
+            continue
+        lineage, old = actor.get("subspecies") if actor.get("subspecies") in rose else None, _old_at(actor, ctx)
+        held = [cause for cause in sorted(budgets[lineage]) if cause != "old_age" or (old is not None and old <= hour)]
+        causes[actor["id"]] = ["weapon"] if actor["id"] in slain and "weapon" in held else held
+        members[lineage].append(actor["id"])
+    # A cause its pinned bodies fill is struck from the others' lists, the world's rise over every body, a lineage's over its own — till nothing moves
+    scopes = [(list(causes), world), *((bodies, budgets[lineage]) for lineage, bodies in members.items())]
+    struck = True
+    while struck:
+        struck = False
+        for bodies, budget in scopes:
+            for cause, rise in budget.items():
+                if sum(causes[body] == [cause] for body in bodies) >= rise:
+                    for body in bodies:
+                        if len(causes[body]) > 1 and cause in causes[body]:
+                            causes[body].remove(cause)
+                            struck = True
+    return causes
 
 
 # The dead since an earlier chapter, as it knew them — WB keeps no dead, so a body gone from the save is one gone from the world: filtered as the living are.
@@ -837,7 +856,8 @@ def _gone_since(
     alive = {actor["id"] for actor in save.get("actors_data") or []}
     thinking = _sapient_subspecies(then) if sapient is not None else None
     bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
-    ctx, rises, now = build_actor_stats_context(then), _death_rises(then, save), float((save.get("mapStats") or {}).get("world_time") or 0)
+    ctx = build_actor_stats_context(then)
+    died = _death_causes(then, save, ctx)
     rows = []
     for actor in then.get("actors_data") or []:
         if actor["id"] in alive or actor["id"] not in was or (kinds and actor.get("asset_id") not in kinds) or not belongs(actor):
@@ -849,10 +869,7 @@ def _gone_since(
         # `was_on` silent under `-i`, which names the land it held
         old = _old_at(actor, ctx)
         row = {"asset_id": actor.get("asset_id"), "gone": True, "id": actor["id"], "name": actor.get("name"), "old_from": None if old is None else world_date(old)}
-        # The cause its lineage's counters rose by, the world's past the living lineages' where it died out: one alone is its own, several what it may have
-        # died of — old age struck off where the body could not have reached it by the later save
-        causes = [cause for cause in rises.get(actor.get("subspecies"), rises[None]) if cause != "old_age" or (old is not None and old <= now)]
-        if causes:
+        if causes := died.get(actor["id"]):  # one alone is its own, several what it may have died of
             row["died_of"] = causes[0] if len(causes) == 1 else causes
         rows.append({**row, "was_on": None if asked else was[actor["id"]]})
     return sorted(rows, key=lambda row: row["id"])

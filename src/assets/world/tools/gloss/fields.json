@@ -189,7 +189,7 @@
   "world.pairings.pair": "La porteuse d'abord, dont l'enfant prend la cité ; sinon, celle de l'autre.",
   "world.pairings.pregnant": "Les porteuses d'une grossesse en cours.",
   "world.roster.city": "Sous `--city`, la terre de la cité se tait : c'est celle de tous.",
-  "world.roster.died_of": "La cause comptée par sa lignée entre les saves (par le monde si éteinte), sans vieillesse avant `old_from` ; une liste : l'une d'elles ; son année : `history world`.",
+  "world.roster.died_of": "Hausses de sa lignée (du monde si éteinte), sans vieillesse avant `old_from`, recoupées par victimes et comptes ; une liste, le doute ; l'an : `history world`.",
   "world.roster.info": "Passé 50 corps, le compte qui remplace la liste : `--with` regroupe ses champs, `--with asset_id,island_id,life_stage` les compte, un filtre la resserre.",
   "world.roster.left": "D'une entité, sous `--since` : `arrived` y est entré, `left` en est sorti vivant.",
   "world.roster.life_stage": "Dit hors des adultes seulement.",

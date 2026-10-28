@@ -352,8 +352,8 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
         tags.append("NEW_AGE")
 
     # First hull ever afloat — WB's boat techs leave no trace in the save, so the boat itself is the discovery. Once in a chronicle.
-    if "NAVIGATION" not in already and any(is_boat(a) for a in live.get("actors_data") or []):
-        tags.append("NAVIGATION")
+    if "FIRST_BOAT" not in already and any(is_boat(a) for a in live.get("actors_data") or []):
+        tags.append("FIRST_BOAT")
 
     # The world's first birth (an egg once laid), first two towns and first death, once a chronicle, off WB's counters — a metamorphosis is no death.
     stats = live["mapStats"]
