@@ -186,7 +186,7 @@
   "world.roster.info": "Passé 50 corps, le compte qui remplace la liste : `--with` regroupe ses champs, `--with asset_id,island_id,life_stage` les compte, un filtre la resserre.",
   "world.roster.left": "D'une entité, sous `--since` : `arrived` y est entré, `left` en est sorti vivant.",
   "world.roster.life_stage": "Dit hors des adultes seulement.",
-  "world.roster.nearest": "`--nearest` : les corps les plus proches à vol d'oiseau, leur marche par `actor … --to` ; un arbre, un bâtiment, une ressource : `actor … --to trees`, `positions`.",
+  "world.roster.nearest": "`--nearest` : les plus proches à vol d'oiseau, les morts de `--since` depuis leur place d'alors, chaque bloc coupé à part ; une marche, un arbre : `actor … --to`.",
   "world.roster.since": "`arrived` paru depuis, `moved` déplacé (`was_on` : sa terre), `gone` mort (`old_from` : la vieillesse exclue avant) ; sous `--has`, les seuls comptes changés.",
   "world.roster.with": "`--with` : jusqu'à 4 champs d'`actor … stats` ou d'une fiche (`place`, `task`, `subspecies` en id…), seuls avec `id`, `name` ; `born` date l'arrivée sous `--since`.",
   "world.since": "`cumulative,snapshot --since C<n>` : les écarts ; celui de `snapshot` est un solde, pas un compte d'événements : naissances et extinctions sont dans `cumulative`.",

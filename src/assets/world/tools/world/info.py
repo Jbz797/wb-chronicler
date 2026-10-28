@@ -598,6 +598,11 @@ def _build_roster(
 
     (nx, ny), near_id = near or ((0, 0), None)
     far: dict[int, float] = {}  # each body's unrounded length, ranked on: two read alike may still stand apart
+
+    # A spot's length from the one ranked around, as the crow flies
+    def crow(x: int, y: int) -> float:
+        return walk_tiles(x - nx, y - ny)
+
     for actor in save.get("actors_data") or []:
         if near and actor["id"] == near_id:  # the body ranked around stands nearest to itself
             continue
@@ -627,14 +632,13 @@ def _build_roster(
         here = _standing(actor, island_of, grid, save["tileMap"])
         change: dict = {weighed: held if once is None else [max(before, floor), max(held, floor)]} if has or top else {}
         if near:
-            x, y = actor_xy(actor)
-            far[actor["id"]] = walk_tiles(x - nx, y - ny)
+            far[actor["id"]] = crow(*actor_xy(actor))
             change["crow_tiles"] = round(far[actor["id"]])
         if was is not None and actor["id"] in known and not has:  # one unseen then was born or set down since, and says so by standing in the roll at all
             if (then := was[actor["id"]]) == here:
                 still += land is None or asked == here  # stood still: nothing for `since` to say of it, but that it was left out
                 continue
-            change = {"was_on": then}
+            change = {"was_on": then} | ({"crow_tiles": change["crow_tiles"]} if near else {})
         if land is None or asked in (here, change.get("was_on")):
             if top and held == before:  # holds none of the measure: left out of the ranking, and said so
                 unranked += 1
@@ -646,6 +650,10 @@ def _build_roster(
         gone = _gone_since(save, earlier, was, kinds, trait, asked, sapient, belonged)
         if once is not None:  # the dead that held the tally, each with what it takes away: where it stood and what took it are another question's
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
+        if near:  # the dead measured from where the earlier save last saw them, no later one keeping their place
+            stood = {a["id"]: actor_xy(a) for a in earlier.get("actors_data") or []}
+            far |= {row["id"]: crow(*stood[row["id"]]) for row in gone}
+            gone = [{**row, "crow_tiles": round(far[row["id"]])} for row in gone]
 
     one_kind = kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
     seen = set(_KEPT_FIELDS) | _FIELD_FLOORS.keys() if fields else set()  # every field a body of the roll can be asked, its own stats added as they come
@@ -692,7 +700,7 @@ def _build_roster(
     refs = {"city": index_by_id(save.get("cities") or []), "family": index_by_id(save.get("families") or [])} if entity else {}
     # A town's own land goes unsaid on its residents' lines, as `-i` does: the room it frees tells their stage instead
     seat = island_of.get(centre) if entity and entity[0] == "city" and (centre := city_centre(refs["city"].get(entity[1]) or {})) else None
-    for actor, here, change in ranked[:_TOP_ROWS] if top or near else ranked:
+    for actor, here, change in ranked[:_TOP_ROWS] if top or (near and not since) else ranked:
         if fields:  # the line is what was asked: who, and those fields, a filter's own figure kept — the default columns stay with the plain roll
             rows.append({"id": actor["id"], "name": actor.get("name"), **change, **_asked_fields(actor, here, fields, ctx, seen)})
             continue
@@ -719,14 +727,8 @@ def _build_roster(
         )
     _refuse_unseen(fields, seen)
 
-    if (top or near) and rows:  # one shape whatever the world, its `info` keeping a lone key from coming bare: the cut said, a tie it falls in, and who holds none
-        key = top or "crow_tiles"
-        if len(ranked) <= _TOP_ROWS:
-            told = f"all {len(ranked)} by {top}, none cut" if top else f"all {len(ranked)}, nearest first, none cut"
-        else:
-            tied = sum(body[2][key] == ranked[_TOP_ROWS - 1][2][key] for body in ranked[_TOP_ROWS:])  # a tenth place shared would read as one body's own
-            told = f"{_TOP_ROWS} highest of {len(ranked)} by {top}" if top else f"{_TOP_ROWS} nearest of {len(ranked)}"
-            told += f" — {tied} more share the last figure" if tied else ""
+    if (top or near) and rows and not since:  # one shape whatever the world, its `info` keeping a lone key from coming bare, and who holds none said
+        told = _cut_told([body[2][top or "crow_tiles"] for body in ranked], top)
         return {"info": told + (f"; {unranked} with no {top}, left out" if unranked else ""), "roster": rows}
 
     gone = [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
@@ -735,8 +737,12 @@ def _build_roster(
         if members_then is not None and entity:  # alive and elsewhere now: left the entity, which a death alone does not say
             leavers = sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id"))
             parts["left"] = [_member_row(a, entity[0], _standing(a, island_of, grid, save["tileMap"]), refs, save, ctx, one_kind) for a in leavers]
-        return {part: bodies for part, bodies in parts.items() if bodies}
-    return rows + gone
+            if near:
+                far |= {a["id"]: crow(*actor_xy(a)) for a in leavers}
+                parts["left"] = [{**row, "crow_tiles": round(far[row["id"]])} for row in parts["left"]]
+        parts = {part: bodies for part, bodies in parts.items() if bodies}
+        return _nearest_parts(parts, far) if near else parts
+    return _nearest_parts({"roster": rows + gone}, far) if near else rows + gone
 
 
 # Actors split three ways: hulls (`boats`), thinking souls (`sapient_pop`) and the beasts (`wild_creatures`). `infected` = WB's `current_infected`.
@@ -792,6 +798,15 @@ def _carried(traits: frozenset[str]) -> bool:
 
 def _count_leaders(counts: Mapping, records: list[dict], min_peers: int) -> list[dict]:
     return [{"id": eid, "name": _name_of(records, eid), "value": n} for eid, n in first_place(counts, min_peers)]
+
+
+# What a ranked cut kept, so a lone key never comes bare: all when few, else the cut and the tie its last place falls in, read off each kept figure in order.
+def _cut_told(figures: list, top: str | None) -> str:
+    if len(figures) <= _TOP_ROWS:
+        return f"all {len(figures)} by {top}, none cut" if top else f"all {len(figures)}, nearest first, none cut"
+    tied = sum(figure == figures[_TOP_ROWS - 1] for figure in figures[_TOP_ROWS:])  # a tenth place shared would read as one body's own
+    told = f"{_TOP_ROWS} highest of {len(figures)} by {top}" if top else f"{_TOP_ROWS} nearest of {len(figures)}"
+    return told + (f" — {tied} more share the last figure" if tied else "")
 
 
 # The causes each lineage's deaths rose by between two saves — under `None`, the world's past every living lineage's: those of the lineages that died out.
@@ -934,6 +949,13 @@ def _natural(value: object) -> list:
 # `--nearest`'s goal: a body `p<id>`, else a tile `x,y`.
 def _near_arg(value: str) -> int | tuple[int, int]:
     return xy_arg(value) if (body := body_ref(value)) is None else body
+
+
+# `--since`'s blocks under `--nearest`, each cut on its own: the arrivals that crowd a census never push out the dead a chapter seeks.
+def _nearest_parts(parts: dict[str, list[dict]], far: dict[int, float]) -> dict:
+    ranked = {part: sorted(rows, key=lambda row: (far[row["id"]], row["id"])) for part, rows in parts.items()}
+    told = "; ".join(f"{part}: " * (part != "roster") + _cut_told([row["crow_tiles"] for row in rows], None) for part, rows in ranked.items())
+    return {"info": told, **{part: rows[:_TOP_ROWS] for part, rows in ranked.items()}}
 
 
 # Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.
@@ -1109,8 +1131,8 @@ def main(argv: list[str]) -> int:
     if args.top and args.nearest is not None:
         print("✗ `--top` and `--nearest` each rank a roll: ask one", file=sys.stderr)
         return 2
-    if (ranked := "--top" if args.top else "--nearest" if args.nearest is not None else None) and since:  # each read off its own chapter
-        print(f"✗ `{ranked}` ranks one chapter: read the other by its suffix, `{since}`", file=sys.stderr)
+    if args.top and since:  # a measure read off its own chapter
+        print(f"✗ `--top` ranks one chapter: read the other by its suffix, `{since}`", file=sys.stderr)
         return 2
     if since and (alone := next((flag for flag in ("lacks", "patch", "status", "task") if getattr(args, flag)), None)):
         print(f"✗ `--{alone}` reads one chapter: ask `--since` apart", file=sys.stderr)  # the dead stood, wore and did what no later save tells
