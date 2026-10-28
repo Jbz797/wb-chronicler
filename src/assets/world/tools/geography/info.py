@@ -648,7 +648,7 @@ def main(argv: list[str]) -> int:
     save_path, argv, _ = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
     parser = arg_parser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
-    parser.add_argument("sections", help=f"Comma-separated sections. Valid: {', '.join(_ALL_SECTIONS)}")
+    parser.add_argument("sections", nargs="?", help=f"Comma-separated sections. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument(
         "--type",
         "-t",
@@ -661,7 +661,7 @@ def main(argv: list[str]) -> int:
     )
     args = parser.parse_args(argv)
 
-    if args.sections == "full":  # No `full` here, unlike the other tools: these sections answer unrelated questions, and no reading wants them all.
+    if args.sections in (None, "full"):  # No `full` here, nor its silent default: these sections answer unrelated questions, and no reading wants them all.
         print(f"✗ geography has no `full` — name a section: {', '.join(_ALL_SECTIONS)}", file=sys.stderr)
         return 2
     try:
