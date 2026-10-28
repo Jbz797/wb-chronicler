@@ -40,7 +40,7 @@ Install it with the other mods of this repository, as [mods/README.md](../README
 - **Compatibility:** the mod replaces no game method (it reshapes one, see below), and works with other mods unless they also use `faithful_` keys or reshape the history's yearly close.
 - **What it writes into your saves:** keys prefixed `faithful_`, per creature (statuses, waits, task, roof, town, army, victims) and per world (clocks, and `faithful_saved_at`, by which this repository's chronicle knows the mod wrote the save). Vanilla ignores them.
 - **A save made before the mod:** its first load still wipes everything; all is kept from the next save on, and its first history year after the mod runs 13 months.
-- **What the log says:** each load names what it handed back (`handed back 12 statuses, 34 long waits and 2 clocks`) and, as a warning, whatever it could not: nothing a save was given is dropped in silence.
+- **What the log says:** a load keeps silent when everything came back, and names in a warning whatever it could not hand back: nothing a save was given is dropped in silence.
 
 ## For modders
 

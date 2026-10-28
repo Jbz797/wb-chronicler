@@ -60,8 +60,8 @@ The model's **1M-token context window** lets that single thread run a long way b
 
 The chronicle runs on two [NeoModLoader](https://steamcommunity.com/sharedfiles/filedetails/?id=3080294469) mods, kept in this repository under [mods/](mods/). **Both are required**: each stamps the saves it writes, and the chronicler refuses to open a chapter on a save that lacks either stamp.
 
-- [Wandering Clouds](mods/WanderingClouds/) — vanilla clouds all rise on the west edge of the map, and they seed a young world's thinking peoples: its first civilizations start out crowded in the west. This mod lets clouds rise anywhere and drift either way, so peoples arise all over the map. Install it **before creating the world**.
 - [Faithful Saves](mods/FaithfulSaves/) — vanilla saves keep no status, so every load ends the pregnancies under way, hatches every egg, wakes every sleeper and redraws how long each creature waits before its next sleep. This mod writes them into the save and hands them back on load.
+- [Wandering Clouds](mods/WanderingClouds/) — vanilla clouds all rise on the west edge of the map, and they seed a young world's thinking peoples: its first civilizations start out crowded in the west. This mod lets clouds rise anywhere and drift either way, so peoples arise all over the map. Install it **before creating the world**.
 
 [Installing them](mods/README.md) links each folder into the game's `Mods` folder, so that a `git pull` keeps it up to date.
 

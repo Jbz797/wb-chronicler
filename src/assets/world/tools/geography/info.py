@@ -85,6 +85,7 @@ _SHORE_REACH = 60  # tiles past which a fire is off every water, as `tiles` hold
 _STEPS = tuple((dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)  # the eight ways a crow-flown search widens
 _SURVEY_PCT = 1  # the share of its land under which a ground is only named in the world-wide `biomes`: half its rows weigh less, and `-i` has them all
 _TOP_PATCHES = 5  # the patches `biomes -t` sites of one ground — a second massif, a frost in two halves: past a handful, the row's count says the rest
+_TOP_STRAITS = 10  # the narrowest crossings `waters` keeps past `MAX_LISTED`, the ones a tale swims: `-i <land>` lists a land's every one
 
 
 # Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
@@ -755,6 +756,9 @@ def main(argv: list[str]) -> int:
             print(f"✗ no {' '.join(map(str, filter(None, args.water)))} {where} — `geography … waters` lists them", file=sys.stderr)
             return 1
         shown = shown | {"waters": one}
+    elif "waters" in shown and args.island is None and len(straits := shown["waters"]["straits"]) > MAX_LISTED:  # already narrowest first
+        more = f"past {MAX_LISTED} straits, the {_TOP_STRAITS} narrowest, {len(straits) - _TOP_STRAITS} more — `-i <land>` lists a land's every one"
+        shown = shown | {"waters": {**shown["waters"], "info": more, "straits": straits[:_TOP_STRAITS]}}
     # An empty section says so, the command failing only where all asked are, as `positions` does — a dict of empty blocks counts: `biomes` on a bare land.
     bare = [s for s in sections if s in _NONE and not (any(shown[s].values()) if isinstance(shown[s], dict) else shown[s])]
 

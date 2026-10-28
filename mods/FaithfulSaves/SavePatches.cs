@@ -19,7 +19,7 @@ namespace FaithfulSaves
         private const string CourseX = "faithful_course_x"; // the shore a hull was taking its passengers to, among its custom ints: `Boat.taxi_target`
         private const string CourseY = "faithful_course_y";
         private const string Inside = "faithful_inside"; // the id of the building the creature was inside, among its custom longs
-        private const string Log = "[Faithful Saves]: "; // every load says what it handed back, and names what it could not
+        private const string Log = "[Faithful Saves]: "; // a load names in the log what it could not hand back, and keeps silent on the rest
         private const int LongWait = 90; // a decision's cooldown from which a redrawn wait is rarely sat out before the next load: sleeps, a herd's march
         private const string Possessed = "possessed"; // the one status left out: it is the player's own hand on a creature, which no save holds
         private const string SavedAt = "faithful_saved_at"; // the world's time at the save, in its custom data: proof the mod wrote this very save
@@ -141,7 +141,6 @@ namespace FaithfulSaves
         private static void AfterLoad()
         {
             double now = World.world.getCurWorldTime();
-            int statuses = 0, waits = 0, clocks = 0;
             List<string> lost = new List<string>();
             foreach (Actor actor in World.world.units)
             {
@@ -151,9 +150,7 @@ namespace FaithfulSaves
                     float left = Take(data, StatusPrefix + asset.id);
                     if (left <= 0f)
                         continue;
-                    if (GiveBack(actor, asset, left))
-                        statuses++;
-                    else
+                    if (!GiveBack(actor, asset, left))
                         lost.Add($"{asset.id} of {actor.getName()}");
                 }
                 double[] lastTaken = _lastTaken(actor);
@@ -163,8 +160,6 @@ namespace FaithfulSaves
                 {
                     float left = Take(data, WaitPrefix + decision.id);
                     lastTaken[decision.decision_index] = left > 0f ? now - (decision.cooldown - left) : 0d; // WB reads a wait off the time it began
-                    if (left > 0f)
-                        waits++;
                 }
             }
             BaseSystemData world = _mapStats(World.world)?.custom_data;
@@ -180,9 +175,8 @@ namespace FaithfulSaves
                     continue;
                 }
                 _timer(clock) = left;
-                clocks++;
             }
-            Report($"{statuses} statuses, {waits} long waits and {clocks} clocks", lost);
+            ReportLost(lost);
         }
 
         // WB's very last step of a load, and the place for the tasks: the buildings a task may aim at load after the creatures, and WB, seating each
@@ -192,19 +186,15 @@ namespace FaithfulSaves
         private static void AfterWorldLoaded()
         {
             double now = World.world.getCurWorldTime();
-            int tasks = 0, roofs = 0, courses = 0;
             List<string> lost = new List<string>();
             foreach (Actor actor in World.world.units)
             {
                 BaseObjectData data = actor.getData();
-                if (GiveTaskBack(actor, data, now, lost))
-                    tasks++;
-                if (GiveRoofBack(actor, data, lost)) // after its task: taking one up empties the roof, as any change of task does
-                    roofs++;
-                if (GiveCourseBack(actor, data, lost))
-                    courses++;
+                GiveTaskBack(actor, data, now, lost);
+                GiveRoofBack(actor, data, lost); // after its task: taking one up empties the roof, as any change of task does
+                GiveCourseBack(actor, data, lost);
             }
-            Report($"{tasks} tasks, {roofs} roofs and {courses} courses", lost);
+            ReportLost(lost);
         }
 
         // A status handed back for the time it had left, without what WB does on first posing it: the mood it brought was felt, and saved, already.
@@ -230,47 +220,43 @@ namespace FaithfulSaves
 
         // A hull handed back the shore it was sailing its passengers to. What it was sailing to fetch is not: a call for a hull lives in a list
         // WB rebuilds as creatures ask again (`TaxiManager`), and a hull on its way to one drops that task as WB has it do (`Boat.cancelWork`).
-        private static bool GiveCourseBack(Actor pActor, BaseObjectData pData, List<string> pLost)
+        private static void GiveCourseBack(Actor pActor, BaseObjectData pData, List<string> pLost)
         {
             pData.get(CourseX, out int x, -1);
             pData.get(CourseY, out int y, -1);
             pData.removeInt(CourseX);
             pData.removeInt(CourseY);
             if (x < 0 || y < 0)
-                return false;
+                return;
             WorldTile shore = World.world.GetTile(x, y);
             Boat hull = pActor.asset.is_boat ? pActor.getSimpleComponent<Boat>() : null;
             if (shore == null || hull == null)
-            {
                 pLost.Add($"the course of {pActor.getName()}");
-                return false;
-            }
-            _course(hull) = shore;
-            return true;
+            else
+                _course(hull) = shore;
         }
 
         // A creature set back under the roof it was in, the building looked up by its id; one the world no longer holds is named in `pLost`.
         // It leaves as it would have: the step of its task that takes it out, or the end of that task (`Actor.clearTasks`).
-        private static bool GiveRoofBack(Actor pActor, BaseObjectData pData, List<string> pLost)
+        private static void GiveRoofBack(Actor pActor, BaseObjectData pData, List<string> pLost)
         {
             long id = TakeAim(pData, Inside);
             if (id < 0)
-                return false;
+                return;
             Building roof = World.world.buildings.get(id);
             if (roof == null || !roof.isAlive())
             {
                 pLost.Add($"the roof of {pActor.getName()}");
-                return false;
+                return;
             }
             _isInside(pActor) = true;
             _inside(pActor) = roof;
-            return true;
         }
 
         // A task handed back at the step it had reached, not replayed from its first: a sleep already begun, a meal already taken are not taken twice.
         // What that step was aimed at comes back with it, looked up by where or who it was; an aim the world no longer holds is named in `pLost`, and
         // WB then ends the task as it does when a prey dies. A task this game no longer has is named too; a save from before the mod has none.
-        private static bool GiveTaskBack(Actor pActor, BaseObjectData pData, double pNow, List<string> pLost)
+        private static void GiveTaskBack(Actor pActor, BaseObjectData pData, double pNow, List<string> pLost)
         {
             pData.get(Task, out string id, null);
             pData.removeString(Task);
@@ -286,12 +272,12 @@ namespace FaithfulSaves
             pData.removeInt(TaskTileX);
             pData.removeInt(TaskTileY);
             if (string.IsNullOrEmpty(id)) // a creature between two tasks, or a save from before the mod
-                return false;
+                return;
             AiSystemActor mind = _ai(pActor);
             if (mind == null || !AssetManager.tasks_actor.has(id))
             {
                 pLost.Add($"task {id} of {pActor.getName()}");
-                return false;
+                return;
             }
             pActor.setTask(id, true, false, false); // empties every aim, hence handed back below
             _step(mind) = (int)step;
@@ -312,7 +298,6 @@ namespace FaithfulSaves
                 && (book < 0 || _bookTarget(pActor) != null) && (building < 0 || _buildingTarget(pActor) != null);
             if (!whole)
                 pLost.Add($"an aim of task {id} of {pActor.getName()}");
-            return true;
         }
 
         // Every decision of the game with a long wait, whoever takes it: a creature draws from its kind's and from lists all share (`bored_sleep`),
@@ -357,10 +342,9 @@ namespace FaithfulSaves
                 pData.removeFloat(pKey);
         }
 
-        // What a load handed back, and by name what it could not: twenty at most, the log being no place for a whole world.
-        private static void Report(string pHandedBack, List<string> pLost)
+        // What a load could not hand back, by name: twenty at most, the log being no place for a whole world, and nothing at all when all came back.
+        private static void ReportLost(List<string> pLost)
         {
-            LogService.LogInfo($"{Log}handed back {pHandedBack}");
             if (pLost.Count > 0)
                 LogService.LogWarning($"{Log}could not hand back {pLost.Count}: {string.Join(", ", pLost.GetRange(0, Math.Min(pLost.Count, 20)))}");
         }

@@ -80,6 +80,7 @@ from shared import (
     kept_city_since,
     kingdom_score_dimensions,
     land_arg,
+    latest_chapter,
     life_stage,
     light,
     load_data,
@@ -233,7 +234,7 @@ _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
 _ON_REQUEST = ("laws", "lineages", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll is no chapter's to carry
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
-_SINCE_SECTIONS = ("cumulative", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll, and two counts weighed chapter against chapter
+_SINCE_SECTIONS = ("cumulative", "lineages", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll or a census, two counts weighed
 
 # WB's four skills, the ones every `ranks_in_species` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
 _SKILLS = ("diplomacy", "intelligence", "stewardship", "warfare")
@@ -256,6 +257,7 @@ _SNAPSHOT_COLLECTIONS = {
 _SOULBORNE = "reproduction_soulborne"  # a lineage born of the souls it strikes: `action_attack_target` harvests one off a body that `has_soul`
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` and `--lacks` weigh: a body's own counters, named as `actor … stats` names them
+_TOP_PAIRINGS = 20  # the kinds `pairings` keeps past `MAX_LISTED`, first births first: the ones a chapter tells, the rest counted and read by `-t`
 _TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "equipment_power")))  # what `--top` ranks by: those counters, a skill, an arsenal
 _TOP_ROWS = 10  # a ranking is asked for its head: who comes first, second, third — the rest is counted
 _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
@@ -858,6 +860,29 @@ def _held(actor: dict, tally: str, ctx: dict | None = None) -> int:
     return value if tally != "level" or value > 1 else 0
 
 
+# Lineages past `MAX_LISTED` as a count by kind, the rest read by `-t`: a census of a hundred lines tells no one which to read.
+def _lineage_tally(rows: dict, typed: bool) -> dict:
+    if typed or len(rows) <= MAX_LISTED:
+        return rows
+    kinds = Counter(row["asset_id"] for row in rows.values())
+    return {"asset_id": dict(kinds), "info": f"past {MAX_LISTED} lineages, a count by kind — `-t <kind>` lists each by id", "total": len(rows)}
+
+
+# The lineages a span saw rise and die out: `gone` as the last save to hold them knew them, `new` as this one does, the ids no save between ever held.
+def _lineages_since(save: dict, since: str, chapter: str | None, kinds: set[str] | None) -> dict:
+    earlier, saves = load_save(SAVES_DIR / since / "map.wbox"), _since_saves(since, chapter, save)
+    then, now, seen = _build_lineages(earlier, kinds), _build_lineages(save, kinds), {}
+    for reading in (earlier, *saves[:-1]):  # each lineage as the last save to hold it knew it: one born and gone between the two ends counts too
+        seen |= _build_lineages(reading, kinds)
+    unseen = passed_unseen(earlier, saves).get("subspecies")
+    out = {
+        "came_and_went": {"world": unseen} if unseen and kinds is not None else unseen,  # no save kept their kind: a filtered census says whose count it is
+        "gone": _lineage_tally({key: seen[key] for key in sorted(seen, key=int) if key not in now}, kinds is not None),
+        "new": _lineage_tally({key: row for key, row in now.items() if key not in then}, kinds is not None),
+    }
+    return {key: value for key, value in out.items() if value}
+
+
 # WB `canFallInLoveWith` between two of a kind: neither pledged to a third, no blood — parent, child or a parent shared — and opposite sexes where sexed.
 def _may_mate(a: dict, b: dict, sexed: bool) -> bool:
     if a.get("lover") not in (None, b["id"]) or b.get("lover") not in (None, a["id"]):
@@ -941,6 +966,19 @@ def _old_at(actor: dict, ctx: dict) -> float | None:
     return float(actor.get("created_time") or 0) + max(floor(lifespan - 1 - (actor.get("age_overgrowth") or 0)) + 1, 0) * UNITS_PER_YEAR
 
 
+# Kinds past `MAX_LISTED` as their `_TOP_PAIRINGS` first births, the rest counted — later, or what each lacks — and read one by one through `-t`.
+def _pairing_tally(rows: list[dict]) -> list[dict] | dict:
+    if len(rows) <= MAX_LISTED:
+        return rows
+    rest = rows[_TOP_PAIRINGS:]
+    return {
+        "first": rows[:_TOP_PAIRINGS],
+        "info": f"past {MAX_LISTED} kinds, the {_TOP_PAIRINGS} first births — `-t <kind>` reads one",
+        "later": sum("birth_on" in row for row in rest) or None,
+        "missing": dict(Counter(row["missing"] for row in rest if "missing" in row)) or None,
+    }
+
+
 # A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
 def _refuse_unseen(fields: list[str], seen: set[str]) -> None:
     if unknown := [field for field in fields if field not in seen]:
@@ -960,7 +998,7 @@ def _score_leaders(totals: Counter, records: list[dict]) -> list[dict]:
 
 # The saves after `since` up to this one: a body a chapter in between held was seen, and is gone rather than passed unseen.
 def _since_saves(since: str, chapter: str | None, save: dict) -> list[dict]:
-    later = [SAVES_DIR / f"C{n}" / "map.wbox" for n in range(int(since[1:]) + 1, int(chapter[1:]) if chapter else 0)]
+    later = [SAVES_DIR / f"C{n}" / "map.wbox" for n in range(int(since[1:]) + 1, int(chapter[1:]) if chapter else latest_chapter() + 1)]
     return [*(load_save(path) for path in later if path.exists()), save]
 
 
@@ -1048,7 +1086,7 @@ def main(argv: list[str]) -> int:
         or args.island is not None
         or args.nearest is not None
     )
-    narrowing = filtered or (args.type and "lineages" not in sections) or args.fields is not None
+    narrowing = filtered or (args.type and not {"lineages", "pairings"} & set(sections)) or args.fields is not None
     if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
         print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
         return 2
@@ -1060,7 +1098,7 @@ def main(argv: list[str]) -> int:
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
         flags = "-t, --trait, --has, --lacks, --top, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --settle, --barred, -i and an entity"
-        print(f"✗ {flags} narrow `roster`, `-t` `lineages` too: name it", file=sys.stderr)
+        print(f"✗ {flags} narrow `roster`, `-t` `lineages` and `pairings` too: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
         print("✗ --has and --lacks split a roll in two: name one", file=sys.stderr)
@@ -1087,6 +1125,8 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     map_stats = save.get("mapStats") or {}  # WB's own counters, period-accurate.
     out: dict = {}
+    families = asset_families(save) if args.type else {}  # swept for `-t` alone, once for every section it narrows: every body and every building
+    bred = asset_kinds(families, args.type) if args.type else None
     if "boats" in sections:
         out["boats"] = _build_boats(save, requested)
     if "cumulative" in sections:
@@ -1096,21 +1136,30 @@ def main(argv: list[str]) -> int:
     if "leaders" in sections:
         out["leaders"] = _build_leaders(save)
     if "lineages" in sections:
-        families = asset_families(save) if args.type else {}  # swept for `-t` alone: every body and every building
-        if not (lineages := _build_lineages(save, asset_kinds(families, args.type) if args.type else None)):
+        of = f" of {args.type}" if args.type else ""
+        if since:
+            lineages = _lineages_since(save, since, chapter, bred)
+            if not (lineages.get("gone") or lineages.get("new")):  # the unseen alone are no answer: of no kind a save keeps, they are said beside the refusal
+                unseen = lineages.get("came_and_went") or []
+                more = len(unseen["world"] if isinstance(unseen, dict) else unseen)
+                print(f"✗ no lineage{of} came or went since {since}" + (f" — {more} more unseen in the world, kind unknown" if more else ""), file=sys.stderr)
+                return 1
+        elif not (lineages := _build_lineages(save, bred)):
             # A mistyped word told apart from a kind with no lineage left, as `roster` tells it
-            why = (args.type and unsited_reason(families, args.type)) or f"no living lineage{f' of {args.type}' if args.type else ''} in this world"
-            print(f"✗ {why}", file=sys.stderr)
+            print(f"✗ {(args.type and unsited_reason(families, args.type)) or f'no living lineage{of} in this world'}", file=sys.stderr)
             return 1
-        out["lineages"] = lineages
+        out["lineages"] = lineages if since else _lineage_tally(lineages, bred is not None)
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)
     if "pairings" in sections:
-        out["pairings"] = _build_pairings(save, save_path)
+        if not (pairings := [row for row in _build_pairings(save, save_path) if bred is None or row["asset_id"] in bred]):
+            print(f"✗ {(args.type and unsited_reason(families, args.type)) or f'no {args.type} to pair in this world'}", file=sys.stderr)
+            return 1
+        out["pairings"] = _pairing_tally(pairings) if bred is None else pairings
     if "plots" in sections:
         out["plots"] = _build_plots(save)
     if "roster" in sections:
-        kinds = asset_kinds(asset_families(save), args.type) if args.type else None
+        kinds = bred
         lands, island_of = compute_islands_cached(save, save_path)  # loaded once: the land `-i` names is checked against the lookup the roll then reads
         if isinstance(args.island, int) and args.island not in {land["id"] for land in lands}:
             print(f"✗ no land with id {args.island} — `geography … islands` lists them", file=sys.stderr)
