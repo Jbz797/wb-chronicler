@@ -365,11 +365,15 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
 
     # The first migrants a fire called in, off each crown's `migrated` (`Kingdom.increaseMigrants`): a realm gone takes its count along, a rare miss.
     migrated = sum(int(k.get("migrated") or 0) for k in live.get("kingdoms") or [])
+
+    # The first death by another body's blow, a beast's bite as a blade: a tag born after the deed is owed by the chapter that saw it alone, the one before at 0.
+    struck = stats.get("deaths_weapon") and not prev_world.get("deaths_weapon")
     firsts = (
         ("FIRST_BIRTH", stats.get("creaturesBorn")),
         ("FIRST_CITY", towns),
         ("FIRST_DEATH", died),
         ("FIRST_HOUSE", housed),
+        ("FIRST_KILL", struck),
         ("FIRST_MIGRANTS", migrated),
         ("SECOND_CITY", towns >= 2),  # a town beside the first: the world has a neighbour, a crown's or a rival's
     )
@@ -773,7 +777,7 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  ✗ tags whose id answers nothing: {tags} — an id made up, one only `history` knows, or what grows or is built: no icon, a blank where it goes")
 
 
-# One scan of prior chapters for all they arbitrate: a first hull, descriptor carry-forward, a new favorite, a turned age, a stale save, a new war, a first crown.
+# One scan of prior chapters for all they arbitrate: a first hull or kill, a descriptor kept, a new favorite, a turned age, a stale save, a new war, a first crown.
 def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
     tags: set = set()
     sworn: set = set()
@@ -790,8 +794,9 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
             # That chapter's own save, read once for its hour and its laws — the age switches left to `age_id`. Gone, it leaves neither.
             then = load_save(archived) if (archived := SAVES_DIR / f"C{prior}" / "map.wbox").exists() else None
             laws = {law: on for law, on in world_laws(then or {}).items() if law.startswith("world_law_")}
-            hour = rounded_world_time(then.get("mapStats") or {}) if then else None
-            world = {**((data.get("world") or {}).get("metadata") or {}), "laws": laws, "world_time": hour}
+            stats = (then or {}).get("mapStats") or {}
+            hour, struck = (rounded_world_time(stats), stats.get("deaths_weapon") or 0) if then else (None, None)
+            world = {**((data.get("world") or {}).get("metadata") or {}), "deaths_weapon": struck, "laws": laws, "world_time": hour}
     return tags, favorite, world, sworn
 
 
