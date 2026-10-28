@@ -730,6 +730,16 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
     return [role for role in _ROLE_ORDER if checks[role]]
 
 
+# The site nearest as the crow flies, where the walk reached another: one the way bars or makes dearer, by its id for `--to` to say why — a tie is no other.
+def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple[int, int], dict], near: dict) -> dict | None:
+    (cx, cy), reached = actor_xy(actor), (near["x"], near["y"])
+    gx, gy = min(aims, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2)
+    crow = walk_tiles(gx - cx, gy - cy)
+    if (site := about.get((gx, gy))) is None or site == about.get(reached) or crow >= walk_tiles(reached[0] - cx, reached[1] - cy):
+        return None
+    return {**site, "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
+
+
 # A time as the chronicler reads it: whole minutes under the hour, where a tenth of an hour would round a few tiles to nought, else hours to the tenth.
 def _duration(hours: float, prefix: str = "") -> dict:
     if (minutes := round(hours * 60)) >= 60:
@@ -1151,8 +1161,12 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
         for word, goal in each.items():  # out of reach, it says so and leaves the others their answer: the command fails where none has one
             try:
                 reached[word] = goal and _build_to(actor, goal[0], f"the nearest {word}", ctx, "nearest", goal[1])
-                if reached[word] and "ground" in (near := reached[word]["nearest"]):  # its patch's size: a lone rock is no range's foot
+                if not (found := reached[word]):
+                    continue
+                if "ground" in (near := found["nearest"]):  # its patch's size: a lone rock is no range's foot
                     near["patch"] = ctx["patch_at"]()(near["x"], near["y"])[1]["tiles"]
+                elif crow := _crow_nearest(actor, goal[0], goal[1], near):
+                    found["crow_nearest"] = crow
             except _UnreachableError as e:
                 print(f"{e} — `circle`: far", file=sys.stderr)
         if not any(reached.values()):

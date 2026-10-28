@@ -42,6 +42,7 @@
   "actor.to.by_task": "Vers un bâtiment : la tuile où mène la tâche du corps s'il y va, sinon la plus proche des tuiles du bâtiment.",
   "actor.to.chunks_apart": "L'écart en chunks de 16 tuiles : à 0 ou 1, le jeu tient les deux pour tout près.",
   "actor.to.circle": "Le cercle du but, au pas du corps : `intimate` ≤ 30 min, `common` ≤ 2 h, sinon `far` ; `total_` préfixe un compte dès deux parts.",
+  "actor.to.crow_nearest": "Le site le plus proche à vol d'oiseau quand la marche en atteint un autre, muré ou plus coûteux : `--to` sur son id dit pourquoi ; absent, `nearest` l'est aussi.",
   "actor.to.from_them": "Vers un corps : le trajet de l'autre jusqu'à lui, dit s'il diffère (pas, terrain).",
   "actor.to.landing": "Vers une terre `i<id>` : le point où l'aborder au moins cher.",
   "actor.to.march_days": "Passé 6 h de marche, les jours de marche, haltes comprises, à la place des heures ; sans l'eau, passée d'une traite, que `total_days` ajoute.",
