@@ -105,7 +105,7 @@ _CHRONICLE_KEPT = "*\n!*/\n!C*/chapter.md\n!C*/chapter.json\n!watches.md\n"
 _COUNSEL = (
     "Read docs/audit/story.md — before C{n} is written: <the turning points and the major changes of your analysis{measured}>. Answer short: the turning point that "
     "carries the chapter, the watch it settles or tips, the angle, what must not be dropped; directions, never prose. At the audit you will judge the text "
-    "as it stands, not its faithfulness to your counsel; the register moves only at the audit."
+    "as it stands, not its faithfulness to your counsel."
 )
 
 # What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
