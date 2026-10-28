@@ -241,6 +241,8 @@ _SINCE_SECTIONS = ("cumulative", "lineages", "roster", "snapshot")  # what `--si
 # WB's four skills, the ones every `ranks_in_species` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
 _SKILLS = ("diplomacy", "intelligence", "stewardship", "warfare")
 
+_SLAYINGS = ("eaten", "weapon")  # the deaths a slayer is credited: WB's eater kills as a striker does (`BehConsumeActorTarget.consume`), nothing kept apart
+
 # Chronicler key => save collection simply counted. What needs classifying (buildings) or filtering (actors, wars) lives in `_build_snapshot` instead.
 _SNAPSHOT_COLLECTIONS = {
     "alliances": "alliances",
@@ -841,19 +843,19 @@ def _death_causes(then: dict, now: dict, ctx: dict) -> dict[int, list[str]]:
             continue
         lineage, old = actor.get("subspecies") if actor.get("subspecies") in rose else None, _old_at(actor, ctx)
         held = [cause for cause in sorted(budgets[lineage]) if cause != "old_age" or (old is not None and old <= hour)]
-        causes[actor["id"]] = ["weapon"] if actor["id"] in slain and "weapon" in held else held
+        causes[actor["id"]] = (actor["id"] in slain and [cause for cause in held if cause in _SLAYINGS]) or held
         members[lineage].append(actor["id"])
-    # A cause its pinned bodies fill is struck from the others' lists, the world's rise over every body, a lineage's over its own — till nothing moves
+    # Causes the bodies held to them fill are struck from the others' lists, the world's rise over every body, a lineage's over its own — till nothing moves
     scopes = [(list(causes), world), *((bodies, budgets[lineage]) for lineage, bodies in members.items())]
     struck = True
     while struck:
         struck = False
         for bodies, budget in scopes:
-            for cause, rise in budget.items():
-                if sum(causes[body] == [cause] for body in bodies) >= rise:
+            for group in {frozenset(causes[body]) for body in bodies if causes[body]}:
+                if sum(bool(causes[body]) and group.issuperset(causes[body]) for body in bodies) >= sum(budget[cause] for cause in group):
                     for body in bodies:
-                        if len(causes[body]) > 1 and cause in causes[body]:
-                            causes[body].remove(cause)
+                        if not group.issuperset(causes[body]) and group.intersection(causes[body]):
+                            causes[body] = [cause for cause in causes[body] if cause not in group]
                             struck = True
     return causes
 
