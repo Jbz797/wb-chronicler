@@ -1,4 +1,5 @@
 {
+  "across.keep": "`--keep a,b.c` : de chaque chapitre, ces seuls champs, par leur chemin pointé depuis le haut du bloc ; un champ absent s'y tait, un refus reste entier.",
   "actor.companions.lover": "Le seul lien qui fait un couple ; `best_friend` n'en fait pas un.",
   "actor.kills": "`--kills` : ses morts données, le total par chapitre et chaque hausse depuis le chapitre d'avant, ou depuis sa venue.",
   "actor.kin": "`parents` (`gone` : mort) et `children` vivants, le sang seul : le compagnon est dans `companions` (`lover`).",
