@@ -173,7 +173,7 @@
   "world.cumulative.gone_without_death": "Des corps partis sans mort comptée : WB n'en compte pas pour une métamorphose, un ovni qui tombe, un ver, une araignée des sables, une imprimante, un doigt divin.",
   "world.cumulative.wars_started": "Le compte du jeu des guerres ouvertes depuis la naissance du monde ; absent, il n'y en a jamais eu : pas un filtre, le témoin lui-même.",
   "world.lineages": "Chaque lignée vivante par son id, comme `subspecies <id> metadata` la dit : espèce, biome, mois, vivants (`members`) ; sous `--since`, les parues et les éteintes.",
-  "world.lineages.gone": "Sous `--since`, les lignées éteintes depuis, telles que leur dernière save les tenait (`members`) ; `new` les parues ; `came_and_went` celles qu'on n'a pas vues.",
+  "world.lineages.gone": "Sous `--since`, les lignées sans plus un vivant, fiche gardée ou non, telles que leur dernière save vivante les tenait (`members`) ; `new` les parues.",
   "world.pairings": "Par espèce, la 1ʳᵉ naissance au plus tôt et le couple qui la porterait ; un couple ignore la lignée (`wiki:Reproduction`) ; `-t` une espèce.",
   "world.pairings.alone_on": "La date où une lignée qui enfante sans partenaire en a l'âge ; ce qui lui manque encore se dit à part (`needs`).",
   "world.pairings.barred": "Ce qui arrête la naissance, non la rencontre, et le corps en cause : `hungry` (`wiki:Reproduction`), `tiny_islet` (îlot ≤ 5 tuiles), `water` (à flot) ou une loi WB.",

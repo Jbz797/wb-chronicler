@@ -887,13 +887,13 @@ def _lineage_tally(rows: dict, typed: bool) -> dict:
 def _lineages_since(save: dict, since: str, chapter: str | None, kinds: set[str] | None) -> dict:
     earlier, saves = load_save(SAVES_DIR / since / "map.wbox"), _since_saves(since, chapter, save)
     then, now, seen = _build_lineages(earlier, kinds), _build_lineages(save, kinds), {}
-    for reading in (earlier, *saves[:-1]):  # each lineage as the last save to hold it knew it: one born and gone between the two ends counts too
-        seen |= _build_lineages(reading, kinds)
+    for rows in (then, *(_build_lineages(reading, kinds) for reading in saves[:-1])):  # as the last save to see it alive knew it, one born and gone between too
+        seen |= {key: row for key, row in rows.items() if row["members"]}  # WB keeps an emptied record a while: no living, no lineage
     unseen = passed_unseen(earlier, saves).get("subspecies")
     out = {
         "came_and_went": {"world": unseen} if unseen and kinds is not None else unseen,  # no save kept their kind: a filtered census says whose count it is
-        "gone": _lineage_tally({key: seen[key] for key in sorted(seen, key=int) if key not in now}, kinds is not None),
-        "new": _lineage_tally({key: row for key, row in now.items() if key not in then}, kinds is not None),
+        "gone": _lineage_tally({key: seen[key] for key in sorted(seen, key=int) if not (now.get(key) or {}).get("members")}, kinds is not None),
+        "new": _lineage_tally({key: row for key, row in now.items() if key not in then and row["members"]}, kinds is not None),
     }
     return {key: value for key, value in out.items() if value}
 
