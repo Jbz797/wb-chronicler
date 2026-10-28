@@ -111,8 +111,6 @@ _COUNSEL = (
 # What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
 _DEATH = "the death section opens the chapter: how he died, pieced together as far as the data allow (§ Déduction des meurtres), what he leaves, the handover"
 
-_DESCRIPTOR_CAP = 64
-
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
     "announce it to the player with `tools/map/show.py <x,y>`: only the map finds it among a thousand",
     "his word given (you will embody it), have him close WorldBox: `tools/chapter/favorite.py <id>` rebuilds this chapter around it",
@@ -255,6 +253,9 @@ _TRAIT_SOURCES = {
     "religion": ("religions", ("saved_traits",)),
     "subspecies": ("subspecies", ("saved_actor_birth_traits", "saved_traits")),
 }
+
+_UNSPOKEN = re.compile(r"\[[a-z] [^\]]*\]|\*\*\*[^*]+\*\*\*|^#.*")  # a tag, a place's name, a heading: no species named bare in them
+_WORDS = re.compile(r"[^\W\d_]+")  # the words between a species and a tag, an elision's `l'` one of them
 
 _WORLD_ONLY = (  # the chapter while no favorite stands — in no doc, a world having one most of its life: the recap says it, the targets hand it to the audit
     "the world's news: its lands, beasts and plants, the thinking kinds' first steps and meetings, deaths, births…",
@@ -542,14 +543,10 @@ def _favorite_talk(n: int, favorite: dict) -> str | None:
     return f"the favorite talks with {name}" if task == "socialize_do_talk" else f"{name} talks to the favorite"
 
 
-# The save's `favorite`-flagged actor (WB's in-game marker), detail folded; the chronicler's `descriptor` carries forward while it stays the same favorite.
-def _featured_favorite(chapter: str, fav_id: int, prev_favorite: dict | None) -> dict | None:
-    favorite = _run("actor/info.py", fav_id, "full", chapter)
-    if favorite is None:
-        return None
-    fold_favorite_detail(favorite)
-    if prev_favorite and (prev_favorite.get("metadata") or {}).get("id") == fav_id and (descriptor := prev_favorite.get("descriptor")):
-        favorite["descriptor"] = descriptor  # same favorite → keep the chronicler's epithet
+# The save's `favorite`-flagged actor (WB's in-game marker), detail folded.
+def _featured_favorite(chapter: str, fav_id: int) -> dict | None:
+    if (favorite := _run("actor/info.py", fav_id, "full", chapter)) is not None:
+        fold_favorite_detail(favorite)
     return favorite
 
 
@@ -570,7 +567,7 @@ def _finalize() -> int:
     if counts := {key: len(rows) for key, rows in (echoes(n) or {}).items() if rows}:
         said = ", ".join(f"{count} {key}" for key, count in counts.items())
         print(f"  → said again: {said} — `tools/chapter/echo.py C{n}` points, you judge each: only a repeat goes — the language, a term and a refrain meant stay")
-    # The targets name what this chapter wrote, so they wait for it: printed on the first pass, a descriptor rewritten after them would slip past the audit.
+    # The targets name what this chapter wrote, so they wait for it: printed on the first pass, a summary written after them would slip past the audit.
     if not facts["done"]:
         print("  → once nothing above is left, run `tools/chapter/new.py --finalize` again: it then hands the audit over")
         return 0
@@ -734,27 +731,13 @@ def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime
         print(_RECAP_RULE)
 
 
-# Step 5's lines, one per errand: a task left (→) or a check failed (✗), a length that holds going unsaid. A carried descriptor is quoted: its standing ages.
+# Step 5's lines, one per errand: a task left (→) or a check failed (✗), a length that holds going unsaid.
 def _print_step_five(n: int, facts: dict) -> None:
-    carrying = facts["carried"] and not facts["h1"]  # keep or rewrite is the first pass's call: once the H1 is in, a carried descriptor reads as checked
-    sized = not facts["h1"] or (facts["favorite"] and (not facts["descriptor"] or carrying)) or facts["owed"]  # any length still to write
+    sized = not facts["h1"] or facts["owed"]  # any length still to write
     if not facts["h1"]:
         print(f"  → the final H1, alone and in place of « # {facts['draft']} »: {_H1_CAP} characters at most")
     elif facts["h1_length"] > _H1_CAP:
         print(f"  ✗ H1, {facts['h1_length']} characters of {_H1_CAP}")
-    if facts["favorite"]:
-        if not (text := facts["descriptor"]):
-            print(
-                "  → `favorite.descriptor` in chapter.json, yet to be written: one line on where the favorite stands now, made of what the chapter already says"
-                f" — {_PLAIN}, {_DESCRIPTOR_CAP} characters at most"
-            )
-        elif carrying:
-            print(
-                f"  → `favorite.descriptor`, carried from C{n - 1}: « {text} » — it may stand while every fact in it still holds, an age never does;"
-                f" else rewrite it, {_PLAIN}, {_DESCRIPTOR_CAP} characters at most"
-            )
-        elif len(text) > _DESCRIPTOR_CAP:
-            print(f"  ✗ descriptor, {len(text)} characters of {_DESCRIPTOR_CAP}")
     if owed := facts["owed"]:
         reads = ", ".join(f"`{'actor' if tier == 'favorite' else tier} {entity} traits C{n}`" for tier, entity in owed.items())
         print(f"  → trait summaries owed ({', '.join(owed)}): one string each under the block's own `traits` key, read off {reads}")
@@ -775,9 +758,12 @@ def _print_step_five(n: int, facts: dict) -> None:
     if stray := facts["stray"]:
         tags = ", ".join(f"l.{line} {tag}" for line, tag in stray)
         print(f"  ✗ tags whose id answers nothing: {tags} — an id made up, one only `history` knows, or what grows or is built: no icon, a blank where it goes")
+    if bare := facts["untagged"]:  # a pointer, never a fault: a word can be a species' name and the language's own (`humain`), and the eye tells them apart
+        named = ", ".join(f"l.{line} {word}" for line, word in bare)
+        print(f"  → species of this world named bare, past a word from an entity's tag: {named} — a `[s …]` each, but a common word; a feminine goes unseen")
 
 
-# One scan of prior chapters for all they arbitrate: a first hull or kill, a descriptor kept, a new favorite, a turned age, a stale save, a new war, a first crown.
+# One scan of prior chapters for all they arbitrate: a first hull or kill, the favorite before, a new favorite, a turned age, a stale save, a new war, a first crown.
 def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
     tags: set = set()
     sworn: set = set()
@@ -830,7 +816,7 @@ def _readme_laws() -> tuple[dict[str, bool], list[str]]:
     return laws, unknown
 
 
-# Whether the prose a delivered chapter's record carries has moved since its last commit: a descriptor or a summary is audited, a panel's data never.
+# Whether the prose a delivered chapter's record carries has moved since its last commit: a summary is audited, a panel's data never.
 def _record_prose_moved(n: int) -> bool:
     committed = chronicle_git("show", f"HEAD:C{n}/chapter.json")
     path = SAVES_DIR / f"C{n}" / "chapter.json"
@@ -1019,7 +1005,7 @@ def _snapshot(n: int) -> tuple[str, str | None] | None:
     return tag, last
 
 
-# Step 5 off the chapter's files: its H1 and length, the favorite's descriptor and if carried, the summaries owed or too long, places astray, prose new since C<n-1>.
+# Step 5 off the chapter's files: its H1 and length, the summaries owed or too long, places astray, prose new since C<n-1>.
 def _step_five_facts(n: int, lang: str) -> dict:
     chapter_dir, prior_path = SAVES_DIR / f"C{n}", SAVES_DIR / f"C{n - 1}" / "chapter.json"
     chapter = json.loads((chapter_dir / "chapter.json").read_text())
@@ -1028,24 +1014,20 @@ def _step_five_facts(n: int, lang: str) -> dict:
     headings = [line[2:] for line in prose.splitlines() if line.startswith("# ")]
     draft = _draft_heading(lang)
     favorite, before = chapter.get("favorite") or {}, prior.get("favorite") or {}
-    descriptor = favorite.get("descriptor")
     same = (before.get("metadata") or {}).get("id") == (favorite.get("metadata") or {}).get("id")  # a favorite stays so until death: another, or none, mourns him
-    carried = bool(descriptor) and same and descriptor == before.get("descriptor")
     written = {tier: summary for tier in _TRAIT_SOURCES if isinstance(summary := (chapter.get(tier) or {}).get("traits"), str)}
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
     h1_length = len(unmarked(h1 or ""))
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
     long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(text)) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
     dialogues, doubled, misplaced, stray = short_dialogues(prose), _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)
-    # A summary carried word for word was audited when written, so only a new one goes; the descriptor always, an age in it stale by the next chapter.
+    # A summary carried word for word was audited when written, so only a new one goes.
     fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
     faults = dialogues or doubled or owed or long or misplaced or stray
     return {
-        "audited": sorted(fresh + (["favorite.descriptor"] if favorite else [])),
-        "carried": carried,
-        "descriptor": descriptor,
+        "audited": fresh,
         "dialogues": dialogues,
-        "done": 0 < h1_length <= _H1_CAP and (not favorite or 0 < len(descriptor or "") <= _DESCRIPTOR_CAP) and not faults,
+        "done": 0 < h1_length <= _H1_CAP and not faults,
         "doubled": doubled,
         "draft": draft,
         "events": _events(chapter.get("tags") or []),
@@ -1059,6 +1041,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "named": _named_places(n),
         "owed": owed,
         "stray": stray,
+        "untagged": _untagged_species(n, prose),
         "talk": _favorite_talk(n, favorite),
     }
 
@@ -1075,6 +1058,30 @@ def _stray_tags(n: int, prose: str) -> list[tuple[int, str]]:
 
     tags = ((at, tag) for at, line in enumerate(prose.splitlines(), 1) for tag in _TAG_ID.finditer(line))
     return [(at, tag[0]) for at, tag in tags if (ids := known(tag[1])) is not None and tag[2] not in ids]
+
+
+# A species of this world named bare, by line, singular or plural: out of tags and place names, past a word from an entity's tag or its cell (« l'orc [p 22 Opo] »)
+def _untagged_species(n: int, prose: str) -> list[tuple[int, str]]:
+    save = load_save(SAVES_DIR / f"C{n}" / "map.wbox")
+    here = {a.get("asset_id") for a in save.get("actors_data") or [] if not is_boat(a)} | {s.get("species_id") for s in save.get("subspecies") or []}
+    if not (names := {name.lower() for kind, name in i18n("species.json").items() if kind in here}):
+        return []
+    spoken = re.compile(r"\b(" + "|".join(sorted(map(re.escape, names), key=len, reverse=True)) + r")[sx]?\b", re.IGNORECASE)
+    bare = []
+    for at, line in enumerate(prose.splitlines(), 1):
+        masked = _UNSPOKEN.sub(lambda span: " " * len(span[0]), line)  # spans blanked, not cut: a word keeps its place beside the tags
+        if not (names_said := list(spoken.finditer(masked))):  # most lines name none: their tags are never weighed
+            continue
+        entities = [tag for tag in _TAG_ID.finditer(line) if tag[1] not in _ICON_TAGS]
+        for found in names_said:
+            if line.startswith("|"):  # a table: the cell is the reach, whatever lies between
+                start, end = line.rfind("|", 0, found.start()), line.find("|", found.end())
+                if any(start < tag.start() and tag.end() <= end for tag in entities):
+                    continue
+            gaps = (line[tag.end() : found.start()] if tag.end() <= found.start() else line[found.end() : tag.start()] for tag in entities)
+            if not any(len(_WORDS.findall(gap)) <= 1 for gap in gaps):
+                bare.append((at, found[0]))
+    return bare
 
 
 # How many thinking souls a world raises before its favorite is picked: one per `_LAND_PER_THINKER` of dry ground, never under the floor.
@@ -1153,10 +1160,9 @@ def _write_world(save: dict) -> None:
     _WORLD_JSON.write_text(render(world) + "\n")  # `render` like every other file the bootstrap writes, so a short blurb would inline as they do
 
 
-# The prose the chronicler writes into a `chapter.json`, which the audit reads as it reads the chapter: the favourite's descriptor, each tier's trait summary.
+# The prose the chronicler writes into a `chapter.json`, which the audit reads as it reads the chapter: each tier's trait summary.
 def _written_prose(record: dict) -> dict:
-    summaries = {f"{tier}.traits": summary for tier in _TRAIT_SOURCES if isinstance(summary := (record.get(tier) or {}).get("traits"), str)}
-    return {**summaries, "favorite.descriptor": (record.get("favorite") or {}).get("descriptor")}
+    return {f"{tier}.traits": summary for tier in _TRAIT_SOURCES if isinstance(summary := (record.get(tier) or {}).get("traits"), str)}
 
 
 def main(argv: list[str]) -> int:
@@ -1236,7 +1242,7 @@ def main(argv: list[str]) -> int:
         # Two waves rather than a call per tier: the favorite's metadata names the bodies it belongs to, so none of those can start until it has landed.
         world, favorite = _run_together(
             (_run, "world/info.py", chapter),
-            (_featured_favorite, chapter, fav_id, prev_favorite) if fav_id is not None else None,
+            (_featured_favorite, chapter, fav_id) if fav_id is not None else None,
         )
 
         lost_favorite = fav_id is not None and favorite is None

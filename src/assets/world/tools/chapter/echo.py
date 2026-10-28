@@ -30,6 +30,9 @@ from shared import (
 
 _CHUTE_WORDS = 2  # rare words a sentence must share with a section's last one to take it up again — a chute taken again is taken short
 _DATE = "Dᴀᴛᴇ"  # a date as the chronicle must write one, read as a single name: the manual's own form, never a turn said again
+_DETERMINERS = frozenset({"d", "de", "des", "du", "l", "la", "le", "les", "un", "une"})  # one mould whatever its article: `dans les lointains`, `dans des lointains`
+_EXAMPLE = re.compile(r"_« (.+?) »_")  # how the manual and the lexicon write an example: an italic quote, cut where its `…` opens on the rest
+_EXAMPLE_WORDS = 3  # words an example holds at least to be a mould: `du feu`, `une vingtaine` are the language's own
 _FAMILY_FLOOR = 8  # uses under which no family is weighed: a word said 6 times in 12 000 characters is no tic, whatever the chapters before did
 _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compter`, `comptées` under `compt` — a crude stem that French forgives well enough
 _FORMULA_LINES = 4  # lines of one chapter a figured turn must come back on to be a tic: `il y a 3 ans` said on line after line
@@ -120,6 +123,31 @@ def _dates() -> re.Pattern[str]:
     return re.compile(rf"\b(?:(?:en|au|à)\s+)?(?:{months})\s+de\s+l['’]an\s+\d+", re.IGNORECASE)
 
 
+# The manual's examples chapter `n` says, each at its first line, as written there: an example used is no fault, used again from chapter to chapter a mould.
+@cache
+def _example_lines(n: int) -> dict[tuple[str, ...], tuple[int, str]]:
+    said: dict[tuple[str, ...], tuple[int, str]] = {}
+    raw = (_chapter(n) or "").splitlines()
+    for number, _, sentences in _lines(n):  # the tokens every other check reads, a line's sentences end to end
+        if not (line := raw[number - 1]).strip() or line[0] in "|<#":
+            continue
+        tokens = [token for sentence in sentences for token in sentence]
+        keys = _moulded(tokens)
+        for example in _examples():
+            span = len(example)
+            if (at := next((i for i, key in enumerate(keys) if key == example[0] and keys[i : i + span] == example), None)) is not None:
+                said.setdefault(example, (number, " ".join(token.surface for token in tokens[at : at + span])))
+    return said
+
+
+# The examples `chronicler.md` and `lexicon.md` give, articles levelled: none with a figure or a tag, a form the manual sets, nor too short to be a mould.
+@cache
+def _examples() -> frozenset[tuple[str, ...]]:
+    docs = SAVES_DIR.parent / "docs"
+    quoted = (found[1].split("…")[0] for doc in ("chronicler.md", "lexicon.md") for found in _EXAMPLE.finditer((docs / doc).read_text()))
+    return frozenset(key for text in quoted if not re.search(r"[\d\[`]", text) and len(key := _moulded(_tokens(text, 0))) >= _EXAMPLE_WORDS)
+
+
 # A figured turn chapter `n` keeps coming back to — `il y a 3 ans`, `plus de 5` —, figures as one: a date or a measure aside, whose form the manual sets.
 def _formulas(n: int) -> list[dict]:
     said: defaultdict[tuple[str, ...], dict[int, str]] = defaultdict(dict)
@@ -191,6 +219,11 @@ def _lines(n: int) -> list[tuple[int, bool, list[list[_Token]]]]:
 @cache
 def _measures() -> frozenset[str]:
     return frozenset(i18n("words.json").get("measures", ()))
+
+
+# Tokens as an example is matched on, every article one: the mould is the turn, never the article it was said with.
+def _moulded(tokens: list[_Token]) -> tuple[str, ...]:
+    return tuple("·" if token.key in _DETERMINERS else token.key for token in tokens)
 
 
 # Each one the chapter tags, by its tag, beside the lines that tagged it in the 2 chapters before: where the same angle is likeliest taken twice.
@@ -408,6 +441,11 @@ def _shaped(n: int) -> list[dict]:
         {"chapters": said, "line": line, "text": text, "what": what}
         for (what, key), (line, text) in marks.items()
         if key and (said := [f"C{k}" for k in before if (what, key) in _shape(k)[0]])
+    ]
+    rows += [
+        {"chapters": said, "line": line, "text": text, "what": "example"}
+        for example, (line, text) in _example_lines(n).items()
+        if (said := [f"C{k}" for k in before if example in _example_lines(k)])
     ]
     opened = {row["line"] for row in rows if row["what"] == "opening"}
     rows = [row for row in rows if row["what"] != "paragraph" or row["line"] not in opened]  # a section's opening, told once
