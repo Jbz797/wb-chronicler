@@ -418,7 +418,9 @@ def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], 
 
     def mark(what: str, line: str, number: int, size: int) -> None:
         start = _tokens(line, number)[:size]
-        marks.setdefault((what, tuple(token.key for token in start)), (number, " ".join(token.surface for token in start)))
+        heading = what in ("heading", "title")  # its words by their root, articles levelled: `Celle du` and `Celles de` one mould, `Le premier`, `La première` too
+        keys = tuple(("·" if token.key in _DETERMINERS else token.key[:_FAMILY_ROOT]) if heading else token.key for token in start)
+        marks.setdefault((what, keys), (number, " ".join(token.surface for token in start)))
 
     def close() -> None:
         if last is not None:
