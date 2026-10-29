@@ -1,6 +1,6 @@
 # 📌 Vocabulaire des tags
 
-<p class="metadata">Date de mise à jour : 28/10/26 12:25</p>
+<p class="metadata">Date de mise à jour : 29/10/26 09:30</p>
 
 ## Balises du récit
 
@@ -32,7 +32,7 @@ Les accents graves n'appartiennent qu'à ce tableau.
 
 ## Tags de chapitre
 
-Les `FIRST_…` et `SECOND_CITY` ne tombent qu'une fois dans la chronique.
+Un tag vaut pour le chapitre qui le porte, à sa save. Les `FIRST_…` et `SECOND_CITY` ne tombent qu'une fois dans la chronique.
 
 | Tag                        | Signification                                                                                                         |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
