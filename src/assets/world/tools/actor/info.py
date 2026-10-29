@@ -980,15 +980,15 @@ def _species(actor: dict, ctx: dict) -> dict:
     return ctx["species_data"].get(actor.get("asset_id")) or {}
 
 
-# A body's lasting statuses at each chapter up to the one read, off each chapter's save: `seen` where it stood at all, what came and went in between unseen.
+# A body's statuses at each chapter up to the one read, off each chapter's save: `held` those moving a stat, `passing` the rest, `seen` where it stood at all.
 def _status_history(actor_id: int, upto: int) -> dict | None:
-    lasting, held, seen = load_data("statuses.json"), defaultdict(list), []
+    lasting, sorts, seen = load_data("statuses.json"), {"held": defaultdict(list), "passing": defaultdict(list)}, []
     for n, body in _chapter_bodies(actor_id, upto):
         seen.append(n)
         for status in kept_statuses(body) or ():
-            if status in lasting:
-                held[status].append(n)
-    return {"held": {status: _chapter_spans(at) for status, at in sorted(held.items())}, "seen": _chapter_spans(seen)} if seen else None
+            sorts["held" if status in lasting else "passing"][status].append(n)
+    spans = {sort: {status: _chapter_spans(at) for status, at in sorted(statuses.items())} for sort, statuses in sorts.items()}
+    return {**spans, "seen": _chapter_spans(seen)} if seen else None
 
 
 # What each lasting status has still to run, off WB's own clock that Faithful Saves keeps: `soon`, `months` or `years`. An egg's end is `hatch_on`'s to date.
