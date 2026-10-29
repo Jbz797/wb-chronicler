@@ -328,6 +328,19 @@ def _breeding_bars(actor: dict, ctx: dict, island_of: TileIslands, grid: LazyTil
     return {f"{bar} {actor['id']}" for bar in bars}
 
 
+# How the lineages breed, WB's trait ids prefixes off — `sexual, viviparity` —, each by its ids or count; one shared by all, alone: `subspecies … traits` names them.
+def _breedings(save: dict, listed: dict, counted: bool) -> str | dict[str, list[int] | int]:
+    held: defaultdict[str, list[int]] = defaultdict(list)
+    for lineage in save.get("subspecies") or []:
+        if str(lineage["id"]) in listed:
+            own = (trait for trait in sorted(lineage.get("saved_traits") or ()) if trait.startswith("reproduction_"))
+            traits = [trait.removeprefix("reproduction_").removeprefix("strategy_") for trait in own]
+            held[", ".join(traits) or "none"].append(lineage["id"])
+    if len(held) == 1:
+        return next(iter(held))
+    return {breeding: len(ids) if counted else sorted(ids) for breeding, ids in sorted(held.items())}
+
+
 # The world's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
 def _build_boats(save: dict, requested: str | None) -> dict:
     afloat = [b for b in save.get("actors_data") or [] if is_boat(b)]
@@ -397,11 +410,11 @@ def _build_leaders(save: dict) -> dict:
 
 
 # Every living lineage by its id, a line each as `subspecies … metadata` tells it: its kind, name, members, the biome that shaped it, its month — `-t` narrows.
-def _build_lineages(save: dict, kinds: set[str] | None) -> dict:
+def _build_lineages(save: dict, kinds: set[str] | None, minded: bool | None = None) -> dict:
     members = Counter(actor.get("subspecies") for actor in save.get("actors_data") or [] if not is_boat(actor))
     rows = {}
     for lineage in sorted(save.get("subspecies") or [], key=lambda s: s["id"]):
-        if kinds is not None and lineage.get("species_id") not in kinds:
+        if (kinds is not None and lineage.get("species_id") not in kinds) or (minded is not None and is_sapient(lineage) != minded):
             continue
         biome = (lineage.get("biome_variant") or "").removeprefix("biome_")
         rows[str(lineage["id"])] = {
@@ -927,10 +940,10 @@ def _lineage_tally(rows: dict, typed: bool) -> dict:
 
 
 # The lineages a span saw rise and die out: `gone` as the last save to hold them knew them, `new` as this one does, the ids no save between ever held.
-def _lineages_since(save: dict, since: str, chapter: str | None, kinds: set[str] | None) -> dict:
+def _lineages_since(save: dict, since: str, chapter: str | None, kinds: set[str] | None, minded: bool | None) -> dict:
     earlier, saves = load_save(SAVES_DIR / since / "map.wbox"), _since_saves(since, chapter, save)
-    then, now, seen = _build_lineages(earlier, kinds), _build_lineages(save, kinds), {}
-    for rows in (then, *(_build_lineages(reading, kinds) for reading in saves[:-1])):  # as the last save to see it alive knew it, one born and gone between too
+    then, now, seen = _build_lineages(earlier, kinds, minded), _build_lineages(save, kinds, minded), {}
+    for rows in (then, *(_build_lineages(reading, kinds, minded) for reading in saves[:-1])):  # as its last save alive knew it, one born and gone between too
         seen |= {key: row for key, row in rows.items() if row["members"]}  # WB keeps an emptied record a while: no living, no lineage
     unseen = passed_unseen(earlier, saves).get("subspecies")
     out = {
@@ -1148,13 +1161,17 @@ def main(argv: list[str]) -> int:
         return 2
     entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None]
     # What keeps only some bodies of the roll: `-t` among them, though it narrows `lineages` too, and `--with` none — it adds fields to every line
-    filtered = (
-        any((args.barred, args.beasts, args.has, args.lacks, args.patch, args.sapient, args.settle, args.stage, args.status, args.task, args.top, args.trait))
+    sifted = (
+        any((args.barred, args.has, args.lacks, args.patch, args.settle, args.stage, args.status, args.task, args.top, args.trait))
         or bool(entities)
         or args.island is not None
         or args.nearest is not None
     )
-    narrowing = filtered or (args.type and not {"lineages", "pairings"} & set(sections)) or args.fields is not None
+    minded = True if args.sapient else False if args.beasts else None  # a roll's bodies split by mind, or a census's lineages
+    filtered = sifted or minded is not None
+    narrowing = (
+        sifted or (minded is not None and "lineages" not in sections) or (args.type and not {"lineages", "pairings"} & set(sections)) or args.fields is not None
+    )
     if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
         print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
         return 2
@@ -1166,7 +1183,7 @@ def main(argv: list[str]) -> int:
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
         flags = "-t, --trait, --has, --lacks, --top, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --settle, --barred, -i and an entity"
-        print(f"✗ {flags} narrow `roster`, `-t` `lineages` and `pairings` too: name it", file=sys.stderr)
+        print(f"✗ {flags} narrow `roster`, `-t` `lineages` and `pairings` too, `--sapient` and `--beasts` `lineages`: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
         print("✗ --has and --lacks split a roll in two: name one", file=sys.stderr)
@@ -1206,17 +1223,20 @@ def main(argv: list[str]) -> int:
     if "lineages" in sections:
         of = f" of {args.type}" if args.type else ""
         if since:
-            lineages = _lineages_since(save, since, chapter, bred)
+            lineages = _lineages_since(save, since, chapter, bred, minded)
             if not (lineages.get("gone") or lineages.get("new")):  # the unseen alone are no answer: of no kind a save keeps, they are said beside the refusal
                 unseen = lineages.get("came_and_went") or []
                 more = len(unseen["world"] if isinstance(unseen, dict) else unseen)
                 print(f"✗ no lineage{of} came or went since {since}" + (f" — {more} more unseen in the world, kind unknown" if more else ""), file=sys.stderr)
                 return 1
-        elif not (lineages := _build_lineages(save, bred)):
+        elif not (lineages := _build_lineages(save, bred, minded)):
             # A mistyped word told apart from a kind with no lineage left, as `roster` tells it
             print(f"✗ {(args.type and unsited_reason(families, args.type)) or f'no living lineage{of} in this world'}", file=sys.stderr)
             return 1
-        out["lineages"] = lineages if since else _lineage_tally(lineages, bred is not None)
+        if not since:  # the census, and how its lineages breed — by ids as its rows, counted where they are: `-t` and `--sapient` narrow both
+            tally = _lineage_tally(lineages, bred is not None)
+            lineages = {**tally, "reproduction": _breedings(save, lineages, counted=tally is not lineages)}
+        out["lineages"] = lineages
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)
     if "pairings" in sections:
