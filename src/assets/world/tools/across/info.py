@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import SAVES_DIR, render
 
-_SPAN = re.compile(r"C(\d+)-C?(\d+)")  # `C1-C5`, or `C1-5`
+_SPAN = re.compile(r"C(\d+)(?:-C?(\d+))?")  # `C1-C5`, or `C1-5` — a lone `C5` read too, to be refused with the call it stands for
 _TOOLS = Path(__file__).parents[1]
 _USAGE = "✗ usage: across/info.py C<a>-C<b> <tool> [args…] [--keep a,b.c] — `across C1-C5 geography burning -i 1`, each chapter's suffix the span's"
 
@@ -60,7 +60,10 @@ def main(argv: list[str]) -> int:
     if chapters := [arg for arg in args if re.fullmatch(r"C\d+", arg)]:
         print(f"✗ {', '.join(chapters)}: the span names the chapters — {_USAGE.removeprefix('✗ ')}", file=sys.stderr)
         return 2
-    first, last = sorted((int(span[1]), int(span[2])))
+    first, last = sorted((int(span[1]), int(span[2] or span[1])))
+    if first == last:  # one chapter is the tool's own suffix, its answer bare
+        print(f"✗ one chapter needs no `across`: `{' '.join([tool, *args, f'C{first}'])}`", file=sys.stderr)
+        return 2
     chapters = [f"C{n}" for n in range(first, last + 1)]
     with ThreadPoolExecutor(max_workers=len(chapters)) as pool:  # each chapter a process of its own, none waiting on another
         jobs = {chapter: pool.submit(_answer, script, args, chapter) for chapter in chapters if (SAVES_DIR / chapter / "map.wbox").exists()}
