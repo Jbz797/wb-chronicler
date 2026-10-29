@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 29/10/26 09:58</p>
+<p class="metadata">Date de mise à jour : 29/10/26 21:39</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -8,7 +8,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - **Ce que fixe un filtre** (`-i`, un seul `-t`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre.
 - **Les coordonnées** croissent vers l'est (x) et le nord (y), un `dir` aussi.
 - **`sections`** : liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings` et `roster`, à nommer) ; un bloc nommé seul (section, `--to`, tuile) sort nu, plusieurs gardent leur clé.
-- **Le suffixe `C<n>`** lit ce chapitre ; sans lui, le dernier ; l'outil `across` (`across C3-C7 actor 23 metadata --keep task`) pose la question à chacun, rangée par chapitre.
+- **Le suffixe `C<n>`** lit ce chapitre ; sans lui, le dernier ; l'outil `across` pose la question à chacun, rangée par chapitre (`across C1-C9 world metadata --keep date` : la date de chacun).
 - **Une sortie se lit entière** : coupée (`head`), le JSON ne se lit plus ; les sections lourdes, une à une. Trop large, elle se résume (un compte par terre) : le détail se demande par ses filtres (`-i`, `-t`, une section).
 
 | Commande          | Sections                                                                                                                               |
