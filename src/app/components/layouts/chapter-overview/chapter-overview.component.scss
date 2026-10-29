@@ -6,21 +6,6 @@
   height: 100vh;
   padding: 1rem;
 
-  nz-divider {
-    margin: 0 0 20px;
-  }
-
-  nz-empty {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  em {
-    color: $text-secondary;
-  }
-
   .section-title {
     margin-bottom: 0;
     text-align: center;
@@ -39,12 +24,11 @@
     }
   }
 
-  ::ng-deep {
-    nz-tag.ant-tag-gold {
-      line-height: 16px;
-      margin-right: 0.25rem;
-    }
+  nz-divider {
+    margin: 0 0 20px;
+  }
 
+  ::ng-deep {
     // Preventive: the widest plate ever laid down measures 179px. Past 200 the name gives way rather than the table, which would widen past the panel.
     .entity-tag {
       max-width: 200px;
@@ -203,38 +187,6 @@
           margin: 0 6px 0 0;
         }
 
-        .inventory {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.35rem;
-
-          span {
-            align-items: center;
-            background: rgb(255 255 255 / 4%);
-            border-radius: $radius;
-            cursor: pointer;
-            display: inline-flex;
-            gap: 0.25rem;
-            padding: 0 4.5px;
-            transition:
-              background-color $transition,
-              box-shadow $transition;
-
-            // The name rides a tooltip, so the cell answers the pointer: lit a shade and ringed in gold, no scale that would blur the pixel art.
-            &:hover {
-              background: rgb(255 255 255 / 10%);
-              box-shadow: inset 0 0 0 1px rgba($primary, 0.5);
-            }
-
-            img {
-              margin: 0;
-              max-height: 12px;
-              max-width: 12px;
-              top: 0;
-            }
-          }
-        }
-
         app-city-tag,
         app-kingdom-tag {
           display: block;
@@ -248,7 +200,6 @@
 
         // `text-top` sets the 20px plate 4px down a 24px line and flush with its foot: lifted by half, it meets the row's centre and leaves the row's height alone.
         .entity-tag {
-          margin: 0;
           position: relative;
           top: -2px;
         }
@@ -258,18 +209,27 @@
       .ant-table-cell {
         white-space: nowrap;
       }
-    }
 
-    .ant-table-tbody nz-tag {
-      margin: 0;
+      .ant-table-tbody nz-tag {
+        margin: 0;
+      }
     }
+  }
 
-    .ant-empty-image {
-      height: auto;
-    }
+  nz-empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
 
-    .ant-empty-description {
-      margin-bottom: 0;
+    ::ng-deep {
+      .ant-empty-image {
+        height: auto;
+      }
+
+      .ant-empty-description {
+        margin-bottom: 0;
+      }
     }
   }
 }

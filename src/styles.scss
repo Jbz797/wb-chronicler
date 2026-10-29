@@ -26,9 +26,25 @@ canvas {
 }
 
 .ant-tag {
-  // One plate for all four: a subject, its village, its crown and its family share a body, so they read as one set. Only ground and ink part them.
+  // Every tag that counts something hangs the same centred box; what it counts, and on which ground, each plate settles for itself below.
+  .tag-badge {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    justify-content: center;
+  }
+
+  // One plate for all: a subject, its village, its crown and its family share a body and a black ground in their crown's hue — only ground and ink part them.
   &.entity-tag {
     align-items: center;
+    background-color: #000;
+    border: none;
+
+    // Black rides over the emblem tint's outer column, insetting it so plate flanks both sides and it reads alike on any page; the olive fallback keeps both alive.
+    box-shadow:
+      inset 0 0 0 1px #000,
+      inset 0 0 0 1.5px var(--tag-ring, #{$kingdom-plate});
+    color: var(--tag-color);
     display: inline-flex;
     font-family: $font-body;
     font-size: 12.5px;
@@ -55,26 +71,6 @@ canvas {
       max-height: 14px;
       max-width: 14px;
     }
-  }
-
-  // Every tag that counts something hangs the same centred box; what it counts, and on which ground, each plate settles for itself below.
-  .tag-badge {
-    align-items: center;
-    display: inline-flex;
-    font-weight: 800;
-    justify-content: center;
-  }
-
-  // The three entity tags take a black ground and their crown's hue, so a subject, its village and its realm answer to the same palette.
-  &.entity-tag {
-    background-color: #000;
-    border: none;
-    color: var(--tag-color);
-
-    // Black rides over the emblem tint's outer column, insetting it so plate flanks both sides and it reads alike on any page; the olive fallback keeps both alive.
-    box-shadow:
-      inset 0 0 0 1px #000,
-      inset 0 0 0 1.5px var(--tag-ring, #{$kingdom-plate});
 
     // All three sprites ride a lift of their own, so the offsetting parent belongs here rather than repeated three times below.
     canvas {

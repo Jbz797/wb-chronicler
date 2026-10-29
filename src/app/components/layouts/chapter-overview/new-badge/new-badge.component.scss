@@ -11,5 +11,10 @@
     margin-left: 4px;
     position: relative;
     top: -1px;
+
+    &.ant-tag-gold {
+      line-height: 16px;
+      margin-right: 0.25rem;
+    }
   }
 }
