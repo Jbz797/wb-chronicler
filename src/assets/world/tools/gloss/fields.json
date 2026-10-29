@@ -32,7 +32,7 @@
   "actor.stats.speed": "Allure du jeu : `speed` × 0,2 tuile par seconde de jeu (60 s font un an) ; les minutes de `--to` suivent l'échelle du récit, jamais cette seconde.",
   "actor.stats.swim": "`breath` tant que dure le souffle, `reach` noyade comprise, à l'endurance et la santé du moment, `rested` reposé ; `never` brûle dans l'eau, `unlimited` jamais las.",
   "actor.stats.warfare": "`diplomacy`, `intelligence`, `stewardship` et `warfare` (« Martial » en jeu, pas « combat ») sont des savoirs : `wiki:Unit_Stats`.",
-  "actor.statuses": "`--statuses` : `held`, ses statuts durables chapitre par chapitre ; `seen`, ses chapitres. Rien ne s'y lit d'entre deux.",
+  "actor.statuses": "`--statuses` : par chapitre, `held` ses statuts qui changent une stat (le bonheur n'en est pas une), `passing` les autres vus à la save ; rien d'entre deux saves.",
   "actor.surroundings": "Rangé au pas du corps, terrain pesé, `crow_tiles` par ligne ; comme `--to`, ne nage que si le but est sur une autre terre. `intimate` ≤ 30 min, `common` ≤ 2 h.",
   "actor.surroundings.boat": "Une coque que le corps rejoint y paraît (`boat_…`), sans être un corps.",
   "actor.surroundings.common_with_boat": "Hors de sa terre, ≤ 2 h en bateau, marches comprises, si son royaume a un transport ; à bord, par l'eau puis à pied.",
