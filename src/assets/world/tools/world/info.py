@@ -478,13 +478,13 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         # WB's law on babies, a beast's or a thinker's, read off the kind's first lineage that mates — every one of a kind thinks or none does.
         law = "world_law_civ_babies" if mating and is_sapient(ctx["subspecies_by_id"].get(mating[0].get("subspecies"))) else "world_law_animals_babies"
         barred_by_law = {law} if not laws.get(law, True) else set()
-        # Lovers first, WB never parting them for another; then a pair nothing bars; then the earliest, the nearest — its bars said, never hidden.
+        # Lovers first, WB never parting them; then a pair nothing bars — a law always, a body's state only if ready now; then the earliest, the nearest.
         best = min(
             (
                 (
                     a.get("lover") != b["id"],
-                    bool(barred := sorted(bars[a["id"]] | bars[b["id"]] | barred_by_law)),
-                    max(ready[a["id"]], ready[b["id"]]),
+                    bool(barred := sorted((bars[a["id"]] | bars[b["id"]] if (mates := max(ready[a["id"]], ready[b["id"]])) <= now else set()) | barred_by_law)),
+                    mates,
                     walk_tiles(where[b["id"]][0] - where[a["id"]][0], where[b["id"]][1] - where[a["id"]][1]),
                     a,
                     b,
