@@ -16,242 +16,244 @@
     // `ngx-scrollbar` sizes its content box to its widest child, so one long code line would stretch every paragraph past the parchment and clip the prose.
     .ng-scroll-content {
       max-width: 100%;
-    }
-  }
 
-  article {
-    padding: 2rem;
-  }
+      article {
+        padding: 2rem;
 
-  p,
-  li {
-    text-align: justify;
-  }
+        p,
+        li {
+          text-align: justify;
+        }
 
-  // EB Garamond's `◦` sits above the lowercase middle, and `::marker` takes no offset: a smaller glyph on the same baseline brings its centre down to it.
-  ul > li::marker {
-    font-size: 0.8em;
-  }
+        // EB Garamond's `◦` sits above the lowercase middle, and `::marker` takes no offset: a smaller glyph on the same baseline brings its centre down to it.
+        ul > li::marker {
+          font-size: 0.8em;
+        }
 
-  // The empty chronicle. Centred on the parchment rather than set as prose: there is no text to read here, only the one order that starts the chronicler.
-  .bootstrap {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    height: calc(100vh - 8rem); // the parchment's own height less the article's padding, so the block sits on the true centre rather than above it
-    justify-content: center;
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+          color: rgb(0 0 0 / 85%);
+          font-family: $font-display;
+        }
 
-    p {
-      color: $sienna-soft;
-      margin: 0;
-      text-align: center;
-    }
+        h1 {
+          border-bottom: 2px solid $gold-soft;
+          margin-top: 1.8em;
+          padding-bottom: 0.2em;
+          text-align: center;
+          text-shadow: $glow;
 
-    .order {
-      color: $sienna;
-      font-family: $font-display;
-      font-size: 1.35em;
-    }
-  }
+          &:first-child {
+            border-bottom: none;
+            margin-top: 0;
+            padding-bottom: 0;
+          }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5 {
-    color: rgb(0 0 0 / 85%);
-    font-family: $font-display;
-  }
+          // An opening set as an epigraph belongs to the title, so the typography's 0.5em gap closes and the two read as one heading.
+          &:has(+ p.plain-opening) {
+            margin-bottom: 0.2em;
+          }
 
-  h1 {
-    border-bottom: 2px solid $gold-soft;
-    margin-top: 1.8em;
-    padding-bottom: 0.2em;
-    text-align: center;
-    text-shadow: $glow;
+          // Left bare it would read as a stray body line under the title, so it takes the epigraph's part: the cap's own hue and face, centred as the `h1` is.
+          & + p.plain-opening {
+            color: $sienna;
+            font-family: $font-display;
+            font-size: 1.35em;
+            letter-spacing: 0.02em;
+            margin: 0 0 1.6em;
+            text-align: center;
 
-    &:first-child {
-      border-bottom: none;
-      margin-top: 0;
-      padding-bottom: 0;
-    }
+            // `text-top` pins the 20px plate to a Cinzel box that grows with the fitted size, so it drifts; `middle` holds it on the small caps at any size.
+            .entity-tag {
+              top: -2px;
+              vertical-align: middle;
+            }
+          }
+        }
 
-    // An opening set as an epigraph belongs to the title, so the typography's 0.5em gap closes and the two read as one heading.
-    &:has(+ p.plain-opening) {
-      margin-bottom: 0.2em;
-    }
+        h2 {
+          border-bottom: 0.5px solid $gold-soft;
+          margin-top: 1.6em;
+          padding-bottom: 0.1em;
+        }
 
-    // Left bare it would read as a stray body line under the title, so it takes the epigraph's part instead: the cap's own hue and face, centred as the `h1` is.
-    & + p.plain-opening {
-      color: $sienna;
-      font-family: $font-display;
-      font-size: 1.35em;
-      letter-spacing: 0.02em;
-      margin: 0 0 1.6em;
-      text-align: center;
+        h3 {
+          margin-top: 1.4em;
+        }
 
-      // `text-top` pins the 20px plate to a Cinzel box that grows with the fitted size, so it drifts; `middle` holds it on the small caps at any size.
-      .entity-tag {
-        top: -2px;
-        vertical-align: middle;
+        h4 {
+          font-style: italic;
+        }
+
+        .metadata {
+          color: $sienna-soft;
+          font-size: 0.92em;
+          font-style: italic;
+          margin-bottom: 32px;
+          margin-top: -16px;
+          text-align: right;
+        }
+
+        a {
+          color: $sienna;
+          text-decoration: underline;
+        }
+
+        :not(pre) > code {
+          background: $paper-shade;
+          color: $sienna;
+          white-space: nowrap;
+        }
+
+        pre {
+          background: $dark-warm;
+        }
+
+        blockquote {
+          border-left: 3px solid $gold;
+          color: $sienna;
+          font-style: italic;
+          margin: 1.6em 0;
+          padding: 0.25em 1em;
+
+          p {
+            margin: 0;
+          }
+        }
+
+        table {
+          margin: 1.2em 0;
+          width: 100%;
+
+          th,
+          td {
+            border: 1px solid $gold-soft;
+            padding: 0.5em 0.8em;
+          }
+
+          th {
+            background: $paper-shade;
+            text-transform: uppercase;
+
+            .entity-tag {
+              text-transform: none; // A plate spells its own name: WB's casing and the tag's small-caps are its own, and the heading's uppercase would flatten both.
+            }
+          }
+
+          tr:nth-child(even) td {
+            background: $paper-dim;
+          }
+        }
+
+        .entity-tag {
+          position: relative;
+          top: 2px;
+        }
+
+        // A tag `ReaderPage` flattened to its name where a plate would crowd the line — bold, its species' hue set inline.
+        .plain-tag {
+          font-weight: 700;
+        }
+
+        hr {
+          border: 0;
+          height: 2em;
+          margin-top: 2em;
+          text-align: center;
+
+          &::before {
+            color: var(--fleuron, #{$gold}); // the favourite's species hue, set by `ReaderPage`; the gold before a favourite and on a workshop page
+            content: '❦';
+            font-size: 1.8em;
+            line-height: 1;
+          }
+        }
+
+        // An icon sits on the line at one size, worn by a name or alone: a bare `[g id]` takes no rule from the wrap it lacks.
+        .icon {
+          max-height: 16px;
+          max-width: 16px;
+          vertical-align: 0;
+        }
+
+        .icon-wrap {
+          font-weight: 500;
+
+          &.boat-ink {
+            color: $boat-ink;
+          }
+
+          .icon {
+            margin-left: 2px;
+          }
+        }
+
+        &.chapter {
+          // The drop cap, a chapter's alone: its opening paragraph, unless `ReaderPage` found it too short to stand by one. A workshop page is a manual, not a tale.
+          h1 + p:not(.plain-opening)::first-letter {
+            color: $sienna;
+            float: left;
+            font-family: $font-display;
+            font-size: 3.55em;
+            font-weight: 700;
+            line-height: 1; // the prose's own 1.75 would box a 62px letter in 109px, sinking it a line and spilling under the paragraph
+            margin: 0.16em 0.1em 0 0; // the glyph's own overshoot, nudged back so its bar sits on the first line's cap height rather than above it
+          }
+
+          // A chapter's last word, a hook taken up again past its fleuron: set apart from the prose it closes, as the epigraph is from the one it opens.
+          hr + p:last-child {
+            color: $sienna;
+            font-size: 1.05em;
+            font-style: italic;
+            margin: 0 8%;
+            text-align: center;
+
+            &::after {
+              color: $gold;
+              content: '❧';
+              display: block;
+              font-size: 1.4em;
+              font-style: normal;
+              margin-top: 0.4em;
+            }
+          }
+
+          // A dialogue's lines, as `ReaderPage` marks them: an exchange set off by a rule, its replies held together, left-aligned where justified prose would gape.
+          p.dialogue {
+            border-left: 2px solid $gold-soft;
+            margin: 0;
+            padding: 0.3em 0 0.3em 1.2em;
+
+            + :not(.dialogue) {
+              margin-top: 1em; // a paragraph's room sits below it alone, so the prose after the exchange takes the gap the last reply gave up
+            }
+          }
+        }
+
+        // The empty chronicle. Centred on the parchment rather than set as prose: there is no text to read here, only the one order that starts the chronicler.
+        .bootstrap {
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+          height: calc(100vh - 8rem); // the parchment's own height less the article's padding, so the block sits on the true centre rather than above it
+          justify-content: center;
+
+          p {
+            color: $sienna-soft;
+            margin: 0;
+            text-align: center;
+          }
+
+          .order {
+            color: $sienna;
+            font-family: $font-display;
+            font-size: 1.35em;
+          }
+        }
       }
-    }
-  }
-
-  h2 {
-    border-bottom: 0.5px solid $gold-soft;
-    margin-top: 1.6em;
-    padding-bottom: 0.1em;
-  }
-
-  h3 {
-    margin-top: 1.4em;
-  }
-
-  h4 {
-    font-style: italic;
-  }
-
-  .metadata {
-    color: $sienna-soft;
-    font-size: 0.92em;
-    font-style: italic;
-    margin-bottom: 32px;
-    margin-top: -16px;
-    text-align: right;
-  }
-
-  a {
-    color: $sienna;
-    text-decoration: underline;
-  }
-
-  :not(pre) > code {
-    background: $paper-shade;
-    color: $sienna;
-    white-space: nowrap;
-  }
-
-  pre {
-    background: $dark-warm;
-  }
-
-  blockquote {
-    border-left: 3px solid $gold;
-    color: $sienna;
-    font-style: italic;
-    margin: 1.6em 0;
-    padding: 0.25em 1em;
-
-    p {
-      margin: 0;
-    }
-  }
-
-  table {
-    margin: 1.2em 0;
-    width: 100%;
-
-    th,
-    td {
-      border: 1px solid $gold-soft;
-      padding: 0.5em 0.8em;
-    }
-
-    th {
-      background: $paper-shade;
-      text-transform: uppercase;
-
-      .entity-tag {
-        text-transform: none; // A plate spells its own name: WB's casing and the tag's small-caps are its own, and the heading's uppercase would flatten both.
-      }
-    }
-
-    tr:nth-child(even) td {
-      background: $paper-dim;
-    }
-  }
-
-  .entity-tag {
-    position: relative;
-    top: 2px;
-  }
-
-  // A tag `ReaderPage` flattened to its name where a plate would crowd the line — bold, its species' hue set inline.
-  .plain-tag {
-    font-weight: 700;
-  }
-
-  // The drop cap, a chapter's alone: its opening paragraph, unless `ReaderPage` found it too short to stand beside one. A workshop page is a manual, not a tale.
-  .chapter h1 + p:not(.plain-opening)::first-letter {
-    color: $sienna;
-    float: left;
-    font-family: $font-display;
-    font-size: 3.55em;
-    font-weight: 700;
-    line-height: 1; // the prose's own 1.75 would box a 62px letter in 109px, sinking it a line and spilling under the paragraph
-    margin: 0.16em 0.1em 0 0; // the glyph's own overshoot, nudged back so its bar sits on the first line's cap height rather than above it
-  }
-
-  // A chapter's last word, a hook taken up again past its fleuron: set apart from the prose it closes, as the epigraph is from the one it opens.
-  .chapter hr + p:last-child {
-    color: $sienna;
-    font-size: 1.05em;
-    font-style: italic;
-    margin: 0 8%;
-    text-align: center;
-
-    &::after {
-      color: $gold;
-      content: '❧';
-      display: block;
-      font-size: 1.4em;
-      font-style: normal;
-      margin-top: 0.4em;
-    }
-  }
-
-  // A dialogue's lines, as `ReaderPage` marks them: one exchange set off by a rule, its replies held together and left-aligned, where justified prose would gape.
-  .chapter p.dialogue {
-    border-left: 2px solid $gold-soft;
-    margin: 0;
-    padding: 0.3em 0 0.3em 1.2em;
-
-    + :not(.dialogue) {
-      margin-top: 1em; // a paragraph's room sits below it alone, so the prose after the exchange takes the gap the last reply gave up
-    }
-  }
-
-  hr {
-    border: 0;
-    height: 2em;
-    margin-top: 2em;
-    text-align: center;
-
-    &::before {
-      color: var(--fleuron, #{$gold}); // the favourite's species hue, set by `ReaderPage`; the gold before a favourite and on a workshop page
-      content: '❦';
-      font-size: 1.8em;
-      line-height: 1;
-    }
-  }
-
-  // An icon sits on the line at one size, worn by a name or alone: a bare `[g id]` takes no rule from the wrap it lacks.
-  .icon {
-    max-height: 16px;
-    max-width: 16px;
-    vertical-align: 0;
-  }
-
-  .icon-wrap {
-    font-weight: 500;
-
-    &.boat-ink {
-      color: $boat-ink;
-    }
-
-    .icon {
-      margin-left: 2px;
     }
   }
 }

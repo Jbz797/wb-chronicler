@@ -6,9 +6,41 @@
   flex-direction: column;
   gap: 1rem;
 
+  .unreachable {
+    color: $text-secondary;
+    margin: 0;
+    text-align: center;
+  }
+
+  // The stack lays every block out full width; the two flags are the one thing narrow enough to read as adrift unless they sit on the panel's axis.
+  .languages {
+    align-self: center;
+
+    // WB's own flags, 15×10 as the game draws them — scaled by a whole factor and left unsmoothed, like every other sprite the reader shows.
+    ::ng-deep .ant-radio-button-wrapper > span:last-child {
+      align-items: center;
+      display: inline-flex;
+      gap: 0.4rem;
+
+      .flag {
+        height: 12px;
+      }
+    }
+  }
+
+  // On the panel's axis like the flags above it — the switch belongs to the same choice, and a lone box hard left would read as an afterthought.
+  .dev-mode {
+    align-self: center;
+  }
+
   // The list is the panel's one moving part; the rules fence it off. Their own margin would double the gap that already governs the stack.
   ::ng-deep .ant-divider {
     margin: 16px 0;
+  }
+
+  .intro {
+    color: $text-secondary;
+    text-align: center;
   }
 
   // A machine can hold as many slots as the player cares to keep, and the panel's own button must stay in sight whatever their number.
@@ -38,58 +70,5 @@
         width: fit-content; // the tooltip hangs off this line, which a long world name above would stretch — the pointer would then find it past its text
       }
     }
-  }
-
-  // ng-zorro dresses `code` as a chip inside the chronicle alone, where the reader then tints it for parchment — the same chip, on the ground this side holds.
-  code {
-    background: rgb(0 0 0 / 25%);
-    border: 1px solid rgba($primary, 0.25);
-    border-radius: 3px;
-    color: $gold-soft;
-    font-size: 0.9em;
-    margin: 0 0.2em;
-    padding: 0.1em 0.35em;
-  }
-
-  // The theme mutes `info` and `warning` into the same brown, and this one is what the panel is for: it takes the gold its own button carries.
-  ::ng-deep .ant-alert-info {
-    background: rgba($primary, 0.12);
-    border-color: rgba($primary, 0.4);
-    margin-top: 0.5rem; // set off from the list it follows, where the gap governing the stack alone would let it read as one more of its rows
-
-    .ant-alert-message {
-      color: $primary;
-    }
-  }
-
-  // On the panel's axis like the flags above it — the switch belongs to the same choice, and a lone box hard left would read as an afterthought.
-  .dev-mode {
-    align-self: center;
-  }
-
-  .intro,
-  .unreachable {
-    color: $text-secondary;
-    text-align: center;
-  }
-
-  // The stack lays every block out full width; the two flags are the one thing narrow enough to read as adrift unless they sit on the panel's axis.
-  .languages {
-    align-self: center;
-
-    // WB's own flags, 15×10 as the game draws them — scaled by a whole factor and left unsmoothed, like every other sprite the reader shows.
-    ::ng-deep .ant-radio-button-wrapper > span:last-child {
-      align-items: center;
-      display: inline-flex;
-      gap: 0.4rem;
-
-      .flag {
-        height: 12px;
-      }
-    }
-  }
-
-  .unreachable {
-    margin: 0;
   }
 }

@@ -8,6 +8,7 @@ import { TranslatePipe } from '@ngx-translate/core';
   selector: 'app-inventory',
   imports: [NzTooltipModule, TranslatePipe],
   templateUrl: './inventory.component.html',
+  styleUrl: './inventory.component.scss',
 })
 export class InventoryComponent {
 
