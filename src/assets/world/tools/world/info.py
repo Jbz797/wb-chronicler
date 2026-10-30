@@ -263,7 +263,7 @@ _SOULBORNE = "reproduction_soulborne"  # a lineage born of the souls it strikes:
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` and `--lacks` weigh: a body's own counters, named as `actor … stats` names them
 _TOP_PAIRINGS = 20  # the kinds `pairings` keeps past `MAX_LISTED`, first births first: the ones a chapter tells, the rest counted and read by `-t`
-_TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "equipment_power")))  # what `--top` ranks by: those counters, a skill, an arsenal
+_TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "age", "equipment_power")))  # what `--top` ranks by: those counters, a skill, an arsenal, the age
 _TOP_ROWS = 10  # a ranking is asked for its head: who comes first, second, third — the rest is counted
 _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
 _WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_ISLET` is, but in the sea or a lake
@@ -657,6 +657,8 @@ def _build_roster(
             continue
         here = _standing(actor, island_of, grid, save["tileMap"])
         change: dict = {weighed: held if once is None else [max(before, floor), max(held, floor)]} if has or top else {}
+        if top == "age":  # its month, which tells a cohort of one age apart
+            change["born"] = entity_born(actor)
         if near:
             far[actor["id"]] = crow(*actor_xy(actor))
             change["crow_tiles"] = round(far[actor["id"]])
@@ -721,7 +723,10 @@ def _build_roster(
         if settle:  # the grown first, whose youth is past, then by the date each comes of age
             return crossed_at(body[0], adult_age(body[0], ctx)), body[0]["id"]
         if has or top:  # the measure asked, highest first — its latest figure under `--since`: whoever stands in no line has none, or has not moved
-            return -(body[2][weighed] if once is None else body[2][weighed][1]), body[0]["id"]
+            figure = body[2][weighed] if once is None else body[2][weighed][1]
+            if top == "age":  # whole years tie a cohort: the earliest born first, the years it arrived with counted
+                return -figure, float(body[0].get("created_time") or 0) - (body[0].get("age_overgrowth") or 0) * UNITS_PER_YEAR, body[0]["id"]
+            return -figure, body[0]["id"]
         if entity:  # its members eldest first, as each entity's own list ran
             return -actor_age(body[0], ctx["world_time"]), body[0]["id"]
         return isinstance(body[1], str), body[1], body[0]["id"]
@@ -923,8 +928,10 @@ def _grouped_field(field: str, values: list) -> dict | None:
     return {"max": held[-1], "median": median(held), "min": held[0], "of": len(held)} if held else None
 
 
-# A body's measure as `--has`, `--lacks` and `--top` weigh it — `level` counts past 1, WB's floor, where every body starts. A skill or an arsenal asks for `ctx`.
+# A body's measure as `--has`, `--lacks` and `--top` weigh it — `level` counts past 1, WB's floor. A skill, an arsenal or the age asks for `ctx`.
 def _held(actor: dict, tally: str, ctx: dict | None = None) -> int:
+    if ctx is not None and tally == "age":  # as `metadata` counts it, the years a body arrived with included: the age that ranks
+        return actor_age(actor, ctx["world_time"])
     if ctx is not None and tally not in _TALLIES:  # read off its stats, where a counter is the body's own
         return equipment_power(actor, ctx) if tally == "equipment_power" else int(compute_actor_stats(actor, ctx).get(tally, 0))
     value = int(actor.get(tally) or 0)
@@ -1146,7 +1153,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--stage", choices=_LIFE_STAGES, help="`roster`: the bodies at one life stage — under `--since`, at it now, a dead one at its last")
     parser.add_argument("--status", help="`roster`: the bodies wearing one status, by its id — what a body wears now, where a trait is what it is")
     parser.add_argument("--task", help="`roster`: the bodies at one task the instant of the save, by its id — what a body does, where a status is what it wears")
-    parser.add_argument("--top", choices=_TOP_MEASURES, help=f"`roster`: its {_TOP_ROWS} highest by one measure, a tally or a skill, each with its figure")
+    parser.add_argument("--top", choices=_TOP_MEASURES, help=f"`roster`: its {_TOP_ROWS} highest by one measure, a tally, a skill or the age, each with its figure")
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster` and `lineages`: one kind, a family (`actors`) or a comma list")
     parser.add_argument(

@@ -199,6 +199,7 @@
   "world.pairings.needs": "`soul` : il lui faut d'abord frapper un corps qui a une âme (`has_soul`, `subspecies … species`) ; ce coup lance seul la naissance.",
   "world.pairings.pair": "La porteuse d'abord, dont l'enfant prend la cité ; sinon, celle de l'autre.",
   "world.pairings.pregnant": "Les porteuses d'une grossesse en cours.",
+  "world.roster.age": "Sous `--top age`, l'âge en années entières, années apportées comprises (`age_overgrowth`) ; à âge égal, le plus tôt né d'abord, que `born` date.",
   "world.roster.city": "Sous `--city`, la terre de la cité se tait : c'est celle de tous.",
   "world.roster.died_of": "Hausses de sa lignée (du monde si éteinte) au chapitre où il part, sans vieillesse avant `old_from`, `eaten` ou `weapon` d'une victime ; une liste, le doute.",
   "world.roster.has": "`--has <compte>` : ceux qui en tiennent ; sous `--since`, ceux dont il a changé, et les morts avec ce qu'ils en emportaient.",
