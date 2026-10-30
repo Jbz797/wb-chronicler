@@ -1198,9 +1198,7 @@ def main(argv: list[str]) -> int:
     )
     minded = True if args.sapient else False if args.beasts else None  # a roll's bodies split by mind, or a census's lineages
     filtered = sifted or minded is not None
-    narrowing = (
-        sifted or (minded is not None and "lineages" not in sections) or (args.type and not {"lineages", "pairings"} & set(sections)) or args.fields is not None
-    )
+    narrowing = sifted or ((minded is not None or args.type) and not {"lineages", "pairings"} & set(sections)) or args.fields is not None
     if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
         print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
         return 2
@@ -1212,7 +1210,7 @@ def main(argv: list[str]) -> int:
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
         flags = "-t, --trait, --has, --lacks, --top, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --settle, --barred, -i and an entity"
-        print(f"✗ {flags} narrow `roster`, `-t` `lineages` and `pairings` too, `--sapient` and `--beasts` `lineages`: name it", file=sys.stderr)
+        print(f"✗ {flags} narrow `roster`, `-t`, `--sapient` and `--beasts` `lineages` and `pairings` too: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
         print("✗ --has and --lacks split a roll in two: name one", file=sys.stderr)
@@ -1269,8 +1267,14 @@ def main(argv: list[str]) -> int:
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)
     if "pairings" in sections:
-        if not (pairings := [row for row in _build_pairings(save, save_path) if bred is None or row["asset_id"] in bred]):
-            print(f"✗ {(args.type and unsited_reason(families, args.type)) or f'no {args.type} to pair in this world'}", file=sys.stderr)
+        thinking = _sapient_subspecies(save) if minded is not None else frozenset()
+        minds = {a.get("asset_id") for a in save.get("actors_data") or [] if a.get("subspecies") in thinking}
+        pairings = [
+            row for row in _build_pairings(save, save_path) if (bred is None or row["asset_id"] in bred) and (minded is None or (row["asset_id"] in minds) == minded)
+        ]
+        if not pairings:
+            kind = args.type or ("thinking kind" if minded else "beast kind" if minded is False else "kind")
+            print(f"✗ {(args.type and unsited_reason(families, args.type)) or f'no {kind} to pair in this world'}", file=sys.stderr)
             return 1
         out["pairings"] = _pairing_tally(pairings) if bred is None else pairings
     if "plots" in sections:

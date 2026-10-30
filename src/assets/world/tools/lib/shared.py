@@ -164,7 +164,7 @@ _SURVIVORS_NAMED = 5  # past it, a gone thing's survivors are counted and no lon
 _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower | 1 herb` or `38 bodies · 23 sapient`, cut once at import
 _THOUGHTLESS_FLOOR = 3000  # a world with no thinking soul: beasts and ground alone, little to tell that would not be padding
 _UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
-_VALUE_ORDERED = frozenset({"across", "drivers", "inventory", "taxonomy", "to_islands"})  # key order means: chapters in turn, stores heaviest-, lands nearest-first
+_VALUE_ORDERED = frozenset({"across", "drivers", "inventory", "kills", "taxonomy", "to_islands"})  # in order: chapters in turn, stores heaviest, lands nearest first
 _WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # a water as `geography … waters` ids it, `lake4`, or its family, `lake`: for `-w` and any `--to` end alike
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
@@ -732,9 +732,10 @@ def emit(out: dict) -> None:
     if isinstance(value, dict):  # a shelf, a rack or a fleet counted at nought says nothing in a sheet: only the section asked by its name still answers 0
         value = {key: block for key, block in value.items() if block != {"total": 0} or key in asked}
     # Weighed level by level on what was asked, not on what is left: under a tile, a section gone empty must not strip its neighbour of its name.
+    shown = None  # the block a bare answer is: its order, `taxonomy` from the kingdom down, survives the unwrapping
     while isinstance(value, dict) and len(value) == 1 and (key := next(iter(value))) in asked and sum(name in asked for name in raw) == 1:
-        raw, value = raw[key], value[key]
-    print(render(value))
+        raw, value, shown = raw[key], value[key], key
+    print(render(value, key=shown))
 
 
 # Years a record has behind it — a city, a crown, a clan, a family, a roof. Only a body counts the year it is in, and `actor_age` adds that one.
