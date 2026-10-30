@@ -801,12 +801,12 @@ def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mappin
     return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
 
 
-# A body's kills at each chapter, total by total: the save dates no death it dealt, so a rise lies between the chapter before its first (or birth) and that one.
+# A body's kills at each chapter, by the chapters a total held, the earliest first: the save dates no death it dealt, so a rise lies between two chapters.
 def _kill_history(actor_id: int, upto: int) -> dict | None:
-    totals = defaultdict(list)
+    totals: defaultdict[int, list[int]] = defaultdict(list)
     for n, body in _chapter_bodies(actor_id, upto):
-        totals[str(body.get("kills") or 0)].append(n)
-    return {total: _chapter_spans(at) for total, at in totals.items()} or None
+        totals[int(body.get("kills") or 0)].append(n)
+    return {_chapter_spans(at): total for total, at in totals.items()} or None
 
 
 # Whom a body was born of and whom it bore, off the parents WB writes on each body: a parent gone is named by the registry, its own dead kept; children, the living.

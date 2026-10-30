@@ -476,20 +476,22 @@ def _fires(
 
 
 # `biomes --since`: each land's grounds by name, a ground told where it gained or lost tiles — its share where that moved, else its tiles past `_GROUND_SWING`.
-def _ground_balance(then: dict, now: dict) -> dict | None:
+def _ground_balance(then: dict, now: dict, only: str | None) -> dict | None:
     def grounds(biomes: dict) -> dict[str, dict[str, dict]]:
         return {land: {row.get("biome") or row.get("ground") or "others": row for row in rows} for land, rows in (biomes.get("islands") or {}).items()}
 
     before, after, lands = grounds(then), grounds(now), {}
     for land in sorted({*before, *after}, key=lambda key: _land_order((key, None))):
         old, new, kept = before.get(land, {}), after.get(land, {}), {}
-        for ground in sorted({*old, *new}):
+        for ground in sorted(ground for ground in {*old, *new} if only in (None, ground)):
             was, came = old.get(ground) or {}, new.get(ground) or {}
             tiles = [was.get("tiles") or 0, came.get("tiles") or 0]
             pct = [was.get("pct") or 0, came.get("pct") or 0]  # a share under a tenth goes unwritten: it is 0
             if tiles[0] == tiles[1]:  # a share that moves with the land's total alone, the ground's own tiles still, is no balance of it
                 continue
-            if pct[0] != pct[1]:
+            if only is not None:  # the one ground `-t` asks: its tiles whatever the swing, its share too where it moved
+                kept[ground] = {"tiles": tiles} | ({"pct": pct} if pct[0] != pct[1] else {})
+            elif pct[0] != pct[1]:
                 kept[ground] = {"pct": pct}
             elif abs(tiles[1] - tiles[0]) >= _GROUND_SWING * max(tiles[0], 1):
                 kept[ground] = {"tiles": tiles}
@@ -714,8 +716,8 @@ def main(argv: list[str]) -> int:
         print(f"✗ {', '.join(unbucketed)}: no {args.island} to narrow to — `-i {args.island}` narrows {', '.join(sorted(bucketed))}", file=sys.stderr)
         return 2
 
-    if wanted is not None and "biomes" in sections and ("positions" in sections or since):
-        print("✗ `biomes -t <ground>` tells one ground of one chapter: ask `positions` and `--since` apart", file=sys.stderr)
+    if wanted is not None and "biomes" in sections and "positions" in sections:
+        print("✗ `biomes -t <ground>` tells one ground: ask `positions` apart", file=sys.stderr)
         return 2
 
     then_path = SAVES_DIR / since / "map.wbox" if since else None
@@ -745,7 +747,7 @@ def main(argv: list[str]) -> int:
             out, then = _narrowed(out, args.island), _narrowed(then, args.island)
         if args.water is not None:  # a water the earlier reading lacks came since: every field of it new
             out["waters"], then["waters"] = _one_water(out["waters"], args.water) or {}, _one_water(then["waters"], args.water) or {}
-        balance = _ground_balance(then.pop("biomes"), out.pop("biomes")) if "biomes" in out else None  # its own balance, ground by ground
+        balance = _ground_balance(then.pop("biomes"), out.pop("biomes"), wanted) if "biomes" in out else None  # its own balance, ground by ground
         moved = found if isinstance(found := moved_between(then, out), dict) else {}  # both readings are dicts, so what moved is one, or nothing
         if balance:
             moved = {**moved, "biomes": balance}
