@@ -126,7 +126,7 @@
   "history.world.at_close": "Les comptes du monde à la clôture, en janvier : « à la fin de l'an N » se lit ici, pas sur une save de y(N+1) m1 ; la 1ʳᵉ année au-dessus de 0 date leur venue.",
   "history.world.close_gap": "Les corps dont la clôture de l'année s'écarte de ses termes (+ trop) : WB garde un mort compté tant qu'il meurt, compte une coque en bête, ignore une métamorphose.",
   "history.world.made_up": "L'écart reprend celui de l'année d'avant : un corps compté un an à côté, les deux années justes ensemble.",
-  "kingdom.identity.worldview": "Trait de culture (`neutral` sans) : opinion, loyauté, accueil ; une cité `xenophiles` prend un arrivant sans culture ou xénophile (`wiki:Culture_Traits`).",
+  "kingdom.identity.worldview": "Trait de la culture du royaume (`neutral` sans) ; l'accueil suit celle de la cité : `xenophiles` prend l'arrivant sans culture ou xénophile (`wiki:Culture_Traits`).",
   "kingdom.metadata.ferries": "Une seule coque de transport sert tout le royaume.",
   "kingdom.metadata.max_cities": "Les cités tenues avant que les lointaines perdent en loyauté : le socle de l'espèce du roi, plus sa part (1, intendance ÷ 6, traits).",
   "kingdom.relations.gap_tiles": "De bord à bord des quartiers, à vol d'oiseau ; tu s'ils se touchent.",
