@@ -203,7 +203,7 @@
   "world.roster.city": "Sous `--city`, la terre de la cité se tait : c'est celle de tous.",
   "world.roster.died_of": "Hausses de sa lignée (du monde si éteinte) au chapitre où il part, sans vieillesse avant `old_from`, `eaten` ou `weapon` d'une victime ; une liste, le doute.",
   "world.roster.has": "`--has <compte>` : ceux qui en tiennent ; sous `--since`, ceux dont il a changé, et les morts avec ce qu'ils en emportaient.",
-  "world.roster.info": "Passé 50 corps, le compte remplace la liste : `--with asset_id,island_id` les compte, `x` et `y` sous `xy` par espèce, `[min, médiane, max]` ; un filtre la resserre.",
+  "world.roster.info": "Passé 50 corps, un compte remplace la liste : `born`, `x`, `y` vont sous `by_species` en `[min, médiane, max]`, sinon `--with asset_id` compte ; un filtre resserre.",
   "world.roster.left": "D'une entité, sous `--since` : `arrived` y est entré, `left` en est sorti vivant.",
   "world.roster.life_stage": "Dit hors des adultes seulement.",
   "world.roster.nearest": "`--nearest` : les plus proches à vol d'oiseau, les morts de `--since` depuis leur place d'alors, chaque bloc coupé à part ; une marche, un arbre : `actor … --to`.",

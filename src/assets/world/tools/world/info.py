@@ -236,7 +236,6 @@ _MEMBERSHIPS = {
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
 _ON_REQUEST = ("laws", "lineages", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll is no chapter's to carry
-_PLACED_FIELDS = ("x", "y")  # a body's own tile: past the list, its kind's bounds and middle (`xy`), never each value counted alone
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
 _SINCE_SECTIONS = ("cumulative", "lineages", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll or a census, two counts weighed
 
@@ -261,6 +260,7 @@ _SNAPSHOT_COLLECTIONS = {
 }
 
 _SOULBORNE = "reproduction_soulborne"  # a lineage born of the souls it strikes: `action_attack_target` harvests one off a body that `has_soul`
+_SPREAD_FIELDS = ("born", "x", "y")  # a body's own date or tile: past the list, its kind's bounds and middle (`by_species`), never each value counted
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` and `--lacks` weigh: a body's own counters, named as `actor … stats` names them
 _TOP_PAIRINGS = 20  # the kinds `pairings` keeps past `MAX_LISTED`, first births first: the ones a chapter tells, the rest counted and read by `-t`
@@ -706,13 +706,15 @@ def _build_roster(
         few = len(gone) <= MAX_LISTED
         wanted = [_asked_fields(actor, here, fields, ctx, seen) for actor, here, _ in bodies]  # `--with` grouped over the roll, its lines too many to read
         _refuse_unseen(fields, seen)
+        spread = [field for field in fields if field in _SPREAD_FIELDS]
+        counted = [field for field in fields if field not in _SPREAD_FIELDS and not (spread and field == "asset_id")]  # `by_species` counts each kind in its `of`
         return {
             # Named while they are few, each side of a `--since` keeping its own list: it is the arrivals that crowd a census out, and the dead a chapter seeks.
             "gone": [{**row, "asset_id": None if one_kind else row["asset_id"], "gone": None} for row in gone] if few else None,
             "gone_by_species": None if few else dict(Counter(row["asset_id"] for row in gone)),
             "info": told,  # the counts alone: what a cut roll is and how to narrow it are glossed (`gloss roster.info`)
-            "with": {field: _grouped_field(field, [w.get(field) for w in wanted]) for field in fields if field not in _PLACED_FIELDS}
-            | ({"xy": _placed(wanted, [a.get("asset_id") for a, _, _ in bodies], axes)} if (axes := [f for f in fields if f in _PLACED_FIELDS]) else {})
+            "with": {field: _grouped_field(field, [w.get(field) for w in wanted]) for field in counted}
+            | ({"by_species": _spread(wanted, [a.get("asset_id") for a, _, _ in bodies], spread)} if spread else {})
             or None,
         }
     rows = []
@@ -1068,18 +1070,6 @@ def _pairing_tally(rows: list[dict]) -> list[dict] | dict:
     }
 
 
-# Where each kind of a roll too long to list stands, `x` and `y` as asked by `[min, median, max]`, a lone value bare: a coordinate names one body, fifty no one.
-def _placed(rows: list[dict], kinds: list[str], axes: list[str]) -> dict:
-    by_kind: defaultdict[str, list[dict]] = defaultdict(list)
-    for kind, row in zip(kinds, rows, strict=True):
-        by_kind[kind].append(row)
-    placed = {}
-    for kind, held in sorted(by_kind.items()):
-        spread = {axis: values for axis in axes if (values := sorted(r[axis] for r in held if r.get(axis) is not None))}
-        placed[kind] = {"of": len(held)} | {axis: v[0] if v[0] == v[-1] else [v[0], median(v), v[-1]] for axis, v in spread.items()}
-    return placed
-
-
 # A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
 def _refuse_unseen(fields: list[str], seen: set[str]) -> None:
     if unknown := [field for field in fields if field not in seen]:
@@ -1101,6 +1091,19 @@ def _score_leaders(totals: Counter, records: list[dict]) -> list[dict]:
 def _since_saves(since: str, chapter: str | None, save: dict) -> list[dict]:
     later = [SAVES_DIR / f"C{n}" / "map.wbox" for n in range(int(since[1:]) + 1, int(chapter[1:]) if chapter else latest_chapter() + 1)]
     return [*(load_save(path) for path in later if path.exists()), save]
+
+
+# Where and when each kind of a roll too long to list stands, `born`, `x` and `y` as asked by `[min, median, max]`, a lone value bare: fifty values name no one.
+def _spread(rows: list[dict], kinds: list[str], fields: list[str]) -> dict:
+    by_kind: defaultdict[str, list[dict]] = defaultdict(list)
+    for kind, row in zip(kinds, rows, strict=True):
+        by_kind[kind].append(row)
+    spread = {}
+    for kind, held in sorted(by_kind.items()):
+        ranged = {field: sorted(values, key=_natural) for field in fields if (values := [r[field] for r in held if r.get(field) is not None])}
+        middle = {field: v[(len(v) - 1) // 2] if field == "born" else median(v) for field, v in ranged.items()}  # a date has no mean: its lower middle
+        spread[kind] = {"of": len(held)} | {field: v[0] if v[0] == v[-1] else [v[0], middle[field], v[-1]] for field, v in ranged.items()}
+    return spread
 
 
 # A body's stage off its raw span alone, as `surroundings` reads one: a roster line and a census say it alike.
