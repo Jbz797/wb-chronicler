@@ -54,10 +54,10 @@ _SENTENCE = re.compile(r"(?<=[.!?…])\s+")  # where a sentence ends inside a li
 _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined — `le bras du couchant`, a place with no name —, told apart as a refrain is
 
 _USAGE = (
-    "usage: chapter/echo.py [C<n>] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before (`from` their line, "
-    "`by` its sign), `internal` runs it says twice, `terms` it coins, `formulas` figured turns it keeps coming back to, "
+    "usage: chapter/echo.py [C<n>] [--whole] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before "
+    "(`from` their line, `by` its sign), `internal` runs it says twice, `terms` it coins, `formulas` figured turns it keeps coming back to, "
     "`overused` families, `shape` its cast poured again, `names` each one it tags beside the lines that did in the 2 chapters before; "
-    "`clear` the checks that found nothing, `length` and `dialogue` among them — "
+    "`clear` the checks that found nothing, `length` and `dialogue` among them; a delivered chapter by its changed lines, `--whole` all — "
     "out of its bounds or under its floor, a ✗ says so; every field glossed by `gloss/info.py echo`"
 )
 
@@ -418,8 +418,13 @@ def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], 
 
     def mark(what: str, line: str, number: int, size: int) -> None:
         start = _tokens(line, number)[:size]
-        heading = what in ("heading", "title")  # its words by their root, articles levelled: `Celle du` and `Celles de` one mould, `Le premier`, `La première` too
-        keys = tuple(("·" if token.key in _DETERMINERS else token.key[:_FAMILY_ROOT]) if heading else token.key for token in start)
+        if what == "sentence":  # whole, with a word of its own and articles levelled: `Au Berceau, les aînées`, never a refrain the chronicle keeps
+            if len(start) < size or not any(token.content for token in start) or tuple(token.key for token in start) in _refrains():
+                return
+            keys = _moulded(start)
+        else:
+            heading = what in ("heading", "title")  # its words by root, articles levelled: `Celle du` and `Celles de` one mould, `Le premier`, `La première` too
+            keys = tuple(("·" if token.key in _DETERMINERS else token.key[:_FAMILY_ROOT]) if heading else token.key for token in start)
         marks.setdefault((what, keys), (number, " ".join(token.surface for token in start)))
 
     def close() -> None:
@@ -437,10 +442,13 @@ def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], 
             movements.append(0)
             opening, last = True, None
         elif line.strip() and line[0] not in "|<":  # a table or a tag line opens nothing and closes nothing: prose does
+            sentences = _SENTENCE.split(line)
             if opening:
-                mark("opening", _SENTENCE.split(line)[0], number, _OPENING_START)  # its first sentence alone: `Crabanvier, an 15.` whatever follows
+                mark("opening", sentences[0], number, _OPENING_START)  # its first sentence alone: `Crabanvier, an 15.` whatever follows
             # Every paragraph too, a section's first among them: a mould taken again mid-section, `Loin à l'ouest, la` before a name no run weighs
-            mark("paragraph", _SENTENCE.split(line)[0], number, _OPENING_START)
+            mark("paragraph", sentences[0], number, _OPENING_START)
+            for sentence in sentences:  # every one, mid-paragraph too: `On raconte que Umtp` said again wherever it falls
+                mark("sentence", sentence, number, _OPENING_START)
             opening, last = False, (number, line)
     close()
     return marks, tuple(movements)
@@ -467,6 +475,8 @@ def _shaped(n: int) -> list[dict]:
                 rows.append({"chapters": [f"C{k}"], "line": line, "text": ", ".join(roots[root] for root in shared), "what": "opening_words"})
     opened = {row["line"] for row in rows if row["what"] == "opening"}
     rows = [row for row in rows if row["what"] != "paragraph" or row["line"] not in opened]  # a section's opening, told once
+    told = {(row["line"], row["text"]) for row in rows if row["what"] != "sentence"}
+    rows = [row for row in rows if row["what"] != "sentence" or (row["line"], row["text"]) not in told]  # a paragraph's or a chute's start, told once
     if len(before) == 2 and all(_shape(k)[1] == movements for k in before):  # twice may be chance, three times is a mould
         rows.append({"chapters": [f"C{k}" for k in before], "text": " | ".join(str(count) for count in movements), "what": "sections per movement"})
     return sorted(rows, key=lambda row: row.get("line", 0))
@@ -543,7 +553,7 @@ def _words(n: int) -> list[_Token]:
 
 
 # What chapter `n` says again, `None` where it is not written — the first has only itself to repeat. `new.py --finalize` counts it before the audit reads it.
-def echoes(n: int) -> dict | None:
+def echoes(n: int, whole: bool = False) -> dict | None:
     if not (words := _words(n)):
         return None
     internal, terms = _within(words, n)
@@ -556,7 +566,7 @@ def echoes(n: int) -> dict | None:
         "shape": _shaped(n),
         "terms": terms,
     }
-    if (changed := _changed(n)) is None:
+    if whole or (changed := _changed(n)) is None:
         return found
 
     # Delivered: a row stands by the lines it names, its own or the one it echoes — a count over the whole chapter names none, and was weighed at delivery.
@@ -568,13 +578,13 @@ def echoes(n: int) -> dict | None:
 
 
 def main(argv: list[str]) -> int:
-    chapter = next((arg for arg in argv if arg[:1] == "C" and arg[1:].isdigit()), None)
-    if stray := [arg for arg in argv if arg != chapter]:  # `--help` among them: a word unheard would else pass for a run of the latest chapter
+    chapter, whole = next((arg for arg in argv if arg[:1] == "C" and arg[1:].isdigit()), None), "--whole" in argv
+    if stray := [arg for arg in argv if arg not in (chapter, "--whole")]:  # `--help` among them: a word unheard would else pass for a run of the latest chapter
         asked = stray[0] in ("-h", "--help")
         print(_USAGE, file=sys.stdout if asked else sys.stderr)
         return 0 if asked else 2
     n = int(chapter[1:]) if chapter else latest_chapter()
-    if (found := echoes(n)) is None:
+    if (found := echoes(n, whole)) is None:
         print(f"✗ no chapter.md for C{n}", file=sys.stderr)
         return 1
     # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
@@ -585,7 +595,7 @@ def main(argv: list[str]) -> int:
         print(fault, file=sys.stderr)
     # A check gone silent found nothing: named, so it is not read as unrun — the length and the dialogue too, silent while they hold.
     clear = sorted(check for check, rows in {**found, "dialogue": short, "length": not held}.items() if not rows)
-    emit({**found, "clear": clear, "delivered": _changed(n) is not None or None})
+    emit({**found, "clear": clear, "delivered": (not whole and _changed(n) is not None) or None})
     return 0
 
 
