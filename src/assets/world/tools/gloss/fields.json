@@ -58,7 +58,7 @@
   "actor.to.reachable": "`--to lands` : chaque terre que le corps gagne à pied et à la nage, mesurée comme `--to i<id>`, la plus proche d'abord ; `unreachable` compte les autres.",
   "actor.to.reached": "Vers un lieu nommé ou une eau (`lake4`) : la tuile où le trajet l'atteint, sa rive, le pied d'une chaîne, le bord d'un bâtiment.",
   "actor.to.task_target": "La tuile où la tâche en cours mène le corps.",
-  "actor.to.then": "`--since` : le même but compté au chapitre nommé.",
+  "actor.to.then": "`--since` : le même but compté au chapitre nommé ; un lieu forgé relu par son nom, une terre ou une eau par son point (`heart`) ; jamais un type ni le feu.",
   "actor.to.widest_crossing": "Le plus long bras d'eau du trajet, dit seulement s'il passe le souffle du corps.",
   "actor.to.with_boat": "Le trajet par la coque de sa couronne : une autre route que la marche, jamais à additionner à elle.",
   "breakdown": "Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).",

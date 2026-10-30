@@ -147,6 +147,8 @@ _RANKED_STATS = {
     "warfare",
 }
 
+_REDRAWN = "✗ no `then`: a kind's sites and the fire are redrawn from save to save — `--to x,y` measures one point in both"
+
 # UI order: active roles (chief, alpha) before historical foundations (creators before founders). `army_captain` is a `profession`, not a role.
 _ROLE_ORDER = (
     "clan_chief",
@@ -1145,6 +1147,41 @@ def _tenures(role: tuple[str, str, str] | None, save: dict, world_time: float) -
     return seats
 
 
+# A goal by a save's own numbers, found again in the chapter `--since` names: a forged place by its name, a counted land or water by its point (`heart`).
+def _then_goals(target: str, told: dict, then: dict, then_ctx: dict, since: str | None) -> list[tuple[int, int]] | None:
+    aimed = told["place"]["aimed"] if "place" in told else target
+    if aimed[:1] == "i" and aimed[1:].isdigit():
+        book, key = "islands", aimed[1:]
+    elif water := water_ref(aimed):
+        book, key = f"{water[0]}s", str(water[1])
+    elif "place" in told:
+        try:
+            return then_ctx["named_place"](target)[0]
+        except PlaceError as e:
+            print(f"{e} — no `then` in {since}", file=sys.stderr)
+            return None
+    else:
+        print(_REDRAWN, file=sys.stderr)
+        return None
+    if (entry := (gazetteer().get(book) or {}).get(key)) is None:
+        print(f"✗ no `then`: {aimed} has no point in places.json", file=sys.stderr)
+        return None
+    heart = place_point(entry)
+    point = f"{target}'s point {heart[0]},{heart[1]} in {since}"
+    if book != "islands":
+        if "pond_tiles" in (held := then_ctx["water_body"]()(*heart)):  # a pond or dry ground: no counted water
+            print(f"✗ no `then`: no counted water held {point}", file=sys.stderr)
+            return None
+        return then_ctx["water_tiles"](*next(iter(held.items())))
+    if not (land := (island_of := then_ctx["island_lookup"]()).get(heart)):
+        print(f"✗ no `then`: no land held {point}", file=sys.stderr)
+        return None
+    if island_of.get(actor_xy(then)) == land:
+        print(f"✗ no `then`: {named_body(then)} stood on {target} in {since}", file=sys.stderr)
+        return None
+    return _shore(land, then_ctx)
+
+
 # What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
 def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
@@ -1181,9 +1218,11 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
         elif then is not None and not isinstance(target, str):
             goals = aims if isinstance(target, tuple) else [actor_xy(then_ctx["actors_by_id"][target])]
             trip["then"] = _trip_then(then, goals, whom, then_ctx)
-    if isinstance(target, str) and then is not None:  # a land's numbers and a kind's sites are redrawn from save to save: the goal then would be another
-        print("✗ no `then`: only a point or a body is the same goal in both chapters", file=sys.stderr)
+        elif then is not None and isinstance(target, str) and (goals := _then_goals(target, told, then, then_ctx, since)):
+            trip["then"] = _trip_then(then, goals, whom, then_ctx)
     if each:
+        if then is not None:
+            print(_REDRAWN, file=sys.stderr)
         reached: dict = dict.fromkeys(each)  # a word left unanswered keeps its place: the others then keep their names, where one alone would come bare
         for word, goal in each.items():  # out of reach, it says so and leaves the others their answer: the command fails where none has one
             try:
