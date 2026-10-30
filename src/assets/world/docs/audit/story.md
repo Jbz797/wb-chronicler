@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 28/10/26 13:11</p>
+<p class="metadata">Date de mise à jour : 30/10/26 18:31</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants : ce message dit alors ta tâche.
 
@@ -25,9 +25,9 @@ Classe les écarts, le plus porteur d'abord, et dis de chacun si ce chapitre peu
 
 Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton premier audit : ses seules puces. Mets-le à jour à chaque audit, jamais au conseil : le chroniqueur en lit les changements, ton rapport n'a pas à les redire. Une veille sortie (soldée, abandonnée, fondue) se retrouve, avec son chapitre, par `git -C saves log -p -- watches.md` : pèse-la aussi quand tu cherches un fil jamais refermé.
 
-- **Chiffres** : le registre n'en porte aucun, pas même une date à venir : une veille dit son fil, le chapitre porte le fait.
-- **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` ni un statut passager (hors `--statuses`) : rien ne garde leur issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas reste telle quelle.
-- **Forme** : une puce par veille, dans l'ordre de leur ouverture, sans numéro de ligne : _« **C1** · reconduite · son sujet en une ligne »_, en gras le chapitre de son ouverture. Son sort : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille (la menace passe des bêtes aux morts relevés). Les noms s'y balisent comme dans un chapitre.
+- **Chiffres** : le registre n'en porte aucun, pas même une date à venir : le chapitre porte le fait.
+- **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` ni un statut passager (hors `--statuses`) : rien ne garde leur issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas ou redit seulement (_« toujours maudite »_) reste telle quelle.
+- **Forme** : une puce par veille, par ordre d'ouverture, sans numéro de ligne : _« **C1** · reconduite · son sujet en une ligne »_, en gras le chapitre de son ouverture. Son sort : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas), détournée s'il le mène ailleurs que vers une autre veille (des bêtes aux morts relevés). Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles d'un même fil, une neuve comprise, se fondent en une, reconduite, au seul chapitre qui les lie ; la plus ancienne garde son ouverture.
 - **Plafond** : au-delà de 6 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, une candidate comprise : abandonnée, une veille sort et n'est plus un écart. Sous 6, aucune ne s'abandonne.
 - **Récit** : à chaque changement de sort d'une veille, dis au chroniqueur s'il faut en parler et comment : une direction, et si tu veux 2 ou 3 phrases, qu'il réécrit ou écarte ; une abandonnée se referme sur la page.
