@@ -236,6 +236,7 @@ _MEMBERSHIPS = {
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
 _ON_REQUEST = ("laws", "lineages", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll is no chapter's to carry
+_PLACED_FIELDS = ("x", "y")  # a body's own tile: past the list, its kind's bounds and middle (`xy`), never each value counted alone
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
 _SINCE_SECTIONS = ("cumulative", "lineages", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll or a census, two counts weighed
 
@@ -710,7 +711,9 @@ def _build_roster(
             "gone": [{**row, "asset_id": None if one_kind else row["asset_id"], "gone": None} for row in gone] if few else None,
             "gone_by_species": None if few else dict(Counter(row["asset_id"] for row in gone)),
             "info": told,  # the counts alone: what a cut roll is and how to narrow it are glossed (`gloss roster.info`)
-            "with": {field: _grouped_field(field, [w.get(field) for w in wanted]) for field in fields} or None,
+            "with": {field: _grouped_field(field, [w.get(field) for w in wanted]) for field in fields if field not in _PLACED_FIELDS}
+            | ({"xy": _placed(wanted, [a.get("asset_id") for a, _, _ in bodies], axes)} if (axes := [f for f in fields if f in _PLACED_FIELDS]) else {})
+            or None,
         }
     rows = []
 
@@ -1065,6 +1068,18 @@ def _pairing_tally(rows: list[dict]) -> list[dict] | dict:
     }
 
 
+# Where each kind of a roll too long to list stands, `x` and `y` as asked by `[min, median, max]`, a lone value bare: a coordinate names one body, fifty no one.
+def _placed(rows: list[dict], kinds: list[str], axes: list[str]) -> dict:
+    by_kind: defaultdict[str, list[dict]] = defaultdict(list)
+    for kind, row in zip(kinds, rows, strict=True):
+        by_kind[kind].append(row)
+    placed = {}
+    for kind, held in sorted(by_kind.items()):
+        spread = {axis: values for axis in axes if (values := sorted(r[axis] for r in held if r.get(axis) is not None))}
+        placed[kind] = {"of": len(held)} | {axis: v[0] if v[0] == v[-1] else [v[0], median(v), v[-1]] for axis, v in spread.items()}
+    return placed
+
+
 # A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
 def _refuse_unseen(fields: list[str], seen: set[str]) -> None:
     if unknown := [field for field in fields if field not in seen]:
@@ -1157,7 +1172,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster` and `lineages`: one kind, a family (`actors`) or a comma list")
     parser.add_argument(
-        "--with", dest="fields", metavar="field,…", help=f"`roster`: up to {_MAX_FIELDS} of `actor … stats`, `task`, `subspecies` or a line's own field on each line"
+        "--with",
+        action="append",  # repeated, each adds its fields: a second never drops the first unheard
+        dest="fields",
+        metavar="field,…",
+        help=f"`roster`: up to {_MAX_FIELDS} of `actor … stats`, `task`, `subspecies` or a line's own field on each line",
     )
     args = parser.parse_args(argv)
     requested = args.sections
@@ -1293,7 +1312,7 @@ def main(argv: list[str]) -> int:
                 print(f"✗ {args.patch[0]},{args.patch[1]} stands on no counted land — `tiles <x,y> tile_info` tells what a tile is", file=sys.stderr)
                 return 2
             patch = patch_finder(save, LazyTileGrid(save), island_of)(*args.patch)[0]
-        fields = args.fields.split(",") if args.fields else []
+        fields = list(dict.fromkeys(",".join(args.fields).split(","))) if args.fields else []
         if len(fields) > _MAX_FIELDS:
             print(f"✗ `--with` takes {_MAX_FIELDS} fields at most — `actor <id> stats` gives a body's whole sheet", file=sys.stderr)
             return 2
