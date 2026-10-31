@@ -1093,7 +1093,7 @@ def _since_saves(since: str, chapter: str | None, save: dict) -> list[dict]:
     return [*(load_save(path) for path in later if path.exists()), save]
 
 
-# Where and when each kind of a roll too long to list stands, `born`, `x` and `y` as asked by `[min, median, max]`, a lone value bare: fifty values name no one.
+# Where and when each kind of a roll too long to list stands, `born`, `x`, `y` by `[min, median, max]`, a pair `[min, max]`, a lone value bare: fifty name no one.
 def _spread(rows: list[dict], kinds: list[str], fields: list[str]) -> dict:
     by_kind: defaultdict[str, list[dict]] = defaultdict(list)
     for kind, row in zip(kinds, rows, strict=True):
@@ -1101,8 +1101,10 @@ def _spread(rows: list[dict], kinds: list[str], fields: list[str]) -> dict:
     spread = {}
     for kind, held in sorted(by_kind.items()):
         ranged = {field: sorted(values, key=_natural) for field in fields if (values := [r[field] for r in held if r.get(field) is not None])}
-        middle = {field: v[(len(v) - 1) // 2] if field == "born" else median(v) for field, v in ranged.items()}  # a date has no mean: its lower middle
-        spread[kind] = {"of": len(held)} | {field: v[0] if v[0] == v[-1] else [v[0], middle[field], v[-1]] for field, v in ranged.items()}
+        spread[kind] = {"of": len(held)}
+        for field, v in ranged.items():  # a pair has no middle of its own: its lower one would read as a second body on the first's value
+            middle = v[(len(v) - 1) // 2] if field == "born" else median(v)  # a date has no mean: its lower middle
+            spread[kind][field] = v[0] if v[0] == v[-1] else [v[0], v[-1]] if len(v) == 2 else [v[0], middle, v[-1]]
     return spread
 
 
