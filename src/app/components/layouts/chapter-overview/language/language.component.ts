@@ -39,7 +39,7 @@ export class LanguageComponent {
     const { pop } = tier;
     const rows = [
       { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: !!m.deaths, stat: 'deaths' as const },
-      { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: pop.warriors !== undefined, stat: 'warriors' as const },
+      { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: pop?.warriors !== undefined, stat: 'warriors' as const },
       { icon: 'assets/img/stats/kills.png', inverted: false, label: 'ui_kills', shown: !!m.kills, stat: 'kills' as const },
       { icon: 'assets/img/world/books.png', inverted: false, label: 'ui_books', shown: !!this.language()?.books?.total, stat: 'books' as const },
       { icon: 'assets/img/world/books_written.png', inverted: false, label: 'ui_writings', shown: !!m.books_written, stat: 'books_written' as const },

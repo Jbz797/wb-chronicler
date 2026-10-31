@@ -7,7 +7,7 @@ export interface Religion {
   identity: ReligionIdentity;
   leaders?: Leaders;
   metadata: ReligionMetadata;
-  pop: TierPopulation;
+  pop?: TierPopulation; // absent where no member lives in a town — Python omits an empty block
   ranks?: ReligionRanks;
   traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }

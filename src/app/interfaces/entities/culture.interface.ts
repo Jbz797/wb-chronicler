@@ -7,7 +7,7 @@ export interface Culture {
   identity: CultureIdentity;
   leaders?: Leaders;
   metadata: CultureMetadata;
-  pop: TierPopulation;
+  pop?: TierPopulation; // absent where no member lives in a town — Python omits an empty block
   ranks?: CultureRanks;
   traits: string; // the chronicler's summary, carried forward while neither the entity nor its traits move
 }

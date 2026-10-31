@@ -6,7 +6,7 @@ export interface Family {
   identity: FamilyIdentity;
   leaders?: Leaders;
   metadata: FamilyMetadata;
-  pop: TierPopulation;
+  pop?: TierPopulation; // absent where no member lives in a town — Python omits an empty block
   ranks?: FamilyRanks;
 }
 

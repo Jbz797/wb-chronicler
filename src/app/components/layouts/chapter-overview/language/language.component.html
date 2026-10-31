@@ -16,7 +16,7 @@
         <app-ranked-stat source="language" stat="renown" />
       </nz-descriptions-item>
     }
-    <nz-descriptions-item *appPresent="l.pop.renown_total" [nzTitle]="renownTotalTitle">
+    <nz-descriptions-item *appPresent="l.pop?.renown_total" [nzTitle]="renownTotalTitle">
       <app-ranked-stat source="language" stat="renown_total" />
     </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="speakersTitle">
@@ -50,13 +50,13 @@
     <nz-descriptions-item *appPlural="l.metadata.kingdoms" [nzTitle]="kingdomsTitle">
       <app-ranked-stat source="language" stat="kingdoms" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="l.pop.housed_pct" [nzTitle]="housedPctTitle">
+    <nz-descriptions-item *appPresent="l.pop?.housed_pct" [nzTitle]="housedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="language" stat="housed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="l.pop.fed_pct" [nzTitle]="fedPctTitle">
+    <nz-descriptions-item *appPresent="l.pop?.fed_pct" [nzTitle]="fedPctTitle">
       <app-ranked-stat deltaSuffix="%" source="language" stat="fed_pct" suffix="%" />
     </nz-descriptions-item>
-    <nz-descriptions-item *appPresent="l.pop.money" [nzTitle]="moneyTitle">
+    <nz-descriptions-item *appPresent="l.pop?.money" [nzTitle]="moneyTitle">
       <app-ranked-stat source="language" stat="money" />
     </nz-descriptions-item>
   </nz-descriptions>

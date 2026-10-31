@@ -7,7 +7,7 @@ export interface Alliance {
   kingdoms: AllianceKingdom[];
   leaders?: Leaders;
   metadata: AllianceMetadata;
-  pop: TierPopulation;
+  pop?: TierPopulation; // absent where no member lives in a town — Python omits an empty block
   ranks?: AllianceRanks;
 }
 
