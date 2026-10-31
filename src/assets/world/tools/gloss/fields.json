@@ -14,6 +14,7 @@
   "actor.metadata.in_building": "Le corps est sous ce toit.",
   "actor.metadata.islet": "Le `heart` de son îlot, comme `tiles … islet` ; autre d'un chapitre à l'autre si l'îlot change de forme.",
   "actor.metadata.near_places": "Les lieux nommés tout près au sens du jeu (`chunks_apart` ≤ 1), eaux et autres terres comprises, celui où il se tient à part : un volcan, une rive.",
+  "actor.metadata.personality": "Le tempérament d'un roi ou d'un chef, par sa compétence la plus haute (`diplomat`, `administrator`, `militarist`, sinon `balanced`) ; sans effet en jeu.",
   "actor.metadata.place": "Le lieu de `places.json` où le corps se tient : un lieu forgé (l'eau d'un golfe, la roche d'une chaîne, un îlot), sinon l'eau nommée où il est ; jamais sa terre.",
   "actor.metadata.settle": "Chez un pensant : `true` s'il fonderait là, `child` si l'âge seul l'arrête, sinon l'obstacle le plus durable ; `ground n/64` : sa zone de 8 × 8, voulue entière.",
   "actor.metadata.settle_more": "Les autres obstacles à une fondation, après celui de `settle`, chacun dit comme lui : ce qui tient au corps avant ce qui tient au lieu.",
