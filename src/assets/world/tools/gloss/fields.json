@@ -49,6 +49,7 @@
   "actor.to.from_them": "Vers un corps : le trajet de l'autre jusqu'à lui, dit s'il diffère (pas, terrain).",
   "actor.to.frozen": "Vers le gel (`--to frozen`) : sa tuile gelée la plus proche et sa sorte, `frost` passager, `snow`, `ice`, `permafrost`, comme `geography … frozen` les compte.",
   "actor.to.ground": "`--to g:<sol>` : un sol seul, par son nom de `biomes`, même quand un type le porte (`flower`, `tumor`) ; le mot nu vise alors le type, et son `info` le dit.",
+  "actor.to.info": "Un mot à deux lectures : un type aussi sol (`g:<sol>` vise le sol), ou une ressource, la plus proche des sortes qui la donnent ; une sorte se vise par son id.",
   "actor.to.landing": "Vers une terre `i<id>` : le point où l'aborder au moins cher.",
   "actor.to.march_days": "Passé 6 h de marche, les jours de marche, haltes comprises, à la place des heures ; sans l'eau, passée d'une traite, que `total_days` ajoute.",
   "actor.to.nearest": "Vers un type, une famille, une ressource, un sol (`ground`, nommé par `biomes`) ou une eau (`lake`, `water`…, hors mares) : le plus proche ; un bâtiment, à sa tuile.",

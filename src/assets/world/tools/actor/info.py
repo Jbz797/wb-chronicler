@@ -90,6 +90,7 @@ from shared import (
     parse_sections,
     place_point,
     resolve_profession,
+    resource_sources,
     sex_label,
     take_chapter,
     take_since,
@@ -1235,6 +1236,9 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
                     found["crow_nearest"] = crow
                 if "asset_id" in near and word in ctx["grounds"]():  # the bare word aimed at the kind: the ground of its name is another `--to`
                     found["info"] = f"{word} is also a ground: `--to {_GROUND_PREFIX}{word}`"
+                elif near.get("asset_id") != word and len(sources := resource_sources(word)) > 1:  # `stone` read as what every lode yields, not its own lode
+                    own = min((kind for kind in sources if kind.endswith(f"_{word}")), default=None)
+                    found["info"] = f"{word} is a resource: the nearest of {len(sources)} kinds giving it" + (f" — `--to {own}` aims at that alone" if own else "")
             except _UnreachableError as e:
                 print(f"{e} — `circle`: far", file=sys.stderr)
         if not any(reached.values()):
