@@ -1,7 +1,7 @@
 {
     "name": "Faithful Saves",
     "author": "Jbz797",
-    "version": "1.5.1",
+    "version": "1.6.0",
     "description": "A save keeps what every creature was in the middle of: a pregnancy, an egg, a sleep, a fire, a mood, a task, and the wait before its next sleep. Loading no longer wipes them. It also stamps when a creature settled in its town or joined its army, names its latest victims, and closes each year of history in January.",
     "GUID": "Jbz797.faithfulsaves",
     "iconPath": "icon.png",
