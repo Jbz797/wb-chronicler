@@ -24,7 +24,7 @@ WorldBox also redraws two kinds of timers on every load:
 
 - **On save**, each creature keeps what is left of its statuses and of its long waits (90 seconds or more), its task (the step reached, the time spent, its aim: a prey, a tile, a building) and the building it is inside; a boat, the shore it was ferrying to; the world, the time left on its two clocks.
 - **On load**, each is handed back for exactly the time it had left, and each creature takes its task up at that very step: a woodcutter carrying his logs walks on to the store, a hunter keeps its prey, a sleeper stays under its roof.
-- **A creature settling in a new town**, by birth, migration, founding or a move, **or joining an army**, is stamped with the world's time; **a killer** keeps its last 3 victims (kind, name, time).
+- **A creature settling in a new town**, by birth, migration, founding or a move, **or joining an army**, is stamped with the world's time; **a killer** keeps its last 3 victims (kind, name, time, and the tile where each fell).
 - **The world's history** closes each year in January, under the year that ended: a row is a calendar year.
 
 Nothing else changes: no status is lengthened, shortened or added, and none replays its first effects (a mood, a sound): those were felt before the save.

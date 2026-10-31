@@ -870,8 +870,13 @@ def kept_roof(actor: dict) -> int | None:
 def kept_victims(actor: dict) -> list[dict] | None:
     if not (held := (actor.get("custom_data_string") or {}).get("faithful_kills")):  # most bodies never killed: no split for them, a roster's thousands
         return None
-    victims = [line.split("\t") for line in held.split("\n") if line.count("\t") == 3]
-    return [{"asset_id": asset, "date": world_date(float(at)), "id": int(victim), "name": name or None} for victim, asset, name, at in victims] or None
+    victims = []
+    for line in held.split("\n"):
+        if len(fields := line.split("\t")) in (4, 6):  # its tile since the mod's 1.6.0: a death stamped before has no place, and no save keeps one
+            victim, asset, name, at, *tile = fields
+            place = {"x": int(tile[0]), "y": int(tile[1])} if tile else {}
+            victims.append({"asset_id": asset, "date": world_date(float(at)), "id": int(victim), "name": name or None} | place)
+    return victims or None
 
 
 # `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces the ones nothing else covers.
