@@ -122,6 +122,7 @@
   "history.entity.pop": "D'un clan resté à `pop` 1 : ses `kills` sont ceux de son seul membre.",
   "history.entity.years": "Une plage avant la fenêtre : états en moyenne ; `money`, `renown`, `kings` et `leaders` à leur plus haut ; ses gains sur la plage, la 1ʳᵉ depuis la naissance.",
   "history.log.by_event": "Passé 50 entrées, le compte par type d'événement ; `-t <event>` ou `--actor <id>` les liste.",
+  "history.log.point": "`x`, `y` : `king`, `favorite` le corps à l'instant (d'un meurtre, la victime), `town` le centre de la cité, `founder` le fondateur, `capital` sa capitale.",
   "history.unknown": "Les morts que le jeu ne range sous aucune cause (fièvre des Cendres…).",
   "history.world": "Par an (`year`, l'en-cours `so_far`), ce qui naît, meurt ou s'éteint ; année absente : rien de neuf. Avant la fenêtre : des plages `years`, états moyens (`mean`).",
   "history.world.at_close": "Les comptes du monde à la clôture, en janvier : « à la fin de l'an N » se lit ici, pas sur une save de y(N+1) m1 ; la 1ʳᵉ année au-dessus de 0 date leur venue.",
