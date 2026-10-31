@@ -264,7 +264,7 @@ _SPREAD_FIELDS = ("born", "x", "y")  # a body's own date or tile: past the list,
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` and `--lacks` weigh: a body's own counters, named as `actor … stats` names them
 _TOP_PAIRINGS = 20  # the kinds `pairings` keeps past `MAX_LISTED`, first births first: the ones a chapter tells, the rest counted and read by `-t`
-_TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "age", "equipment_power")))  # what `--top` ranks by: those counters, a skill, an arsenal, the age
+_TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "age", "equipment_power")))  # what `--rank` ranks by: those counters, a skill, an arsenal, the age
 _TOP_ROWS = 10  # a ranking is asked for its head: who comes first, second, third — the rest is counted
 _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
 _WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_ISLET` is, but in the sea or a lake
@@ -579,6 +579,7 @@ def _build_roster(
     has: str | None,
     lacks: str | None,
     top: str | None,
+    count: int,
     entity: tuple[str, int] | None,
     near: tuple[tuple[int, int], int | None] | None,
     fields: list[str],
@@ -593,7 +594,7 @@ def _build_roster(
     # Under an entity, `--since` weighs who belonged then: a body that joined arrives, one alive elsewhere has left, though the world saw both all along.
     members_then = {a["id"] for a in earlier.get("actors_data") or [] if belonged(a)} if entity and earlier is not None else None
     known = was if members_then is None else members_then
-    weighed = has or lacks or top  # one measure each: `--has` keeps whoever holds any, `--lacks` whoever holds none, `--top` the highest alone
+    weighed = has or lacks or top  # one measure each: `--has` keeps whoever holds any, `--lacks` whoever holds none, `--rank` the highest alone
     thinking = _sapient_subspecies(save) if sapient is not None else None  # `--sapient` keeps the minds, `--beasts` the rest
     grid = LazyTileGrid(save)  # rows decoded as read: a body off every land alone asks its tile
     asked = _ISLET if land == "islets" else land  # `-i islets` names the islets as a body stands on one, `islet`
@@ -649,7 +650,7 @@ def _build_roster(
             continue
         held = _held(actor, weighed, ctx) if weighed else 0
         before = once.get(actor["id"], 0) if once is not None else 0  # with no `--since`, a tally is weighed against nought
-        if (has and held == before) or (lacks and held):  # `--top` counts a body with none once every other filter has had its say
+        if (has and held == before) or (lacks and held):  # `--rank` counts a body with none once every other filter has had its say
             continue
         gates = settle_gates(actor, ctx) if settle or barred else None
         if settle and gates not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
@@ -743,7 +744,12 @@ def _build_roster(
     refs = {"city": index_by_id(save.get("cities") or []), "family": index_by_id(save.get("families") or [])} if entity else {}
     # A town's own land goes unsaid on its residents' lines, as `-i` does: the room it frees tells their stage instead
     seat = island_of.get(centre) if entity and entity[0] == "city" and (centre := city_centre(refs["city"].get(entity[1]) or {})) else None
-    for actor, here, change in ranked[:_TOP_ROWS] if top or (near and not since) else ranked:
+    cut = min(count if top else _TOP_ROWS, len(ranked)) if top or (near and not since) else len(ranked)
+    if top:  # a last place shared goes whole: a cut through it would leave unsaid a body that ranks as the last — by its figure, its birth month under `age`
+        tie = (lambda b: (order(b)[0], world_date(order(b)[1]))) if top == "age" else (lambda b: order(b)[0])
+        while cut < len(ranked) and tie(ranked[cut]) == tie(ranked[cut - 1]):
+            cut += 1
+    for actor, here, change in ranked[:cut]:
         if fields:  # the line is what was asked: who, and those fields, a filter's own figure kept — the default columns stay with the plain roll
             rows.append({"id": actor["id"], "name": actor.get("name"), **change, **_asked_fields(actor, here, fields, ctx, seen)})
             continue
@@ -771,7 +777,7 @@ def _build_roster(
     _refuse_unseen(fields, seen)
 
     if (top or near) and rows and not since:  # one shape whatever the world, its `info` keeping a lone key from coming bare, and who holds none said
-        told = _cut_told([body[2][top or "crow_tiles"] for body in ranked], top)
+        told = _cut_told([body[2][top or "crow_tiles"] for body in ranked], top, cut)
         return {"info": told + (f"; {unranked} with no {top}, left out" if unranked else ""), "roster": rows}
 
     gone = [{**row, "asset_id": None if one_kind else row["asset_id"]} for row in gone]
@@ -845,11 +851,13 @@ def _count_leaders(counts: Mapping, records: list[dict], min_peers: int) -> list
 
 
 # What a ranked cut kept, so a lone key never comes bare: all when few, else the cut and the tie its last place falls in, read off each kept figure in order.
-def _cut_told(figures: list, top: str | None) -> str:
-    if len(figures) <= _TOP_ROWS:
+def _cut_told(figures: list, top: str | None, kept: int = _TOP_ROWS) -> str:
+    if len(figures) <= kept:
         return f"all {len(figures)} by {top}, none cut" if top else f"all {len(figures)}, nearest first, none cut"
-    tied = sum(figure == figures[_TOP_ROWS - 1] for figure in figures[_TOP_ROWS:])  # a tenth place shared would read as one body's own
-    told = f"{_TOP_ROWS} highest of {len(figures)} by {top}" if top else f"{_TOP_ROWS} nearest of {len(figures)}"
+    tied = sum(figure == figures[kept - 1] for figure in figures[kept:])  # a last place shared would read as one body's own
+    told = f"{kept} highest of {len(figures)} by {top}" if top else f"{kept} nearest of {len(figures)}"
+    if tied and top == "age":  # its rank's tie is the birth month, kept whole: those of the same years born later stay out
+        return told + f" — {tied} more aged {figures[kept - 1]}, born later"
     return told + (f" — {tied} more share the last figure" if tied else "")
 
 
@@ -933,7 +941,7 @@ def _grouped_field(field: str, values: list) -> dict | None:
     return {"max": held[-1], "median": median(held), "min": held[0], "of": len(held)} if held else None
 
 
-# A body's measure as `--has`, `--lacks` and `--top` weigh it — `level` counts past 1, WB's floor. A skill, an arsenal or the age asks for `ctx`.
+# A body's measure as `--has`, `--lacks` and `--rank` weigh it — `level` counts past 1, WB's floor. A skill, an arsenal or the age asks for `ctx`.
 def _held(actor: dict, tally: str, ctx: dict | None = None) -> int:
     if ctx is not None and tally == "age":  # as `metadata` counts it, the years a body arrived with included: the age that ranks
         return actor_age(actor, ctx["world_time"])
@@ -1173,7 +1181,13 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--stage", choices=_LIFE_STAGES, help="`roster`: the bodies at one life stage — under `--since`, at it now, a dead one at its last")
     parser.add_argument("--status", help="`roster`: the bodies wearing one status, by its id — what a body wears now, where a trait is what it is")
     parser.add_argument("--task", help="`roster`: the bodies at one task the instant of the save, by its id — what a body does, where a status is what it wears")
-    parser.add_argument("--top", choices=_TOP_MEASURES, help=f"`roster`: its {_TOP_ROWS} highest by one measure, a tally, a skill or the age, each with its figure")
+    parser.add_argument(
+        "--rank",
+        nargs="+",
+        dest="top",
+        metavar="measure [n]",
+        help=f"`roster`: its highest by one measure, a tally, a skill or the age, each with its figure — {_TOP_ROWS} unless `n` says, up to {MAX_LISTED}",
+    )
     parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
     parser.add_argument("--type", "-t", help="`roster` and `lineages`: one kind, a family (`actors`) or a comma list")
     parser.add_argument(
@@ -1184,6 +1198,13 @@ def main(argv: list[str]) -> int:
         help=f"`roster`: up to {_MAX_FIELDS} of `actor … stats`, `task`, `subspecies` or a line's own field on each line",
     )
     args = parser.parse_args(argv)
+    count = _TOP_ROWS
+    if args.top:  # `--rank age 20`: a measure, then how many rows of it
+        measure, *more = args.top
+        if measure not in _TOP_MEASURES or len(more) > 1 or (more and not (more[0].isdigit() and 1 <= int(more[0]) <= MAX_LISTED)):
+            print(f"✗ `--rank <measure> [n]`: one of {', '.join(_TOP_MEASURES)}, then 1 to {MAX_LISTED} rows ({_TOP_ROWS} unsaid)", file=sys.stderr)
+            return 2
+        args.top, count = measure, int(more[0]) if more else _TOP_ROWS
     requested = args.sections
     try:
         sections = parse_sections(requested, (*_ALL_SECTIONS, *_ON_REQUEST), full=_ALL_SECTIONS)
@@ -1211,20 +1232,20 @@ def main(argv: list[str]) -> int:
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        flags = "-t, --trait, --has, --lacks, --top, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --settle, --barred, -i and an entity"
+        flags = "-t, --trait, --has, --lacks, --rank, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --settle, --barred, -i and an entity"
         print(f"✗ {flags} narrow `roster`, `-t`, `--sapient` and `--beasts` `lineages` and `pairings` too: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
         print("✗ --has and --lacks split a roll in two: name one", file=sys.stderr)
         return 2
     if args.top and (other := next((flag for flag in ("has", "lacks", "settle", "barred") if getattr(args, flag)), None)):
-        print(f"✗ `--top` ranks a roll by one measure: ask `--{other}` apart", file=sys.stderr)
+        print(f"✗ `--rank` ranks a roll by one measure: ask `--{other}` apart", file=sys.stderr)
         return 2
     if args.top and args.nearest is not None:
-        print("✗ `--top` and `--nearest` each rank a roll: ask one", file=sys.stderr)
+        print("✗ `--rank` and `--nearest` each rank a roll: ask one", file=sys.stderr)
         return 2
     if args.top and since:  # a measure read off its own chapter
-        print(f"✗ `--top` ranks one chapter: read the other by its suffix, `{since}`", file=sys.stderr)
+        print(f"✗ `--rank` ranks one chapter: read the other by its suffix, `{since}`", file=sys.stderr)
         return 2
     if since and (alone := next((flag for flag in ("lacks", "patch", "status", "task") if getattr(args, flag)), None)):
         print(f"✗ `--{alone}` reads one chapter: ask `--since` apart", file=sys.stderr)  # the dead stood, wore and did what no later save tells
@@ -1344,6 +1365,7 @@ def main(argv: list[str]) -> int:
                 args.has,
                 args.lacks,
                 args.top,
+                count,
                 entity,
                 near,
                 fields,
