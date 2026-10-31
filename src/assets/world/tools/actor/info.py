@@ -462,7 +462,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "roles": _compute_roles(actor, save),
         "sapient": is_sapient(lineage),  # tells a builder of cities from a beast, and gates his person tag
         # Chronicler-only, a thinker's alone: whether a town could rise where it stands, else what bars it — the zone weighed even for a child.
-        **settle_told(settle_gates(actor, ctx)),
+        **settle_told(settle_gates(actor, ctx), listed=True),
         "sex": sex_label(actor),
         "statuses": kept_statuses(actor),  # Chronicler-only: what the body is in the middle of — asleep, with young —, where the save keeps it
         "statuses_left": _statuses_left(actor),  # Chronicler-only: how long a lasting one still runs, a state and never a date
