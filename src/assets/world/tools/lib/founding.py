@@ -126,9 +126,9 @@ def settle_rank(gate: str) -> tuple[int, int]:
     return _GATE_KINDS.index(gate.split(" ", 1)[0]), abs(figures[0] - figures[-1]) if figures else 0
 
 
-# One gate told, the steadiest, and how many more it hides — youth never counted there, which a body's own date already tells.
-def settle_told(gates: bool | list[str] | None) -> dict:
+# One gate told, the steadiest, and the others it hides — counted on a roll's line, listed on a body's own sheet; youth never there, its own date tells it.
+def settle_told(gates: bool | list[str] | None, *, listed: bool = False) -> dict:
     if not isinstance(gates, list):
         return {} if gates is None else {"settle": True}
     barring = [gate for gate in gates if gate != "child"]
-    return {"settle": barring[0], "settle_more": len(barring) - 1 or None} if barring else {"settle": "child"}
+    return {"settle": barring[0], "settle_more": (barring[1:] if listed else len(barring) - 1) or None} if barring else {"settle": "child"}
