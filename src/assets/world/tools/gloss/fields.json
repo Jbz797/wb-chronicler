@@ -93,7 +93,7 @@
   "geography.burning.since": "Sous `-i … --since`, d'un foyer : ses tuiles prises (`caught`), qui brûlaient déjà (`still`), et celles d'alors éteintes au plus près de lui (`out`).",
   "geography.burning.spills": "La part d'un foyer hors de sa terre (un îlot collé, une terre voisine) : un foyer se range sous la terre qui en porte le plus, jamais compté deux fois.",
   "geography.burning.tiles": "Sous `--since`, par terre : tuiles prises (`caught`) et éteintes (`out`), foyer par foyer sous `-i` (`since`) ; une éteinte puis reprise n'y paraît pas.",
-  "geography.burning.to_water": "L'eau la plus proche du bord d'un foyer, depuis sa tuile la plus proche, nommée comme sous `tiles … distances` : 1, le feu touche la rive ; rien au-delà de 60.",
+  "geography.burning.to_water": "L'eau la plus proche du bord d'un foyer (1 : il touche la rive ; rien passé 60), seule, changeante d'un chapitre à l'autre ; une eau donnée : `tiles <x,y> --to`.",
   "geography.entity_types": "Toutes les sortes que porte la save, par famille (`actors`, `trees`, `nature`…) : une famille absente n'a rien dans ce monde ; ses noms valent pour `positions -t`.",
   "geography.frozen": "Par terre, la part gelée puis ses tuiles : `permafrost` le biome gelé en toute saison, `snow` et `ice` la neige et la glace de la carte, `frost` le gel passager.",
   "geography.heart": "`heart` (`islands`, `waters`, `islet`, `places.json`) : où se pose son nom, le plus loin des rives ; d'une rivière, d'un îlot, sa tuile la plus proche de sa moyenne.",
