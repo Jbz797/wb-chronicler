@@ -37,7 +37,7 @@ export class AllianceComponent {
     const rows = [
       { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_births', shown: meta.births !== undefined, stat: 'births' as const },
       { icon: 'assets/img/world/deaths.png', inverted: true, label: 'ui_deaths', shown: meta.deaths !== undefined, stat: 'deaths' as const },
-      { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: pop.warriors !== undefined, stat: 'warriors' as const },
+      { icon: 'assets/img/professions/warrior.png', inverted: false, label: 'ui_warriors', shown: pop?.warriors !== undefined, stat: 'warriors' as const },
       { icon: 'assets/img/stats/kills.png', inverted: false, label: 'ui_kills', shown: meta.kills !== undefined, stat: 'kills' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, inverted, label, stat }) => ({ icon, inverted, label, stat }));
