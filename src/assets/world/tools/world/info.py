@@ -57,6 +57,7 @@ from shared import (
     arg_parser,
     asset_families,
     asset_kinds,
+    bearing,
     biome_lore,
     body_ref,
     breeding_mode,
@@ -613,7 +614,7 @@ def _build_roster(
         }
 
     # A trait is a body's own or its lineage's: `gift_of_thunder` is born with a whole line, `fire_blood` with one body — `--trait` finds either.
-    bearing = {sub["id"] for sub in save.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
+    bearers = {sub["id"] for sub in save.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
 
     # Under `--since`, a tally is weighed against what the body held then: only one that moved is told, as a pair — `level` from its floor, never from 0.
     once = {a["id"]: _held(a, has) for a in earlier.get("actors_data") or []} if has and earlier is not None else None
@@ -624,14 +625,15 @@ def _build_roster(
     (nx, ny), near_id = near or ((0, 0), None)
     far: dict[int, float] = {}  # each body's unrounded length, ranked on: two read alike may still stand apart
 
-    # A spot's length from the one ranked around, as the crow flies
-    def crow(x: int, y: int) -> float:
-        return walk_tiles(x - nx, y - ny)
+    # A body's line beside the one ranked around: its length as the crow flies, and its heading — not under `--since`, its lines full
+    def towards(row_id: int, x: int, y: int) -> dict:
+        far[row_id] = walk_tiles(x - nx, y - ny)
+        return {"crow_tiles": round(far[row_id]), "dir": None if since else bearing(x - nx, y - ny)}
 
     for actor in save.get("actors_data") or []:
         if near and actor["id"] == near_id:  # the body ranked around stands nearest to itself
             continue
-        borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearing
+        borne = not trait or trait in (actor.get("saved_traits") or ()) or actor.get("subspecies") in bearers
         if (
             is_boat(actor)
             or (kinds and actor.get("asset_id") not in kinds)
@@ -662,8 +664,7 @@ def _build_roster(
         if top == "age":  # its month, which tells a cohort of one age apart
             change["born"] = entity_born(actor)
         if near:
-            far[actor["id"]] = crow(*actor_xy(actor))
-            change["crow_tiles"] = round(far[actor["id"]])
+            change |= towards(actor["id"], *actor_xy(actor))
         if was is not None and actor["id"] in known and not has:  # one unseen then was born or set down since, and says so by standing in the roll at all
             past = then_bodies[actor["id"]]
             was_stage = _stage(past, once_ctx, actor_age(past, once_ctx["world_time"]), adult_age(past, once_ctx))
@@ -688,8 +689,7 @@ def _build_roster(
             gone = [{**row, has: once[row["id"]], "old_from": None, "was_on": None} for row in gone if once.get(row["id"])]
         if near:  # the dead measured from where the earlier save last saw them, no later one keeping their place
             stood = {a["id"]: actor_xy(a) for a in earlier.get("actors_data") or []}
-            far |= {row["id"]: crow(*stood[row["id"]]) for row in gone}
-            gone = [{**row, "crow_tiles": round(far[row["id"]])} for row in gone]
+            gone = [row | towards(row["id"], *stood[row["id"]]) for row in gone]
 
     one_kind = kinds is not None and len(kinds) == 1  # a lone `-t` names the kind, as `-i` the land
     seen = set(_KEPT_FIELDS) | _FIELD_FLOORS.keys() if fields else set()  # every field a body of the roll can be asked, its own stats added as they come
@@ -744,11 +744,10 @@ def _build_roster(
     refs = {"city": index_by_id(save.get("cities") or []), "family": index_by_id(save.get("families") or [])} if entity else {}
     # A town's own land goes unsaid on its residents' lines, as `-i` does: the room it frees tells their stage instead
     seat = island_of.get(centre) if entity and entity[0] == "city" and (centre := city_centre(refs["city"].get(entity[1]) or {})) else None
-    cut = min(count if top else _TOP_ROWS, len(ranked)) if top or (near and not since) else len(ranked)
-    if top:  # a last place shared goes whole: a cut through it would leave unsaid a body that ranks as the last — by its figure, its birth month under `age`
-        tie = (lambda b: (order(b)[0], world_date(order(b)[1]))) if top == "age" else (lambda b: order(b)[0])
-        while cut < len(ranked) and tie(ranked[cut]) == tie(ranked[cut - 1]):
-            cut += 1
+    cut = len(ranked)
+    if top or (near and not since):  # a ranking's head, its last place whole — the birth month under `age`, the length as shown under `--nearest`
+        tie = (lambda b: (order(b)[0], world_date(order(b)[1]))) if top == "age" else (lambda b: b[2]["crow_tiles"]) if near else (lambda b: order(b)[0])
+        cut = _tied_cut([tie(body) for body in ranked], count if top else _TOP_ROWS)
     for actor, here, change in ranked[:cut]:
         if fields:  # the line is what was asked: who, and those fields, a filter's own figure kept — the default columns stay with the plain roll
             rows.append({"id": actor["id"], "name": actor.get("name"), **change, **_asked_fields(actor, here, fields, ctx, seen)})
@@ -788,8 +787,7 @@ def _build_roster(
             leavers = sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id"))
             parts["left"] = [_member_row(a, entity[0], _standing(a, island_of, grid, save["tileMap"]), refs, save, ctx, one_kind) for a in leavers]
             if near:
-                far |= {a["id"]: crow(*actor_xy(a)) for a in leavers}
-                parts["left"] = [{**row, "crow_tiles": round(far[row["id"]])} for row in parts["left"]]
+                parts["left"] = [row | towards(a["id"], *actor_xy(a)) for row, a in zip(parts["left"], leavers, strict=True)]
         parts = {part: bodies for part, bodies in parts.items() if bodies}
         return _nearest_parts(parts, far) if near else parts
     return _nearest_parts({"roster": rows + gone}, far) if near else rows + gone
@@ -908,7 +906,7 @@ def _gone_since(
 ) -> list[dict]:
     alive = {actor["id"] for actor in save.get("actors_data") or []}
     thinking = _sapient_subspecies(then) if sapient is not None else None
-    bearing = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
+    bearers = {sub["id"] for sub in then.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()
     ctx = build_actor_stats_context(then)
     died: dict[int, list[str]] = {}
     for before, after in pairwise([then, *later]):  # each death weighed in the span it fell in: that span's counts, the victims its saves still kept
@@ -917,7 +915,7 @@ def _gone_since(
     for actor in then.get("actors_data") or []:
         if actor["id"] in alive or actor["id"] not in was or (kinds and actor.get("asset_id") not in kinds) or not belongs(actor):
             continue
-        if trait and trait not in (actor.get("saved_traits") or ()) and actor.get("subspecies") not in bearing:
+        if trait and trait not in (actor.get("saved_traits") or ()) and actor.get("subspecies") not in bearers:
             continue
         if (thinking is not None and (actor.get("subspecies") in thinking) != sapient) or (asked is not None and was[actor["id"]] != asked):
             continue
@@ -1029,9 +1027,13 @@ def _near_arg(value: str) -> int | tuple[int, int]:
 
 # `--since`'s blocks under `--nearest`, each cut on its own: the arrivals that crowd a census never push out the dead a chapter seeks.
 def _nearest_parts(parts: dict[str, list[dict]], far: dict[int, float]) -> dict:
+    if not parts:  # nothing moved: the roll's own refusal says so, never a bare `info`
+        return {}
     ranked = {part: sorted(rows, key=lambda row: (far[row["id"]], row["id"])) for part, rows in parts.items()}
-    told = "; ".join(f"{part}: " * (part != "roster") + _cut_told([row["crow_tiles"] for row in rows], None) for part, rows in ranked.items())
-    return {"info": told, **{part: rows[:_TOP_ROWS] for part, rows in ranked.items()}}
+    lengths = {part: [row["crow_tiles"] for row in rows] for part, rows in ranked.items()}
+    kept = {part: _tied_cut(figures) for part, figures in lengths.items()}
+    told = "; ".join(f"{part}: " * (part != "roster") + _cut_told(figures, None, kept[part]) for part, figures in lengths.items())
+    return {"info": told, **{part: rows[: kept[part]] for part, rows in ranked.items()}}
 
 
 # Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.
@@ -1135,6 +1137,14 @@ def _then(chapter: str) -> tuple[dict, dict[int, int | str]]:
     then = load_save(then_path)
     island_of, grid = compute_islands_cached(then, then_path)[1], LazyTileGrid(then)
     return then, {actor["id"]: _standing(actor, island_of, grid, then["tileMap"]) for actor in then.get("actors_data") or [] if not is_boat(actor)}
+
+
+# How far a cut of `size` runs on a list ranked by `figures`: past it while the last place is shared, which a cut would split.
+def _tied_cut(figures: list, size: int = _TOP_ROWS) -> int:
+    kept = min(size, len(figures))
+    while kept < len(figures) and figures[kept] == figures[kept - 1]:
+        kept += 1
+    return kept
 
 
 # Why the deaths WB counted since a save and the bodies gone since differ, those no chapter saw counted in — nothing where they agree, `saves` from then to now.
