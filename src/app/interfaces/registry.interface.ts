@@ -30,7 +30,7 @@ export interface CityInfo {
   species?: string;
 }
 
-// A clan's tag: its own hue (sworn, not granted, so no crown lends it one), the founder's species pip and the living headcount. Its `name` is chronicler-only.
+// A clan's tag: its own hue (sworn, not granted, so no crown lends it one), the founder's species pip and the living headcount.
 export interface ClanInfo {
   banner_bg?: number;
   banner_bg_color?: string;
@@ -43,7 +43,7 @@ export interface ClanInfo {
   species?: string;
 }
 
-// A culture's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living headcount. Its `name` is chronicler-only.
+// A culture's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living headcount.
 export interface CultureInfo {
   banner_bg?: number;
   banner_bg_color?: string;
@@ -56,7 +56,7 @@ export interface CultureInfo {
   species?: string;
 }
 
-// A family's tag: the frame worn as a border, the flattened backing hue, the founding species' pip and its living headcount. Its `name` is chronicler-only.
+// A family's tag: the frame worn as a border, the flattened backing hue, the founding species' pip and its living headcount.
 export interface FamilyInfo {
   bg_color?: string;
   dead?: boolean;
@@ -66,7 +66,7 @@ export interface FamilyInfo {
   species?: string;
 }
 
-// A realm's tag visuals: the `banner_*` four are the shield and emblem slots `KingdomSpriteHelpers` composes, each with its hue; its `name` is chronicler-only.
+// A realm's tag visuals: the `banner_*` four are the shield and emblem slots `KingdomSpriteHelpers` composes, each with its hue.
 export interface KingdomInfo {
   banner_bg?: number;
   banner_bg_color?: string;
@@ -80,7 +80,7 @@ export interface KingdomInfo {
   species?: string;
 }
 
-// A tongue's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living speakers. Its `name` is chronicler-only.
+// A tongue's tag: its own hue (caught, not granted, so no crown lends it one), the founder's species pip and the living speakers.
 export interface LanguageInfo {
   banner_bg?: number;
   banner_bg_color?: string;
@@ -93,7 +93,7 @@ export interface LanguageInfo {
   species?: string;
 }
 
-// Everything `ActorSpriteHelpers` needs to draw the actor. Python omits `head`/`phenotype_*` at 0 — WB's own default; the entry's `name` is chronicler-only.
+// Everything `ActorSpriteHelpers` needs to draw the actor. Python omits `head`/`phenotype_*` at 0 — WB's own default.
 export interface PersonInfo {
   asset_id: string;
   dead?: boolean;
@@ -111,7 +111,7 @@ export interface PersonInfo {
   weapon?: string;
 }
 
-// A creed's tag: its own hue (preached, not granted, so no crown lends it one), the founder's species pip and the living faithful. Its `name` is chronicler-only.
+// A creed's tag: its own hue (preached, not granted, so no crown lends it one), the founder's species pip and the living faithful.
 export interface ReligionInfo {
   banner_bg?: number;
   banner_bg_color?: string;

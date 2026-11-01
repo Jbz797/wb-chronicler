@@ -3,13 +3,13 @@
 # WB's own history, `history/map_stats.s3db`, read so that no one queries it raw: windows joined, blanks carried, tallies told as each year's gains, dates compact.
 # User-facing docs: `docs/tools.md`.
 
-import json
 import re
 import sqlite3
 import sys
 from collections import Counter, defaultdict
 from contextlib import closing
 from pathlib import Path
+lazy from collections.abc import Mapping
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
@@ -18,9 +18,13 @@ from shared import (
     SAVES_DIR,
     UNITS_PER_YEAR,
     absent_entity,
+    alive_or_dead_ref,
     arg_parser,
+    crowns_named,
     emit,
     entity_ref,
+    index_by_id,
+    kept_deaths,
     latest_chapter,
     load_data,
     load_save,
@@ -106,7 +110,7 @@ def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict) -> list[dict]:
     columns = [c for c, *_ in found.description]
     crowns = [dict(zip(columns, row, strict=True)) for row in found.fetchall()]
     fallen, reigns = {c["id"] for c in crowns}, defaultdict(list)
-    for entry in log_entries(0.0, now) if crowns else ():
+    for entry in log_entries(0.0, now, deaths=True) if crowns else ():
         if entry["event"].startswith("king_") and entry["kingdom_id"] in fallen:
             reigns[entry["kingdom_id"]].append(_king_entry(entry))
     out = []
@@ -174,7 +178,7 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
     return older + years  # the coarse spans first, each told by its `years`
 
 
-# WB's own log up to the chapter, its bodies and crowns named off the registries — past `_MAX_LOG` entries, a count by kind of event.
+# WB's own log up to the chapter, its bodies named by the save and the death register, its crowns by `crowns_named` — past `_MAX_LOG` entries, a count by kind.
 def _build_log(save: dict, since: str | None, actor: int | None, event: str | None) -> dict | list[dict] | str:
     start = _chapter_time(load_save(SAVES_DIR / since / "map.wbox")) if since else 0.0
     if not (entries := log_entries(start, end := _chapter_time(save), actor, event)):
@@ -185,12 +189,12 @@ def _build_log(save: dict, since: str | None, actor: int | None, event: str | No
     if len(entries) > _MAX_LOG:
         counts = Counter(e["event"] for e in entries)
         return {"by_event": dict(sorted(counts.items()))}
-    persons, crowns = _registry("persons"), _registry("kingdoms")
+    persons, deaths, crowns = index_by_id(save.get("actors_data") or []), kept_deaths(save), crowns_named(save)
     for entry in entries:
         if event:  # the one `-t` asked for, so no entry repeats it — nor the body `--actor` named
             entry.pop("event")
         if (unit := entry.pop("actor_id")) is not None and actor is None:
-            entry["actor"] = entity_ref(unit, persons) or {"id": unit}
+            entry["actor"] = alive_or_dead_ref(unit, persons, deaths)
         if (crown := entry.pop("kingdom_id")) is not None:
             entry["kingdom"] = entity_ref(crown, crowns) or {"id": crown}
     return entries
@@ -201,14 +205,18 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     map_stats = save.get("mapStats") or {}
     closed = _closed_year(save)
     columns, coarse, rows = _series(conn, "World", None, closed + 1)
-    events = [c for c in columns if _EVENT_COLUMN.search(c) and c != _DEATHS_TOTAL]
+    # The deaths and the metamorphoses off the register: WB's tallies miss what dies uncounted, a crab reborn among them
+    events = [c for c in columns if _EVENT_COLUMN.search(c) and c not in (_DEATHS_TOTAL, "metamorphosis") and not _DEATH_CAUSE.match(c)]
+    died: defaultdict[int, Counter] = defaultdict(Counter)  # each year's deaths by cause, sorted once for every span to sum
+    for dead in kept_deaths(save).values():
+        died[_row_year(dead["died"])][dead["cause"]] += 1
     tracked = [*events, _DEATHS_TOTAL] if _DEATHS_TOTAL in columns else events
     before: dict = dict.fromkeys(tracked, 0)
     spans = []
     # The years before the window, as `entity` tells them: gains on each span from the world's birth, its states a mean, never what a year closed on.
     for r in coarse:
         now = {c: r[c] for c in tracked}
-        gains, mean = _with_unknown(_gains(before, now, events), before, now), _world_states(r)
+        gains, mean = _gains(before, now, events) | _died(died, max(r["timestamp"] - r["step"], 1), r["timestamp"] - 1), _world_states(r)
         if gains or mean:
             spans.append({**gains, "mean": mean or None, "years": _span(r, 1)})
         before = now
@@ -223,14 +231,14 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
         # A gap the next year takes back is one body counted a year off, and says so: the two years together fall right.
         gap = {"close_gap": over, "made_up": over == -owed or None} if over else {}
         owed, stood = over, roll
-        if gains := _with_unknown(_gains(before, now, events), before, now):
+        if gains := _gains(before, now, events) | _died(died, row["timestamp"], row["timestamp"]):
             timeline.append({**gains, **gap, "at_close": _world_states(row), "year": f"y{row['timestamp']}"})
         before = now
     # WB's `mapStats` holds the same tallies in camelCase, the deaths snake-cased — two of them under names of their own.
     keys = {c: _STAT_KEYS.get(c) or (c if c.startswith("deaths_") else _camel(c)) for c in tracked}
     now = {c: int(v) if (v := map_stats.get(key)) is not None else None for c, key in keys.items()}
-    if gains := _with_unknown(_gains(before, now, events), before, now):
-        start = closed + 1 if rows else coarse[-1]["timestamp"] if coarse else 1  # the year after the last row read: a span's end where no year is left
+    start = closed + 1 if rows else coarse[-1]["timestamp"] if coarse else 1  # the year after the last row read: a span's end where no year is left
+    if gains := _gains(before, now, events) | _died(died, start, closed + 1):
         timeline.append({**gains, **({"year": f"y{start}"} if start > closed else {"years": f"y{start}–y{closed + 1}"}), "so_far": True})
     return spans + timeline
 
@@ -247,6 +255,13 @@ def _chapter_time(save: dict) -> float:
 # The last year closed at the chapter's hour, the one before its own: the year under way is told `so_far`.
 def _closed_year(save: dict) -> int:
     return _row_year(_chapter_time(save)) - 1
+
+
+# The deaths of the years `first` to `last` by cause, as the register keeps them — a metamorphosis is no death, and its tally stands apart.
+def _died(died: Mapping[int, Counter], first: int, last: int) -> dict:
+    counts = sum((died[year] for year in range(first, last + 1) if year in died), Counter())
+    changed = counts.pop("metamorphosis", 0)
+    return ({"deaths": dict(counts)} if counts else {}) | ({"metamorphosis": changed} if changed else {})
 
 
 # Each year's rise of the rising tallies: `None` before any reading, so a window opened past the entity's first year never passes a total off as a year's gain.
@@ -270,13 +285,6 @@ def _king_entry(entry: dict) -> dict:
         return {**at, "killer": {"id": body, "name": entry.get("killer")}, "name": entry.get("king")}
     names = entry.get("names") or []
     return {**at, "id": body, "name": names[1] if len(names) > 1 else None}
-
-
-# The persons and crowns named by id in the latest chapter's registries — the dead kept, whom no save carries any more.
-def _registry(name: str) -> dict:
-    n = latest_chapter()
-    path = SAVES_DIR / f"C{n}" / f"{name}.json" if n else None
-    return {int(k): v for k, v in json.loads(path.read_text()).items()} if path and path.exists() else {}
 
 
 # The year whose row a moment falls in: Faithful Saves closes a calendar year as January opens — the rows WB wrote before it, a month early, read the same.
@@ -313,15 +321,6 @@ def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: in
 def _span(row: dict, first: int) -> str:
     start, end = max(row["timestamp"] - row["step"], first), row["timestamp"] - 1
     return f"y{start}–y{end}" if start < end else f"y{end}"
-
-
-# A year's deaths WB filed under no cause, as `world … cumulative` says them — its total less the metamorphoses it counts in: the causes then sum to the true deaths.
-def _with_unknown(gains: dict, before: dict, now: dict) -> dict:
-    if before.get(_DEATHS_TOTAL) is None or now.get(_DEATHS_TOTAL) is None:
-        return gains
-    if (unknown := now[_DEATHS_TOTAL] - before[_DEATHS_TOTAL] - gains.get("metamorphosis", 0) - sum((gains.get("deaths") or {}).values())) > 0:
-        gains.setdefault("deaths", {})["unknown"] = unknown
-    return gains
 
 
 # A world row's states under `world`'s own names. WB's `vegetation` counts its trees in, where `snapshot` tells them apart — and a nought goes unsaid.

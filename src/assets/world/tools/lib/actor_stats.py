@@ -725,7 +725,7 @@ def body_stats(actor: dict, ctx: dict) -> dict:
         cleaned.pop("max_children", None)
     cleaned.update(
         {
-            # Life's tallies, silent at nought as every other stat is: a soul that has killed nobody and owns nothing says so by carrying none of them.
+            # Life's tallies, silent at nought as every other stat is: a soul that owns nothing says so by carrying none of them — its kills are `victims`.
             **({"births": n} if (n := int(actor.get("births") or 0)) else {}),
             # Said at nought while the lineage can still bear, unsaid where it never will: the absence then says « none to come », not « none yet »
             **({"children": n} if (n := ctx["children_by_parent"].get(actor.get("id"), 0)) or bearing else {}),
@@ -733,7 +733,6 @@ def body_stats(actor: dict, ctx: dict) -> dict:
             # WB happiness runs -100..+100, surfaced as the 0-100 % the UI shows — and dropped whole where the biology has no `amygdala`, feeling nothing at all.
             **({"happiness": (int(actor.get("happiness") or 0) + 100) // 2} if has_emotions(actor, ctx["subspecies_by_id"]) else {}),
             "health": int(actor.get("health", UNWRITTEN_HEALTH)),
-            **({"kills": n} if (n := int(actor.get("kills") or 0)) else {}),
             **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # every body starts at 1, WB's floor: said once earned past it
             **({"loot": n} if (n := int(actor.get("loot") or 0)) else {}),
             "mana": int(actor.get("mana") or 0),

@@ -39,13 +39,16 @@ from shared import (
     SAVES_DIR,
     UNITS_PER_YEAR,
     actor_age,
+    alive_or_dead_ref,
     chapter_floor,
     chapter_length,
     chapter_world_time,
     chronicle_git,
     i18n,
+    index_by_id,
     is_boat,
     is_sapient,
+    kept_deaths,
     latest_chapter,
     life_stage,
     live_save,
@@ -61,6 +64,7 @@ from shared import (
     thinking_souls,
     under_construction,
     unmarked,
+    world_date,
     world_laws,
     worldbox_running,
     write_save,
@@ -109,7 +113,7 @@ _COUNSEL = (
 )
 
 # What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
-_DEATH = "the death section opens the chapter: how he died, pieced together as far as the data allow (§ Déduction des meurtres), what he leaves, the handover"
+_DEATH = "the death section opens the chapter: how he died, as the death register tells it (`actor <id>`), what he leaves, the handover"
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
     "announce it to the player with `tools/map/show.py <x,y>`: only the map finds it among a thousand",
@@ -181,6 +185,7 @@ _MAP_BLOCK = 64  # WB sizes a world in blocks of this many tiles, every stock si
 _MODS = {"Faithful Saves": "faithful_saved_at", "Wandering Clouds": "wandering_clouds_saved_at"}
 
 _MODS_DIR = "../../../mods"  # from the chronicler's own directory, where he runs this script
+_MODS_LATEST = {"Faithful Saves": "faithful_deaths_from"}  # a key only its current version writes: an older one stamps the save, yet keeps no death register
 
 # What a place's check weighs — in no doc: handed to the audit with the names a chapter gave, which no auditor was sent to before.
 _PLACE = (
@@ -356,9 +361,9 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     if "FIRST_BOAT" not in already and any(is_boat(a) for a in live.get("actors_data") or []):
         tags.append("FIRST_BOAT")
 
-    # The world's first birth (an egg once laid), first two towns and first death, once a chronicle, off WB's counters — a metamorphosis is no death.
+    # The world's first birth (an egg once laid) and first two towns, once a chronicle, off WB's counters; its first death off the register, no metamorphosis.
     stats = live["mapStats"]
-    died = int(stats.get("deaths") or 0) - int(stats.get("metamorphosis") or 0)
+    deaths = [dead for dead in kept_deaths(live).values() if dead["cause"] != "metamorphosis"]
     towns = int(stats.get("citiesCreated") or 0)
 
     # Its first house is read off the map, once it stands: WB's `housesBuilt` takes a fire and a stockpile for one, and counts a site the day it is laid.
@@ -367,12 +372,13 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     # The first migrants a fire called in, off each crown's `migrated` (`Kingdom.increaseMigrants`): a realm gone takes its count along, a rare miss.
     migrated = sum(int(k.get("migrated") or 0) for k in live.get("kingdoms") or [])
 
-    # The first death by another body's blow, a beast's bite as a blade: a tag born after the deed is owed by the chapter that saw it alone, the one before at 0.
-    struck = stats.get("deaths_weapon") and not prev_world.get("deaths_weapon")
+    # The first death by another body's hand, blade or bite: a tag born after the deed is owed by the chapter that saw it alone, the one before it.
+    first_kill = min((dead["died"] for dead in deaths if dead["killer"] is not None), default=None)
+    struck = first_kill is not None and first_kill > float(prev_world.get("world_time") or 0)
     firsts = (
         ("FIRST_BIRTH", stats.get("creaturesBorn")),
         ("FIRST_CITY", towns),
-        ("FIRST_DEATH", died),
+        ("FIRST_DEATH", deaths),
         ("FIRST_HOUSE", housed),
         ("FIRST_KILL", struck),
         ("FIRST_MIGRANTS", migrated),
@@ -631,11 +637,12 @@ def _misplaced_places(n: int) -> list[tuple[str, int, int, int | None, int | Non
     return misplaced
 
 
-# The mods this save was written without: its stamp missing, or left by an older save — the time it holds is then not this save's.
+# The mods this save was written without: its stamp missing, or left by an older save — the time it holds is then not this save's —, or an older version.
 def _mods_off(save: dict) -> list[str]:
     stats = save.get("mapStats") or {}
     stamps = (stats.get("custom_data") or {}).get("custom_data_float") or {}
-    return [name for name, key in _MODS.items() if abs(float(stamps.get(key, -inf)) - float(stats.get("world_time") or 0)) > _STAMP_SLACK]
+    stale = [name for name, key in _MODS.items() if abs(float(stamps.get(key, -inf)) - float(stats.get("world_time") or 0)) > _STAMP_SLACK]
+    return stale + [name for name, key in _MODS_LATEST.items() if name not in stale and key not in stamps]
 
 
 # The names this chapter put on the map, a land's or a water's as a place's own: what `--finalize` dated, and what the chronicler wrote `chapter` on himself.
@@ -718,10 +725,10 @@ def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime
     if turned := sorted(f"{_LAW_NAMES.get(law, law)} {'on' if on else 'off'}" for law, on in world_laws(live).items() if law in then and then[law] != on):
         print(f"  ⚖ world laws turned since C{n - 1}: {', '.join(turned)} — `tools/wiki/info.py World_Laws --entry <law>` says what each rules")
         print(_RECAP_RULE)
-    # The one source naming a killer, printed so a king's fall needn't wait on the file; none at C1, whose whole past would pour out: `history log`'s to give.
+    # The crowns and towns made and unmade since, printed so a fall needn't wait on the file; none at C1, whose whole past would pour out: `history log`'s to give.
     journal = log_entries(float(prev_world.get("world_time") or 0)) if n > 1 else []
-    for entry in journal:  # the killer named as such, `special1..3` shifting meaning, the point by whose place it is — a meteorite names no one, its point its own
-        told = [f"{role} {entry[role]}" for role in ("favorite", "king", "killer") if entry.get(role)] or (entry.get("names") or [])
+    for entry in journal:  # the point by whose place it is — a meteorite names no one, its point its own
+        told = entry.get("names") or []
         print(f"  ✎ {' · '.join((entry['date'], entry['event'], *told))} ({entry['point'] or 'at'} {entry['x']},{entry['y']})")
     if journal:
         print(_RECAP_RULE)
@@ -779,8 +786,8 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
             then = load_save(archived) if (archived := SAVES_DIR / f"C{prior}" / "map.wbox").exists() else None
             laws = {law: on for law, on in world_laws(then or {}).items() if law.startswith("world_law_")}
             stats = (then or {}).get("mapStats") or {}
-            hour, struck = (rounded_world_time(stats), stats.get("deaths_weapon") or 0) if then else (None, None)
-            world = {**((data.get("world") or {}).get("metadata") or {}), "deaths_weapon": struck, "laws": laws, "world_time": hour}
+            hour = rounded_world_time(stats) if then else None
+            world = {**((data.get("world") or {}).get("metadata") or {}), "laws": laws, "world_time": hour}
     return tags, favorite, world, sworn
 
 
@@ -822,13 +829,18 @@ def _record_prose_moved(n: int) -> bool:
     return path.exists() and _written_prose(json.loads(path.read_text())) != _written_prose(before)
 
 
-# What the favorite line adds, so the chronicler need not deduce it — a favorite gone from `actors_data` is dead, and nothing else says so. Silent when it holds.
-def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None) -> str:
+# What the favorite line adds, so the chronicler need not deduce it — a favorite gone, with its death as the register keeps it. Silent when it holds.
+def _regime(n: int, actors: list, fav_id: int | None, prev_fav_id: int | None, deaths: dict[int, dict]) -> str:
     if n == 1:
         return "first chapter"
     if prev_fav_id is not None and not any(a.get("id") == prev_fav_id for a in actors):  # WB drops the dead from `actors_data`: an absent favorite is a dead one
         # The pick itself is the closing block's, printed only while enough thinking souls are left to pick from.
-        return f"{'the favorite has' if fav_id is None else 'successor to one who has'} left the world — {_DEATH}"
+        dead, told = deaths.get(prev_fav_id), ""
+        if dead:  # its death as the register keeps it: when, of what, by whom
+            killer = alive_or_dead_ref(dead["killer"], index_by_id(actors), deaths)
+            by = f" by {killer.get('name') or 'a nameless body'} ({killer['id']})" if killer else ""
+            told = f" ({world_date(dead['died'])}, {dead['cause']}{by})"
+        return f"{'the favorite has' if fav_id is None else 'successor to one who has'} left the world{told} — {_DEATH}"
     return "yet to be designated" if fav_id is None else ""
 
 
@@ -1211,7 +1223,7 @@ def main(argv: list[str]) -> int:
         if not live["mapStats"].get("world_time"):  # a reset zeroes the clock and leaves the old stamps: no game has written this save since
             print("✗ the world has not been saved since its reset — player: reopen it in WorldBox and save again", file=sys.stderr)
             return 1
-        print(f"✗ the save was written without {' and '.join(off)} — no chapter is written on such a save", file=sys.stderr)
+        print(f"✗ the save was written without {' and '.join(off)}, or an older version — no chapter is written on such a save", file=sys.stderr)
         print("  → player: its README tells how to install it — or the chronicler can install it for you, just ask", file=sys.stderr)
         print("  → player: then restart the game (a mod only loads when it starts), load the world and save again", file=sys.stderr)
         readmes = ", ".join(f"`{_MODS_DIR}/{name.replace(' ', '')}/README.md`" for name in off)
@@ -1295,7 +1307,7 @@ def main(argv: list[str]) -> int:
         (chapter_dir / "chapter.md").write_text(f"# {_draft_heading()}\n")
         _write_index(n, world_time)
 
-        _print_report(n, live, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id), tags, prev_world)
+        _print_report(n, live, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id, kept_deaths(live)), tags, prev_world)
         _print_next_step(n, live, favorite, _forget_subagents())
     except BaseException as fault:  # a crash or a Ctrl-C halfway, which `_abandon` never sees: the half-built folder goes the same way, the fault still surfacing
         shutil.rmtree(chapter_dir, ignore_errors=True)

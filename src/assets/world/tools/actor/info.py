@@ -2,7 +2,6 @@
 
 # User-facing docs (usage, available sections) live in `docs/tools.md`. Notes below are for maintainers — algorithm references, gotchas, source pointers.
 
-import json
 import re
 import sys
 from argparse import ArgumentTypeError
@@ -50,6 +49,7 @@ from shared import (
     absent_entity,
     actor_age,
     actor_xy,
+    alive_or_dead_ref,
     asset_families,
     asset_kinds,
     asset_sites,
@@ -78,8 +78,7 @@ from shared import (
     is_transport,
     kept_army_since,
     kept_city_since,
-    kept_victims,
-    latest_chapter,
+    kept_deaths,
     life_stage,
     light,
     load_data,
@@ -99,12 +98,13 @@ from shared import (
     wants_detail,
     water_ref,
     whereabouts,
+    world_date,
     world_laws,
 )
 from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_in
 from waters import water_bodies, water_family, water_tiles, waters_cached, waters_within
 
-_ALL_SECTIONS = ("companions", "gear", "inventory", "kin", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits")
+_ALL_SECTIONS = ("companions", "gear", "inventory", "kin", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits", "victims")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
@@ -135,7 +135,6 @@ _RANKED_STATS = {
     "equipment_power",
     "health_max",
     "intelligence",
-    "kills",
     "level",
     "lifespan",
     "loot",
@@ -341,6 +340,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "cities_by_id": index_by_id(save.get("cities") or []),
         "clan_chiefs": frozenset(chief for c in save.get("clans") or [] if (chief := c.get("chief_id"))),
         "cultures_by_id": index_by_id(save.get("cultures") or []),
+        "deaths": kept_deaths(save),  # the register: each body's victims, and who a dead parent or killer was
         "families_by_id": index_by_id(save.get("families") or []),
         "ferrying_kingdoms": ferrying,  # the crowns a transport boat serves: only their people reach, and are measured, past the common circle
         "city_zones": cache(lambda: city_zones(save, islands()[1])),  # called not stored: `settle` alone asks, and only of a thinking soul
@@ -474,7 +474,6 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "tenure_years": tenure,
         # WB `isInsideSomething`: a save keeps the boat half, never the building. A plain ref, souls boarding transports alone — `boat/info.py <id>` spells it out.
         **({"transport": entity_ref(actor.get("transportID"), ctx["actors_by_id"])} if is_aboard(actor) else {}),
-        "victims": kept_victims(actor),  # Chronicler-only: the latest deaths it dealt, the mod's stamp — WB counts them, never whom
         "x": tile[0],
         "y": tile[1],
     }
@@ -503,13 +502,11 @@ def _build_plot(actor: dict, ctx: dict, save: dict) -> dict | None:
 
 
 # A body between two chapters: its path, a heading and a length, never a bearing from anyone; then what moved of `metadata`, `stats` and traits — gaps, not events.
-def _build_since(actor: dict | None, then: dict | None, ctx: dict, save: dict, then_ctx: dict, then_save: dict) -> dict:
+def _build_since(actor: dict, then: dict | None, ctx: dict, save: dict, then_ctx: dict, then_save: dict) -> dict:
     if then is None:
         return {"new": True}  # born or set down since, with nothing then to weigh it against
     was = actor_xy(then)
     was_land = _land_of(then, then_ctx)
-    if actor is None:  # WB drops the dead from the save: a body gone is a body dead, its place then all that is left — none keeps where it fell
-        return {"asset_id": then.get("asset_id"), "gone": True, "name": then.get("name"), "was_at": {"island_id": was_land, "x": was[0], "y": was[1]}}
     out: dict = {}
     if (now := actor_xy(actor)) != was:
         dx, dy = now[0] - was[0], now[1] - was[1]
@@ -725,8 +722,9 @@ def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
 
     getters = {stat: lambda s, st=stat: s.get(st, 0) for stat in _RANKED_STATS if stat in own}  # `st=stat` binds now, else every lambda reads the last one
     ranks = competition_ranks(own, peers, getters)
-    # Age is not in `body_stats` (derived from `created_time`) — ranked separately, against the raw actors.
-    ranks.update(competition_ranks(actor, same_species, {"age": lambda a: actor_age(a, ctx["world_time"])}))
+    # Age and kills are not in `body_stats` — one derived from `created_time`, the other told by `victims` — ranked apart, against the raw actors.
+    raw = {"age": lambda a: actor_age(a, ctx["world_time"])} | ({"kills": lambda a: int(a.get("kills") or 0)} if actor.get("kills") else {})
+    ranks.update(competition_ranks(actor, same_species, raw))
     return ranks
 
 
@@ -755,6 +753,24 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
     if round(crow) >= round(walked) if whole else site is None or site == about.get(reached) or crow >= walked:
         return None
     return {**(site or {}), "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
+
+
+# A body the register saw die: what it was and of whom, then when, of what, by whom and where — its land as the map read draws it.
+def _death(dead: dict, ctx: dict) -> dict:
+    by_id, deaths, lineage = ctx["actors_by_id"], ctx["deaths"], dead["subspecies"]
+    return {
+        "asset_id": dead["asset_id"],
+        "born": world_date(dead["born"]),
+        "date": world_date(dead["died"]),
+        "died_of": dead["cause"],
+        "island_id": _land_of(dead, ctx),
+        "killed_by": alive_or_dead_ref(dead["killer"], by_id, deaths),
+        "name": dead["name"],
+        "parents": [alive_or_dead_ref(parent, by_id, deaths) for parent in dead["parents"]] or None,
+        "subspecies": entity_ref(lineage, ctx["subspecies_by_id"]) or ({"id": lineage} if lineage else None),  # one died out keeps its id
+        "x": dead["x"],
+        "y": dead["y"],
+    }
 
 
 # A time as the chronicler reads it: whole minutes under the hour, where a tenth of an hour would round a few tiles to nought, else hours to the tenth.
@@ -802,23 +818,14 @@ def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mappin
     return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
 
 
-# A body's kills at each chapter, by the chapters a total held, the earliest first: the save dates no death it dealt, so a rise lies between two chapters.
-def _kill_history(actor_id: int, upto: int) -> dict | None:
-    totals: defaultdict[int, list[int]] = defaultdict(list)
-    for n, body in _chapter_bodies(actor_id, upto):
-        totals[int(body.get("kills") or 0)].append(n)
-    return {_chapter_spans(at): total for total, at in totals.items()} or None
-
-
-# Whom a body was born of and whom it bore, off the parents WB writes on each body: a parent gone is named by the registry, its own dead kept; children, the living.
+# Whom a body was born of and whom it bore, off the parents WB writes on each body and the register on each dead one: the dead named by it, and said gone.
 def _kin(actor: dict, ctx: dict) -> dict:
-    by_id, aid = ctx["actors_by_id"], actor["id"]
+    by_id, deaths, aid = ctx["actors_by_id"], ctx["deaths"], actor["id"]
     ids = [pid for pid in (actor.get("parent_id_1"), actor.get("parent_id_2")) if pid]
-    gone = [pid for pid in ids if pid not in by_id]
-    path = SAVES_DIR / f"C{latest_chapter()}" / "persons.json"
-    known = json.loads(path.read_text()) if gone and path.exists() else {}
-    parents = [entity_ref(pid, by_id) or {"gone": True, "id": pid, "name": (known.get(str(pid)) or {}).get("name")} for pid in ids]
-    children = [entity_ref(kid, by_id) for kid in sorted(b["id"] for b in by_id.values() if aid in (b.get("parent_id_1"), b.get("parent_id_2")))]
+    parents = [entity_ref(pid, by_id) or {"gone": True, "id": pid, "name": (deaths.get(pid) or {}).get("name")} for pid in ids]
+    living = [entity_ref(b["id"], by_id) for b in by_id.values() if aid in (b.get("parent_id_1"), b.get("parent_id_2"))]
+    lost = [{"gone": True, "id": dead["id"], "name": dead["name"]} for dead in deaths.values() if aid in dead["parents"]]
+    children = sorted(filter(None, living + lost), key=lambda child: child["id"])
     return {"children": children or None, "parents": parents or None}
 
 
@@ -1277,6 +1284,17 @@ def _trip_time(per_hour: float, total: float, foot: float | None = None, water: 
     return {"march_days": round(total / day, 1)} if total >= day else _duration(total / per_hour, "walk_" if foot is not None else "total_")
 
 
+# The deaths a body dealt, oldest first, off the register — WB counts them, never whom: `full` keeps the latest, the section named every one.
+def _victims(actor_id: int, ctx: dict, requested: str | None) -> dict | None:
+    dealt = [dead for dead in ctx["deaths"].values() if dead["killer"] == actor_id]
+    rows = [{"asset_id": d["asset_id"], "date": world_date(d["died"]), "id": d["id"], "name": d["name"], "x": d["x"], "y": d["y"]} for d in dealt]
+    if not rows:
+        return None
+    if len(rows) > 1 and requested in (None, "full"):
+        return light({"latest": rows[-1], "total": len(rows)}, withheld=True)
+    return {"all": rows, "total": len(rows)}
+
+
 # How far on foot each of `spots` lies, `None` for a body the ground never holds: round his land's bays, swum within reach toward another, each walk drawn if asked.
 def _walker(actor: dict, gait: Gait | None, ctx: dict, limit: float, spots: list[tuple]) -> Callable[[int, int, int | None], float | None] | None:
     if gait is None:
@@ -1347,11 +1365,11 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
-    kills, statuses = "--kills" in argv, "--statuses" in argv
-    argv = [arg for arg in argv if arg not in {"--kills", "--statuses"}]
+    statuses = "--statuses" in argv
+    argv = [arg for arg in argv if arg != "--statuses"]
     save_path, argv, chapter = take_chapter(argv)
-    if (kills or statuses) and chapter is None:  # the chapters' saves are the record it reads: before the first, there is none
-        print(f"✗ `--{'kills' if kills else 'statuses'}` reads the chapters' saves, and none is written yet", file=sys.stderr)
+    if statuses and chapter is None:  # the chapters' saves are the record it reads: before the first, there is none
+        print("✗ `--statuses` reads the chapters' saves, and none is written yet", file=sys.stderr)
         return 2
     upto = int(chapter[1:]) if chapter else 0
     try:
@@ -1361,7 +1379,7 @@ def main(argv: list[str]) -> int:
         return 2
     if not argv:
         print(
-            "✗ usage: info.py <id> [sections] [--to p<id>|<x,y>|b<id>|c<id>|i<land>|<kind>] [--since C<n>] [--kills] [--statuses] [C<n>] — docs/tools.md",
+            "✗ usage: info.py <id> [sections] [--to p<id>|<x,y>|b<id>|c<id>|i<land>|<kind>] [--since C<n>] [--statuses] [C<n>] — docs/tools.md",
             file=sys.stderr,
         )
         return 2
@@ -1372,7 +1390,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     requested = argv[1] if len(argv) > 1 else None
-    flagged = since is not None or kills or statuses
+    flagged = since is not None or statuses
     try:
         sections = parse_sections(requested, _ALL_SECTIONS) if requested or (not targets and not flagged) else ()  # a flag alone answers alone
     except ValueError as e:
@@ -1390,11 +1408,9 @@ def main(argv: list[str]) -> int:
         then_save = load_save(then_path)
         then_ctx = _build_context(then_save, then_path)
         then = then_ctx["actors_by_id"].get(actor_id)
-    if actor is None and not sections and not targets:  # a body gone still answers `--since`, `--kills` and `--statuses`, each with its own past, and they alone
-        dealt, history = _kill_history(actor_id, upto) if kills else None, _status_history(actor_id, upto) if statuses else None
-        if (since or kills or statuses) and (not since or then is not None) and (not kills or dealt) and (not statuses or history):
-            emit({"kills": dealt, "since": _build_since(None, then, ctx, save, then_ctx, then_save) if since else None, "statuses": history})
-            return 0
+    if actor is None and (dead := ctx["deaths"].get(actor_id)) and not targets:  # a dead body answers by its death, and `--statuses` by its past
+        emit({"died": _death(dead, ctx), "statuses": _status_history(actor_id, upto) if statuses else None})
+        return 0
     if actor is None:
         print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
         return 1
@@ -1437,10 +1453,10 @@ def main(argv: list[str]) -> int:
         out["surroundings"] = _build_surroundings(actor, ctx, requested)
     if "traits" in sections:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
+    if "victims" in sections:
+        out["victims"] = _victims(actor_id, ctx, requested)
     if since:
         out["since"] = _build_since(actor, then, ctx, save, then_ctx, then_save)
-    if kills:
-        out["kills"] = _kill_history(actor_id, upto)
     if statuses:
         out["statuses"] = _status_history(actor_id, upto)
     trips = {words: aim and _trip(actor, aim, ctx, then, then_ctx, since) for words, aim in aimed.items()}
@@ -1448,6 +1464,9 @@ def main(argv: list[str]) -> int:
         return 1
     if trips:  # several `--to` keep each its words, where one alone comes bare
         out["to"] = trips if len(trips) > 1 else next(iter(trips.values()))
+    if out.keys() == {"victims"} and not out["victims"]:  # asked alone, a bare `{}` would read as a field gone missing
+        print(f"✗ no victim — {named_body(actor)} has killed none", file=sys.stderr)
+        return 1
     if out.keys() == {"kin"} and not any(out["kin"].values()):  # asked alone, a bare `{}` would read as a field gone missing
         print(f"✗ no kin — {named_body(actor)} appeared, born of none, and none is born of it", file=sys.stderr)
         return 1

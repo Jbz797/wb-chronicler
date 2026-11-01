@@ -34,6 +34,7 @@ EQUIPMENT_RACKS = {
 }
 
 HISTORY_S3DB = Path(__file__).parents[2] / "history" / "map_stats.s3db"  # WB's SQLite history, copied each chapter: `history/info.py` and the recap read it
+JOBS = ("army_captain", "civilian", "king", "leader", "warrior")  # every job `resolve_profession` names, a warrior leading an army among them
 MAX_LISTED = 50  # past so many, a roll is read for what and where, not for which is which: `roster` and `positions` count instead
 MIN_PER_CAPITA_UNITS = 4  # Below four souls a per-head ratio or a share measures the divisor, not the body — a lone survivor would top every podium.
 MIN_RANK_PEERS = 4  # Under this a podium says nothing: first of three is a fact about the world's emptiness, not about the one who holds the place.
@@ -53,6 +54,7 @@ UNWRITTEN_HEALTH = 100  # WB `BaseObjectData`: the health a body, a hull or a bu
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
+_ATTACK_CAUSES = {"Age": "old_age", "AshFever": "ash_fever", "Smile": "grin_reaper", "Starvation": "hunger"}  # WB `AttackType` as counters name it, else lowercased
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # One lore under two WB spellings: its tiles say one, its biome sheet the other.
 
 # The field a body carries its tie to each kind by: what counts, of a kind gone, the bodies that outlived it.
@@ -79,6 +81,9 @@ _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "st
 
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
+_DEATH_COLUMNS = ("id", "asset_id", "name", "subspecies", "parent_id_1", "parent_id_2", "born", "died", "cause", "killer", "x", "y")  # the mod's table
+_DEATH_EVENTS = ("favorite_dead", "favorite_killed", "king_dead", "king_killed")  # the log's deaths, which the register tells whole
+_DEATH_SLACK = 0.001  # a death at the save's instant: the game writes its time in doubles, the save its clock in floats
 _DIALOGUE_FLOOR = 750  # characters a dialogue holds at least, counted as its ✗ says — under it, a line or two, not a talk
 _DOMINANT_AXIS = 0.4  # an axis under this share of the other drops out of the bearing: a heading mostly north reads N, not NE
 _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age / lifespan exceeds this.
@@ -146,12 +151,6 @@ _META_REPORTS = {
 _META_REPORT_MIN_UNITS = 20  # WB's own gate on `many_children` and `many_homeless` — the two that count heads rather than weigh hearts.
 _MIN_SUMMARY_ENTRIES = 5  # Under this, summarising saves a few dozen characters and still forces the follow-up call — the full form travels instead.
 
-# A section a tool no longer offers, named in a request: refused all the same, with where its content now lives.
-_MOVED_SECTIONS = {
-    "members": " — an entity's members are `world … roster --<entity> <id>`, their count `metadata.members`",
-    "population": " — `population` is now `pop`",
-}
-
 _NEEDS_ESCAPE = re.compile(r'["\\\x00-\x1f]')  # what `json.encoder.ESCAPE` covers, its named `\b\f\n\r\t` all sitting inside the control range
 
 # Ranked on a key of our own making — a negated birth, a share of a stomach: `_leader_refs` leaves their value to the caller, who fills in years or a share.
@@ -199,6 +198,42 @@ def _current_save() -> Path | None:
     if override := os.environ.get("WB_SAVE"):
         return Path(override)
     return Path(path) if (path := reader_settings().get("savePath")) else None
+
+
+# The history base that holds a save's deaths: the latest chapter's copy for any chapter, the live slot's for a world gone on since.
+@cache
+def _deaths_base(world_time: float) -> Path:
+    last = latest_chapter()
+    newer = not last or world_time > float(load_save(SAVES_DIR / f"C{last}" / "map.wbox")["mapStats"].get("world_time") or 0)
+    live = _current_save() if newer else None
+    return base if live and (base := live.parent / "map_stats.s3db").exists() else HISTORY_S3DB
+
+
+# The mod's table read once per base and instant, each line as a body's death; a base without it, none — `new.py` refuses a save of the mod's older age.
+@cache
+def _deaths_until(base: Path, now: float) -> dict[int, dict]:
+    sql = f"SELECT {', '.join(_DEATH_COLUMNS)} FROM FaithfulDeaths WHERE died <= ? ORDER BY died, id"
+    try:
+        with closing(sqlite3.connect(f"file:{base}?mode=ro", uri=True)) as conn:
+            rows = conn.execute(sql, [now + _DEATH_SLACK]).fetchall()
+    except sqlite3.Error:  # no table: a base the mod never wrote
+        return {}
+    deaths = {}
+    for body, asset, name, lineage, mother, father, born, died, attack, killer, x, y in rows:
+        deaths[body] = {
+            "asset_id": asset,
+            "born": born,
+            "cause": _ATTACK_CAUSES.get(attack, attack.lower()),
+            "died": died,
+            "id": body,
+            "killer": killer,
+            "name": name or None,
+            "parents": [parent for parent in (mother, father) if parent],
+            "subspecies": lineage or None,
+            "x": x,
+            "y": y,
+        }
+    return deaths
 
 
 # Item base stats + its modifiers' bonuses, floats trimmed to 4 decimals (ints when whole), zeros dropped.
@@ -378,34 +413,33 @@ def _write_save_cache(cache_file: Path, save: dict) -> None:
         doomed.unlink(missing_ok=True)
 
 
-# Why no record answers an id in this chapter, off the others: gone since the last one it stood in, not born yet, come and gone unseen, or never handed out.
+# Why no record answers an id in this chapter, off the others: dead as the register says, gone since the last one it stood in, not born yet, or never handed out.
 def absent_entity(tool: str, collection: str, entity_id: int, chapter: str | None, match: Callable[[dict], bool] | None = None, noun: str = "") -> str:
     last = latest_chapter()
     here = int(chapter[1:]) if chapter else last + 1
 
-    # Whether the id stood in chapter `n`'s save, as `match` narrows it — a body, not a hull — unless `whatever` it was.
-    def stood(n: int, whatever: bool = False) -> bool:
+    # Whether the id stood in chapter `n`'s save, as `match` narrows it — a body, not a hull.
+    def stood(n: int) -> bool:
         path = SAVES_DIR / f"C{n}" / "map.wbox"
-        return path.exists() and any(e.get("id") == entity_id and (whatever or match is None or match(e)) for e in load_save(path).get(collection) or [])
+        return path.exists() and any(e.get("id") == entity_id and (match is None or match(e)) for e in load_save(path).get(collection) or [])
 
+    noun = noun or tool
+    deaths = kept_deaths(load_save(SAVES_DIR / chapter / "map.wbox" if chapter else live_save())) if collection == "actors_data" else {}
+    if (dead := deaths.get(entity_id)) and (match is None or match(dead)):  # the register's own: its death told, its sheet one call away
+        return f"✗ {noun} {entity_id} died {world_date(dead['died'])} ({dead['cause']}) — `actor/info.py {entity_id}` tells its death"
     seen = [n for n in range(1, last + 1) if n != here and stood(n)]
-    where, noun = f"C{here}" if chapter else "the live save", noun or tool
+    where = f"C{here}" if chapter else "the live save"
     if before := [n for n in seen if n < here]:
         gone = f"✗ {noun} {entity_id} is gone by {where} — last seen in C{before[-1]}: `{tool}/info.py {entity_id} C{before[-1]}`"
         return gone + _survivors(collection, entity_id, before[-1], here)
     if seen:
         return f"✗ {noun} {entity_id} is not there yet in {where} — first seen in C{seen[0]}: `{tool}/info.py {entity_id} C{seen[0]}`"
-    # In no chapter's save, yet a body the registry met — it keeps every one a chapter named, a family's founders among them, the dead too; no hull, hence `match`.
-    persons = SAVES_DIR / f"C{last}" / "persons.json"
-    known = json.loads(persons.read_text()).get(str(entity_id)) if collection == "actors_data" and persons.exists() else None
-    if known and known.get("dead") and (match is None or match(known)):
-        return f"✗ {noun} {entity_id} died before any chapter saw it alive — the registry keeps its kind, {known.get('asset_id')}, and no more"
-    # In no save and no registry, yet an id WB did hand out: what bore it came and went between two chapters. Of an actor, no telling a body from a hull.
+    # In no save, yet an id WB did hand out: what bore it came and went between two chapters — never a body, whose death the register keeps.
     counter, saves = _ID_COUNTERS.get(collection), [(n, path) for n in range(1, last + 1) if (path := SAVES_DIR / f"C{n}" / "map.wbox").exists()]
-    handed = (n for n, path in saves if counter and 0 < entity_id < int(load_save(path)["mapStats"].get(counter) or 1))
-    if (by := next(handed, None)) and not (match and any(stood(n, whatever=True) for n, _ in saves)):
-        span, what = f"between C{by - 1} and C{by}" if by > 1 else f"before C{by}", noun if match is None else "body or hull"
-        return f"✗ {what} {entity_id} came and went {span} — no chapter saw it, and WB keeps nothing of what is gone"
+    handed = (n for n, path in saves if 0 < entity_id < int(load_save(path)["mapStats"].get(counter or "") or 1))
+    if counter and collection != "actors_data" and (by := next(handed, None)):
+        span = f"between C{by - 1} and C{by}" if by > 1 else f"before C{by}"
+        return f"✗ {noun} {entity_id} came and went {span} — no chapter saw it, and WB keeps nothing of what is gone"
     return f"✗ unknown {noun}: {entity_id}"
 
 
@@ -417,6 +451,11 @@ def actor_age(actor: dict, world_time: float) -> int:
 # A body's tile, soul or hull. WB omits a zero at save time, one coordinate at a time: a body on the first row writes an `x` and no `y`, as a zone does.
 def actor_xy(actor: dict) -> tuple[int, int]:
     return actor.get("x", 0), actor.get("y", 0)
+
+
+# A body as `entity_ref` names it, a dead one by the register's name: a killer or a parent the save no longer holds still has one.
+def alive_or_dead_ref(body_id: int | None, by_id: dict, deaths: dict[int, dict]) -> dict | None:
+    return None if body_id is None else entity_ref(body_id, by_id) or {"id": body_id, "name": (deaths.get(body_id) or {}).get("name")}
 
 
 # argparse's refusals, marked as every other script's are: its bare `usage:` and `error:` pair would be the one refusal a chronicler reads unflagged.
@@ -714,6 +753,16 @@ def counted_birth(actor: dict) -> float:
     return float(actor.get("created_time") or 0) - (actor.get("age_overgrowth") or 0) * UNITS_PER_YEAR
 
 
+# The crowns by id as the save and WB's own fallen-crown table name them: the dead kept, whom no save carries any more.
+def crowns_named(save: dict) -> dict[int, dict]:
+    try:
+        with closing(sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True)) as conn:
+            fallen = {crown: {"name": name} for crown, name in conn.execute("SELECT id, name FROM KingdomData WHERE died_time IS NOT NULL")}
+    except sqlite3.Error:  # no copy yet: the save's own crowns alone
+        fallen = {}
+    return fallen | index_by_id(save.get("kingdoms") or [])
+
+
 # Deaths by cause as WB keeps them, a `deaths_<cause>` field each, none at nought — WB's `natural` told `old_age`, as `world` and `history` tell it.
 def death_causes(record: dict) -> dict[str, int]:
     return {"old_age" if (cause := k.removeprefix("deaths_")) == "natural" else cause: v for k, v in record.items() if k.startswith("deaths_") and v}
@@ -861,22 +910,15 @@ def kept_city_since(actor: dict) -> str | None:
     return _kept_since(actor, "cityID", "city")
 
 
+# The world's deaths as the Faithful Saves mod keeps them in WB's history base, by body id, oldest first, up to the save's instant: WB keeps nothing of the dead.
+def kept_deaths(save: dict) -> dict[int, dict]:
+    now = float((save.get("mapStats") or {}).get("world_time") or 0)
+    return _deaths_until(_deaths_base(now), now)
+
+
 # The building the Faithful Saves mod found a body inside, by its id. WB keeps `is_inside_building` on the runtime actor alone: no save without the mod says it.
 def kept_roof(actor: dict) -> int | None:
     return (actor.get("custom_data_long") or {}).get("faithful_inside")
-
-
-# The latest deaths a body dealt, oldest first, as the Faithful Saves mod kept them: WB counts them alone, never whom — a beast's name absent, as WB wrote none.
-def kept_victims(actor: dict) -> list[dict] | None:
-    if not (held := (actor.get("custom_data_string") or {}).get("faithful_kills")):  # most bodies never killed: no split for them, a roster's thousands
-        return None
-    victims = []
-    for line in held.split("\n"):
-        if len(fields := line.split("\t")) in (4, 6):  # its tile since the mod's 1.6.0: a death stamped before has no place, and no save keeps one
-            victim, asset, name, at, *tile = fields
-            place = {"x": int(tile[0]), "y": int(tile[1])} if tile else {}
-            victims.append({"asset_id": asset, "date": world_date(float(at)), "id": int(victim), "name": name or None} | place)
-    return victims or None
 
 
 # `{name: {kingdom id: value}}` — size, might, wealth, prestige, reach. Exported: `kingdom/info.py` surfaces the ones nothing else covers.
@@ -1032,8 +1074,10 @@ def load_save(path: Path | str) -> dict:
 
 
 # WB's own log from `start` to `end` (world times): each entry dated, its names told by role where `special1..3` shift meaning, its body and crown by id.
-def log_entries(start: float, end: float = float("inf"), actor: int | None = None, event: str | None = None) -> list[dict]:
+# Its deaths left out unless `deaths`: the register tells each one, cause, killer and tile, and a fallen crown's reigns alone still read them here.
+def log_entries(start: float, end: float = float("inf"), actor: int | None = None, event: str | None = None, *, deaths: bool = False) -> list[dict]:
     sql = "SELECT timestamp, asset_id, special1, special2, special3, unit_id, kingdom_id, x, y FROM WorldLogMessage WHERE asset_id != 'auto_tester'"
+    sql += "" if deaths else f" AND asset_id NOT IN ({', '.join(repr(kind) for kind in _DEATH_EVENTS)})"
     sql += " AND timestamp >= ? AND timestamp <= ?" + (" AND unit_id = ?" if actor is not None else "") + (" AND asset_id = ?" if event else "")
     try:
         with closing(sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True)) as conn:  # WB stamps a whole unit, hence `>=`
@@ -1120,18 +1164,17 @@ def parse_sections(arg: str | None, all_sections: tuple[str, ...], allow_full: b
     if unknown := [s for s in named if s not in all_sections]:
         if across := _misplaced_across():
             raise ValueError(f"✗ {across}")
-        moved = "".join(gloss for section, gloss in _MOVED_SECTIONS.items() if section in unknown)
-        raise ValueError(f"✗ unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}{moved}")
+        raise ValueError(f"✗ unknown section(s): {','.join(unknown)} — valid: {','.join((*(('full',) if allow_full else ()), *all_sections))}")
     return (*lot, *(s for s in named if s not in lot)) if len(named) < len(requested) else named
 
 
-# What WB made after a save and none since holds, `saves` being every chapter's from the next one on: born and gone unseen — actors counted, a tier by its ids.
+# What WB made after a save and none since holds, `saves` being every chapter's from the next one on: born and gone unseen, a tier by its ids.
 def passed_unseen(then: dict, saves: list[dict]) -> dict:
     def ids(collection: str) -> list[int]:
         counter, held = _ID_COUNTERS[collection], {entity["id"] for save in saves for entity in save.get(collection) or []}
         return [i for i in range(int(then["mapStats"].get(counter) or 1), int(saves[-1]["mapStats"].get(counter) or 1)) if i not in held]
 
-    return {kind: found for kind, found in (("bodies_and_hulls", len(ids("actors_data"))), *((kind, ids(kind)) for kind in _UNSEEN_KINDS)) if found}
+    return {kind: found for kind in _UNSEEN_KINDS if (found := ids(kind))}
 
 
 def place_point(spot: dict) -> tuple[int, int]:

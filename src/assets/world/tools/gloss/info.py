@@ -28,7 +28,7 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
         for key, segments in segmented.items()
         if _holds(segments, asked) or (section is not None and segments[0] not in _TOOLS and segments[: len(section)] == section)
     }
-    # A field that has no key of its own is told inside a neighbour's gloss: `their_opinion` within `opinion`'s, `was_at` within `gone`'s.
+    # A field that has no key of its own is told inside a neighbour's gloss: `their_opinion` within `opinion`'s.
     found = found or {key: gloss for key, gloss in glosses.items() if f"`{asked[-1]}`" in gloss}
     if not found:
         words = sorted({segment for segments in segmented.values() for segment in segments})

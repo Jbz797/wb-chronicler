@@ -47,7 +47,6 @@ _AUDIT = {
             "tax_tribute",
             "traits",
             "under_construction",  # a town's and a crown's sites, counted among the `buildings` the panel prints
-            "victims",
         }
     ),
     "ranks": frozenset(
@@ -125,6 +124,8 @@ _EMPTY = (None, [], {})
 # The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
 _LEADER_ROWS = {"families": frozenset({"pop"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
 
+_OTHER_DEATHS = ("ash_fever", "none", "other")  # the ash fever, the deaths WB files under no cause, a falling UFO: one « other » row
+
 # Libraries and fleets kept as a count alone — the tier's own `info.py <id> <section>` still names every volume and hull behind the figure.
 _TALLIES = {
     "culture": ("books",),
@@ -177,6 +178,9 @@ def _fold_city_detail(city: dict) -> None:
 def _fold_cumulative(world: dict) -> None:
     if isinstance(block := world.get("cumulative"), dict):
         world["cumulative"] = {key: value for key, value in block.items() if key in _UI_CUMULATIVE}
+        deaths = world["cumulative"].get("deaths") or {}
+        if others := sum(deaths.pop(cause, 0) for cause in _OTHER_DEATHS):  # one row of the panel for the three WB files apart from its own causes
+            deaths["other"] = others
 
 
 # Drops every `opinion.top_drivers`, the kings past and the town list: the table prints the standing, the panel the sitting king, the founder and a town count.
@@ -284,9 +288,11 @@ def fold_bodies(blocks: dict, boat: dict | None) -> None:
         _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
 
 
-# Folds the favorite's heavy blocks: their traits, their gear, who stands around them and the scheme's detail all go — `actor/info.py <id>` still hands each whole.
+# Folds the favorite's heavy blocks: traits, gear, who stands around them, victims and the scheme's detail all go — `actor/info.py <id>` still hands each whole.
 def fold_favorite_detail(favorite: dict) -> None:
-    for section in ("gear", "surroundings"):
+    if total := (favorite.get("victims") or {}).get("total"):  # the panel ranks its kills among `stats`, where `actor` no longer tells them
+        favorite.setdefault("stats", {})["kills"] = total
+    for section in ("gear", "surroundings", "victims"):
         favorite.pop(section, None)
     # The panel prints the type, the target and the gauge: WB's English is the chronicler's, and so is how long the scheme has run.
     plot = favorite.get("plot") or {}

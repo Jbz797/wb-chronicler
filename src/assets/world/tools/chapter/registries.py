@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-# Builds a chapter's `<entity>.json` registries under `saves/C<n>/`, one per kind in `_REGISTRIES` — the tag visuals (+ last-known names) the UI and chronicler
-# resolve an inline `[<letter> id]` marker from, crowns and banners composed on canvas. Carried forward from C<n-1> (dead kept), rebuilt whole.
+# Builds a chapter's `<entity>.json` registries under `saves/C<n>/`, one per kind in `_REGISTRIES` — the tag visuals the UI alone resolves an inline
+# `[<letter> id]` marker from, crowns and banners composed on canvas: no field the UI does not read, and no tool reads them.
+# Carried forward from C<n-1> (dead kept), rebuilt whole.
 # `ensure()` is what the bootstrap (`chapter/new.py`) calls; `registries.py C<n> [--force]` (re)builds one chapter standalone — a dev tool, not in `tools.md`.
 
 import json
@@ -22,6 +23,7 @@ from shared import (
     city_score_dimensions,
     index_by_id,
     is_boat,
+    kept_deaths,
     kingdom_score_dimensions,
     load_data,
     load_save,
@@ -33,23 +35,12 @@ from shared import (
 
 _ENCODE = json.JSONEncoder(ensure_ascii=False, sort_keys=True).encode  # mounted once: given keyword arguments, `json.dumps` builds a fresh encoder per call
 
-# Where each tier keeps its founder(s) and the stock to draw them from — WB names the field differently on every one, and a family claims two.
-_FOUNDER_FIELDS = (
-    ("cities", ("founder_id",), "original_actor_asset"),
-    ("clans", ("founder_actor_id",), "original_actor_asset"),
-    ("cultures", ("creator_id",), "original_actor_asset"),
-    ("families", ("main_founder_id_1", "main_founder_id_2"), "species_id"),
-    ("kingdoms", ("founder_id",), "original_actor_asset"),
-    ("languages", ("creator_id",), "creator_species_id"),
-    ("religions", ("creator_id",), "creator_species_id"),
-)
-
 _REALM_FALLBACK_HUE = "#B0B0B0"  # WB `Toolbox.color_grey` — worn by a realm whose palette WB never shipped, the only case the name hue can miss.
 _REGISTRIES = ("alliances", "books", "cities", "clans", "cultures", "families", "kingdoms", "languages", "persons", "religions", "subspecies")
 _SIZE_TIERS = (5, 15, 30, 60, 120, 250, 500, 1000)  # Population upper bounds → settlement tier 1-9 (foyer→cité-monde), mirrors the `chronicler.md` naming scale.
 
 
-# Alliance entry: name, hue, crown count and the founding crown's heraldry, WB giving a pact no king — no podium, no size tier, and oath binds no one stock.
+# Alliance entry: hue, crown count and the founding crown's heraldry, WB giving a pact no king — no podium, no size tier, and oath binds no one stock.
 def _alliance_entry(alliance: dict) -> dict:
     palette = _palette(alliance.get("color_id", ""))
     # WB `AllianceBanner.setupBanner`: its own two sprite lists, indexed by the save's ids, under `alliance_frame` — `_unity` unless `alliance_type` is normal.
@@ -61,7 +52,6 @@ def _alliance_entry(alliance: dict) -> dict:
         **({"banner_unity": True} if alliance.get("alliance_type") else {}),
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
         "kingdoms": len(alliance.get("kingdoms") or []),  # the badge in the right link: crowns bound, the one count that tells two pacts apart at a glance
-        "name": alliance.get("name"),
     }
 
 
@@ -88,7 +78,6 @@ def _book_entry(book: dict, genres: dict, rank: int | None) -> dict:
         "color": genre.get("color"),
         "cover": book.get("path_cover"),  # `books/book_covers/<cover>` — twenty sheets, the same set for every genre
         "icon": f"{genre.get('folder') or book.get('book_type')}/{book.get('path_icon')}",  # the glyph, white, drawn over the cover from its genre's own folder
-        "name": book.get("name"),
     }
     if reads := int(book.get("times_read") or 0):  # the badge, dropped while nobody has opened it — a shelf holds many a volume no one reads
         entry["reads"] = reads
@@ -213,24 +202,19 @@ def _build_registries(save: dict, prev: dict) -> dict:
         "subspecies": _merge(prev.get("subspecies") or {}, subspecies_registry),
     }
 
-    # A founder dead before the first chapter was archived sits in no registry, so its tag would resolve to nothing — its tier's `species` draws it instead.
-    for tier, id_fields, asset_field in _FOUNDER_FIELDS:
-        for record in save.get(tier) or []:
-            asset = record.get(asset_field)
-            rulers = record.get("past_rulers") or []
-            for fid in (*(record.get(f) for f in id_fields), rulers[0].get("id") if rulers else None):
-                if fid and asset and str(fid) not in out["persons"]:
-                    out["persons"][str(fid)] = {"asset_id": asset, "dead": True}
+    # A body dead before a chapter saw it sits in no registry, so its tag would resolve to nothing: the death register gives its stock, a founder's among them.
+    for body, dead in kept_deaths(save).items():
+        if str(body) not in out["persons"] and not is_boat(dead):
+            out["persons"][str(body)] = {"asset_id": dead["asset_id"], "dead": True}
 
     return out
 
 
-# City registry entry — what a `[c id Nom]` tag draws, plus the last-known name. `kingdom` stands in for the name's hue, all it still borrows from its crown.
+# City registry entry — what a `[c id Nom]` tag draws. `kingdom` stands in for the name's hue, all it still borrows from its crown.
 def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | None) -> dict:
     dominant = species.most_common(1)
     kingdom = kingdom or {}
     entry = {
-        "name": city.get("name"),
         "plate": "capital" if kingdom.get("capitalID") == city.get("id") else "city",  # WB's nameplates: gold studs mark a seat, bare stone the rest
         "species": dominant[0][0] if dominant else None,
     }
@@ -248,7 +232,6 @@ def _clan_entry(clan: dict, members: int, rank: int | None) -> dict:
     palette = _palette(clan.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
-        "name": clan.get("name"),
         "species": clan.get("creator_species_id"),  # the founder's stock, which its recruits need not share — the pip right of the name
     }
     if (size := _size_tier(members)) > 1:  # every tag pill stays silent at its lowest tier, as the city medallion does
@@ -269,7 +252,6 @@ def _culture_entry(culture: dict, followers: int, rank: int | None) -> dict:
     palette = _palette(culture.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
-        "name": culture.get("name"),
         "species": culture.get("creator_species_id"),  # the founder's stock, which those raised in it need not share — the pip right of the name
     }
     if (size := _size_tier(followers)) > 1:
@@ -290,11 +272,10 @@ def _defined(entry: dict) -> dict:
     return {key: value for key, value in entry.items() if value is not None}
 
 
-# Family registry entry — the frame the tag wears as a border, the founding species' pip, the flattened backing hue and the living headcount, plus the last name.
+# Family registry entry — the frame the tag wears as a border, the founding species' pip, the flattened backing hue and the living headcount.
 def _family_entry(family: dict, members: int, rank: int | None) -> dict:
     entry = {
         "frame": family.get("banner_frame_id") or 0,  # an absent banner id arrives as C#'s 0 — slot zero, not no slot
-        "name": family.get("name"),
     }
     if (size := _size_tier(members)) > 1:  # a family carried over from an older chapter keeps none, as every tag pill stays silent at its lowest tier
         entry["size"] = size
@@ -316,7 +297,6 @@ def _kingdom_entry(kingdom: dict, species: Counter, rank: int | None) -> dict:
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue, and the magenta ramp root once lightened; a `null` would break the UI type
         "color_main": palette.get("color_main"),
-        "name": kingdom.get("name"),
         "species": dominant[0][0] if dominant else None,
     }
     if (size := _size_tier(species.total())) > 1:  # the crown's own people, not its towns: the chronicler reads those from `kingdom/info.py`
@@ -338,7 +318,6 @@ def _language_entry(language: dict, speakers: int, rank: int | None) -> dict:
     palette = _palette(language.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
-        "name": language.get("name"),
         "species": language.get("creator_species_id"),  # the founder's stock, which those who answer in it need not share — the pip right of the name
     }
     if (size := _size_tier(speakers)) > 1:
@@ -382,7 +361,7 @@ def _palette(color_id: int | str) -> dict:
     return load_data("colors.json")["entities"].get(str(color_id), {})
 
 
-# Person registry entry — everything the UI composes an actor from, plus the last-known name. `dead` comes from the merge.
+# Person registry entry — everything the UI composes an actor from. `dead` comes from the merge.
 def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspecies_by_id: dict, rank: int | None, egg: str | None) -> dict:
     carried = [(items_by_id.get(iid) or {}).get("asset_id", "") for iid in actor.get("saved_items") or []]  # resolved once: head and weapon both read it
     entry = {"asset_id": actor.get("asset_id"), "sex": sex_label(actor)}
@@ -399,8 +378,6 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
         entry["level"] = level
     if rank is not None:
         entry["rank"] = rank
-    if name := actor.get("name"):  # Plenty of actors are unnamed — omit rather than store a placeholder; the tag's inline name stays the fallback.
-        entry["name"] = name
     if skin := (subspecies_by_id.get(actor.get("subspecies")) or {}).get("skin_id"):  # WB `Subspecies.cacheSkins` picks the body sheet; absent means index 0.
         entry["skin_id"] = skin
     if special := _special_head(actor, profession, carried):
@@ -431,7 +408,6 @@ def _religion_entry(religion: dict, faithful: int, rank: int | None) -> dict:
     palette = _palette(religion.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
-        "name": religion.get("name"),
         "species": religion.get("creator_species_id"),  # the founder's stock, which those who hold to it need not share — the pip right of the name
     }
     if (size := _size_tier(faithful)) > 1:
@@ -461,7 +437,7 @@ def _special_head(actor: dict, profession: str | None, carried: list[str]) -> st
     return "head_old" if "wise" in (actor.get("saved_traits") or []) else None
 
 
-# Subspecies registry entry — the stone slab it is written on, the two bookmark hues WB dyes over it, the species pip and the last-known name.
+# Subspecies registry entry — the stone slab it is written on, the two bookmark hues WB dyes over it and the species pip.
 def _subspecies_entry(subspecies: dict, members: int, rank: int | None) -> dict:
     palette = _palette(subspecies.get("color_id", ""))
     entry = {
@@ -469,7 +445,6 @@ def _subspecies_entry(subspecies: dict, members: int, rank: int | None) -> dict:
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
         "color_main": palette.get("color_main"),  # `getColorMain`, dyeing the inner bookmark
         "color_main_2": palette.get("color_main_2"),  # `getColorMainSecond`, dyeing the outer one
-        "name": subspecies.get("name"),
         "species": subspecies.get("species_id"),  # the stock WB mutated it out of — the pip right of the name
     }
     if (size := _size_tier(members)) > 1:

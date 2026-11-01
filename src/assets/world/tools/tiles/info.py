@@ -4,7 +4,6 @@
 # Output: dict keyed by `"x,y"`, each value contains the requested sections for that tile; a lone tile comes out bare.
 # Coordinate convention: WB UI / actor coords; `grid[y][x]` (no inversion — y grows north and so does the row index).
 
-import argparse
 import math
 import re
 import sys
@@ -579,7 +578,6 @@ def main(argv: list[str]) -> int:
     parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
     parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `biomes` names it, `burning` or `frozen`: its nearest tile, in `distances`.")
     parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
-    parser.add_argument("--radius", "-r", help=argparse.SUPPRESS)  # retired: refused below with what answers instead
     parser.add_argument(
         "--to",
         type=_end_arg,
@@ -596,13 +594,6 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
 
-    if args.radius is not None:  # a sweep drowned what it looked for: said where each answer now lies, not merely that it is refused
-        print(
-            "✗ `--radius` is gone: what borders the tile is in its `rays`, the nearest ground or water under `-g` and `distances`, "
-            "bodies around by `world … roster --nearest x,y`, the lay of the land by `map/show.py x,y --zoom <n>`",
-            file=sys.stderr,
-        )
-        return 2
     if any(isinstance(end, str) for end in (args.xy, args.to)) and sections:  # a building lies on many tiles, a section reads one
         print("✗ a building `b<id>`, a town `c<id>`, a body `p<id>` or a place's name ends a lone `--to`: sections read tiles — name them `x,y`", file=sys.stderr)
         return 2

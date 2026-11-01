@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 31/10/26 13:09</p>
+<p class="metadata">Date de mise à jour : 01/11/26 13:55</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -13,7 +13,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 | Commande          | Sections                                                                                                                               |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `actor <id>`      | `companions`, `gear`, `inventory`, `kin`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`                    |
+| `actor <id>`      | `companions`, `gear`, `inventory`, `kin`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`, `victims`         |
 | `alliance <id>`   | `breakdown`, `identity`, `kingdoms`, `leaders`, `metadata`, `pop`, `ranks`, `wars`                                                     |
 | `boat <id>`       | `combat`, `crew`, `identity`, `inventory`, `metadata`, `traits`                                                                        |
 | `book <id>`       | `gains`, `metadata`, `origin`, `teaches`                                                                                               |
@@ -40,7 +40,6 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ### `actor` :
 
-- `--kills` : ses morts données, par chapitre (`gloss:actor.kills`)
 - `--since C<n>` : ce qui a bougé depuis (`gloss:actor.since`, `gloss:to.then`)
 - `--statuses` : ses statuts, par chapitre (`gloss:actor.statuses`)
 - `--to <p<id> | x,y | b<id> | c<id> | i<terre> | lands | "<lieu>" | lake4 | burning | type>` : une cité par son centre, les terres qu'il peut gagner, un nom de `places.json` (`gloss:to.place`), la flamme la plus proche, ou le plus proche de chaque type, famille, ressource, sol, gel (`frozen`) ou eau (`lake`, `water`…), `g:<sol>` un sol, même au nom d'un type, par virgules pour ceux-là seuls ; répété, chacun à part. `gloss:actor.to`.
@@ -70,7 +69,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
 - `lineages` : chaque lignée vivante, `-t` celles d'une espèce, `--sapient` ou `--beasts`. `gloss:lineages`.
 - `pairings` : par espèce, la 1ʳᵉ naissance au plus tôt et son couple. `gloss:pairings`.
-- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--rank <mesure> [n]`, `--nearest <x,y | p<id>>` au plus près à vol d'oiseau, `--with <champs>`, 4 au plus, d'`actor … stats` ou d'une fiche, `--status`/`--task <id>`, `--stage <palier>`, `--sapient` ou `--beasts`, `--settle` (`settle` vrai ou `child`), `--barred` l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`…) ses membres, `--since C<n>` ce qui a changé. `gloss:roster`.
+- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--rank <mesure> [n]`, `--nearest <x,y | p<id>>` au plus près à vol d'oiseau, `--with <champs>`, 4 au plus, d'`actor … stats` ou d'une fiche, `--status`/`--task <id>`, `--stage <palier>`, `--sapient` ou `--beasts`, `--settle` (`settle` vrai ou `child`), `--barred` l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`…) ses membres, `--job <métier>` (`king`…), `--since C<n>` ce qui a changé. `gloss:roster`.
 
 ---
 

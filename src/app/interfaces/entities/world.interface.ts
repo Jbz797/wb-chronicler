@@ -46,10 +46,10 @@ interface DeathBreakdown {
   hunger?: number;
   infection?: number;
   old_age?: number;
+  other?: number;
   plague?: number;
   poison?: number;
   tumor?: number;
-  unknown?: number;
   water?: number;
   weapon?: number;
 }
