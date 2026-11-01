@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 01/11/26 13:55</p>
+<p class="metadata">Date de mise à jour : 01/11/26 22:24</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -42,7 +42,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 - `--since C<n>` : ce qui a bougé depuis (`gloss:actor.since`, `gloss:to.then`)
 - `--statuses` : ses statuts, par chapitre (`gloss:actor.statuses`)
-- `--to <p<id> | x,y | b<id> | c<id> | i<terre> | lands | "<lieu>" | lake4 | burning | type>` : une cité par son centre, les terres qu'il peut gagner, un nom de `places.json` (`gloss:to.place`), la flamme la plus proche, ou le plus proche de chaque type, famille, ressource, sol, gel (`frozen`) ou eau (`lake`, `water`…), `g:<sol>` un sol, même au nom d'un type, par virgules pour ceux-là seuls ; répété, chacun à part. `gloss:actor.to`.
+- `--to <p<id> | x,y | b<id> | c<id> | cities | i<terre> | lands | "<lieu>" | lake4 | burning | type>` : une cité par son centre, les cités et les terres qu'il peut gagner, un nom de `places.json` (`gloss:to.place`), la flamme la plus proche, ou le plus proche de chaque type, famille, ressource, sol, gel (`frozen`) ou eau (`lake`, `water`…), `g:<sol>` un sol, même au nom d'un type, par virgules pour ceux-là seuls ; répété, chacun à part. `gloss:actor.to`.
 
 ### `geography` :
 

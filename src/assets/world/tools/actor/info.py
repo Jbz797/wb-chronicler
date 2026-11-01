@@ -177,8 +177,9 @@ _TENURE_ROLES = {
 
 _TILES_PER_SPEED = 0.2  # tiles a second per point of `speed`: WB's own 0.4 step, halved by the world's `unit_speed_multiplier`
 _TO_USAGE = (
-    "`--to` takes a body, a tile, a building, a town, a land, every land, a named place, a water, the nearest fire, a kind or a ground: `--to p42`,"
-    ' `--to 415,117`, `--to b219`, `--to c3`, `--to i7`, `--to lands`, `--to "<place>"`, `--to lake4`, `--to burning`, `--to frozen`, `--to volcano`, `--to lava`'
+    "`--to` takes a body, a tile, a building, a town, every town, a land, every land, a named place, a water, the nearest fire, a kind or a ground: `--to p42`,"
+    ' `--to 415,117`, `--to b219`, `--to c3`, `--to cities`, `--to i7`, `--to lands`, `--to "<place>"`, `--to lake4`, `--to burning`, `--to frozen`'
+    ", `--to volcano`, `--to lava`"
     ", `--to g:flower` (a ground whose name a kind holds)"
 )
 
@@ -238,6 +239,8 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if city is None or (tile := city_centre(city)) is None:
             raise _AimError(absent_entity("city", "cities", city_id, chapter))
         target, aims, whom = tile, [tile], city.get("name") or f"city {city_id}"
+    elif target == "cities":  # every town, each aimed at as `c<id>` is: `_trip` answers with those reached
+        whom = "every town"
     elif target == "lands":  # every land but its own, each tried as `i<id>` is: `_trip` answers with those reached
         whom = "every land"
     elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():
@@ -877,7 +880,7 @@ def _land_of(body: dict, ctx: dict) -> int | str:
 def _lone_target(word: str) -> bool:
     if word.startswith(_GROUND_PREFIX):
         return False
-    return bool(_LONE_ID.fullmatch(word) or water_ref(word)) or word in {"burning", "lands"} or not kind_word(word)
+    return bool(_LONE_ID.fullmatch(word) or water_ref(word)) or word in {"burning", "cities", "lands"} or not kind_word(word)
 
 
 # A counted land's or water's name in `places.json`, `None` while the chronicler has not named it.
@@ -962,6 +965,43 @@ def _places_at(actor: dict, ctx: dict) -> dict:
     return {**({"near_places": sorted(set(near))} if near else {}), **({"place": on} if (on := index.at(ax, ay)) else {})}
 
 
+# Every town the body can reach, the nearest first, each aimed at its centre as `--to c<id>` aims: its circle, heading and time — the rest counted.
+def _reachable_cities(actor: dict, ctx: dict) -> dict:
+    (cx, cy), island_of, per_hour = actor_xy(actor), ctx["island_lookup"](), _per_hour(actor, ctx)
+    home, centres = island_of.get((cx, cy)), {tile: city for city in ctx["cities_by_id"].values() if (tile := city_centre(city))}
+    timed: dict[tuple[int, int], tuple[float, dict]]  # each town reached, by its centre: the hours that file it in a circle, and its time by parts
+    boat: dict[tuple[int, int], float] = {}  # the towns only a crown's hull brings within the common circle, by the hours aboard
+    if (gait := _gait(actor, ctx)) is None:  # flown, swum or sailed at will: every town on the straight line, as `--to` times it
+        timed = {(x, y): ((crow := round(walk_tiles(x - cx, y - cy))) / per_hour, _trip_time(per_hour, crow)) for x, y in centres}
+    else:
+        walk_map, part = ctx["walk_map"](), "sail" if is_aboard(actor) else "swim"
+        index = {y * walk_map.width + x: (x, y) for x, y in centres}
+        # WB walks round the bays of his own land and swims only toward another, as `--to c<id>` goes: one settling for each, an islet of his tried on foot first.
+        ashore = set() if walk_map.wet(cx, cy) else {t for t, tile in index.items() if home is None or island_of.get(tile) == home}
+        ways = walk_ways(walk_map, gait.ashore(), cx, cy, {t: t for t in ashore}) if ashore else {}
+        # Never asked for none: a settling with no goal to stop it at crosses the whole world, some 4 s, for nothing.
+        if rest := index.keys() - (ways.keys() if home is None else ashore):
+            ways |= walk_ways(walk_map, gait, cx, cy, {t: t for t in rest})
+        timed = {index[t]: (way[0] / per_hour, _way_times(way, per_hour, part)) for t, way in ways.items()}
+        if actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]:  # off his land past the common circle, as `--to` files a town by boat
+            goals = {t for t, tile in index.items() if island_of.get(tile) != home and not (tile in timed and _ring(timed[tile][0]))}
+            sailed = walk_from(walk_map, gait.sailing(per_hour / _boat_per_hour()), cx, cy, _ring_bound(_CIRCLES[-1][1]) * per_hour, goals)
+            boat = {index[t]: hours for t in goals if t in sailed and _ring(hours := sailed[t] / per_hour)}
+    rows = []
+    for (x, y), city in centres.items():
+        hours, times = timed.get((x, y)) or (None, {})
+        if (x, y) in boat:
+            circle, times = "common_with_boat", {**times, "with_boat": _duration(boat[x, y], "total_")}
+        elif hours is None:
+            continue
+        else:
+            circle = _ring(hours) or "far"
+        rows.append({"circle": circle, "city": {"id": city["id"], "name": city.get("name")}, "dir": bearing(x - cx, y - cy), **times})
+    # By the time that files each in its circle, a hull's where it brings the town in: the nearest first, as `surroundings` rings them.
+    rows.sort(key=lambda row: (*_told_time(row["with_boat"] if row["circle"] == "common_with_boat" else row), row["city"]["id"]))
+    return {"reachable": rows or None, "unreachable": len(centres) - len(rows) or None}
+
+
 # Every land the body can gain, the nearest first, each by its cheapest shore as `--to i<id>` lands it: its heading, time and swim — the rest counted.
 def _reachable_lands(actor: dict, ctx: dict) -> dict:
     (cx, cy), island_of, per_hour = actor_xy(actor), ctx["island_lookup"](), _per_hour(actor, ctx)
@@ -975,16 +1015,16 @@ def _reachable_lands(actor: dict, ctx: dict) -> dict:
         for land, rim in shores.items():
             to = _heading(cx, cy, *min(rim, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2), "landing", {})
             rows.append({"dir": to["dir"], "island_id": land, **_trip_time(per_hour, to["crow_tiles"])})
-        return {"reachable": sorted(rows, key=_told_time) or None}
+        return {"reachable": sorted(rows, key=lambda row: (*_told_time(row), row["island_id"])) or None}
     walk_map = ctx["walk_map"]()
     land_of = {y * walk_map.width + x: land for land, rim in shores.items() for x, y in rim}
     ways = walk_ways(walk_map, gait, cx, cy, land_of)  # one settling for every land: a walk apiece would cross the world once a land
     rows = []
     for land, way in ways.items():
         tile = way[5]
-        times = {key: value for key, value in _way_parts(way, per_hour, "swim").items() if not key.endswith("_tiles") and key.startswith(("swim_", "total_"))}
-        rows.append({"dir": _heading(cx, cy, tile % walk_map.width, tile // walk_map.width, "landing", {})["dir"], "island_id": land, **times})
-    rows.sort(key=_told_time)  # by the time as told, days counting a march's halts: the way's raw cost would file a long swim after a longer walk
+        rows.append({"dir": bearing(tile % walk_map.width - cx, tile // walk_map.width - cy), "island_id": land, **_way_times(way, per_hour, "swim")})
+    # By the time as told, days counting a march's halts: the way's raw cost would file a long swim after a longer walk.
+    rows.sort(key=lambda row: (*_told_time(row), row["island_id"]))
     lands = sum(land != home for land in ctx["island_sizes"]())  # a land rimmed by rock alone has no shore, and counts as out of reach
     return {"reachable": rows or None, "unreachable": lands - len(ways) or None}
 
@@ -1224,17 +1264,17 @@ def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
 
 
-# A trip's time as told, for sorting: minutes before hours before days, each read by its own figure — the whole trip's, or a flyer's march.
-def _told_time(row: dict) -> tuple[int, float, int]:
-    for rank, key in ((0, "total_minutes"), (1, "total_hours"), (2, "total_days"), (2, "march_days")):
-        if key in row:
-            return rank, row[key], row["island_id"]
-    return 3, 0.0, row["island_id"]
+# A trip's time as told, for sorting: minutes before hours before days, each read by its own figure — the whole trip's, else a walk's or a march's.
+def _told_time(row: dict) -> tuple[int, float]:
+    keys = ((0, "total_minutes"), (1, "total_hours"), (2, "total_days"), (0, "walk_minutes"), (1, "walk_hours"), (2, "march_days"))
+    return next(((rank, row[key]) for rank, key in keys if key in row), (3, 0.0))
 
 
 # One `--to` answered: the walk, the way back from a body, the same goal in the chapter `--since` names — `None` where its refusal was told.
 def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict, since: str | None) -> dict | None:
     target, aims, mark, about, whom, each, told = aim
+    if target == "cities":
+        return _reachable_cities(actor, ctx)
     if target == "lands":
         return _reachable_lands(actor, ctx)
     trip: dict | None = None
@@ -1376,6 +1416,12 @@ def _way_parts(way: tuple | None, per_hour: float, part: str) -> dict:
     cost, water, swam, trod, _, _, crossings = way
     wet = {"crossings": crossings, f"{part}_tiles": max(round(swam), 1), "total_tiles": round(trod)} if water else {}
     return {**wet, "walk_tiles": round(trod - swam), **_trip_time(per_hour, cost, cost - water, (part, water) if water else None)}
+
+
+# A way's time by parts, lengths and crossings left out: the water's `part` and `total_` once it was crossed, else the walk's or march's alone.
+def _way_times(way: tuple, per_hour: float, part: str) -> dict:
+    told = _way_parts(way, per_hour, part)
+    return {key: value for key, value in told.items() if not key.endswith("_tiles") and (not way[1] or key.startswith((f"{part}_", "total_")))}
 
 
 # Why no walk joins the two, named: the rock of their one land or round the goal, a water shut to the body, a strait no islet chain shortens, no crossing in reach.
