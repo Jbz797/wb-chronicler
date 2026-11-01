@@ -109,6 +109,7 @@ _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a 
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DAILY_TILES_PER_SPEED = 24.0  # chronicler.md § Échelle: `speed` 10 walks 240 tiles a day, 6 hours of road, its halts counted — far short of 24 hours' worth
+_DEAD_SECTIONS = ("kin", "victims")  # what a dead body still answers beside its death: the register keeps its blood and the deaths it dealt
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 _FLOORS = {"gen": 1}  # a count `--since` reads unsaid as its floor: WB counts a founder its first generation
 _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # a goal's words: `moved` keeps its own heading and length
@@ -753,6 +754,27 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
     if round(crow) >= round(walked) if whole else site is None or site == about.get(reached) or crow >= walked:
         return None
     return {**(site or {}), "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
+
+
+# What a dead body still answers, off the register: its death, its blood and its victims — named, those alone; any other section refused with them.
+def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, history: dict | None) -> int:
+    named = requested not in (None, "full")
+    if named and (lost := [section for section in sections if section not in _DEAD_SECTIONS]):
+        print(f"✗ {named_body(dead)} is dead: it keeps `died`, {', '.join(f'`{s}`' for s in _DEAD_SECTIONS)} — not {', '.join(lost)}", file=sys.stderr)
+        return 2
+    body = {"id": dead["id"], **dict(zip(("parent_id_1", "parent_id_2"), dead["parents"], strict=False))}  # its parents as a living body carries them
+    kin = _kin(body, ctx) if "kin" in sections else None
+    out = {
+        "died": None if named else _death(dead, ctx),
+        "kin": kin if kin and any(kin.values()) else None,
+        "statuses": history,
+        "victims": _victims(dead["id"], ctx, requested) if "victims" in sections else None,
+    }
+    if named and not any(out.values()):  # asked alone, a bare `{}` would read as a field gone missing
+        print(f"✗ no {' nor '.join(sections)} — {named_body(dead)} left none", file=sys.stderr)
+        return 1
+    emit(out)
+    return 0
 
 
 # A body the register saw die: what it was and of whom, then when, of what, by whom and where — its land as the map read draws it.
@@ -1408,9 +1430,8 @@ def main(argv: list[str]) -> int:
         then_save = load_save(then_path)
         then_ctx = _build_context(then_save, then_path)
         then = then_ctx["actors_by_id"].get(actor_id)
-    if actor is None and (dead := ctx["deaths"].get(actor_id)) and not targets:  # a dead body answers by its death, and `--statuses` by its past
-        emit({"died": _death(dead, ctx), "statuses": _status_history(actor_id, upto) if statuses else None})
-        return 0
+    if actor is None and (dead := ctx["deaths"].get(actor_id)) and not targets:  # a dead body answers by what the register keeps, `--statuses` by its past
+        return _dead_answer(dead, ctx, sections, requested, _status_history(actor_id, upto) if statuses else None)
     if actor is None:
         print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
         return 1

@@ -1,7 +1,7 @@
 {
   "across.keep": "`--keep a,b.c` : de chaque chapitre, ces seuls champs, par leur chemin pointé depuis le haut du bloc ; un champ absent s'y tait, un refus reste entier.",
   "actor.companions.lover": "Le seul lien qui fait un couple ; `best_friend` n'en fait pas un.",
-  "actor.died": "Un corps mort, au registre du monde, même jamais vu d'un chapitre : naissance (`born`), mort (`date`), cause, tueur, tuile de sa mort, parents, lignée.",
+  "actor.died": "Un corps mort, au registre, même jamais vu d'un chapitre : naissance (`born`), mort (`date`), cause, tueur, tuile, parents, lignée ; il garde `kin` et `victims`.",
   "actor.kin": "`parents` et `children`, `gone` : mort (au registre), le sang seul : le compagnon est dans `companions` (`lover`).",
   "actor.metadata.age_overgrowth": "Les années que `age` compte sans les avoir vécues ici : un migrant appelé par le feu arrive grand (1 à 2 fois l'âge de venue de son espèce), un clone, un paradoxe.",
   "actor.metadata.army_since": "Le mois où le corps est entré dans son armée.",
