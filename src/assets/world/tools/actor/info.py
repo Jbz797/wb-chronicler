@@ -300,6 +300,11 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
     return target, aims, mark, about, whom, each, told
 
 
+# Whether a body stands on his own land, or on his own islet off every land: `home_islet` is empty unless he stands on one.
+def _beside(other: dict, ctx: dict, home: int | None, land: int | None) -> bool:
+    return land == home if land is not None else actor_xy(other) in ctx["home_islet"]
+
+
 # Tiles a hull sails in an hour, off its trade's `speed` in `boat-assets.json` — a transport's when none is named, the one kind that ferries.
 def _boat_per_hour(hull: dict | None = None) -> float:
     kinds = load_data("boat-assets.json").get("kinds") or {}
@@ -567,17 +572,15 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
         dx, dy = ox - cx, oy - cy
         # Filed by the time as told, as `--to` files it: a row that says « 2 h » stands in the common circle. A hull too, walked and swum to like any body.
         if (cost := crow if walker is None else walker(ox, oy, land)) is not None and (ring := _ring(cost / per_hour)):
-            circles[ring].append((cost, i, dx, dy, land))
+            circles[ring].append((cost / per_hour, i, dx, dy, land))
         elif sailed and (boat or land != home) and (cost := sailed().get(oy * walk_map.width + ox)) is not None and _ring(cost / per_hour):
-            offshore.append((cost, i, dx, dy, land))  # what only a hull brings in reach: every boat, every body off his land
+            offshore.append((cost / per_hour, i, dx, dy, land))  # what only a hull brings in reach: every boat, every body off his land
     if ferried:
         circles["common_with_boat"] = offshore
     if not any(circles.values()):  # none within his circles: the nearest body still said, lest an empty section read as a silence
         return {"nearest": _nearest_body(actor, ctx)}
-    by_id = ctx["actors_by_id"]
-    near = sorted(circles.pop("intimate"))
-    rings: dict = {"intimate": [_surroundings_row(by_id[i], ctx, dx, dy, home, land, kin.get(i)) for _, i, dx, dy, land in near]}
-    plans = {name: _surroundings_plan(entries, ctx, kin) for name, entries in circles.items()}
+    rings: dict = {"intimate": [_surroundings_row(entry, ctx, home, kin) for entry in sorted(circles.pop("intimate"))]}
+    plans = {name: _surroundings_plan(entries, ctx, home, kin) for name, entries in circles.items()}
     if detailed := wants_detail(requested, sum(map(len, plans.values()))):
         rings.update({name: _surroundings_rows(plan, ctx, home, kin) for name, plan in plans.items()})
     # An adult's line goes unmarked, most bodies standing there: said beside the rows, where a silence read alone passes for youth. A sexless hull has no stage.
@@ -1034,12 +1037,12 @@ def _statuses_left(actor: dict) -> dict | None:
 
 
 # A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
-def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> list[tuple | dict]:
+def _surroundings_plan(entries: list[tuple], ctx: dict, home: int | None, kin: dict[int, str]) -> list[tuple | dict]:
     by_id, chiefs = ctx["actors_by_id"], ctx["clan_chiefs"]
     groups: dict[tuple, dict] = {}
     plan: list[tuple | dict] = []  # the entries come sorted, so a group stands where its nearest member was met, and nothing is re-sorted
     for entry in sorted(entries):
-        _, i, dx, dy, _ = entry
+        hours, i, dx, dy, land = entry
         other = by_id[i]
         sapient = not is_boat(other) and is_sapient(ctx["subspecies_by_id"][other["subspecies"]])
         city = other.get("cityID") if sapient else None
@@ -1050,7 +1053,8 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> 
         key = ("city", city) if sapient else ("asset_id", other.get("asset_id"))
         if (group := groups.get(key)) is None:
             head = {"city": entity_ref(city, ctx["cities_by_id"]), "species": Counter()} if sapient else {"asset_id": key[1]}
-            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": {"crow_tiles": round(walk_tiles(dx, dy)), "dir": bearing(dx, dy)}}
+            nearest = {"crow_tiles": round(walk_tiles(dx, dy)), "dir": bearing(dx, dy), **({} if _beside(other, ctx, home, land) else _duration(hours))}
+            group = groups[key] = {**head, "count": 0, "first": entry, "nearest": nearest}
             plan.append(group)
         group["count"] += 1
         if sapient:
@@ -1059,10 +1063,12 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, kin: dict[int, str]) -> 
 
 
 # One line of `surroundings`: silent on his own land or islet, off it the land's id — or `water` or `islet_tiles` off every land, a bare null reading as home.
-def _surroundings_row(other: dict, ctx: dict, dx: int, dy: int, home: int | None, land: int | None, tie: str | None) -> dict:
+def _surroundings_row(entry: tuple, ctx: dict, home: int | None, kin: dict[int, str]) -> dict:
+    hours, i, dx, dy, land = entry
+    other, tie = ctx["actors_by_id"][i], kin.get(i)
     row = {
         "asset_id": other.get("asset_id"),
-        "crow_tiles": round(walk_tiles(dx, dy)),  # what a sentence with no walker says: his own pace's time is `--to`'s to tell
+        "crow_tiles": round(walk_tiles(dx, dy)),  # what a sentence with no walker says: his own pace's time is told off his land alone, else `--to`'s
         "dir": bearing(dx, dy),
         "id": other["id"],
         **({"kills": n} if (n := int(other.get("kills") or 0)) else {}),
@@ -1075,9 +1081,9 @@ def _surroundings_row(other: dict, ctx: dict, dx: int, dy: int, home: int | None
     # Why a line stands in full, where the reason tells a story: the tie before the post, a crown before a clan. Each marks a thinker, so `sapient` falls silent.
     job = None if tie else _POSTS.get(other.get("profession", 0))  # WB omits `profession` at 0, its « nothing »
     mark = {"kin": tie} if tie else {"job": job} if job else {"role": "clan_chief"} if other["id"] in ctx["clan_chiefs"] else {}
-    beside = land == home if land is not None else actor_xy(other) in ctx["home_islet"]  # `home_islet` is empty unless he stands on one
     return {
-        **({} if beside else _off_land_at(other, ctx) if land is None else {"island_id": land}),
+        # Off his land, the time too: a swift swimmer brings a shore 30 km off within the common circle, which its `crow_tiles` alone would read as far-off.
+        **({} if _beside(other, ctx, home, land) else (_off_land_at(other, ctx) if land is None else {"island_id": land}) | _duration(hours)),
         **row,
         # Silent at `adult`, the stage most bodies stand at, as a tally at nought: printed on every line it would push a named killer's past the inline width.
         **({} if (stage := life_stage(age, adult_age(other, ctx), lifespan, is_egg(other, ctx))) == "adult" else {"life_stage": stage}),
@@ -1096,8 +1102,7 @@ def _surroundings_rows(plan: list[tuple | dict], ctx: dict, home: int | None, ki
         if isinstance(item, dict) and item["count"] > 1:
             rows.append(item)
             continue
-        _, i, dx, dy, land = entry
-        rows.append(_surroundings_row(ctx["actors_by_id"][i], ctx, dx, dy, home, land, kin.get(i)))
+        rows.append(_surroundings_row(entry, ctx, home, kin))
     return rows
 
 

@@ -36,6 +36,7 @@
   "actor.surroundings.boat": "Une coque que le corps rejoint y paraît (`boat_…`), sans être un corps.",
   "actor.surroundings.common_with_boat": "Hors de sa terre, ≤ 2 h en bateau, marches comprises, si son royaume a un transport ; à bord, par l'eau puis à pied.",
   "actor.surroundings.count": "Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou `asset_id`, sauf un pensant sans cité ou un groupe d'un seul.",
+  "actor.surroundings.hours": "Hors de sa terre, le temps pour l'y rejoindre à son pas, nage ou bateau compris (`minutes` sous l'heure) : une nage rapide rapproche une rive lointaine.",
   "actor.surroundings.nearest": "Un groupe d'un seul donne son `nearest`, à vol d'oiseau.",
   "actor.surroundings.sapient": "Se tait devant `kin`, `job` ou `role`, qui le disent déjà.",
   "actor.surroundings.water": "`water` et `islet_tiles` comme dans `tiles … tile_info`, tus sur la terre ou l'îlot du corps.",
