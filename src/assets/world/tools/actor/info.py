@@ -1114,13 +1114,14 @@ def _swim(actor: dict, stats: dict, ctx: dict) -> dict | str | None:
         return "unlimited"
     if _water_trait_ids().intersection(biology):
         return "never"  # WB sends no such body into the water: it burns there rather than drowns
-    aloft, swift = "hovering" in biology, "fast_swimming" in tags
-    breath, reach = _swim_reach(actor, stats, biology, aloft, swift)
-    if reach == inf:
+    if "hovering" in biology:  # over the water as over any ground
         return "unlimited"
+    if "fast_swimming" in tags:  # five times its walking pace, never out of breath: why one swimmer crosses in an hour what another takes a day for
+        return "fast"
+    breath, reach = _swim_reach(actor, stats, biology, aloft=False, swift=False)
     now = {"breath": round(breath), "reach": round(reach)}
     # What comes back once it has rested, where it differs: the breath off a wind spent, the reach off either gauge — a gauge at its top changes nothing.
-    full = zip(("breath", "reach"), map(round, _swim_reach(actor, stats, biology, aloft, swift, rested=True)), strict=True)
+    full = zip(("breath", "reach"), map(round, _swim_reach(actor, stats, biology, aloft=False, swift=False, rested=True)), strict=True)
     rested = {gauge: value for gauge, value in full if value != now[gauge]}
     return {**now, **({"rested": rested} if rested else {})} if reach or rested else None
 
