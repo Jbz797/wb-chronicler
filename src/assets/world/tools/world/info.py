@@ -909,7 +909,7 @@ def _gone_since(
             continue
         if stage and _stage(body, ctx, actor_age(body, dead["died"]), adult_age(body, ctx)) != stage:  # the stage it died at
             continue
-        row = {"asset_id": dead["asset_id"], "died": world_date(dead["died"]), "died_of": dead["cause"], "gone": True, "id": dead["id"]}
+        row = {"asset_id": dead["asset_id"], "blow": dead["blow"], "died": world_date(dead["died"]), "died_of": dead["cause"], "gone": True, "id": dead["id"]}
         killer = alive_or_dead_ref(dead["killer"], alive, deaths)
         # Its name at death, the register's, before what the save last knew; `was_on` silent under `-i`
         rows.append({**row, "killed_by": killer, "name": dead["name"] or body.get("name"), "was_on": None if asked else standing(dead)})

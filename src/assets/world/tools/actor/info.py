@@ -782,6 +782,7 @@ def _death(dead: dict, ctx: dict) -> dict:
     by_id, deaths, lineage = ctx["actors_by_id"], ctx["deaths"], dead["subspecies"]
     return {
         "asset_id": dead["asset_id"],
+        "blow": dead["blow"],
         "born": world_date(dead["born"]),
         "date": world_date(dead["died"]),
         "died_of": dead["cause"],
@@ -1306,10 +1307,21 @@ def _trip_time(per_hour: float, total: float, foot: float | None = None, water: 
     return {"march_days": round(total / day, 1)} if total >= day else _duration(total / per_hour, "walk_" if foot is not None else "total_")
 
 
-# The deaths a body dealt, oldest first, off the register — WB counts them, never whom: `full` keeps the latest, the section named every one.
+# The deaths a body dealt, oldest first, off the register — WB counts them, never whom, nor a metamorphosis: `full` keeps the latest, the section named all.
 def _victims(actor_id: int, ctx: dict, requested: str | None) -> dict | None:
     dealt = [dead for dead in ctx["deaths"].values() if dead["killer"] == actor_id]
-    rows = [{"asset_id": d["asset_id"], "date": world_date(d["died"]), "id": d["id"], "name": d["name"], "x": d["x"], "y": d["y"]} for d in dealt]
+    rows = [
+        {
+            "asset_id": d["asset_id"],
+            "date": world_date(d["died"]),
+            "died_of": d["cause"] if d["cause"] == "metamorphosis" else None,  # changed under the blow: said, where any other is plainly slain
+            "id": d["id"],
+            "name": d["name"],
+            "x": d["x"],
+            "y": d["y"],
+        }
+        for d in dealt
+    ]
     if not rows:
         return None
     if len(rows) > 1 and requested in (None, "full"):

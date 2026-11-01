@@ -81,7 +81,7 @@ _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "st
 
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
-_DEATH_COLUMNS = ("id", "asset_id", "name", "subspecies", "parent_id_1", "parent_id_2", "born", "died", "cause", "killer", "x", "y")  # the mod's table
+_DEATH_COLUMNS = ("id", "asset_id", "name", "subspecies", "parent_id_1", "parent_id_2", "born", "died", "cause", "killer", "x", "y", "blow")  # the mod's table
 _DEATH_EVENTS = ("favorite_dead", "favorite_killed", "king_dead", "king_killed")  # the log's deaths, which the register tells whole
 _DEATH_SLACK = 0.001  # a death at the save's instant: the game writes its time in doubles, the save its clock in floats
 _DIALOGUE_FLOOR = 750  # characters a dialogue holds at least, counted as its ✗ says — under it, a line or two, not a talk
@@ -212,16 +212,18 @@ def _deaths_base(world_time: float) -> Path:
 # The mod's table read once per base and instant, each line as a body's death; a base without it, none — `new.py` refuses a save of the mod's older age.
 @cache
 def _deaths_until(base: Path, now: float) -> dict[int, dict]:
-    sql = f"SELECT {', '.join(_DEATH_COLUMNS)} FROM FaithfulDeaths WHERE died <= ? ORDER BY died, id"
     try:
         with closing(sqlite3.connect(f"file:{base}?mode=ro", uri=True)) as conn:
-            rows = conn.execute(sql, [now + _DEATH_SLACK]).fetchall()
+            kept = {column for _, column, *_ in conn.execute("PRAGMA table_info(FaithfulDeaths)")}  # `blow` came with 1.8.0: none, off an older table
+            picked = ", ".join(column if column in kept else f"NULL AS {column}" for column in _DEATH_COLUMNS)
+            rows = conn.execute(f"SELECT {picked} FROM FaithfulDeaths WHERE died <= ? ORDER BY died, id", [now + _DEATH_SLACK]).fetchall()
     except sqlite3.Error:  # no table: a base the mod never wrote
         return {}
     deaths = {}
-    for body, asset, name, lineage, mother, father, born, died, attack, killer, x, y in rows:
+    for body, asset, name, lineage, mother, father, born, died, attack, killer, x, y, blow in rows:
         deaths[body] = {
             "asset_id": asset,
+            "blow": blow and _ATTACK_CAUSES.get(blow, blow.lower()),  # what struck a body down before it changed: a metamorphosis's alone
             "born": born,
             "cause": _ATTACK_CAUSES.get(attack, attack.lower()),
             "died": died,

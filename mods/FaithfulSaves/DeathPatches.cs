@@ -6,14 +6,18 @@ using SQLite;
 namespace FaithfulSaves
 {
     // WB keeps nothing of the dead: every death of the world, each by who died, of what, when, where and by whose hand, in a table of its history database.
+    // A metamorphosis ends a body under a blow WB then forgets, neither counting the death nor crediting the killer: the blow and its author are kept too.
     internal static class DeathPatches
     {
         private const string Create = "CREATE TABLE IF NOT EXISTS " + Table + " (id INTEGER PRIMARY KEY, asset_id TEXT, name TEXT, subspecies INTEGER, "
-            + "parent_id_1 INTEGER, parent_id_2 INTEGER, born REAL, died REAL, cause TEXT, killer INTEGER, x INTEGER, y INTEGER)";
+            + "parent_id_1 INTEGER, parent_id_2 INTEGER, born REAL, died REAL, cause TEXT, killer INTEGER, x INTEGER, y INTEGER, blow TEXT)";
+        private const string Blow = "blow"; // the column a table from 1.7.0 lacks, added at its first save under 1.8.0
         private const string From = "faithful_deaths_from"; // the world's time since which the table misses no death: the mod's first death or save there
-        private const string Insert = "INSERT OR REPLACE INTO " + Table + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        private const string Insert = "INSERT OR REPLACE INTO " + Table + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         private const string Table = "FaithfulDeaths";
 
+        private static readonly AccessTools.FieldRef<Actor, BaseSimObject> _attackedBy = AccessTools.FieldRefAccess<Actor, BaseSimObject>("attackedBy");
+        private static readonly AccessTools.FieldRef<Actor, AttackType> _lastAttackType = AccessTools.FieldRefAccess<Actor, AttackType>("_last_attack_type");
         private static readonly AccessTools.FieldRef<MapBox, MapStats> _mapStats = AccessTools.FieldRefAccess<MapBox, MapStats>("map_stats");
 
         // The deaths since the last save, written into the database only as a save copies it out: a load wipes them with the world they fell in.
@@ -43,12 +47,20 @@ namespace FaithfulSaves
             ActorData data = (ActorData)__instance.getData();
             long id = __instance.getID();
             object killer = _victim == id ? _killer : null;
+            object blow = null;
             _victim = -1;
+            // `getHit` runs the death actions (a crab's rebirth, a cursed body's skeleton) once health is spent, before `checkDeath` would credit the blow.
+            if (__1 == AttackType.Metamorphosis)
+            {
+                blow = _lastAttackType(__instance).ToString();
+                if (_attackedBy(__instance) is Actor hitter && !hitter.isRekt())
+                    killer = hitter.getID();
+            }
             WorldTile tile = __instance.current_tile;
             _pending.Add(new object[]
             {
                 id, __instance.asset.id, data.name, data.subspecies, data.parent_id_1, data.parent_id_2, data.created_time, World.world.getCurWorldTime(),
-                __1.ToString(), killer, tile?.x ?? 0, tile?.y ?? 0,
+                __1.ToString(), killer, tile?.x ?? 0, tile?.y ?? 0, blow,
             });
             MarkFrom();
         }
@@ -69,6 +81,8 @@ namespace FaithfulSaves
             using (connection.Lock())
             {
                 connection.Execute(Create);
+                if (!connection.GetTableInfo(Table).Exists(column => column.Name == Blow))
+                    connection.Execute("ALTER TABLE " + Table + " ADD COLUMN " + Blow + " TEXT");
                 connection.RunInTransaction(() => _pending.ForEach(row => connection.Execute(Insert, row)));
             }
             _pending.Clear();

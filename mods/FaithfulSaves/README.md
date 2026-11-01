@@ -9,7 +9,7 @@ Vanilla WorldBox writes no status into a save, so every load quietly resets them
 - **Pregnancy.** A live-bearing mother carries for as many months as her kind matures (5 seconds a month). A load before she is due ends it, with no birth: a kind that carries 21 months, loaded every 2 years, loses nearly 9 pregnancies in 10.
 - **Eggs.** An egg hatches the moment the world loads, however long it had left: egg-layers gain on every load what live-bearers lose.
 - **Afterglow.** After a mating, both lovers wait before they can breed again, 90 seconds for most kinds: a load lifts that wait.
-- **Sleep.** Every sleeper wakes, however long it had left to sleep.
+- **Sleep.** Every sleeper wakes at once.
 - **Harm.** Fires go out, the poisoned, the cursed and the ash-fevered are cured: a death the game was dealing never comes.
 - **Moods.** A tantrum, a rage, a dream, a fresh love: all gone.
 - **Tasks.** Every creature drops what it was doing and picks a task anew.
@@ -24,7 +24,7 @@ WorldBox also redraws two kinds of timers on every load:
 
 - **On save**, each creature keeps what is left of its statuses and of its long waits (90 seconds or more), its task (the step reached, the time spent, its aim: a prey, a tile, a building) and the building it is inside; a boat, the shore it was ferrying to; the world, the time left on its two clocks.
 - **On load**, each is handed back for exactly the time it had left, and each creature takes its task up at that very step: a woodcutter walks on to the store, a hunter keeps its prey, a sleeper stays under its roof.
-- **A creature settling in a new town**, by birth, migration, founding or a move, **or joining an army**, is stamped with the world's time; **every death** goes into the history database (`map_stats.s3db`, table `FaithfulDeaths`): who died (kind, name, lineage, parents, birth), when, of what, where, and by whose hand.
+- **A creature settling in a new town**, by birth, migration, founding or a move, **or joining an army**, is stamped with the world's time; **every death** goes into the history database (`map_stats.s3db`, table `FaithfulDeaths`): who died (kind, name, lineage, parents, birth), when, of what, where, by whose hand, and the blow a metamorphosis hides.
 - **The world's history** closes each year in January, under the year that ended: a row is a calendar year.
 
 Nothing else changes: no status is lengthened, shortened or added, nor replays its first effects (a mood, a sound).
@@ -40,7 +40,7 @@ Install it as [mods/README.md](../README.md) describes, with the other mods of t
 - **Compatibility:** the mod replaces no game method (it reshapes one, see below), and works with other mods unless they also use `faithful_` keys or reshape the history's yearly close.
 - **What it writes into your saves:** keys prefixed `faithful_`, per creature (statuses, waits, task, roof, town, army) and per world (clocks, and `faithful_saved_at`, by which this repository's chronicle knows the mod wrote the save). Vanilla ignores them, and the `FaithfulDeaths` table.
 - **A save made before the mod:** its first load still wipes everything; all is kept from the next save on, and its first history year after the mod runs 13 months.
-- **The log** warns of whatever a load could not hand back.
+- **The log** warns of what a load could not hand back.
 
 ## For modders
 
