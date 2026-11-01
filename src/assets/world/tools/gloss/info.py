@@ -21,15 +21,10 @@ _TOOLS = frozenset(path.parent.name for path in Path(__file__).parents[1].glob("
 # One key's glosses, or its refusal told: the fields it names, a tool's whole with the shared ones, or the neighbour whose gloss tells it.
 def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]) -> dict[str, str]:
     asked = wanted.split(".")
-    # The bare keys a tool shares, on what is asked of it: all for the whole tool (`actor` its `crow_tiles`), a section's own (`actor.traits`, `traits.absorbed`).
-    section = asked[1:] if asked[0] in _TOOLS else None
-    found = {
-        key: glosses[key]
-        for key, segments in segmented.items()
-        if _holds(segments, asked) or (section is not None and segments[0] not in _TOOLS and segments[: len(section)] == section)
-    }
-    # A field that has no key of its own is told inside a neighbour's gloss: `their_opinion` within `opinion`'s.
-    found = found or {key: gloss for key, gloss in glosses.items() if f"`{asked[-1]}`" in gloss}
+    found = {key: glosses[key] for key, segments in segmented.items() if _within(segments, asked)}
+    # A field with no key is told in a gloss of its section (`their_opinion` in `opinion`'s): searched wider, any gloss citing it would answer.
+    if not found and (found := {key: gloss for key, gloss in glosses.items() if f"`{asked[-1]}`" in gloss and _within(segmented[key], asked[:-1])}):
+        print(f"· no key for `{asked[-1]}` — told within {', '.join(found)}", file=sys.stderr)
     if not found:
         words = sorted({segment for segments in segmented.values() for segment in segments})
         near = difflib.get_close_matches(asked[-1], words, n=_NEAR) or difflib.get_close_matches(wanted, sorted(glosses), n=_NEAR)
@@ -40,6 +35,12 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
 # Whether the asked segments run inside the key's, in order and unbroken: `pairings.lovers` in `world.pairings.lovers`, never `world.lovers`.
 def _holds(key: list[str], asked: list[str]) -> bool:
     return any(key[at : at + len(asked)] == asked for at in range(len(key) - len(asked) + 1))
+
+
+# Whether a key falls within the asked: it holds it, or is a bare key the tool shares, all for the whole tool, a section's own (`actor.traits`, `traits.absorbed`).
+def _within(key: list[str], asked: list[str]) -> bool:
+    section = asked[1:] if asked and asked[0] in _TOOLS else None
+    return _holds(key, asked) or (section is not None and key[0] not in _TOOLS and key[: len(section)] == section)
 
 
 def main(argv: list[str]) -> int:
