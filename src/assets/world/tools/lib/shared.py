@@ -458,10 +458,10 @@ def alive_or_dead_ref(body_id: int | None, by_id: dict, deaths: dict[int, dict])
     return None if body_id is None else entity_ref(body_id, by_id) or {"id": body_id, "name": (deaths.get(body_id) or {}).get("name")}
 
 
-# argparse's refusals, marked as every other script's are: its bare `usage:` and `error:` pair would be the one refusal a chronicler reads unflagged.
+# argparse's refusals, marked as every script's are (a bare `usage:`/`error:` reads unflagged), and no abbreviation: `--king` would run as `--kingdom`.
 def arg_parser(prog: str, description: str, docs: str = "docs/tools.md") -> argparse.ArgumentParser:
     # A width said: left to the terminal, argparse loads `shutil` and three compressors to measure it, at the first `add_argument` of every run.
-    parser = argparse.ArgumentParser(prog=prog, description=description, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH))
+    parser = argparse.ArgumentParser(prog=prog, description=description, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH), allow_abbrev=False)
     parser.error = lambda message: parser.exit(2, f"✗ {_misplaced_across() or message} — see {docs}\n")
     return parser
 
