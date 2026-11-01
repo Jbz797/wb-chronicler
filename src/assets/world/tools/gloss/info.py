@@ -37,10 +37,12 @@ def _holds(key: list[str], asked: list[str]) -> bool:
     return any(key[at : at + len(asked)] == asked for at in range(len(key) - len(asked) + 1))
 
 
-# Whether a key falls within the asked: it holds it, or is a bare key the tool shares, all for the whole tool, a section's own (`actor.traits`, `traits.absorbed`).
+# Whether a key falls within the asked: it holds it, or is a bare shared key — a full path's field (`city.metadata.territory`), a section's, all for a whole tool.
 def _within(key: list[str], asked: list[str]) -> bool:
+    if key[0] in _TOOLS:
+        return _holds(key, asked)
     section = asked[1:] if asked and asked[0] in _TOOLS else None
-    return _holds(key, asked) or (section is not None and key[0] not in _TOOLS and key[: len(section)] == section)
+    return _holds(key, asked) or asked[-len(key) :] == key or (section is not None and key[: len(section)] == section)
 
 
 def main(argv: list[str]) -> int:
