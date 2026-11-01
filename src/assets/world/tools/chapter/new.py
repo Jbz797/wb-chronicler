@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 import registries
 from actor_stats import adult_age, build_actor_stats_context, is_egg, kept_task, kept_task_target
-from echo import echoes
+from echo import echoes, faults
 from fold import drop_chronicler_keys, fold_bodies, fold_favorite_detail, fold_world
 from founding import city_zones, settle_gates
 from grid import LazyTileGrid, shore_tally, tile_layer, tile_runs
@@ -928,6 +928,10 @@ def _retouch() -> int:
     changed = sorted(n for n in touched if (str(n), "chapter.md") in moved or _record_prose_moved(n))  # its tale, or the prose its record carries
     if not (refreshed := sorted(touched - set(changed))) and not changed:
         print("✗ no delivered chapter has moved since its last round — the chapter under way rounds with `--finalize`", file=sys.stderr)
+        return 1
+    # `echo.py`'s faults bar the round before any commit, the panels' data included: a round tags only a chapter within its bounds, never one to cut again.
+    if broken := [f"✗ C{n} — {fault.removeprefix('✗ ')}" for n in changed for rows in faults(n).values() for fault in rows]:
+        print(*broken, "  → set these right, then run `tools/chapter/new.py --retouch` again: no round taken, nothing committed", sep="\n", file=sys.stderr)
         return 1
     if refreshed:
         _commit(f"data {', '.join(f'C{n}' for n in refreshed)}", *(f"C{n}/chapter.json" for n in refreshed))

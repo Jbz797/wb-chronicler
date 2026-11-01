@@ -577,6 +577,13 @@ def echoes(n: int, whole: bool = False) -> dict | None:
     return {key: [row for row in rows if changed & named(row)] for key, rows in found.items()}
 
 
+# What chapter `n` breaks, empty while it holds: its length, the cap at every retouch too, its dialogues against `--finalize`'s floor: `--retouch` refuses on them.
+def faults(n: int) -> dict[str, list[str]]:
+    floor, length = chapter_floor(n), chapter_length(prose := _chapter(n) or "")
+    told = f"✗ chapter.md, {length} characters, {COUNTED_AS} — its bounds are {floor} to {CHAPTER_CAP}"
+    return {"dialogue": short_dialogues(prose), "length": [] if floor <= length <= CHAPTER_CAP else [told]}
+
+
 def main(argv: list[str]) -> int:
     chapter, whole = next((arg for arg in argv if arg[:1] == "C" and arg[1:].isdigit()), None), "--whole" in argv
     if stray := [arg for arg in argv if arg not in (chapter, "--whole")]:  # `--help` among them: a word unheard would else pass for a run of the latest chapter
@@ -587,14 +594,11 @@ def main(argv: list[str]) -> int:
     if (found := echoes(n, whole)) is None:
         print(f"✗ no chapter.md for C{n}", file=sys.stderr)
         return 1
-    # Said only past its bounds, as every check says a fault alone: a retouch after delivery would else pass the cap unseen, `--deliver` long run.
-    floor, length = chapter_floor(n), chapter_length(prose := _chapter(n) or "")
-    if not (held := floor <= length <= CHAPTER_CAP):
-        print(f"✗ chapter.md, {length} characters, {COUNTED_AS} — its bounds are {floor} to {CHAPTER_CAP}", file=sys.stderr)
-    for fault in (short := short_dialogues(prose)):  # `--finalize`'s own floor, measured each round where the audit reads it
+    told = faults(n)
+    for fault in (*told["length"], *told["dialogue"]):
         print(fault, file=sys.stderr)
     # A check gone silent found nothing: named, so it is not read as unrun — the length and the dialogue too, silent while they hold.
-    clear = sorted(check for check, rows in {**found, "dialogue": short, "length": not held}.items() if not rows)
+    clear = sorted(check for check, rows in {**found, **told}.items() if not rows)
     emit({**found, "clear": clear, "delivered": (not whole and _changed(n) is not None) or None})
     return 0
 
