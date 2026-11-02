@@ -183,6 +183,7 @@ _KEPT_FIELDS = (
     "asset_id",
     "born",
     "breeds_on",
+    "city",
     "city_since",
     "gen",
     "hatch_on",
@@ -269,6 +270,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "born": lambda: entity_born(actor),
         # Its lineage's own line, as on the roll: none to come where it never bears
         "breeds_on": lambda: crossed_on(actor, breeding) if age < (breeding := breeding_age(actor, ctx)) and fertile(lineage) else None,
+        "city": lambda: entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
         "city_since": lambda: kept_city_since(actor),
         "gen": lambda: int(actor.get("generation") or 1),
         "hatch_on": lambda: hatch_on(actor, ctx),
@@ -339,6 +341,8 @@ def _build_cumulative(save: dict) -> dict:
     causes = Counter(dead["cause"] for dead in kept_deaths(save).values())
     if changed := causes.pop("metamorphosis", 0):  # a crab reborn as WB never counts it, whose tally sees a bite's alone
         out["metamorphosis"] = changed
+    if migrated := sum(int(k.get("migrated") or 0) for k in save.get("kingdoms") or []):  # `Kingdom.increaseMigrants`: a realm gone takes its count along
+        out["migrated"] = migrated
     return out | {"deaths": dict(causes)}
 
 
@@ -586,6 +590,8 @@ def _build_roster(
     if patch and land is None:
         asked = island_of.get(next(iter(patch)))  # a patch lies on one land, which then goes unsaid as `-i`'s does
     ctx = build_actor_stats_context(save)
+    if "city" in fields:
+        ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
     if "place" in fields:  # each forged place drawn once for the whole roll, as `metadata` draws it for one body
         ctx["place_index"] = PlaceIndex(save, save_path, island_of, WalkMap(save))
     if settle or barred:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
@@ -919,6 +925,7 @@ def _gone_since(
 # One field of `--with` over a roll too long to list: a task or a status counted by its value, a stat by its spread — `of` the bodies it applies to.
 def _grouped_field(field: str, values: list) -> dict | None:
     if field in _KEPT_FIELDS:  # lands by their id first, the islets and the water after, every other value by its name, a date's figures as numbers
+        values = [value["name"] if isinstance(value, dict) else value for value in values]  # a town counted by its name, a ref being no key
         counts = Counter(item for value in values if value for item in (value if isinstance(value, list) else [value]))
         return {str(key): counts[key] for key in sorted(counts, key=lambda key: (isinstance(key, str), _natural(key)))} or None
     held = sorted(value for value in values if value is not None)

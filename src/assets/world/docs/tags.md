@@ -1,6 +1,6 @@
 # 📌 Vocabulaire des tags
 
-<p class="metadata">Date de mise à jour : 29/10/26 09:30</p>
+<p class="metadata">Date de mise à jour : 02/11/26 12:41</p>
 
 ## Balises du récit
 
@@ -47,7 +47,7 @@ Un tag vaut pour le chapitre qui le porte, à sa save. Les `FIRST_…` et `SECON
 | `FIRST_DEATH`              | La **première mort** du monde, quelle qu'en soit la cause.                                                            |
 | `FIRST_HOUSE`              | La **première maison** du monde est debout — ni un chantier ni une tente n'en sont une.                               |
 | `FIRST_KILL`               | La **première mort sous les coups** d'un autre corps, lame ou morsure.                                                |
-| `FIRST_MIGRANTS`           | Les **premiers migrants** du monde arrivent à un feu, appelés par la loi (`wiki:World_Laws`).                         |
+| `FIRST_MIGRANTS`           | Les **premiers migrants** du monde arrivent, appelés par la loi (`wiki:World_Laws`, `gloss:handsome_migrant`).        |
 | `NEW_AGE`                  | Le monde bascule dans un **nouvel âge** (l'`age_id` change vs le chapitre précédent).                                 |
 | `NEW_FAVORITE`             | Un nouveau **favori** est désigné dans ce chapitre.                                                                   |
 | `SECOND_CITY`              | La **deuxième cité** du monde est fondée, d'une couronne déjà là ou d'une nouvelle.                                   |
