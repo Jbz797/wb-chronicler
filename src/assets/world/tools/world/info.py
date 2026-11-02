@@ -193,6 +193,7 @@ _KEPT_FIELDS = (
     "hatch_on",
     "island_id",
     "life_stage",
+    "parents",
     "place",
     "sex",
     "statuses",
@@ -279,6 +280,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "hatch_on": lambda: hatch_on(actor, ctx),
         "island_id": lambda: here,
         "life_stage": lambda: _stage(actor, ctx, age, adult_age(actor, ctx)),
+        "parents": lambda: sorted(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p and p != -1) or None,  # ids, not refs: a line holds one
         "place": lambda: ctx["place_index"].at(*actor_xy(actor)),
         "sex": lambda: sex_label(actor),
         "statuses": lambda: kept_statuses(actor),
@@ -932,6 +934,8 @@ def _gone_since(
 
 # One field of `--with` over a roll too long to list: a task or a status counted by its value, a stat by its spread — `of` the bodies it applies to.
 def _grouped_field(field: str, values: list) -> dict | None:
+    if field == "parents":  # a couple counted as one, its births together, where its two ids apart would count each parent's
+        values = ["+".join(map(str, value)) if value else None for value in values]
     if field in _KEPT_FIELDS:  # lands by their id first, the islets and the water after, every other value by its name, a date's figures as numbers
         values = [value["name"] if isinstance(value, dict) else value for value in values]  # a town counted by its name, a ref being no key
         counts = Counter(item for value in values if value for item in (value if isinstance(value, list) else [value]))
