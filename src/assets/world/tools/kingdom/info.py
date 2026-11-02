@@ -33,6 +33,7 @@ from shared import (
     entity_age,
     entity_born,
     entity_ref,
+    house_building_ids,
     index_by_id,
     is_transport,
     kingdom_score_dimensions,
@@ -183,7 +184,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         zones_by_kingdom[kid].extend(map(zone_xy, zones))
 
     buildings_by_kingdom: Counter[int] = Counter()
-    civic = civic_building_ids()  # Tallied per kingdom below (tile inside a city zone); `houses` = the dwelling subset.
+    civic, roofs = civic_building_ids(), house_building_ids()  # Tallied per kingdom below (tile inside a city zone); `houses` as WB counts a town's
     food_by_kingdom: Counter[int] = Counter()
     food_ids = asset_set("food")
     gold_by_kingdom: Counter[int] = Counter()
@@ -211,7 +212,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if (tile := building_tile(b)) is not None and (kid := zone_to_kingdom.get((tile[0] // ZONE_TILES, tile[1] // ZONE_TILES))) is not None:
             buildings_by_kingdom[kid] += 1
             sites_by_kingdom[kid] += under_construction(b)
-            if asset_id.startswith("house"):
+            if asset_id in roofs:
                 houses_by_kingdom[kid] += 1
 
     capitals_by_kingdom = {k["id"]: cities_by_id[k["capitalID"]] for k in save.get("kingdoms", []) if k.get("capitalID") in cities_by_id}
@@ -336,7 +337,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
             "gold": ctx["gold_by_kingdom"][kid],  # Gold ore in the kingdom's buildings: mined from `mineral_gold` + half of each taxpayer's loot. Not coins.
             "goods": ctx["goods_by_kingdom"][kid],  # Non-food, non-gold stock (materials, gems…) across the kingdom's buildings.
             "heir": heir,
-            "houses": ctx["houses_by_kingdom"][kid],  # Dwellings (subset of `buildings`).
+            "houses": ctx["houses_by_kingdom"][kid],  # Its towns' houses as WB counts them, tents and sites in (subset of `buildings`).
             "id": kid,
             "islands": islands,
             "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).

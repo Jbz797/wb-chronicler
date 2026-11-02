@@ -74,6 +74,7 @@ from shared import (
     entity_ref,
     fertile,
     first_place,
+    house_building_ids,
     i18n,
     index_by_id,
     is_aboard,
@@ -809,7 +810,7 @@ def _build_roster(
 # Actors split three ways: hulls (`boats`), thinking souls (`sapient_pop`) and the beasts (`wild_creatures`). `infected` = WB's `current_infected`.
 def _build_snapshot(save: dict) -> dict:
     actors = save.get("actors_data") or []
-    civic = civic_building_ids()
+    civic, roofs = civic_building_ids(), house_building_ids()
     asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings") or [])  # Count `asset_id`s once, classify the distinct keys — four scans saved.
 
     # `infected` ⊂ `sick` — a plague never shows up in the first, hence both; each drops at 0, outbreaks leaving them idle most chapters.
@@ -832,9 +833,9 @@ def _build_snapshot(save: dict) -> dict:
         {
             **{k: len(save.get(coll) or []) for k, coll in _SNAPSHOT_COLLECTIONS.items()},
             "armies": len(save.get("armies") or []),
-            "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded); `houses` = dwellings.
+            "buildings": sum(n for aid, n in asset_counts.items() if aid in civic),  # Built structures worldwide (nature excluded)
             "frozen_pct": round(frozen / (tiles or 1) * 100),  # the map's frozen share, whole — permafrost, snow, ice and frost; `geography … totals` has the tenth
-            "houses": sum(n for aid, n in asset_counts.items() if aid.startswith("house")),
+            "houses": sum(n for aid, n in asset_counts.items() if aid in roofs),  # as WB counts a town's (`City.getHouseCurrent`): tents and sites in
             "infected": infected,
             "passengers": passengers,  # souls at sea this instant, WB's own word (`Boat.countPassengers`) — chronicler-only, `boats` counts the hulls
             "sapient_pop": sapients,  # named apart from every tier's `pop`, which counts members: this one weighs minds, and no crown gathers them

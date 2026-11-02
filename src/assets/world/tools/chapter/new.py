@@ -368,8 +368,11 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     deaths = [dead for dead in kept_deaths(live).values() if dead["cause"] != "metamorphosis"]
     towns = int(stats.get("citiesCreated") or 0)
 
-    # Its first house is read off the map, once it stands: WB's `housesBuilt` takes a fire and a stockpile for one, and counts a site the day it is laid.
-    housed = any((b.get("asset_id") or "").startswith("house") and not under_construction(b) for b in live.get("buildings") or [])
+    # Its first roof off the map, once it stands — a tent, a house or a hall (`housing_slots`): WB's `housesBuilt` takes a fire for one, and counts a laid site.
+    roofs = load_data("buildings.json")
+    housed = "FIRST_HOME" not in already and any(
+        (roofs.get(b.get("asset_id")) or {}).get("housing_slots") and not under_construction(b) for b in live.get("buildings") or []
+    )
 
     # The first migrants a fire called in, off each crown's `migrated` (`Kingdom.increaseMigrants`): a realm gone takes its count along, a rare miss.
     migrated = sum(int(k.get("migrated") or 0) for k in live.get("kingdoms") or [])
@@ -381,7 +384,7 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
         ("FIRST_BIRTH", stats.get("creaturesBorn")),
         ("FIRST_CITY", towns),
         ("FIRST_DEATH", deaths),
-        ("FIRST_HOUSE", housed),
+        ("FIRST_HOME", housed),
         ("FIRST_KILL", struck),
         ("FIRST_MIGRANTS", migrated),
         ("SECOND_CITY", towns >= 2),  # a town beside the first: the world has a neighbour, a crown's or a rival's

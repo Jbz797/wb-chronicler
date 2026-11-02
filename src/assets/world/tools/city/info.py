@@ -38,6 +38,7 @@ from shared import (
     entity_born,
     entity_ref,
     equipment_entry,
+    house_building_ids,
     index_by_id,
     is_aboard,
     light,
@@ -233,7 +234,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
 
     buildings_by_city: Counter[int] = Counter()  # read by `settlement_rank_getters` under a composed key, `f"{name}_by_{tier}"`
     civic_by_city: defaultdict[int, list[dict]] = defaultdict(list)
-    civic = civic_building_ids()  # `houses` = the dwelling subset.
+    civic, roofs = civic_building_ids(), house_building_ids()
     food_ids = asset_set("food")
     food_by_city: Counter[int] = Counter()
     gold_by_city: Counter[int] = Counter()
@@ -262,7 +263,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
             buildings_by_city[cid] += 1
             civic_by_city[cid].append(b)
             sites_by_city[cid] += under_construction(b)
-            if asset_id.startswith("house"):
+            if asset_id in roofs:
                 houses_by_city[cid] += 1
 
     ctx = {
@@ -412,7 +413,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
             "gold": ctx["gold_by_city"][cid],  # Gold ore in the city's buildings (mined + tribute). Not coins — see `pop.money`.
             "goods": ctx["goods_by_city"][cid],  # Non-food, non-gold stock (materials, gems…).
             **({"heir": heir} if (heir := _resolve_heir(city, ctx)) else {}),  # Omitted when WB would draw the next mayor at random — see `_resolve_heir`.
-            "houses": ctx["houses_by_city"][cid],  # Dwellings, a subset of the `buildings` section.
+            "houses": ctx["houses_by_city"][cid],  # WB's count (`City.getHouseCurrent`): houses and tents, sites in — a subset of `buildings`.
             "id": cid,
             "islands": islands,
             "kills": int(city.get("total_kills") or 0),  # Enemies its inhabitants have slain over the city's lifetime (WB `total_kills`).

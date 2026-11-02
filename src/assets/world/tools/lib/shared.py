@@ -890,6 +890,11 @@ def head_money(entity: dict, ctx: dict, tier: str) -> int:
     return int((ctx["actors_by_id"].get(entity.get(_HEAD_FIELD[tier])) or {}).get("money") or 0)
 
 
+@cache
+def house_building_ids() -> frozenset[str]:
+    return frozenset(asset for asset, spec in load_data("buildings.json").items() if spec.get("type") == "type_house")
+
+
 # A file of `i18n/<lang>/`, in the chronicle's language as the settings name it — `{}` where that language has none: a name falls back, a check runs chattier.
 @cache
 def i18n(name: str) -> dict:
