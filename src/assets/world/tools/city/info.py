@@ -813,7 +813,11 @@ def main(argv: list[str]) -> int:
     if "ranks" in sections:
         out["ranks"] = _compute_ranks(city, ctx, save)
     if "rulers" in sections:
-        out["rulers"] = reigns(city, ctx["actors_by_id"], requested)  # its mayors, the sitting one last; the founder, a first settler, stays in `identity`
+        out["rulers"] = reigns(city, ctx["actors_by_id"], requested) or None  # its mayors, the sitting one last; the founder, a first settler, stays in `identity`
+        if out["rulers"] is None and len(sections) == 1:  # WB's `checkFindLeader` passes the king over: a town of its king alone names no one
+            crown = f": kingdom {crown_id} rulers" if (crown_id := city.get("kingdomID")) is not None else ""
+            print(f"✗ {city.get('name')} ({city_id}) never had a leader — WB picks one among its townsfolk, never its king{crown}", file=sys.stderr)
+            return 1
 
     emit(out)
     return 0
