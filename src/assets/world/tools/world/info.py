@@ -247,7 +247,7 @@ _SOULBORNE = "reproduction_soulborne"  # a lineage born of the souls it strikes:
 _SPREAD_FIELDS = ("at", "born")  # a body's own tile or date: past the list, its kind's bounds and middle (`by_species`), never each value counted
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` and `--lacks` weigh: a body's own counters, named as `actor … stats` names them
-_TOP_PAIRINGS = 20  # the kinds `pairings` keeps past `MAX_LISTED`, first births first: the ones a chapter tells, the rest counted and read by `-t`
+_TOP_PAIRINGS = 20  # the kinds `pairings` keeps past `MAX_LISTED`, soonest births first: the ones a chapter tells, the rest counted and read by `-t`
 _TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "age", "equipment_power")))  # what `--rank` ranks by: those counters, a skill, an arsenal, the age
 _TOP_ROWS = 10  # a ranking is asked for its head: who comes first, second, third — the rest is counted
 _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
@@ -1079,16 +1079,16 @@ def _or_among(tie: Callable[[dict], bool], ids: Collection[int]) -> Callable[[di
     return lambda actor: tie(actor) or actor["id"] in ids
 
 
-# Kinds past `MAX_LISTED` as their `_TOP_PAIRINGS` first births, the rest counted — later, or what each lacks — and read one by one through `-t`.
+# Kinds past `MAX_LISTED` as their `_TOP_PAIRINGS` soonest births, the rest counted — later, or what each lacks — and read one by one through `-t`.
 def _pairing_tally(rows: list[dict]) -> list[dict] | dict:
     if len(rows) <= MAX_LISTED:
         return rows
     rest = rows[_TOP_PAIRINGS:]
     return {
-        "first": rows[:_TOP_PAIRINGS],
-        "info": f"past {MAX_LISTED} kinds, the {_TOP_PAIRINGS} first births — `-t <kind>` reads one",
+        "info": f"past {MAX_LISTED} kinds, the {_TOP_PAIRINGS} soonest births",
         "later": sum("birth_on" in row for row in rest) or None,
         "missing": dict(Counter(row["missing"] for row in rest if "missing" in row)) or None,
+        "soonest": rows[:_TOP_PAIRINGS],
     }
 
 
