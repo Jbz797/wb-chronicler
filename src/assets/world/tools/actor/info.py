@@ -101,7 +101,7 @@ from shared import (
     world_date,
     world_laws,
 )
-from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_in
+from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_foot, walled_in
 from waters import water_bodies, water_family, water_tiles, waters_cached, waters_within
 
 _ALL_SECTIONS = ("companions", "gear", "inventory", "kin", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits", "victims")
@@ -257,8 +257,8 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             raise _AimError(f"✗ no {kind} {water_id} — `geography … waters` lists them")
         mark, whom = "reached", _named(gazetteer(), f"{kind}s", water_id) or f"{kind} {water_id}"
     elif isinstance(target, str) and _GROUND_PREFIX not in target and (place := _place_aim(target, actor, ctx)) is not None:
-        (aims, aimed), mark, whom = place, "reached", target
-        told = {"place": {"aimed": aimed, "name": target}}
+        (aims, aimed, foot), mark, whom = place, "reached", target
+        told = {"place": {"aimed": aimed, "foot": foot or None, "name": target}}
     elif target == "burning":  # a fire's nearest flame, where `geography … burning` sites its middle: what a body would meet first
         if not (aims := list(listed_tiles(save, "fire"))):
             raise _AimError("✗ nothing burns in this world")
@@ -931,8 +931,8 @@ def _per_hour(actor: dict, ctx: dict) -> float:
     return _HOURLY_TILES_PER_SPEED * (compute_actor_stats(actor, ctx).get("speed") or 1)
 
 
-# A name of `places.json` as `--to` aims at it (`places.named_place`), a land landed on its walkable rim and never the one the body stands on — `None`: a kind.
-def _place_aim(name: str, actor: dict, ctx: dict) -> tuple[list[tuple[int, int]], str] | None:
+# A name of `places.json` as `--to` aims at it (`places.named_place`): a land by its walkable rim, never the body's own, a walled cone by its foot — `None`: a kind.
+def _place_aim(name: str, actor: dict, ctx: dict) -> tuple[list[tuple[int, int]], str, bool] | None:
     try:
         if (found := ctx["named_place"](name)) is None:
             return None
@@ -945,7 +945,12 @@ def _place_aim(name: str, actor: dict, ctx: dict) -> tuple[list[tuple[int, int]]
         if ctx["island_lookup"]().get(actor_xy(actor)) == (land := int(aimed[1:])):
             raise _AimError(f"✗ {named_body(actor)} already stands on {name}")
         tiles = _shore(land, ctx)
-    return tiles, aimed
+    elif aimed[:1] == "b" and aimed[1:].isdigit() and (gait := _gait(actor, ctx)) is not None and (foot := walled_foot(ctx["walk_map"](), gait, tiles)):
+        # A cone its rock or lava walls in, filed in its foot's circle: on the land holding most of it, a rock-bound enclave would send the walk swimming the world.
+        island_of = ctx["island_lookup"]()
+        main = Counter(map(island_of.get, foot)).most_common(1)[0][0]
+        return [tile for tile in foot if island_of.get(tile) == main], aimed, True
+    return tiles, aimed, False
 
 
 # The named places a body stands on, and those the game would call close (`chunks_apart` ≤ 1) — of the forged, only those whose box or point is in reach.

@@ -58,6 +58,7 @@
   "actor.to.other_fires": "Sous `--to burning`, les autres foyers (`geography … fires`), chacun par sa flamme la plus proche, à vol d'oiseau, les 4 plus près ; leur trajet : `--to x,y`.",
   "actor.to.patch": "Vers un sol, la taille de la parcelle atteinte, comme `biomes` la compte : `1`, une tuile isolée ; le pied d'un relief nommé se mesure par son nom (`--to \"<lieu>\"`).",
   "actor.to.place": "`--to \"<lieu>\"` : ce qu'il vise (`aimed`), une terre `i<id>`, une eau, un volcan `b<id>`, un îlot, ou dans sa `box` l'eau de son point, son `ground` ou sa terre.",
+  "actor.to.place.foot": "D'un volcan ou d'un geyser que la roche ou la lave mure : visé par son pied, la tuile praticable la plus proche au-delà du mur ; son cercle est celui de ce pied.",
   "actor.to.reachable": "`--to lands`, `cities` : chaque terre (comme `--to i<id>`) ou cité (comme `--to c<id>`) que le corps gagne, la plus proche d'abord ; `unreachable` compte les autres.",
   "actor.to.reached": "Vers un lieu nommé ou une eau (`lake4`) : la tuile où le trajet l'atteint, sa rive, le pied d'une chaîne, le bord d'un bâtiment.",
   "actor.to.sail_hours": "Le temps à bord d'un bateau de son royaume (`sail_minutes` sous l'heure), à l'allure du transport, marches d'accès à part (`walk_hours`).",

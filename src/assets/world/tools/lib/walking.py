@@ -305,6 +305,28 @@ def walk_ways(walk_map: WalkMap, gait: Gait, x: int, y: int, land_of: dict[int, 
     return ways
 
 
+# The dry open tiles at the foot of the rock, lava or goo shutting `tiles` in, across that wall — `None` when they stand open: a cone is walked to by its foot.
+def walled_foot(walk_map: WalkMap, gait: Gait, tiles: list[tuple[int, int]]) -> list[tuple[int, int]] | None:
+    x, y = tiles[0]
+    pocket = [tile for tile, *_ in islice(_settle(walk_map, gait.tireless(), x, y, inf, None), _POCKET)]
+    if len(pocket) == _POCKET:
+        return None
+    classes, width, height = walk_map._classes, walk_map.width, walk_map._height  # noqa: SLF001
+    seen = {*pocket, *(ty * width + tx for tx, ty in tiles)}
+    wall, foot = list(seen), []
+    while wall:  # through the wall only: the pocket's own open ground and the water stop the flood, its far side found
+        y0, x0 = divmod(wall.pop(), width)
+        for dx, dy in _WALLED_DELTAS:
+            if not (0 <= (nx := x0 + dx) < width and 0 <= (ny := y0 + dy) < height) or (tile := ny * width + nx) in seen:
+                continue
+            seen.add(tile)
+            if classes[tile] == _BARRED:
+                wall.append(tile)
+            elif classes[tile] != _WATER:
+                foot.append((nx, ny))
+    return foot
+
+
 # Whether rock, lava or goo shut a tile in: a swimmer no breath stops, leaving it, runs out of ground and water alike before `_POCKET` tiles.
 def walled_in(walk_map: WalkMap, gait: Gait, x: int, y: int) -> bool:
     return sum(1 for _ in islice(_settle(walk_map, gait.tireless(), x, y, inf, None), _POCKET)) < _POCKET
