@@ -1120,12 +1120,13 @@ def log_entries(start: float, end: float = float("inf"), actor: int | None = Non
             **({role: n for role, n in zip(roles, names, strict=False) if role} if (roles := kind.get("roles")) else {"names": [n for n in names if n] or None}),
             "kingdom_id": crown if crown is not None and crown >= 0 else None,
             # A murder's is the slain one's, where `actor_id` names the killer; a crown's is its founder's the day it is made, its capital's centre after.
-            "point": kind.get("point"),
-            "x": x,
-            "y": y,
+            "point": point,
+            "x": x if point else None,  # a war ended or a pact made or broken, sited nowhere: WB leaves its zero
+            "y": y if point else None,
         }
         for ts, asset, *names, unit, crown, x, y in rows
         for kind in (kinds.get(asset, {}),)
+        for point in (kind.get("point"),)
     ]
 
 

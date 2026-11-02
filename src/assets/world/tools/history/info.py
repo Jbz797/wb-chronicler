@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     HISTORY_S3DB,
+    MAX_LISTED,
     SAVES_DIR,
     UNITS_PER_YEAR,
     absent_entity,
@@ -22,6 +23,7 @@ from shared import (
     arg_parser,
     crowns_named,
     emit,
+    entity_born,
     entity_ref,
     index_by_id,
     kept_deaths,
@@ -61,12 +63,22 @@ _EVENT_COLUMN = re.compile(
 )
 
 _FINE_STEP = 1  # WB's yearly table: a row a year, the only one whose `timestamp` is a year — every coarser one averages its span or keeps its last year
+
+# The bodies WB's journal never logs the making of, each by its record's own fields: its founder's id and name, the town it rose in.
+_FOUNDED = {
+    "clans": ("founder_actor_id", "founder_actor_name", "founder_city_id"),
+    "cultures": ("creator_id", "creator_name", "creator_city_id"),
+    "families": ("main_founder_id_1", "founder_actor_name_1", "founder_city_id"),
+    "languages": ("creator_id", "creator_name", "creator_city_id"),
+    "religions": ("creator_id", "creator_name", "creator_city_id"),
+}
+
 _MAX_LOG = 50  # past so many entries the journal is read by its kinds of event, not line by line: `-t` or `--actor` narrow it back
 
 # WB's `world_statistics_beasts` walks every unit, the dying and the hulls with it, where `Actor.die` counts a death at the blow and none for a metamorphosis.
 _ROLL = ("population_beasts", "population_civ")  # the two columns a year's bodies stand in
 _ROLL_TERMS = {"creatures_born": 1, "creatures_created": 1, _DEATHS_TOTAL: -1}  # and what moves them, by its sign
-_SECTIONS = ("dead_kingdoms", "entity", "log", "world")
+_SECTIONS = ("dead_kingdoms", "entity", "founded", "log", "world")
 _SKIPPED = frozenset({"auto", "id", "timestamp"})  # WB's row bookkeeping: `auto` flags a row it wrote itself, and says nothing of the world
 _STAT_KEYS = {"deaths_natural": "deaths_age", _DEATHS_TOTAL: "deaths"}  # the yearly columns `mapStats` names otherwise: old age, and the bare total
 _STEPS = (1, 5, 10, 50, 100, 500, 1000, 5000, 10000)  # WB's table suffixes, each keeping a window of the last rows at that step
@@ -179,6 +191,27 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
         years.append({**{names[c]: row[c] for c in states if row[c]}, **gains, **since, "year": f"y{at}"})
         before = now
     return older + years  # the coarse spans first, each told by its `years`
+
+
+# What rose since a chapter, or ever, that WB's journal never logs — a clan, a custom, a tongue, a faith, a family —, off the save: those still standing alone.
+def _build_founded(save: dict, since: str | None) -> dict:
+    start = _chapter_time(load_save(SAVES_DIR / since / "map.wbox")) if since else -1.0
+    cities, out = index_by_id(save.get("cities") or []), {}
+    for collection, (founder, name, town) in _FOUNDED.items():
+        risen = (record for record in save.get(collection) or [] if float(record.get("created_time") or 0) > start)
+        rows = [
+            {
+                "born": entity_born(record),
+                "city": entity_ref(record.get(town), cities),
+                "founder": {"id": record[founder], "name": record.get(name)} if record.get(founder) is not None else None,
+                "id": record["id"],
+                "name": record.get("name"),
+            }
+            for record in sorted(risen, key=lambda r: (float(r.get("created_time") or 0), r["id"]))
+        ]
+        if rows:  # past the list a count, as `roster` gives
+            out[collection] = rows if len(rows) <= MAX_LISTED else {"total": len(rows)}
+    return out
 
 
 # WB's own log up to the chapter, its bodies named by the save and the death register, its crowns by `crowns_named` — past `_MAX_LOG` entries, a count by kind.
@@ -358,8 +391,11 @@ def main(argv: list[str]) -> int:
     if args.section == "entity" and not (len(args.entity) == 2 and args.entity[0] in _ENTITIES and args.entity[1].isdigit()):
         print(f"✗ entity takes a kind and an id: `entity family 12` — kinds: {', '.join(_ENTITIES)}", file=sys.stderr)
         return 2
-    if (args.actor is not None or args.type or since) and args.section != "log":
-        print("✗ --actor, -t and --since narrow `log`: name it", file=sys.stderr)
+    if (args.actor is not None or args.type) and args.section != "log":
+        print("✗ --actor and -t narrow `log`: name it", file=sys.stderr)
+        return 2
+    if since and args.section not in ("founded", "log"):
+        print("✗ --since narrows `log` and `founded`: name one", file=sys.stderr)
         return 2
     if since and not (SAVES_DIR / since / "map.wbox").exists():
         print(f"✗ no save for {since}", file=sys.stderr)
@@ -373,6 +409,8 @@ def main(argv: list[str]) -> int:
             out = _build_world(conn, save) or "✗ no year closed, and nothing born, raised or dead yet"
         elif args.section == "log":
             out = _build_log(save, since, args.actor, args.type)
+        elif args.section == "founded":
+            out = _build_founded(save, since) or f"✗ nothing founded {f'since {since}' if since else 'yet'} that WB's journal leaves out"
         elif args.section == "dead_kingdoms":
             out = _build_dead_kingdoms(conn, save) or "✗ no crown has fallen"
         else:

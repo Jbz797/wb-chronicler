@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 02/11/26 17:51</p>
+<p class="metadata">Date de mise à jour : 02/11/26 23:58</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -23,7 +23,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 | `family <id>`     | `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`                                                                         |
 | `geography`       | `biomes`, `bodies`, `burning`, `entity_types`, `frozen`, `gear`, `islands`, `positions`, `ridges`, `totals`, `waters`                  |
 | `ground <id>`     | `boats`, `inventory`, `metadata`, `occupants`                                                                                          |
-| `history`         | `dead_kingdoms`, `entity`, `log`, `world`                                                                                              |
+| `history`         | `dead_kingdoms`, `entity`, `founded`, `log`, `world`                                                                                   |
 | `kingdom <id>`    | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `relations`, `rulers`, `wars`               |
 | `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
 | `religion <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
@@ -54,7 +54,8 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 ### `history` :
 
 - `entity <type> <id>` : les années d'une entité
-- `log` : `--since C<n>` depuis un chapitre, `--actor <id>` celles d'un corps, `-t <event>` un type
+- `founded` : ce que le journal tait (`gloss:history.founded`)
+- `log` : `--since C<n>`, `--actor <id>` celles d'un corps, `-t <event>` un type
 - `world` : les comptes du monde à chaque fin d'année (`at_close`), un « jamais » dans le temps
 
 ### `tiles` :
