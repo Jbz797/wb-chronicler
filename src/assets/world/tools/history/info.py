@@ -152,6 +152,9 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
         refusal = absent_entity(kind, collection, entity_id, last if ended else chapter)
         return f"{refusal} — WB keeps the years of the living alone" if " is gone " in refusal else refusal
     events = [c for c in columns if _EVENT_COLUMN.search(c)]
+    # A gain at nought is unsaid on its year, as every count: the tallies this kind keeps, said once, let a silence read as none gained, not as none kept.
+    if tallies := sorted({"deaths" if _DEATH_CAUSE.match(c) else _WORLD_RENAMED.get(c, c) for c in events}):
+        print(f"· {kind} tallies: {', '.join(tallies)} — one unsaid on a year gained none", file=sys.stderr)
     states = [c for c in columns if c not in events and any(r[c] for r in (*coarse, *rows))]  # a state at nought all along says nothing
     names = {c: _ENTITY_RENAMED.get(c, c) for c in states}
     born = _row_year(float(living["created_time"])) if living and living.get("created_time") is not None else None
