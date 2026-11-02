@@ -38,6 +38,12 @@ _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compt
 _FORMULA_LINES = 4  # lines of one chapter a figured turn must come back on to be a tic: `il y a 3 ans` said on line after line
 _FORMULA_WORDS = 3  # words a figured turn holds at least, the figure among them; from `_LONG_RUN_WITHIN` up, `internal` hears it already
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
+
+# A sentence opened on an inversion — `Peut-être a-t-elle`, `Sans doute compte-t-elle` —, its opener the one or two words before the verb.
+_INVERTED = re.compile(
+    r"(?P<opener>[^\W\d_][\w'’-]*(?:\s+[\w'’-]+)??)\s+(?:(?:ne|n['’]|y|en|se|s['’]|l['’]|le|la|les|lui|leur)\s*)*[\w'’]+-(?:t-)?(?:il|elle|on|ils|elles)\b"
+)
+
 _LONG_RUN = 7  # words from which a run is a turn of phrase with a single word of its own: `et ce qui verdit au ras du sol`, `à l'entrée de l'an 5`
 _LONG_RUN_WITHIN = 6  # the same, within one chapter, where a formula said again ten lines on is heard: `jamais encore on n'avait vu`
 _MARKS = re.compile(r"[*_#>|`]")  # emphasis, headings, quotes and table rules: markup, which no reader hears
@@ -47,6 +53,7 @@ _OPENING_START = 4  # words a section's first sentence is known by, a figure rea
 _OPENING_WORDS = 2  # words of its own a chapter's first sentence must share with one before to pour its mould again: one alone is the chronicle's subject
 _OVERUSE = 1.3  # how far past the chronicle's own highest rate a family must climb to be named: a wobble is not a tic
 _RARE = 3  # uses across the whole chronicle under which a word shared with the two chapters before is an image borrowed, not the language
+_RECENT = 6  # chapters before the one weighed that a mould is counted in: 3 of the 6 latest means the same at C11 as at C50, an old one resting out of it
 _REFRAIN = 3  # chapters a run of words must be said in to be the chronicle's own refrain — `par la taille`, `n'obéissent à rien` — told apart, never dropped
 _SCARCE = 8  # uses across the whole chronicle under which a word can carry a chute: `monde` or `terre` would join any two sentences
 _SECTION = re.compile(r"^(##\s|---\s*$)")  # a heading or a separator: where a section, and so its chute, ends
@@ -199,6 +206,18 @@ def _inside(run: tuple[str, ...], other: tuple[str, ...]) -> bool:
     return any(other[at : at + len(run)] == run for at in range(len(other) - len(run) + 1))
 
 
+# Chapter `n`'s sentences opened on an inversion, by their opener lower-cased, each at its first line as written: a question asks, and is no mould.
+@cache
+def _inverted(n: int) -> dict[str, tuple[int, str]]:
+    said: dict[str, tuple[int, str]] = {}
+    for number, line in enumerate((_chapter(n) or "").splitlines(), 1):
+        if line.strip() and line[0] not in "|<#":
+            for sentence in _SENTENCE.split(_MARKS.sub(" ", unmarked(line)).strip()):
+                if not sentence.endswith("?") and (found := _INVERTED.match(sentence)):
+                    said.setdefault(found["opener"].lower(), (number, found[0]))
+    return said
+
+
 # A word as compared: lower-case, its elision's apostrophe gone, each figure as `N` — `21 sont morts` and `15 sont morts` are one mould.
 def _key(word: str) -> str:
     return re.sub(r"\d+", "N", word.lower().rstrip("'’"))
@@ -287,7 +306,7 @@ def _passages(words: list[_Token], n: int) -> list[dict]:
     found: defaultdict[tuple[int, int], list[dict]] = defaultdict(list)
     for before in range(max(n - 2, 1), n):
         for (line, at), texts in _runs(words, _words(before)).items():
-            found[line, before] += [{"by": {"echo", *(("refrain",) if _refrain(text) else ())}, "from": at, "text": text} for text in texts]
+            found[line, before] += [{"by": {"echo", *(("refrain",) if _refrain(text, n) else ())}, "from": at, "text": text} for text in texts]
         for line, at, word in _borrowed(words, before):
             # A borrowed word inside a run from the same line is told on that run, never on its own with nothing new to show
             carried = [m for m in found[line, before] if m["from"] == at and "text" in m and word in _keys(m["text"])]
@@ -302,7 +321,7 @@ def _passages(words: list[_Token], n: int) -> list[dict]:
                 match.setdefault("words", set()).update(() if "text" in match else shared)
             else:
                 found[line, before].append(match := {"by": set(), "from": at, "words": set(shared)})
-            match["by"] |= {"chute", *(("refrain",) if _refrain_chute(frozenset(match.get("words") or shared)) else ())}
+            match["by"] |= {"chute", *(("refrain",) if _refrain_chute(frozenset(match.get("words") or shared), n) else ())}
     out, shown = [], defaultdict(set)  # per line, the words its stronger chapters already show
     for (line, before), matches in sorted(found.items(), key=lambda item: (item[0][0], [-rank for rank in _weight(item[0][1], item[1])])):
         heard = {key for match in matches for key in (_keys(match["text"]) if "text" in match else {match.get("word"), *match.get("words", ())})}
@@ -329,27 +348,27 @@ def _rare() -> frozenset[str]:
     return frozenset(word for word, count in _uses().items() if count <= _RARE and len(word) >= _FAMILY_ROOT)
 
 
-# Whether a shown run holds `_MIN_RUN` words the chronicle says in `_REFRAIN` chapters or more: its own voice, which the eye weighs apart from a repeat.
-def _refrain(text: str) -> bool:
+# The `_RECENT` chapters before chapter `n`, all of them while the chronicle is shorter: where a mould is counted, never past `n`.
+def _recent(n: int) -> range:
+    return range(max(n - _RECENT, 1), n)
+
+
+# Whether a shown run holds `_MIN_RUN` words chapter `n` and those `_recent` say in `_REFRAIN` chapters or more: its own voice, weighed apart from a repeat.
+def _refrain(text: str, n: int) -> bool:
     keys = [_key(word) for word in _WORD.findall(text)]
-    return any(tuple(keys[i : i + _MIN_RUN]) in _refrains() for i in range(len(keys) - _MIN_RUN + 1))
+    return any(tuple(keys[i : i + _MIN_RUN]) in _refrains(n) for i in range(len(keys) - _MIN_RUN + 1))
 
 
-# Whether a chute's words are heard together in `_REFRAIN` chapters of the chronicle or more — `voit court` in three chapters running: its refrain, not a repeat.
-def _refrain_chute(words: frozenset[str]) -> bool:
-    return sum(any(words <= heard for _, heard in _heard(k)) for k in range(1, latest_chapter() + 1)) >= _REFRAIN
+# Whether a chute's words are heard together in `_REFRAIN` chapters of `n` and those `_recent` — `voit court` in three chapters running: a refrain, not a repeat.
+def _refrain_chute(words: frozenset[str], n: int) -> bool:
+    return sum(any(words <= heard for _, heard in _heard(k)) for k in (*_recent(n), n)) >= _REFRAIN
 
 
-# Every telling run of `_MIN_RUN` words said in `_REFRAIN` chapters of the chronicle or more: `de ce monde ne` is the language's, whatever its count.
+# Every telling run of `_MIN_RUN` words said in `_REFRAIN` chapters of `n` and those `_recent`: `de ce monde ne` is the language's, whatever its count.
 @cache
-def _refrains() -> frozenset[tuple[str, ...]]:
-    said: defaultdict[tuple[str, ...], set[int]] = defaultdict(set)
-    for k in range(1, latest_chapter() + 1):
-        words = _words(k)
-        for i in range(len(words) - _MIN_RUN + 1):
-            if (run := words[i : i + _MIN_RUN])[0].line == run[-1].line and _telling(run):
-                said[tuple(token.key for token in run)].add(k)
-    return frozenset(run for run, chapters in said.items() if len(chapters) >= _REFRAIN)
+def _refrains(n: int) -> frozenset[tuple[str, ...]]:
+    said = Counter(run for k in (*_recent(n), n) for run in _telling_runs(k))
+    return frozenset(run for run, chapters in said.items() if chapters >= _REFRAIN)
 
 
 # Runs of `_MIN_RUN`+ words shared with `earlier`, each followed along one passage of it, keyed (line, line said first); against itself, only an earlier line counts
@@ -419,7 +438,7 @@ def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], 
     def mark(what: str, line: str, number: int, size: int) -> None:
         start = _tokens(line, number)[:size]
         if what == "sentence":  # whole, with a word of its own and articles levelled: `Au Berceau, les aînées`, never a refrain the chronicle keeps
-            if len(start) < size or not any(token.content for token in start) or tuple(token.key for token in start) in _refrains():
+            if len(start) < size or not any(token.content for token in start) or tuple(token.key for token in start) in _refrains(n):
                 return
             keys = _moulded(start)
         else:
@@ -473,6 +492,10 @@ def _shaped(n: int) -> list[dict]:
         for k in before:
             if (theirs := _opening(k)) and len(shared := sorted(roots.keys() & theirs[1].keys())) >= _OPENING_WORDS:
                 rows.append({"chapters": [f"C{k}"], "line": line, "text": ", ".join(roots[root] for root in shared), "what": "opening_words"})
+    # An inversion is a mould by itself, `Peut-être a-t-elle` whatever the verb: weighed over the chapters `_recent`, where a gap of one hides no habit.
+    for opener, (line, text) in _inverted(n).items():
+        if len(said := [f"C{k}" for k in _recent(n) if opener in _inverted(k)]) >= _REFRAIN:
+            rows.append({"chapters": said, "line": line, "text": text, "what": "inverted"})
     opened = {row["line"] for row in rows if row["what"] == "opening"}
     rows = [row for row in rows if row["what"] != "paragraph" or row["line"] not in opened]  # a section's opening, told once
     told = {(row["line"], row["text"]) for row in rows if row["what"] != "sentence"}
@@ -498,6 +521,14 @@ def _table_rows(n: int) -> frozenset[int]:
 # The words a run must carry to be a turn of phrase rather than the language: two that say something of their own, one from `long_run` words.
 def _telling(run: list[_Token], long_run: int = _LONG_RUN) -> bool:
     return sum(token.content for token in run) >= (1 if len(run) >= long_run else 2)
+
+
+# Chapter `k`'s telling runs of `_MIN_RUN` words, each within a line, as compared: read once a chapter, whichever window `_refrains` counts them in.
+@cache
+def _telling_runs(k: int) -> frozenset[tuple[str, ...]]:
+    words = _words(k)
+    runs = (words[i : i + _MIN_RUN] for i in range(len(words) - _MIN_RUN + 1))
+    return frozenset(tuple(token.key for token in run) for run in runs if run[0].line == run[-1].line and _telling(run))
 
 
 # A stretch of prose as tokens: markup gone, a tag's text kept and marked as a name, an elision split from the word it leans on.
