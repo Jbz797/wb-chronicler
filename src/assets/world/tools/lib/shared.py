@@ -230,7 +230,7 @@ def _deaths_until(base: Path, now: float) -> dict[int, dict]:
             "id": body,
             "killer": killer,
             "name": name or None,
-            "parents": [parent for parent in (mother, father) if parent],
+            "parents": [parent for parent in (mother, father) if parent and parent != -1],  # WB's -1 for none, as the mod copies it
             "subspecies": lineage or None,
             "x": x,
             "y": y,

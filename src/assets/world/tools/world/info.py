@@ -559,6 +559,7 @@ def _build_roster(
     sapient: bool | None,
     settle: bool,
     barred: bool,
+    bred: bool,
     patch: set[tuple[int, int]] | None,
     status: str | None,
     task: str | None,
@@ -637,6 +638,9 @@ def _build_roster(
             continue
         if task and kept_task(actor) != task:
             continue
+        # Born of a body, its parents kept: under `--since`, born since — one the earlier save held was born before it, whatever it did after
+        if bred and (not (actor.get("parent_id_1") or actor.get("parent_id_2")) or (was is not None and actor["id"] in was)):
+            continue
         grown = _stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx)) if stage or was is not None else None
         if stage and grown != stage:
             continue
@@ -675,7 +679,7 @@ def _build_roster(
 
     if earlier is not None and was is not None and not (settle or barred):  # the dead found nothing
         standing = partial(_standing, island_of=island_of, grid=grid, names=save["tileMap"])  # where each died, on today's map
-        gone = _gone_since(save, earlier, later, kinds, trait, asked, sapient, belonged, stage, standing)
+        gone = _gone_since(save, earlier, later, kinds, trait, asked, sapient, bred, belonged, stage, standing)
         if gone and entity and entity[0] == "job":  # as a living holder's line: a king's realm, the log's or the earlier save's, anyone else's town
             before = {a["id"]: a for reading in (earlier, *later[:-1]) for a in reading.get("actors_data") or []}
             if entity[1] == "king":
@@ -893,6 +897,7 @@ def _gone_since(
     trait: str | None,
     asked: int | str | None,
     sapient: bool | None,
+    bred: bool,
     belongs: Callable[[dict], bool],
     stage: str | None,
     standing: Callable[[dict], int | str],
@@ -906,6 +911,8 @@ def _gone_since(
     rows = []
     for dead in deaths.values():
         if dead["died"] <= since or is_boat(dead) or (kinds and dead["asset_id"] not in kinds):
+            continue
+        if bred and (not dead["parents"] or dead["born"] <= since):  # a birth since, dead before the save
             continue
         if not belongs(body := last.get(dead["id"]) or {**dead, "created_time": dead["born"]}):
             continue
@@ -1047,11 +1054,14 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
         f"at the {args.stage} stage" if args.stage else None,
         "that could found a town where it stands" if args.settle else None,
         "kept from founding by more than its age" if args.barred else None,
+        "born of another" if args.bred and not since else None,
         (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
         f"on the patch of {args.patch[0]},{args.patch[1]}" if args.patch else None,
         *(f"of {kind} {entity_id}" for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None),
         f"working as {args.job}" if args.job else None,
-        (f"whose {args.has} moved since {since}" if args.has else f"arrived, grew, moved or died since {since}") if since else None,
+        (f"whose {args.has} moved since {since}" if args.has else f"born since {since}" if args.bred else f"arrived, grew, moved or died since {since}")
+        if since
+        else None,
     ]
     thinking = "thinking " if args.sapient or args.settle or args.barred else "unthinking " if args.beasts else ""
     unborn = kinds is not None and not any(a.get("asset_id") in kinds for a in save.get("actors_data") or [] if not is_boat(a))
@@ -1157,6 +1167,7 @@ def main(argv: list[str]) -> int:
         parser.add_argument(f"--{kind}", type=int, metavar="id", help=f"`roster`: the members of one {kind}, in the line its own list kept")
     parser.add_argument("--barred", action="store_true", help="`roster`: the thinkers something besides their age keeps from founding, and what")
     parser.add_argument("--beasts", action="store_true", help="`roster`: the bodies of no thinking lineage alone, `--sapient`'s other half")
+    parser.add_argument("--bred", action="store_true", help="`roster`: the bodies born of another — under `--since`, the births since, the dead among them")
     parser.add_argument("--has", choices=_TALLIES, help="`roster`: the bodies with one tally above nought — `level` past 1 — and its figure, highest first")
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
     parser.add_argument("--job", choices=JOBS, help="`roster`: the bodies at one job, `king` with its realm — under `--since`, who took it, left it, died at it")
@@ -1201,7 +1212,7 @@ def main(argv: list[str]) -> int:
     entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None] + ([("job", args.job)] if args.job else [])
     # What keeps only some bodies of the roll: `-t` among them, though it narrows `lineages` too, and `--with` none — it adds fields to every line
     sifted = (
-        any((args.barred, args.has, args.lacks, args.patch, args.settle, args.stage, args.status, args.task, args.top, args.trait))
+        any((args.barred, args.bred, args.has, args.lacks, args.patch, args.settle, args.stage, args.status, args.task, args.top, args.trait))
         or bool(entities)
         or args.island is not None
         or args.nearest is not None
@@ -1218,7 +1229,7 @@ def main(argv: list[str]) -> int:
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        flags = "-t, --trait, --has, --lacks, --rank, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --settle, --barred, -i and an entity"
+        flags = "-t, --trait, --has, --lacks, --rank, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --bred, --settle, --barred, -i, an entity"
         print(f"✗ {flags} narrow `roster`, `-t`, `--sapient` and `--beasts` `lineages` and `pairings` too: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
@@ -1343,6 +1354,7 @@ def main(argv: list[str]) -> int:
                 True if args.sapient else False if args.beasts else None,
                 args.settle,
                 args.barred,
+                args.bred,
                 patch,
                 args.status,
                 args.task,
