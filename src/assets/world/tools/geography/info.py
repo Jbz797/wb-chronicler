@@ -311,7 +311,7 @@ def _build_positions(
             "y": y,
             # A town's building as `ground … metadata` dates it: laid, never finished — the save keeps no end to a site, nor any trace of one fallen.
             **(
-                {"born": entity_born(record), "city": entity_ref(record.get("cityID"), cities), "under_construction": under_construction(record) or None}
+                {"city": entity_ref(record.get("cityID"), cities), "laid": entity_born(record), "under_construction": under_construction(record) or None}
                 if record.get("asset_id") in civic
                 else {}
             ),

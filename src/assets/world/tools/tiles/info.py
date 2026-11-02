@@ -46,6 +46,7 @@ from shared import (
     building_tile,
     chunks_apart,
     city_centre,
+    civic_building_ids,
     emit,
     entity_born,
     entity_ref,
@@ -303,8 +304,8 @@ def _ground_at(x: int, y: int, ctx: dict) -> dict:
         return {}
     asset = b.get("asset_id")
     family = building_family(asset)  # named as `geography` names them
-    # `born` dates the laying, not the roof: a site still rising says so.
-    return {"asset_id": asset, "born": entity_born(b), "id": b.get("id"), "type": family, "under_construction": under_construction(b) or None}
+    dated = "laid" if asset in civic_building_ids() else "born"  # a town's building is laid, a tree or an ore grows
+    return {"asset_id": asset, dated: entity_born(b), "id": b.get("id"), "type": family, "under_construction": under_construction(b) or None}
 
 
 # Quarters are held by their corner tile, a town being the ground they cover — while a crown's seat stays the one centre `city/info.py` sites a capital by.

@@ -71,10 +71,11 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
     # WB writes a health whole or hurt alike: only one under its asset's own tells a hurt.
     health, whole = house.get("health", UNWRITTEN_HEALTH), asset.get("health")
     hurt = whole is not None and health < whole
+    dated = "laid" if ctx["civic"] else "born"  # a town's building is laid, a tree or an ore grows
 
     return {
         # Dropped where it reads under zero: a reset before landmarks were stamped left them older than the world, and no age beats one counting backwards.
-        **({"age": age, "born": entity_born(house)} if (age := entity_age(house, ctx["world_time"])) >= 0 else {}),  # its month, where `age` counts years
+        **({"age": age, dated: entity_born(house)} if (age := entity_age(house, ctx["world_time"])) >= 0 else {}),  # its month, where `age` counts years
         "asset_id": house.get("asset_id"),  # WB's dwelling asset (`house_orc_1`, `tent_orc`…) — the species and the tier of shelter both read off it.
         "city": entity_ref(house.get("cityID"), ctx["cities_by_id"]),
         # What WB took from the town's stock as the site was laid (`CityBehBuild.tryToBuild`), a raised tier paying its own — nothing said of a free one.
@@ -175,6 +176,7 @@ def main(argv: list[str]) -> int:
     residents = dwellers + visitors
     ctx = {
         "cities_by_id": index_by_id(save.get("cities") or []),
+        "civic": civic,
         "families_by_id": index_by_id(save.get("families") or []),
         "island_lookup": cache(lambda: compute_islands_cached(save, save_path)[1]),  # called not stored: 0.2 s cold, and only `metadata` needs it
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
