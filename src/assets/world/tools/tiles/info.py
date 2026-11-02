@@ -290,7 +290,7 @@ def _ground(end: str, save: dict, save_path: Path, chapter: str | None) -> tuple
     kind, ref = end[0], int(end[1:])
     if kind == "b":
         site = next((b for b in save.get("buildings") or [] if b.get("id") == ref), None)
-        return (site and (building_footprint(site), None)) or absent_entity("ground", "buildings", ref, chapter, noun="building")
+        return (site and (building_footprint(site), end)) or absent_entity("ground", "buildings", ref, chapter, noun="building")
     if kind == "c":
         city = next((c for c in save.get("cities") or [] if c.get("id") == ref), None)
         return ([centre], None) if city and (centre := city_centre(city)) else absent_entity("city", "cities", ref, chapter)
