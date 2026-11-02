@@ -49,6 +49,9 @@ _LONG_RUN_WITHIN = 6  # the same, within one chapter, where a formula said again
 _MARKS = re.compile(r"[*_#>|`]")  # emphasis, headings, quotes and table rules: markup, which no reader hears
 _MIN_RUN = 4  # words a shared run must hold: three are the language's own (« il n'y a »), four start to be a turn of phrase
 _NAMELESS = frozenset("grs")  # gear, resources and species: icons a chapter strews, no one whose angle can be told twice
+_NEAR_ROOT = 4  # letters a family is known by when heard close: `bâti` takes `bâtir` and `bâtie`, which `_FAMILY_ROOT` splits; two merely alike cost a glance
+_NEAR_SPAN = 2  # paragraphs running a family must come back in to be heard: a third doubles the count, `monde` and `venu` read as tics
+_NEAR_USES = 3  # uses of one family in that span: twice is the language, thrice a reader hears it
 _OPENING_START = 4  # words a section's first sentence is known by, a figure read as any other: `Voxzen est dans sa` 11ᵉ, then 13ᵉ année
 _OPENING_WORDS = 2  # words of its own a chapter's first sentence must share with one before to pour its mould again: one alone is the chronicle's subject
 _OVERUSE = 1.3  # how far past the chronicle's own highest rate a family must climb to be named: a wobble is not a tic
@@ -63,7 +66,8 @@ _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined 
 _USAGE = (
     "usage: chapter/echo.py [C<n>] [--whole] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before "
     "(`from` their line, `by` its sign), `internal` runs it says twice, `terms` it coins, `formulas` figured turns it keeps coming back to, "
-    "`overused` families, `shape` its cast poured again, `names` each one it tags beside the lines that did in the 2 chapters before; "
+    "`overused` families, `near` one said thrice in two paragraphs, `shape` its cast poured again, "
+    "`names` each one it tags beside the lines that did in the 2 chapters before; "
     "`clear` the checks that found nothing, `length` and `dialogue` among them; a delivered chapter by its changed lines, `--whole` all — "
     "out of its bounds or under its floor, a ✗ says so; every field glossed by `gloss/info.py echo`"
 )
@@ -264,6 +268,23 @@ def _names(n: int) -> list[dict]:
         if seen := {f"C{m}": found[tag][1] for m, found in before.items() if tag in found}:
             rows.append({**seen, "lines": lines, "name": name, "tag": tag})
     return sorted(rows, key=lambda row: row["lines"][0])
+
+
+# A family said `_NEAR_USES` times within `_NEAR_SPAN` paragraphs running, its forms and lines: heard close, where `overused` weighs the chapter whole.
+def _near(n: int) -> list[dict]:
+    tables = _table_rows(n)
+    at = {number: i for i, number in enumerate(number for number, edge, sentences in _lines(n) if sentences and not edge and number not in tables)}
+    said: defaultdict[str, list[_Token]] = defaultdict(list)
+    for token in _words(n):
+        if token.content and token.line in at and token.key[:_FAMILY_ROOT] not in _imposed():  # the manual's own word, `foyer`, has no other to swap
+            said[token.key[:_NEAR_ROOT]].append(token)
+    rows = []
+    for root, tokens in said.items():
+        starts = (i for i in range(len(tokens) - _NEAR_USES + 1) if at[tokens[i + _NEAR_USES - 1].line] - at[tokens[i].line] < _NEAR_SPAN)
+        if (start := next(starts, None)) is not None:
+            run = tokens[start : start + _NEAR_USES]
+            rows.append({"family": root, "forms": sorted({token.key for token in run}), "lines": sorted({token.line for token in run})})
+    return sorted(rows, key=lambda row: row["lines"])
 
 
 # Chapter `n`'s first sentence, its line and the words of its own it carries, each by its family's root: what a mould taken again with other words still keeps.
@@ -593,6 +614,7 @@ def echoes(n: int, whole: bool = False) -> dict | None:
         "formulas": _formulas(n),
         "internal": internal,
         "names": _names(n),
+        "near": _near(n),
         "overused": _overused(words, n),
         "passages": _passages(words, n),
         "shape": _shaped(n),
