@@ -465,18 +465,26 @@ def _fires(
     homed = sorted((i for i, fire in enumerate(clusters) if _fire_home(fire, burning) == key), key=lambda i: (-len(clusters[i]), min(clusters[i])))
     told = [{**_fire_row(clusters[i], burning, key, land), "place": place(clusters[i]), "to_water": water(clusters[i])} for i in homed[:_TOP_PATCHES]]
     rest, gone = [clusters[i] for i in homed[_TOP_PATCHES:]], None
-    if before is not None:  # `--since`: an earlier fire's tiles gone out held by the fire now nearest it, else that earlier fire gone out whole
-        owner, held, out = _fire_cells(clusters), Counter(), []
+    if before is not None:  # `--since`: an earlier fire's tiles gone out held by the fire now nearest it, `over` each in its reach, else that fire gone out whole
+        owner, held, over, out = _fire_cells(clusters), Counter(), Counter(), []
         for earlier in fire_clusters(before):
-            if reaches := [found for tile in earlier if (found := _nearest_fire(tile, owner)) is not None]:
+            if reaches := [found for tile in earlier for found in _fires_near(tile, owner)]:
                 held[min(reaches)[1]] += sum(tile not in burning for tile in earlier)
+                over.update({index for _, index in reaches})
             elif _fire_home(earlier, before) == key:
                 out.append(earlier)
         for row, i in zip(told, homed, strict=False):
-            caught = sum(tile not in before for tile in clusters[i])
-            row["since"] = quiet_zeros({"caught": caught, "out": held[i], "still": len(clusters[i]) - caught})
+            row["since"] = quiet_zeros({"caught": sum(tile not in before for tile in clusters[i]), "out": held[i], "over": over[i]})
         gone = [_fire_row(fire, before, key, land) for fire in sorted(out, key=lambda fire: (-len(fire), min(fire)))[:_TOP_PATCHES]] or None
     return {"fires": told, "gone": gone, "unlisted": {"fires": len(rest), "tiles": sum(map(len, rest))} if rest else None}
+
+
+# The fires within `FIRE_REACH` of `tile`, each as its reach and its index in the clusters `owner` was built from — one per burning tile in reach.
+def _fires_near(tile: tuple[int, int], owner: dict[tuple[int, int], list[tuple[tuple[int, int], int]]]) -> list[tuple[int, int]]:
+    x, y = tile
+    cx, cy = x // FIRE_REACH, y // FIRE_REACH
+    cells = (found for dx in (-1, 0, 1) for dy in (-1, 0, 1) for found in owner.get((cx + dx, cy + dy), ()))
+    return [(reach, index) for (fx, fy), index in cells if (reach := max(abs(fx - x), abs(fy - y))) <= FIRE_REACH]
 
 
 # `biomes --since`: each land's grounds by name, a ground told where it gained or lost tiles — its share where that moved, else its tiles past `_GROUND_SWING`.
@@ -559,14 +567,6 @@ def _narrowed(out: dict, land: int | str) -> dict:
             "straits": [strait for strait in waters["straits"] if land in strait["between"]],
         }
     return narrowed
-
-
-# The fire nearest `tile` within `FIRE_REACH`, as its reach and its index in the clusters `owner` was built from — none past that reach.
-def _nearest_fire(tile: tuple[int, int], owner: dict[tuple[int, int], list[tuple[tuple[int, int], int]]]) -> tuple[int, int] | None:
-    x, y = tile
-    cx, cy = x // FIRE_REACH, y // FIRE_REACH
-    cells = (found for dx in (-1, 0, 1) for dy in (-1, 0, 1) for found in owner.get((cx + dx, cy + dy), ()))
-    return min(((reach, index) for (fx, fy), index in cells if (reach := max(abs(fx - x), abs(fy - y))) <= FIRE_REACH), default=None)
 
 
 # The `waters` block cut by `-w`: one water's row, or one family with the count it leaves unlisted — `None` where this reading holds none.

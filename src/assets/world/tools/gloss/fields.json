@@ -105,7 +105,7 @@
   "geography.burning.fires": "Un foyer : les tuiles en feu à 16 au plus l'une de l'autre, sur toute la carte ; les 5 plus grands, le reste en `unlisted`.",
   "geography.burning.gone": "Sous `-i … --since`, les foyers d'alors éteints en entier, loin de tout foyer d'aujourd'hui : où ils brûlaient, sur combien de tuiles et de quels sols.",
   "geography.burning.place": "D'un foyer (`fires`, `--to burning`) : le lieu forgé de `places.json` le plus proche, à 32 tuiles au plus de sa flamme la plus proche ; d'un volcan, le cône seul.",
-  "geography.burning.since": "Sous `-i … --since`, d'un foyer : ses tuiles prises (`caught`), qui brûlaient déjà (`still`), et celles d'alors éteintes au plus près de lui (`out`).",
+  "geography.burning.since": "Sous `-i … --since`, d'un foyer : tuiles prises (`caught`), éteintes près de lui (`out`), foyers d'alors à portée (`over`), pas sa source (6 mois de feu par tuile).",
   "geography.burning.spills": "La part d'un foyer hors de sa terre (un îlot collé, une terre voisine) : un foyer se range sous la terre qui en porte le plus, jamais compté deux fois.",
   "geography.burning.tiles": "Sous `--since`, par terre : tuiles prises (`caught`) et éteintes (`out`), foyer par foyer sous `-i` (`since`) ; une éteinte puis reprise n'y paraît pas.",
   "geography.burning.to_water": "L'eau la plus proche du bord d'un foyer (1 : il touche la rive ; rien passé 60), seule, changeante d'un chapitre à l'autre ; une eau donnée : `tiles <x,y> --to`.",
