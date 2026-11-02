@@ -473,14 +473,15 @@ def _shape(n: int) -> tuple[dict[tuple[str, tuple[str, ...]], tuple[int, str]], 
     return marks, tuple(movements)
 
 
-# The cast chapter `n` takes back from the two before, which no run of words shows: a title, a heading, a section or paragraph begun alike, the same cut thrice.
+# The cast chapter `n` takes back, which no run of words shows: a title, a heading, a section or paragraph begun alike, the same cut thrice.
 def _shaped(n: int) -> list[dict]:
     marks, movements = _shape(n)
     before = [k for k in (n - 2, n - 1) if k >= 1 and _chapter(k) is not None]
+    # A section's opening is what a reader keeps best: weighed over the chapters `_recent`, where the rest of the cast holds to the two before.
     rows = [
         {"chapters": said, "line": line, "text": text, "what": what}
         for (what, key), (line, text) in marks.items()
-        if key and (said := [f"C{k}" for k in before if (what, key) in _shape(k)[0]])
+        if key and (said := [f"C{k}" for k in (_recent(n) if what == "opening" else before) if (what, key) in _shape(k)[0]])
     ]
     rows += [
         {"chapters": said, "line": line, "text": text, "what": "example"}
