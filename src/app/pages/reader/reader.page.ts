@@ -133,7 +133,7 @@ export class ReaderPage {
 
   // A chapter opening shorter than the two-line cap forgoes it — measured, not counted, since chars per line follow the window. A workshop page's is instruction.
   private async _plainOpening(root: HTMLElement): Promise<void> {
-    const opening = root.querySelector<HTMLElement>(':scope h1 + p:not(.metadata)');
+    const opening = root.querySelector<HTMLElement>(':scope .chapter h1 + p:not(.metadata)');
     this._openingObserver.disconnect();
     if (!opening) return;
     opening.classList.remove('plain-opening'); // the cap shapes the wrap, so the height that decides its fate is measured with it on
