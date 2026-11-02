@@ -8,7 +8,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { PLACES_FILE, SPECIES_COLORS } from '../../../../constants';
-import { LabelBox, MapPin, MapPinKind, PlaceArea, Places, TileExtent, TilePoint } from '../../../../interfaces';
+import { LabelBox, MapPin, MapPinKind, PlaceArea, Places, TileExtent } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 
 @Component({
@@ -26,11 +26,11 @@ export class WorldMapComponent {
 
   private readonly _extent = signal<TileExtent | null>(null);
 
-  // A tile's centre in percent of the picture, the save counting `y` northward where the rows run south — `map/show.py`'s one conversion.
-  private readonly _at = (tile: TilePoint, extent: TileExtent): Pick<MapPin, 'left' | 'top'> => ({
-    left: ((tile.x + 0.5) / extent.width) * 100,
-    top: ((extent.height - tile.y - 0.5) / extent.height) * 100,
-  });
+  // A tile's centre (`x,y`) in percent of the picture, the save counting `y` northward where the rows run south — `map/show.py`'s one conversion.
+  private readonly _at = (tile: string, extent: TileExtent): Pick<MapPin, 'left' | 'top'> => {
+    const [x = 0, y = 0] = tile.split(',').map(Number);
+    return { left: ((x + 0.5) / extent.width) * 100, top: ((extent.height - y - 0.5) / extent.height) * 100 };
+  };
 
   // Where the favourite stood as the chapter was written, sited as every pin is and dyed as its species' tag in the prose — none before a favourite is chosen.
   protected readonly favorite = computed(() => {
@@ -38,7 +38,7 @@ export class WorldMapComponent {
     const metadata = this._chronicler.currentChapter()?.meta.favorite?.metadata;
     if (!extent || !metadata) return null;
     const color = SPECIES_COLORS[this._registry.persons()[String(metadata.id)]?.asset_id ?? ''];
-    return { ...this._at({ x: metadata.x, y: metadata.y }, extent), color, name: metadata.name };
+    return { ...this._at(metadata.at, extent), color, name: metadata.name };
   });
   // The picture's own box, as wide as the screen allows at its ratio — the pins sit in percent of it, so they hold wherever it lands.
   protected readonly frame = computed(() => {

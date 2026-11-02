@@ -16,7 +16,7 @@ lazy from collections.abc import Iterator
 lazy from pathlib import Path
 
 from grid import HEART_CELL, decode_tile_grid, hearts, tile_block, tile_kind, tile_layer
-from shared import pickle_cached, union_root
+from shared import pickle_cached, tile_text, union_root
 
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
 _CITY_MIN_ISLAND_TILES = 300  # WB `Globals.CITY_MIN_ISLAND_TILES`: under it no city is ever founded, so the land bears no history worth a name.
@@ -110,7 +110,7 @@ class TileIslands:
             tiles = low | high
             mean_x, mean_y = sum(x for x, _ in tiles) / len(tiles), sum(y for _, y in tiles) / len(tiles)
             x, y = min(tiles, key=lambda t: ((t[0] - mean_x) ** 2 + (t[1] - mean_y) ** 2, t))
-            out.append({"at": {"x": x, "y": y}, "between": list(pair), "length": max(len(low), len(high))})
+            out.append({"at": tile_text(x, y), "between": list(pair), "length": max(len(low), len(high))})
         return sorted(out, key=lambda r: (-r["length"], r["between"]))
 
     # One row's island ids, `0` on water or a rock too small to count: a sweep that already walks the grid reads them by index rather than asking `get` per tile.
@@ -269,8 +269,8 @@ def _compute_islands(save: dict) -> tuple[list[dict], TileIslands]:
         # `size` against the box says how ragged a land is: both of the whole land, mountains in, as the centroid is.
         bounds = {"x": [west, east], "y": [south, north]}
         # The mean may fall at sea, off a land a gulf bites into: `heart` is where its name sits, the tile farthest from every shore — none on a sliver.
-        heart = {"x": middles[new_id][0], "y": middles[new_id][1]} if new_id in middles else None
-        centroid = {"x": sum_x // size, "y": sum_y // size}
+        heart = tile_text(*middles[new_id]) if new_id in middles else None
+        centroid = tile_text(sum_x // size, sum_y // size)
         islands.append({"bounds": bounds, "centroid": centroid, "ground": ground, "heart": heart, "id": new_id, "size": size})
 
     return islands, TileIslands(id_grid, width, height, _edge_tiles(id_grid, width), islets, islet_sites)
@@ -304,7 +304,7 @@ def _middle_tile(runs: list[tuple[int, int, int]], size: int) -> tuple[int, int]
 
 # Disk-cached `_compute_islands`, one slot per save like every sweep of the map: `actor … --since` weighs two saves, which a single slot would evict in turn.
 def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], TileIslands]:
-    return pickle_cached("islands_v21", save_path, lambda: _compute_islands(save))
+    return pickle_cached("islands_v22", save_path, lambda: _compute_islands(save))
 
 
 # An islet's heart, its own tile nearest the mean of all its tiles — a mean alone could fall at sea, off a crescent of rock: its mark from a chapter to the next.

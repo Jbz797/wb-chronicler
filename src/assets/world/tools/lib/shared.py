@@ -34,6 +34,7 @@ EQUIPMENT_RACKS = {
 }
 
 HISTORY_S3DB = Path(__file__).parents[2] / "history" / "map_stats.s3db"  # WB's SQLite history, copied each chapter: `history/info.py` and the recap read it
+HOMES = "homes"  # the word `asset_kinds` takes for every roof with `housing_slots`, a kind list's own beside WB's families
 JOBS = ("army_captain", "civilian", "king", "leader", "warrior")  # every job `resolve_profession` names, a warrior leading an army among them
 MAX_LISTED = 50  # past so many, a roll is read for what and where, not for which is which: `roster` and `positions` count instead
 MIN_PER_CAPITA_UNITS = 4  # Below four souls a per-head ratio or a share measures the divisor, not the body — a lone survivor would top every podium.
@@ -402,6 +403,21 @@ def _tally(text: str) -> dict[str, float] | None:
     return {kind: int(n) if n.is_integer() else n for kind, n in parts.items()}
 
 
+# Every tile an output names, one `at` where it rode as `x` and `y`: the `x,y` that `tiles` and `--to` take — a box, its two corners. `render` sorts the keys.
+def _tiled(value: object) -> object:
+    if isinstance(value, list):
+        return [_tiled(v) for v in value]
+    if not isinstance(value, dict):
+        return value
+    tiled = {k: _tiled(v) for k, v in value.items()}
+    if isinstance(box := tiled.get("bounds"), dict) and set(box) == {"x", "y"}:  # south-west, then north-east
+        (west, east), (south, north) = box["x"], box["y"]
+        tiled["bounds"] = f"{tile_text(west, south)} {tile_text(east, north)}"
+    if not (isinstance(x := tiled.get("x"), int) and isinstance(y := tiled.get("y"), int)):
+        return tiled
+    return {**{key: v for key, v in tiled.items() if key not in ("x", "y")}, "at": tile_text(x, y)}
+
+
 # Orphan slots go — a chapter's save never changes, where the live one mints a fresh key at every in-game save. `_CACHE_KEEP` then caps what survives, newest first.
 def _write_save_cache(cache_file: Path, save: dict) -> None:
     _CACHE_DIR.mkdir(exist_ok=True)
@@ -481,6 +497,9 @@ def asset_families(save: dict) -> dict[str, Counter]:
 def asset_kinds(families: dict[str, Counter], words: str) -> set[str]:
     here, kinds = {kind for counts in families.values() for kind in counts}, set[str]()
     for word in words.split(","):
+        if word == HOMES:  # every roof a soul may sleep under (`housing_slots`), houses, tents and halls alike: no family WB names
+            kinds |= {kind for kind in here if (load_data("buildings.json").get(kind) or {}).get("housing_slots")}
+            continue
         kinds |= families[word].keys() if word in families else (word not in here and resource_sources(word) & here) or {word}
     return kinds
 
@@ -779,7 +798,7 @@ def dormant(site: dict) -> bool | None:
 def emit(out: dict) -> None:
     asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}
     asked |= {"islets"} if "islet" in asked else set()  # `land_arg`'s singular names the block its plural keys
-    raw, value = out, _strip_none(out)
+    raw, value = out, _tiled(_strip_none(out))
     if isinstance(value, dict):  # a shelf, a rack or a fleet counted at nought says nothing in a sheet: only the section asked by its name still answers 0
         value = {key: block for key, block in value.items() if block != {"total": 0} or key in asked}
     # Weighed level by level on what was asked, not on what is left: under a tile, a section gone empty must not strip its neighbour of its name.
@@ -1005,8 +1024,8 @@ def land_arg(value: str) -> int | str:
 
 # Where a point lies on a land (« the desert covers its north-east »): its heading from the land's centroid, `centre` within a quarter of each half-span.
 def land_side(x: int, y: int, land: dict) -> str | None:
-    (west, east), (south, north), middle = land["bounds"]["x"], land["bounds"]["y"], land["centroid"]
-    dx, dy = x - middle["x"], y - middle["y"]
+    (west, east), (south, north), (mx, my) = land["bounds"]["x"], land["bounds"]["y"], point_xy(land["centroid"])
+    dx, dy = x - mx, y - my
     if (dx / max((east - west) / 2, 1)) ** 2 + (dy / max((north - south) / 2, 1)) ** 2 < _CENTRE_SHARE**2:
         return "centre"
     return bearing(dx, dy)
@@ -1180,7 +1199,7 @@ def passed_unseen(then: dict, saves: list[dict]) -> dict:
 
 
 def place_point(spot: dict) -> tuple[int, int]:
-    return int((point := spot.get("heart") or {}).get("x") or 0), int(point.get("y") or 0)
+    return point_xy(spot.get("heart") or "0,0")
 
 
 # A section's answer kept on disk under the save it was read from: the map never moves, so neither does what a sweep of it says. Stale slots go on the way past.
@@ -1204,6 +1223,14 @@ def pickle_cached[T](name: str, save_path: Path, compute: Callable[[], T]) -> T:
         for doomed in outdated + current[_CACHE_KEEP:]:
             doomed.unlink(missing_ok=True)
     return out
+
+
+# A tile written `x,y`, as `tile_text` writes it: a dict left by a hand used to the old `{x, y}` still read, till `new.py` tidies it.
+def point_xy(point: str | dict) -> tuple[int, int]:
+    if isinstance(point, dict):
+        return int(point.get("x") or 0), int(point.get("y") or 0)
+    x, y = point.split(",", 1)
+    return int(x), int(y)
 
 
 # Top-3 shares per dimension over civ `actors` (% of the group); `species` also carries its `asset_id`. Needs the five `*_by_id` indexes in `ctx`.
@@ -1497,6 +1524,10 @@ def take_since(argv: list[str]) -> tuple[str | None, list[str]]:
 def thinking_souls(save: dict) -> int:
     lineages = index_by_id(save.get("subspecies") or [])
     return sum(is_sapient(lineages.get(a.get("subspecies"))) for a in save.get("actors_data") or [] if not is_boat(a))
+
+
+def tile_text(x: int, y: int) -> str:
+    return f"{x},{y}"
 
 
 # A site still rising: WB flags a town's building the day it is laid — the day its `created_time` and `housesBuilt` count it — and lifts the flag at its completion.

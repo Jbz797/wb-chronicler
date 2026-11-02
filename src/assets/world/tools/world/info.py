@@ -94,6 +94,7 @@ from shared import (
     needs_food,
     parse_sections,
     passed_unseen,
+    point_xy,
     quiet_zeros,
     resolve_profession,
     rounded_world_time,
@@ -102,6 +103,7 @@ from shared import (
     spores_unfed,
     take_chapter,
     take_since,
+    tile_text,
     under_construction,
     unranked,
     unsited_reason,
@@ -181,6 +183,7 @@ _KEPT_FIELDS = (
     "adult_on",
     "age_overgrowth",
     "asset_id",
+    "at",
     "born",
     "breeds_on",
     "city",
@@ -194,8 +197,6 @@ _KEPT_FIELDS = (
     "statuses",
     "subspecies",
     "task",
-    "x",
-    "y",
 )
 
 _LIFE_STAGES = ("egg", "baby", "child", "teen", "adult", "elder")  # `shared.life_stage`'s, in the order a body passes them — what `--stage` takes
@@ -241,7 +242,7 @@ _SNAPSHOT_COLLECTIONS = {
 }
 
 _SOULBORNE = "reproduction_soulborne"  # a lineage born of the souls it strikes: `action_attack_target` harvests one off a body that `has_soul`
-_SPREAD_FIELDS = ("born", "x", "y")  # a body's own date or tile: past the list, its kind's bounds and middle (`by_species`), never each value counted
+_SPREAD_FIELDS = ("at", "born")  # a body's own tile or date: past the list, its kind's bounds and middle (`by_species`), never each value counted
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` and `--lacks` weigh: a body's own counters, named as `actor … stats` names them
 _TOP_PAIRINGS = 20  # the kinds `pairings` keeps past `MAX_LISTED`, first births first: the ones a chapter tells, the rest counted and read by `-t`
@@ -267,6 +268,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "adult_on": lambda: crossed_on(actor, adult) if age < (adult := adult_age(actor, ctx)) else None,
         "age_overgrowth": lambda: int(actor.get("age_overgrowth") or 0) or None,  # a migrant's mark, `born` its arrival
         "asset_id": lambda: actor.get("asset_id"),
+        "at": lambda: tile_text(*actor_xy(actor)),
         "born": lambda: entity_born(actor),
         # Its lineage's own line, as on the roll: none to come where it never bears
         "breeds_on": lambda: crossed_on(actor, breeding) if age < (breeding := breeding_age(actor, ctx)) and fertile(lineage) else None,
@@ -281,8 +283,6 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "statuses": lambda: kept_statuses(actor),
         "subspecies": lambda: actor.get("subspecies"),
         "task": lambda: kept_task(actor),
-        "x": lambda: actor_xy(actor)[0],
-        "y": lambda: actor_xy(actor)[1],
     }
     return {field: kept[field]() if field in kept else stats.get(field, _FIELD_FLOORS.get(field)) for field in fields}
 
@@ -1117,7 +1117,9 @@ def _spread(rows: list[dict], kinds: list[str], fields: list[str]) -> dict:
         by_kind[kind].append(row)
     spread = {}
     for kind, held in sorted(by_kind.items()):
-        ranged = {field: sorted(values, key=_natural) for field in fields if (values := [r[field] for r in held if r.get(field) is not None])}
+        ranged = {field: sorted(values, key=_natural) for field in fields if field != "at" and (values := [r[field] for r in held if r.get(field) is not None])}
+        if "at" in fields and (tiles := [point_xy(r["at"]) for r in held if r.get("at")]):  # a tile spreads by its axes: two figures share no middle
+            ranged["x"], ranged["y"] = (sorted(axis) for axis in zip(*tiles, strict=True))
         spread[kind] = {"of": len(held)}
         for field, v in ranged.items():  # a pair has no middle of its own: its lower one would read as a second body on the first's value
             middle = v[(len(v) - 1) // 2] if field == "born" else median(v)  # a date has no mean: its lower middle

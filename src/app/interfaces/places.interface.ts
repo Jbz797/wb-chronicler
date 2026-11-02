@@ -16,8 +16,8 @@ export interface MapPin {
   top: number;
 }
 
-// A land or a water, by the point its name sits on and its extent in tiles — `name` and `chapter` empty while the chronicle has not baptised it.
-export interface PlaceArea { chapter: string; heart: TilePoint; name: string; size: number }
+// A land or a water, by the tile its name sits on (`x,y`) and its extent in tiles — `name` and `chapter` empty while the chronicle has not baptised it.
+export interface PlaceArea { chapter: string; heart: string; name: string; size: number }
 
 // `history/places.json`, the chronicler's gazetteer: one file for the whole world, lands and waters keyed by their id, spots by their own name.
 export interface Places {
@@ -31,8 +31,5 @@ export interface Places {
 // The map's extent in tiles — the preview's own size, WB drawing one pixel a tile.
 export interface TileExtent { height: number; width: number }
 
-// A tile in save coordinates: `y` grows north, where the picture's rows grow south.
-export interface TilePoint { x: number; y: number }
-
 // A spot the chronicler named (its key), sited by one tile, filed in his own word (`lisière`, `îlot`…), marked by his `emoji` — `island_id` is `new.py`'s alone.
-interface PlaceSpot { chapter: string; emoji: string; heart: TilePoint; kind: string }
+interface PlaceSpot { chapter: string; emoji: string; heart: string; kind: string }

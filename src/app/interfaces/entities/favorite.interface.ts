@@ -18,6 +18,7 @@ interface Companions { best_friend?: PersonReference; lover?: PersonReference }
 // The favorite's standing (job, life stage, roles…); optional fields are dropped by Python when the actor has none. Its bodies each open their own panel.
 interface FavoriteMetadata {
   age: number;
+  at: string; // the tile (`x,y`) the body stood on as the chapter was written — the fullscreen map pins it there
   id: number;
   job: string;
   life_stage: LifeStage;
@@ -27,8 +28,6 @@ interface FavoriteMetadata {
   sex: 'female' | 'male';
   tenure_rank_in_post?: number; // 1-3 among those who hold the same post, a chief among chiefs — absent off that podium, as a rank in the species is
   tenure_years?: number;
-  x: number; // where the body stood as the chapter was written — the fullscreen map pins it there
-  y: number;
 }
 
 // The favorite's rank (1-3) per stat among its species peers — all optional: a stat is absent when the favorite isn't on its podium.

@@ -35,6 +35,7 @@ from grid import (
 from islands import TileIslands, compute_islands_cached
 from shared import (
     DIAGONAL_EXTRA,
+    HOMES,
     MAX_LISTED,
     SAVES_DIR,
     actor_xy,
@@ -43,8 +44,11 @@ from shared import (
     asset_kinds,
     asset_sites,
     biome_lore,
+    civic_building_ids,
     dormant,
     emit,
+    entity_born,
+    entity_ref,
     index_by_id,
     is_boat,
     is_sapient,
@@ -57,6 +61,7 @@ from shared import (
     quiet_zeros,
     take_chapter,
     take_since,
+    under_construction,
     union_root,
     unsited_reason,
     water_arg,
@@ -295,7 +300,7 @@ def _build_positions(
         tally = {key: " | ".join(f"{n} {kind}" for kind, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
         return {**tally, "info": f"past {MAX_LISTED} sites, a count by land — `-i <land>` or one kind lists each by id", "total": len(sites)}
     # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
-    mixed = len(kinds) > 1
+    mixed, civic, cities = len(kinds) > 1, civic_building_ids(), index_by_id(save.get("cities") or [])
     out = [
         {
             "asset_id": record.get("asset_id") if mixed else None,
@@ -304,6 +309,12 @@ def _build_positions(
             "name": record.get("name"),
             "x": x,
             "y": y,
+            # A town's building as `ground … metadata` dates it: laid, never finished — the save keeps no end to a site, nor any trace of one fallen.
+            **(
+                {"born": entity_born(record), "city": entity_ref(record.get("cityID"), cities), "under_construction": under_construction(record) or None}
+                if record.get("asset_id") in civic
+                else {}
+            ),
         }
         for record, (x, y) in sites
     ]
@@ -581,13 +592,19 @@ def _narrowed(out: dict, land: int | str) -> dict:
         waters = out["waters"]
         narrowed["waters"] = {
             **waters,
-            **{kind: [body for body in waters[kind] if land in body["shores"]] for kind in ("lakes", "rivers", "seas")},
+            **{kind: [_off_shore(body, land) for body in waters[kind] if land in body["shores"]] for kind in ("lakes", "rivers", "seas")},
             # The ponds are counted world-wide, none sited on a land: their floor alone holds for one
             "unlisted": {**waters["unlisted"], "lakes": {key: value for key, value in waters["unlisted"]["lakes"].items() if key != "count"}},
             "necks": [{key: value for key, value in neck.items() if key != "island"} for neck in waters["necks"] if neck["island"] == land],
             "straits": [strait for strait in waters["straits"] if land in strait["between"]],
         }
     return narrowed
+
+
+# A water's row under `-i`, the asked land out of its `shores` as `positions` leaves its `island_id` — they go when it washes no other.
+def _off_shore(body: dict, land: int | str) -> dict:
+    rest = {key: value for key, value in body.items() if key != "shores"}
+    return {**rest, "shores": others} if (others := [shore for shore in body["shores"] if shore != land]) else rest
 
 
 # The `waters` block cut by `-w`: one water's row, or one family with the count it leaves unlisted — `None` where this reading holds none.
@@ -791,7 +808,7 @@ def main(argv: list[str]) -> int:
 
     if "positions" in out and out["positions"] is None:  # a word nothing answers to, never a silent `{}`
         none = unsited_reason(families, wanted or "") or f"no {wanted} in this world"
-        print(f"✗ {none} — `entity_types` lists every kind, and the families: {', '.join(sorted(families))}", file=sys.stderr)
+        print(f"✗ {none} — `entity_types` lists every kind, and the families: {', '.join(sorted([*families, HOMES]))}", file=sys.stderr)
         return 1
 
     where = "in this world" if args.island is None else f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}"

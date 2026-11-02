@@ -13,7 +13,7 @@ lazy from pathlib import Path
 
 from grid import HEART_CELL, hearts, tile_block, tile_layer, tile_mask
 from islands import TileIslands, compute_islands_cached
-from shared import bearing, pickle_cached, union_root
+from shared import bearing, pickle_cached, tile_text, union_root
 
 _BRANCH = 10  # tiles of water an arm must run off the water already traced to end on its own: a kilometre, so neither a bulge nor a corner's spur passes for one
 _DELTAS_8 = tuple((dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)  # a tile's eight neighbours, corners too, as a river chains
@@ -166,7 +166,7 @@ def _lakes(
     for index, lake in lake_of.items():
         islands, (x, y) = sorted(i for i, seen in pools_of_island.items() if seen == {index}), middles[lake]
         shore = sorted(shores[_code("lake", lake)] - set(islands))
-        out.append({"heart": {"x": x, "y": y}, "id": lake, "islands": islands, "shores": shore, "size": pools[index].size})
+        out.append({"heart": tile_text(x, y), "id": lake, "islands": islands, "shores": shore, "size": pools[index].size})
     return out
 
 
@@ -195,7 +195,7 @@ def _necks(
         if land not in grounds:
             grounds[land] = bytes(map(land.__eq__, land_at))
         ends = banks[key]
-        sited = [{"x": i % stride - 1, "y": i // stride - 1} for i in ends]
+        sited = [tile_text(i % stride - 1, i // stride - 1) for i in ends]
         out.append({"banks": sited, "island": land, "land_tiles": round(span / _STEP), "seas": pair, "sides": _sides(grounds[land], stride, ends)})
     return out
 
@@ -290,14 +290,13 @@ def _rivers(
         rivers.append(
             {
                 "arms": len(tips) - 2 or None,  # a count: a large river runs several, which the map reads, where `tiles … to_river_ends` names the nearest
-                "ends": [{"x": x, "y": y} for x, y in tips[:2]],
-                "heart": {"x": heart[0], "y": heart[1]},
+                "ends": [tile_text(x, y) for x, y in tips[:2]],
+                "heart": tile_text(*heart),
                 "id": river,
                 "lakes": sorted(lake_of[other] for other in touched if other in lake_of),
                 "seas": sorted(sea_of[other] for other in touched if other in sea_of),
                 "size": size,
                 "tips": tips,  # every end, the arms' too: `tiles … to_river_ends` asks the ones nearest a tile, never a whole delta
-                "waters": len(chain),
             }
         )
     return river_of, rivers
@@ -318,7 +317,7 @@ def _seas(pools: list[_Pool], pool_at: list[int], stride: int, sea_of: dict[int,
             {
                 "deep_pct": round(deep.get(index, 0) / pool.size * 100, 1) or None,
                 "edges": reached,
-                "heart": {"x": x, "y": y},
+                "heart": tile_text(x, y),
                 "id": sea,
                 "shores": sorted(shores[_code("sea", sea)]),
                 "size": pool.size,
@@ -360,7 +359,7 @@ def _sides(ground: bytes, stride: int, ends: tuple[int, int]) -> list[dict] | No
 def _straits(water: bytearray, stride: int, coast: list[tuple[int, int]]) -> list[dict]:
     gaps, banks = _tides(water, stride, coast, _FARTHEST_SWIM * _STEP)  # a tide reaching nobody is not worth raising: what it would still close, no body could swim
     return [
-        {"banks": [{"x": i % stride - 1, "y": i // stride - 1} for i in banks[pair]], "between": list(pair), "swim_tiles": round(span / _STEP)}
+        {"banks": [tile_text(i % stride - 1, i // stride - 1) for i in banks[pair]], "between": list(pair), "swim_tiles": round(span / _STEP)}
         for pair, span in sorted(gaps.items(), key=lambda kv: (kv[1], kv[0]))
     ]
 
@@ -435,7 +434,7 @@ def _water_steps(
 
 # Every stretch of water the map holds, read once per save since the map never moves — the bodies' mask with it, which only `water_bodies` and `water_tiles` read.
 def _waters(save: dict, save_path: Path) -> dict:
-    return pickle_cached("waters_v20", save_path, lambda: _compute_waters(save, save_path))
+    return pickle_cached("waters_v22", save_path, lambda: _compute_waters(save, save_path))
 
 
 # The tiles from `tile` back to the nearest source of a walk, a step down each time: the water a new end is joined to the rest by.

@@ -56,7 +56,9 @@ from shared import (
     load_save,
     parse_sections,
     place_point,
+    point_xy,
     take_chapter,
+    tile_text,
     under_construction,
     walk_tiles,
     water_arg,
@@ -172,8 +174,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 def _centre(end: str, save: dict, save_path: Path) -> tuple[int, int]:
     if not (water := water_ref(end)):
         return place_centre(end)
-    heart = next(body["heart"] for body in waters_cached(save, save_path)[f"{water[0]}s"] if body["id"] == water[1])
-    return heart["x"], heart["y"]
+    return point_xy(next(body["heart"] for body in waters_cached(save, save_path)[f"{water[0]}s"] if body["id"] == water[1]))
 
 
 # WB claims land by the zone, never by the tile — so a tile's town is its zone's, and both sections that ask read it the one way.
@@ -360,7 +361,7 @@ def _islet_at(x: int, y: int, ctx: dict) -> dict:
         "biomes": _shares(biomes, sum(biomes.values())),
         "bounds": {"x": [min(xs), max(xs)], "y": [min(ys), max(ys)]},
         "ground": _shares(kinds, len(tiles)),
-        "heart": {"x": cx, "y": cy},
+        "heart": tile_text(cx, cy),
         # The forged place whose point stands on it: an islet the chronicler named, as `actor … metadata`'s `place` names it
         "name": next((name for name, spot in (gazetteer().get("places") or {}).items() if place_point(spot) in own), None),
         "size": len(tiles),  # the rock whole, as a land's counts its own — the islets it touches in, where `islet_tiles` weighs one mass's ground

@@ -57,11 +57,13 @@ from shared import (
     log_entries,
     named_body,
     place_point,
+    point_xy,
     reader_settings,
     render,
     rounded_world_time,
     short_dialogues,
     thinking_souls,
+    tile_text,
     under_construction,
     unmarked,
     world_date,
@@ -1112,6 +1114,10 @@ def _tidy(card: Path) -> None:
         data = json.loads(raw)
     except json.JSONDecodeError as e:  # a hand edit gone astray: said where, rather than a traceback the chronicler has to read through
         sys.exit(f"✗ {card.relative_to(SAVES_DIR.parent)} is no longer valid JSON — {e.msg}, line {e.lineno}: mend it, then run the command again")
+    if card == PLACES_JSON:  # a `heart` written `{x, y}` from habit, put back as every tool writes a tile
+        for entry in (entry for book in data.values() for entry in book.values()):
+            if isinstance(heart := entry.get("heart"), dict):
+                entry["heart"] = tile_text(*point_xy(heart))
     if (tidy := render(data) + "\n") != raw:
         card.write_text(tidy)
 

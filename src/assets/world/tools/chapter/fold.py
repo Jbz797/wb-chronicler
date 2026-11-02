@@ -88,7 +88,7 @@ _AUDIT_TIERS = {
     "attackers.kingdoms": {"pop"},  # a camp's realms as tags, the side's pooled `pop` printed beside them
     "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
     # No row counts its births, its crown and seat are the kingdom panel's to name, and its migrants, centre and years under the banner only the chronicler reads.
-    "city.metadata": {"births", "capital", "kingdom", "migrants", "x", "y", "years_in_kingdom"},
+    "city.metadata": {"at", "births", "capital", "kingdom", "migrants", "years_in_kingdom"},
     "city.pop": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
     "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
@@ -156,7 +156,7 @@ def _fold_boat_detail(boat: dict) -> None:
     for section in ("combat", "traits"):
         boat.pop(section, None)  # a hull's merits — `kingslayer`, `veteran` — narrate well and print nowhere
     metadata = boat.get("metadata") or {}
-    for key in ("kills", "level", "loot", "mass_kg", "renown", "speed", "x", "y"):  # a hull is no pin on the map, where the favourite is; `home` goes with `_AUDIT`
+    for key in ("at", "kills", "level", "loot", "mass_kg", "renown", "speed"):  # a hull is no pin on the map, where the favourite is; `home` goes with `_AUDIT`
         metadata.pop(key, None)
 
 
