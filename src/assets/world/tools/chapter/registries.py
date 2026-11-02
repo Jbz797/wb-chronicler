@@ -107,8 +107,8 @@ def _build_registries(save: dict, prev: dict) -> dict:
     members_by_language: Counter = Counter()
     members_by_religion: Counter = Counter()
     members_by_subspecies: Counter = Counter()
+    members_by_kingdom: Counter = Counter()
     species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
-    species_by_kingdom: defaultdict[int, Counter] = defaultdict(Counter)
 
     for a in actors:
         if is_boat(a):
@@ -131,7 +131,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
         if (cid := a.get("cityID")) is not None:
             species_by_city[cid][species] += 1
         if kid := a.get("civ_kingdom_id"):
-            species_by_kingdom[kid][species] += 1
+            members_by_kingdom[kid] += 1
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
         crowd[actor_id] = (a, resolve_profession(a, save))
 
@@ -149,17 +149,22 @@ def _build_registries(save: dict, prev: dict) -> dict:
     rank_by_city = _podium(score_totals([c["id"] for c in cities], city_score_dimensions(save)), MIN_SCORE_PEERS)
     rank_by_kingdom = _podium(score_totals([k["id"] for k in kingdoms], kingdom_score_dimensions(save)), MIN_SCORE_PEERS)
 
+    # WB's plate wears the town's leader's species (`City.getMainSubspecies`), else the first townsman's: the most numerous stands in for that save order.
     city_registry = {
-        str(c["id"]): _city_entry(c, species_by_city.get(c["id"], Counter()), kingdoms_by_id.get(c.get("kingdomID")), rank_by_city.get(c["id"])) for c in cities
+        str(c["id"]): _city_entry(
+            c,
+            species_by_city.get(c["id"], Counter()),
+            (crowd.get(c.get("leaderID")) or ({},))[0].get("asset_id"),
+            kingdoms_by_id.get(c.get("kingdomID")),
+            rank_by_city.get(c["id"]),
+        )
+        for c in cities
     }
 
-    kingdom_registry = {
-        str(k["id"]): _defined(
-            _kingdom_entry(k, species_by_kingdom.get(k["id"], Counter()), rank_by_kingdom.get(k["id"]))
-            | _banner(k, _kingdom_species(k, kings_by_id, subspecies_by_id))
-        )
-        for k in kingdoms
-    }
+    kingdom_registry = {}
+    for k in kingdoms:  # the king's species, plate and banner alike, as WB's `Kingdom.getActorAsset`: the most numerous of a mixed realm is not its crown
+        crown = _kingdom_species(k, kings_by_id, subspecies_by_id)
+        kingdom_registry[str(k["id"])] = _defined(_kingdom_entry(k, crown, members_by_kingdom[k["id"]], rank_by_kingdom.get(k["id"])) | _banner(k, crown))
 
     alliances = save.get("alliances") or []
     alliance_registry = {str(a["id"]): _defined(_alliance_entry(a)) for a in alliances}
@@ -211,12 +216,12 @@ def _build_registries(save: dict, prev: dict) -> dict:
 
 
 # City registry entry — what a `[c id Nom]` tag draws. `kingdom` stands in for the name's hue, all it still borrows from its crown.
-def _city_entry(city: dict, species: Counter, kingdom: dict | None, rank: int | None) -> dict:
+def _city_entry(city: dict, species: Counter, leader: str | None, kingdom: dict | None, rank: int | None) -> dict:
     dominant = species.most_common(1)
     kingdom = kingdom or {}
     entry = {
         "plate": "capital" if kingdom.get("capitalID") == city.get("id") else "city",  # WB's nameplates: gold studs mark a seat, bare stone the rest
-        "species": dominant[0][0] if dominant else None,
+        "species": leader or (dominant[0][0] if dominant else None),
     }
     if kingdom_id := kingdom.get("id"):  # its crown, which the name's hue is read off — fallen realms stay registered so a razed city keeps its colour
         entry["kingdom"] = kingdom_id
@@ -292,14 +297,14 @@ def _family_entry(family: dict, members: int, rank: int | None) -> dict:
 
 
 # Kingdom entry, less the heraldry `_banner` folds in and the merge's `dead`. It alone holds a hue — cities and subjects read theirs off it.
-def _kingdom_entry(kingdom: dict, species: Counter, rank: int | None) -> dict:
-    dominant, palette = species.most_common(1), _palette(kingdom.get("color_id", ""))
+def _kingdom_entry(kingdom: dict, species: str | None, members: int, rank: int | None) -> dict:
+    palette = _palette(kingdom.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue, and the magenta ramp root once lightened; a `null` would break the UI type
         "color_main": palette.get("color_main"),
-        "species": dominant[0][0] if dominant else None,
+        "species": species,
     }
-    if (size := _size_tier(species.total())) > 1:  # the crown's own people, not its towns: the chronicler reads those from `kingdom/info.py`
+    if (size := _size_tier(members)) > 1:  # the crown's own people, not its towns: the chronicler reads those from `kingdom/info.py`
         entry["size"] = size
     if rank is not None:
         entry["rank"] = rank
