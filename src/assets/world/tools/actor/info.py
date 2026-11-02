@@ -37,7 +37,7 @@ from actor_stats import (
 from founding import city_zones, settle_gates, settle_told
 from grid import BARE, LazyTileGrid, fire_clusters, frozen_tiles, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_heart
-from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, kind_word, named_place, unquoted
+from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, fire_place, kind_word, named_place, unquoted
 from shared import (
     NEW_BABY_NUTRITION,
     PROFESSION_KING,
@@ -809,6 +809,18 @@ def _duration(hours: float, prefix: str = "") -> dict:
     return {f"{prefix}minutes": max(minutes, 1) if hours else 0}  # a trip, however short, takes a minute: 0 is for the tile he stands on
 
 
+# The fire whose flame the walk met, its size and place, then the others by their flame nearest the body as the crow flies: a walk to one is `--to x,y`.
+def _fires(actor: dict, flames: list[tuple[int, int]], met: tuple[int, int], ctx: dict) -> tuple[dict, list[dict] | None]:
+    (cx, cy), index, clusters = actor_xy(actor), ctx["place_index"](), fire_clusters(flames)
+    own = next(fire for fire in clusters if met in fire)
+    nearest = sorted((min((walk_tiles(x - cx, y - cy), x, y) for x, y in fire), fire) for fire in clusters if fire is not own)[:_OTHER_FIRES]
+    others = [
+        {"crow_tiles": round(crow), "dir": bearing(x - cx, y - cy), "place": fire_place(fire, index), "tiles": len(fire), "x": x, "y": y}
+        for (crow, x, y), fire in nearest
+    ]
+    return {"place": fire_place(own, index), "tiles": len(own)}, others or None
+
+
 # The same trip made by the body aimed at, which no shared figure tells: its own pace, its own swim — only what differs, and nothing where both agree.
 def _from_them(other: dict, actor: dict, to: dict, ctx: dict) -> dict | None:
     try:
@@ -911,13 +923,6 @@ def _off_land_at(body: dict, ctx: dict) -> dict:
     if off_land(ctx["tile_map"][ctx["tile_grid"]()[y][x]]) == "water":
         return {"water": True}
     return {"islet_tiles": ctx["island_lookup"]().islet_size((x, y))}
-
-
-# Every fire but the one whose flame the walk met, each by its flame nearest the body as the crow flies, nearest first: a walk to one is `--to x,y`.
-def _other_fires(actor: dict, flames: list[tuple[int, int]], met: tuple[int, int]) -> list[dict] | None:
-    cx, cy = actor_xy(actor)
-    nearest = sorted((min((walk_tiles(x - cx, y - cy), x, y) for x, y in fire), len(fire)) for fire in fire_clusters(flames) if met not in fire)
-    return [{"crow_tiles": round(crow), "dir": bearing(x - cx, y - cy), "tiles": size, "x": x, "y": y} for (crow, x, y), size in nearest[:_OTHER_FIRES]] or None
 
 
 # Tiles walked in an hour at the body's own pace — a passenger's too, the unit his hull's sailing is counted in (`_gait`).
@@ -1283,8 +1288,9 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
             trip = {**_build_to(actor, aims, whom, ctx, mark, about), **told}
             if mark == "reached" and (crow := _crow_nearest(actor, aims, about, trip["reached"], whole=True)):  # a water's or a place's nearest tile
                 trip["crow_nearest"] = crow
-            elif mark == "burning" and (others := _other_fires(actor, aims, (trip["burning"]["x"], trip["burning"]["y"]))):
-                trip["other_fires"] = others
+            elif mark == "burning":
+                own, trip["other_fires"] = _fires(actor, aims, (trip["burning"]["x"], trip["burning"]["y"]), ctx)
+                trip["burning"] |= own
             if isinstance(target, int):
                 trip["from_them"] = _from_them(ctx["actors_by_id"][target], actor, trip, ctx)
         except _UnreachableError as e:

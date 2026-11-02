@@ -62,6 +62,8 @@ from shared import (
     water_arg,
 )
 from waters import water_bodies, waters_cached
+lazy from places import PlaceIndex, fire_place
+lazy from walking import WalkMap
 
 _ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
@@ -183,7 +185,7 @@ def _build_bodies(save: dict, save_path: Path) -> dict:
 def _build_burning(save: dict, save_path: Path, island: int | str | None, before: dict[tuple[int, int], tuple[str, str]] | None = None) -> dict:
     if not (burning := _burning_tiles(save, save_path)) and not before:  # nothing listed, nothing to site: the islands are never unpickled
         return {}
-    islands, grid, tile_map = compute_islands_cached(save, save_path)[0], LazyTileGrid(save), save.get("tileMap") or []
+    (islands, island_of), grid, tile_map = compute_islands_cached(save, save_path), LazyTileGrid(save), save.get("tileMap") or []
     by_land: defaultdict[str, list[str]] = defaultdict(list)
     for key, ground in burning.values():
         by_land[key].append(ground)
@@ -193,7 +195,8 @@ def _build_burning(save: dict, save_path: Path, island: int | str | None, before
     if island is not None and ((key := str(island)) in by_land or any(land == key for land, _ in (before or {}).values())):
         wet, bodies = [tile_layer(name) == "Ocean" for name in tile_map], water_bodies(save, save_path)
         water = partial(_water_near, grid=grid, wet=wet, bodies=bodies)  # handed down, so `_fires` needs no save
-        fires = _fires(burning, key, next((row for row in islands if str(row["id"]) == key), None), water, before)
+        place = partial(fire_place, index=PlaceIndex(save, save_path, island_of, WalkMap(save)))
+        fires = _fires(burning, key, next((row for row in islands if str(row["id"]) == key), None), water, place, before)
         lone = len(fires["fires"]) == 1 and fires["fires"][0]["grounds"] == out.get(key)  # one fire holding the land's whole burning: its line says it once
         out[key] = {"grounds": None if lone else out.get(key), **fires}
     return out
@@ -455,11 +458,12 @@ def _fires(
     key: str,
     land: dict | None,
     water: Callable[[list], dict | None],
+    place: Callable[[list], dict | None],
     before: dict[tuple[int, int], tuple[str, str]] | None,
 ) -> dict:
     clusters = fire_clusters(burning)
     homed = sorted((i for i, fire in enumerate(clusters) if _fire_home(fire, burning) == key), key=lambda i: (-len(clusters[i]), min(clusters[i])))
-    told = [{**_fire_row(clusters[i], burning, key, land), "to_water": water(clusters[i])} for i in homed[:_TOP_PATCHES]]
+    told = [{**_fire_row(clusters[i], burning, key, land), "place": place(clusters[i]), "to_water": water(clusters[i])} for i in homed[:_TOP_PATCHES]]
     rest, gone = [clusters[i] for i in homed[_TOP_PATCHES:]], None
     if before is not None:  # `--since`: an earlier fire's tiles gone out held by the fire now nearest it, else that earlier fire gone out whole
         owner, held, out = _fire_cells(clusters), Counter(), []
