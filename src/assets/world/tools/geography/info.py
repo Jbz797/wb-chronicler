@@ -584,6 +584,15 @@ def _patch_detail(save: dict, save_path: Path, land: int | str, kind: str) -> di
     return {**{key: value for key, value in row.items() if key != "largest"}, **told, "unlisted": rest if rest["patches"] else None}
 
 
+# `burning --since` with no `-i`: a land's line sums its fires, so a land with two, then or now, names the call telling each apart — on stderr, the JSON as it was.
+def _point_to_fires(lands: dict, then: dict[tuple[int, int], tuple[str, str]], now: dict[tuple[int, int], tuple[str, str]], since: str | None) -> None:
+    was, still = (Counter(_fire_home(fire, tiles) for fire in fire_clusters(tiles)) for tiles in (then, now))
+    most = was | still  # each land's larger count, then or now
+    for key in lands:
+        if most[key] > 1:
+            print(f"· {f'land {key}' if key.isdigit() else key}: {most[key]} fires — `geography burning -i {key} --since {since}` tells each apart", file=sys.stderr)
+
+
 # A patch's own tile nearest its middle, ties to the lower `(x, y)` — a mean alone could fall on another ground, or at sea. Each run offers its nearest column.
 def _site(mean_x: float, mean_y: float, runs: list[tuple[int, int, int]]) -> dict:
     column, offers = math.ceil(mean_x - 0.5), []  # the column nearest the mean, a tie going west as `(x, y)` orders it
@@ -763,6 +772,8 @@ def main(argv: list[str]) -> int:
                 # The land's grounds off its tiles, both sides: a lone fire's line holds them in its reading, which would weigh as a land gone out
                 grounds = (_tally(ground for land, ground in tiles.values() if land == key) for tiles in (then_fire, now_fire))
                 moved["burning"][key] = {"grounds": moved_between(*grounds), "tiles": moved["burning"][key].get("tiles"), **kept}
+            elif args.island is None:
+                _point_to_fires(moved["burning"], then_fire, now_fire, since)
         if "positions" in sections and kinds is not None:
             was, now = ({record["id"] for record, _ in asset_sites(reading, kinds)} for reading in (earlier, save))
             gone, came = _build_positions(earlier, then_path, kinds, args.island, was - now), _build_positions(save, save_path, kinds, args.island, now - was)
