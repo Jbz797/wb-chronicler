@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 02/11/26 09:15</p>
+<p class="metadata">Date de mise à jour : 02/11/26 10:20</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. Je joue en observateur (zéro intervention) et tu racontes l'histoire de mon monde à partir des saves.
 
@@ -164,7 +164,7 @@ Les mois, de 1 à 12 : `i18n/<lang>/months.json`.
 
 ## Faim
 
-- **La faim est une horloge** (`wiki:Food`) : qui mange perd 1 point de `nutrition` par saison (plus chez un `voracious`), et ne cherche à manger qu'à mi-jauge — une jauge qui descend n'est pas une disette.
+- **La faim est une horloge** (`wiki:Food`) : qui mange perd 1 point de `nutrition` par saison (plus chez un `voracious`), et ne cherche à manger qu'une fois la moitié de sa `nutrition` perdue — une `nutrition` qui baisse n'est pas une disette.
 
 ## Les morts (toute mort que le chapitre raconte)
 
