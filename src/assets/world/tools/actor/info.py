@@ -109,7 +109,7 @@ _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a 
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DAILY_TILES_PER_SPEED = 24.0  # chronicler.md § Échelle: `speed` 10 walks 240 tiles a day, 6 hours of road, its halts counted — far short of 24 hours' worth
-_DEAD_SECTIONS = ("kin", "victims")  # what a dead body still answers beside its death: the register keeps its blood and the deaths it dealt
+_DEAD_SECTIONS = ("died", "kin", "victims")  # what a dead body still answers: the register keeps its death, its blood and the deaths it dealt
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 _FLOORS = {"gen": 1}  # a count `--since` reads unsaid as its floor: WB counts a founder its first generation
 _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # a goal's words: `moved` keeps its own heading and length
@@ -118,6 +118,7 @@ _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
 _LONE_ID = re.compile(r"[bcip]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): a body, a building, a town, a land — a bare number too
+_NAMED_SECTIONS = tuple(sorted((*_ALL_SECTIONS, "died")))  # what a call may name: `died` a dead body's alone, never in `full`
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
 _OTHER_FIRES = 4  # past the fire met first, as many as `geography … fires` lists in all: its five largest
 _POSTS = {PROFESSION_KING: "king", PROFESSION_LEADER: "leader"}  # the `job` a crown or a town's head holds, labelled as `resolve_profession` labels it
@@ -766,12 +767,12 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
 def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, history: dict | None) -> int:
     named = requested not in (None, "full")
     if named and (lost := [section for section in sections if section not in _DEAD_SECTIONS]):
-        print(f"✗ {named_body(dead)} is dead: it keeps `died`, {', '.join(f'`{s}`' for s in _DEAD_SECTIONS)} — not {', '.join(lost)}", file=sys.stderr)
+        print(f"✗ {named_body(dead)} is dead: it keeps {', '.join(f'`{s}`' for s in _DEAD_SECTIONS)} — not {', '.join(lost)}", file=sys.stderr)
         return 2
     body = {"id": dead["id"], **dict(zip(("parent_id_1", "parent_id_2"), dead["parents"], strict=False))}  # its parents as a living body carries them
     kin = _kin(body, ctx) if "kin" in sections else None
     out = {
-        "died": None if named else _death(dead, ctx),
+        "died": _death(dead, ctx) if not named or "died" in sections else None,
         "kin": kin if kin and any(kin.values()) else None,
         "statuses": history,
         "victims": _victims(dead["id"], ctx, requested) if "victims" in sections else None,
@@ -1484,7 +1485,7 @@ def main(argv: list[str]) -> int:
     requested = argv[1] if len(argv) > 1 else None
     flagged = since is not None or statuses
     try:
-        sections = parse_sections(requested, _ALL_SECTIONS) if requested or (not targets and not flagged) else ()  # a flag alone answers alone
+        sections = parse_sections(requested, _NAMED_SECTIONS, full=_ALL_SECTIONS) if requested or (not targets and not flagged) else ()  # a flag alone answers alone
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -1505,6 +1506,9 @@ def main(argv: list[str]) -> int:
     if actor is None:
         print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
         return 1
+    if "died" in sections:  # known alive only now, the register read
+        print(f"✗ {named_body(actor)} is alive: `died` is a dead body's", file=sys.stderr)
+        return 2
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
         return 1

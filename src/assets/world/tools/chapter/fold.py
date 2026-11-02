@@ -163,7 +163,7 @@ def _fold_boat_detail(boat: dict) -> None:
 # The composition table names each dimension's leader and its share: the runners-up print nowhere, and a leader holding everyone restates its own panel.
 def _fold_breakdown(entity: dict) -> None:
     block = entity.pop("breakdown", None) or {}
-    if kept := {dimension: rows[:1] for dimension, rows in block.items() if rows[0]["pct"] < 100}:
+    if kept := {dimension: rows[:1] for dimension, rows in block.items() if isinstance(rows, list) and rows[0]["pct"] < 100}:  # `info`, a lone line, no row
         entity["breakdown"] = kept
 
 

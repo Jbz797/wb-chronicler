@@ -1,7 +1,7 @@
 {
   "across.keep": "`--keep a,b.c` : de chaque chapitre, ces seuls champs, par leur chemin pointé depuis le haut du bloc ; un champ absent s'y tait, un refus reste entier.",
   "actor.companions.lover": "Le seul lien qui fait un couple ; `best_friend` n'en fait pas un.",
-  "actor.died": "Un corps mort, au registre, même jamais vu d'un chapitre : naissance (`born`), mort (`date`), cause, tueur, tuile, parents, lignée ; il garde `kin` et `victims`.",
+  "actor.died": "Un mort du registre, même jamais vu d'un chapitre : naissance (`born`), mort (`date`), cause, tueur, tuile, parents, lignée ; sections : `died`, `kin`, `victims`.",
   "actor.kin": "`parents` et `children`, `gone` : mort (au registre), le sang seul : le compagnon est dans `companions` (`lover`).",
   "actor.metadata.age_overgrowth": "Les années que `age` compte sans les avoir vécues ici : un migrant appelé par le feu arrive grand (1 à 2 fois l'âge de venue de son espèce), un clone, un paradoxe.",
   "actor.metadata.army_since": "Le mois où le corps est entré dans son armée.",
@@ -72,7 +72,7 @@
   "actor.to.with_boat": "Le trajet par la coque de sa couronne : une autre route que la marche, jamais à additionner à elle.",
   "actor.victims": "Les morts qu'il a données (`total`), changés compris (`died_of`) ; nommée, la section les rend toutes (`all`), la plus ancienne d'abord ; en `full`, la dernière.",
   "blow": "D'une `metamorphosis`, le coup qui a abattu le corps avant qu'il se change (`weapon`, `fire`…), que le jeu oublie ; absent d'une save d'avant le mod 1.8.0.",
-  "breakdown": "Sous 4 membres, une entité ne rend ni `breakdown` ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).",
+  "breakdown": "Sous 4 membres, une entité ne rend aucune part (`breakdown` le dit dans son `info`) ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).",
   "came_and_went": "Parues puis disparues entre les deux saves, qu'aucune save n'a tenues : leurs ids (cités, clans…), une lignée avec son espèce, que ses morts au registre donnent.",
   "chapter.echo.borrowed": "Un mot rare posé entre les mêmes voisins que dans un chapitre d'avant.",
   "chapter.echo.chute": "La dernière phrase d'une section du chapitre d'avant, à `from`, reprise sur cette ligne.",

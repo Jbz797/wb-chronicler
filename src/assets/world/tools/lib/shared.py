@@ -1209,7 +1209,7 @@ def pickle_cached[T](name: str, save_path: Path, compute: Callable[[], T]) -> T:
 # Top-3 shares per dimension over civ `actors` (% of the group); `species` also carries its `asset_id`. Needs the five `*_by_id` indexes in `ctx`.
 def population_breakdown(actors: list[dict], ctx: dict) -> dict:
     if (pop := len(actors)) < MIN_PER_CAPITA_UNITS:  # one soul weighs a quarter or more: the shares would measure the divisor
-        return {}
+        return {"info": f"{pop} soul{'s' * (pop > 1)}, under {MIN_PER_CAPITA_UNITS}: no shares — `pop` counts them"} if pop else {}
     species, cultures, kingdoms, languages, religions, subspecies = Counter(), Counter(), Counter(), Counter(), Counter(), Counter()
 
     # Hoisted out of the loop below: written inline, this literal would rebuild five tuples for every actor.
