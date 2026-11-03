@@ -31,6 +31,7 @@ from shared import (
     load_data,
     load_save,
     parse_sections,
+    quiet_zeros,
     resolve_profession,
     sex_label,
     take_chapter,
@@ -94,26 +95,19 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
     }
 
 
-# WB's `homeBuildingID` points the other way, so the roster is rebuilt by walking the actors once. Eldest first, `total` riding with its list.
-def _build_occupants(residents: list[dict], house: dict, ctx: dict, save: dict, detailed: bool) -> dict:
-    if not detailed:  # `full` keeps the chapter light: ids and a headcount, the roster itself only when the section is asked for by name
-        return light({"total": len(residents)})
-    out = [
-        {
-            "age": actor_age(actor, ctx["world_time"]),
-            "family": entity_ref(actor.get("family"), ctx["families_by_id"]),
-            "gen": gen if (gen := int(actor.get("generation") or 1)) > 1 else None,  # elder above child under one roof; a founder's 1, the floor, unsaid
-            "id": actor["id"],
-            "job": resolve_profession(actor, save),
-            "name": actor.get("name"),
-            "sex": sex_label(actor),
-            **ctx["spots"].get(actor["id"], {}),
-            # Their own roof, named only when it is not this one — a guest by the fire, a miner at the seam, a soul WB left homeless keeping the key away.
-            **({"home": home} if (home := actor.get("homeBuildingID")) and home != house["id"] else {}),
-        }
-        for actor in residents
-    ]
-    return {"roster": sorted(out, key=lambda o: (-o["age"], o["id"])), "total": len(out)}
+# WB's `homeBuildingID` points the other way, so both lists are rebuilt by walking the actors once: who sleeps here, and who only stands at it. Eldest first.
+def _build_occupants(dwellers: list[dict], visitors: list[dict], ctx: dict, save: dict, detailed: bool) -> dict:
+    if not (dwellers or visitors):
+        return {"total": 0}  # the nought `emit` keeps for the section named alone
+    if not detailed:  # `full` keeps the chapter light: two headcounts, the lists themselves only when the section is asked for by name
+        return light(quiet_zeros({"dwellers": len(dwellers), "visitors": len(visitors)}, said=("dwellers",)))
+    # A guest's own roof, or none: a soul WB left homeless at the door would otherwise read as one who sleeps there.
+    guests = [{**_occupant(actor, ctx, save), **({"home": home} if (home := actor.get("homeBuildingID")) else {"homeless": True})} for actor in visitors]
+    return {"dwellers": _eldest([_occupant(actor, ctx, save) for actor in dwellers]), "visitors": _eldest(guests)}
+
+
+def _eldest(rows: list[dict]) -> list[dict]:
+    return sorted(rows, key=lambda o: (-o["age"], o["id"]))
 
 
 # Under this roof, as the Faithful Saves mod kept it, or standing at it: its tile or one beside, and no other structure nearer. Absent unless true.
@@ -121,6 +115,20 @@ def _here(actor: dict, house: dict, by_tile: dict[tuple, dict]) -> dict:
     if kept_roof(actor) == house["id"]:
         return {"in_building": True}
     return {"at_building": True} if building_at(actor, by_tile) is house else {}
+
+
+# One body under or at this roof, where it stands said by `spots`.
+def _occupant(actor: dict, ctx: dict, save: dict) -> dict:
+    return {
+        "age": actor_age(actor, ctx["world_time"]),
+        "family": entity_ref(actor.get("family"), ctx["families_by_id"]),
+        "gen": gen if (gen := int(actor.get("generation") or 1)) > 1 else None,  # elder above child under one roof; a founder's 1, the floor, unsaid
+        "id": actor["id"],
+        "job": resolve_profession(actor, save),
+        "name": actor.get("name"),
+        "sex": sex_label(actor),
+        **ctx["spots"].get(actor["id"], {}),
+    }
 
 
 # A site by the progress WB keeps from a builder's first blow (`Building.updateBuild`), none meaning nobody touched it — never a share, which would tell its end.
@@ -173,7 +181,6 @@ def main(argv: list[str]) -> int:
                 dwellers.append(actor)
             elif here:  # a guest by the fire is nobody's dweller, yet a mine and a windmill do hold people
                 visitors.append(actor)
-    residents = dwellers + visitors
     ctx = {
         "cities_by_id": index_by_id(save.get("cities") or []),
         "civic": civic,
@@ -192,7 +199,7 @@ def main(argv: list[str]) -> int:
     if "metadata" in sections:
         out["metadata"] = _build_metadata(house, dwellers, ctx)
     if "occupants" in sections and civic:  # nobody lodges in a tree: the section only means something where someone can
-        out["occupants"] = _build_occupants(residents, house, ctx, save, detailed=wants_detail(requested, len(residents)))
+        out["occupants"] = _build_occupants(dwellers, visitors, ctx, save, detailed=wants_detail(requested, len(dwellers) + len(visitors)))
 
     emit(out)
     return 0
