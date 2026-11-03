@@ -256,7 +256,7 @@
   "world.pairings.pregnant": "Les porteuses d'une grossesse en cours, chacune avec son reste : `soon` sous 3 mois, `months` sous 1 an, sinon `years`, comme `statuses_left`.",
   "world.pairings.soonest": "Passé 50 espèces, les 20 dont la prochaine naissance vient le plus tôt, chacune comme sans la coupe ; les autres : `later`, `missing`.",
   "world.roster.age": "`--with age`, `--rank age` : l'âge en années entières, années apportées comprises (`age_overgrowth`) ; sous `--rank`, à âge égal, le plus tôt né d'abord.",
-  "world.roster.bred": "`--bred` : les vivants nés d'un autre, même d'un parent mort ; sous `--since`, les naissances depuis, les mortes dans `gone` ; une portée : `--with parents,born`.",
+  "world.roster.bred": "`--bred` : les vivants nés d'un parent, même mort ; sous `--since`, les naissances, mortes dans `gone` ; portée : `--with parents,born` ; d'un corps : `actor … kin`.",
   "world.roster.by_species": "Par espèce, `[min, médiane, max]` des champs demandés, `[min, max]` à 2 corps, une valeur seule nue ; les naissances une à une : `--rank age` (`-t`, `--sapient`).",
   "world.roster.city": "Sous `--city`, la terre de la cité se tait : c'est celle de tous.",
   "world.roster.died": "D'un mort (`gone`), le mois de sa mort, au registre du monde ; `was_on` y dit la terre où il est tombé.",
