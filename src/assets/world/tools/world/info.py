@@ -182,6 +182,7 @@ _ISLET = "islet"  # where `roster` says a body stands, or stood, on an islet too
 # What `--with` reads off the body and its ground, a line's own fields among them, its tile as `metadata` gives it, and its lineage by id: `lineages` names it
 _KEPT_FIELDS = (
     "adult_on",
+    "age",
     "age_overgrowth",
     "asset_id",
     "at",
@@ -193,6 +194,7 @@ _KEPT_FIELDS = (
     "hatch_on",
     "island_id",
     "life_stage",
+    "lover",
     "parents",
     "place",
     "sex",
@@ -268,6 +270,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
     age, lineage = actor_age(actor, ctx["world_time"]), ctx["subspecies_by_id"].get(actor.get("subspecies"))
     kept = {
         "adult_on": lambda: crossed_on(actor, adult) if age < (adult := adult_age(actor, ctx)) else None,
+        "age": lambda: age,
         "age_overgrowth": lambda: int(actor.get("age_overgrowth") or 0) or None,  # a migrant's mark, `born` its arrival
         "asset_id": lambda: actor.get("asset_id"),
         "at": lambda: tile_text(*actor_xy(actor)),
@@ -280,6 +283,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "hatch_on": lambda: hatch_on(actor, ctx),
         "island_id": lambda: here,
         "life_stage": lambda: _stage(actor, ctx, age, adult_age(actor, ctx)),
+        "lover": lambda: lover if (lover := actor.get("lover")) in ctx["living_ids"] else None,  # its mate's id, a dead one none
         "parents": lambda: sorted(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p and p != -1) or None,  # ids, not refs: a line holds one
         "place": lambda: ctx["place_index"].at(*actor_xy(actor)),
         "sex": lambda: sex_label(actor),
@@ -596,6 +600,8 @@ def _build_roster(
     ctx = build_actor_stats_context(save)
     if "city" in fields:
         ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
+    if "lover" in fields:
+        ctx["living_ids"] = {actor["id"] for actor in save.get("actors_data") or []}
     if "place" in fields:  # each forged place drawn once for the whole roll, as `metadata` draws it for one body
         ctx["place_index"] = PlaceIndex(save, save_path, island_of, WalkMap(save))
     if settle or barred:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
@@ -936,7 +942,9 @@ def _gone_since(
 def _grouped_field(field: str, values: list) -> dict | None:
     if field == "parents":  # a couple counted as one, its births together, where its two ids apart would count each parent's
         values = ["+".join(map(str, value)) if value else None for value in values]
-    if field in _KEPT_FIELDS:  # lands by their id first, the islets and the water after, every other value by its name, a date's figures as numbers
+    elif field == "lover":  # the bodies paired, a mate's id counting no one
+        values = ["paired" if value else None for value in values]
+    if field in _KEPT_FIELDS and field != "age":  # an age spreads like a stat; lands by id, then islets and water, other values by name, dates by figures
         values = [value["name"] if isinstance(value, dict) else value for value in values]  # a town counted by its name, a ref being no key
         counts = Counter(item for value in values if value for item in (value if isinstance(value, list) else [value]))
         return {str(key): counts[key] for key in sorted(counts, key=lambda key: (isinstance(key, str), _natural(key)))} or None
