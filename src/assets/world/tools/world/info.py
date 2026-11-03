@@ -192,6 +192,7 @@ _KEPT_FIELDS = (
     "city_since",
     "gen",
     "hatch_on",
+    "home",
     "island_id",
     "life_stage",
     "lover",
@@ -281,6 +282,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "city_since": lambda: kept_city_since(actor),
         "gen": lambda: int(actor.get("generation") or 1),
         "hatch_on": lambda: hatch_on(actor, ctx),
+        "home": lambda: actor.get("homeBuildingID"),  # its roof's id, none for one sleeping out: `ground <id>` tells the roof
         "island_id": lambda: here,
         "life_stage": lambda: _stage(actor, ctx, age, adult_age(actor, ctx)),
         "lover": lambda: lover if (lover := actor.get("lover")) in ctx["living_ids"] else None,  # its mate's id, a dead one none

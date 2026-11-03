@@ -260,6 +260,7 @@
   "world.roster.died": "D'un mort (`gone`), le mois de sa mort, au registre du monde ; `was_on` y dit la terre où il est tombé.",
   "world.roster.dir": "Sous `--nearest`, le cap du corps vu depuis la tuile ou le corps visé ; tu sous `--since`, dont les lignes sont pleines. Le temps de marche : `actor … --to`.",
   "world.roster.has": "`--has <compte>` : ceux qui en tiennent ; sous `--since`, ceux dont il a changé, et les morts avec ce qu'ils en emportaient.",
+  "world.roster.home": "`--with home` : l'id du toit du corps, tu chez qui dort dehors ; sa sorte et qui s'y tient : `ground <id>` ; passé 50 corps, le nombre de corps par toit.",
   "world.roster.info": "Passé 50 corps, un compte remplace la liste : `born`, `at` par axe, sous `by_species` en `[min, médiane, max]`, sinon `--with asset_id` compte ; un filtre resserre.",
   "world.roster.job": "`--job` : les corps d'un métier, un roi avec son royaume, les autres leur cité ; sous `--since`, `arrived` l'a pris, `left` l'a quitté vivant, `gone` y est mort.",
   "world.roster.left": "D'une entité, sous `--since` : `arrived` y est entré, `left` en est sorti vivant.",
