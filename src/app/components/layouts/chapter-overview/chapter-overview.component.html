@@ -2,13 +2,15 @@
 @let c = currentChapter();
 @if (w && c) {
   @let ageId = c.meta.world.metadata.age_id;
-  <h2 class="section-title">{{ w.name }}</h2>
-  <p class="world-age">
-    <img class="age-icon" [src]="`assets/img/ages/${ageId}.png`" />
-    {{ `age_${ageId}` | translate }}
-    <app-new-badge [dot]="false" [show]="isNewAge()" />
-  </p>
-  <nz-divider />
+  <header
+    class="world-header"
+    nz-tooltip
+    [class.compact]="hasOpenPanel()"
+    [nzTooltipTitle]="`age_${ageId}` | translate"
+    [style.background-image]="`url(assets/img/ages/${ageId}.png)`"
+  >
+    <h2 class="section-title">{{ w.name }}</h2>
+  </header>
 
   <ng-template #worldStatsHeader>
     <img class="panel-icon" src="assets/img/world/world_stats.png" />
@@ -85,8 +87,8 @@
 
   <nz-collapse *appFresh="c" nzAccordion nzSize="small">
     <nz-collapse-panel
-      [nzActive]="isOpen('world-stats', worldHasContent())"
-      [nzCollapsible]="collapsible(worldHasContent())"
+      [nzActive]="isOpen('world-stats')"
+      [nzCollapsible]="collapsible('world-stats')"
       [nzHeader]="worldStatsHeader"
       (nzActiveChange)="onPanelToggle('world-stats', $event)"
     >
@@ -95,8 +97,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('favorite', c.meta.favorite)"
-      [nzCollapsible]="collapsible(c.meta.favorite)"
+      [nzActive]="isOpen('favorite')"
+      [nzCollapsible]="collapsible('favorite')"
       [nzExtra]="favoriteChip"
       [nzHeader]="favoritesHeader"
       (nzActiveChange)="onPanelToggle('favorite', $event)"
@@ -106,8 +108,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('subspecies', c.meta.subspecies)"
-      [nzCollapsible]="collapsible(c.meta.subspecies)"
+      [nzActive]="isOpen('subspecies')"
+      [nzCollapsible]="collapsible('subspecies')"
       [nzExtra]="subspeciesChip"
       [nzHeader]="subspeciesHeader"
       (nzActiveChange)="onPanelToggle('subspecies', $event)"
@@ -117,8 +119,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('family', c.meta.family)"
-      [nzCollapsible]="collapsible(c.meta.family)"
+      [nzActive]="isOpen('family')"
+      [nzCollapsible]="collapsible('family')"
       [nzExtra]="familyChip"
       [nzHeader]="familyHeader"
       (nzActiveChange)="onPanelToggle('family', $event)"
@@ -128,8 +130,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('clan', c.meta.clan)"
-      [nzCollapsible]="collapsible(c.meta.clan)"
+      [nzActive]="isOpen('clan')"
+      [nzCollapsible]="collapsible('clan')"
       [nzExtra]="clanChip"
       [nzHeader]="clanHeader"
       (nzActiveChange)="onPanelToggle('clan', $event)"
@@ -139,8 +141,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('culture', c.meta.culture)"
-      [nzCollapsible]="collapsible(c.meta.culture)"
+      [nzActive]="isOpen('culture')"
+      [nzCollapsible]="collapsible('culture')"
       [nzExtra]="cultureChip"
       [nzHeader]="cultureHeader"
       (nzActiveChange)="onPanelToggle('culture', $event)"
@@ -150,8 +152,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('language', c.meta.language)"
-      [nzCollapsible]="collapsible(c.meta.language)"
+      [nzActive]="isOpen('language')"
+      [nzCollapsible]="collapsible('language')"
       [nzExtra]="languageChip"
       [nzHeader]="languageHeader"
       (nzActiveChange)="onPanelToggle('language', $event)"
@@ -161,8 +163,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('religion', c.meta.religion)"
-      [nzCollapsible]="collapsible(c.meta.religion)"
+      [nzActive]="isOpen('religion')"
+      [nzCollapsible]="collapsible('religion')"
       [nzExtra]="religionChip"
       [nzHeader]="religionHeader"
       (nzActiveChange)="onPanelToggle('religion', $event)"
@@ -172,8 +174,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('city', c.meta.city)"
-      [nzCollapsible]="collapsible(c.meta.city)"
+      [nzActive]="isOpen('city')"
+      [nzCollapsible]="collapsible('city')"
       [nzExtra]="cityChip"
       [nzHeader]="cityHeader"
       (nzActiveChange)="onPanelToggle('city', $event)"
@@ -183,8 +185,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('kingdom', c.meta.kingdom)"
-      [nzCollapsible]="collapsible(c.meta.kingdom)"
+      [nzActive]="isOpen('kingdom')"
+      [nzCollapsible]="collapsible('kingdom')"
       [nzExtra]="kingdomChip"
       [nzHeader]="kingdomHeader"
       (nzActiveChange)="onPanelToggle('kingdom', $event)"
@@ -194,8 +196,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('alliance', c.meta.alliance)"
-      [nzCollapsible]="collapsible(c.meta.alliance)"
+      [nzActive]="isOpen('alliance')"
+      [nzCollapsible]="collapsible('alliance')"
       [nzExtra]="allianceChip"
       [nzHeader]="allianceHeader"
       (nzActiveChange)="onPanelToggle('alliance', $event)"
@@ -205,8 +207,8 @@
       </ng-scrollbar>
     </nz-collapse-panel>
     <nz-collapse-panel
-      [nzActive]="isOpen('wars', c.meta.wars?.length)"
-      [nzCollapsible]="collapsible(c.meta.wars?.length)"
+      [nzActive]="isOpen('wars')"
+      [nzCollapsible]="collapsible('wars')"
       [nzExtra]="warsChip"
       [nzHeader]="warsHeader"
       (nzActiveChange)="onPanelToggle('wars', $event)"
@@ -216,6 +218,9 @@
       </ng-scrollbar>
     </nz-collapse-panel>
   </nz-collapse>
+  @if (!hasOpenPanel()) {
+    <app-banner-garland />
+  }
 } @else {
   <nz-empty nzNotFoundImage="assets/img/empty/no-data.png" [nzNotFoundContent]="'ui_nothing_to_show' | translate" />
 }

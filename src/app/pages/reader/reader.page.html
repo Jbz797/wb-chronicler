@@ -1,12 +1,6 @@
 <div class="reader-page">
   <ng-scrollbar class="reader-scroll">
-    <article
-      class="ant-typography"
-      [class.chapter]="isChapter()"
-      [style.--fleuron]="favoriteHue()"
-      (pointerout)="onProseOut($event)"
-      (pointerover)="onProseOver($event)"
-    >
+    <article class="ant-typography" [class.chapter]="isChapter()" (pointerout)="onProseOut($event)" (pointerover)="onProseOver($event)">
       @if (src(); as s) {
         <markdown [disableSanitizer]="true" [src]="s" (ready)="onReady()" />
       } @else if (merged.hasValue()) {

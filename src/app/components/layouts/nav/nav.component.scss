@@ -41,13 +41,22 @@
         }
       }
 
-      &.ant-menu-item-selected .ant-menu-title-content {
-        font-weight: 700;
-        text-shadow: $glow;
+      // The chapter read: its favourite's species hue (`ChroniclerService`) in bar, ground and glow, the label kept gilt lest a dark hue sink it; gilt without one.
+      &.ant-menu-item-selected {
+        background-color: color-mix(in srgb, var(--favorite-hue, #{$primary}) 15%, #{$background});
 
-        .tag-icon {
-          height: 14px;
-          width: 14px;
+        &::after {
+          border-inline-end-color: var(--favorite-hue, #{$primary});
+        }
+
+        .ant-menu-title-content {
+          font-weight: 700;
+          text-shadow: 0 0 10px color-mix(in srgb, var(--favorite-hue, #{$primary}) 40%, transparent); // `$glow`, in the favourite's hue
+
+          .tag-icon {
+            height: 14px;
+            width: 14px;
+          }
         }
       }
     }

@@ -1,0 +1,36 @@
+@use 'variables' as *;
+
+// Takes whatever height the folded collapse leaves, never more: the banners are sized to it, not the other way round.
+:host {
+  flex: 1 1 0;
+  margin: 0 -1rem; // over the overview's padding, so the cord is nailed to the panel's own edges
+  overflow: hidden;
+
+  .cord {
+    path {
+      fill: none;
+      stroke: $gold-soft;
+      stroke-opacity: 0.6;
+      stroke-width: 1.5;
+    }
+  }
+
+  // Each banner hangs from its point on the cord, its brow along the cord's slope (`--tilt`), and sways about it a beat apart from its neighbours.
+  .hanging {
+    animation: sway 3.2s ease-in-out infinite alternate;
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    transform-origin: top center;
+  }
+}
+
+@keyframes sway {
+  from {
+    transform: rotate(calc(var(--tilt) - 2.5deg));
+  }
+
+  to {
+    transform: rotate(calc(var(--tilt) + 2.5deg));
+  }
+}

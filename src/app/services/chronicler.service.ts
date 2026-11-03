@@ -1,17 +1,22 @@
+import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { computed, inject, Service, signal } from '@angular/core';
+import { computed, effect, inject, Service, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 
 import { catchError, filter, forkJoin, map, Observable, of, tap } from 'rxjs';
 
-import { CHAPTER_INDEX, SAVES_DIR } from '../constants';
+import { CHAPTER_INDEX, SAVES_DIR, SPECIES_COLORS } from '../constants';
 import { Chapter, ChapterIndexEntry, ChapterMeta, ChapterTier, LoadedChapter } from '../interfaces';
+
+import { RegistryService } from './registry.service';
 
 @Service()
 export class ChroniclerService {
 
+  private readonly _document = inject(DOCUMENT);
   private readonly _http = inject(HttpClient);
+  private readonly _registry = inject(RegistryService);
   private readonly _router = inject(Router);
 
   // False until `saves/index.json` has answered — an empty list means « no chapter yet » only once it has, and « not known yet » before.
@@ -30,6 +35,11 @@ export class ChroniclerService {
 
   // The chapter being read, once its blocks are in — `undefined` on a static page, and while the resolver is still fetching them.
   public readonly currentChapter = computed(() => this._loaded(this.chapters().find(c => c.slug === this._slug())));
+  // The favourite's species hue, as its `[s]` tag is dyed in the prose — `null` before a favourite or off a chapter, the gilt standing in.
+  public readonly favoriteHue = computed(() => {
+    const id = this.currentChapter()?.meta.favorite?.metadata.id;
+    return id === undefined ? null : (SPECIES_COLORS[this._registry.persons()[String(id)]?.asset_id ?? ''] ?? null);
+  });
   // The one before it, which every delta is measured against — `undefined` on C1 and on non-chapter pages.
   public readonly previousChapter = computed(() => {
     const all = this.chapters();
@@ -38,6 +48,21 @@ export class ChroniclerService {
 
   // The `chapter.json` of every chapter visited, by slug — written once and never changing, so a second visit costs nothing.
   private readonly _metas = signal<Record<string, ChapterMeta>>({});
+
+  constructor() {
+    // On the root, so every scroller and fleuron of the page takes it: `styles.scss` falls back to the gilt where it is removed.
+    effect(() => {
+      const hue = this.favoriteHue();
+      const root = this._document.documentElement.style;
+      if (hue) {
+        root.setProperty('--favorite-hue', hue);
+        root.setProperty('--favorite-hue-soft', `color-mix(in srgb, ${hue} 60%, white)`); // the hovered thumb, paler as the gilt's own `$gold-soft` is
+      } else {
+        root.removeProperty('--favorite-hue');
+        root.removeProperty('--favorite-hue-soft');
+      }
+    });
+  }
 
   // The body this tier names in the chapter before — same id, same entity, or every delta would compare two strangers: a dead favourite, a crown lost.
   public readonly carriesOver = (tier: ChapterTier): boolean => {

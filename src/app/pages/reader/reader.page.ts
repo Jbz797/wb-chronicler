@@ -36,11 +36,6 @@ export class ReaderPage {
 
   // Nothing to read and nothing coming: the world is set up but no chapter written yet, so the page says how to open the one who writes them.
   protected readonly awaitsChronicler = computed(() => this._chronicler.probed() && this._chronicler.chapters().length === 0);
-  // The favourite's species hue, dyeing the chapter's fleurons as its tag is dyed in the prose — none before a favourite, the gold standing in.
-  protected readonly favoriteHue = computed(() => {
-    const id = this._chronicler.currentChapter()?.meta.favorite?.metadata.id;
-    return id === undefined ? null : (SPECIES_COLORS[this._registry.persons()[String(id)]?.asset_id ?? ''] ?? null);
-  });
   // A chapter, not a workshop page: only a chapter closes on a hook taken up again, which its last paragraph is styled as.
   protected readonly isChapter = computed(() => this._chronicler.chapters().some(c => c.slug === this._slug()));
   // A page of several files, fetched together and read as one, in the order its list gives them — idle for a page of one.

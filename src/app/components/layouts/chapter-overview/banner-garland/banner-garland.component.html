@@ -1,0 +1,20 @@
+@if (layout(); as l) {
+  <svg class="cord" height="100%" width="100%">
+    <path [attr.d]="l.cord" />
+  </svg>
+  @for (banner of banners(); track banner.tier) {
+    @let slot = l.slots[$index];
+    @if (slot) {
+      <div
+        class="hanging"
+        [style.--tilt]="slot.tilt"
+        [style.animation-delay.ms]="-$index * 700"
+        [style.left.px]="slot.left"
+        [style.top.px]="slot.top"
+        [style.width.px]="slot.width"
+      >
+        <canvas #banner height="0" width="0"></canvas>
+      </div>
+    }
+  }
+}

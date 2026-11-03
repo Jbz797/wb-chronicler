@@ -11,9 +11,9 @@ from waters import water_bodies, water_tiles
 lazy from islands import TileIslands
 lazy from walking import WalkMap
 
-FIRE_PLACE_REACH = 32  # tiles, two chunks, within which a fire is told by a forged place: « aux abords » of a cone, never across a land
 PLACE_REACH = 8  # tiles from a forged place's point its landmark may stand: the chronicler sets it on the cone he sees, not on the building's tile
 _ARTICLE = re.compile(r"^(?:l'|(?:le|la|les|the)\s+)", re.IGNORECASE)  # the article a sentence contracts or drops: `du Lac`, `au Socle`
+_FIRE_PLACE_REACH = 32  # tiles, two chunks, within which a fire is told by a forged place: « aux abords » of a cone, never across a land
 _LANDMARKS = ("geyser", "volcano")  # the words of the buildings a forged place names by its point: `acid_geyser` too, the world's own landmarks
 _QUOTES = {'"': '"', "'": "'", "«": "»", "“": "”"}  # the pairs a name may come wrapped in when a caller's shell left them on: `"La Carapace"`
 _SEEDED_BOOKS = {"islands": "i", "lakes": "lake", "rivers": "river", "seas": "sea"}  # the gazetteer's counted lands and waters, by the prefix their ids take
@@ -121,10 +121,10 @@ def _spans(spot: dict, x: int, y: int) -> bool:
     return min(box["x0"], box["x1"]) <= x <= max(box["x0"], box["x1"]) and min(box["y0"], box["y1"]) <= y <= max(box["y0"], box["y1"])
 
 
-# The forged place nearest a fire within `FIRE_PLACE_REACH`, by its flame nearest it: a volcano holds no tile of its own fire, its cone the building alone.
+# The forged place nearest a fire within `_FIRE_PLACE_REACH`, by its flame nearest it: a volcano holds no tile of its own fire, its cone the building alone.
 def fire_place(fire: Collection[tuple[int, int]], index: PlaceIndex) -> dict | None:
     xs, ys, near = [x for x, _ in fire], [y for _, y in fire], []
-    x0, x1, y0, y1 = min(xs) - FIRE_PLACE_REACH, max(xs) + FIRE_PLACE_REACH, min(ys) - FIRE_PLACE_REACH, max(ys) + FIRE_PLACE_REACH
+    x0, x1, y0, y1 = min(xs) - _FIRE_PLACE_REACH, max(xs) + _FIRE_PLACE_REACH, min(ys) - _FIRE_PLACE_REACH, max(ys) + _FIRE_PLACE_REACH
     for name, spot in (gazetteer().get("places") or {}).items():
         if (box := spot.get("box")) and (
             max(box["x0"], box["x1"]) < x0 or min(box["x0"], box["x1"]) > x1 or max(box["y0"], box["y1"]) < y0 or min(box["y0"], box["y1"]) > y1
@@ -133,8 +133,8 @@ def fire_place(fire: Collection[tuple[int, int]], index: PlaceIndex) -> dict | N
         if not (held := [(x, y) for x, y in index.tiles(name, spot) or () if x0 <= x <= x1 and y0 <= y <= y1]):
             continue
         px0, px1, py0, py1 = min(x for x, _ in held), max(x for x, _ in held), min(y for _, y in held), max(y for _, y in held)
-        flames = [(x, y) for x, y in fire if px0 - FIRE_PLACE_REACH <= x <= px1 + FIRE_PLACE_REACH and py0 - FIRE_PLACE_REACH <= y <= py1 + FIRE_PLACE_REACH]
-        if flames and (crow := min(walk_tiles(x - fx, y - fy) for x, y in held for fx, fy in flames)) <= FIRE_PLACE_REACH:
+        flames = [(x, y) for x, y in fire if px0 - _FIRE_PLACE_REACH <= x <= px1 + _FIRE_PLACE_REACH and py0 - _FIRE_PLACE_REACH <= y <= py1 + _FIRE_PLACE_REACH]
+        if flames and (crow := min(walk_tiles(x - fx, y - fy) for x, y in held for fx, fy in flames)) <= _FIRE_PLACE_REACH:
             near.append((crow, name))
     return {"crow_tiles": round(nearest[0]), "name": nearest[1]} if (nearest := min(near, default=None)) else None
 

@@ -113,7 +113,7 @@
         }
 
         blockquote {
-          border-left: 3px solid $gold;
+          border-left: 3px solid var(--favorite-hue, #{$gold}); // dyed as the fleurons
           color: $sienna;
           font-style: italic;
           margin: 1.6em 0;
@@ -165,7 +165,7 @@
           text-align: center;
 
           &::before {
-            color: var(--fleuron, #{$gold}); // the favourite's species hue, set by `ReaderPage`; the gold before a favourite and on a workshop page
+            color: var(--favorite-hue, #{$gold}); // the favourite's species hue, set by `ChroniclerService`; the gold before a favourite
             content: '❦';
             font-size: 1.8em;
             line-height: 1;
@@ -212,7 +212,7 @@
             text-align: center;
 
             &::after {
-              color: $gold;
+              color: var(--favorite-hue, #{$gold}); // dyed as the fleuron above it
               content: '❧';
               display: block;
               font-size: 1.4em;

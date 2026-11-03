@@ -8,8 +8,8 @@ body {
 
 // Every scroller is an `ngx-scrollbar`, so no native bar is left to dress — only its gilt, set here; `compact` and `hover` are settled in `main.ts`.
 :root {
-  --scrollbar-thumb-color: #{$gold};
-  --scrollbar-thumb-hover-color: #{$gold-soft};
+  --scrollbar-thumb-color: var(--favorite-hue, #{$gold}); // the favourite's species hue, set by `ChroniclerService`
+  --scrollbar-thumb-hover-color: var(--favorite-hue-soft, #{$gold-soft});
   --scrollbar-track-color: #{rgba($paper-shade, 0.12)};
   --scrollbar-track-thickness: 5px; // finer than the library's 7px, which reads heavy against the chronicle's type
 }
