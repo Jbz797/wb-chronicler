@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 26/10/26 22:08</p>
+<p class="metadata">Date de mise à jour : 03/11/26 10:19</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche pour ce qui s'y vérifie ; la forme qu'il demande (un dialogue dû, sa longueur) est à la conformité.
 
@@ -18,7 +18,7 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 - **Une distance** se vérifie comme la phrase la dit : un km nu à vol d'oiseau, « de marche » à pied, une tournure par la mesure qu'elle suppose.
 - **Une forme** (une chaîne, une mer ouverte au sud) se lit sur la carte (`docs/tools.md` § Carte).
 - **Une phrase à deux lectures dont l'une est fausse** est un écart : cite celle-ci.
-- **Une phrase que le texte donne pour incertaine n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.
+- **Une phrase incertaine, ou une pensée de l'Intime, n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.
 - **Une scène** ne forge ni mort, ni nombre, ni lieu, ni date : seuls ses gestes se supposent.
 - **Une somme se vérifie aussi contre ses termes** : un total et ses parts, un tableau et la phrase qui le reprend, un solde et ce qui est venu et parti. Des termes justes un à un qui ne font pas le total sont un écart : dis lequel la commande dément.
 
