@@ -1,6 +1,6 @@
 # 🔤 Vocabulaire du récit
 
-<p class="metadata">Date de mise à jour : 02/11/26 10:20</p>
+<p class="metadata">Date de mise à jour : 03/11/26 12:33</p>
 
 ## Mots imposés
 
@@ -14,14 +14,14 @@
 - **« 0 an »** : un `age` de 0 dit une vie de moins d'un an — raconte la naissance récente.
 - **Continent, océan** : la plus vaste terre n'est jamais un continent, ni la plus vaste eau un océan.
 - **Jauge, barre, points de vie**, ni aucune mesure de l'interface : une faim, une santé, une humeur se disent par ce que le corps sent ou fait (_« la faim commence à le tenailler »_, pas _« sa faim arrive à mi-jauge »_).
-- **Jeu, sauvegarde, joueur, partie, moteur**, ni rien du cadre technique : un compte dit ce qu'il compte, jamais qu'on compte (_« elles sont 348 »_, pas _« on en compte 348 »_) ; une règle du jeu, comme la conduite des corps, jamais une loi (_« elle ne s'installerait pas si près d'un autre foyer »_, pas _« un foyer trop proche le lui interdit »_).
+- **Jeu, sauvegarde, joueur, partie, moteur**, ni rien du cadre technique : un compte dit ce qu'il compte, jamais qu'on compte (_« elles sont 348 »_, pas _« on en compte 348 »_) ; une règle du jeu, comme la conduite des corps, jamais une loi (_« elle ne s'installerait pas si près d'autres toits »_, pas _« des toits trop proches le lui interdisent »_).
 - **Tuile**, et **aucune unité ne la remplace une pour une**, ni « pas » ou « brasse » (_« à 12 pas »_), « arpent » ou « hectare » — _« à quelques pas »_, _« quelques brasses »_, sans chiffre, disent le tout-près, `crow_tiles` 1 : une distance ou une aire se dit par l'échelle (`chronicler.md` § Échelle), une aire aussi par sa part d'une terre, d'une eau.
 
 ## Barèmes
 
 ### Agglomérations (par population)
 
-Le **terme** qui accompagne la balise suit la tranche de population : ne jamais appeler « cité » un hameau de trois habitants.
+Le **terme** qui accompagne la balise d'une agglomération suit sa tranche de population (jamais « cité » pour trois habitants) ; en son sens commun (le foyer d'un feu, d'une maison), le mot est libre.
 
 | Habitants | Terme       |
 | --------- | ----------- |
