@@ -266,7 +266,7 @@
   "world.roster.info": "Passé 50 corps, un compte remplace la liste : `born`, `at` par axe, sous `by_species` en `[min, médiane, max]`, sinon `--with asset_id` compte ; un filtre resserre.",
   "world.roster.job": "`--job` : les corps d'un métier, un roi avec son royaume, les autres leur cité ; sous `--since`, `arrived` l'a pris, `left` l'a quitté vivant, `gone` y est mort.",
   "world.roster.left": "D'une entité, sous `--since` : `arrived` y est entré, `left` en est sorti vivant.",
-  "world.roster.life_stage": "Dit hors des adultes seulement.",
+  "world.roster.life_stage": "Tu chez un adulte sur la ligne de base ; demandé par `--with life_stage`, toujours dit, `adult` compris.",
   "world.roster.lover": "`--with lover` : l'id du compagnon vivant, tu chez un corps libre ; passé 50 corps, le nombre de corps en couple (`paired`).",
   "world.roster.nearest": "`--nearest` : les plus proches à vol d'oiseau, un dernier rang partagé sorti entier ; les morts de `--since` depuis où ils sont tombés ; une marche : `actor … --to`.",
   "world.roster.parents": "`--with parents` : les ids des deux parents, triés, un mort compris (`actor <id>` le nomme) ; passé 50 corps, les naissances par couple (`321+322`).",
