@@ -38,6 +38,7 @@ _FAMILY_ROOT = 5  # letters a family is known by — `compte`, `comptes`, `compt
 _FORMULA_LINES = 4  # lines of one chapter a figured turn must come back on to be a tic: `il y a 3 ans` said on line after line
 _FORMULA_WORDS = 3  # words a figured turn holds at least, the figure among them; from `_LONG_RUN_WITHIN` up, `internal` hears it already
 _HEADING_START = 2  # words a heading is known by: `Loin d'elle` and `Loin d'elle, ce qui s'est éteint` open alike
+_HEADING_WORDS = 2  # words of its own a heading must share with one before, in any order, to be cast again: `Les toits des rois`, `Les rois et leurs toits`
 
 # A sentence opened on an inversion — `Peut-être a-t-elle`, `Sans doute compte-t-elle` —, its opener the one or two words before the verb.
 _INVERTED = re.compile(
@@ -196,6 +197,17 @@ def _heard(n: int) -> list[tuple[int, frozenset[str]]]:
         heard = [*(sentence or ()), *(after or () if after_line == line else ())]
         if sentence and (words := frozenset(t.key for t in heard if t.key in _scarce() and t.content)):
             out.append((line, words))
+    return out
+
+
+# Chapter `n`'s title and headings as the roots of their own words, whatever their order — its first word lowered, a capital no name there.
+@cache
+def _headings(n: int) -> list[tuple[int, str, frozenset[str]]]:
+    out = []
+    for number, line in enumerate((_chapter(n) or "").splitlines(), 1):
+        if line.startswith(("# ", "## ")):
+            text = line.lstrip("# ")
+            out.append((number, text, frozenset(t.key[:_FAMILY_ROOT] for t in _tokens(text[:1].lower() + text[1:], number) if t.content)))
     return out
 
 
@@ -514,6 +526,12 @@ def _shaped(n: int) -> list[dict]:
         for k in before:
             if (theirs := _opening(k)) and len(shared := sorted(roots.keys() & theirs[1].keys())) >= _OPENING_WORDS:
                 rows.append({"chapters": [f"C{k}"], "line": line, "text": ", ".join(roots[root] for root in shared), "what": "opening_words"})
+    started = {row["line"] for row in rows if row["what"] in ("heading", "title")}  # begun alike already: told once
+    for line, text, roots in _headings(n):  # its own words in another order, which no start shows
+        if line in started or len(roots) < _HEADING_WORDS:
+            continue
+        if theirs := [f"C{k}" for k in before if any(len(roots & other) >= _HEADING_WORDS for _, _, other in _headings(k))]:
+            rows.append({"chapters": theirs, "line": line, "text": text, "what": "heading_words"})
     # An inversion is a mould by itself, `Peut-être a-t-elle` whatever the verb: weighed over the chapters `_recent`, where a gap of one hides no habit.
     for opener, (line, text) in _inverted(n).items():
         if len(said := [f"C{k}" for k in _recent(n) if opener in _inverted(k)]) >= _REFRAIN:

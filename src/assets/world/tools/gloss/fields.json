@@ -85,6 +85,7 @@
   "chapter.echo.delivered": "Chapitre livré : seules les lignes changées depuis sont pesées, ses comptes l'ayant été à la livraison ; `--whole` le pèse en entier.",
   "chapter.echo.echo": "Une suite de mots redite.",
   "chapter.echo.formulas": "Une tournure chiffrée revenue sur 4 lignes ou plus (`il y a 3 ans`), les chiffres pour un seul ; dates et mesures à part, leur forme étant imposée.",
+  "chapter.echo.heading_words": "Dans `shape` : un titre ou un intertitre qui garde 2 mots porteurs ou plus d'un des 2 chapitres d'avant, dans n'importe quel ordre, par leur racine.",
   "chapter.echo.inverted": "Dans `shape` : une phrase ouverte sur une inversion (`Peut-être a-t-elle`), dont l'ouverture revient dans 3 des 6 chapitres d'avant ou plus, listés.",
   "chapter.echo.names": "Chaque entité balisée ici et dans un des 2 chapitres d'avant, ses lignes côte à côte : rien à corriger, des lignes à relire ensemble, où un même angle se reprend.",
   "chapter.echo.near": "Une famille (4 premières lettres) dite 3 fois en 2 paragraphes de suite : `family`, ses `forms`, ses `lines`. Les mots du manuel (`foyer`, `lignée`) n'y sont pas.",
