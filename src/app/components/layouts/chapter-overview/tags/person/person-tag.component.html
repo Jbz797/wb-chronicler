@@ -1,5 +1,5 @@
 @if (person(); as p) {
-  <nz-tag class="entity-tag" nz-tooltip [class.dead]="p.dead" [nzTooltipTitle]="hint() ? aboutTemplate : truncated.isTruncated() ? label() : ''" [style.--tag-color]="color()" [style.--tag-ring]="ring()">
+  <nz-tag class="entity-tag" nz-tooltip [class.dead]="p.dead" [class.hinted]="hint()" [nzTooltipTitle]="hint() ? aboutTemplate : truncated.isTruncated() ? label() : ''" [style.--tag-color]="color()" [style.--tag-ring]="ring()">
     <canvas #portrait class="portrait" height="0" width="0"></canvas>
     <span #truncated="appTruncated" appTruncated class="entity-name">{{ label() }}</span>
     @if (medal() && p.rank; as r) {

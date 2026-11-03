@@ -99,9 +99,9 @@ export class ReaderPage {
     if (plate && !plate.contains(event.relatedTarget as Node | null)) this.proseHint.set(null);
   }
 
-  // A person's plate under the pointer: its portrait canvas names them, the flattened ones of a heading or a reply having none, so none answers there.
+  // A person's plate under the pointer, if `onReady` marked it as one with something to tell — the favourite's, and a heading's or a reply's, have none.
   protected onProseOver(event: PointerEvent): void {
-    const plate = (event.target as Element).closest<HTMLElement>('.entity-tag');
+    const plate = (event.target as Element).closest<HTMLElement>('.entity-tag.hinted');
     const person = PERSON_REGISTRY[plate?.querySelector<HTMLCanvasElement>('canvas[data-person]')?.dataset.person ?? ''];
     if (!plate || !person || this.proseHint()?.origin.nativeElement === plate) return;
     this.proseHint.set({ origin: new ElementRef(plate), text: LabelHelpers.personAbout(this._translate, person) });
@@ -115,6 +115,7 @@ export class ReaderPage {
     this._plainTags([...root.querySelectorAll(':scope h1, :scope h2, :scope .chapter th, :scope .chapter hr + p:last-child'), ...replies]);
     for (const line of replies) line.classList.add('dialogue');
     ActorSpriteHelpers.paintAll(root, this._registry.persons());
+    this._hintPlates(root);
     BookSpriteHelpers.paintAll(root, this._registry.books());
     KingdomSpriteHelpers.paintAll(root, this._registry.kingdoms());
     AllianceSpriteHelpers.paintAll(root, this._registry.alliances());
@@ -142,6 +143,14 @@ export class ReaderPage {
       opening.style.fontSize = `${Math.min(Math.floor(((size * room) / content) * 10) / 10, size - 0.1)}px`;
     }
     opening.style.removeProperty('white-space');
+  }
+
+  // Marks the prose's person plates that tell their species and crown on hover: all but the favourite's, whose own panel already says both.
+  private _hintPlates(root: HTMLElement): void {
+    const favorite = String(this._chronicler.currentChapter()?.meta.favorite?.metadata.id);
+    for (const portrait of root.querySelectorAll<HTMLCanvasElement>('canvas[data-person]')) {
+      if (portrait.dataset.person !== favorite) portrait.closest('.entity-tag')?.classList.add('hinted');
+    }
   }
 
   // Google Fonts swaps faces in late, so a measure waits for the one it reads — spelled from longhands: computed `font` often reads empty, and `load('')` throws.

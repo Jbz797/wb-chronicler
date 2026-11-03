@@ -7,7 +7,7 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { TruncatedDirective } from '../../../../../directives';
 import { ActorSpriteHelpers, LabelHelpers, PaletteHelpers } from '../../../../../helpers';
-import { RegistryService } from '../../../../../services';
+import { ChroniclerService, RegistryService } from '../../../../../services';
 
 @Component({
   selector: 'app-person-tag',
@@ -16,10 +16,10 @@ import { RegistryService } from '../../../../../services';
 })
 export class PersonTagComponent {
 
+  private readonly _chronicler = inject(ChroniclerService);
   private readonly _registry = inject(RegistryService);
   private readonly _translate = inject(TranslateService);
 
-  public readonly hint = input(true); // their species and crown on hover — off where the panel is theirs, which says both already
   public readonly id = input.required<number>();
   public readonly medal = input(true); // Podium medal shown by default; hidden where the entity is the winner by construction.
   public readonly name = input.required<string | undefined>(); // absent on 42 % of WB's actors, but always bound — a silent « Anonyme » would hide a forgotten one
@@ -33,6 +33,8 @@ export class PersonTagComponent {
   });
   // Their realm's own name hue — a subject reads as belonging to that crown, exactly as its `[k]` tag does.
   protected readonly color = computed(() => PaletteHelpers.realmText(this.person()?.kingdom));
+  // Their species and crown on hover for anyone but the favourite, whose own panel already says both.
+  protected readonly hint = computed(() => this.id() !== this._chronicler.currentChapter()?.meta.favorite?.metadata.id);
   // What the plate prints: their name, or the stand-in where WB never gave them one — the row still belongs, only the soul in it went unrecorded.
   protected readonly label = computed(() => this.name() ?? (this._translate.instant('anonymous') as string));
   // And its emblem tint around the plate — the second half of that belonging, shared with the crown's own tag and its villages'.

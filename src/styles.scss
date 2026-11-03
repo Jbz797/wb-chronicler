@@ -66,6 +66,20 @@ canvas {
       }
     }
 
+    // A plate with more to say on hover lights up a touch, so the pointer knows it has landed — a struck one keeps its ash under the light.
+    &.hinted {
+      cursor: help;
+      transition: filter 0.15s ease;
+
+      &:hover {
+        filter: brightness(1.3);
+      }
+
+      &.dead:hover {
+        filter: grayscale(0.85) brightness(1.3);
+      }
+    }
+
     // The species pip and the sex glyph, capped alike on every plate so a family sits level with its village and its crown.
     img {
       max-height: 14px;
