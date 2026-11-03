@@ -115,6 +115,7 @@ export class ReaderPage {
     this._plainTags([...root.querySelectorAll(':scope h1, :scope h2, :scope .chapter th, :scope .chapter hr + p:last-child'), ...replies]);
     for (const line of replies) line.classList.add('dialogue');
     ActorSpriteHelpers.paintAll(root, this._registry.persons());
+    this._bondPlates(root);
     this._hintPlates(root);
     BookSpriteHelpers.paintAll(root, this._registry.books());
     KingdomSpriteHelpers.paintAll(root, this._registry.kingdoms());
@@ -126,6 +127,19 @@ export class ReaderPage {
     SubspeciesSpriteHelpers.paintAll(root, this._registry.subspecies());
     this._plainOpening(root).catch(() => {});
     this._restoreScroll();
+  }
+
+  // The favourite's lover and best friend wear the icon its panel gives that bond, just before their sex — `marked` drew the plates without the chapter.
+  private _bondPlates(root: HTMLElement): void {
+    const companions = this._chronicler.currentChapter()?.meta.favorite?.companions;
+    for (const [icon, person] of [['lovers', companions?.lover], ['friendship', companions?.best_friend]] as const) {
+      if (!person) continue;
+      for (const portrait of root.querySelectorAll<HTMLCanvasElement>(`canvas[data-person="${CSS.escape(String(person.id))}"]`)) {
+        const plate = portrait.closest('.entity-tag');
+        const img = Object.assign(document.createElement('img'), { src: `assets/img/stats/${icon}.png` });
+        plate?.insertBefore(img, plate.querySelector('img[src*="/sex/"], img[src*="/professions/"]'));
+      }
+    }
   }
 
   // The epigraph's larger face can wrap: shrunk by its one-line overflow, pass after pass, since a tag keeps its pixel size and one proportional cut falls short.

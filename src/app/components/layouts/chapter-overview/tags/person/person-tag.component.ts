@@ -21,7 +21,6 @@ export class PersonTagComponent {
   private readonly _translate = inject(TranslateService);
 
   public readonly id = input.required<number>();
-  public readonly medal = input(true); // Podium medal shown by default; hidden where the entity is the winner by construction.
   public readonly name = input.required<string | undefined>(); // absent on 42 % of WB's actors, but always bound — a silent « Anonyme » would hide a forgotten one
 
   // Species/sex/profession badge/dead come from the person registry, kept fresh by actor/city/kingdom info.py. `null` until the person is registered.
@@ -30,6 +29,11 @@ export class PersonTagComponent {
   protected readonly about = computed(() => {
     const person = this.person();
     return person ? LabelHelpers.personAbout(this._translate, person) : '';
+  });
+  // The favourite's lover and best friend, each marked by the icon its own panel gives that bond.
+  protected readonly bonds = computed(() => {
+    const companions = this._chronicler.currentChapter()?.meta.favorite?.companions;
+    return [{ icon: 'lovers', person: companions?.lover }, { icon: 'friendship', person: companions?.best_friend }].filter(b => b.person?.id === this.id());
   });
   // Their realm's own name hue — a subject reads as belonging to that crown, exactly as its `[k]` tag does.
   protected readonly color = computed(() => PaletteHelpers.realmText(this.person()?.kingdom));
