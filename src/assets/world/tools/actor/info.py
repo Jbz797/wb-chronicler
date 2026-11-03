@@ -824,15 +824,6 @@ def _fires(actor: dict, flames: list[tuple[int, int]], met: tuple[int, int], ctx
     return {"place": fire_place(own, index), "tiles": len(own)}, others or None
 
 
-# The same trip made by the body aimed at, which no shared figure tells: its own pace, its own swim — only what differs, and nothing where both agree.
-def _from_them(other: dict, actor: dict, to: dict, ctx: dict) -> dict | None:
-    try:
-        back = _build_to(other, [actor_xy(actor)], named_body(actor), ctx, None, {})
-    except _UnreachableError:
-        return {"unreachable": True}
-    return {key: value for key, value in back.items() if key != "dir" and to.get(key) != value} or None
-
-
 # How this body walks, or `None` for one the ground never holds — a flyer, a body born to the water, one aboard a hull: all keep the crow's line.
 def _gait(actor: dict, ctx: dict) -> Gait | None:
     biology = lineage_traits(actor, ctx)
@@ -1283,7 +1274,7 @@ def _told_time(row: dict) -> tuple[int, float]:
     return next(((rank, row[key]) for rank, key in keys if key in row), (3, 0.0))
 
 
-# One `--to` answered: the walk, the way back from a body, the same goal in the chapter `--since` names — `None` where its refusal was told.
+# One `--to` answered: the walk, the same goal in the chapter `--since` names — `None` where its refusal was told.
 def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict, since: str | None) -> dict | None:
     target, aims, mark, about, whom, each, told = aim
     if target == "cities":
@@ -1299,8 +1290,6 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
             elif mark == "burning":
                 own, trip["other_fires"] = _fires(actor, aims, (trip["burning"]["x"], trip["burning"]["y"]), ctx)
                 trip["burning"] |= own
-            if isinstance(target, int):
-                trip["from_them"] = _from_them(ctx["actors_by_id"][target], actor, trip, ctx)
         except _UnreachableError as e:
             print(f"{e} — `circle`: far", file=sys.stderr)  # out of reach is past every circle: said, a refusal bearing no field
             return None
