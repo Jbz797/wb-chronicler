@@ -1,4 +1,4 @@
-# A body's walk over the map, as WB's pathfinder lets it — counted in tiles at a flat pace: a step costs its length, stretched by what slows the body there.
+# A body's quickest walk over the map, by the ways WB's pathfinder allows — its A* counts steps, this counts time: a step's length, stretched by the pace.
 #
 # The rules (extracted from `Assembly-CSharp.dll`):
 # 1. `AStarFinder.FindPath` bars every `block` tile, lava, and on foot all that is not `ground` — goo. It pays 1 a straight step and 1.414 a slanted one,
