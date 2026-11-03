@@ -35,7 +35,7 @@
   "actor.surroundings": "Rangé au pas du corps, terrain pesé, `crow_tiles` par ligne ; comme `--to`, ne nage que si le but est sur une autre terre. `intimate` ≤ 30 min, `common` ≤ 2 h.",
   "actor.surroundings.boat": "Une coque que le corps rejoint y paraît (`boat_…`), sans être un corps.",
   "actor.surroundings.common_with_boat": "Hors de sa terre, ≤ 2 h en bateau, marches comprises, si son royaume a un transport ; à bord, par l'eau puis à pied.",
-  "actor.surroundings.count": "Hors de l'intime, qui n'a ni lien, ni charge, ni meurtre, ni nom de bête se compte par cité ou `asset_id`, sauf un pensant sans cité ou un groupe d'un seul.",
+  "actor.surroundings.count": "Hors de l'intime, le reste à portée d'une cité ou d'un `asset_id` : ni sa terre entière ni qui a sa ligne (lien, charge, meurtre, nom de bête, pensant sans cité).",
   "actor.surroundings.hours": "Hors de sa terre, le temps pour l'y rejoindre à son pas, nage ou bateau compris (`minutes` sous l'heure) : une nage rapide rapproche une rive lointaine.",
   "actor.surroundings.nearest": "Un groupe d'un seul donne son `nearest`, à vol d'oiseau.",
   "actor.surroundings.sapient": "Se tait devant `kin`, `job` ou `role`, qui le disent déjà.",
