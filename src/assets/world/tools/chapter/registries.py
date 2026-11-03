@@ -7,7 +7,7 @@
 
 import json
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from functools import cache
 from itertools import groupby
 from pathlib import Path
@@ -100,15 +100,15 @@ def _build_registries(save: dict, prev: dict) -> dict:
     crowd: dict[int, tuple[dict, str | None]] = {}
     subspecies_by_id = index_by_id(save.get("subspecies") or [])
 
-    # Headcount and dominant species are all an entry needs, so tally straight away — and WB points the actor at its clan, family and biology, never the reverse.
+    # Headcounts are all an entry needs, so tally straight away — and WB points the actor at its clan, family and biology, never the reverse.
+    members_by_city: Counter = Counter()
     members_by_clan: Counter = Counter()
     members_by_culture: Counter = Counter()
     members_by_family: Counter = Counter()
+    members_by_kingdom: Counter = Counter()
     members_by_language: Counter = Counter()
     members_by_religion: Counter = Counter()
     members_by_subspecies: Counter = Counter()
-    members_by_kingdom: Counter = Counter()
-    species_by_city: defaultdict[int, Counter] = defaultdict(Counter)
 
     for a in actors:
         if is_boat(a):
@@ -125,11 +125,11 @@ def _build_registries(save: dict, prev: dict) -> dict:
             members_by_religion[rid] += 1
         if sid := a.get("subspecies"):
             members_by_subspecies[sid] += 1
-        actor_id, species = a["id"], a.get("asset_id")  # hoisted: the id is read three times below, the species twice
+        actor_id = a["id"]  # hoisted: read three times below
         if actor_id in king_ids:
             kings_by_id[actor_id] = a
         if (cid := a.get("cityID")) is not None:
-            species_by_city[cid][species] += 1
+            members_by_city[cid] += 1
         if kid := a.get("civ_kingdom_id"):
             members_by_kingdom[kid] += 1
         # Every non-boat actor, kingdomless wilds included — the chronicler may tag any of them (species exemplars, lone notables…).
@@ -149,11 +149,11 @@ def _build_registries(save: dict, prev: dict) -> dict:
     rank_by_city = _podium(score_totals([c["id"] for c in cities], city_score_dimensions(save)), MIN_SCORE_PEERS)
     rank_by_kingdom = _podium(score_totals([k["id"] for k in kingdoms], kingdom_score_dimensions(save)), MIN_SCORE_PEERS)
 
-    # WB's plate wears the town's leader's species (`City.getMainSubspecies`), else the first townsman's: the most numerous stands in for that save order.
+    # WB's plate wears the town's leader's species, else its founder's (`City.getActorAsset`, `getFounderSpecies`), never the most numerous.
     city_registry = {
         str(c["id"]): _city_entry(
             c,
-            species_by_city.get(c["id"], Counter()),
+            members_by_city[c["id"]],
             (crowd.get(c.get("leaderID")) or ({},))[0].get("asset_id"),
             kingdoms_by_id.get(c.get("kingdomID")),
             rank_by_city.get(c["id"]),
@@ -163,7 +163,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
 
     kingdom_registry = {}
     for k in kingdoms:  # the king's species, plate and banner alike, as WB's `Kingdom.getActorAsset`: the most numerous of a mixed realm is not its crown
-        crown = _kingdom_species(k, kings_by_id, subspecies_by_id)
+        crown = _kingdom_species(k, kings_by_id)
         kingdom_registry[str(k["id"])] = _defined(_kingdom_entry(k, crown, members_by_kingdom[k["id"]], rank_by_kingdom.get(k["id"])) | _banner(k, crown))
 
     alliances = save.get("alliances") or []
@@ -216,18 +216,17 @@ def _build_registries(save: dict, prev: dict) -> dict:
 
 
 # City registry entry — what a `[c id Nom]` tag draws. `kingdom` stands in for the name's hue, all it still borrows from its crown.
-def _city_entry(city: dict, species: Counter, leader: str | None, kingdom: dict | None, rank: int | None) -> dict:
-    dominant = species.most_common(1)
+def _city_entry(city: dict, members: int, leader: str | None, kingdom: dict | None, rank: int | None) -> dict:
     kingdom = kingdom or {}
     entry = {
         "plate": "capital" if kingdom.get("capitalID") == city.get("id") else "city",  # WB's nameplates: gold studs mark a seat, bare stone the rest
-        "species": leader or (dominant[0][0] if dominant else None),
+        "species": leader or city.get("original_actor_asset"),
     }
     if kingdom_id := kingdom.get("id"):  # its crown, which the name's hue is read off — fallen realms stay registered so a razed city keeps its colour
         entry["kingdom"] = kingdom_id
     if rank is not None:
         entry["rank"] = rank
-    if (size := _size_tier(species.total())) > 1:  # a medallion reading `1` states the floor — every tag pill stays silent at its lowest tier
+    if (size := _size_tier(members)) > 1:  # a medallion reading `1` states the floor — every tag pill stays silent at its lowest tier
         entry["size"] = size
     return _defined(entry)
 
@@ -237,7 +236,7 @@ def _clan_entry(clan: dict, members: int, rank: int | None) -> dict:
     palette = _palette(clan.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
-        "species": clan.get("creator_species_id"),  # the founder's stock, which its recruits need not share — the pip right of the name
+        "species": clan.get("original_actor_asset"),  # the founder's stock (`Clan.get_species_id`), which its recruits need not share — the pip right of the name
     }
     if (size := _size_tier(members)) > 1:  # every tag pill stays silent at its lowest tier, as the city medallion does
         entry["size"] = size
@@ -257,7 +256,7 @@ def _culture_entry(culture: dict, followers: int, rank: int | None) -> dict:
     palette = _palette(culture.get("color_id", ""))
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue; a `null` would break the UI type
-        "species": culture.get("creator_species_id"),  # the founder's stock, which those raised in it need not share — the pip right of the name
+        "species": culture.get("original_actor_asset"),  # the founder's stock (`Culture.get_species_id`), which its folk need not share — the pip right of the name
     }
     if (size := _size_tier(followers)) > 1:
         entry["size"] = size
@@ -302,6 +301,7 @@ def _kingdom_entry(kingdom: dict, species: str | None, members: int, rank: int |
     entry: dict = {
         "color": palette.get("color_text") or _REALM_FALLBACK_HUE,  # the name hue, and the magenta ramp root once lightened; a `null` would break the UI type
         "color_main": palette.get("color_main"),
+        "name": kingdom.get("name"),  # what a subject's tooltip names it by — the tag of the crown itself keeps the prose's own
         "species": species,
     }
     if (size := _size_tier(members)) > 1:  # the crown's own people, not its towns: the chronicler reads those from `kingdom/info.py`
@@ -311,11 +311,9 @@ def _kingdom_entry(kingdom: dict, species: str | None, members: int, rank: int |
     return entry
 
 
-# The king's (or founder's) species — drives the banner set: living subspecies → its `species_id`, else the founding `original_actor_asset` (dead-founder fallback).
-def _kingdom_species(kingdom: dict, kings_by_id: dict, subspecies_by_id: dict) -> str | None:
-    king = kings_by_id.get(kingdom.get("kingID"))
-    subspecies = subspecies_by_id.get(king.get("subspecies")) if king else None
-    return (subspecies or {}).get("species_id") or kingdom.get("original_actor_asset")
+# The king's species, else the founding one, as WB's `Kingdom.getActorAsset` — what the banner set and the plate both wear.
+def _kingdom_species(kingdom: dict, kings_by_id: dict) -> str | None:
+    return (kings_by_id.get(kingdom.get("kingID")) or {}).get("asset_id") or kingdom.get("original_actor_asset")
 
 
 # Language registry entry — its own hue (a tongue is caught, not granted, so it wears no crown's colour), the founder's species and the living headcount.

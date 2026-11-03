@@ -75,6 +75,7 @@ export interface KingdomInfo {
   color: string;
   color_main?: string;
   dead?: boolean;
+  name?: string; // the crown's name at this chapter, which a subject's tooltip reads
   rank?: number;
   size?: number;
   species?: string;

@@ -6,7 +6,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { TranslateService } from '@ngx-translate/core';
 
 import { TruncatedDirective } from '../../../../../directives';
-import { ActorSpriteHelpers, PaletteHelpers } from '../../../../../helpers';
+import { ActorSpriteHelpers, LabelHelpers, PaletteHelpers } from '../../../../../helpers';
 import { RegistryService } from '../../../../../services';
 
 @Component({
@@ -19,12 +19,18 @@ export class PersonTagComponent {
   private readonly _registry = inject(RegistryService);
   private readonly _translate = inject(TranslateService);
 
+  public readonly hint = input(true); // their species and crown on hover — off where the panel is theirs, which says both already
   public readonly id = input.required<number>();
   public readonly medal = input(true); // Podium medal shown by default; hidden where the entity is the winner by construction.
   public readonly name = input.required<string | undefined>(); // absent on 42 % of WB's actors, but always bound — a silent « Anonyme » would hide a forgotten one
 
   // Species/sex/profession badge/dead come from the person registry, kept fresh by actor/city/kingdom info.py. `null` until the person is registered.
   protected readonly person = computed(() => this._registry.persons()[String(this.id())] ?? null);
+  // Their species and crown for the plate's tooltip, as the prose's plates tell them.
+  protected readonly about = computed(() => {
+    const person = this.person();
+    return person ? LabelHelpers.personAbout(this._translate, person) : '';
+  });
   // Their realm's own name hue — a subject reads as belonging to that crown, exactly as its `[k]` tag does.
   protected readonly color = computed(() => PaletteHelpers.realmText(this.person()?.kingdom));
   // What the plate prints: their name, or the stand-in where WB never gave them one — the row still belongs, only the soul in it went unrecorded.

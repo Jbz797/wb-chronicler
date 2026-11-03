@@ -1,23 +1,25 @@
 import { HttpClient } from '@angular/common/http';
-import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, resource, viewChild } from '@angular/core';
+import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, resource, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { MarkdownComponent } from 'ngx-markdown';
 import { NgScrollbar, NgScrollbarModule } from 'ngx-scrollbar';
 import { firstValueFrom, map } from 'rxjs';
 
-import { BOOT_SETTINGS, PAGES, SPECIES_COLORS } from '../../constants';
+import { BOOT_SETTINGS, PAGES, PERSON_REGISTRY, SPECIES_COLORS } from '../../constants';
 import {
-  ActorSpriteHelpers, AllianceSpriteHelpers, BookSpriteHelpers, ClanSpriteHelpers, CultureSpriteHelpers, KingdomSpriteHelpers, LanguageSpriteHelpers,
+  ActorSpriteHelpers, AllianceSpriteHelpers, BookSpriteHelpers, ClanSpriteHelpers, CultureSpriteHelpers, KingdomSpriteHelpers, LabelHelpers, LanguageSpriteHelpers,
   ReligionSpriteHelpers, SubspeciesSpriteHelpers,
 } from '../../helpers';
 import { ChroniclerService, RegistryService } from '../../services';
 
 @Component({
   selector: 'app-reader',
-  imports: [MarkdownComponent, NgScrollbarModule, TranslatePipe],
+  imports: [MarkdownComponent, NgScrollbarModule, NzTooltipModule, TranslatePipe],
   templateUrl: './reader.page.html',
   styleUrl: './reader.page.scss',
 })
@@ -30,6 +32,7 @@ export class ReaderPage {
   private readonly _registry = inject(RegistryService);
   private readonly _router = inject(Router);
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });
+  private readonly _translate = inject(TranslateService);
 
   // Nothing to read and nothing coming: the world is set up but no chapter written yet, so the page says how to open the one who writes them.
   protected readonly awaitsChronicler = computed(() => this._chronicler.probed() && this._chronicler.chapters().length === 0);
@@ -51,6 +54,8 @@ export class ReaderPage {
       return Array.isArray(url) ? url : undefined;
     },
   });
+  // The prose's person plate under the pointer and what its tooltip tells: `marked` writes plain HTML, so one tooltip follows the pointer from plate to plate.
+  protected readonly proseHint = signal<{ origin: ElementRef<HTMLElement>; text: string } | null>(null);
 
   // `undefined` while a chapter slug is still being discovered — avoids flashing/locking onto the Chronicler fallback on refresh.
   private readonly _mdUrl = computed(() => {
@@ -86,6 +91,20 @@ export class ReaderPage {
     });
 
     inject(DestroyRef).onDestroy(() => this._openingObserver.disconnect());
+  }
+
+  // Off the plate it was on, the tooltip goes — unless the pointer only crossed into one of its own children, the portrait or a badge.
+  protected onProseOut(event: PointerEvent): void {
+    const plate = (event.target as Element).closest('.entity-tag');
+    if (plate && !plate.contains(event.relatedTarget as Node | null)) this.proseHint.set(null);
+  }
+
+  // A person's plate under the pointer: its portrait canvas names them, the flattened ones of a heading or a reply having none, so none answers there.
+  protected onProseOver(event: PointerEvent): void {
+    const plate = (event.target as Element).closest<HTMLElement>('.entity-tag');
+    const person = PERSON_REGISTRY[plate?.querySelector<HTMLCanvasElement>('canvas[data-person]')?.dataset.person ?? ''];
+    if (!plate || !person || this.proseHint()?.origin.nativeElement === plate) return;
+    this.proseHint.set({ origin: new ElementRef(plate), text: LabelHelpers.personAbout(this._translate, person) });
   }
 
   // Fills the canvas placeholders `marked` left in the prose — subjects and heraldry alike — now that the rendered chapter sits in the DOM.

@@ -16,7 +16,7 @@
       <app-family-tag [id]="r.id" [name]="r.name" />
     }
     @case ('favorite') {
-      <app-person-tag [id]="r.id" [name]="r.name" />
+      <app-person-tag [hint]="false" [id]="r.id" [name]="r.name" />
     }
     @case ('kingdom') {
       <app-kingdom-tag [id]="r.id" [name]="r.name" />
