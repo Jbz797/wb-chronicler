@@ -111,6 +111,7 @@
   "geography.biomes.patches": "`-i <terre> -t <sol>` : les 5 plus grandes parcelles du sol sur cette terre, chacune avec ses bornes et ce qui la borde.",
   "geography.bodies": "Par terre, puis `islets` et `water` : les corps vivants, coques à part, et parmi eux ceux d'une lignée qui pense (`sapient`).",
   "geography.burning": "Par terre, ses foyers (`fires`) ; ses tuiles en feu par sol (pas ce qui y pousse) s'ils ne la somment pas (`unlisted`, `spills`), hors lave posée ; `-i` : une terre.",
+  "geography.burning.cities": "D'un foyer : les cités où il brûle, la plus touchée d'abord, et ses tuiles en feu chez chacune (une tuile est à la cité de sa zone) ; aucune : rien.",
   "geography.burning.fires": "Un foyer : les tuiles en feu à 16 au plus l'une de l'autre, sur toute la carte ; les 5 plus grands, le reste en `unlisted`.",
   "geography.burning.gone": "Sous `--since`, les foyers d'alors éteints en entier, loin de tout foyer d'aujourd'hui : où ils brûlaient, sur combien de tuiles et de quels sols.",
   "geography.burning.place": "D'un foyer (`fires`, `--to burning`) : le lieu forgé de `places.json` le plus proche, à 32 tuiles au plus de sa flamme la plus proche ; d'un volcan, le cône seul.",

@@ -38,6 +38,7 @@ from shared import (
     HOMES,
     MAX_LISTED,
     SAVES_DIR,
+    ZONE_TILES,
     actor_xy,
     arg_parser,
     asset_families,
@@ -65,6 +66,7 @@ from shared import (
     union_root,
     unsited_reason,
     water_arg,
+    zone_xy,
 )
 from waters import water_bodies, waters_cached
 lazy from places import PlaceIndex, fire_place
@@ -204,10 +206,11 @@ def _build_burning(save: dict, save_path: Path, island: int | str | None, before
     wet, bodies = [tile_layer(name) == "Ocean" for name in tile_map], water_bodies(save, save_path)
     water = partial(_water_near, grid=grid, wet=wet, bodies=bodies)  # handed down, so `_fires` needs no save
     place = partial(fire_place, index=PlaceIndex(save, save_path, island_of, WalkMap(save)))
+    towns = partial(_fire_towns, by_zone={zone_xy(zone): city for city in save.get("cities") or [] for zone in city.get("zones") or []})
     rows = {str(row["id"]): row for row in islands}
     for key in sorted(keys, key=lambda key: _land_order((key, None))):
         # Counts, not the shares `islands` gives: a few dozen tiles read better whole than as percentages of themselves.
-        grounds, fires = _tally(by_land[key]) or None, _fires(burning, key, rows.get(key), water, place, before)
+        grounds, fires = _tally(by_land[key]) or None, _fires(burning, key, rows.get(key), place, towns, water, before)
         # Its listed fires holding the land's whole burning, none past them nor spilling either way: their lines sum it, said once
         told = fires["fires"]
         whole = not fires["unlisted"] and not any(row["spills"] for row in told) and sum(row["tiles"] for row in told) == len(by_land[key])
@@ -475,6 +478,12 @@ def _fire_row(fire: list[tuple[int, int]], burning: dict[tuple[int, int], tuple[
     return {"x": x, "y": y, **side, "grounds": _tally(burning[tile][1] for tile in fire), "spills": dict(spills) or None, "tiles": len(fire)}
 
 
+# The towns a fire burns in, the most burnt first: a tile is a town's by the zone it lies in.
+def _fire_towns(fire: list[tuple[int, int]], by_zone: dict[tuple[int, int], dict]) -> list[dict] | None:
+    held = Counter((city["id"], city.get("name")) for x, y in fire if (city := by_zone.get((x // ZONE_TILES, y // ZONE_TILES))))
+    return [{"id": cid, "name": name, "tiles": n} for (cid, name), n in sorted(held.items(), key=lambda kv: (-kv[1], kv[0][0]))] or None
+
+
 # What burned between two saves, land by land: the tiles caught since (`caught`) and those gone out (`out`) — two instants, a tile out and caught again unseen.
 def _fire_turnover(then: dict[tuple[int, int], tuple[str, str]], now: dict[tuple[int, int], tuple[str, str]], island: int | str | None) -> dict[str, dict]:
     counts: defaultdict[str, Counter] = defaultdict(Counter)
@@ -489,13 +498,17 @@ def _fires(
     burning: dict[tuple[int, int], tuple[str, str]],
     key: str,
     land: dict | None,
-    water: Callable[[list], dict | None],
     place: Callable[[list], dict | None],
+    towns: Callable[[list], list | None],
+    water: Callable[[list], dict | None],
     before: dict[tuple[int, int], tuple[str, str]] | None,
 ) -> dict:
     clusters = fire_clusters(burning)
     homed = sorted((i for i, fire in enumerate(clusters) if _fire_home(fire, burning) == key), key=lambda i: (-len(clusters[i]), min(clusters[i])))
-    told = [{**_fire_row(clusters[i], burning, key, land), "place": place(clusters[i]), "to_water": water(clusters[i])} for i in homed[:_TOP_PATCHES]]
+    told = [
+        {**_fire_row(clusters[i], burning, key, land), "cities": towns(clusters[i]), "place": place(clusters[i]), "to_water": water(clusters[i])}
+        for i in homed[:_TOP_PATCHES]
+    ]
     rest, gone = [clusters[i] for i in homed[_TOP_PATCHES:]], None
     if before is not None:  # `--since`: an earlier fire's tiles gone out held by the fire now nearest it, `over` each in its reach, else that fire gone out whole
         owner, held, over, out = _fire_cells(clusters), Counter(), Counter(), []
