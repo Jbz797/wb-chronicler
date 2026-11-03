@@ -151,7 +151,7 @@
   "history.entity.pop": "D'un clan resté à `pop` 1 : ses `kills` sont ceux de son seul membre.",
   "history.entity.years": "Une plage avant la fenêtre : états en moyenne ; `money`, `renown`, `kings` et `leaders` à leur plus haut ; ses gains sur la plage, la 1ʳᵉ depuis la naissance.",
   "history.founded": "`--since C<n>`, sinon depuis toujours : clans, cultures, langues, religions, familles fondés et encore debout, que le journal tait ; disparus : `world … cumulative`.",
-  "history.log": "Le journal de WB, rien d'autre : ni naissance (`world … roster --bred`), ni clan, culture, langue, religion ou famille fondés (`history founded`).",
+  "history.log": "Le journal de WB seul : ni naissance (`roster --bred`), mort (`actor <id>`, `roster --job king`), couple (`companions`) ni clan, culture… fondés (`history founded`).",
   "history.log.by_event": "Passé 50 entrées, le compte par type d'événement ; `-t <event>` ou `--actor <id>` les liste.",
   "history.log.point": "`at` : `king` le roi à l'instant, `town` la cité, `founder` le fondateur, `capital` la capitale, `disaster` où elle frappe ; pacte et paix, aucun. Morts au registre.",
   "history.unknown": "D'un royaume tombé, les morts que le jeu ne range sous aucune cause (fièvre des Cendres…) : ses compteurs, le registre ne disant pas à qui était un mort.",
