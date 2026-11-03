@@ -1,6 +1,7 @@
 {
   "across.keep": "`--keep a,b.c` : de chaque chapitre, ces seuls champs, par leur chemin pointé depuis le haut du bloc ; un champ absent s'y tait, un refus reste entier.",
   "actor.companions.lover": "Le seul lien qui fait un couple ; `best_friend` n'en fait pas un.",
+  "actor.companions.lover_since": "Le mois où le corps et son compagnon ont formé leur couple, daté chez les deux.",
   "actor.died": "Un mort du registre, même jamais vu d'un chapitre : naissance (`born`), mort (`date`), cause, tueur, tuile, parents, lignée ; sections : `died`, `kin`, `victims`.",
   "actor.kin": "`parents` et `children`, `gone` : mort (au registre), le sang seul : le compagnon est dans `companions` (`lover`).",
   "actor.metadata.age": "L'âge du corps, années apportées comprises (`age_overgrowth`) : c'est lui qui se compare ; qui est là depuis plus longtemps se lit à `born`.",
@@ -179,6 +180,7 @@
   "rulers": "La succession, datée comme en jeu ; un royaume, son fondateur en tête ; une cité, ses chefs, jamais son roi (`kingdom … rulers`). Sa bourse : `pop.ruler_money`.",
   "sapient": "Une lignée qui pense au sens du jeu (`has_sapience`), mobs compris : crânes enflammés, Plague Doctors ; `--sapient` la garde, `--beasts` le reste.",
   "statuses.drowning": "À bout de souffle à la nage, 1 pv par demi-seconde ; le statut tient 1 s de jeu (`speed`) : sur la terre ferme, le corps vient de sortir de l'eau.",
+  "statuses.fell_in_love": "Posé aux deux amants quand ils forment leur couple, gardé 3 ans ; la date du couple : `actor … companions` (`lover_since`).",
   "statuses.had_bad_dream": "Un rêve tiré au réveil, un sur trois (bon, mauvais, cauchemar), gardé un an et demi : −15 de bonheur ; il ne fait pas d'un corps un dormeur.",
   "statuses.had_good_dream": "Un rêve tiré au réveil, un sur trois (bon, mauvais, cauchemar), gardé un an et demi : +15 de bonheur ; il ne fait pas d'un corps un dormeur.",
   "statuses.had_nightmare": "Un rêve tiré au réveil, un sur trois (bon, mauvais, cauchemar), gardé un an et demi : −30 de bonheur ; il ne fait pas d'un corps un dormeur.",

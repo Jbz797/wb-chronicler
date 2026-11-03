@@ -80,6 +80,7 @@ from shared import (
     kept_army_since,
     kept_city_since,
     kept_deaths,
+    kept_lover_since,
     life_stage,
     light,
     load_data,
@@ -1522,9 +1523,10 @@ def main(argv: list[str]) -> int:
     if targets and not any(aimed.values()):
         return 1
     out: dict = {}
-    if "companions" in sections:  # both attachments as plain refs — `emit` drops whichever is unset or dead, and the section itself when the actor has neither
+    if "companions" in sections:  # both as plain refs, the couple dated beside a living mate — `emit` drops what is unset or dead, the section when nothing is left
         by_id = ctx["actors_by_id"]
-        out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": entity_ref(actor.get("lover"), by_id)}
+        lover = entity_ref(actor.get("lover"), by_id)
+        out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": lover, "lover_since": lover and kept_lover_since(actor)}
     if "gear" in sections:
         out["gear"] = _build_gear(actor, ctx)
     if "inventory" in sections:

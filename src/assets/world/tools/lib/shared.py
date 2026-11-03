@@ -942,6 +942,10 @@ def kept_deaths(save: dict) -> dict[int, dict]:
     return _deaths_until(_deaths_base(now), now)
 
 
+def kept_lover_since(actor: dict) -> str | None:
+    return _kept_since(actor, "lover", "lover")
+
+
 # The building the Faithful Saves mod found a body inside, by its id. WB keeps `is_inside_building` on the runtime actor alone: no save without the mod says it.
 def kept_roof(actor: dict) -> int | None:
     return (actor.get("custom_data_long") or {}).get("faithful_inside")
