@@ -42,13 +42,13 @@ from shared import (
 _ALL_SECTIONS = ("boats", "inventory", "metadata", "occupants")
 
 
-# Absent off a shipyard, `in_building` telling a hull tied up in it from one riding by. `boat/info.py <id>` spells one out.
-def _build_boats(moored: list[dict], spots: dict[int, dict], requested: str | None) -> dict:
+# Absent off a shipyard, `spot` telling a hull tied up in it from one riding by. `boat/info.py <id>` spells one out.
+def _build_boats(moored: list[dict], spots: dict[int, str], requested: str | None) -> dict:
     if not moored:
         return {}
     if not wants_detail(requested, len(moored)):  # `full` keeps it light — one count, the hulls themselves only when the section is asked for by name
         return light({"total": len(moored)})
-    afloat = [{"asset_id": b.get("asset_id"), "id": b["id"], "name": b.get("name"), **spots.get(b["id"], {})} for b in moored]
+    afloat = [{"asset_id": b.get("asset_id"), "id": b["id"], "name": b.get("name"), "spot": spots.get(b["id"])} for b in moored]
     return {"afloat": afloat, "total": len(moored)}
 
 
@@ -110,14 +110,14 @@ def _eldest(rows: list[dict]) -> list[dict]:
     return sorted(rows, key=lambda o: (-o["age"], o["id"]))
 
 
-# Under this roof, as the Faithful Saves mod kept it, or standing at it: its tile or one beside, and no other structure nearer. Absent unless true.
-def _here(actor: dict, house: dict, by_tile: dict[tuple, dict]) -> dict:
+# Under this roof, as the Faithful Saves mod kept it, or standing beside it: its tile or a neighbour, no other structure nearer. None elsewhere.
+def _here(actor: dict, house: dict, by_tile: dict[tuple, dict]) -> str | None:
     if kept_roof(actor) == house["id"]:
-        return {"in_building": True}
-    return {"at_building": True} if building_at(actor, by_tile) is house else {}
+        return "in"
+    return "beside" if building_at(actor, by_tile) is house else None
 
 
-# One body under or at this roof, where it stands said by `spots`.
+# One body under or beside this roof, where it stands said by `spots`.
 def _occupant(actor: dict, ctx: dict, save: dict) -> dict:
     return {
         "age": actor_age(actor, ctx["world_time"]),
@@ -127,7 +127,7 @@ def _occupant(actor: dict, ctx: dict, save: dict) -> dict:
         "job": resolve_profession(actor, save),
         "name": actor.get("name"),
         "sex": sex_label(actor),
-        **ctx["spots"].get(actor["id"], {}),
+        "spot": ctx["spots"].get(actor["id"]),
     }
 
 
@@ -162,7 +162,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     civic = house.get("asset_id") in civic_building_ids()  # WB files trees and wheat under `buildings` too, and nobody stands at a field as at a fire
-    spots: dict[int, dict] = {}  # who is under this roof or stands at it, by id: read once as the walk sorts them, and said again on each row
+    spots: dict[int, str] = {}  # who is under this roof or stands beside it, by id: read once as the walk sorts them, and said again on each row
     dwellers: list[dict] = []
     visitors: list[dict] = []
     moored: list[dict] = []

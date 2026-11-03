@@ -12,7 +12,7 @@ _AUDIT = {
             "age_stage",
             "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
             "army_since",
-            "at_building",
+            "beside_building",
             "besieged_by",
             "born",  # when WB set it on the map, a soul or a people — for the chronicler's « who came first », no panel dating either
             "breeds_on",

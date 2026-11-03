@@ -1611,13 +1611,13 @@ def weapon_assets() -> frozenset[str]:
     return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
 
 
-# Where a body stands as to the built: the roof it is under, as the Faithful Saves mod kept it, and the structure it stands at, unsaid where it is that roof.
+# Where a body stands as to the built: the roof it is under, as the Faithful Saves mod kept it, and the structure it stands beside, unsaid where it is that roof.
 def whereabouts(actor: dict, buildings: Sequence[dict], by_tile: Mapping[tuple, dict]) -> dict:
     roof = kept_roof(actor)
     inside = next((b for b in buildings if b.get("id") == roof), None) if roof is not None else None
-    at = building_at(actor, by_tile)
+    beside = building_at(actor, by_tile)
     return {
-        "at_building": {"asset_id": at.get("asset_id"), "id": at["id"]} if at and at is not inside else None,
+        "beside_building": {"asset_id": beside.get("asset_id"), "id": beside["id"]} if beside and beside is not inside else None,
         "in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]} if inside else None,
     }
 
