@@ -105,9 +105,10 @@ export class ReaderPage {
   // Fills the canvas placeholders `marked` left in the prose — subjects and heraldry alike — now that the rendered chapter sits in the DOM.
   protected onReady(): void {
     const root = this._element.nativeElement;
-    // Flattened before the paint: headings, the closing hook, a table's column titles, and a dialogue's lines, where a plate would break the voice.
+    // Flattened before the paint: headings, the closing hook, a table's column titles, a quoted aside and a dialogue's lines, where a plate would break the voice.
     const replies = [...root.querySelectorAll(':scope .chapter p')].filter(line => line.textContent?.trimStart().startsWith('—'));
-    this._plainTags([...root.querySelectorAll(':scope h1, :scope h2, :scope .chapter th, :scope .chapter hr + p:last-child'), ...replies]);
+    const voiced = root.querySelectorAll(':scope h1, :scope h2, :scope .chapter blockquote, :scope .chapter th, :scope .chapter hr + p:last-child');
+    this._plainTags([...voiced, ...replies]);
     for (const line of replies) line.classList.add('dialogue');
     ActorSpriteHelpers.paintAll(root, this._registry.persons());
     this._bondPlates(root);
