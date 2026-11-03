@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 03/11/26 12:07</p>
+<p class="metadata">Date de mise à jour : 03/11/26 15:21</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -38,39 +38,43 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ## Options :
 
+### Partagées :
+
+- `--sapient`, `--beasts` : sous `world … lineages`, `pairings` et `roster`
+- `--since C<n>` : ce qui a bougé depuis, sous `actor` (`gloss:actor.since`, `gloss:to.then`), `geography` en soldes (`gloss:geography.since`), `history log` et `world … roster`
+- `-i <id>` : une terre, ou `islets` et `water` là où on les compte (`geography`, `world … roster`) ; sous `tiles`, `gloss:to_island`
+- `-w <eau>` : `lake<id>`, `river<id>` ou `sea<id>` ; sous `geography … waters`, une famille (`lake`…) ; sous `tiles`, `gloss:to_body`
+
 ### `actor` :
 
-- `--since C<n>` : ce qui a bougé depuis (`gloss:actor.since`, `gloss:to.then`)
 - `--statuses` : ses statuts, par chapitre (`gloss:actor.statuses`)
 - `--to <p<id> | x,y | b<id> | c<id> | cities | i<terre> | lands | "<lieu>" | lake4 | burning | type>` : une cité par son centre, les cités et les terres qu'il peut gagner, un nom de `places.json` (`gloss:to.place`), la flamme la plus proche, ou le plus proche de chaque type, famille, ressource, sol, gel (`frozen`) ou eau (`lake`, `water`…), `g:<sol>` un sol, même au nom d'un type, par virgules pour ceux-là seuls ; répété, chacun à part. `gloss:actor.to`.
 
 ### `geography` :
 
-- `--since C<n>` : ce qui a bougé, en soldes (`gloss:geography.since`)
-- `-i <id>` : une seule terre dans les sections rangées par terre, ou `islets` et `water` là où elles les comptent
 - `-t <type>` : sous `positions`, types, familles (`trees`…, `homes` les toits) et ressources, par virgules, hors corps ; sous `biomes`, un biome ou un sol (`gloss:biomes`)
-- `-w <eau>` : sous `waters`, une eau ou une famille (`lake`…)
 
 ### `history` :
 
 - `entity <type> <id>` : les années d'une entité
 - `founded` : ce que le journal tait (`gloss:history.founded`)
-- `log` : `--since C<n>`, `--actor <id>` celles d'un corps, `-t <event>` un type
+- `log` : `--actor <id>` celles d'un corps, `-t <event>` un type
 - `world` : `gloss:history.world`
+
+### `kingdom` :
+
+- `relations --kingdom <id>[,<id>]` : envers ceux-là seuls
 
 ### `tiles` :
 
 - `-g <sol>` : `gloss:to_ground`
-- `-i <id>` : une terre par son id (`gloss:to_island`)
 - `--to <x,y>` : cap et mesures, sous `to` si une section la rejoint ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre), un corps `p<id>`, une eau `lake<id>` ou un `"<lieu>"` (`gloss:to.from`)
-- `-w <eau>` : une eau, `lake<id>`, `river<id>` ou `sea<id>` (`gloss:to_body`)
 
 ### `world` :
 
 - `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
-- `lineages` : `-t` une espèce, `--sapient` ou `--beasts` (`gloss:lineages`)
-- `pairings` : `gloss:pairings`
-- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--rank <mesure> [n]`, `--nearest <x,y | p<id>>` au plus près à vol d'oiseau, `--with <champs>`, 4 au plus, d'`actor … stats` ou d'une fiche, `--status`/`--task <id>`, `--stage <palier>`, `--sapient` ou `--beasts`, `--bred` les nés d'un corps, `--settle` (`settle` vrai ou `child`), `--barred` l'inverse, `-i` une terre, `islets` ou `water`, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`…) ses membres, `--job <métier>` (`king`…), `--since C<n>` ce qui a changé. `gloss:roster`.
+- `lineages`, `pairings` : `-t` une espèce (`gloss:lineages`, `gloss:pairings`)
+- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--rank <mesure> [n]`, `--nearest <x,y | p<id>>`, `--with <champs>`, 4 au plus, d'`actor … stats` ou d'une fiche, `--status`/`--task <id>`, `--stage <palier>`, `--bred` les nés d'un corps, `--settle` (`settle` vrai ou `child`), `--barred` l'inverse, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`…) ses membres, `--job <métier>` (`king`…). `gloss:roster`.
 
 ---
 

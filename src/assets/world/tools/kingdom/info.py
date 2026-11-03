@@ -358,7 +358,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
 
 
 # Diplomatic ties involving this kingdom. Status derived from alliances/wars cross-ref (WB only persists pair + timestamps).
-def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool) -> list[dict]:
+def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool, rivals: set[int] | None) -> list[dict]:
     kid = kingdom["id"]
     alliances = save.get("alliances", [])
     ongoing_wars = [w for w in save.get("wars", []) if not w.get("winner")]
@@ -387,7 +387,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool) -> li
 
     for other in save.get("kingdoms", []):
         other_id = other.get("id")
-        if other_id == kid:
+        if other_id == kid or (rivals and other_id not in rivals):  # `--kingdom` spares the opinions nobody asked for, both ways
             continue
         r = relations_by_other.get(other_id)
         status = "ally" if other_id in allies else "enemy" if other_id in enemies else "neutral"
@@ -650,6 +650,17 @@ def _resolve_heir(kingdom: dict, ctx: dict) -> dict | None:
     return {"id": heir["id"], "name": heir.get("name")} if heir else None
 
 
+# `--kingdom <id>[,<id>]` taken out of the call, the rest left positional: the rivals `relations` narrows to, none when absent.
+def _take_rivals(argv: list[str]) -> tuple[list[str], set[int] | None]:
+    if "--kingdom" not in argv:
+        return argv, None
+    at = argv.index("--kingdom")
+    try:
+        return argv[:at] + argv[at + 2 :], {int(token) for token in argv[at + 1].split(",")}
+    except IndexError, ValueError:
+        raise ValueError("✗ `--kingdom` takes kingdom ids, comma-separated: `--kingdom 3,7`") from None
+
+
 # WB keeps the instigator apart from the pack on each side, and writes `None` into the lists it never filled — folded here so callers see two plain sets.
 def _war_sides(war: dict) -> tuple[set, set]:
     attackers = ({war.get("main_attacker")} | set(war.get("list_attackers") or [])) - {None}
@@ -671,8 +682,13 @@ def _zone_halo(zones: list[tuple[int, int]]) -> set[tuple[int, int]]:
 
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
+    try:
+        argv, rivals = _take_rivals(argv)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 2
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [--kingdom <id>[,<id>]] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         kingdom_id = int(argv[0])
@@ -686,10 +702,16 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
+    if rivals and "relations" not in sections:
+        print("✗ `--kingdom` narrows `relations` alone — name it: `<id> relations --kingdom <id>`", file=sys.stderr)
+        return 2
     save = load_save(save_path)
     kingdom = index_by_id(save.get("kingdoms", [])).get(kingdom_id)
     if kingdom is None:
         print(absent_entity("kingdom", "kingdoms", kingdom_id, chapter), file=sys.stderr)
+        return 1
+    if rivals and (wrong := sorted(rivals.difference(others := sorted(k["id"] for k in save.get("kingdoms", []) if k["id"] != kingdom_id)))):
+        print(f"✗ no other kingdom {', '.join(map(str, wrong))} — `--kingdom` takes {', '.join(map(str, others))}", file=sys.stderr)
         return 1
     ctx = _build_context(save, save_path)
 
@@ -714,7 +736,8 @@ def main(argv: list[str]) -> int:
         out["ranks"] = _compute_ranks(kingdom, ctx, save)
     if "relations" in sections:
         # Naming a section is asking for it in depth, so its opinions come with the full ledger; `full` sweeps everything and keeps the two-line summary.
-        out["relations"] = _build_relations(kingdom, ctx, save, detailed=requested not in (None, "full"))
+        relations = _build_relations(kingdom, ctx, save, detailed=requested not in (None, "full"), rivals=rivals)
+        out["relations"] = relations[0] if rivals and len(rivals) == 1 else relations  # one rival asked comes bare, as one block named does
     if "rulers" in sections:
         out["rulers"] = reigns(kingdom, ctx["actors_by_id"], requested)  # the sitting king is its last entry, the founder its first
     if "wars" in sections:
