@@ -72,21 +72,8 @@ from shared import (
     write_save,
 )
 
-# The chapter's own tongue, for the audit account the player reads beside the chapter.
-_ACCOUNT = {
-    "en": {
-        "facts": "Fact check: {} gaps fixed",
-        "none": "not applicable",
-        "reaudit": "Re-audit: {} gaps fixed",
-        "story": "Story check: {} gaps fixed",
-    },
-    "fr": {
-        "facts": "Vérification des faits : {} écarts corrigés",
-        "none": "non applicable",
-        "reaudit": "Réaudit : {} écarts corrigés",
-        "story": "Vérification du récit : {} écarts corrigés",
-    },
-}
+# The chapter's own tongue, for the one line of audit the player reads beside the chapter: its rounds of reading, every gap fixed across them.
+_ACCOUNT = {"en": "Audit: {} rounds of reading, {} gaps fixed", "fr": "Audit : {} tours de lecture, {} écarts corrigés"}
 
 _AGE_SLOTS = ("age_hope", *("age_unknown",) * 7)  # WB resolves them one at a time; a world always opens on the first
 
@@ -472,13 +459,9 @@ def _deliver() -> int:
     print(f"✓ C{n} — delivery")
     if _snapshot(n) is not None:  # what a retouch after delivery is weighed against, `echo.py` weighing those lines alone
         chronicle_git("tag", "-f", f"C{n}-delivered")
-    labels = _ACCOUNT.get(settings.get("lang", ""), _ACCOUNT["en"])
-    detail = "each line details its gaps" if settings.get("dev") else "no comment beside them"
-    account = ", ".join(f"« {labels[key].format('N')} »" for key in ("facts", "story"))
-    # The compliance verdicts are the chronicler's own tally, as the counts are: only he knows what he corrected, round after round.
-    verdicts = f"a line per part of docs/chronicler.md, § I to § V: `§ N : ` then `✓`, `✓ (N corrections)` or « {labels['none']} »"
-    rounds = f"« {labels['reaudit'].format('N')} » for all later rounds, the rest counting the first"
-    print(f"  → with the chapter, the audit's account: {verdicts}, then {account}, {rounds} — {detail}")
+    # The chronicler's own tally, round after round: only he knows how many he ran and what he fixed — the four auditors together, no list beside it.
+    account = _ACCOUNT.get(settings.get("lang", ""), _ACCOUNT["en"]).format("N", "N")
+    print(f"  → with the chapter, the audit in one line: « {account} », each noun agreeing with its number")
 
     # The workshop switch is the player's, and it decides who he is here: a reader is owed the chapter and its account, nothing more.
     if settings.get("dev"):
