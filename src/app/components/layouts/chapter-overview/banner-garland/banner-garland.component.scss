@@ -5,6 +5,7 @@
   flex: 1 1 0;
   margin: 0 -1rem; // over the overview's padding, so the cord is nailed to the panel's own edges
   overflow: hidden;
+  position: relative; // the banners' frame: absolute, they would otherwise hang from the overview's top
 
   .cord {
     path {
