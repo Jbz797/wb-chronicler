@@ -890,8 +890,8 @@ def _fallen_kings(save: dict, then: dict) -> dict[int, int]:
     for entry in log_entries(since, now, deaths=True):
         if entry["event"] == "king_dead":
             fallen[entry["actor_id"]] = entry["kingdom_id"]
-        elif entry["event"] == "king_killed":  # its body the killer's: the king is the death that killer dealt that month, nearest the slain one's point
-            dealt = [dead for dead in deaths.values() if dead["killer"] == entry["actor_id"] and since < dead["died"] <= now]
+        elif entry["event"] == "king_killed":  # its body the killer's: a king it slew that month, nearest the slain one's point — any, off a table without `job`
+            dealt = [dead for dead in deaths.values() if dead["killer"] == entry["actor_id"] and since < dead["died"] <= now and dead["job"] in ("king", None)]
             if dealt:
                 at = (entry["date"], entry["x"], entry["y"])
                 king = min(dealt, key=lambda dead, at=at: (world_date(dead["died"]) != at[0], walk_tiles(dead["x"] - at[1], dead["y"] - at[2])))

@@ -10,10 +10,11 @@ namespace FaithfulSaves
     internal static class DeathPatches
     {
         private const string Create = "CREATE TABLE IF NOT EXISTS " + Table + " (id INTEGER PRIMARY KEY, asset_id TEXT, name TEXT, subspecies INTEGER, "
-            + "parent_id_1 INTEGER, parent_id_2 INTEGER, born REAL, died REAL, cause TEXT, killer INTEGER, x INTEGER, y INTEGER, blow TEXT)";
+            + "parent_id_1 INTEGER, parent_id_2 INTEGER, born REAL, died REAL, cause TEXT, killer INTEGER, x INTEGER, y INTEGER, blow TEXT, job TEXT)";
         private const string Blow = "blow"; // the column a table from 1.7.0 lacks, added at its first save under 1.8.0
+        private const string Job = "job"; // the column a table before 1.10.0 lacks, added at its first save under it
         private const string From = "faithful_deaths_from"; // the world's time since which the table misses no death: the mod's first death or save there
-        private const string Insert = "INSERT OR REPLACE INTO " + Table + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        private const string Insert = "INSERT OR REPLACE INTO " + Table + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         private const string Table = "FaithfulDeaths";
 
         private static readonly AccessTools.FieldRef<Actor, BaseSimObject> _attackedBy = AccessTools.FieldRefAccess<Actor, BaseSimObject>("attackedBy");
@@ -60,7 +61,7 @@ namespace FaithfulSaves
             _pending.Add(new object[]
             {
                 id, __instance.asset.id, data.name, data.subspecies, data.parent_id_1, data.parent_id_2, data.created_time, World.world.getCurWorldTime(),
-                __1.ToString(), killer, tile?.x ?? 0, tile?.y ?? 0, blow,
+                __1.ToString(), killer, tile?.x ?? 0, tile?.y ?? 0, blow, JobOf(__instance),
             });
             MarkFrom();
         }
@@ -81,8 +82,11 @@ namespace FaithfulSaves
             using (connection.Lock())
             {
                 connection.Execute(Create);
-                if (!connection.GetTableInfo(Table).Exists(column => column.Name == Blow))
-                    connection.Execute("ALTER TABLE " + Table + " ADD COLUMN " + Blow + " TEXT");
+                foreach (string column in new[] { Blow, Job })
+                {
+                    if (!connection.GetTableInfo(Table).Exists(kept => kept.Name == column))
+                        connection.Execute("ALTER TABLE " + Table + " ADD COLUMN " + column + " TEXT");
+                }
                 connection.RunInTransaction(() => _pending.ForEach(row => connection.Execute(Insert, row)));
             }
             _pending.Clear();
@@ -92,6 +96,21 @@ namespace FaithfulSaves
         [HarmonyPrefix]
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.currentWorldToSavedMap))]
         private static void BeforeWorldSave() => MarkFrom();
+
+        // The post a body dies in, as the chronicle's tools word the save's `profession`, a warrior leading an army apart: `civilian` for any other, beasts too.
+        private static string JobOf(Actor actor)
+        {
+            if (actor.is_army_captain)
+                return "army_captain";
+            switch (actor.getProfession())
+            {
+                case UnitProfession.King: return "king";
+                case UnitProfession.Leader: return "leader";
+                case UnitProfession.Unit: return "civilian";
+                case UnitProfession.Warrior: return "warrior";
+                default: return null;
+            }
+        }
 
         // The table's start, set once in the save: deaths before the mod ran are none of its knowing.
         private static void MarkFrom()

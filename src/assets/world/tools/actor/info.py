@@ -787,7 +787,7 @@ def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, 
     return 0
 
 
-# A body the register saw die: what it was and of whom, then when, of what, by whom and where — its land as the map read draws it.
+# A body the register saw die: what it was, of whom and in what post, then when, of what, by whom and where — its land as the map read draws it.
 def _death(dead: dict, ctx: dict) -> dict:
     by_id, deaths, lineage = ctx["actors_by_id"], ctx["deaths"], dead["subspecies"]
     return {
@@ -797,6 +797,7 @@ def _death(dead: dict, ctx: dict) -> dict:
         "date": world_date(dead["died"]),
         "died_of": dead["cause"],
         "island_id": _land_of(dead, ctx),
+        "job": dead["job"],
         "killed_by": alive_or_dead_ref(dead["killer"], by_id, deaths),
         "name": dead["name"],
         "parents": [alive_or_dead_ref(parent, by_id, deaths) for parent in dead["parents"]] or None,
@@ -1366,6 +1367,7 @@ def _victims(actor_id: int, ctx: dict, requested: str | None) -> dict | None:
             "date": world_date(d["died"]),
             "died_of": d["cause"] if d["cause"] == "metamorphosis" else None,  # changed under the blow: said, where any other is plainly slain
             "id": d["id"],
+            "job": d["job"],
             "name": d["name"],
             "x": d["x"],
             "y": d["y"],
