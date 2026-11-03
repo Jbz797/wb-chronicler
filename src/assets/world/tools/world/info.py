@@ -1079,7 +1079,8 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
     thinking = "thinking " if args.sapient or args.settle or args.barred else "unthinking " if args.beasts else ""
     unborn = kinds is not None and not any(a.get("asset_id") in kinds for a in save.get("actors_data") or [] if not is_boat(a))
     hint = " — a family of buildings (`trees`…) holds none, `geography … entity_types` lists the kinds" if unborn else ""
-    return f"✗ no living {thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
+    living = "" if since else "living "  # under `--since` the dead are searched too
+    return f"✗ no {living}{thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
 
 
 # A tie widened to the bodies beside it: one it holds, or one among `ids`.
