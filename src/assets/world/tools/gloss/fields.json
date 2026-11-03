@@ -173,6 +173,8 @@
   "leaders.persons": "Dans `world … leaders`, seul `persons` ne pèse que les êtres pensants.",
   "leaders.value": "Chaque titulaire porte sa `value`, sauf un `score`, dont les points grimpent avec les rivaux ; `hungriest` se lit à l'envers : le ventre le moins plein, en %.",
   "pop.eaters": "Les bouches, quand un corps n'a pas d'estomac : `food_per_capita` partage les vivres entre elles.",
+  "pop.men": "Les mâles de l'entité, même chez les bêtes (le mot de WB) ; d'une espèce entière, toutes lignées : `world … roster -t <espèce> --with sex`.",
+  "pop.women": "Les femelles de l'entité, même chez les bêtes (le mot de WB) ; d'une espèce entière, toutes lignées : `world … roster -t <espèce> --with sex`.",
   "ranks": "Un rang de compétition (1, 2, 2, 4) ; aucun pour un niveau 1, une seule cité ou royaume, une `attractivity` ≤ 0, une valeur à plus de la moitié du vivier.",
   "religion.metadata.cities": "`cities` et `kingdoms` comptent qui l'a faite sienne, pas où vivent ses fidèles.",
   "religion.metadata.kingdoms": "Une cité ne prend une foi que si son chef y croit, un royaume que si son roi la décrète (`wiki:Religions`).",
