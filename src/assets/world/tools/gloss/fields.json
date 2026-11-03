@@ -5,7 +5,7 @@
   "actor.died": "Un mort du registre, même jamais vu d'un chapitre : naissance (`born`), mort (`date`), cause, tueur, tuile, parents, lignée ; sections : `died`, `kin`, `victims`.",
   "actor.died.job": "Son poste à sa mort, au registre : `king`, `leader`, `army_captain`, `warrior`, sinon `civilian`, bêtes comprises ; son royaume : `roster --job king --since`.",
   "actor.kin": "`parents` et `children`, `gone` : mort (au registre), le sang seul : le compagnon est dans `companions` (`lover`).",
-  "actor.metadata.age": "L'âge du corps, années apportées comprises (`age_overgrowth`) : c'est lui qui se compare ; qui est là depuis plus longtemps se lit à `born`.",
+  "actor.metadata.age": "L'âge, années apportées comprises (`age_overgrowth`) : un seuil s'y compare ; l'écart de deux corps, à leur `born` ôté d'`age_overgrowth` ; l'ancienneté, à `born`.",
   "actor.metadata.age_overgrowth": "Les années que `age` compte sans les avoir vécues ici : un migrant appelé par le feu arrive grand (1 à 2 fois l'âge de venue de son espèce), un clone, un paradoxe.",
   "actor.metadata.army_since": "Le mois où le corps est entré dans son armée.",
   "actor.metadata.at_building": "Le corps se tient à une tuile au plus d'un des bâtiments nommés, sans y être entré.",
