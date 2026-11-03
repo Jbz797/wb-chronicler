@@ -207,6 +207,7 @@
   "tiles.islet.name": "Le lieu de `places.json` dont le point tombe sur cet îlot : l'îlot baptisé, ou le cône d'un volcan cerné de lave ; absent, l'îlot n'a pas de nom.",
   "tiles.islet.off": "La terre dont l'îlot est au large, s'il est à 60 tuiles ou moins, et son côté (`side`) : le cap de son `heart` depuis le `centroid` de la terre, `centre` au cœur.",
   "tiles.islet.size": "Le rocher entier : son sol, sa roche, sa lave et les îlots accolés, comme une terre compte sa taille ; `islet_tiles` n'en pèse que le sol.",
+  "tiles.owner": "La cité qui tient la tuile, par la zone où elle tombe, et son royaume ; hors de toute cité, rien (demandé seul : « no town »).",
   "tiles.rays": "Par direction, sur le cap exact (la plus proche : `--to`), la distance au relief qui change (montagne et cime ensemble, une eau par son id), et avant lui au biome.",
   "tiles.tile_info.block": "Ce qui barre la marche sur la tuile.",
   "tiles.tile_info.islet_tiles": "Le sol seul de la masse où se tient la tuile, moins de 300 pour un îlot ; `islet … size` compte le rocher entier.",

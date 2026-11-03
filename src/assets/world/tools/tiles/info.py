@@ -70,9 +70,9 @@ from shared import (
 from walking import WalkMap, walk_way, walled_in
 from waters import river_ends_near, water_bodies, water_tiles, waters_cached
 
-_ALL_SECTIONS = ("actors", "context", "distances", "ground", "islet", "rays", "tile_info")
+_ALL_SECTIONS = ("actors", "distances", "ground", "islet", "owner", "rays", "tile_info")
 _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can lie along, every 45° from east, `y` growing north
-_BARE = {"actors": "no body", "ground": "nothing built or grown"}  # what a tile lacks, said when `actors` or `ground` is all the call asked
+_BARE = {"actors": "no body", "ground": "nothing built or grown", "owner": "no town"}  # what a tile lacks, said when these are all the call asked
 _BRUTE_PAIRS = 20_000  # tile pairs two grounds are weighed by one by one: a building and a body, never a land and a lake
 _BURNING = "burning"  # what `-g` takes for the fires, no ground: `geography … burning` names them so
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
@@ -135,7 +135,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
             if (b.get("mainX", 0), b.get("mainY", 0)) in wanted and (pos := building_tile(b)) is not None:
                 ctx["ground_by_pos"][pos] = b
 
-    if {"actors", "context", "distances"} & sections:  # the two id maps resolve refs for `actors` as well as `context`
+    if {"actors", "distances", "owner"} & sections:  # the two id maps resolve refs for `actors` as well as `owner`
         ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
         ctx["kingdoms_by_id"] = index_by_id(save.get("kingdoms") or [])
 
@@ -145,7 +145,7 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
         ctx["biome_of"], ctx["relief_of"] = cache(lambda tx, ty: _biome_of(tx, ty, ctx)), cache(lambda tx, ty: _relief_of(tx, ty, ctx))
         ctx["map_size"] = sum((save.get("tileAmounts") or [[]])[0]), len(save.get("tileArray") or [])
 
-    if {"context", "distances"} & sections:
+    if {"distances", "owner"} & sections:
         _index_cities(ctx, {(x // ZONE_TILES, y // ZONE_TILES) for x, y in coords})
 
     # `distances` needs it too, to say how far a rock lies from a land a city could hold, and a walk what land it keeps to
@@ -206,14 +206,6 @@ def _closest_pair(first: list[tuple[int, int]], second: list[tuple[int, int]]) -
                     if (crow := walk_tiles(tx - sx, ty - sy)) < best:
                         best, pair = crow, ((sx, sy), (tx, ty))
     return (pair[1], pair[0]) if flip else pair
-
-
-# `{}` on unclaimed ground, which `emit` strips from the cell.
-def _context_at(x: int, y: int, ctx: dict) -> dict:
-    city = _city_at(x, y, ctx)
-    if city is None:
-        return {}
-    return {"city": {"id": city["id"], "name": city.get("name")}, "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"])}
 
 
 # Every reading counts steps, WB walking its eight directions.
@@ -306,6 +298,10 @@ def _ground_at(x: int, y: int, ctx: dict) -> dict:
     family = building_family(asset)  # named as `geography` names them
     dated = "laid" if asset in civic_building_ids() else "born"  # a town's building is laid, a tree or an ore grows
     return {"asset_id": asset, dated: entity_born(b), "id": b.get("id"), "type": family, "under_construction": under_construction(b) or None}
+
+
+def _holds(section: str, coords: list[tuple[int, int]], ctx: dict) -> bool:
+    return any(_owner_at(x, y, ctx) for x, y in coords) if section == "owner" else bool(ctx[f"{section}_by_pos"])  # each index holds the tiles asked alone
 
 
 # Quarters are held by their corner tile, a town being the ground they cover — while a crown's seat stays the one centre `city/info.py` sites a capital by.
@@ -492,6 +488,14 @@ def _nearest_water(x: int, y: int, ctx: dict) -> dict | None:
     return {**ctx["water_body"]()(*at), **reach}
 
 
+# The town holding a tile, and its crown — `{}` on unclaimed ground, which `emit` strips from the cell.
+def _owner_at(x: int, y: int, ctx: dict) -> dict:
+    city = _city_at(x, y, ctx)
+    if city is None:
+        return {}
+    return {"city": {"id": city["id"], "name": city.get("name")}, "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"])}
+
+
 # What each of the eight headings runs into, as the crow flies to the tile reached: the relief's change, after the biome's if sooner — a wall seen from its foot.
 def _rays_at(x: int, y: int, ctx: dict) -> dict:
     (width, height), relief, biome = ctx["map_size"], ctx["relief_of"], ctx["biome_of"]
@@ -664,14 +668,10 @@ def main(argv: list[str]) -> int:
         land = ctx["tile_to_island"].get((cx, cy))
         print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands -i {land}`' if land else 'water'}", file=sys.stderr)
         return 2
-    # Asked alone, a tile in no town would read as a failure rather than open ground.
-    if sections == {"context"} and not any(_context_at(x, y, ctx) for x, y in coords):
-        print(f"✗ ({cx}, {cy}) lies in no town", file=sys.stderr)
-        return 2
-
-    # The same for what lives or stands there: asked with nothing else, a tile with neither says so, an empty answer reading as a tool gone wrong.
-    if sections and sections <= _BARE.keys() and not any(ctx[f"{section}_by_pos"] for section in sections):  # each index holds the tiles asked alone
-        print(f"✗ {' and '.join(_BARE[s] for s in sorted(sections))} on ({cx}, {cy})", file=sys.stderr)
+    # Its town, what lives or stands there: asked with nothing else, a tile with none of them says so, an empty answer reading as a tool gone wrong.
+    if sections and sections <= _BARE.keys() and not any(_holds(section, coords, ctx) for section in sections):
+        *rest, last = (_BARE[section] for section in sorted(sections))
+        print(f"✗ {', '.join(rest)}{' and ' if rest else ''}{last} on ({cx}, {cy})", file=sys.stderr)
         return 2
 
     out: dict = {}
@@ -679,14 +679,14 @@ def main(argv: list[str]) -> int:
         cell: dict = {}
         if "actors" in sections:
             cell["actors"] = _actors_at(x, y, ctx)
-        if "context" in sections:
-            cell["context"] = _context_at(x, y, ctx)
         if "distances" in sections:
             cell["distances"] = _distances_at(x, y, ctx)
         if "ground" in sections:
             cell["ground"] = _ground_at(x, y, ctx)
         if "islet" in sections:
             cell["islet"] = _islet_at(x, y, ctx)
+        if "owner" in sections:
+            cell["owner"] = _owner_at(x, y, ctx)
         if "rays" in sections:
             cell["rays"] = _rays_at(x, y, ctx)
         if "tile_info" in sections:
