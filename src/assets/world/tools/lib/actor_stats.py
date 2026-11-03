@@ -241,6 +241,7 @@ _RENAMES = {
 
 _SEX_GENES = {"bonus_female": "female", "bonus_male": "male"}  # `GeneAsset.is_bonus_male`/`is_bonus_female` — the block each one feeds.
 _SIDE = {(1, 0): "right", (-1, 0): "left", (0, 1): "down", (0, -1): "up"}
+_STATUS_SPANS = ((3 * UNITS_PER_MONTH, "soon"), (UNITS_PER_YEAR, "months"))  # a status's time left as a state: under 3 months, under a year, else `years`
 
 # WB `synergy_sides_always` — `bad` bears it too but `isNextToBad` turns the neighbour away first. None of them is given a DNA either, so no code of theirs is read.
 _SYNERGY_ALWAYS = {"bonus_female", "bonus_male", "mutagenic"}
@@ -998,6 +999,11 @@ def settlement_pop(entity: dict, ctx: dict, tier: str) -> dict:
 def status_left(actor: dict, status: str) -> float | None:
     custom = actor.get("custom_data_float") or {}
     return float(custom.get(_MOD_STATUS + status) or 0) if _MOD_MARK in custom else None
+
+
+# A status's time left as a state, never a date: what is to come a chronicle may not see.
+def status_span(seconds: float) -> str:
+    return next((span for bound, span in _STATUS_SPANS if seconds < bound), "years")
 
 
 # WB's own subspecies panel: the neutral block every bearer starts from, then what a `bonus_*` locus adds to that sex — `meta_stats` in the base, as WB prints them.

@@ -33,6 +33,7 @@ from actor_stats import (
     kept_task_target,
     lineage_traits,
     status_left,
+    status_span,
 )
 from founding import city_zones, settle_gates, settle_told
 from grid import BARE, LazyTileGrid, fire_clusters, frozen_tiles, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
@@ -170,7 +171,6 @@ _ROLE_ORDER = (
 _SCALE_UNIT = 0.1  # `getMassKG` divides the body's own `scale` by it, so a species drawn at 0.25 weighs two and a half times its `mass_2`
 _SPENT_BREATH_PACE = 0.4  # WB's own multiplier for a body out of breath: it still swims, at two fifths of its pace
 _STAMINA_PER_SECOND = 10.0  # `spendStaminaWithCooldown` takes 1 to 5 points every 0.3s — `Randy.randomInt` leaves its top out, so three on average
-_STATUS_SPANS = ((3 * UNITS_PER_MONTH, "soon"), (UNITS_PER_YEAR, "months"))  # a status's time left as a state: under 3 months, under a year, else `years`
 
 # Profession → (current-holder field, save collection, history list). Every post keeps a `past_*` history whose last entry is the sitting holder's start.
 _TENURE_ROLES = {
@@ -1078,7 +1078,7 @@ def _statuses_left(actor: dict) -> dict | None:
     lasting, left = load_data("statuses.json"), {}
     for status in kept_statuses(actor) or ():
         if status in lasting and status != "egg" and (seconds := status_left(actor, status)) is not None:
-            left[status] = next((span for bound, span in _STATUS_SPANS if seconds < bound), "years")
+            left[status] = status_span(seconds)
     return left or None
 
 

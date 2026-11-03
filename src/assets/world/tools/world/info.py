@@ -36,6 +36,7 @@ from actor_stats import (
     kept_task,
     maturation_months,
     status_left,
+    status_span,
 )
 from founding import city_zones, settle_gates, settle_rank, settle_told
 from grid import LazyTileGrid, frozen_tally, off_land, patch_finder
@@ -525,9 +526,9 @@ def _build_pairings(save: dict, save_path: Path) -> list[dict]:
         # A barren lineage beside fertile ones, its bodies by lineage: WB wants `needs_mate` of both lovers, so none of them ever pairs, not even across lineages.
         if (mating or lone) and (barren := Counter(sid for actor in bodies if (sid := actor.get("subspecies")) is not None and mode.get(sid) is None)):
             row["barren"] = {str(sid): count for sid, count in sorted(barren.items())}  # ids as JSON keys, in their numeric order
-        # A birth under way, as the save keeps it: its date is the game's own, and it leads whatever a pair could still conceive.
+        # A birth under way, as the save keeps it: its date is the game's own, and it leads whatever a pair could still conceive — each bearer's told as a state.
         if carrying := {actor["id"]: left for actor in bodies if (left := max(status_left(actor, status) or 0 for status in _CARRYING))}:
-            row["pregnant"] = sorted(carrying)
+            row["pregnant"] = {str(bearer): status_span(left) for bearer, left in sorted(carrying.items())}  # ids as JSON keys, in their numeric order
             births += [now + left for left in carrying.values()]
         if births:
             row["birth_on"] = min(births)
