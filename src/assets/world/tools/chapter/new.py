@@ -554,7 +554,10 @@ def _finalize() -> int:
         print(f"  ✓ places.json: {', '.join(dated)} dated C{n}")
     _print_step_five(n, facts)
     # Counted before the audit reads the chapter, so the chronicler weighs his own repeats first.
-    if counts := {key: len(rows) for key, rows in (echoes(n) or {}).items() if rows}:
+    found = echoes(n) or {}
+    if bare := found.get("bare"):  # no repeat but a tag forgotten: each one is mended, none is judged
+        print(f"  → {len(bare)} name(s) written bare — `tools/chapter/echo.py C{n}` gives each line: tag them")
+    if counts := {key: len(rows) for key, rows in found.items() if rows and key not in ("bare", "names")}:  # `names` lines are to read, none said again
         said = ", ".join(f"{count} {key}" for key, count in counts.items())
         print(f"  → said again: {said} — `tools/chapter/echo.py C{n}` points, you judge each: only a repeat goes — the language, a term and a refrain meant stay")
     # The targets name what this chapter wrote, so they wait for it: printed on the first pass, a summary written after them would slip past the audit.

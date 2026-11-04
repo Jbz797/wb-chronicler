@@ -65,10 +65,10 @@ _SENTENCE = re.compile(r"(?<=[.!?…])\s+")  # where a sentence ends inside a li
 _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined — `le bras du couchant`, a place with no name —, told apart as a refrain is
 
 _USAGE = (
-    "usage: chapter/echo.py [C<n>] [--whole] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before "
+    "usage: chapter/echo.py [C<n>] [--whole] [--names] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before "
     "(`from` their line, `by` its sign), `internal` runs it says twice, `terms` it coins, `formulas` figured turns it keeps coming back to, "
     "`overused` families, `near` one said thrice in two paragraphs, `shape` its cast poured again, "
-    "`names` each one it tags beside the lines that did in the 2 chapters before; "
+    "`names` each one it tags beside the lines that did in the 2 chapters before (counted, listed on `--names`), `bare` one it tags elsewhere written bare; "
     "`clear` the checks that found nothing, `length` and `dialogue` among them; a delivered chapter by its changed lines, `--whole` all — "
     "out of its bounds or under its floor, a ✗ says so; every field glossed by `gloss/info.py echo`"
 )
@@ -82,6 +82,24 @@ class _Token(NamedTuple):
     line: int
     name: bool  # a tag's text or a capitalised word: a name, which returns by nature
     surface: str  # the word as written, to show a run as the chapter says it
+
+
+# A name the chapter tags elsewhere, written bare on a line, headings included: a capitalised tag text alone, `la reine` being a reprise free of its tag.
+def _bare(n: int) -> list[dict]:
+    prose = _chapter(n) or ""
+    tags: defaultdict[str, set[str]] = defaultdict(set)
+    for tag in TAG_MARK.finditer(prose):
+        if tag["kind"] not in _NAMELESS and (text := tag["text"]) and text[:1].isupper():
+            tags[text].add(f"{tag['kind']} {tag['id']}")
+    if not tags:
+        return []
+    spoken = re.compile("|".join(rf"(?<![\w-]){re.escape(name)}(?![\w-])" for name in sorted(tags, key=len, reverse=True)))  # the longest first
+    rows = []
+    for at, line in enumerate(prose.splitlines(), 1):
+        for name in dict.fromkeys(found[0] for found in spoken.finditer(TAG_MARK.sub(lambda tag: " " * len(tag[0]), line))):
+            one = next(iter(tags[name])) if len(tags[name]) == 1 else None  # two entities sharing a name: the tag is the chronicler's to pick
+            rows.append({"line": at, "name": name, "tag": one})
+    return rows
 
 
 # Chronicle-rare words taken from chapter `before` between the same neighbours — `au flanc de celui` against `au flanc de ceux` —, as (line, line before, word)
@@ -629,6 +647,7 @@ def echoes(n: int, whole: bool = False) -> dict | None:
         return None
     internal, terms = _within(words, n)
     found = {
+        "bare": _bare(n),
         "formulas": _formulas(n),
         "internal": internal,
         "names": _names(n),
@@ -657,8 +676,8 @@ def faults(n: int) -> dict[str, list[str]]:
 
 
 def main(argv: list[str]) -> int:
-    chapter, whole = next((arg for arg in argv if arg[:1] == "C" and arg[1:].isdigit()), None), "--whole" in argv
-    if stray := [arg for arg in argv if arg not in (chapter, "--whole")]:  # `--help` among them: a word unheard would else pass for a run of the latest chapter
+    chapter, whole, listed = next((arg for arg in argv if arg[:1] == "C" and arg[1:].isdigit()), None), "--whole" in argv, "--names" in argv
+    if stray := [arg for arg in argv if arg not in (chapter, "--whole", "--names")]:  # `--help` among them: a word unheard would else run the latest chapter
         asked = stray[0] in ("-h", "--help")
         print(_USAGE, file=sys.stdout if asked else sys.stderr)
         return 0 if asked else 2
@@ -671,6 +690,8 @@ def main(argv: list[str]) -> int:
         print(fault, file=sys.stderr)
     # A check gone silent found nothing: named, so it is not read as unrun — the length and the dialogue too, silent while they hold.
     clear = sorted(check for check, rows in {**found, **told}.items() if not rows)
+    if not listed:  # a reading aid, never a fault: counted, the lines on `--names` — listed, it drowned what is to mend
+        found["names"] = len(found["names"])
     emit({**found, "clear": clear, "delivered": (not whole and _changed(n) is not None) or None})
     return 0
 
