@@ -84,6 +84,7 @@ from shared import (
     kept_army_since,
     kept_city_since,
     kept_deaths,
+    kept_roof,
     kingdom_score_dimensions,
     land_arg,
     latest_chapter,
@@ -195,7 +196,9 @@ _KEPT_FIELDS = (
     "gen",
     "hatch_on",
     "home",
+    "in_building",
     "island_id",
+    "job",
     "life_stage",
     "lover",
     "parents",
@@ -286,7 +289,9 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "gen": lambda: int(actor.get("generation") or 1),
         "hatch_on": lambda: hatch_on(actor, ctx),
         "home": lambda: actor.get("homeBuildingID"),  # its roof's id, none for one sleeping out: `ground <id>` tells the roof
+        "in_building": lambda: {"asset_id": inside.get("asset_id"), "id": inside["id"]} if (inside := ctx["buildings_by_id"].get(kept_roof(actor))) else None,
         "island_id": lambda: here,
+        "job": lambda: ctx["profession"](actor),
         "life_stage": lambda: _stage(actor, ctx, age, adult_age(actor, ctx)),
         "lover": lambda: lover if (lover := actor.get("lover")) in ctx["living_ids"] else None,  # its mate's id, a dead one none
         "parents": lambda: sorted(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p and p != -1) or None,  # ids, not refs: a line holds one
@@ -615,6 +620,10 @@ def _build_roster(
     ctx = build_actor_stats_context(save)
     if "city" in fields:
         ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
+    if "in_building" in fields:
+        ctx["buildings_by_id"] = index_by_id(save.get("buildings") or [])
+    if "job" in fields:
+        ctx["profession"] = lambda actor: resolve_profession(actor, save)
     if "lover" in fields:
         ctx["living_ids"] = {actor["id"] for actor in save.get("actors_data") or []}
     if "place" in fields:  # each forged place drawn once for the whole roll, as `metadata` draws it for one body
@@ -988,10 +997,12 @@ def _gone_since(
 
 # One field of `--with` over a roll too long to list: a task or a status counted by its value, a stat by its spread — `of` the bodies it applies to.
 def _grouped_field(field: str, values: list) -> dict | None:
-    if field == "parents":  # a couple counted as one, its births together, where its two ids apart would count each parent's
-        values = [" + ".join(map(str, value)) if value else None for value in values]
+    if field == "in_building":  # roofs counted by their kind, one id naming a single house
+        values = [value["asset_id"] if value else None for value in values]
     elif field == "lover":  # the bodies paired, a mate's id counting no one
         values = ["paired" if value else None for value in values]
+    elif field == "parents":  # a couple counted as one, its births together, where its two ids apart would count each parent's
+        values = [" + ".join(map(str, value)) if value else None for value in values]
     if field in _KEPT_FIELDS and field != "age":  # an age spreads like a stat; lands by id, then islets and water, other values by name, dates by figures
         values = [value["name"] if isinstance(value, dict) else value for value in values]  # a town counted by its name, a ref being no key
         counts = Counter(item for value in values if value for item in (value if isinstance(value, list) else [value]))
