@@ -156,6 +156,24 @@
         // A tag `ReaderPage` flattened to its name where a plate would crowd the line — bold, its species' hue set inline.
         .plain-tag {
           font-weight: 700;
+
+          // Gone since this chapter: struck through and dimmed as its plate is, the ash itself set inline by `ReaderPage`.
+          &.dead {
+            opacity: 0.7;
+            text-decoration: line-through;
+          }
+
+          // A crisp outline, no blur: half a pixel on all four sides, darkened by `--edge` as the hue pales — the edge sets the name apart, so it drops its bold.
+          &.inked {
+            --outline: rgb(0 0 0 / calc(45% + 50% * var(--edge, 0)));
+
+            font-weight: normal;
+            text-shadow:
+              0.5px 0 0 var(--outline),
+              -0.5px 0 0 var(--outline),
+              0 0.5px 0 var(--outline),
+              0 -0.5px 0 var(--outline);
+          }
         }
 
         hr {

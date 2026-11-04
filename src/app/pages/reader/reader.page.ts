@@ -13,7 +13,7 @@ import { firstValueFrom, map } from 'rxjs';
 import { BOOT_SETTINGS, PAGES, PERSON_REGISTRY, SPECIES_COLORS } from '../../constants';
 import {
   ActorSpriteHelpers, AllianceSpriteHelpers, BookSpriteHelpers, ClanSpriteHelpers, CultureSpriteHelpers, KingdomSpriteHelpers, LabelHelpers, LanguageSpriteHelpers,
-  ReligionSpriteHelpers, SubspeciesSpriteHelpers,
+  PaletteHelpers, ReligionSpriteHelpers, SubspeciesSpriteHelpers,
 } from '../../helpers';
 import { ChroniclerService, RegistryService } from '../../services';
 
@@ -163,6 +163,13 @@ export class ReaderPage {
     }
   }
 
+  // A hue too pale for the parchment — most were chosen for a black plate — takes a dark edge, the paler the darker; one dark enough stays as it is.
+  private _ink(element: HTMLElement, color: string): void {
+    const edge = PaletteHelpers.paperEdge(color.match(/\d+/g)?.map(Number) ?? []);
+    element.classList.toggle('inked', edge > 0);
+    if (edge > 0) element.style.setProperty('--edge', String(edge));
+  }
+
   // Google Fonts swaps faces in late, so a measure waits for the one it reads — spelled from longhands: computed `font` often reads empty, and `load('')` throws.
   private async _loadFaces(element: HTMLElement): Promise<FontFace[]> {
     const { fontFamily, fontSize, fontStyle, fontWeight } = getComputedStyle(element);
@@ -190,10 +197,22 @@ export class ReaderPage {
   private _plainTags(elements: Element[]): void {
     const tags = elements.flatMap(element => [...element.querySelectorAll(':scope .entity-tag, :scope .icon-wrap')]);
     for (const tag of tags) {
+      const name = tag.querySelector(':scope .entity-name');
       const plain = document.createElement('span');
       plain.classList.add('plain-tag');
-      plain.textContent = tag.querySelector(':scope .entity-name')?.textContent ?? tag.textContent;
-      plain.style.color = SPECIES_COLORS[this._speciesOf(tag)] ?? ''; // none for a resource, or a species without a hue: the line's own ink then
+      plain.textContent = name?.textContent ?? tag.textContent;
+      // The ink the tag's name wore (a `[s]` its species', a resource the line's); a family takes its fill, a crownless soul its species' hue, not its grey.
+      const fill = tag.classList.contains('family-tag') ? getComputedStyle(tag).getPropertyValue('--tag-fill').trim() : '';
+      const soul = this._registry.persons()[tag.querySelector<HTMLElement>(':scope canvas[data-person]')?.dataset.person ?? ''];
+      const isCrownless = !!soul && soul.kingdom === undefined;
+      const own = isCrownless ? SPECIES_COLORS[soul.asset_id] : undefined;
+      plain.style.color = own ?? (fill || getComputedStyle(name ?? tag).color);
+      // A fallen one's name drains to ash and is struck through, as its plate is — its edge read on that ash, the hue it now shows.
+      if (tag.classList.contains('dead')) {
+        plain.classList.add('dead');
+        plain.style.color = `rgb(${PaletteHelpers.ashen(plain.style.color.match(/\d+/g)?.map(Number) ?? []).join(', ')})`;
+      }
+      if (name && !isCrownless) this._ink(plain, plain.style.color); // a `[s]` and a crownless soul keep their species' hue bare
       tag.replaceWith(plain);
     }
   }
@@ -204,13 +223,6 @@ export class ReaderPage {
     if (target <= 0) return;
     const viewport = this._scroller().adapter.viewportElement;
     requestAnimationFrame(() => (viewport.scrollTop = target));
-  }
-
-  // The species a tag stands for: a soul's off the registry, where its portrait shows it; any other plate's, or a `[s]` marker's, off its species glyph.
-  private _speciesOf(tag: Element): string {
-    const person = tag.querySelector<HTMLElement>(':scope canvas[data-person]')?.dataset.person;
-    const glyph = tag.querySelector(':scope img[src*="/species/"]')?.getAttribute('src') ?? '';
-    return person ? (this._registry.persons()[person]?.asset_id ?? '') : (/\/species\/([^/.]+)\.png$/.exec(glyph)?.[1] ?? '');
   }
 
 }

@@ -5,13 +5,28 @@ import { SpriteHelpers } from './sprites/sprite.helpers';
 // A realm's colours, read from the chapter registry — the layer between chapter data and everything drawn in a crown's hues, tags and sprites alike.
 export class PaletteHelpers {
 
+  private static readonly _edgeFloor = 2.2; // the contrast on the parchment from which a hue holds alone, its plain name left bold and unedged
   private static readonly _liftCache = new Map<string, string>();
   private static readonly _liftSteps = 100; // finer than a byte of channel, so the first step to clear the target is already the least altered colour
+  private static readonly _paperLuminance = 0.92; // `$paper`, #FAF6EC, the parchment's lightest — where a pale hue fades most
   private static readonly _ringTarget = 3.5; // WCAG 1.4.11 asks 3.0 of a non-text border; the ring reads as a half-pixel band, so it carries some margin
   private static readonly _textTarget = 6; // above the 4.5 AA floor for 12.5px text, short of the 7 of AAA — enough to lift the three dimmest realms, no more
 
+  // The ash a fallen plate drains to, as `filter: grayscale(0.85)` computes it (Filter Effects' matrix), so its flattened name greys exactly as the plate does.
+  public static ashen(rgb: readonly number[], amount = 0.85): [number, number, number] {
+    const [r = 0, g = 0, b = 0] = rgb;
+    const grey = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return [r, g, b].map(channel => Math.round(channel + amount * (grey - channel))) as [number, number, number];
+  }
+
   // Any hue lifted to readable on the tag's black plate — a pact carries its own, where a realm's is looked up by id.
   public static liftedText = (hue: string | undefined): string => this._lift(hue ?? REALM_FALLBACK_HUE, this._textTarget);
+
+  // How much dark edge a hue needs to hold on the parchment (`$paper`), 0 to 1: none from `_edgeFloor` up, all of it at 1:1 and below, as white has.
+  public static paperEdge(rgb: readonly number[]): number {
+    const contrast = (this._paperLuminance + 0.05) / ((this._contrast(rgb) - 1) / 20 + 0.05); // `_contrast` is against black: `20 * L + 1` gives L back
+    return Math.min(1, Math.max(0, (this._edgeFloor - contrast) / (this._edgeFloor - 1)));
+  }
 
   // Ink for a tag carrying its own fill (the families): `_contrast` measures against black, so above √21 ≈ 4.58 the fill is nearer white — dark ink then wins.
   public static readableOn = (fill: string | undefined): string => fill && this._contrast(SpriteHelpers.hexRgb(fill)) > 4.58 ? '#141414' : '#F5F2EA';
