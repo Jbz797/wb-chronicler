@@ -45,7 +45,7 @@
   "actor.surroundings.sapient": "Se tait devant `kin`, `job` ou `role`, qui le disent déjà.",
   "actor.surroundings.water": "`water` et `islet_tiles` comme dans `tiles … tile_info`, tus sur la terre ou l'îlot du corps.",
   "actor.to.burning": "Vers le feu (`--to burning`) : la flamme qu'il croise d'abord, `tiles` son foyer, `place` son lieu (`gloss geography.burning.place`) ; le milieu : `burning`.",
-  "actor.to.by_task": "Vers un bâtiment : la tuile où mène la tâche du corps s'il y va, sinon la plus proche des tuiles du bâtiment.",
+  "actor.to.by_task": "Vers un bâtiment : la tuile où mène la tâche du corps s'il y va, sinon la plus proche des siennes ; sa distance se dit jusqu'à elle, non jusqu'à son ancrage.",
   "actor.to.chunks_apart": "L'écart en chunks de 16 tuiles : à 0 ou 1, le jeu tient les deux pour tout près.",
   "actor.to.circle": "Le cercle du but, au pas du corps appelé : `intimate` ≤ 30 min, `common` ≤ 2 h, sinon `far` ; `total_` préfixe un compte dès deux parts.",
   "actor.to.city": "`--to cities` : une cité visée à son centre comme `--to c<id>`, la sienne comprise ; `with_boat`, sa coque, si elle seule l'amène au cercle commun.",
