@@ -646,14 +646,15 @@ def _build_to(actor: dict, aims: list[tuple[int, int]], whom: str, ctx: dict, ma
     return {**to, **boat, **_way_parts(way, per_hour, part), **past, "circle": circle}
 
 
-# What the soul was born with, off WB's creature library — each trait and its rarity, then its effect and flavour once named, and whether this age lulls it.
+# What the soul was born with, off WB's creature library: each trait, its rarity, its effect once named, whether this age lulls it or its lineage hands it.
 def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
     sworn, library = actor.get("saved_traits") or [], ctx["creature_traits"]
     if not detailed:
         return light({"ids": build_trait_ids(sworn, library, "rarity")})
     asleep, totals = ctx["era_dormant_traits"], actor_stat_totals(actor, ctx)  # `asleep`: the verdict `stats` already heeds, an age's gift lulled by another
+    inborn = set((ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_actor_birth_traits") or ())
     return [
-        {**trait, "dormant": True} if trait["id"] in asleep else {**trait, "absorbed": _absorbed(actor, trait, ctx, totals)}
+        {**trait, "inborn": trait["id"] in inborn or None, **({"dormant": True} if trait["id"] in asleep else {"absorbed": _absorbed(actor, trait, ctx, totals)})}
         for trait in build_trait_list(sworn, library)
     ]
 

@@ -74,6 +74,7 @@
   "actor.to.walk_hours": "Le temps à pied (`walk_minutes` sous l'heure), au pas du corps sur chaque sol (`walk_tiles`).",
   "actor.to.widest_crossing": "Le plus long bras d'eau du trajet, dit seulement s'il passe le souffle du corps.",
   "actor.to.with_boat": "Le trajet par la coque de sa couronne : une autre route que la marche, jamais à additionner à elle.",
+  "actor.traits.inborn": "Sa lignée, telle qu'elle est aujourd'hui (`subspecies … traits`), le donne à chaque naissance : un héritage de tous les siens, non une particularité du corps.",
   "actor.victims": "Les morts qu'il a données (`total`), changés compris (`died_of`) ; nommée, la section les rend toutes (`all`), la plus ancienne d'abord ; en `full`, la dernière.",
   "actor.victims.job": "Le poste de chaque victime à sa mort, comme `died.job` : un roi tué s'y lit `king`.",
   "at": "Une tuile, `x,y`, que `tiles` et `--to` prennent ; d'un bâtiment, sa tuile d'ancrage, au pied de son milieu, pas son bord ; `bounds`, coins sud-ouest puis nord-est.",
