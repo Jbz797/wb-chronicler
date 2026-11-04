@@ -9,6 +9,7 @@ _AUDIT = {
     "metadata": frozenset(
         {
             "adult_on",
+            "age_since",
             "age_stage",
             "alliance",  # the pact a realm or a soul answers to — the panel has a tier of its own for it, and the scripts still hand the ref over
             "army_since",

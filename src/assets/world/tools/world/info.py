@@ -440,19 +440,21 @@ def _build_lineages(save: dict, kinds: set[str] | None, minded: bool | None = No
     return rows
 
 
-# The world's day and its age — how far that age has run, never when it ends: WB's UI counts the moons left, and a chronicle told the month would foretell it.
+# The world's day and its age — when it began and how far it has run, never when it ends: WB's UI counts the moons left, a chronicle told it would foretell it.
 def _build_metadata(map_stats: dict) -> dict:
     age_id = map_stats.get("world_age_id") or ""
     age = load_data("world-ages.json").get(age_id) or {}
     key = age_id.removeprefix("age_")  # `WorldAgeLibrary` key without WB's prefix — `hope`, as the panel keys its French and its icon
     world_time = rounded_world_time(map_stats)
+    span, run = float(map_stats.get("current_world_ages_duration") or 0), float(map_stats.get("current_age_progress") or 0)  # no span where no age runs
     return {
         "age_description": age.get("description"),  # Chronicler-only: WB's English line on the age, one per chapter
         "age_id": key,
         # Chronicler-only: the age as the chronicle names it, said here so nobody opens `i18n/<lang>/ages.json`, where every age to come is listed. Else WB's title.
         "age_name": i18n("ages.json").get(key) or age.get("name"),
-        # Chronicler-only: an age's own life stage, off the share of its span the save says it has run. Absent where no age runs: WB then stores no span.
-        "age_stage": _age_stage(float(map_stats.get("current_age_progress") or 0)) if float(map_stats.get("current_world_ages_duration") or 0) > 0 else None,
+        # Chronicler-only: the month the age began, off the share run — WB's `world_age_started_at` is stamped anew at each load, the share kept
+        "age_since": world_date(max(0.0, world_time - run * span)) if span > 0 else None,
+        "age_stage": _age_stage(run) if span > 0 else None,  # Chronicler-only: an age's own life stage, off the share of its span the save says it has run
         "date": world_date(world_time),  # Chronicler-only: the day as every other date is written — the raw clock stays the scripts', read off the save
     }
 
