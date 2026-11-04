@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 03/11/26 12:19</p>
+<p class="metadata">Date de mise à jour : 04/11/26 13:00</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants : ce message dit alors ta tâche.
 
@@ -15,7 +15,7 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut, de `saves/C1/chapt
 - un motif, une cause ou un chiffre qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - un personnage ou un lieu qu'elle a lâchés là où la chronique l'attendait.
 
-Un doute qui tient au monde (vit-il ? où est-il ?) ne se tranche pas à l'oreille, ni un absolu (« seul », « jamais ») ne se certifie : c'est un point à mesurer. Tu ne vérifies pas les faits ; mais un écart que tu soulèves, ou un lieu qu'un conseil cite, tu peux le mesurer d'une seule commande (`docs/tools.md`), citée avec lui ; au-delà, il est à mesurer. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Le temps » ; un seuil d'âge d'espèce se mesure, il se signale.
+Un doute qui tient au monde (vit-il ? où est-il ?), un absolu (« seul », « jamais ») ou deux chiffres contraires ne se tranchent pas à l'oreille : c'est un point à mesurer. Tu ne vérifies pas les faits ; un écart que tu soulèves, ou un lieu qu'un conseil cite, se mesure d'une seule commande (`docs/tools.md`), citée avec lui ; au-delà, à mesurer. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Le temps » ; un seuil d'âge d'espèce se mesure, il se signale.
 
 Dis-le là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage manquant, un angle neuf), comme une direction, jamais de prose écrite, sauf un dialogue, bâti à deux : à lui les faits, à toi ce que la chronique sait du favori, et le passage d'une veille.
 
