@@ -71,7 +71,7 @@
   "actor.to.swim_tiles": "Les tuiles faites dans l'eau, 1 au moins dès qu'il y entre ; `crossings` compte ses entrées.",
   "actor.to.task_target": "La tuile où la tâche en cours mène le corps.",
   "actor.to.then": "`--since` : le même but compté au chapitre nommé ; un lieu forgé relu par son nom, une terre ou une eau par son point (`heart`) ; jamais un type ni le feu.",
-  "actor.to.total_hours": "La somme des parts du trajet (`walk_`, `swim_`, `sail_`), dite dès qu'il en compte deux ; `total_minutes` sous l'heure, comme chaque part.",
+  "actor.to.total_hours": "Le temps du trajet dès deux parts, `total_minutes` sous l'heure : celui qui se chiffre, une part le détaillant au besoin (« dont 20 minutes de nage »), jamais seule.",
   "actor.to.total_tiles": "La somme des tuiles du trajet, à pied, à la nage ou à bord, dite dès qu'il compte deux parts.",
   "actor.to.walk_hours": "Le temps à pied au pas du corps appelé, jamais du but, déjà arrondi : 5 min sous l'heure (`walk_minutes`), le quart d'heure jusqu'à 3 h (`\"2h15\"`), la demi au-delà.",
   "actor.to.widest_crossing": "Le plus long bras d'eau du trajet, dit seulement s'il passe le souffle du corps.",
