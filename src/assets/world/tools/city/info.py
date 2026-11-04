@@ -18,6 +18,7 @@ from shared import (
     PROFESSION_KING,
     PROFESSION_LEADER,
     PROFESSION_WARRIOR,
+    SAVES_DIR,
     SICK_TRAITS,
     UNITS_PER_YEAR,
     ZONE_TILES,
@@ -57,6 +58,7 @@ from shared import (
     sex_label,
     succession_heir,
     take_chapter,
+    take_since,
     under_construction,
     wants_detail,
     world_laws,
@@ -150,11 +152,7 @@ def _build_buildings(city: dict, ctx: dict, requested: str | None) -> dict | lis
     owned = ctx["civic_by_city"].get(city["id"], [])
     if requested in (None, "full"):  # whatever their number: the panel reads the total there, and a town's roofs are the section's to list
         return light({"total": len(owned)})
-    rows = []
-    for building in sorted(owned, key=itemgetter("id")):
-        x, y = building_tile(building) or (None, None)
-        rows.append({"asset_id": building.get("asset_id"), "id": building["id"], "under_construction": under_construction(building) or None, "x": x, "y": y})
-    return rows
+    return [_building_row(building) for building in sorted(owned, key=itemgetter("id"))]
 
 
 # One pass over actors then buildings — every per-city tally the sections need, so no section rescans the save. Built whole whatever was asked for.
@@ -469,6 +467,31 @@ def _build_realm_context(save: dict, warriors_by_city: Counter) -> dict:
     }
 
 
+# A building's line, a site said as one: its kind, its id, its tile.
+def _building_row(building: dict) -> dict:
+    x, y = building_tile(building) or (None, None)
+    return {"asset_id": building.get("asset_id"), "id": building["id"], "under_construction": under_construction(building) or None, "x": x, "y": y}
+
+
+# What became of its civic buildings since an earlier save: raised, a site finished, another kind under one id (a tent grown a house), lost — the rest counted.
+def _buildings_since(city_id: int, save: dict, then_save: dict) -> dict:
+    civic = civic_building_ids()
+    now, then = ({b["id"]: b for b in s.get("buildings") or [] if b.get("cityID") == city_id and b.get("asset_id") in civic} for s in (save, then_save))
+    parts: dict[str, list] = {"built": [], "changed": [], "finished": []}
+    still = 0
+    for bid, building in sorted(now.items()):
+        if (was := then.get(bid)) is None:
+            parts["built"].append(_building_row(building))
+        elif (kind := was.get("asset_id")) != building.get("asset_id"):
+            parts["changed"].append({**_building_row(building), "was": kind})
+        elif under_construction(was) and not under_construction(building):
+            parts["finished"].append(_building_row(building))
+        else:
+            still += 1
+    gone = [_building_row(b) for bid, b in sorted(then.items()) if bid not in now]  # as the earlier save last knew them
+    return parts | {"gone": gone, "info": f"{still} stood still" if still else None}
+
+
 # Memo over `city_centre` — every town asks its capital's, over and over.
 def _city_centre(city: dict, ctx: dict) -> tuple[int, int] | None:
     cid = city["id"]
@@ -760,9 +783,14 @@ def _years_since(timestamp: float, ctx: dict) -> int:
 
 
 def main(argv: list[str]) -> int:
+    try:
+        since, argv = take_since(argv)
+    except ValueError as e:
+        print(f"✗ {e}", file=sys.stderr)
+        return 2
     save_path, argv, chapter = take_chapter(argv)
     if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
+        print("✗ usage: info.py <id> [sections] [--since C<n>] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
     try:
         city_id = int(argv[0])
@@ -771,16 +799,29 @@ def main(argv: list[str]) -> int:
         return 2
 
     requested = argv[1] if len(argv) > 1 else None
+    if since and requested != "buildings":  # the members and the figures have their own roads
+        print(
+            f"✗ `--since` weighs `buildings` — people: `world … roster --city {city_id} --since {since}`, figures: `across {since}-C<n> city {city_id} metadata`",
+            file=sys.stderr,
+        )
+        return 2
     try:
         sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
+        return 2
+    then_path = SAVES_DIR / since / "map.wbox" if since else None
+    if since and then_path and ((late := chapter is not None and int(since[1:]) >= int(chapter[1:])) or not then_path.exists()):  # both, for the checker
+        print(f"✗ `--since {since}`: {f'not before {chapter}, the chapter read' if late else 'no such chapter'} — name an earlier one", file=sys.stderr)
         return 2
     save = load_save(save_path)
     city = index_by_id(save.get("cities") or []).get(city_id)
     if city is None:
         print(absent_entity("city", "cities", city_id, chapter), file=sys.stderr)
         return 1
+    if then_path:  # its buildings alone, read off both saves: the town's every tally would go unread
+        emit({"buildings": _buildings_since(city_id, save, load_save(then_path))})
+        return 0
     ctx = _build_context(save, save_path)
 
     out: dict = {}

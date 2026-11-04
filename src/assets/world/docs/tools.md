@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 04/11/26 17:39</p>
+<p class="metadata">Date de mise à jour : 04/11/26 18:52</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -41,7 +41,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 ### Partagées :
 
 - `--sapient`, `--beasts` : sous `world … lineages`, `pairings` et `roster`
-- `--since C<n>` : ce qui a bougé depuis, sous `actor` (`gloss:actor.since`, `gloss:to.then`), `geography` en soldes (`gloss:geography.since`), `history log` et `world … roster`
+- `--since C<n>` : ce qui a bougé depuis, sous `actor` (`gloss:actor.since`, `gloss:to.then`), `city … buildings`, `geography` en soldes (`gloss:geography.since`), `history log` et `world … roster`
 - `-i <id>` : une terre, ou `islets` et `water` là où on les compte (`geography`, `world … roster`) ; sous `tiles`, `gloss:to_island`
 - `-w <eau>` : `lake<id>`, `river<id>` ou `sea<id>` ; sous `geography … waters`, une famille (`lake`…) ; sous `tiles`, `gloss:to_body`
 
@@ -73,7 +73,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ### `world` :
 
-- `laws` : les lois par leur libellé du jeu, celui de `wiki:World_Laws`
+- `laws` : par leur libellé du jeu (`wiki:World_Laws`)
 - `lineages`, `pairings` : `-t` une espèce (`gloss:lineages`, `gloss:pairings`)
 - `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--rank <mesure> [n]`, `--nearest <x,y | p<id>>`, `--with <champs>`, `--status`/`--task <id>`, `--stage <palier>`, `--born <yN[ mM]>`, `--bred` nés d'un parent, `--settle` (`settle` vrai ou `child`), `--barred` l'inverse, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`…) ses membres, `--job <métier>` (`king`…). `gloss:roster`.
 
