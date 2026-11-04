@@ -38,7 +38,7 @@ from actor_stats import (
 from founding import city_zones, settle_gates, settle_told
 from grid import BARE, LazyTileGrid, fire_clusters, frozen_tiles, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_heart
-from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, fire_place, kind_word, named_place, unquoted
+from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, end_text, fire_place, kind_word, named_place, unquoted
 from shared import (
     HOMES,
     NEW_BABY_NUTRITION,
@@ -1187,20 +1187,20 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
-# Every `--to` on the line, in order: a body, a tile, a building, a town, a land, a water, fire, kinds or grounds — repeated where a list of ids would be a tile.
+# Every `--to` on the line, in order: a body, a tile, a building, a city, a land, a water, fire, kinds or grounds — repeated where a list of ids would be a tile.
 def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], list[str]]:
     targets: list[int | tuple[int, int] | str] = []
     while "--to" in argv:
         at = argv.index("--to")
         if at + 1 == len(argv):
             raise ValueError(_TO_USAGE)
-        value, argv = unquoted(argv[at + 1]), argv[:at] + argv[at + 2 :]
+        value, argv = end_text(argv[at + 1]), argv[:at] + argv[at + 2 :]
         x, sep, y = value.partition(",")
         if (body := body_ref(value)) is not None:
             targets.append(body)
         elif x.lstrip("-").isdigit() and sep and y.lstrip("-").isdigit():
             targets.append((int(x), int(y)))
-        else:  # a land (`i7`, as `geography … islands` ids it), every land, a building, a town, a water, the fire, or kinds, families and grounds
+        else:  # a land (`i7`, as `geography … islands` ids it), every land, a building, a city, a water, the fire, or kinds, families and grounds
             targets.append(value)
     return targets, argv
 

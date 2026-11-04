@@ -2,6 +2,7 @@
 
 import difflib
 import re
+lazy from argparse import ArgumentTypeError
 lazy from collections.abc import Callable, Collection
 lazy from pathlib import Path
 
@@ -92,7 +93,7 @@ def _find(name: str) -> tuple[str, str, dict]:
         raise PlaceError(f"✗ {name} names {' and '.join(hit[3] for hit in found)} — write it whole")
     if not found:
         near = difflib.get_close_matches(name, [hit[3] for hit in every], n=3)
-        raise UnknownPlaceError(f"✗ no place named {name} in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
+        raise UnknownPlaceError(f"✗ no place named `{name}` in places.json" + (f" — near it: {', '.join(near)}" if near else ""))
     return found[0][:3]
 
 
@@ -119,6 +120,13 @@ def _spans(spot: dict, x: int, y: int) -> bool:
     if not (box := spot.get("box")):
         return True
     return min(box["x0"], box["x1"]) <= x <= max(box["x0"], box["x1"]) and min(box["y0"], box["y1"]) <= y <= max(box["y0"], box["y1"])
+
+
+# An end as typed, its quotes off — refused empty, as a shell variable left unset passes it, rather than read as a place no name holds; `what` names it.
+def end_text(value: str, what: str = "`--to`") -> str:
+    if not (text := unquoted(value)):
+        raise ArgumentTypeError(f"{what} got an empty value — an unset shell variable?")
+    return text
 
 
 # The forged place nearest a fire within `_FIRE_PLACE_REACH`, by its flame nearest it: a volcano holds no tile of its own fire, its cone the building alone.

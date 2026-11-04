@@ -32,7 +32,7 @@ from grid import (
     tile_layer,
 )
 from islands import compute_islands_cached, islet_heart
-from places import PlaceError, named_place, place_centre, unquoted
+from places import PlaceError, end_text, named_place, place_centre
 from shared import (
     DIAGONAL_EXTRA,
     ZONE_TILES,
@@ -257,9 +257,9 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     return out
 
 
-# An end of `tiles`: a building `b<id>`, a town `c<id>`, a body `p<id>`, a water `lake<id>` or a name of `places.json`, its quotes off; else a tile `x,y`.
+# An end of `tiles`: a building `b<id>`, a city `c<id>`, a body `p<id>`, a water `lake<id>` or a name of `places.json`, its quotes off; else a tile `x,y`.
 def _end_arg(value: str) -> str | tuple[int, int]:
-    value = unquoted(value)
+    value = end_text(value, "an end")  # argparse names which of the two
     return xy_arg(value) if body_ref(value) is None and re.fullmatch(r"-?\d+,-?\d+", value) else value
 
 
@@ -278,7 +278,7 @@ def _ground(end: str, save: dict, save_path: Path, chapter: str | None) -> tuple
             found = named_place(end, save, save_path, compute_islands_cached(save, save_path)[1], WalkMap(save))
         except PlaceError as e:
             return str(e)
-        return found or f"✗ `{end}` is no end — a tile `x,y`, a building `b<id>`, a town `c<id>`, a body `p<id>`, a water `lake<id>` or a name of places.json"
+        return found or f"✗ `{end}` is no end — a tile `x,y`, a building `b<id>`, a city `c<id>`, a body `p<id>`, a water `lake<id>` or a name of places.json"
     kind, ref = end[0], int(end[1:])
     if kind == "b":
         site = next((b for b in save.get("buildings") or [] if b.get("id") == ref), None)
@@ -601,7 +601,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     if any(isinstance(end, str) for end in (args.xy, args.to)) and sections:  # a building lies on many tiles, a section reads one
-        print("✗ a building `b<id>`, a town `c<id>`, a body `p<id>` or a place's name ends a lone `--to`: sections read tiles — name them `x,y`", file=sys.stderr)
+        print("✗ a building `b<id>`, a city `c<id>`, a body `p<id>` or a place's name ends a lone `--to`: sections read tiles — name them `x,y`", file=sys.stderr)
         return 2
     aimed = [flag for flag, given in (("--ground", args.ground), ("--island", args.island), ("--water", args.water)) if given is not None]
     if aimed and "distances" not in sections:
