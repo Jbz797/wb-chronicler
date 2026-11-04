@@ -796,7 +796,7 @@ def dormant(site: dict) -> bool | None:
 
 
 # One block the command named (a section, `--to`, a tile) comes bare, its key only repeating the question; several named stay keyed, even one left empty.
-def emit(out: dict) -> None:
+def emit(out: dict | list) -> None:
     asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}
     asked |= {"islets"} if "islet" in asked else set()  # `land_arg`'s singular names the block its plural keys
     raw, value = out, _tiled(_strip_none(out))

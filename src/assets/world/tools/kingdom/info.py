@@ -62,6 +62,7 @@ _ALL_SECTIONS = ("boats", "breakdown", "cities", "gear", "identity", "leaders", 
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
 _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
 
+_LINE_FIELDS = ("age", "births", "buildings", "cities", "houses", "id", "name", "renown", "territory", "wealth")  # what of `metadata` a crown's line holds, inline
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
 _TRAIT_MODS = _OPINION_CONSTANTS["actor_trait_opinion_mods"]  # Read once per king trait in `_compute_opinion`, so it earns its own name (as in `city/info.py`).
 _WORLDVIEWS = ("ethnocentric_guard", "xenophiles", "xenophobic")  # WB's `worldview` culture traits: mutually exclusive, often absent — hence our own fourth value.
@@ -294,6 +295,16 @@ def _build_leaders(kingdom: dict, ctx: dict) -> dict:
     actors = ctx["actors_by_kingdom"].get(kingdom["id"], [])
     # `compute_actor_stats`, as every other tier: the podium reads the names it hands out, and a child's blow is halved there — raw totals would flatter one.
     return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
+
+
+# Every standing crown, strongest first, as one line of its `metadata` and its people's count — the whole sheet a `kingdom <id>` away.
+def _build_list(ctx: dict, save: dict) -> list[dict]:
+    ranked = []
+    for kingdom in save.get("kingdoms") or []:
+        sheet = _build_metadata(kingdom, ctx, save)
+        row = {field: sheet.get(field) for field in _LINE_FIELDS} | {"pop": len(ctx["actors_by_kingdom"].get(kingdom["id"], ())) or None}
+        ranked.append((sheet.get("score_rank") or 0, kingdom["id"], row))  # the place orders, never shown; under three crowns none, the ids then ordering
+    return [row for *_, row in sorted(ranked)]  # an id never ties, so no two lines are ever weighed
 
 
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
@@ -687,9 +698,16 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    if not argv:
-        print("✗ usage: info.py <id> [sections] [--kingdom <id>[,<id>]] [C<n>] — see docs/tools.md", file=sys.stderr)
+    if not argv and rivals:
+        print("✗ usage: info.py [<id> [sections] [--kingdom <id>[,<id>]]] [C<n>] — see docs/tools.md", file=sys.stderr)
         return 2
+    if not argv:  # no id: the list of every crown
+        save = load_save(save_path)
+        if not save.get("kingdoms"):
+            print("✗ no kingdom in this world", file=sys.stderr)
+            return 1
+        emit(_build_list(_build_context(save, save_path), save))
+        return 0
     try:
         kingdom_id = int(argv[0])
     except ValueError:

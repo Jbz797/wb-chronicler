@@ -171,6 +171,7 @@
   "housing_slots": "Les corps qu'un toit loge : tente 3, maison 3 à 10, hall 5 à 12 ; `positions -t homes` liste ces toits.",
   "killed_by": "Son tueur, `{id, name}`, vivant ou mort ; absent : pas tué, ou un tueur que rien ne nomme (mort avant sa victime, ou qui n'était pas un corps).",
   "kingdom.identity.worldview": "Trait de la culture du royaume (`neutral` sans) ; l'accueil suit celle de la cité : `xenophiles` prend l'arrivant sans culture ou xénophile (`wiki:Culture_Traits`).",
+  "kingdom.list": "Sans id, chaque royaume, rangé par score, du plus fort au plus faible (`score_rank` de la fiche) ; `pop` ses sujets, le reste les champs de `metadata`.",
   "kingdom.metadata.ferries": "Une seule coque de transport sert tout le royaume.",
   "kingdom.metadata.max_cities": "Les cités tenues avant que les lointaines perdent en loyauté : le socle de l'espèce du roi, plus sa part (1, intendance ÷ 6, traits).",
   "kingdom.relations.gap_tiles": "De bord à bord des quartiers, à vol d'oiseau ; tu s'ils se touchent.",
