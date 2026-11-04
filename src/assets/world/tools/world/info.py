@@ -311,6 +311,14 @@ def _belongs(save: dict, entity: tuple[str, int | str] | None) -> Callable[[dict
     return lambda actor: actor.get(field) == entity_id
 
 
+# `--born`'s span of world time, a year `y2` or a month `"y2 m12"` as every output dates one, with the words it was asked in.
+def _born_arg(value: str) -> tuple[str, float, float]:
+    if not (found := re.fullmatch(r"y(\d+)(?: m(\d+))?", value.strip())) or int(found[1]) < 1 or not 1 <= int(found[2] or 1) <= 12:
+        raise argparse.ArgumentTypeError(f'`{value}` is no date — a year `y2`, a month `"y2 m12"`')
+    start = (int(found[1]) - 1) * UNITS_PER_YEAR + (int(found[2] or 1) - 1) * UNITS_PER_MONTH
+    return value.strip(), start, start + (UNITS_PER_MONTH if found[2] else UNITS_PER_YEAR)
+
+
 # What keeps a body of age from breeding, WB weighing each partner: a belly short of a baby or half-full, a footing to leave first — tagged `tiny_islet 40`.
 def _breeding_bars(actor: dict, ctx: dict, island_of: TileIslands, grid: LazyTileGrid, names: list[str]) -> set[str]:
     bars = set()
@@ -581,6 +589,7 @@ def _build_roster(
     near: tuple[tuple[int, int], int | None] | None,
     fields: list[str],
     stage: str | None,
+    born: tuple[str, float, float] | None,
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
     # Each body's stage then, under `--since`: one that grew from a child to a teen changed as one that changed land did
@@ -649,6 +658,9 @@ def _build_roster(
         if status and status not in (kept_statuses(actor) or ()):
             continue
         if task and kept_task(actor) != task:
+            continue
+        # Born in this world that year or month: a migrant's birth is no date the save holds, its arrival less whole years brought guessing the month
+        if born and (actor.get("age_overgrowth") or not born[1] <= float(actor.get("created_time") or 0) < born[2]):
             continue
         # Born of a body, its parents kept: under `--since`, born since — one the earlier save held was born before it, whatever it did after
         if bred and (not (actor.get("parent_id_1") or actor.get("parent_id_2")) or (was is not None and actor["id"] in was)):
@@ -1070,6 +1082,7 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
         f"at the {args.stage} stage" if args.stage else None,
         "that could found a town where it stands" if args.settle else None,
         "kept from founding by more than its age" if args.barred else None,
+        f"born in {args.born[0]}" if args.born else None,
         "born of another" if args.bred and not since else None,
         (f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}") if args.island is not None else None,
         f"on the patch of {args.patch[0]},{args.patch[1]}" if args.patch else None,
@@ -1186,6 +1199,7 @@ def main(argv: list[str]) -> int:
         parser.add_argument(f"--{kind}", type=int, metavar="id", help=f"`roster`: the members of one {kind}, in the line its own list kept")
     parser.add_argument("--barred", action="store_true", help="`roster`: the thinkers something besides their age keeps from founding, and what")
     parser.add_argument("--beasts", action="store_true", help="`roster`: the bodies of no thinking lineage alone, `--sapient`'s other half")
+    parser.add_argument("--born", type=_born_arg, metavar="yN[ mM]", help="`roster`: the bodies born here that year or month — never a migrant, undated")
     parser.add_argument("--bred", action="store_true", help="`roster`: the bodies born of another — under `--since`, the births since, the dead among them")
     parser.add_argument("--has", choices=_TALLIES, help="`roster`: the bodies with one tally above nought — `level` past 1 — and its figure, highest first")
     parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
@@ -1231,13 +1245,16 @@ def main(argv: list[str]) -> int:
     entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None] + ([("job", args.job)] if args.job else [])
     # What keeps only some bodies of the roll: `-t` among them, though it narrows `lineages` too, and `--with` none — it adds fields to every line
     sifted = (
-        any((args.barred, args.bred, args.has, args.lacks, args.patch, args.settle, args.stage, args.status, args.task, args.top, args.trait))
+        any((args.barred, args.born, args.bred, args.has, args.lacks, args.patch, args.settle, args.stage, args.status, args.task, args.top, args.trait))
         or bool(entities)
         or args.island is not None
         or args.nearest is not None
     )
     minded = True if args.sapient else False if args.beasts else None  # a roll's bodies split by mind, or a census's lineages
     narrowing = sifted or ((minded is not None or args.type) and not {"lineages", "pairings"} & set(sections)) or args.fields is not None
+    if args.born and since:  # the dead of `gone` carry no birth to sift on: a span of births is read off the living
+        print("✗ --born reads the living: drop --since", file=sys.stderr)
+        return 2
     if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
         print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
         return 2
@@ -1385,6 +1402,7 @@ def main(argv: list[str]) -> int:
                 near,
                 fields,
                 args.stage,
+                args.born,
             )
         except ValueError as e:  # a field `--with` asks that no body of the roll carries
             print(e, file=sys.stderr)
