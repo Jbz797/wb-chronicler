@@ -33,7 +33,7 @@ _BUILD_TAGS = {"corrupted": "corruption", "desert": "desert", "infernal": "infer
 _CITY_WAVE = 3  # WB `CityPlaceFinder.startWave`: the zones a town keeps founders off, counted from its edge across its own land
 
 # A gate's first word, in the order `settle_gates` ranks them.
-_GATE_KINDS = ("world_law_kingdom_expansion", "king", "has_city", "trait", "biomes", "zone", "town", "ground", "child")
+_GATE_KINDS = ("world_law_kingdom_expansion", "king", "has_city", "trait", "biomes", "zone", "city", "ground", "child")
 
 # WB ground, all 64 of a zone's tiles for `canStartCityHere`: the hill left out, ground though it bars; a pit a dry hole (`liquid` 0) till the sea fills it.
 _GROUND_BASES = frozenset({"pit_close_ocean", "pit_deep_ocean", "pit_shallow_waters", "sand", "soil_high", "soil_low"})
@@ -58,7 +58,7 @@ def city_zones(save: dict, island_of: TileIslands) -> list[tuple[int, int, int |
     zones = []
     for city in save.get("cities") or []:
         if held := city.get("zones") or []:
-            land, name = island_of.get(_zone_centre(*zone_xy(held[0]))), city.get("name") or f"town {city.get('id')}"
+            land, name = island_of.get(_zone_centre(*zone_xy(held[0]))), city.get("name") or f"city {city.get('id')}"
             zones += [(*zone_xy(zone), land, name) for zone in held]
     return zones
 
@@ -87,9 +87,9 @@ def settle_gates(actor: dict, ctx: dict) -> bool | list[str] | None:
     if land is None:
         layer = tile_layer(names[grid[cy][cx]])
         place.append(f"zone centre on {'water' if layer not in LAND_LAYERS else {'Block': 'rock', 'Lava': 'lava'}.get(layer, 'an islet')}")
-    elif near := [(d, town) for tx, ty, on, town in ctx["city_zones"]() if on == land and (d := abs(tx - zx) + abs(ty - zy)) <= _CITY_WAVE]:
-        zones, town = min(near)
-        place.append(f"town {zones} zone{'s' if zones != 1 else ''} away: {town}")
+    elif near := [(d, name) for tx, ty, on, name in ctx["city_zones"]() if on == land and (d := abs(tx - zx) + abs(ty - zy)) <= _CITY_WAVE]:
+        zones, name = min(near)
+        place.append(f"city {zones} zone{'s' if zones != 1 else ''} away: {name}")
     tags = frozenset(tag for trait in subspecies.get("saved_traits") or () for tag in (ctx["subspecies_traits"].get(trait) or {}).get("tags") or ())
     ground = soil = fit = 0
     barred, wanted = Counter(), Counter()  # what each shut gate is made of: the ground a zone lacks, the adaptations its unfit biomes ask for
