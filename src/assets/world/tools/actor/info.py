@@ -121,6 +121,7 @@ _GROUND_PREFIX = "g:"  # `--to g:flower`: a ground by its `biomes` name alone, w
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
+_LISTED_GOALS = 5  # the nearest `--to cities` and `--to lands` list, a last place shared told whole: one more is its own `--to c<id>`, `i<id>`
 _LONE_ID = re.compile(r"[bcip]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): a body, a building, a town, a land — a bare number too
 _NAMED_SECTIONS = tuple(sorted((*_ALL_SECTIONS, "died")))  # what a call may name: `died` a dead body's alone, never in `full`
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
@@ -808,11 +809,11 @@ def _death(dead: dict, ctx: dict) -> dict:
     }
 
 
-# A time as the chronicler reads it: whole minutes under the hour, where a tenth of an hour would round a few tiles to nought, else hours to the tenth.
+# A time as told, `"2h15"` past the hour: a trip, however short, takes a minute, and 0 is for the tile he stands on.
 def _duration(hours: float, prefix: str = "") -> dict:
-    if (minutes := round(hours * 60)) >= 60:
-        return {f"{prefix}hours": round(hours, 1)}
-    return {f"{prefix}minutes": max(minutes, 1) if hours else 0}  # a trip, however short, takes a minute: 0 is for the tile he stands on
+    if (minutes := _told_minutes(hours)) < 60:
+        return {f"{prefix}minutes": max(minutes, 1) if hours else 0}
+    return {f"{prefix}hours": f"{minutes // 60}h{minutes % 60:02d}" if minutes % 60 else f"{minutes // 60}h"}
 
 
 # The fire whose flame the walk met, its size and place, then the others by their flame nearest the body as the crow flies: a walk to one is `--to x,y`.
@@ -848,6 +849,11 @@ def _ground_tiles(save: dict, ground: str) -> list[tuple[int, int]]:
     if ground not in (names := [(tile_ground(name) or "").removeprefix(BARE) for name in save.get("tileMap") or []]):
         return []
     return [(x, y) for y, row in enumerate(tile_mask(save, [own == ground for own in names])) for x, held in enumerate(row) if held]
+
+
+# Days to the half, as a march is told past its first day: `1.5`, a whole one bare.
+def _half_days(days: float) -> float:
+    return half if (half := int(days * 2 + 0.5) / 2) % 1 else int(half)
 
 
 # The bearing and the crow's tiles to a point — and, where the goal was many, which one: a land's `landing`, the `nearest` of a kind with its id, or of a ground.
@@ -912,6 +918,15 @@ def _nearest_body(actor: dict, ctx: dict) -> dict | None:
         return None
     crow, other, dx, dy = best
     return {"asset_id": other.get("asset_id"), "crow_tiles": round(crow), "dir": bearing(dx, dy), "id": other["id"], "name": other.get("name")}
+
+
+# The nearest goals of a sorted list, a last place shared told whole, and how many lie farther: the rest is each goal's own `--to`.
+def _nearest_listed(rows: list[dict], told: Callable[[dict], tuple]) -> tuple[list[dict], int]:
+    if len(rows) <= _LISTED_GOALS:
+        return rows, 0
+    last = told(rows[_LISTED_GOALS - 1])
+    shown = [row for at, row in enumerate(rows) if at < _LISTED_GOALS or told(row) == last]
+    return shown, len(rows) - len(shown)
 
 
 # Where a body off every counted land stands, an islet told by its ground or the water — the grid decoded for its row alone, for the lines that need it.
@@ -1004,9 +1019,14 @@ def _reachable_cities(actor: dict, ctx: dict) -> dict:
         else:
             circle = _ring(hours) or "far"
         rows.append({"circle": circle, "city": {"id": city["id"], "name": city.get("name")}, "dir": bearing(x - cx, y - cy), **times})
+
     # By the time that files each in its circle, a hull's where it brings the town in: the nearest first, as `surroundings` rings them.
-    rows.sort(key=lambda row: (*_told_time(row["with_boat"] if row["circle"] == "common_with_boat" else row), row["city"]["id"]))
-    return {"reachable": rows or None, "unreachable": len(centres) - len(rows) or None}
+    def told(row: dict) -> tuple[int, float]:
+        return _told_time(row["with_boat"] if row["circle"] == "common_with_boat" else row)
+
+    rows.sort(key=lambda row: (*told(row), row["city"]["id"]))
+    shown, farther = _nearest_listed(rows, told)
+    return {"farther": farther or None, "reachable": shown or None, "unreachable": len(centres) - len(rows) or None}
 
 
 # Every land the body can gain, the nearest first, each by its cheapest shore as `--to i<id>` lands it: its heading, time and swim — the rest counted.
@@ -1022,7 +1042,8 @@ def _reachable_lands(actor: dict, ctx: dict) -> dict:
         for land, rim in shores.items():
             to = _heading(cx, cy, *min(rim, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2), "landing", {})
             rows.append({"dir": to["dir"], "island_id": land, **_trip_time(per_hour, to["crow_tiles"])})
-        return {"reachable": sorted(rows, key=lambda row: (*_told_time(row), row["island_id"])) or None}
+        shown, farther = _nearest_listed(sorted(rows, key=lambda row: (*_told_time(row), row["island_id"])), _told_time)
+        return {"farther": farther or None, "reachable": shown or None}
     walk_map = ctx["walk_map"]()
     land_of = {y * walk_map.width + x: land for land, rim in shores.items() for x, y in rim}
     ways = walk_ways(walk_map, gait, cx, cy, land_of)  # one settling for every land: a walk apiece would cross the world once a land
@@ -1032,8 +1053,9 @@ def _reachable_lands(actor: dict, ctx: dict) -> dict:
         rows.append({"dir": bearing(tile % walk_map.width - cx, tile // walk_map.width - cy), "island_id": land, **_way_times(way, per_hour, "swim")})
     # By the time as told, days counting a march's halts: the way's raw cost would file a long swim after a longer walk.
     rows.sort(key=lambda row: (*_told_time(row), row["island_id"]))
+    shown, farther = _nearest_listed(rows, _told_time)
     lands = sum(land != home for land in ctx["island_sizes"]())  # a land rimmed by rock alone has no shore, and counts as out of reach
-    return {"reachable": rows or None, "unreachable": lands - len(ways) or None}
+    return {"farther": farther or None, "reachable": shown or None, "unreachable": lands - len(ways) or None}
 
 
 # A goal of a `--to` list as its own `--to` takes it: a number is a body's, a name with a space or a capital is a place's, quoted.
@@ -1041,15 +1063,15 @@ def _retyped(word: str) -> str:
     return f"p{word}" if word.isdigit() else word if kind_word(word) else f'"{word}"'
 
 
-# The circle a time falls in, read as `_duration` tells it, so a row printed « 2 h » stands in the common circle though its walk ran to 2.04 — `None` past them.
+# The circle a time falls in, read as `_duration` tells it, so a row printed « 2h » stands in the common circle though its walk ran to 2h07 — `None` past them.
 def _ring(hours: float) -> str | None:
-    told = minutes if (minutes := round(hours * 60)) < 60 else round(hours, 1) * 60
+    told = _told_minutes(hours)  # once, not per circle: `surroundings` asks it of every tile it weighs
     return next((name for name, limit in _CIRCLES if told <= limit), None)
 
 
-# The longest time still told within `minutes`, as `_ring` files by the rounded time: the bound a sweep of the circles walks to.
+# The longest time still told within `minutes`, as `_ring` files by the rounded time: the bound a sweep of the circles walks to, half a step past.
 def _ring_bound(minutes: int) -> float:
-    return (minutes + 0.5) / 60 if minutes < 60 else minutes / 60 + 0.05
+    return (minutes + _step(minutes) / 2) / 60
 
 
 # The tiles a land is landed on: the ground of its rim, a land owning its rock, where no body sets foot.
@@ -1081,6 +1103,11 @@ def _statuses_left(actor: dict) -> dict | None:
         if status in lasting and status != "egg" and (seconds := status_left(actor, status)) is not None:
             left[status] = status_span(seconds)
     return left or None
+
+
+# The grain a time of so many minutes is told at, the longer the coarser as speech rounds it: the minute under 5, then 5, the quarter hour, the half past 3h.
+def _step(minutes: float) -> int:
+    return 1 if minutes < 5 else 5 if minutes < 60 else 15 if minutes < 180 else 30
 
 
 # A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
@@ -1271,10 +1298,19 @@ def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
     return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
 
 
+# A time in the minutes `_duration` tells, rounded at its grain: the one figure both what a row says and the circle it falls in are read from.
+def _told_minutes(hours: float) -> int:
+    return int((raw := hours * 60) / (step := _step(raw)) + 0.5) * step
+
+
 # A trip's time as told, for sorting: minutes before hours before days, each read by its own figure — the whole trip's, else a walk's or a march's.
 def _told_time(row: dict) -> tuple[int, float]:
     keys = ((0, "total_minutes"), (1, "total_hours"), (2, "total_days"), (0, "walk_minutes"), (1, "walk_hours"), (2, "march_days"))
-    return next(((rank, row[key]) for rank, key in keys if key in row), (3, 0.0))
+    rank, told = next(((rank, row[key]) for rank, key in keys if key in row), (3, 0.0))
+    if isinstance(told, str):  # `"2h15"`: hours and minutes read back, a string sorting `"10h"` before `"2h"`
+        hours, _, minutes = told.partition("h")
+        told = int(hours) + int(minutes or 0) / 60
+    return rank, told
 
 
 # One `--to` answered: the walk, the same goal in the chapter `--since` names — `None` where its refusal was told.
@@ -1353,10 +1389,10 @@ def _trip_time(per_hour: float, total: float, foot: float | None = None, water: 
     day = _DAILY_TILES_PER_SPEED / _HOURLY_TILES_PER_SPEED * per_hour  # a day's march, in the cost's own tiles
     if water and foot is not None:  # water is crossed in one go, swum or sailed: the march alone keeps its halts, and the whole day by day
         (part, wet), marched = water, foot / day
-        told = _duration(wet / per_hour, f"{part}_") | ({"march_days": round(marched, 1)} if marched >= 1 else _duration(foot / per_hour, "walk_"))
+        told = _duration(wet / per_hour, f"{part}_") | ({"march_days": _half_days(marched)} if marched >= 1 else _duration(foot / per_hour, "walk_"))
         whole = marched + wet / per_hour / 24
-        return told | ({"total_days": round(whole, 1)} if whole >= 1 else _duration(total / per_hour, "total_"))
-    return {"march_days": round(total / day, 1)} if total >= day else _duration(total / per_hour, "walk_" if foot is not None else "total_")
+        return told | ({"total_days": _half_days(whole)} if whole >= 1 else _duration(total / per_hour, "total_"))
+    return {"march_days": _half_days(total / day)} if total >= day else _duration(total / per_hour, "walk_" if foot is not None else "total_")
 
 
 # The deaths a body dealt, oldest first, off the register — WB counts them, never whom, nor a metamorphosis: `full` keeps the latest, the section named all.
