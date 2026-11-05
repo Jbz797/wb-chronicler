@@ -99,6 +99,7 @@ export interface PersonInfo {
   asset_id: string;
   dead?: boolean;
   egg?: string; // the shell a body is still in, drawn in its stead — the egg its biology lays
+  favorite_family?: boolean; // one of the favourite's living kin, whose plate wears the family's bond
   head?: number;
   job?: string;
   kingdom?: number;

@@ -64,6 +64,14 @@ export class ChroniclerService {
     });
   }
 
+  // The one bond a plate wears towards the favourite, as its panel draws it: the lover first, then the best friend, then kin — `null` for anyone else, herself too.
+  public readonly bondIcon = (id: number): string | null => {
+    const companions = this.currentChapter()?.meta.favorite?.companions;
+    if (companions?.lover?.id === id) return 'assets/img/stats/lovers.png';
+    if (companions?.best_friend?.id === id) return 'assets/img/stats/friendship.png';
+    return this._registry.persons()[String(id)]?.favorite_family ? 'assets/img/world/families.png' : null;
+  };
+
   // The body this tier names in the chapter before — same id, same entity, or every delta would compare two strangers: a dead favourite, a crown lost.
   public readonly carriesOver = (tier: ChapterTier): boolean => {
     const previous = this.previousChapter()?.meta[tier]?.metadata;

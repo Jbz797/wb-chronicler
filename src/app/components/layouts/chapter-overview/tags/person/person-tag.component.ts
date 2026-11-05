@@ -30,11 +30,8 @@ export class PersonTagComponent {
     const person = this.person();
     return person ? LabelHelpers.personAbout(this._translate, person) : '';
   });
-  // The favourite's lover and best friend, each marked by the icon its own panel gives that bond.
-  protected readonly bonds = computed(() => {
-    const companions = this._chronicler.currentChapter()?.meta.favorite?.companions;
-    return [{ icon: 'lovers', person: companions?.lover }, { icon: 'friendship', person: companions?.best_friend }].filter(b => b.person?.id === this.id());
-  });
+  // Their one bond to the favourite — lover, best friend or kin —, marked by the icon its own panel gives it.
+  protected readonly bond = computed(() => this._chronicler.bondIcon(this.id()));
   // Their realm's own name hue — a subject reads as belonging to that crown, exactly as its `[k]` tag does.
   protected readonly color = computed(() => PaletteHelpers.realmText(this.person()?.kingdom));
   // Their species and crown on hover for anyone but the favourite, whose own panel already says both.

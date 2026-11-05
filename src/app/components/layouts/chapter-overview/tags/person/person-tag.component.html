@@ -16,8 +16,8 @@
     @if (p.level; as l) {
       <span class="tag-badge">{{ l }}</span>
     }
-    @for (b of bonds(); track b.icon) {
-      <img [src]="`assets/img/stats/${b.icon}.png`" />
+    @if (bond(); as b) {
+      <img [src]="b" />
     }
     @if (p.sex; as s) {
       <img [src]="`assets/img/sex/${s}.png`" />

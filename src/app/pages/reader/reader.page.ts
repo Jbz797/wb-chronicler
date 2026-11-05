@@ -125,16 +125,13 @@ export class ReaderPage {
     this._restoreScroll();
   }
 
-  // The favourite's lover and best friend wear the icon its panel gives that bond, just before their sex — `marked` drew the plates without the chapter.
+  // The favourite's lover, best friend and kin wear the icon its panel gives that bond, just before their sex — `marked` drew the plates without the chapter.
   private _bondPlates(root: HTMLElement): void {
-    const companions = this._chronicler.currentChapter()?.meta.favorite?.companions;
-    for (const [icon, person] of [['lovers', companions?.lover], ['friendship', companions?.best_friend]] as const) {
-      if (!person) continue;
-      for (const portrait of root.querySelectorAll<HTMLCanvasElement>(`canvas[data-person="${CSS.escape(String(person.id))}"]`)) {
-        const plate = portrait.closest('.entity-tag');
-        const img = Object.assign(document.createElement('img'), { src: `assets/img/stats/${icon}.png` });
-        plate?.insertBefore(img, plate.querySelector('img[src*="/sex/"], img[src*="/professions/"]'));
-      }
+    for (const portrait of root.querySelectorAll<HTMLCanvasElement>('canvas[data-person]')) {
+      const icon = this._chronicler.bondIcon(Number(portrait.dataset.person));
+      const plate = portrait.closest('.entity-tag');
+      if (!icon || !plate) continue;
+      plate.insertBefore(Object.assign(document.createElement('img'), { src: icon }), plate.querySelector('img[src*="/sex/"], img[src*="/professions/"]'));
     }
   }
 

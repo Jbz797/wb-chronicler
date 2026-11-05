@@ -140,10 +140,14 @@ def _build_registries(save: dict, prev: dict) -> dict:
     # A body still in its shell is drawn as that shell: the egg its biology lays, WB keeping it among the biology's traits.
     ctx, shells = build_actor_stats_context(save), {trait for trait, told in load_data("subspecies-traits.json").items() if told.get("group") == "eggs"}
     egg_by_subspecies = {sid: next((trait for trait in sub.get("saved_traits") or () if trait in shells), None) for sid, sub in subspecies_by_id.items()}
+    # The favourite's own family, off the flag `favorite.py` set in the save: its kin wear the bond on their plates, the favourite never.
+    kin = next((family for a, _ in crowd.values() if a.get("favorite") and (family := a.get("family"))), None)
     persons = {}
     for aid, (a, job) in crowd.items():
         egg = egg_by_subspecies.get(a.get("subspecies")) if is_egg(a, ctx) else None
-        persons[str(aid)] = _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid), egg)
+        entry = persons[str(aid)] = _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid), egg)
+        if kin is not None and a.get("family") == kin and not a.get("favorite"):  # `None` guarded: a familyless body would else match a familyless favourite
+            entry["favorite_family"] = True
 
     # The composite score's points, medalled as every other podium is — from three rivals up, a world raising its towns and crowns by the handful.
     rank_by_city = _podium(score_totals([c["id"] for c in cities], city_score_dimensions(save)), MIN_SCORE_PEERS)
@@ -347,7 +351,7 @@ def _merge(prev: dict, live: dict) -> dict:
         if entry_key in live:
             continue
         carried[entry_key] = fallen = {**entry, "dead": True}
-        for volatile in ("kingdoms", "rank", "size"):  # the tier, the medal and the crowns of the living, none of which a last-known entry has a claim to
+        for volatile in ("favorite_family", "kingdoms", "rank", "size"):  # the living's kinship, tier, medal and crowns: no last-known entry has a claim to them
             fallen.pop(volatile, None)
     return carried | live
 
