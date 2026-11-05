@@ -4806,9 +4806,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:22.6.12":
-  version: 22.6.12
-  resolution: "eslint-config-angular-strict@npm:22.6.12"
+"eslint-config-angular-strict@npm:22.6.13":
+  version: 22.6.13
+  resolution: "eslint-config-angular-strict@npm:22.6.13"
   dependencies:
     "@angular-eslint/builder": "npm:22.6.0"
     "@angular-eslint/eslint-plugin": "npm:22.6.0"
@@ -4826,8 +4826,8 @@ __metadata:
     eslint-plugin-perfectionist: "npm:5.13.0"
     eslint-plugin-toml: "npm:1.5.0"
     eslint-plugin-unicorn: "npm:79.0.0"
-    eslint-plugin-yml: "npm:3.9.0"
-  checksum: 10c0/52f78def89157c148012899c02e3b3ec235770e6bc4d875acd49acfa0a0f26bd324c07b540b090f929592aa760cf310955ec4028c946aa3da111ded6b60ab253
+    eslint-plugin-yml: "npm:3.10.0"
+  checksum: 10c0/3431bd6dbc04bf22ba43fc98c1e904b5dc9aeab46bacb49698f29e815c68d8af350320e9e5de13463a08b2c24eae654d01484f7a30aed46edaf205de228be81e
   languageName: node
   linkType: hard
 
@@ -5133,9 +5133,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-yml@npm:3.9.0":
-  version: 3.9.0
-  resolution: "eslint-plugin-yml@npm:3.9.0"
+"eslint-plugin-yml@npm:3.10.0":
+  version: 3.10.0
+  resolution: "eslint-plugin-yml@npm:3.10.0"
   dependencies:
     "@eslint/core": "npm:^1.0.1"
     "@eslint/plugin-kit": "npm:^0.7.0"
@@ -5146,7 +5146,7 @@ __metadata:
     yaml-eslint-parser: "npm:^2.0.0"
   peerDependencies:
     eslint: ">=9.38.0"
-  checksum: 10c0/0a553852344bd2bd8e92007997e4bd80778137a3f0cbf24977d583f086f63a1ef2c84a12230a0f9cec244088634a1ebfe732d96a493dd7a5cca15634f38b3b27
+  checksum: 10c0/f9f74fee06d61d874ca07240bc84d19b4e77c583df24e12d72c9f55ed713a02e21045e174e3e17e9c81456ce16a9a8c2f6aa6502291898573772363a99071534
   languageName: node
   linkType: hard
 
@@ -9978,7 +9978,7 @@ __metadata:
     "@ngx-translate/core": "npm:18.1.0"
     chokidar: "npm:6.0.0"
     concurrently: "npm:10.0.6"
-    eslint-config-angular-strict: "npm:22.6.12"
+    eslint-config-angular-strict: "npm:22.6.13"
     less: "npm:4.9.1"
     marked: "npm:18.1.3"
     ng-zorro-antd: "npm:22.1.2"
