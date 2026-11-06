@@ -212,7 +212,10 @@ _STAMP_SLACK = 1  # seconds a mod's stamp may stray from the save's own time: WB
 _SUBAGENT_GRACE = 120  # seconds: a transcript written this lately may be a sub-agent still at work, not to be pulled from under it
 
 # What a trait summary is — in no doc: said to the chronicler as one falls due, and handed to the audit with the targets that name one.
-_SUMMARY = f"what those traits make of the body, {_PLAIN}; never a list, a tally of traits or a figure that ages — read alone, it may echo the chapter"
+_SUMMARY = (
+    f"what those traits make of their bearer (the culture, clan… itself), {_PLAIN}; never a list of traits, even in prose, nor a tally or a figure that ages"
+    " — read alone, it may echo any chapter"
+)
 
 _SUMMARY_CAP = 400
 _SUMMARY_CAPS = {"subspecies": 500}  # a lineage's alone is given more room: a biology is born whole, where the other tiers gather their traits one by one

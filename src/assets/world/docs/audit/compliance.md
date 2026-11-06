@@ -1,8 +1,8 @@
 # 📐 Audit de conformité
 
-<p class="metadata">Date de mise à jour : 04/11/26 12:57</p>
+<p class="metadata">Date de mise à jour : 06/11/26 11:35</p>
 
-Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets après le chapitre, ce que le script a demandé à ce chapitre-là : cela s'ajoute au § III.
+Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets après chaque cible, ce que le script lui a demandé : cela s'ajoute au § III.
 
 ## Ta tâche
 
