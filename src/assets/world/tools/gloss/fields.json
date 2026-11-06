@@ -300,7 +300,7 @@
   "world.roster.settle_more": "Le nombre d'autres obstacles après `settle`, la ligne restant courte ; leur liste, dite comme `settle` : `actor <id> metadata`.",
   "world.roster.since": "Les parties à nommer après le chapitre (`--since C15 arrived,gone`) : `arrived` paru, `moved` de terre, `grew` d'âge seul, `gone` mort ; sans liste, sauf `grew`.",
   "world.roster.stage": "`--stage` : un palier de `life_stage` ; sous `--since`, celui d'aujourd'hui (d'un mort, celui de sa mort) : `--since C<n> --stage teen`, qui l'est devenu depuis.",
-  "world.roster.with": "`--with` : jusqu'à 4 champs d'`actor … stats` ou d'une fiche (`city`, `place`, `subspecies` en id…), seuls avec `id`, `name` ; `born` date l'arrivée sous `--since`.",
+  "world.roster.with": "`--with` : 4 champs au plus d'`actor … stats` ou d'une fiche (`city`, `language`, `subspecies` en id…), avec `id` et `name` ; `born` date l'arrivée sous `--since`.",
   "world.since": "`cumulative,snapshot --since C<n>` : les écarts ; celui de `snapshot` est un solde, pas un compte d'événements : naissances et extinctions sont dans `cumulative`.",
   "world.snapshot.armies": "Les armées levées dans le monde, une par cité au plus, en paix comme en guerre (`wiki:Armies`).",
   "world.snapshot.clouds": "Les nuages du ciel à la save, par sorte ; chacun, sa tuile, son cap et sa taille : `geography … clouds`.",

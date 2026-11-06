@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 06/11/26 16:37</p>
+<p class="metadata">Date de mise à jour : 06/11/26 17:14</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -75,7 +75,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 - `laws` : leur libellé du jeu (`wiki:World_Laws`)
 - `lineages`, `pairings` : `-t` une espèce (`gloss:lineages`, `gloss:pairings`)
-- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--rank <mesure> [n]`, `--nearest <x,y | p<id>>`, `--with <champs>`, `--status`/`--task <id>`, `--stage <palier>`, `--born <yN[ mM]>`, `--bred` nés d'un parent, `--settle` (`settle` vrai ou `child`), `--barred` l'inverse, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`…) ses membres, `--job <métier>` (`king`…). `gloss:roster`.
+- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--rank <mesure> [n]`, `--nearest <x,y | p<id>>`, `--with <champs>`, `--status`/`--task <id>`, `--stage <palier>`, `--born <yN[ mM]>`, `--bred` nés d'un parent, `--settle` (`settle` vrai ou `child`), `--barred` l'inverse, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--language`…) ses membres, `--job <métier>` (`king`…). `gloss:roster`.
 
 ---
 

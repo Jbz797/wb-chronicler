@@ -194,16 +194,22 @@ _KEPT_FIELDS = (
     "breeds_on",
     "city",
     "city_since",
+    "clan",
+    "culture",
+    "family",
     "gen",
     "hatch_on",
     "home",
     "in_building",
     "island_id",
     "job",
+    "kingdom",
+    "language",
     "life_stage",
     "lover",
     "parents",
     "place",
+    "religion",
     "sex",
     "statuses",
     "subspecies",
@@ -257,6 +263,7 @@ _SOULBORNE = "reproduction_soulborne"  # a lineage born of the souls it strikes:
 _SPREAD_FIELDS = ("at", "born")  # a body's own tile or date: past the list, its kind's bounds and middle (`by_species`), never each value counted
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `--has` and `--lacks` weigh: a body's own counters, named as `actor … stats` names them
+_TIES = ("city", "clan", "culture", "family", "kingdom", "language", "religion")  # what `--with` names a body's ties by, `{id, name}` as `actor … metadata` does
 _TOP_PAIRINGS = 20  # the kinds `pairings` keeps past `MAX_LISTED`, soonest births first: the ones a chapter tells, the rest counted and read by `-t`
 _TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "age", "equipment_power")))  # what `--rank` ranks by: those counters, a skill, an arsenal, the age
 _TOP_ROWS = 10  # a ranking is asked for its head: who comes first, second, third — the rest is counted
@@ -285,7 +292,6 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "born": lambda: entity_born(actor),
         # Its lineage's own line, as on the roll: none to come where it never bears
         "breeds_on": lambda: crossed_on(actor, breeding) if age < (breeding := breeding_age(actor, ctx)) and fertile(lineage) else None,
-        "city": lambda: entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
         "city_since": lambda: kept_city_since(actor),
         "gen": lambda: int(actor.get("generation") or 1),
         "hatch_on": lambda: hatch_on(actor, ctx),
@@ -301,6 +307,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "statuses": lambda: kept_statuses(actor),
         "subspecies": lambda: actor.get("subspecies"),
         "task": lambda: kept_task(actor),
+        **{kind: (lambda kind=kind: entity_ref(actor.get(_MEMBERSHIPS[kind][1]), ctx["ties"][kind])) for kind in ctx.get("ties", ())},
     }
     return {field: kept[field]() if field in kept else stats.get(field, _FIELD_FLOORS.get(field)) for field in fields}
 
@@ -621,8 +628,8 @@ def _build_roster(
     if patch and land is None:
         asked = island_of.get(next(iter(patch)))  # a patch lies on one land, which then goes unsaid as `-i`'s does
     ctx = build_actor_stats_context(save)
-    if "city" in fields:
-        ctx["cities_by_id"] = index_by_id(save.get("cities") or [])
+    if ties := [kind for kind in _TIES if kind in fields]:
+        ctx["ties"] = {kind: index_by_id(save.get(_MEMBERSHIPS[kind][0]) or []) for kind in ties}
     if "in_building" in fields:
         ctx["buildings_by_id"] = index_by_id(save.get("buildings") or [])
     if "job" in fields:
@@ -1168,7 +1175,7 @@ def _pairing_tally(rows: list[dict]) -> list[dict] | dict:
 # A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
 def _refuse_unseen(fields: list[str], seen: set[str]) -> None:
     if unknown := [field for field in fields if field not in seen]:
-        raise ValueError(f"✗ no body here has {', '.join(f'`{f}`' for f in unknown)} — `--with` takes {', '.join(sorted(seen))}")
+        raise ValueError(f"✗ {', '.join(f'`{f}`' for f in unknown)}: no `--with` field, or a stat no body here carries — it takes {', '.join(sorted(seen))}")
 
 
 # The subspecies WB hangs `has_sapience` on, as a set of ids — an allegiance is not a mind, and a world can think long before it crowns anyone.
