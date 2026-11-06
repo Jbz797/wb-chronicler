@@ -37,12 +37,17 @@ def _holds(key: list[str], asked: list[str]) -> bool:
     return any(key[at : at + len(asked)] == asked for at in range(len(key) - len(asked) + 1))
 
 
-# Whether a key falls within the asked: held, a tool's field its sections share (`ground.spot`), or a bare shared key — a full path's field, a section's, a tool's.
+# Whether the key's segments run through the asked in order, on its very field: a level the output groups by (`common`, `fires`, `base`) is no part of a key.
+def _threads(key: list[str], asked: list[str]) -> bool:
+    rest = iter(asked)
+    return key[-1] == asked[-1] and all(segment in rest for segment in key)
+
+
+# Whether a key falls within the asked: held, threaded through it (`ground.spot`), a section's shared key, or a value of the field asked (`statuses.rage`).
 def _within(key: list[str], asked: list[str]) -> bool:
     if key[0] in _TOOLS:
-        return _holds(key, asked) or (len(key) == 2 < len(asked) and asked[0] == key[0] and asked[-1] == key[1])
-    section = asked[1:] if asked and asked[0] in _TOOLS else None
-    return _holds(key, asked) or asked[-len(key) :] == key or (section is not None and key[: len(section)] == section)
+        return _holds(key, asked) or (asked[0] == key[0] and _threads(key, asked))
+    return _holds(key, asked) or _threads(key, asked) or (asked[0] in _TOOLS and key[: len(asked) - 1] == asked[1:]) or key[0] == asked[-1] != asked[0]
 
 
 def main(argv: list[str]) -> int:
