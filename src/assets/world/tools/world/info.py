@@ -1404,7 +1404,7 @@ def main(argv: list[str]) -> int:
         if stray:
             # A status asked as a trait is sent to its own filter: `cursed` reads like one, and the plain refusal would leave no way on.
             hint = f"it is a status: `--status {args.trait}`" if args.trait in worn else "`actor <id> traits` and `subspecies <id> traits` give the ids"
-            print(f"✗ no trait {args.trait}, of a body or of a lineage — {hint}", file=sys.stderr)
+            print(f"✗ `{args.trait}` is no trait of the game, of a body or of a lineage — {hint}", file=sys.stderr)
             return 2
         if args.status and args.status not in worn:  # refused by what this world wears: WB's whole list would not tell a mistyped id from an idle one
             print(f"✗ no body wears {args.status} — worn here: {', '.join(worn) or 'no status at all'}", file=sys.stderr)
