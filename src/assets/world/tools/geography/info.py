@@ -9,6 +9,7 @@ import sys
 from collections import Counter, defaultdict
 from functools import partial
 from heapq import heapify, heappop, heappush
+from operator import itemgetter
 from pathlib import Path
 lazy from collections.abc import Callable, Collection, Iterable
 
@@ -53,6 +54,7 @@ from shared import (
     index_by_id,
     is_boat,
     is_sapient,
+    kept_clouds,
     land_arg,
     land_side,
     load_save,
@@ -72,7 +74,7 @@ from waters import water_bodies, waters_cached
 lazy from places import PlaceIndex, fire_place
 lazy from walking import WalkMap
 
-_ALL_SECTIONS = ("biomes", "bodies", "burning", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
+_ALL_SECTIONS = ("biomes", "bodies", "burning", "clouds", "entity_types", "frozen", "gear", "islands", "positions", "ridges", "totals", "waters")
 _BIOME_RUN = re.compile(rb"([\x01-\xff])\1*")  # a row's unbroken stretch of one biome, its code one byte, `0` where the ground bears none
 _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections that also count the islets and the water, which `-i` may name
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what `-i` narrows: the rest is world-wide
@@ -216,6 +218,16 @@ def _build_burning(save: dict, save_path: Path, island: int | str | None, before
         whole = not fires["unlisted"] and not any(row["spills"] for row in told) and sum(row["tiles"] for row in told) == len(by_land[key])
         out[key] = {"grounds": None if whole else grounds, **fires}
     return out
+
+
+# The sky at the save, as the Faithful Saves mod kept it, west to east: each cloud's kind, tile, heading, the reach of its drops and the town it hangs over.
+def _build_clouds(save: dict) -> list[dict]:
+    city_by_zone = {zone_xy(zone): city for city in save.get("cities") or [] for zone in city.get("zones") or []}
+    rows = []
+    for cloud in kept_clouds(save):
+        city = city_by_zone.get((cloud["x"] // ZONE_TILES, cloud["y"] // ZONE_TILES))  # the zone under its tile, where its drops fall
+        rows.append(cloud | ({"over": {"id": city["id"], "name": city.get("name")}} if city else {}))
+    return sorted(rows, key=itemgetter("x", "y"))
 
 
 # Every kind the save holds, by family: `shared.asset_families`, which `actor … --to` and `positions -t` read, so that a name listed here is one they take.
@@ -389,6 +401,8 @@ def _collect(save: dict, save_path: Path, sections: tuple[str, ...], kinds: set[
         out["bodies"] = _build_bodies(save, save_path)
     if "burning" in sections:
         out["burning"] = _build_burning(save, save_path, island)
+    if "clouds" in sections:
+        out["clouds"] = _build_clouds(save)
     if "entity_types" in sections:
         out["entity_types"] = _build_entity_types(save)
     if "frozen" in sections:
@@ -792,6 +806,9 @@ def main(argv: list[str]) -> int:
             print(f"✗ {', '.join(said)}: bodies are listed by `world … roster -t`, `positions` sites the rest", file=sys.stderr)
             return 2
 
+    if then_path and "clouds" in sections:  # a sky lives seconds to minutes: two saves' clouds are never the same ones, nor weighed one against the other
+        print("✗ `clouds`: the sky of one save, never weighed against another — read each chapter's by its suffix", file=sys.stderr)
+        return 2
     # `positions` and `burning` are weighed apart under `--since`: a roll or a tally by land, fires that never carry over, would be held against each other.
     out = _collect(save, save_path, tuple(s for s in sections if s not in {"burning", "positions"}) if then_path else sections, kinds, args.island)
 
@@ -824,6 +841,9 @@ def main(argv: list[str]) -> int:
         print(f"✗ {none} — `entity_types` lists every kind, and the families: {', '.join(sorted([*families, HOMES]))}", file=sys.stderr)
         return 1
 
+    if out.get("clouds") == [] and len(sections) == 1:
+        print("✗ no cloud in the sky of this save — or a save the Faithful Saves mod did not write it into", file=sys.stderr)
+        return 1
     where = "in this world" if args.island is None else f"on land {args.island}" if isinstance(args.island, int) else f"on the {args.island}"
     if "positions" in out and not out["positions"]:
         print(f"✗ no {wanted} {where} — without `-i`, `positions` says which lands hold one", file=sys.stderr)

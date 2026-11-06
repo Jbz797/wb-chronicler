@@ -2,7 +2,7 @@ using HarmonyLib;
 
 namespace WanderingClouds
 {
-    // Nothing of a cloud is kept in a save, so nothing in one says the mod ran. The chronicle this mod ships with only follows a world it runs on:
+    // WB keeps nothing of a cloud in a save, so nothing in one says the mod ran. The chronicle this mod ships with only follows a world it runs on:
     // each save now carries the world's time under the mod's key, which a save written without the mod cannot match.
     internal static class SaveStamp
     {

@@ -937,6 +937,17 @@ def kept_city_since(actor: dict) -> str | None:
     return _kept_since(actor, "cityID", "city")
 
 
+# The clouds of the sky at the save, as the Faithful Saves mod kept them: kind, tile, heading by its speed's sign, and the tiles its drops fall over, `"14x6"`.
+def kept_clouds(save: dict) -> list[dict]:
+    kept = ((((save.get("mapStats") or {}).get("custom_data") or {}).get("custom_data_string") or {}).get("faithful_clouds")) or ""
+    clouds = []
+    for entry in filter(None, kept.split(";")):
+        kind, x, y, speed, _, _, _, reach_x, reach_y = entry.split(" ")  # life left, sprite and mirroring between: the reload's, never the chronicle's
+        size = f"{round(2 * float(reach_x))}x{round(2 * float(reach_y))}"  # the reach a drop falls within, either side of the cloud
+        clouds.append({"asset_id": kind, "dir": "W" if float(speed) < 0 else "E", "size": size, "x": int(float(x)), "y": int(float(y))})
+    return clouds
+
+
 # The world's deaths as the Faithful Saves mod keeps them in WB's history base, by body id, oldest first, up to the save's instant: WB keeps nothing of the dead.
 def kept_deaths(save: dict) -> dict[int, dict]:
     now = float((save.get("mapStats") or {}).get("world_time") or 0)

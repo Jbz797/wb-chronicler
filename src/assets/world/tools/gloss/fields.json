@@ -111,6 +111,7 @@
   "city.metadata.migrants": "Ce qui retient la loi d'en amener, sinon `soon` ou `later` (`wiki:World_Laws`).",
   "city.metadata.migrants.later": "Rien ne retient la loi non plus : elle n'amène des migrants qu'à intervalles, et son prochain tour n'approche pas encore. Pas un manque.",
   "city.metadata.migrants.soon": "Rien ne retient la loi, et son prochain tour approche.",
+  "cloud_rage": "Au Chaos, le seul nuage du ciel : plus de semence ; sa goutte met en rage un corps sur cinq alentour, et un corps en rage qui tue peut devenir démon.",
   "crow_tiles": "À vol d'oiseau sur 8 directions (une diagonale vaut 1,41), arrondi, jusqu'à la tuile que la sortie nomme : à citer tel quel, sans le refaire ; pas un compte de pas.",
   "cursed": "`cursed` rabat la santé à la moitié ; le sol corrompu maudit à 5 % par pas. Levé, il laisse `health` sous `health_max`.",
   "deaths_by_cause": "D'une lignée, il omet des morts (un maudit relevé) : celles du monde sont dans `world … cumulative` ou `history world` ; hors du journal, au `pop` annuel.",
@@ -132,6 +133,7 @@
   "geography.burning.spills": "La part d'un foyer hors de sa terre (un îlot collé, une terre voisine) : un foyer se range sous la terre qui en porte le plus, jamais compté deux fois.",
   "geography.burning.tiles": "Sous `--since`, par terre : tuiles prises (`caught`) et éteintes (`out`), foyer par foyer en `since` ; une éteinte puis reprise n'y paraît pas.",
   "geography.burning.to_water": "L'eau la plus proche du bord d'un foyer (1 : il touche la rive ; rien passé 60), seule, changeante d'un chapitre à l'autre ; une eau donnée : `tiles <x,y> --to`.",
+  "geography.clouds": "Le ciel à la save : chaque nuage, sa sorte, sa tuile, son cap (`E`, `W`), la cité survolée (`over`) ; `size`, en tuiles, la zone où tombent ses gouttes.",
   "geography.entity_types": "Toutes les sortes que porte la save, par famille (`actors`, `trees`, `nature`…) : une famille absente n'a rien dans ce monde ; ses noms valent pour `positions -t`.",
   "geography.frozen": "Par terre, la part gelée puis ses tuiles : `permafrost` le biome gelé en toute saison, `snow` et `ice` la neige et la glace de la carte, `frost` le gel passager.",
   "geography.heart": "`heart` (`islands`, `waters`, `islet`, `places.json`) : où se pose son nom, le plus loin des rives ; d'une rivière, d'un îlot, sa tuile la plus proche de sa moyenne.",
@@ -293,5 +295,6 @@
   "world.roster.with": "`--with` : jusqu'à 4 champs d'`actor … stats` ou d'une fiche (`city`, `place`, `subspecies` en id…), seuls avec `id`, `name` ; `born` date l'arrivée sous `--since`.",
   "world.since": "`cumulative,snapshot --since C<n>` : les écarts ; celui de `snapshot` est un solde, pas un compte d'événements : naissances et extinctions sont dans `cumulative`.",
   "world.snapshot.armies": "Les armées levées dans le monde, une par cité au plus, en paix comme en guerre (`wiki:Armies`).",
+  "world.snapshot.clouds": "Les nuages du ciel à la save, par sorte ; chacun, sa tuile, son cap et sa taille : `geography … clouds`.",
   "world.snapshot.wars": "Les guerres en cours, sans vainqueur ; tu à 0 : absent, aucune ne se livre. Celles d'une couronne : `kingdom … wars`."
 }
