@@ -388,6 +388,7 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
         ("FIRST_HOME", housed),
         ("FIRST_KILL", struck),
         ("FIRST_MIGRANTS", migrated),
+        ("FIRST_RELIGION", stats.get("religionsCreated")),  # a faith founded, gone since or not: WB counts it at `newReligion`
         ("SECOND_CITY", towns >= 2),  # a town beside the first: the world has a neighbour, a crown's or a rival's
     )
 
