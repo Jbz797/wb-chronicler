@@ -110,6 +110,7 @@
   "city.buildings.finished": "Sous `--since`, les chantiers achevés depuis, même sorte, même id.",
   "city.buildings.gone": "Sous `--since`, ceux que la cité a perdus, détruits ou démontés, tels que la save d'avant les gardait.",
   "city.buildings.info": "Sous `--since`, le nombre de bâtiments restés tels quels.",
+  "city.inventory": "Le stock à la save, non ce qui s'est fait : un bien fait puis mangé entre deux saves n'y paraît pas ; sa venue : `across … city <id> inventory --keep <bien>`.",
   "city.metadata.attractivity": "Les corps gagnés, moins ceux partis vivants ; le fondateur et les migrants à part.",
   "city.metadata.heir": "Qui WB ferait chef si le poste s'ouvrait : un sujet à clan du royaume, du clan royal d'abord, classé selon la culture de la cité ; tu s'il tirerait au sort.",
   "city.metadata.migrants": "Ce qui retient la loi d'en amener, sinon `soon` ou `later` (`wiki:World_Laws`).",
