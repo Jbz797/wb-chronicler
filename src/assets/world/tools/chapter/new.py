@@ -274,18 +274,20 @@ def _age_duration(age_id: str) -> float:
     return float(random.randint(low, high) * UNITS_PER_YEAR)
 
 
-# The chapter and what it wrote into `chapter.json`, with what the recap asked of this chapter alone between brackets: the auditors never see the recap.
+# The chapter and its `chapter.json`, each followed by what the recap asked of it alone in brackets: the auditors never see the recap, and read a bracket as all.
 def _audit_targets(n: int, facts: dict) -> str:
     asked = [
         *([] if facts["favorite"] else [f"no favorite: {' / '.join(_WORLD_ONLY)}"]),
         *([f"favorite dead: {_DEATH}"] if facts["mourned"] else []),
         *([f"events: {', '.join(facts['events'])}, each {_EVENT}"] if facts["events"] else []),
-        *([f"trait summaries: {_SUMMARY}"] if any(field.endswith(".traits") for field in facts["audited"]) else []),
-        *([_LINEAGE] if "subspecies.traits" in facts["audited"] else []),
         *([f"dialogue owed: {facts['talk']} — {_DIALOGUE}"] if facts["talk"] else []),
     ]
-    shape = f" [{' — '.join(asked)}]" if asked else ""
-    written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])})" if facts["audited"] else ""
+    summed = [
+        *([f"trait summaries: {_SUMMARY}"] if any(field.endswith(".traits") for field in facts["audited"]) else []),
+        *([_LINEAGE] if "subspecies.traits" in facts["audited"] else []),
+    ]
+    shape, summed_shape = (f" [{' — '.join(items)}]" if items else "" for items in (asked, summed))
+    written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])}){summed_shape}" if facts["audited"] else ""
     named = f", history/places.json ({', '.join(f'« {name} »' for name in facts['named'])}) [{_PLACE}]" if facts["named"] else ""
     return f"saves/C{n}/chapter.md{shape}{written}{named}"
 
