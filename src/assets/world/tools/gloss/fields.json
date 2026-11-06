@@ -40,6 +40,7 @@
   "actor.statuses": "`--statuses` : par chapitre, `held` ses statuts qui changent une stat, le bonheur à part (un rêve n'y entre pas), `passing` les autres vus à la save.",
   "actor.surroundings": "Rangé au pas du corps, terrain pesé ; `crow_tiles` à vol d'oiseau, jamais un temps (`--to`) ; ne nage que vers une autre terre. `intimate` ≤ 30 min, `common` ≤ 2 h.",
   "actor.surroundings.boat": "Une coque que le corps rejoint y paraît (`boat_…`), sans être un corps.",
+  "actor.surroundings.common": "Entre 30 min et 2 h de sa marche : la distance seule, cité comprise. Sa famille (`kin`) et ceux de sa maison restent de l'Intime, à toute distance.",
   "actor.surroundings.common_with_boat": "Hors de sa terre, ≤ 2 h en bateau, marches comprises, si son royaume a un transport ; à bord, par l'eau puis à pied.",
   "actor.surroundings.count": "Hors de l'intime, le reste à portée d'une cité ou d'un `asset_id` : ni sa terre entière ni qui a sa ligne (lien, charge, meurtre, nom de bête, pensant sans cité).",
   "actor.surroundings.hours": "Hors de sa terre, le temps pour l'y rejoindre à son pas, nage ou bateau compris (`minutes` sous l'heure) : une nage rapide rapproche une rive lointaine.",
