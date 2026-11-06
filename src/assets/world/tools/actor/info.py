@@ -1232,7 +1232,7 @@ def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], l
     return targets, argv
 
 
-# Chronicler-only: what the body's task was aimed at the instant of the save — a prey, a store, a tile —, a body and a building told as every ref is.
+# Chronicler-only: what the body's task was aimed at the instant of the save — a prey, a store, a tile —, refs told as every ref is, and how far that tile lies.
 def _task_target(actor: dict, ctx: dict, save: dict) -> dict | None:
     if (aim := kept_task_target(actor)) is None:
         return None
@@ -1242,6 +1242,9 @@ def _task_target(actor: dict, ctx: dict, save: dict) -> dict | None:
     if (target := aim.get("ground")) is not None:
         site = next((b for b in save.get("buildings") or [] if b.get("id") == target), None) or {}
         aim["ground"] = {"asset_id": site.get("asset_id"), "id": target}
+    if "x" in aim and "y" in aim:  # where the task leads, never where the body stands: how far off, as the crow flies — `--to` times the walk
+        cx, cy = actor_xy(actor)
+        aim["crow_tiles"] = round(walk_tiles(aim["x"] - cx, aim["y"] - cy))
     return aim
 
 
