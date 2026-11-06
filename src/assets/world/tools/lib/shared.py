@@ -317,6 +317,11 @@ def _misplaced_across() -> str | None:
     return f"`across` is a tool of its own, the tool asked after the span: `tools/across/info.py {' '.join([*span, tool, *rest])}`"
 
 
+# Whether a kind bears the name as whole segments of its id — `windmill` in `windmill_dwarf_0`, `tree` in `jungle_tree`, never `tow` in `watch_tower`.
+def _named_by(word: str, kind: str) -> bool:
+    return f"_{word}_" in f"_{kind}_"
+
+
 # The standout souls. `hungriest` skips a body with no gut, which carries no `nutrition_max` to fall short of; the combat stats share one pass, that being the cost.
 def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of: Callable[[dict], dict], world_time: float) -> dict:
     by_id = {actor["id"]: actor for actor in actors}
@@ -500,14 +505,19 @@ def asset_families(save: dict) -> dict[str, Counter]:
     return {family: counts for family, counts in families.items() if counts}
 
 
-# The asset ids a comma list of kinds, families and resources stands for — a family or a resource, only the kinds this save carries. A kind here wins its own name.
+# The asset ids a comma list of kinds, families, resources and names stands for — all but a kind, only those this save carries. A kind here wins its own name.
 def asset_kinds(families: dict[str, Counter], words: str) -> set[str]:
     here, kinds = {kind for counts in families.values() for kind in counts}, set[str]()
     for word in words.split(","):
         if word == HOMES:  # every roof a soul may sleep under (`housing_slots`), houses, tents and halls alike: no family WB names
             kinds |= {kind for kind in here if (load_data("buildings.json").get(kind) or {}).get("housing_slots")}
             continue
-        kinds |= families[word].keys() if word in families else (word not in here and resource_sources(word) & here) or {word}
+        if word in families:
+            kinds |= families[word].keys()
+        elif word in here:
+            kinds.add(word)
+        else:  # a resource's sources here, else every kind here that bears the name (`windmill`, `house_dwarf`), else the word itself, to be refused
+            kinds |= resource_sources(word) & here or {kind for kind in here if _named_by(word, kind)} or {word}
     return kinds
 
 
@@ -1593,7 +1603,7 @@ def unsited_reason(families: dict[str, Counter], words: str) -> str | None:
     # And every family, present or not: on a bare world `trees` is no typo, only none.
     known |= {"actors", "buildings", "other"} | {(entry or {}).get("category") for entry in buildings.values()}
     # A name WB gives a kind per species (`watch_tower` => `watch_tower_civ_…`), none standing here: an absence proven, never a typo.
-    named = {word: kinds for word in asked if word not in known and (kinds := sorted(kind for kind in known if kind and word in kind))}
+    named = {word: kinds for word in asked if word not in known and (kinds := sorted(kind for kind in known if kind and _named_by(word, kind)))}
     told = [f"no `{word}` stands here — WB names {_kinds_by(kinds)}" for word, kinds in named.items()]
     if strange := [word for word in asked if not (word in known or word in named or word.startswith("boat_"))]:
         told.append(f"`{', '.join(strange)}` is no kind of the game nor a resource")

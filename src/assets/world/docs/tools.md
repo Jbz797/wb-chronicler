@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 06/11/26 17:14</p>
+<p class="metadata">Date de mise à jour : 06/11/26 17:28</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -52,7 +52,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 ### `geography` :
 
-- `-t <type>` : sous `positions`, types, familles (`trees`…, `homes` les toits) et ressources, par virgules, hors corps ; sous `biomes`, un biome ou un sol (`gloss:biomes`)
+- `-t <type>` : sous `positions`, types, familles (`trees`…, `homes` les toits), noms (`windmill`) et ressources, par virgules, hors corps ; sous `biomes`, un biome ou un sol (`gloss:biomes`)
 
 ### `history` :
 
