@@ -293,6 +293,11 @@ def _kept_since(actor: dict, field: str, kind: str) -> str | None:
     return world_date(since)
 
 
+# The kinds a name stands for in WB, told the way a refusal ends: the one kind whole, or how many and the first, the rest left to `entity_types`.
+def _kinds_by(kinds: list[str]) -> str:
+    return f"`{kinds[0]}` by it" if len(kinds) == 1 else f"{len(kinds)} kinds by it (`{kinds[0]}`…)"
+
+
 # Each measure's first place off its tally, as `{id, name, value}` refs — a measure nobody holds drops out, and `emit` a `name` WB never wrote.
 def _leader_refs(tallies: dict, records: Mapping) -> dict:
     refs = {}
@@ -1575,7 +1580,7 @@ def unranked(pools: Mapping[str, tuple[int, int]]) -> dict:
     return {block: {"needs": needs, "peers": peers} for block, (peers, needs) in pools.items() if 0 < peers < needs}
 
 
-# Why a comma list sites nothing, past a kind merely absent: a resource no site here yields, a word a kind here holds, one WB knows no kind or resource by.
+# Why a comma list sites nothing, past a kind merely absent: a resource none here yields, a word a kind here holds, a name WB's kinds bear, else a word unknown.
 def unsited_reason(families: dict[str, Counter], words: str) -> str | None:
     here = {kind for counts in families.values() for kind in counts}  # a kind a body is the last of is one all the same: no likeness to offer
     asked = [word for word in words.split(",") if word and word not in here]
@@ -1587,9 +1592,12 @@ def unsited_reason(families: dict[str, Counter], words: str) -> str | None:
     known = load_data("species.json").keys() | buildings.keys() | civic_building_ids()  # every kind WB has, hulls aside
     # And every family, present or not: on a bare world `trees` is no typo, only none.
     known |= {"actors", "buildings", "other"} | {(entry or {}).get("category") for entry in buildings.values()}
-    if strange := [word for word in asked if not (word in known or word.startswith("boat_"))]:
-        return f"`{', '.join(strange)}` names no kind nor resource"
-    return None
+    # A name WB gives a kind per species (`watch_tower` => `watch_tower_civ_…`), none standing here: an absence proven, never a typo.
+    named = {word: kinds for word in asked if word not in known and (kinds := sorted(kind for kind in known if kind and word in kind))}
+    told = [f"no `{word}` stands here — WB names {_kinds_by(kinds)}" for word, kinds in named.items()]
+    if strange := [word for word in asked if not (word in known or word in named or word.startswith("boat_"))]:
+        told.append(f"`{', '.join(strange)}` is no kind of the game nor a resource")
+    return "; ".join(told) or None
 
 
 # What a body actually walks between two points: WB paths in eight directions but spends its speed on each step's length, which is the octile distance.
