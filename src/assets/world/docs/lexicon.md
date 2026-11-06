@@ -1,6 +1,6 @@
 # 🔤 Vocabulaire du récit
 
-<p class="metadata">Date de mise à jour : 04/11/26 12:55</p>
+<p class="metadata">Date de mise à jour : 06/11/26 19:15</p>
 
 ## Mots imposés
 
@@ -14,8 +14,8 @@
 - **« 0 an »** : un `age` de 0 dit une vie de moins d'un an — raconte la naissance récente.
 - **Continent, océan** : la plus vaste terre n'est jamais un continent, ni la plus vaste eau un océan.
 - **Jauge, barre, points de vie**, ni aucune mesure de l'interface : une faim, une santé, une humeur se disent par ce que le corps sent ou fait (_« la faim commence à le tenailler »_, pas _« sa faim arrive à mi-jauge »_).
-- **Jeu, sauvegarde, joueur, partie, moteur**, ni rien du cadre technique : un compte dit ce qu'il compte, jamais qu'on compte (_« elles sont 348 »_, pas _« on en compte 348 »_) ; une règle du jeu, comme la conduite des corps, jamais une loi (_« elle ne s'installerait pas si près d'autres toits »_, pas _« des toits trop proches le lui interdisent »_).
-- **Tuile**, et **aucune unité ne la remplace une pour une**, ni « pas » ou « brasse » (_« à 12 pas »_), « arpent » ou « hectare » — _« à quelques pas »_, sans chiffre, dit le tout-près, `crow_tiles` 1 : une distance ou une aire se dit par l'échelle (`chronicler.md` § Échelle), une aire aussi par sa part d'une terre, d'une eau.
+- **Jeu, sauvegarde, joueur, partie, moteur**, ni rien du cadre technique : un compte dit ce qu'il compte, jamais qu'on compte (_« elles sont 348 »_) ; une règle du jeu, comme la conduite des corps, jamais une loi (_« elle ne s'installerait pas si près d'autres toits »_, pas _« des toits trop proches le lui interdisent »_) ; l'âge ne l'explique qu'au palier `elder`.
+- **Tuile**, et **aucune unité ne la remplace une pour une**, ni « pas » ou « brasse », « arpent » ou « hectare » — _« à quelques pas »_, sans chiffre, dit le tout-près, `crow_tiles` 1 : une distance ou une aire se dit par l'échelle (`chronicler.md` § Échelle), une aire aussi par sa part d'une terre, d'une eau.
 
 ## Barèmes
 
