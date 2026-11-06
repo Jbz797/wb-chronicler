@@ -3,6 +3,7 @@
 # Reads the official WorldBox wiki through its MediaWiki API, the one door its 403 leaves open. User-facing docs: `docs/chronicler.md` § « Accès au wiki ».
 # `<Page>` prints its wikitext, a redirect followed to the section it names; `--entry <name>` the table rows naming it, cell by cell, else list items opening on it;
 # `--list [word]` its titles, every batch of the listing walked, filtered on a word when one is given; `--search <words>` the pages whose text holds them.
+# A page past `_OUTLINE` prints its sections and their sizes instead, `--section <title>` reading one whole.
 
 import html
 import json
@@ -24,6 +25,7 @@ _DOCS = "docs/chronicler.md § « Accès au wiki WorldBox »"  # where every ref
 _FOUND = 10  # pages `--search` hands back, best first: past them the wiki only grazes the words
 _HEADERS = {"User-Agent": "Mozilla/5.0"}  # the wiki turns away a request that names no browser, 403 and nothing else
 _LABEL_WORDS = 3  # words past which a cell is prose, not a label: « Spore », « Mushroom Production »
+_OUTLINE = 8000  # characters past which a page prints its sections, one read by `--section`: Culture Traits runs 35 000, a few hundred of them asked
 _STEM = 4  # letters two words must open on alike to be taken for one: `spore` and `spores`, `corruption` and `corrupted`
 _TIMEOUT = 15
 _UNTOLD = frozenset({"version of introduction"})  # columns that tell the wiki's own history, none of the game's rules
@@ -49,6 +51,16 @@ def _names(cell: str) -> set[str]:
 # Whether a list item opens on the asked name, a whole word of it: `nutrition (hunger) value…` on `nutrition`, never `nutritional`.
 def _opens_on(item: str, asked: str) -> bool:
     return item.startswith(asked) and not item[len(asked) : len(asked) + 1].isalnum()
+
+
+# A long page's sections as `--section` takes them, each sized as it would read, sub-sections indented under it and counted in it — the lead apart.
+def _outline(wikitext: str, sections: list[dict]) -> str:
+    cut = [s for s in sections if s.get("byteoffset") is not None]
+    lines = [f"(lead) {cut[0]['byteoffset'] if cut else len(wikitext)}"]
+    for at, s in enumerate(cut):
+        end = next((o["byteoffset"] for o in cut[at + 1 :] if int(o["level"]) <= int(s["level"])), len(wikitext))
+        lines.append(f"{'  ' * (int(s['level']) - 2)}{_plain(s.get('line', ''))} {end - s['byteoffset']}")
+    return "\n".join(lines)
 
 
 # A cell as it reads: no pictures, links down to their label, no tags, a break a « / », italics kept as `*…*` — the traits page italicises what the game hides
@@ -88,10 +100,10 @@ def _said(cell: str) -> str:
     return cell.casefold().replace("_", " ")
 
 
-# The section an anchor names, its sub-sections with it, a heading of its rank closing it — cut by the wiki's `byteoffset`, which counts characters, not bytes.
+# The section a title or an anchor names, its sub-sections with it, a heading of its rank closing it — cut by the wiki's `byteoffset`, which counts characters.
 def _section(wikitext: str, sections: list[dict], fragment: str) -> str | None:
-    anchor = fragment.replace(" ", "_")
-    at = next((i for i, section in enumerate(sections) if section.get("anchor") == anchor and section.get("byteoffset") is not None), None)
+    anchor = fragment.replace(" ", "_").casefold()  # the wiki's anchor is its title, `_` for a space: either is asked, case aside
+    at = next((i for i, s in enumerate(sections) if s.get("anchor", "").casefold() == anchor and s.get("byteoffset") is not None), None)
     if at is None:
         return None
     rank = int(sections[at]["level"])
@@ -112,9 +124,10 @@ def _titles() -> list[str]:
 def main(argv: list[str]) -> int:
     parser = arg_parser(prog="wiki/info.py", description="Read a page of the official WorldBox wiki, list its titles or search its text.", docs=_DOCS)
     parser.add_argument("page", nargs="?", help="the page's title, as `wiki:<Page>` names it")
+    parser.add_argument("--entry", metavar="name", help="the rows naming it, else list items opening on it — a trait's id, `_` a space, one term of a cell")
     parser.add_argument("--list", nargs="?", const="", metavar="word", help="its titles, those holding the word alone if one is given")
     parser.add_argument("--search", metavar="words", help="the pages whose text holds them, best first — where no title does")
-    parser.add_argument("--entry", metavar="name", help="the rows naming it, else list items opening on it — a trait's id, `_` a space, one term of a cell")
+    parser.add_argument("--section", metavar="title", help="one section whole, its sub-sections with it, by its title or anchor")
     args = parser.parse_args(argv)
     if args.list is None and not args.search and not args.page:  # one of three, which argparse cannot ask for
         print(f"✗ name a page, `--list [word]` or `--search <words>` — see {_DOCS}", file=sys.stderr)
@@ -140,13 +153,22 @@ def main(argv: list[str]) -> int:
         print(f"✗ no page `{page}` — `--list <word>` finds its title", file=sys.stderr)
         return 1
     parsed = answer["parse"]
-    wikitext = parsed["wikitext"]["*"]
+    wikitext, sections = parsed["wikitext"]["*"], parsed.get("sections") or []
+    if args.section:
+        if (part := _section(wikitext, sections, args.section)) is None:
+            print(f"✗ no section « {args.section} » in `{parsed['title']}` — its sections:\n{_outline(wikitext, sections)}", file=sys.stderr)
+            return 1
+        wikitext = part
     if args.entry is None:
         # A title that points into a page is read where it points: `Renown` is one section of `Unit Stats`, not its 550 lines.
-        fragment = next((turn["tofragment"] for turn in parsed.get("redirects") or [] if turn.get("tofragment")), None)
-        if fragment and (part := _section(wikitext, parsed.get("sections") or [], fragment)):
+        fragment = None if args.section else next((turn["tofragment"] for turn in parsed.get("redirects") or [] if turn.get("tofragment")), None)
+        if fragment and (part := _section(wikitext, sections, fragment)):
             print(f'→ `{page}` is § {fragment} of `{parsed["title"]}`, read alone — the page whole: `wiki/info.py "{parsed["title"]}"`', file=sys.stderr)
             wikitext = part
+        elif not args.section and len(wikitext) > _OUTLINE and sections:  # too long to read whole: its map, each part asked for by name
+            print(f"· `{parsed['title']}` runs {len(wikitext)} characters — `--section <title>` reads one, `--entry <name>` a row", file=sys.stderr)
+            print(_outline(wikitext, sections))
+            return 0
         print(wikitext)
         return 0
     wanted = _said(args.entry)
