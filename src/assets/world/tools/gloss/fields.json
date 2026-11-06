@@ -85,6 +85,7 @@
   "at": "Une tuile, `x,y`, que `tiles` et `--to` prennent ; d'un bâtiment, sa tuile d'ancrage, au pied de son milieu, pas son bord ; `bounds`, coins sud-ouest puis nord-est.",
   "blow": "D'une `metamorphosis`, le coup qui a abattu le corps avant qu'il se change (`weapon`, `fire`…), que le jeu oublie ; absent d'une save d'avant le mod 1.8.0.",
   "boat.metadata.home": "Le port dont la coque relève, par son id : `ground <id>` dit son âge, sa santé, sa cité.",
+  "born": "Le mois où le corps ou l'entité a paru ; une portée naît le même jour, ids à la suite : le jeu ne connaît pas d'aîné, l'ordre des ids n'en fait pas un.",
   "bounds": "Une boîte par ses deux coins, `x,y` sud-ouest puis nord-est (`y` croît vers le nord) : l'emprise d'une terre, d'une parcelle, d'un îlot.",
   "breakdown": "Sous 4 membres, une entité ne rend aucune part (`breakdown` le dit dans son `info`) ni ratio par tête (`fed_pct`, `housed_pct`, `*_per_capita`).",
   "chapter.echo.bare": "Un nom que le chapitre balise ailleurs, écrit nu sur cette ligne, intertitres compris : à baliser ; `tag` tu quand deux entités portent ce nom.",
