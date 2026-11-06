@@ -20,6 +20,7 @@ from shared import (
     MIN_SCORE_PEERS,
     PODIUM_PLACES,
     SAVES_DIR,
+    actor_age,
     city_score_dimensions,
     index_by_id,
     is_boat,
@@ -146,6 +147,7 @@ def _build_registries(save: dict, prev: dict) -> dict:
     for aid, (a, job) in crowd.items():
         egg = egg_by_subspecies.get(a.get("subspecies")) if is_egg(a, ctx) else None
         entry = persons[str(aid)] = _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid), egg)
+        entry["age"] = actor_age(a, ctx["world_time"])  # the years WB's own window shows, on the plate's hover
         if kin is not None and a.get("family") == kin and not a.get("favorite"):  # `None` guarded: a familyless body would else match a familyless favourite
             entry["favorite_family"] = True
 
@@ -351,7 +353,7 @@ def _merge(prev: dict, live: dict) -> dict:
         if entry_key in live:
             continue
         carried[entry_key] = fallen = {**entry, "dead": True}
-        for volatile in ("favorite_family", "kingdoms", "rank", "size"):  # the living's kinship, tier, medal and crowns: no last-known entry has a claim to them
+        for volatile in ("age", "favorite_family", "kingdoms", "rank", "size"):  # the living's years, kin, tier, medal and crowns: no last-known entry claims them
             fallen.pop(volatile, None)
     return carried | live
 

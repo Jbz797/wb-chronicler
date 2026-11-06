@@ -96,6 +96,7 @@ export interface LanguageInfo {
 
 // Everything `ActorSpriteHelpers` needs to draw the actor. Python omits `head`/`phenotype_*` at 0 — WB's own default.
 export interface PersonInfo {
+  age?: number; // the living's years at this chapter, dropped once dead
   asset_id: string;
   dead?: boolean;
   egg?: string; // the shell a body is still in, drawn in its stead — the egg its biology lays

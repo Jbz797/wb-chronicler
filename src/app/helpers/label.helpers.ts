@@ -13,11 +13,11 @@ export class LabelHelpers {
     return label === key ? (translate.instant(base) as string) : label;
   }
 
-  // What a person's plate tells on hover, in the panels as in the prose: their species, then their crown by its name at this chapter — the crownless, their species.
+  // What a person's plate tells on hover, in the panels as in the prose: their species, their crown by its name at this chapter, then the living's age.
   public static personAbout(translate: TranslateService, person: PersonInfo): string {
-    const species = translate.instant(`species_${person.asset_id}`) as string;
+    const age = person.age === undefined ? undefined : `${person.age}${translate.instant('ui_years') as string}`;
     const realm = person.kingdom === undefined ? undefined : KINGDOM_REGISTRY[String(person.kingdom)]?.name;
-    return realm ? `${species} · ${realm}` : species;
+    return [translate.instant(`species_${person.asset_id}`) as string, realm, age].filter(Boolean).join(' · ');
   }
 
 }
