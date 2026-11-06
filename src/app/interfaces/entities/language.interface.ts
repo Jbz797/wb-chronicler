@@ -1,6 +1,6 @@
 import { BookShelf, Leaders, PersonReference, PopulationBreakdown, TierPopulation } from '../entity.interface';
 
-// The favourite's language: caught by ear, not by blood — so WB counts its speakers three ways, born to it, won from another tongue, and lost to one.
+// The favourite's language: caught by ear, not by blood — so WB counts its speakers apart, born to it and won from another tongue.
 export interface Language {
   books?: BookShelf; // volumes still written in it, whoever holds them now — `metadata.books_written` is WB's lifetime tally, burnt ones counted
   breakdown?: PopulationBreakdown; // absent where every dimension is shared by all
@@ -25,7 +25,6 @@ interface LanguageMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
-  lost?: number;
   members?: number; // its living, counted: `world … roster --language <id>` names them
   name: string;
   native?: number;
@@ -43,7 +42,6 @@ interface LanguageRanks {
   housed_pct?: number;
   kills?: number;
   kingdoms?: number;
-  lost?: number;
   members?: number;
   money?: number;
   native?: number;
