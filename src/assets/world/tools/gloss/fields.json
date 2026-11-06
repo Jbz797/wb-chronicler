@@ -206,7 +206,7 @@
   "report": "Parle par images : « No fire, no warmth » dit le bois qui manque, pas le feu.",
   "rulers": "La succession, datée comme en jeu ; un royaume, son fondateur en tête ; une cité, ses chefs, jamais son roi (`kingdom … rulers`). Sa bourse : `pop.ruler_money`.",
   "sapient": "Une lignée qui pense au sens du jeu (`has_sapience`), mobs compris : crânes enflammés, Plague Doctors ; `--sapient` la garde, `--beasts` le reste.",
-  "statuses.cursed": "Santé et dégâts de moitié, vitesse −20 %, plafond d'enfants à 0, 10 ans de vie ôtés ; pris à 5 % par pas sur sol corrompu ; levé, `health` reste sous `health_max`.",
+  "statuses.cursed": "Santé, dégâts de moitié, vitesse −20 %, nul enfant, 10 ans ôtés ; mort maudit, il se relève squelette (`wiki:Skeleton`) ; pris à 5 % par pas sur sol corrompu.",
   "statuses.drowning": "À bout de souffle à la nage, 1 pv par demi-seconde ; le statut tient 1 s de jeu (`speed`) : sur la terre ferme, le corps vient de sortir de l'eau.",
   "statuses.fell_in_love": "Posé aux deux amants quand ils forment leur couple, gardé 3 ans ; la date du couple : `actor … companions` (`lover_since`).",
   "statuses.had_bad_dream": "Un rêve tiré au réveil, un sur trois (bon, mauvais, cauchemar), gardé un an et demi : −15 de bonheur ; il ne fait pas d'un corps un dormeur.",
