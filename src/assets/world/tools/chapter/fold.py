@@ -16,6 +16,7 @@ _AUDIT = {
             "beside_building",
             "besieged_by",
             "born",  # when WB set it on the map, a soul or a people — for the chronicler's « who came first », no panel dating either
+            "breeding_barred",
             "breeds_on",
             "can_reproduce",
             "city_since",

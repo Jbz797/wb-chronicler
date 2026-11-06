@@ -189,7 +189,7 @@ _TO_USAGE = (
 )
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
-_UNCOMPARED = frozenset({"island_id", "near_places", "place", "statuses_left", "task", "task_target", "x", "y"})
+_UNCOMPARED = frozenset({"breeding_barred", "island_id", "near_places", "place", "statuses_left", "task", "task_target", "x", "y"})
 _WATERS = ("lake", "river", "sea", "water")  # the families a `--to` word may name: the nearest numbered water of one, `water` of any
 
 
@@ -326,6 +326,22 @@ def _body_tags(actor: dict, biology: tuple | list, ctx: dict) -> frozenset[str]:
     return frozenset(tag for traits, library in sources for trait in traits for tag in (library.get(trait) or {}).get("tags") or ())
 
 
+# Why a body of a bearing lineage cannot, in WB's order: `canBreed`'s age, reserve and two statuses, then `canMakeBabies`' `infertile` and cap on whoever bears.
+def _breeding_barred(actor: dict, ctx: dict, snap: dict, lineage: dict | None, age: float, age_breeding: float) -> list[str]:
+    barred = ["age"] if age < age_breeding else []
+    if needs_food(lineage) and (nutrition := int(actor.get("nutrition") or 0)) < NEW_BABY_NUTRITION:
+        barred.append(f"hunger {nutrition}")
+    statuses = kept_statuses(actor) or ()
+    barred += (status for status in ("pregnant", "afterglow") if status in statuses)  # with young, or just mated: a lull WB waits out
+    if bears(actor, ctx) is True:  # a sire's or a hermaphrodite's cap bars no one — whoever bears is tested
+        children, cap = ctx["children_by_parent"].get(actor.get("id"), 0), int(snap.get("max_children") or 0)
+        if "infertile" in (actor.get("saved_traits") or []):
+            barred.append("infertile")  # the trait zeroes the cap too: `children 0/0` would only echo it
+        elif children >= cap:
+            barred.append(f"children {children}/{cap}")  # the living ones, as WB counts them — a litter may overshoot the cap
+    return barred
+
+
 # One home for every index the sections read, so no caller rolls its own. Actor loop = one pass: id, asset_id, children-per-parent (`get_current_children_count`).
 def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_asset: defaultdict[str, list[dict]] = defaultdict(list)
@@ -416,18 +432,9 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     seats = _tenures(_TENURE_ROLES.get(profession or ""), save, ctx["world_time"])  # every holder of the post, read once: the years, then the place among them
     held, tenure = [{"years": years} for years in seats.values()], seats.get(actor["id"])
 
-    # A lineage that can bear first (`fertile`); then `Actor.canBreed`'s age and reserve (a gut-less body fed), `infertile` and the cap on whoever bears.
     lineage = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     lineage_bears = fertile(lineage)
-    can_reproduce = (
-        lineage_bears
-        and age >= age_breeding
-        and (not needs_food(lineage) or int(actor.get("nutrition") or 0) >= NEW_BABY_NUTRITION)
-        and (
-            bears(actor, ctx) is not True
-            or ("infertile" not in (actor.get("saved_traits") or []) and ctx["children_by_parent"].get(actor.get("id"), 0) < int(snap.get("max_children") or 0))
-        )
-    )
+    barred = _breeding_barred(actor, ctx, snap, lineage, age, age_breeding) if lineage_bears else []
 
     land = _land_of(actor, ctx)
     return {
@@ -442,10 +449,10 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "army_since": kept_army_since(actor),  # Chronicler-only: the month it joined its army, the mod's stamp
         "asset_id": actor.get("asset_id"),
         "born": entity_born(actor),  # the month WB set it on the map, dated as the chronicle dates: who came first, and when
+        **({"breeding_barred": barred} if barred else {}),  # why a body of a bearing lineage cannot, as WB tests it — a lineage that never bears says so itself
         # Chronicler-only, and only while it still bites: the date WB opens a body's own line — `adult_on` lifts a bridling and lets it found a town, never bear.
         **({"breeds_on": crossed_on(actor, age_breeding)} if age < age_breeding and lineage_bears else {}),
-        # Said only when they hold, as every flag the tools emit: a body that cannot is most of the world, beasts and children first.
-        **({"can_reproduce": True} if can_reproduce else {}),
+        **({"can_reproduce": True} if lineage_bears and not barred else {}),
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
         "city_since": kept_city_since(actor),  # Chronicler-only: the month it settled there, the mod's stamp
         "clan": entity_ref(actor.get("clan"), ctx["clans_by_id"]),  # a ref, not a bare name: `clan/info.py <id>` can be called on it, as on `family`
