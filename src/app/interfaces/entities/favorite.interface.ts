@@ -7,7 +7,7 @@ export interface Favorite {
   inventory?: Record<string, number>;
   metadata: FavoriteMetadata;
   plot?: Plot;
-  ranks_in_species?: FavoriteRanks;
+  ranks?: FavoriteRanks; // among its species
   stats: FavoriteStats;
   traits: string; // the chronicler's summary, carried forward while the favorite's own traits hold
 }
@@ -36,6 +36,7 @@ interface FavoriteRanks {
   armor?: number;
   attack_speed?: number;
   children?: number;
+  crafted?: number;
   critical_chance?: number;
   damage_max?: number;
   diplomacy?: number;
@@ -59,6 +60,7 @@ interface FavoriteStats {
   armor?: number;
   attack_speed?: number;
   children?: number; // said at 0 while the lineage can bear, absent where it never will — the panel's « Enfants » line follows it
+  crafted?: number; // the items it made, wherever they are now
   critical_chance?: number;
   damage_max: number;
   diplomacy?: number;

@@ -73,7 +73,6 @@ _AUDIT = {
             "traits",
         }
     ),
-    "ranks_in_species": frozenset({"birth_rate", "births", "damage_min", "loot"}),
     # The tie's age, its border or its gap, its last war: the panel prints the standing, its drivers.
     "relations": frozenset({"age_years", "borders", "gap_tiles", "years_since_last_war"}),
     # The world's stock of items, its sky, what its bodies are in the middle of and its sites — the panel counts souls, roofs and trees.
@@ -293,11 +292,12 @@ def fold_bodies(blocks: dict, boat: dict | None) -> None:
         _fold_total(boat, "crew")  # the panel prints how many souls are aboard, `boat/info.py <id> crew` names them
 
 
-# Folds the favorite's heavy blocks: traits, gear, who stands around them, victims and the scheme's detail all go — `actor/info.py <id>` still hands each whole.
+# Folds the favorite's heavy blocks: traits, gear and its own work, who stands around, victims and the scheme's detail go — `actor/info.py <id>` hands each whole.
 def fold_favorite_detail(favorite: dict) -> None:
-    if total := (favorite.get("victims") or {}).get("total"):  # the panel ranks its kills among `stats`, where `actor` no longer tells them
-        favorite.setdefault("stats", {})["kills"] = total
-    for section in ("gear", "surroundings", "victims"):
+    for section, stat in (("crafted", "crafted"), ("victims", "kills")):  # the panel ranks its work and its kills among `stats`, where `actor` tells neither
+        if total := (favorite.pop(section, None) or {}).get("total"):
+            favorite.setdefault("stats", {})[stat] = total
+    for section in ("gear", "surroundings"):
         favorite.pop(section, None)
     # The panel prints the type, the target and the gauge: WB's English is the chronicler's, and so is how long the scheme has run.
     plot = favorite.get("plot") or {}

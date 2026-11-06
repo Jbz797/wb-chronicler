@@ -241,7 +241,7 @@ _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a
 _SINCE_PARTS = {"arrived": "arrived", "grew": "grew", "moved": "moved", "gone": "died"}  # what a `--since` roll files a body under, as a refusal says it
 _SINCE_SECTIONS = ("cumulative", "lineages", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll or a census, two counts weighed
 
-# WB's four skills, the ones every `ranks_in_species` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
+# WB's four skills, the ones every `actor … ranks` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
 _SKILLS = ("diplomacy", "intelligence", "stewardship", "warfare")
 
 # Chronicler key => save collection simply counted. What needs classifying (buildings) or filtering (actors, wars) lives in `_build_snapshot` instead.

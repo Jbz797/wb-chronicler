@@ -40,6 +40,7 @@ from grid import BARE, LazyTileGrid, fire_clusters, frozen_tiles, listed_tiles, 
 from islands import compute_islands_cached, islet_heart
 from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, end_text, fire_place, kind_word, named_place, unquoted
 from shared import (
+    EQUIPMENT_RACKS,
     HOMES,
     NEW_BABY_NUTRITION,
     PROFESSION_KING,
@@ -108,12 +109,12 @@ from shared import (
 from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_foot, walled_in
 from waters import water_bodies, water_family, water_tiles, waters_cached, waters_within
 
-_ALL_SECTIONS = ("companions", "gear", "inventory", "kin", "metadata", "plot", "ranks_in_species", "stats", "surroundings", "traits", "victims")
+_ALL_SECTIONS = ("companions", "crafted", "gear", "inventory", "kin", "metadata", "plot", "ranks", "stats", "surroundings", "traits", "victims")
 _BABY_MASS_MULTIPLIER = 0.4  # WB `SimGlobalAsset.baby_mass_multiplier`: what a child weighs of the body it will grow into
 _CIRCLES = (("intimate", 30), ("common", 120))  # chronicler.md's tiers, in minutes at his own pace — past the last lies the far-off, which no roster could hold
 _CLAN_CHIEF_ROLE = ("chief_id", "clans", "past_chiefs")  # Chieftainship is a role, not a profession (a king can be both) — hence its own tenure field.
 _DAILY_TILES_PER_SPEED = 24.0  # chronicler.md § Échelle: `speed` 10 walks 240 tiles a day, 6 hours of road, its halts counted — far short of 24 hours' worth
-_DEAD_SECTIONS = ("died", "kin", "victims")  # what a dead body still answers: the register keeps its death, its blood and the deaths it dealt
+_DEAD_SECTIONS = ("crafted", "died", "kin", "victims")  # what a dead body still answers: its death, blood and kills off the register, its work off the items
 _DROWNING_PER_SECOND = 2.0  # the `drowning` status takes one point of health every 0.5s, and no armour blunts it — WB spares armour for blows alone
 _FLOORS = {"gen": 1}  # a count `--since` reads unsaid as its floor: WB counts a founder its first generation
 _GOAL_ONLY = frozenset({"chunks_apart", "circle", "crow_tiles", "dir", "widest_crossing", "with_boat"})  # a goal's words: `moved` keeps its own heading and length
@@ -594,14 +595,14 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
         circles["common_with_boat"] = offshore
     if not any(circles.values()):  # none within his circles: the nearest body still said, lest an empty section read as a silence
         return {"nearest": _nearest_body(actor, ctx)}
+    if not wants_detail(requested, sum(map(len, circles.values()))):  # `full` counts each circle: a peopled town would fill the fiche with its rows
+        return light({name: len(entries) for name, entries in circles.items() if entries}, withheld=True)
     rings: dict = {"intimate": [_surroundings_row(entry, ctx, home, kin) for entry in sorted(circles.pop("intimate"))]}
-    plans = {name: _surroundings_plan(entries, ctx, home, kin) for name, entries in circles.items()}
-    if detailed := wants_detail(requested, sum(map(len, plans.values()))):
-        rings.update({name: _surroundings_rows(plan, ctx, home, kin) for name, plan in plans.items()})
+    rings.update({name: _surroundings_rows(_surroundings_plan(entries, ctx, home, kin), ctx, home, kin) for name, entries in circles.items()})
     # An adult's line goes unmarked, most bodies standing there: said beside the rows, where a silence read alone passes for youth. A sexless hull has no stage.
     if any("sex" in row and "life_stage" not in row for ring in rings.values() if isinstance(ring, list) for row in ring):
         rings["life_stage_default"] = "adult"
-    return rings if detailed else light(rings, withheld=True)  # `full` keeps the circle a chapter opens on, and says the wider ones wait to be named
+    return rings
 
 
 # The walk to a body, a tile or a land's shore, at his own gait within his swim — a flyer, water-born or passenger goes as the crow flies, landing nearest.
@@ -735,15 +736,17 @@ def _compute_personality(actor: dict, snap: dict) -> str | None:
 
 
 # Top 3 only — UI hides the rest, no narrative use for "34th out of 114". Zero-skip like the city/kingdom ranks: no podium for a stat the actor has none of.
-def _compute_ranks_in_species(actor: dict, ctx: dict) -> dict:
+def _compute_ranks(actor: dict, ctx: dict) -> dict:
     same_species = ctx["actors_by_asset"].get(actor.get("asset_id"), [])
     peers = [body_stats(a, ctx) for a in same_species]
     own = next(s for a, s in zip(same_species, peers, strict=True) if a["id"] == actor["id"])
 
     getters = {stat: lambda s, st=stat: s.get(st, 0) for stat in _RANKED_STATS if stat in own}  # `st=stat` binds now, else every lambda reads the last one
     ranks = competition_ranks(own, peers, getters)
-    # Age and kills are not in `body_stats` — one derived from `created_time`, the other told by `victims` — ranked apart, against the raw actors.
+    # Age, kills and work are not in `body_stats` — off `created_time`, the kill count and the items' maker — ranked apart, against the raw actors.
     raw = {"age": lambda a: actor_age(a, ctx["world_time"])} | ({"kills": lambda a: int(a.get("kills") or 0)} if actor.get("kills") else {})
+    made = Counter(maker for item in ctx["items_by_id"].values() if (maker := item.get("creator_id")))
+    raw |= {"crafted": lambda a: made[a["id"]]} if made[actor["id"]] else {}  # a body that made nothing takes no podium, as one that killed none
     ranks.update(competition_ranks(actor, same_species, raw))
     return ranks
 
@@ -765,6 +768,28 @@ def _compute_roles(actor: dict, save: dict) -> list[str]:
     return [role for role in _ROLE_ORDER if checks[role]]
 
 
+# The items a body made, oldest first, and where each is now: in a hand, on a town's rack, else gone from both — `full` keeps the latest, the section named all.
+def _crafted(actor_id: int, ctx: dict, requested: str | None) -> dict | None:
+    made = sorted((item for item in ctx["items_by_id"].values() if item.get("creator_id") == actor_id), key=lambda item: item["id"])
+    if not made:
+        return None
+    ids, held = {item["id"] for item in made}, {}
+    for body in ctx["actors_by_id"].values():
+        held.update({iid: {"carried_by": {"id": body["id"], "name": body.get("name")}} for iid in body.get("saved_items") or () if iid in ids})
+    for city in ctx["cities_by_id"].values():
+        racks = city.get("equipment") or {}
+        town = {"id": city["id"], "name": city.get("name")}
+        held.update({iid: {"city": town, "rack": rack} for rack, field in EQUIPMENT_RACKS.items() for iid in racks.get(field) or () if iid in ids})
+    item_stats, mod_stats = ctx["equipment"]["items"], ctx["equipment"]["modifiers"]
+    rows = []
+    for item in made:
+        entry = equipment_entry(item, item_stats, mod_stats, ctx["world_time"])
+        rows.append({key: entry[key] for key in ("age", "asset_id", "id", "name", "rarity")} | held.get(item["id"], {}))
+    if not wants_detail(requested, len(rows)):
+        return light({"latest": rows[-1], "total": len(rows)}, withheld=True)
+    return {"all": rows, "total": len(rows)}
+
+
 # The nearest as the crow flies, where the walk reached another: a site the way bars or makes dearer, by its id; `whole`, a water's or place's own tile — no tie.
 def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple[int, int], dict], near: dict, whole: bool = False) -> dict | None:
     (cx, cy), reached = actor_xy(actor), (near["x"], near["y"])
@@ -775,7 +800,7 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
     return {**(site or {}), "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
 
 
-# What a dead body still answers, off the register: its death, its blood and its victims — named, those alone; any other section refused with them.
+# What a dead body still answers: its death, its blood, its victims and its work — named, those alone; any other section refused with them.
 def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, history: dict | None) -> int:
     named = requested not in (None, "full")
     if named and (lost := [section for section in sections if section not in _DEAD_SECTIONS]):
@@ -784,6 +809,7 @@ def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, 
     body = {"id": dead["id"], **dict(zip(("parent_id_1", "parent_id_2"), dead["parents"], strict=False))}  # its parents as a living body carries them
     kin = _kin(body, ctx) if "kin" in sections else None
     out = {
+        "crafted": _crafted(dead["id"], ctx, requested) if "crafted" in sections else None,
         "died": _death(dead, ctx) if not named or "died" in sections else None,
         "kin": kin if kin and any(kin.values()) else None,
         "statuses": history,
@@ -1117,7 +1143,7 @@ def _step(minutes: float) -> int:
     return 1 if minutes < 5 else 5 if minutes < 60 else 15 if minutes < 180 else 30
 
 
-# A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind — so `full` counts lines unwritten.
+# A wide circle, nearest first: kin, killer, named beast, crown or wanderer as its entry, the rest as a group per town or kind.
 def _surroundings_plan(entries: list[tuple], ctx: dict, home: int | None, kin: dict[int, str]) -> list[tuple | dict]:
     by_id, chiefs = ctx["actors_by_id"], ctx["clan_chiefs"]
     groups: dict[tuple, dict] = {}
@@ -1576,6 +1602,8 @@ def main(argv: list[str]) -> int:
         by_id = ctx["actors_by_id"]
         lover = entity_ref(actor.get("lover"), by_id)
         out["companions"] = {"best_friend": entity_ref(actor.get("best_friend_id"), by_id), "lover": lover, "lover_since": lover and kept_lover_since(actor)}
+    if "crafted" in sections:
+        out["crafted"] = _crafted(actor_id, ctx, requested)
     if "gear" in sections:
         out["gear"] = _build_gear(actor, ctx)
     if "inventory" in sections:
@@ -1586,8 +1614,8 @@ def main(argv: list[str]) -> int:
         out["metadata"] = _build_metadata(actor, ctx, save)
     if "plot" in sections:
         out["plot"] = _build_plot(actor, ctx, save)
-    if "ranks_in_species" in sections:
-        out["ranks_in_species"] = _compute_ranks_in_species(actor, ctx)
+    if "ranks" in sections:
+        out["ranks"] = _compute_ranks(actor, ctx)
     if "stats" in sections:
         stats = body_stats(actor, ctx)
         out["stats"] = {**stats, "swim": _swim(actor, stats, ctx)} if stats else stats
@@ -1606,11 +1634,14 @@ def main(argv: list[str]) -> int:
         return 1
     if trips:  # several `--to` keep each its words, where one alone comes bare
         out["to"] = trips if len(trips) > 1 else next(iter(trips.values()))
-    if out.keys() == {"victims"} and not out["victims"]:  # asked alone, a bare `{}` would read as a field gone missing
-        print(f"✗ no victim — {named_body(actor)} has killed none", file=sys.stderr)
+    if out.keys() == {"crafted"} and not out["crafted"]:  # asked alone, a bare `{}` would read as a field gone missing
+        print(f"✗ no item — {named_body(actor)} has made none", file=sys.stderr)
         return 1
-    if out.keys() == {"kin"} and not any(out["kin"].values()):  # asked alone, a bare `{}` would read as a field gone missing
+    if out.keys() == {"kin"} and not any(out["kin"].values()):  # as `crafted`
         print(f"✗ no kin — {named_body(actor)} appeared, born of none, and none is born of it", file=sys.stderr)
+        return 1
+    if out.keys() == {"victims"} and not out["victims"]:  # as `crafted`
+        print(f"✗ no victim — {named_body(actor)} has killed none", file=sys.stderr)
         return 1
 
     emit(out)

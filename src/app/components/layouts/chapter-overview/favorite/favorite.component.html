@@ -50,6 +50,9 @@
     <nz-descriptions-item *appPresent="fav.stats.equipment_power" [nzTitle]="equipmentPowerTitle">
       <app-ranked-stat stat="equipment_power" />
     </nz-descriptions-item>
+    <nz-descriptions-item *appPresent="fav.stats.crafted" [nzTitle]="craftedTitle">
+      <app-ranked-stat stat="crafted" />
+    </nz-descriptions-item>
     <nz-descriptions-item [nzTitle]="inventoryTitle">
       <app-inventory [resources]="fav.inventory ?? {}" />
     </nz-descriptions-item>
@@ -62,6 +65,10 @@
   <ng-template #childrenTitle>
     <img src="assets/img/stats/children.png" />
     <span>{{ 'ui_children' | translate }}</span>
+  </ng-template>
+  <ng-template #craftedTitle>
+    <img src="assets/img/stats/crafted.png" />
+    <span>{{ 'ui_crafted' | translate }}</span>
   </ng-template>
   <ng-template #equipmentPowerTitle>
     <img src="assets/img/stats/equipment_power.png" />

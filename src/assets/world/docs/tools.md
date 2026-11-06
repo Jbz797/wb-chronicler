@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 06/11/26 17:28</p>
+<p class="metadata">Date de mise à jour : 06/11/26 22:53</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -13,7 +13,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 
 | Commande          | Sections                                                                                                                               |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `actor <id>`      | `companions`, `died`, `gear`, `inventory`, `kin`, `metadata`, `plot`, `ranks_in_species`, `stats`, `surroundings`, `traits`, `victims` |
+| `actor <id>`      | `companions`, `crafted`, `died`, `gear`, `inventory`, `kin`, `metadata`, `plot`, `ranks`, `stats`, `surroundings`, `traits`, `victims` |
 | `alliance <id>`   | `breakdown`, `identity`, `kingdoms`, `leaders`, `metadata`, `pop`, `ranks`, `wars`                                                     |
 | `boat <id>`       | `combat`, `crew`, `identity`, `inventory`, `metadata`, `traits`                                                                        |
 | `book <id>`       | `gains`, `metadata`, `origin`, `teaches`                                                                                               |

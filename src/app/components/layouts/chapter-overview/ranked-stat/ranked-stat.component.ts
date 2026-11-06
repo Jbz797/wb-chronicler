@@ -153,7 +153,7 @@ export class RankedStatComponent {
   // Per-kind accessor over the favorite's stats/ranks. A stat WB never wrote is one nothing granted — no weapon to crit with — so absent reads as zero.
   private _resolveFavorite(f: NonNullable<ChapterMeta['favorite']>): RankedStatSnapshot {
     const k = this.stat();
-    const ranks = f.ranks_in_species ?? {}; // Absent when the favorite tops nothing in its species — every lookup below then simply misses.
+    const ranks = f.ranks ?? {}; // Absent when the favorite tops nothing in its species — every lookup below then simply misses.
     if (k === 'age') return this._snap(f.metadata.age, ranks.age); // read off `metadata`, as the post's years are; every other names a field of `stats`
     if (k === 'tenure_years') return this._snap(f.metadata.tenure_years ?? 0, f.metadata.tenure_rank_in_post); // ranked among the post's holders, not the species
     const field = FAVORITE_GAUGE_FIELDS[k] ?? k;
