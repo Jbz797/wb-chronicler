@@ -277,6 +277,15 @@ def _age_duration(age_id: str) -> float:
     return float(random.randint(low, high) * UNITS_PER_YEAR)
 
 
+# Whether the crown stands in a war no winner has closed, on either side, at the save — whoever declared it, and however long ago.
+def _at_war(save: dict, kingdom_id: int) -> bool:
+    return any(
+        not war.get("winner")
+        and kingdom_id in {war.get("main_attacker"), war.get("main_defender"), *(war.get("list_attackers") or []), *(war.get("list_defenders") or [])}
+        for war in save.get("wars") or []
+    )
+
+
 # The chapter and its `chapter.json`, each followed by what the recap asked of it alone in brackets: the auditors never see the recap, and read a bracket as all.
 def _audit_targets(n: int, facts: dict) -> str:
     asked = [
@@ -341,7 +350,7 @@ def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> None:
 
 # The chapter's event codes, `chapter.json.tags` their only log. The order is a priority, the nav badging the first three: the rarest first, the alerts last.
 def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favorite: dict | None, just_designated: bool, prior: tuple, age_id: str) -> list[str]:
-    already, _prev_favorite, prev_world, sworn = prior
+    already, _prev_favorite, prev_world, sworn, prev_pact = prior
     tags = ["NEW_FAVORITE"] if just_designated else []
 
     # The favorite's first crown, once a soul and not once a world — a successor designated already inside a realm joined nothing the chronicle saw.
@@ -386,9 +395,14 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
         if tag not in already and count:
             tags.append(tag)
 
-    # A war the favorite's crown found itself in since the chapter before, whoever declared it — the first chapter having no before, it owes none.
-    if (realm := _entity_id(blocks.get("kingdom") or {})) is not None and (since := prev_world.get("world_time")) is not None and _entered_war(live, realm, since):
-        tags.append("FAVORITE_KINGDOM_NEW_WAR")
+    # A pact the favorite's crown stands in that the chapter before did not see — the first chapter having no before, and a successor's crown no joining.
+    pact = _entity_id(blocks.get("alliance") or {})
+    if pact is not None and pact != prev_pact and prev_world.get("world_time") is not None and not just_designated:
+        tags.append("FAVORITE_KINGDOM_NEW_ALLIANCE")
+
+    # A war the favorite's crown is in at the save, whoever declared it: every chapter it lasts carries it, a winner closing it.
+    if (realm := _entity_id(blocks.get("kingdom") or {})) is not None and _at_war(live, realm):
+        tags.append("FAVORITE_KINGDOM_AT_WAR")
 
     if boat:  # a chapter caught at sea — the favorite is aboard right now, which the panel badges and the chronicler owes a scene
         tags.append("FAVORITE_ABOARD")
@@ -506,15 +520,6 @@ def _draft_heading(lang: str | None = None) -> str:
 def _dry_land(save: dict) -> int:
     sea = [tile_layer(name) == "Ocean" for name in save.get("tileMap") or []]
     return sum(length for tile, length in tile_runs(save) if not sea[tile])
-
-
-# Whether the crown was drawn into a war begun after `since`, on either side and ended or not — the declaration is the event the chapter owes, not the fighting.
-def _entered_war(save: dict, kingdom_id: int, since: float) -> bool:
-    return any(
-        float(war.get("created_time") or 0) > since
-        and kingdom_id in {war.get("main_attacker"), war.get("main_defender"), *(war.get("list_attackers") or []), *(war.get("list_defenders") or [])}
-        for war in save.get("wars") or []
-    )
 
 
 def _entity_id(block: dict) -> int | None:
@@ -764,11 +769,11 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  → species of this world named bare, past a word from an entity's tag: {named} — a `[s …]` each, but a common word; a feminine goes unseen")
 
 
-# One scan of prior chapters for all they arbitrate: a first hull or kill, the favorite before, a new favorite, a turned age, a stale save, a new war, a first crown.
-def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
+# One scan of prior chapters for all they arbitrate: a first hull or kill, the favorite before, a new favorite, a turned age, a stale save, a pact, a first crown.
+def _prior_context(n: int) -> tuple[set, dict | None, dict, set, int | None]:
     tags: set = set()
     sworn: set = set()
-    favorite, world = None, {}
+    favorite, world, pact = None, {}, None
     for prior in range(1, n):
         if not (prior_json := SAVES_DIR / f"C{prior}" / "chapter.json").exists():
             continue
@@ -777,14 +782,14 @@ def _prior_context(n: int) -> tuple[set, dict | None, dict, set]:
         if data.get("kingdom") and (sworn_id := ((data.get("favorite") or {}).get("metadata") or {}).get("id")) is not None:
             sworn.add(sworn_id)
         if prior == n - 1:
-            favorite = data.get("favorite")
+            favorite, pact = data.get("favorite"), _entity_id(data.get("alliance") or {})
             # That chapter's own save, read once for its hour and its laws — the age switches left to `age_id`. Gone, it leaves neither.
             then = load_save(archived) if (archived := SAVES_DIR / f"C{prior}" / "map.wbox").exists() else None
             laws = {law: on for law, on in world_laws(then or {}).items() if law.startswith("world_law_")}
             stats = (then or {}).get("mapStats") or {}
             hour = rounded_world_time(stats) if then else None
             world = {**((data.get("world") or {}).get("metadata") or {}), "laws": laws, "world_time": hour}
-    return tags, favorite, world, sworn
+    return tags, favorite, world, sworn, pact
 
 
 # Empties a world's own chronicle, table by table, leaving the schema WB expects. `VACUUM` hands the megabytes back rather than leaving a hollow file.
@@ -1237,7 +1242,7 @@ def main(argv: list[str]) -> int:
     world_time = rounded_world_time(live["mapStats"])
     fav_id = next((a["id"] for a in actors if a.get("favorite") is True), None)
     prior = _prior_context(n)
-    _, prev_favorite, prev_world, _ = prior
+    _, prev_favorite, prev_world, _, _ = prior
     prev_fav_id = ((prev_favorite or {}).get("metadata") or {}).get("id")
     # A favorite the chapter before did not carry — the world's first, or a successor to one who died. Both earn a chapter at an unchanged timestamp, and the tag.
     just_designated = fav_id is not None and fav_id != prev_fav_id

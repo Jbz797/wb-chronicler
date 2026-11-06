@@ -33,7 +33,7 @@
           position: relative;
           top: -1px;
           transition: all $transition;
-          width: 12px;
+          width: auto; // its own proportions: the alliance shield stands taller than wide
 
           &:first-child {
             margin-left: 8px;
@@ -55,8 +55,18 @@
 
           .tag-icon {
             height: 14px;
-            width: 14px;
           }
+        }
+      }
+
+      // A chapter whose favourite's crown is at war: its label in red, brighter once read — the war icon beside it says which tag.
+      &.at-war {
+        .ant-menu-title-content {
+          color: $error;
+        }
+
+        &.ant-menu-item-selected .ant-menu-title-content {
+          color: color-mix(in srgb, #{$error} 70%, #ff3030);
         }
       }
     }

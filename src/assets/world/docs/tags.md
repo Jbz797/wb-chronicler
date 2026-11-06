@@ -1,6 +1,6 @@
 # 📌 Vocabulaire des tags
 
-<p class="metadata">Date de mise à jour : 02/11/26 23:27</p>
+<p class="metadata">Date de mise à jour : 06/11/26 18:15</p>
 
 ## Balises du récit
 
@@ -34,20 +34,21 @@ Les accents graves n'appartiennent qu'à ce tableau.
 
 Un tag vaut pour le chapitre qui le porte, à sa save. Les `FIRST_…` et `SECOND_CITY` ne tombent qu'une fois dans la chronique.
 
-| Tag                        | Signification                                                                                                         |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `DISABLE_DROP_OF_THOUGHTS` | Assez de couronnes sont debout ou à portée et la loi **Drop of Thoughts** tourne encore → à couper.                   |
-| `FAVORITE_ABOARD`          | Le favori est **à bord d'un bateau** au moment de la sauvegarde.                                                      |
-| `FAVORITE_FIRST_KINGDOM`   | Le favori rejoint **son premier royaume** — une fois par favori, jamais pour un successeur déjà sujet d'une couronne. |
-| `FAVORITE_KINGDOM_NEW_WAR` | Le royaume du favori entre dans **une guerre nouvelle** depuis le chapitre précédent, qu'il l'ait déclarée ou subie.  |
-| `FAVORITE_PLOTTING`        | Le favori **mène un complot** au moment de la sauvegarde.                                                             |
-| `FIRST_BIRTH`              | Le **premier corps** du monde vient au jour, par un couple ou seul — l'œuf compte dès la ponte.                       |
-| `FIRST_BOAT`               | Le **premier bateau** du monde prend la mer : la navigation est découverte.                                           |
-| `FIRST_CITY`               | La **première cité** du monde est fondée.                                                                             |
-| `FIRST_DEATH`              | La **première mort** du monde, quelle qu'en soit la cause.                                                            |
-| `FIRST_HOME`               | Le **premier toit** du monde est debout, où un corps peut dormir : tente, maison ou hall, pas un chantier.            |
-| `FIRST_KILL`               | La **première mort sous les coups** d'un autre corps, lame ou morsure.                                                |
-| `FIRST_MIGRANTS`           | Les **premiers migrants** du monde arrivent, appelés par la loi (`wiki:World_Laws`, `gloss:handsome_migrant`).        |
-| `NEW_AGE`                  | Le monde bascule dans un **nouvel âge** (l'`age_id` change vs le chapitre précédent).                                 |
-| `NEW_FAVORITE`             | Un nouveau **favori** est désigné dans ce chapitre.                                                                   |
-| `SECOND_CITY`              | La **deuxième cité** du monde est fondée, d'une couronne déjà là ou d'une nouvelle.                                   |
+| Tag                             | Signification                                                                                                         |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `DISABLE_DROP_OF_THOUGHTS`      | Assez de couronnes sont debout ou à portée et la loi **Drop of Thoughts** tourne encore → à couper.                   |
+| `FAVORITE_ABOARD`               | Le favori est **à bord d'un bateau** au moment de la sauvegarde.                                                      |
+| `FAVORITE_FIRST_KINGDOM`        | Le favori rejoint **son premier royaume** — une fois par favori, jamais pour un successeur déjà sujet d'une couronne. |
+| `FAVORITE_KINGDOM_AT_WAR`       | Le royaume du favori est **en guerre**, qu'il l'ait déclarée ou subie.                                                |
+| `FAVORITE_KINGDOM_NEW_ALLIANCE` | Le royaume du favori **rejoint une alliance** depuis le chapitre précédent.                                           |
+| `FAVORITE_PLOTTING`             | Le favori **mène un complot** au moment de la sauvegarde.                                                             |
+| `FIRST_BIRTH`                   | Le **premier corps** du monde vient au jour, par un couple ou seul — l'œuf compte dès la ponte.                       |
+| `FIRST_BOAT`                    | Le **premier bateau** du monde prend la mer : la navigation est découverte.                                           |
+| `FIRST_CITY`                    | La **première cité** du monde est fondée.                                                                             |
+| `FIRST_DEATH`                   | La **première mort** du monde, quelle qu'en soit la cause.                                                            |
+| `FIRST_HOME`                    | Le **premier toit** du monde est debout, où un corps peut dormir : tente, maison ou hall, pas un chantier.            |
+| `FIRST_KILL`                    | La **première mort sous les coups** d'un autre corps, lame ou morsure.                                                |
+| `FIRST_MIGRANTS`                | Les **premiers migrants** du monde arrivent, appelés par la loi (`gloss:handsome_migrant`).                           |
+| `NEW_AGE`                       | Le monde bascule dans un **nouvel âge**.                                                                              |
+| `NEW_FAVORITE`                  | Un nouveau **favori** est désigné dans ce chapitre.                                                                   |
+| `SECOND_CITY`                   | La **deuxième cité** du monde est fondée, d'une couronne déjà là ou d'une nouvelle.                                   |

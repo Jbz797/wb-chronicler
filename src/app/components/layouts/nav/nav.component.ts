@@ -35,6 +35,8 @@ export class NavComponent {
     });
   }
 
+  protected atWar = (tags: string[]): boolean => tags.includes('FAVORITE_KINGDOM_AT_WAR');
+
   // Brings the chapter being read into view. `nearest` moves nothing once it is on screen, so the early passes, on a list still filling in, cost nothing.
   protected revealCurrent = (): void => {
     const slug = this._chronicler.currentChapter()?.slug;

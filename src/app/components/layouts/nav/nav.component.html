@@ -12,7 +12,7 @@
   <ng-scrollbar (afterUpdate)="revealCurrent()">
     <ul #chapterList nz-menu nzMode="inline">
       @for (chapter of chapters(); track chapter.slug) {
-        <li nz-menu-item nzMatchRouter [attr.data-slug]="chapter.slug" [routerLink]="['/', chapter.slug]">
+        <li nz-menu-item nzMatchRouter [attr.data-slug]="chapter.slug" [class.at-war]="atWar(chapter.tags)" [routerLink]="['/', chapter.slug]">
           {{ chapter.label | translate }}
           @for (tag of chapter.tags | slice: 0 : 3; track tag) {
             <img class="tag-icon" nz-tooltip [nzTooltipTitle]="`tag_${tag}` | translate" [src]="tagIconUrl(tag)" />
