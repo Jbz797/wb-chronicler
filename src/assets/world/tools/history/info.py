@@ -43,6 +43,7 @@ _DEATH_CAUSE = re.compile(r"^deaths_(?!attackers$|defenders$|total$)(\w+)$")  # 
 # Tool kind => (WB table stem, save collection): the collection finds the living, whom alone WB keeps the years of.
 _ENTITIES = {
     "alliance": ("Alliance", "alliances"),
+    "army": ("Army", "armies"),
     "city": ("City", "cities"),
     "clan": ("Clan", "clans"),
     "culture": ("Culture", "cultures"),

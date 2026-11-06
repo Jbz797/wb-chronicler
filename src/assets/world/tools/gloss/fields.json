@@ -253,6 +253,7 @@
   "wealth": "Les pièces de ses habitants et l'or brut de ses bâtiments (`gold`) ; ni leur butin ni les biens (`goods`).",
   "world.came_and_went": "Parues puis disparues entre les deux saves, qu'aucune save n'a tenues : leurs ids (cités, clans…), une lignée avec son espèce, que ses morts au registre donnent.",
   "world.cumulative": "Des compteurs qui ne font que monter : naissances, morts, extinctions.",
+  "world.cumulative.armies_destroyed": "Une armée tombe sans soldat, capitaine ni cité, ou dissoute par sa cité ; ses années, ou entre quels chapitres elle passa : `history entity army <id>`.",
   "world.cumulative.creatures_created": "Ce qui paraît sans naître : semé, migrant, invoqué, changé d'espèce, coque ; jamais une naissance (`creatures_born`).",
   "world.cumulative.metamorphosis": "Les abattus changés au lieu de mourir : un crabe vieux renaît (`metamorphosis_crab`), un maudit en squelette, un mordu en zombie ; ni mort ni tueur au jeu.",
   "world.cumulative.migrated": "Les migrants que la loi a fait paraître aux feux, au compte des royaumes : un royaume tombé emporte le sien. Ceux de moins de 6 ans : `gloss handsome_migrant`.",

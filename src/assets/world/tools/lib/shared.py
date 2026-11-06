@@ -98,6 +98,7 @@ _IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `
 _ID_COUNTERS = {
     "actors_data": "id_unit",
     "alliances": "id_alliance",
+    "armies": "id_army",
     "books": "id_book",
     "buildings": "id_building",
     "cities": "id_city",
