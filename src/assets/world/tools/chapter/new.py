@@ -213,8 +213,9 @@ _SUBAGENT_GRACE = 120  # seconds: a transcript written this lately may be a sub-
 
 # What a trait summary is — in no doc: said to the chronicler as one falls due, and handed to the audit with the targets that name one.
 _SUMMARY = (
-    "what those traits make of their bearer and those it holds (a culture's people, a clan's members), never of one body, "
-    f"{_PLAIN}; never a list of traits, even in prose, nor a tally or a figure that ages — read alone, it may echo any chapter"
+    "what those traits make of their bearer — and, for a tier, of those it holds (a culture's people, a clan's members), never one of them alone —, "
+    f"{_PLAIN}; grouped by what they do (fight, work, body, mind…), a clause each, never one trait after another; "
+    "a lean, never a stat's level, which gear and level move too; nor a tally or a figure that ages — read alone, it may echo any chapter"
 )
 
 _SUMMARY_CAP = 400
