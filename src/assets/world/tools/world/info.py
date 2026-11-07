@@ -6,6 +6,8 @@
 # ⚠️ Output keys must stay self-descriptive (chronicler reads them with no other context). Prefer disambiguated names (e.g. `wild_creatures` over `creatures`).
 # Exception: WB-native names kept verbatim for raw-save fields (e.g. `asset_id`) — the tools' default, a rename having to earn its churn across py, UI and data.
 
+import contextlib
+import difflib
 import re
 import sys
 from collections import Counter, defaultdict
@@ -239,6 +241,7 @@ _MEMBERSHIPS = {
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
 _ON_REQUEST = ("laws", "lineages", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll is no chapter's to carry
+_RANKED_KEPT = ("age_overgrowth", "gen")  # the figures among a body's kept fields `--rank` reads, every other a word or an id
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
 _SINCE_PARTS = {"arrived": "arrived", "grew": "grew", "moved": "moved", "gone": "died"}  # what a `--since` roll files a body under, as a refusal says it
 _SINCE_SECTIONS = ("cumulative", "lineages", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll or a census, two counts weighed
@@ -640,6 +643,10 @@ def _build_roster(
         ctx["profession"] = lambda actor: resolve_profession(actor, save)
     if "lover" in fields:
         ctx["living_ids"] = {actor["id"] for actor in save.get("actors_data") or []}
+    stated = fields or (top and top not in _TOP_MEASURES)  # a stat asked or ranked by: every body's `actor … stats` read
+    seen = set(_KEPT_FIELDS) | _FIELD_FLOORS.keys() if stated else set()  # every field a body can be asked or ranked by, its stats added as they come
+    if stated:
+        ctx["children_by_parent"] = children_by_id(save)  # `body_stats` counts each body's children as `actor` does
     if top == "crafted" or "crafted" in fields:  # the world's items by their maker, as `actor … ranks` counts a body's work
         ctx["made"] = crafted_counts(ctx["items_by_id"])
     if "place" in fields:  # each forged place drawn once for the whole roll, as `metadata` draws it for one body
@@ -700,7 +707,7 @@ def _build_roster(
         before = once.get(actor["id"], 0) if once is not None else 0  # with no `--since`, a tally is weighed against nought
         if (has and held == before) or (lacks and held):
             continue
-        figure = _held(actor, top, ctx) if top else 0  # `--rank`'s measure: one holding none is counted once every other filter has had its say
+        figure = _rank_figure(actor, top, ctx, seen) if top else 0  # `--rank`'s figure: one holding none is counted once every other filter has had its say
         gates = settle_gates(actor, ctx) if settle or barred else None
         if settle and gates not in (True, ["child"]):  # founds where it stands once grown: nothing, or its youth alone, bars it
             continue
@@ -733,6 +740,10 @@ def _build_roster(
                 unranked += 1
             else:
                 bodies.append((actor, here, change | (settle_told(gates) if barred else {}), figure))
+    if top and top not in seen and top not in _TOP_MEASURES and (bodies or unranked):  # a stat no body weighed here carries, told once their stats are known
+        figures = sorted({*_TOP_MEASURES, *_RANKED_KEPT, *(field for field in seen if field not in _KEPT_FIELDS)})
+        guess = f" ({', '.join(f'`{field}`' for field in close)}?)" if (close := difflib.get_close_matches(top, figures, cutoff=0.7)) else ""
+        raise ValueError(f"✗ `{top}`: no figure `--rank` reads{guess} — it takes one of `actor <id> stats`, `age`, `crafted`, `gen`, `kills`, `p<id>` or `x,y`")
     gone = []
 
     if earlier is not None and was is not None and not (settle or barred) and "gone" in told_parts:  # the dead found nothing
@@ -756,9 +767,6 @@ def _build_roster(
             gone = [row | towards(row["id"], fell[row["id"]]["x"], fell[row["id"]]["y"]) for row in gone]
 
     one_kind = kinds is not None and len(kinds) == 1  # a lone `type:` names the kind, as a lone land its own
-    seen = set(_KEPT_FIELDS) | _FIELD_FLOORS.keys() if fields else set()  # every field a body of the roll can be asked, its own stats added as they come
-    if fields:
-        ctx["children_by_parent"] = children_by_id(save)  # `body_stats` counts each body's children as `actor` does
     lineages = ctx["subspecies_by_id"]
     # Unsaid where a view never reads it — `barred`'s gates, a measure's figure, a distance, `--since`'s blocks — whose lines it would push past inline
     breeds_said = not (barred or has or top or near or since)
@@ -1143,6 +1151,17 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
     return f"✗ no {living}{thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
 
 
+# `--rank`'s figure of a body: a counter, the age or the work as `_held` weighs them, a kept figure as `--with` reads it, else one of its stats.
+def _rank_figure(actor: dict, top: str, ctx: dict, seen: set[str]) -> float:
+    if top in _TOP_MEASURES:
+        return _held(actor, top, ctx)
+    if top in _RANKED_KEPT:
+        return _asked_fields(actor, "", [top], ctx, seen)[top] or 0
+    stats = body_stats(actor, ctx)
+    seen.update(stats)
+    return stats.get(top, 0)
+
+
 # A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
 def _refuse_unseen(fields: list[str], seen: set[str]) -> None:
     if unknown := [field for field in fields if field not in seen]:
@@ -1262,13 +1281,13 @@ def main(argv: list[str]) -> int:
         return 2
     # `grew` untold unless named, or a stage sought; the dead alone under `died:`
     told_parts = frozenset({"gone"}) if args.died_of else asked_parts or frozenset({"arrived", "gone", "moved", *(["grew"] if args.stage else [])})
-    point = None  # `--rank` by a measure, highest first, or by a body or a tile, nearest first
+    point = None  # `--rank` by a figure, highest first, or by a body or a tile, nearest first: a word not a point is a field, refused if none
     if args.top and args.top not in _TOP_MEASURES:
-        try:
+        with contextlib.suppress(argparse.ArgumentTypeError):
             point, args.top = _near_arg(args.top), None
-        except argparse.ArgumentTypeError:
-            print(f"✗ `--rank` takes a measure — {', '.join(_TOP_MEASURES)} — or a body `p<id>` or a tile `x,y`, nearest first", file=sys.stderr)
-            return 2
+    if args.top in _KEPT_FIELDS and args.top not in (*_RANKED_KEPT, *_TOP_MEASURES):
+        print(f"✗ `{args.top}` is no figure to rank — `--with {args.top}` shows it on each line", file=sys.stderr)
+        return 2
     limit = _LIMIT if args.limit is None else args.limit or None  # `all` read as 0: every line
     requested = args.sections
     try:

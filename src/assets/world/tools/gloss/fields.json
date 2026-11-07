@@ -304,7 +304,7 @@
   "world.--filter.trait": "`trait:<id>` : les corps qui portent ce trait, le leur ou celui de leur lignée.",
   "world.--filter.type": "`type:dwarf` : un type, une famille (`actors`) ; plusieurs s'additionnent (`type:dwarf,type:elf`) ; sous `roster`, `lineages` et `pairings`.",
   "world.--limit": "`--limit n|all` : les lignes gardées, 10 sans lui, par `id` sans `--rank`, les espèces de `pairings` par naissance ; la coupe dite d'un `⚠` ; `all` pour un script.",
-  "world.--rank": "`--rank <mesure|x,y|p<id>>` : l'ordre, la mesure la plus haute d'abord (à âge égal, le plus tôt né) ou le plus proche à vol d'oiseau ; sans la mesure, tus.",
+  "world.--rank": "`--rank <champ|x,y|p<id>>` : l'ordre, tout chiffre que `--with` lit, le plus haut d'abord (à âge égal, le plus tôt né), ou le plus proche ; sans le chiffre, tus.",
   "world.--since": "`--since C<n>` : ce qui a changé depuis ; `--filter` en garde des parties : `arrived` paru, `moved` de terre, `grew` d'âge seul, `gone` mort ; sinon, sauf `grew`.",
   "world.--with": "`--with` : 4 champs au plus d'`actor … stats` ou d'une fiche (`city`, `language`, `subspecies` en id…), avec `id` et `name` ; `born` date l'arrivée sous `--since`.",
   "world.came_and_went": "Parues puis disparues entre les deux saves, qu'aucune save n'a tenues : leurs ids (cités, clans…), une lignée avec son espèce, que ses morts au registre donnent.",
