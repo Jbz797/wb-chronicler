@@ -1,9 +1,9 @@
-@if (summary(); as text) {
+@if (summary()) {
   <figure class="trait-summary">
     <figcaption>
       {{ heading() }}
       <app-new-badge [dot]="false" [show]="isNew()" />
     </figcaption>
-    <p>{{ text }}</p>
+    <p>@for (run of runs(); track $index) {<span [class.fresh]="run.fresh">{{ run.text }}</span>}</p>
   </figure>
 }

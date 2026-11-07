@@ -12,6 +12,7 @@
 
 - `max-lines` est configuré avec `skipBlankLines: true` et `skipComments: true`
 - Vérifier les erreurs avec `yarn lint:fix && yarn build`
+- Membres réordonnés par une dépendance (`sort-classes`) : la ligne vide entre eux n'est plus vérifiée, la mettre à la main
 
 ## i18n
 

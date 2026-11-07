@@ -152,6 +152,7 @@ _EMPTIED = (
 
 _EVENT = "an event the chapter owes its reader, glossed in docs/tags.md"  # said to the chronicler at the recap, and to his auditors with their targets
 _FLAGS = frozenset({"--deliver", "--description", "--erosion", "--finalize", "--name", "--reset", "--reset-asked", "--retouch"})  # all `main` reads
+_FRESH = re.compile(r"\[([^\]]*)\]")  # what a rewritten trait summary tells new, between brackets its panel sets apart and no length counts
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _GROWN = frozenset({"adult", "teen"})  # the stages a kind may be counted on: past childhood, an elder read as the adult it is — its span is not asked
 _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
@@ -182,7 +183,7 @@ _PLACE = (
     " its kind and sign say what the chapter says of it"
 )
 
-_PLAIN = "plain text with no tag"  # what a field of `chapter.json` is written in: its panel prints it as it stands, brackets and all
+_PLAIN = "plain text with no tag"  # what a trait summary is written in: its panel prints it as it stands, but for `_FRESH`'s brackets
 _README = Path(__file__).resolve().parents[5] / "README.md"  # its World laws table, the player's guide and the reset's alike: one table, no copy
 _RECAP_RULE = "  " + "─" * 40  # closes each block of the recap's report — the chapter's state, what fired, the journal — the last two only where they print
 
@@ -215,7 +216,8 @@ _SUBAGENT_GRACE = 120  # seconds: a transcript written this lately may be a sub-
 _SUMMARY = (
     "what those traits make of their bearer — and, for a tier, of those it holds (a culture's people, a clan's members), never one of them alone —, "
     f"{_PLAIN}; grouped by what they do (fight, work, body, mind…), a clause each, never one trait after another; "
-    "a lean, never a stat's level, which gear and level move too; nor a tally or a figure that ages — read alone, it may echo any chapter"
+    "a lean, never a stat's level, which gear and level move too; nor a tally or a figure that ages — read alone, it may echo any chapter; "
+    "rewritten as the same entity's traits moved, what it tells new set between [ ], which no length counts — a correction alone, none"
 )
 
 _SUMMARY_CAP = 400
@@ -344,7 +346,7 @@ def _carry_trait_summaries(n: int, blocks: dict, live: dict) -> None:
             continue
         # Both saves are walked only where a summary stands to be carried — a tier with nothing written is owed whether or not its traits moved.
         if tier in written and _trait_fingerprint(live, tier, _entity_id(block)) == _trait_fingerprint(prior_save, tier, _entity_id(prior.get(tier) or {})):
-            block["traits"] = written[tier]  # same entity, same traits: what the chronicler wrote still holds
+            block["traits"] = _unfresh(written[tier])  # same entity, same traits: what the chronicler wrote still holds, new no more
 
 
 # The chapter's event codes, `chapter.json.tags` their only log. The order is a priority, the nav badging the first three: the rarest first, the alerts last.
@@ -751,8 +753,10 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  ✗ chapter.md, {facts['length']} characters of {floor} at least, {COUNTED_AS} — the gain goes with this round's corrections, before the audit")
     if long := facts["long"]:
         print(f"  ✗ trait summaries, in characters: {', '.join(f'{tier} {told}' for tier, told in long.items())}")
+    if bare := facts["bare"]:
+        print(f"  ✗ trait summaries rewritten with nothing new set between [ ]: {', '.join(bare)}")
     if sized:
-        print("  → every length above counts spaces too, a tag by its name alone")
+        print("  → every length above counts spaces too, a tag by its name alone, a summary's [ ] not at all")
     for name, x, y, other in facts["doubled"]:
         print(f"  ✗ places.json « {name} »: ({x},{y}) is the very point of « {other} » — its sign needs a point of its own on the map")
     for name, x, y, found, declared in facts["misplaced"]:
@@ -1031,14 +1035,27 @@ def _step_five_facts(n: int, lang: str) -> dict:
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
     h1_length = len(unmarked(h1 or ""))
     owed = {tier: _entity_id(chapter[tier]) for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and tier not in written}
-    long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(text)) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
+    long = {tier: f"{size} of {cap}" for tier, text in sorted(written.items()) if (size := len(_unfresh(text))) > (cap := _SUMMARY_CAPS.get(tier, _SUMMARY_CAP))}
     dialogues, doubled, misplaced, stray = short_dialogues(prose), _doubled_places(n), _misplaced_places(n), _stray_tags(n, prose)
-    # A summary carried word for word was audited when written, so only a new one goes.
-    fresh = [f"{tier}.traits" for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and written.get(tier) != (prior.get(tier) or {}).get("traits")]
+    # A summary carried word for word was audited when written, so only a new one goes — its brackets aside, which carrying drops.
+    moved = [tier for tier in sorted(_TRAIT_SOURCES) if chapter.get(tier) and _unfresh(written.get(tier)) != _unfresh((prior.get(tier) or {}).get("traits"))]
+    # Rewritten over the same entity's summary, unbracketed: owed its brackets only where its traits moved — a correction alone tells nothing new
+    rewritten = {
+        tier: entity
+        for tier in moved
+        if tier in written
+        and not _FRESH.search(written[tier])
+        and isinstance((prior.get(tier) or {}).get("traits"), str)
+        and (entity := _entity_id(chapter[tier])) is not None
+        and entity == _entity_id(prior[tier])
+    }
+    saves = [load_save(path) if rewritten and (path := SAVES_DIR / f"C{m}" / "map.wbox").exists() else {} for m in (n, n - 1)]
+    bare = [tier for tier, entity in rewritten.items() if len({_trait_fingerprint(save, tier, entity) for save in saves}) > 1]
     length, floor = chapter_length(prose), chapter_floor(n)
-    faults = dialogues or doubled or owed or long or misplaced or stray or length < floor
+    faults = dialogues or doubled or owed or long or misplaced or stray or bare or length < floor
     return {
-        "audited": fresh,
+        "audited": [f"{tier}.traits" for tier in moved],
+        "bare": bare,
         "dialogues": dialogues,
         "done": 0 < h1_length <= _H1_CAP and not faults,
         "doubled": doubled,
@@ -1107,6 +1124,11 @@ def _trait_fingerprint(save: dict, tier: str, entity_id: int | None) -> tuple | 
     collection, fields = _TRAIT_SOURCES[tier]
     record = next((r for r in save.get(collection) or [] if r.get("id") == entity_id), None)
     return None if record is None else (entity_id, *(tuple(sorted(record.get(field) or [])) for field in fields))
+
+
+# A summary with what it told new no longer set apart: carried, or weighed against another — anything not a string, an old tally or none, as it stands.
+def _unfresh[T](text: T) -> T:
+    return _FRESH.sub(r"\1", text) if isinstance(text, str) else text
 
 
 # A surveyed feature stripped to what a toponym needs: where its name sits — its heart, else its mean —, its size, and the two fields the chronicler fills.

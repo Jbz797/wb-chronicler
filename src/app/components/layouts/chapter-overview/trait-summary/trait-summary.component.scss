@@ -24,5 +24,10 @@
     hyphens: auto;
     margin: 0;
     text-align: justify;
+
+    // What a rewritten summary tells new, in the gilt of the badge that announces it
+    .fresh {
+      color: $primary;
+    }
   }
 }
