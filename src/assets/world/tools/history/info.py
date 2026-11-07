@@ -31,7 +31,9 @@ from shared import (
     load_data,
     load_save,
     log_entries,
+    pickle_cached,
     quiet_zeros,
+    reigns,
     take_chapter,
     take_since,
     world_date,
@@ -75,11 +77,14 @@ _FOUNDED = {
 }
 
 _MAX_LOG = 50  # past so many entries the journal is read by its kinds of event, not line by line: `-t` or `--actor` narrow it back
+_REIGN_EDGES = {"king_dead": "to", "king_killed": "to", "king_left": "to", "king_new": "from"}  # the log's ends of a reign, a flight none
 
 # WB's `world_statistics_beasts` walks every unit, the dying and the hulls with it, where `Actor.die` counts a death at the blow and none for a metamorphosis.
 _ROLL = ("population_beasts", "population_civ")  # the two columns a year's bodies stand in
 _ROLL_TERMS = {"creatures_born": 1, "creatures_created": 1, _DEATHS_TOTAL: -1}  # and what moves them, by its sign
-_SECTIONS = ("dead_kingdoms", "entity", "founded", "log", "world")
+
+_RULED = {"army": "past_captains", "city": "past_rulers", "kingdom": "past_rulers"}  # the seats `rulers` follows, by the succession WB keeps of each
+_SECTIONS = ("dead_kingdoms", "entity", "founded", "log", "rulers", "world")
 _SKIPPED = frozenset({"auto", "id", "timestamp"})  # WB's row bookkeeping: `auto` flags a row it wrote itself, and says nothing of the world
 _STAT_KEYS = {"deaths_natural": "deaths_age", _DEATHS_TOTAL: "deaths"}  # the yearly columns `mapStats` names otherwise: old age, and the bare total
 _STEPS = (1, 5, 10, 50, 100, 500, 1000, 5000, 10000)  # WB's table suffixes, each keeping a window of the last rows at that step
@@ -237,6 +242,39 @@ def _build_log(save: dict, since: str | None, actor: int | None, event: str | No
     return entries
 
 
+# Every term the world still knows, a crown's, a town's or an army's, off its succession in the last save that held it — a fallen crown's, off the log too.
+def _build_rulers(save: dict, save_path: Path, chapter: str | None, kinds: tuple[str, ...]) -> list[dict] | dict | str:
+    persons = index_by_id(save.get("actors_data") or [])
+    standing = {(kind, record["id"]) for kind in kinds for record in save.get(_ENTITIES[kind][1]) or []}
+    records, rows = _ruled_records(save, save_path, chapter), []
+    for (kind, entity_id), record in records.items():
+        if kind in kinds:
+            seat = {kind: {"id": entity_id, "name": record.get("name")}, "gone": (kind, entity_id) not in standing or None}
+            rows += [{**reign, **seat} for reign in reigns(record, persons, "rulers")]
+    if "kingdom" in kinds:  # a fallen crown's kings as the log names them, crowned (`from`) or gone (`to`): an end past its last save, a crown no save held
+        crowns, logged = crowns_named(save), {}
+        for entry in log_entries(0.0, _chapter_time(save), deaths=True):
+            if entry["event"] in _REIGN_EDGES and (crown := entry["kingdom_id"]) is not None and ("kingdom", crown) not in standing:
+                king = _king_entry(entry)
+                seat = {"gone": True, "id": king.get("id"), "kingdom": entity_ref(crown, crowns) or {"id": crown}, "name": king["name"]}
+                logged.setdefault((crown, king["name"]), seat)[_REIGN_EDGES[entry["event"]]] = king["date"]
+        for row in rows:
+            if row.get("gone") and "kingdom" in row and "to" not in row and (end := logged.get((row["kingdom"]["id"], row["name"]), {}).get("to")):
+                row["to"] = end
+        rows += [row for (crown, _), row in logged.items() if ("kingdom", crown) not in records]
+    if not rows:
+        return f"✗ no {' nor '.join(kinds)} has had a head yet"
+    if len(rows) > _MAX_LOG:
+        return {"by_kind": dict(sorted(Counter(kind for row in rows for kind in kinds if kind in row).items()))}
+    deaths = kept_deaths(save)  # 60 ms of register, for the listed rows' `born` alone
+    for row in rows:
+        if (body := persons.get(row["id"])) is not None:
+            row["born"] = entity_born(body)
+        elif (dead := deaths.get(row["id"])) is not None:
+            row["born"] = world_date(dead["born"])
+    return sorted(rows, key=lambda row: (tuple(int(part[1:]) for part in (row.get("from") or row["to"]).split()), row.get("id") or 0))
+
+
 # The world's years: what each one saw born, raised, razed or dying, as gains, and what it closed on — the one under way, with no row yet, off the save's tallies.
 def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     map_stats = save.get("mapStats") or {}
@@ -329,6 +367,16 @@ def _row_year(world_time: float) -> int:
     return int(world_time // UNITS_PER_YEAR) + 1
 
 
+# Each crown, town and army as the last save to hold it left it, up to the chapter read: its name and succession, a seat gone between two chapters included.
+def _ruled_records(save: dict, save_path: Path, chapter: str | None) -> dict[tuple[str, int], dict]:
+    def table() -> dict[tuple[str, int], dict]:
+        saves = [load_save(SAVES_DIR / f"C{n}" / "map.wbox") for n in range(1, int(chapter[1:]) if chapter else 1)] + [save]
+        held = ((kind, record) for each in saves for kind in _RULED for record in each.get(_ENTITIES[kind][1]) or [])
+        return {(kind, record["id"]): {"name": record.get("name"), "past_rulers": record.get(_RULED[kind])} for kind, record in held}  # as `reigns` reads it
+
+    return pickle_cached("ruled_records_v2", save_path, table)
+
+
 # Every row of one series before `year`, the fine window's years and, older, the coarse steps' approximations — each row its own blanks carried.
 def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: int) -> tuple[list[str], list[dict], list[dict]]:
     where, params = ("WHERE timestamp < ?", [year]) if entity_id is None else ("WHERE id = ? AND timestamp < ?", [entity_id, year])
@@ -386,7 +434,11 @@ def main(argv: list[str]) -> int:
         hint = f"an entity's years: `entity {args.section} <id>`" if args.section in _ENTITIES else f"valid: {', '.join(_SECTIONS)}"
         print(f"✗ no section {args.section} — {hint}", file=sys.stderr)
         return 2
-    if args.section != "entity" and args.entity:
+    seats = tuple(sorted({seat for arg in args.entity for seat in arg.split(",")})) if args.section == "rulers" else ()  # a comma list, as sections take
+    if not set(seats) <= set(_RULED):
+        print(f"✗ rulers takes a seat or none: {', '.join(_RULED)} — one seat's own: `kingdom <id> rulers`, `city <id> rulers`, `city <id> army`", file=sys.stderr)
+        return 2
+    if args.section not in ("entity", "rulers") and args.entity:
         print(f"✗ {args.section} takes no entity", file=sys.stderr)
         return 2
     if args.section == "entity" and not (len(args.entity) == 2 and args.entity[0] in _ENTITIES and args.entity[1].isdigit()):
@@ -412,6 +464,8 @@ def main(argv: list[str]) -> int:
             out = _build_log(save, since, args.actor, args.type)
         elif args.section == "founded":
             out = _build_founded(save, since) or f"✗ nothing founded {f'since {since}' if since else 'yet'} that WB's journal leaves out"
+        elif args.section == "rulers":
+            out = _build_rulers(save, save_path, chapter, seats or tuple(_RULED))
         elif args.section == "dead_kingdoms":
             out = _build_dead_kingdoms(conn, save) or "✗ no crown has fallen"
         else:

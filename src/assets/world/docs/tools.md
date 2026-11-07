@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 07/11/26 02:16</p>
+<p class="metadata">Date de mise à jour : 07/11/26 16:47</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -24,7 +24,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 | `family <id>`     | `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`                                                                         |
 | `geography`       | `biomes`, `bodies`, `burning`, `clouds`, `entity_types`, `frozen`, `gear`, `islands`, `positions`, `ridges`, `totals`, `waters`        |
 | `ground <id>`     | `boats`, `inventory`, `metadata`, `occupants`                                                                                          |
-| `history`         | `dead_kingdoms`, `entity`, `founded`, `log`, `world`                                                                                   |
+| `history`         | `dead_kingdoms`, `entity`, `founded`, `log`, `rulers`, `world`                                                                         |
 | `kingdom [<id>]`  | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `relations`, `rulers`, `wars`               |
 | `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
 | `religion <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
