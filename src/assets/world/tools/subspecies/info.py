@@ -27,6 +27,7 @@ from shared import (
     emit,
     entity_age,
     entity_born,
+    hand_usage,
     index_by_id,
     is_boat,
     is_sapient,
@@ -169,9 +170,8 @@ def _species_totals(save: dict) -> dict[str, dict]:
 
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
-    if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
-        return 2
+    if not argv or argv[0] in ("-h", "--help"):
+        return hand_usage("usage: subspecies/info.py <id> [sections] [C<n>]", argv)
     try:
         subspecies_id = int(argv[0])
     except ValueError:

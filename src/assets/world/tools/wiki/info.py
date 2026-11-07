@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Reads the official WorldBox wiki through its MediaWiki API, the one door its 403 leaves open. User-facing docs: `docs/chronicler.md` § « Accès au wiki ».
+# Reads the official WorldBox wiki through its MediaWiki API, the one door its 403 leaves open. User-facing docs: `docs/chronicler.md` § « Accès au wiki WorldBox ».
 # `<Page>` prints its wikitext, a redirect followed to the section it names; `--entry <name>` the table rows naming it, cell by cell, else list items opening on it;
 # `--list [word]` its titles, every batch of the listing walked, filtered on a word when one is given; `--search <words>` the pages whose text holds them.
 # A page past `_OUTLINE` prints its sections and their sizes instead, `--section <title>` reading one whole.
@@ -21,7 +21,6 @@ _API = "https://the-official-worldbox-wiki.fandom.com/api.php"
 _BATCH = 500  # the most titles one `allpages` call hands back
 _CELL_ATTRS = re.compile(r'^\s*(?:[\w-]+\s*=\s*"[^"]*"\s*)+\|(?!\|)')  # `| style="…" | text`: a cell's own styling, before its single pipe
 _CHANGELOG = re.compile(r"^\d+\.\d")  # a version's release notes, `0.7.0 - Crabs and Sorcery`: the game's history, never its rules as they stand
-_DOCS = "docs/chronicler.md § « Accès au wiki WorldBox »"  # where every refusal points: the manual tells the wiki, `tools.md` does not
 _FOUND = 10  # pages `--search` hands back, best first: past them the wiki only grazes the words
 _HEADERS = {"User-Agent": "Mozilla/5.0"}  # the wiki turns away a request that names no browser, 403 and nothing else
 _LABEL_WORDS = 3  # words past which a cell is prose, not a label: « Spore », « Mushroom Production »
@@ -122,15 +121,15 @@ def _titles() -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    parser = arg_parser(prog="wiki/info.py", description="Read a page of the official WorldBox wiki, list its titles or search its text.", docs=_DOCS)
-    parser.add_argument("page", nargs="?", help="the page's title, as `wiki:<Page>` names it")
-    parser.add_argument("--entry", metavar="name", help="the rows naming it, else list items opening on it — a trait's id, `_` a space, one term of a cell")
-    parser.add_argument("--list", nargs="?", const="", metavar="word", help="its titles, those holding the word alone if one is given")
-    parser.add_argument("--search", metavar="words", help="the pages whose text holds them, best first — where no title does")
-    parser.add_argument("--section", metavar="title", help="one section whole, its sub-sections with it, by its title or anchor")
+    parser = arg_parser(prog="wiki/info.py")
+    parser.add_argument("page", nargs="?")
+    parser.add_argument("--entry", metavar="name")
+    parser.add_argument("--list", nargs="?", const="", metavar="word")
+    parser.add_argument("--search", metavar="words")
+    parser.add_argument("--section", metavar="title")
     args = parser.parse_args(argv)
     if args.list is None and not args.search and not args.page:  # one of three, which argparse cannot ask for
-        print(f"✗ name a page, `--list [word]` or `--search <words>` — see {_DOCS}", file=sys.stderr)
+        print("✗ name a page, `--list [word]` or `--search <words>` — see docs/chronicler.md § « Accès au wiki WorldBox »", file=sys.stderr)
         return 2
     page = (args.page or "").removeprefix("wiki:")  # the docs write a page as `wiki:<Page>`, and that prefix is no part of its title
     try:

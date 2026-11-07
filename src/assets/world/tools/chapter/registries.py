@@ -58,9 +58,9 @@ def _alliance_entry(alliance: dict) -> dict:
 
 # WB `KingdomBanner.setupBanner` inputs for the UI's canvas: the slots the realm's two banner ids pick in its king's species set, each with its hue. Realms only.
 def _banner(record: dict, species: str | None) -> dict:
-    lib = load_data("banner-icons.json")
-    banner_id = lib["species_to_banner_id"].get(species)
-    bg_slots, icon_slots = lib["banner_id_backgrounds"].get(banner_id), lib["banner_id_icons"].get(banner_id)
+    heraldry = load_data("heraldry.json")
+    banner_id = heraldry["species_banners"].get(species)
+    bg_slots, icon_slots = heraldry["backgrounds"].get(banner_id), heraldry["icons"].get(banner_id)
     if not bg_slots or not icon_slots:  # species without a banner set (never seen in practice) → no fields, and the tag simply wears no heraldry
         return {}
     palette = _palette(record.get("color_id", ""))
@@ -294,7 +294,7 @@ def _family_entry(family: dict, members: int, rank: int | None) -> dict:
     if (species := family.get("species_id")) is not None:  # the founding species' pip, right of the name as on every other tag
         entry["species"] = species
     # WB paints the backing sprite with `getColorMainSecond` (families borrow the realms' palette). Flattened to one hex: the tag fills rather than stacks.
-    backing = load_data("colors.json")["family_frames"].get(f"{family.get('banner_background_id') or 0:02}")
+    backing = load_data("heraldry.json")["family_frames"].get(f"{family.get('banner_background_id') or 0:02}")
     tint = _palette(family.get("color_id", "")).get("color_main_2") or _REALM_FALLBACK_HUE  # WB grants a handful of families no palette at all — grey, as it does
     if backing:
         entry["bg_color"] = _multiply(backing, tint)
@@ -367,7 +367,7 @@ def _multiply(base: str, tint: str) -> str:
 # A realm's palette, verbatim — WB's own `checkIfColorTooDark` belongs to the sprite ramps alone, so the UI applies it. Empty when WB shipped no such palette.
 @cache  # realms of one palette share the call, and every chapter rebuild replays it
 def _palette(color_id: int | str) -> dict:
-    return load_data("colors.json")["entities"].get(str(color_id), {})
+    return load_data("heraldry.json")["palettes"].get(str(color_id), {})
 
 
 # Person registry entry — everything the UI composes an actor from. `dead` comes from the merge.

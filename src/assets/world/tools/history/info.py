@@ -375,12 +375,12 @@ def main(argv: list[str]) -> int:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     save_path, argv, chapter = take_chapter(argv)
-    parser = arg_parser(prog="history/info.py", description="The world's past, from WB's own history base.")
-    parser.add_argument("section", help=f"Valid: {', '.join(_SECTIONS)}")
-    parser.add_argument("entity", nargs="*", help=f"`entity`: its kind and id, `entity family 12` — kinds: {', '.join(_ENTITIES)}")
-    parser.add_argument("--actor", type=int, metavar="id", help="`log`: the entries naming one body")
+    parser = arg_parser(prog="history/info.py", taken="[--since C<n>] [C<n>]")
+    parser.add_argument("section")
+    parser.add_argument("entity", nargs="*", metavar="kind id")
+    parser.add_argument("--actor", type=int, metavar="id")
     kinds = sorted(load_data("world-log.json"))  # WB's own kinds of entry: a word outside them is a typo, refused with the list, never a quiet nothing
-    parser.add_argument("--type", "-t", choices=kinds, metavar="event", help=f"`log`: one kind of entry, by WB's id — {', '.join(kinds)}")
+    parser.add_argument("--type", "-t", choices=kinds, metavar="event")
     args = parser.parse_args(argv)
     if args.section not in _SECTIONS:
         hint = f"an entity's years: `entity {args.section} <id>`" if args.section in _ENTITIES else f"valid: {', '.join(_SECTIONS)}"

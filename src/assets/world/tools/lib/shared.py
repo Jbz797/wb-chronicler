@@ -55,7 +55,6 @@ UNWRITTEN_HEALTH = 100  # WB `BaseObjectData`: the health a body, a hull or a bu
 ZONE_TILES = 8  # WB `TileZone` side (tiles): `zones` are in zone units — divide tile coords by this; centre = `z*ZONE_TILES + ZONE_TILES//2`.
 
 _ASCENSION_STATS = {"diplomatic_ascension": "diplomacy", "warriors_ascension": "warfare"}  # Culture succession by that stat (else renown, coins, age).
-_ATTACK_CAUSES = {"Age": "old_age", "AshFever": "ash_fever", "Smile": "grin_reaper", "Starvation": "hunger"}  # WB `AttackType` as counters name it, else lowercased
 _BIOME_ALIASES = {"pumpkin": "super_pumpkin", "singularity": "singularity_swamp"}  # One lore under two WB spellings: its tiles say one, its biome sheet the other.
 
 # The field a body carries its tie to each kind by: what counts, of a kind gone, the bodies that outlived it.
@@ -91,7 +90,7 @@ _ELDER_AGE_RATIO = 0.7  # WB `Actor.isPrettyOld`: an actor is « old » once age
 _ELDER_MIN_AGE = 1  # and its other guard, which bites on a body so short-lived that its first year already spends the ratio
 _EMPTY_VALUES = (None, [], {})  # module-level so `_strip_none` doesn't rebuild a list and a dict at every node it tests.
 _HEAD_FIELD = {"city": "leaderID", "kingdom": "kingID"}  # WB names the office-holder apart on each tier.
-_HELP_WIDTH = 78  # what argparse gives a piped run, its 80 columns less 2: the help the chronicler has always read
+_HELP_WIDTH = 78  # what argparse gives a piped run, its 80 columns less 2: the usage the chronicler has always read
 _IDENTITIES = ("id", "biome")  # what names a row across two chapters, so that `--since` weighs a land, a site or a biome against itself
 
 # WB's next id of each kind, by the save's collection (`MapStats.getNextId`): an id under it was handed out, whatever became of what bore it.
@@ -172,6 +171,17 @@ _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Mod
 _captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
 
 
+# `--help` as the tools answer it: the syntax alone, options, arguments and choices, each option's meaning living in its gloss (`gloss <tool>`).
+class _Syntax(argparse.Action):
+    def __call__(self, parser: argparse.ArgumentParser, *_: object) -> None:
+        flagged = [action.option_strings for action in parser._actions if action.option_strings and action is not self]  # noqa: SLF001
+        short = ", ".join(f"{flags[-1]} {flags[0]}" for flags in flagged if len(flags) > 1)  # the usage names an option by its first spelling alone
+        told = (f"short: {short}\n" if short else "") + (f"each option: `gloss {parser.prog.partition('/')[0]}`\n" if flagged else "")
+        # What the tool takes off the call before argparse reads it, `--since` and the chapter, closes the usage line as the rest of it.
+        sys.stdout.write(parser.format_usage().rstrip() + (f" {self.const}" if self.const else "") + "\n" + told)
+        parser.exit()
+
+
 # `full` named, alone or with sections beside it, or nothing at all: the default lot, where a list answers by its count and not one by one.
 def _asks_full(requested: str | None) -> bool:
     return requested is None or "full" in requested.split(",")
@@ -221,13 +231,13 @@ def _deaths_until(base: Path, now: float) -> dict[int, dict]:
             rows = conn.execute(f"SELECT {picked} FROM FaithfulDeaths WHERE died <= ? ORDER BY died, id", [now + _DEATH_SLACK]).fetchall()
     except sqlite3.Error:  # no table: a base the mod never wrote
         return {}
-    deaths = {}
+    deaths, causes = {}, load_data("attack-types.json")  # WB `AttackType` as its counters name it: a type a later game adds, lowercased
     for body, asset, name, lineage, mother, father, born, died, attack, killer, x, y, blow, job in rows:
         deaths[body] = {
             "asset_id": asset,
-            "blow": blow and _ATTACK_CAUSES.get(blow, blow.lower()),  # what struck a body down before it changed: a metamorphosis's alone
+            "blow": blow and causes.get(blow, blow.lower()),  # what struck a body down before it changed: a metamorphosis's alone
             "born": born,
-            "cause": _ATTACK_CAUSES.get(attack, attack.lower()),
+            "cause": causes.get(attack, attack.lower()),
             "died": died,
             "id": body,
             "job": job,  # its post as it fell, in `resolve_profession`'s words — none off a table older than the column
@@ -489,10 +499,12 @@ def alive_or_dead_ref(body_id: int | None, by_id: dict, deaths: dict[int, dict])
 
 
 # argparse's refusals, marked as every script's are (a bare `usage:`/`error:` reads unflagged), and no abbreviation: `--king` would run as `--kingdom`.
-def arg_parser(prog: str, description: str, docs: str = "docs/tools.md") -> argparse.ArgumentParser:
+def arg_parser(prog: str, taken: str = "") -> argparse.ArgumentParser:
     # A width said: left to the terminal, argparse loads `shutil` and three compressors to measure it, at the first `add_argument` of every run.
-    parser = argparse.ArgumentParser(prog=prog, description=description, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH), allow_abbrev=False)
-    parser.error = lambda message: parser.exit(2, f"✗ {_misplaced_across() or message} — see {docs}\n")
+    parser = argparse.ArgumentParser(prog=prog, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH), add_help=False, allow_abbrev=False)
+    parser.add_argument("-h", "--help", action=_Syntax, nargs=0, const=taken, default=argparse.SUPPRESS)
+    told = f"`--help` for its syntax, `gloss {prog.partition('/')[0]}` for each option"
+    parser.error = lambda message: parser.exit(2, f"✗ {_misplaced_across() or message} — {told}\n")
     return parser
 
 
@@ -895,6 +907,13 @@ def first_place(values: Mapping, min_peers: int) -> list[tuple]:
 @cache
 def gazetteer() -> dict:
     return json.loads(PLACES_JSON.read_text()) if PLACES_JSON.exists() else {}
+
+
+# A hand-read tool's syntax: on `--help`, the line alone, as argparse's tools give theirs; else the refusal of a call that names nothing.
+def hand_usage(line: str, argv: list[str]) -> int:
+    asked = argv[:1] in (["-h"], ["--help"])
+    print(line if asked else f"✗ {line}", file=sys.stdout if asked else sys.stderr)
+    return 0 if asked else 2
 
 
 # WB `Actor.hasEmotions`, which reads its biology's `has_emotions` meta tag — a single trait grants it, and without it a soul is never happy nor unhappy.
@@ -1600,8 +1619,8 @@ def unsited_reason(families: dict[str, Counter], words: str) -> str | None:
         return f"`{words}` names no kind here — like it: {', '.join(near)}"
     buildings = load_data("buildings.json")
     known = load_data("species.json").keys() | buildings.keys() | civic_building_ids()  # every kind WB has, hulls aside
-    # And every family, present or not: on a bare world `trees` is no typo, only none.
-    known |= {"actors", "buildings", "other"} | {(entry or {}).get("category") for entry in buildings.values()}
+    # And every family, present or not, ours among them: on a bare world `trees` or `homes` is no typo, only none.
+    known |= {"actors", "buildings", "other", HOMES} | {(entry or {}).get("category") for entry in buildings.values()}
     # A name WB gives a kind per species (`watch_tower` => `watch_tower_civ_…`), none standing here: an absence proven, never a typo.
     named = {word: kinds for word in asked if word not in known and (kinds := sorted(kind for kind in known if kind and _named_by(word, kind)))}
     told = [f"no `{word}` stands here — WB names {_kinds_by(kinds)}" for word, kinds in named.items()]

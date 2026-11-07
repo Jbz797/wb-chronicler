@@ -74,6 +74,7 @@ from shared import (
     equipment_entry,
     fertile,
     gazetteer,
+    hand_usage,
     index_by_id,
     is_aboard,
     is_boat,
@@ -296,7 +297,8 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             if ground != word:
                 print(f"✗ no {ground} ground in this world — `geography … biomes` names them", file=sys.stderr)
                 continue
-            none = unsited_reason(families, word) or f"no {word} in this world, {named_body(actor)} aside"
+            aside = f", {named_body(actor)} aside" if actor.get("asset_id") == word or word == "actors" else ""  # only where the body is of that kind, its last
+            none = unsited_reason(families, word) or f"no {word} in this world{aside}"
             print(f"✗ {none} — the families: {', '.join(sorted([*families, HOMES]))}; the waters: {', '.join(_WATERS)}", file=sys.stderr)
         if not any(each.values()):
             raise _AimError("")
@@ -1542,12 +1544,9 @@ def main(argv: list[str]) -> int:
     except (ArgumentTypeError, ValueError) as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
-    if not argv:
-        print(
-            "✗ usage: info.py <id> [sections] [--to p<id>|<x,y>|b<id>|c<id>|i<land>|<kind>] [--since C<n>] [--statuses] [C<n>] — docs/tools.md",
-            file=sys.stderr,
-        )
-        return 2
+    if not argv or argv[0] in ("-h", "--help"):
+        to = 'p<id>|x,y|b<id>|c<id>|cities|i<land>|lands|"<place>"|lake<id>|burning|frozen|g:<ground>|<kind>'
+        return hand_usage(f"usage: actor/info.py <id> [sections] [--to {to}]… [--since C<n>] [--statuses] [C<n>]\neach option: `gloss actor`", argv)
     try:
         actor_id = int(argv[0])
     except ValueError:

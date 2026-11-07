@@ -20,6 +20,7 @@ from shared import (
     entity_age,
     entity_born,
     entity_ref,
+    hand_usage,
     index_by_id,
     load_save,
     meta_report,
@@ -101,9 +102,8 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
 
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
-    if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
-        return 2
+    if not argv or argv[0] in ("-h", "--help"):
+        return hand_usage("usage: family/info.py <id> [sections] [C<n>]", argv)
     try:
         family_id = int(argv[0])
     except ValueError:

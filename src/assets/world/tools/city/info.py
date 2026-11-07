@@ -39,6 +39,7 @@ from shared import (
     entity_born,
     entity_ref,
     equipment_entry,
+    hand_usage,
     house_building_ids,
     index_by_id,
     is_aboard,
@@ -789,9 +790,8 @@ def main(argv: list[str]) -> int:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     save_path, argv, chapter = take_chapter(argv)
-    if not argv:
-        print("✗ usage: info.py <id> [sections] [--since C<n>] [C<n>] — see docs/tools.md", file=sys.stderr)
-        return 2
+    if not argv or argv[0] in ("-h", "--help"):
+        return hand_usage("usage: city/info.py <id> [sections] [--since C<n>] [C<n>]\neach option: `gloss city`", argv)
     try:
         city_id = int(argv[0])
     except ValueError:

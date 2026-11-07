@@ -16,6 +16,7 @@ from shared import (
     emit,
     entity_age,
     entity_ref,
+    hand_usage,
     index_by_id,
     load_data,
     load_save,
@@ -61,9 +62,8 @@ def _build_origin(book: dict) -> dict:
 
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
-    if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
-        return 2
+    if not argv or argv[0] in ("-h", "--help"):
+        return hand_usage("usage: book/info.py <id> [sections] [C<n>]", argv)
     try:
         book_id = int(argv[0])
     except ValueError:

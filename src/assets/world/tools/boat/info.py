@@ -19,6 +19,7 @@ from shared import (
     emit,
     entity_age,
     entity_ref,
+    hand_usage,
     index_by_id,
     is_boat,
     light,
@@ -134,9 +135,8 @@ def _trait_stats(boat: dict, ctx: dict) -> dict:
 
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
-    if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
-        return 2
+    if not argv or argv[0] in ("-h", "--help"):
+        return hand_usage("usage: boat/info.py <id> [sections] [C<n>]", argv)
     try:
         boat_id = int(argv[0])
     except ValueError:

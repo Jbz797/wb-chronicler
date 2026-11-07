@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 06/11/26 22:53</p>
+<p class="metadata">Date de mise à jour : 07/11/26 02:16</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne), citée en abrégé : `kingdom … metadata`.
 
@@ -9,6 +9,7 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 - **Les coordonnées** croissent vers l'est (x) et le nord (y), un `dir` aussi.
 - **`sections`** : liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings` et `roster`, à nommer) ; un bloc nommé seul (section, `--to`, tuile) sort nu, plusieurs gardent leur clé.
 - **Le suffixe `C<n>`** lit ce chapitre ; sans lui, le dernier ; l'outil `across` pose la question à chacun, rangée par chapitre (`across C1-C9 world metadata --keep date` : la date de chacun).
+- **`--help`** donne la syntaxe d'un outil : ses options, leurs arguments, leurs choix ; ce que fait chacune, sa glose.
 - **Une sortie se lit entière** : coupée (`head`), le JSON ne se lit plus ; les sections lourdes, une à une. Trop large, elle se résume (un compte par terre) : le détail se demande par ses filtres (`-i`, `-t`, une section).
 
 | Commande          | Sections                                                                                                                               |
@@ -32,53 +33,8 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 | `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                                   |
 | `world`           | `boats`, `cumulative`, `laws`, `leaders`, `lineages`, `metadata`, `pairings`, `plots`, `roster`, `snapshot`                            |
 
+- **La carte** : `tools/map/show.py <x,y> [C<n>]` cerne la tuile sur la carte du chapitre et rend le chemin de l'image ; `gloss map.--zoom` pour lire une côte.
+
 ## Gloses :
 
-`python tools/gloss/info.py <clé>` glose un champ en une ligne ; une balise **`gloss:<clé>`** y renvoie, comme `wiki:` au wiki. La clé suit la sortie, `<outil>.<section>.<champ>`, ou le champ seul s'il sert à plusieurs ; un fragment suffit (`pairings` rend la section entière). Avant de lire une section, `gloss <outil>.<section>` rend ses gloses, `gloss <outil>` tout l'outil, champs partagés compris ; plusieurs par virgules, chaque glose une fois.
-
-## Options :
-
-### Partagées :
-
-- `--sapient`, `--beasts` : sous `world … lineages`, `pairings` et `roster`
-- `--since C<n>` : ce qui a bougé depuis, sous `actor` (`gloss:actor.since`, `gloss:to.then`), `city … buildings`, `geography` en soldes (`gloss:geography.since`), `history log` et `world … roster`
-- `-i <id>` : une terre, ou `islets` et `water` là où on les compte (`geography`, `world … roster`) ; sous `tiles`, `gloss:to_island`
-- `-w <eau>` : `lake<id>`, `river<id>` ou `sea<id>` ; sous `geography … waters`, une famille (`lake`…) ; sous `tiles`, `gloss:to_body`
-
-### `actor` :
-
-- `--statuses` : ses statuts, par chapitre (`gloss:actor.statuses`)
-- `--to <p<id> | x,y | b<id> | c<id> | cities | i<terre> | lands | "<lieu>" | lake4 | burning | type>` : une cité par son centre, les 5 cités, les 5 terres les plus proches, un nom de `places.json` (`gloss:to.place`), le feu le plus proche, ou le plus proche de chaque type, famille, ressource, sol, gel (`frozen`) ou eau (`lake`, `water`…), `g:<sol>` un sol, même au nom d'un type, par virgules pour ceux-là seuls ; répété, chacun à part. `gloss:actor.to`.
-
-### `geography` :
-
-- `-t <type>` : sous `positions`, types, familles (`trees`…, `homes` les toits), noms (`windmill`) et ressources, par virgules, hors corps ; sous `biomes`, un biome ou un sol (`gloss:biomes`)
-
-### `history` :
-
-- `entity <type> <id>` : les années d'une entité
-- `founded` : ce que le journal tait (`gloss:history.founded`)
-- `log` : `--actor <id>` celles d'un corps, `-t <event>` un type
-- `world` : `gloss:history.world`
-
-### `kingdom` :
-
-- sans id : tous, par score (`gloss:kingdom.list`)
-- `relations --kingdom <id>[,<id>]` : envers ceux-là seuls
-
-### `tiles` :
-
-- `-g <sol>` : `gloss:to_ground`
-- `--to <x,y>` : cap et mesures, sous `to` si une section la rejoint ; à chaque bout, `--to` seul, un bâtiment `b<id>` (au plus proche), une cité `c<id>` (son centre), un corps `p<id>`, une eau `lake<id>` ou un `"<lieu>"` (`gloss:to.from`)
-
-### `world` :
-
-- `laws` : leur libellé du jeu (`wiki:World_Laws`)
-- `lineages`, `pairings` : `-t` une espèce (`gloss:lineages`, `gloss:pairings`)
-- `roster` : chaque vivant ; `-t` type ou famille, `--trait`, `--has`/`--lacks <compte>`, `--rank <mesure> [n]`, `--nearest <x,y | p<id>>`, `--with <champs>`, `--status`/`--task <id>`, `--stage <palier>`, `--born <yN[ mM]>`, `--bred` nés d'un parent, `--settle` (`settle` vrai ou `child`), `--barred` l'inverse, `--patch <x,y>` sa parcelle, `--<entité> <id>` (`--city`, `--language`…) ses membres, `--job <métier>` (`king`…). `gloss:roster`.
-
----
-
-## Carte :
-
-`tools/map/show.py <x,y> [C<n>]` — cerne la tuile sur la carte du chapitre, rend le chemin de l'image. `--zoom <n>` : les n tuiles autour — **à lire toi-même** pour la forme d'une côte —, leurs parts en dessous, chaque sol nommé comme dans `biomes`, puis les tuiles en feu, la neige d'une roche, la glace et le gel.
+`python tools/gloss/info.py <clé>` glose un champ ou une option en une ligne ; une balise **`gloss:<clé>`** y renvoie, comme `wiki:` au wiki. La clé suit la sortie, `<outil>.<section>.<champ>`, une option `<outil>.--<option>` (`world.--rank`), ou le champ seul, l'option seule, s'ils servent à plusieurs (`--since`) ; un fragment suffit (`pairings` rend la section entière). Avant de lire une section, `gloss <outil>.<section>` rend ses gloses, `gloss <outil>` tout l'outil, options et champs partagés compris ; plusieurs par virgules, chaque glose une fois.

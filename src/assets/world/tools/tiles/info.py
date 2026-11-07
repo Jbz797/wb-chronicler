@@ -75,6 +75,7 @@ _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can l
 _BARE = {"actors": "no body", "ground": "nothing built or grown", "owner": "no town"}  # what a tile lacks, said when these are all the call asked
 _BRUTE_PAIRS = 20_000  # tile pairs two grounds are weighed by one by one: a building and a body, never a land and a lake
 _BURNING = "burning"  # what `-g` takes for the fires, no ground: `geography … burning` names them so
+_END = "x,y|b<id>|c<id>|p<id>|lake<id>|<place>"  # what either end of a reading takes, the tile and a lone `--to` alike: as `--help` shows it
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
 _FROZEN = "frozen"  # what `-g` takes for every frost, no ground: snow, ice, permafrost and the passing frost, as `geography … frozen` counts them
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
@@ -574,23 +575,13 @@ def _water_named(x: int, y: int, ctx: dict) -> str:
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
-    parser = arg_parser(prog="tiles/info.py", description="Inspect a tile at (x, y), or both ends of a `--to`. Output is keyed by `'x,y'`.")
-    parser.add_argument(
-        "xy",
-        type=_end_arg,
-        metavar="x,y|b<id>|c<id>|p<id>|lake<id>|<place>",
-        help="Tile coords (WB UI, y grows north), e.g. `415,117` — a place or body by a lone `--to`.",
-    )
-    parser.add_argument("sections", nargs="?", help=f"Comma-separated sections or `full` (default) — a lone `--to` answers alone. Valid: {', '.join(_ALL_SECTIONS)}")
-    parser.add_argument("--ground", "-g", metavar="ground", help="A ground as `biomes` names it, `burning` or `frozen`: its nearest tile, in `distances`.")
-    parser.add_argument("--island", "-i", type=int, metavar="id", help="A land by id, measured in `distances` as `to_islands` is — one past the nearest five.")
-    parser.add_argument(
-        "--to",
-        type=_end_arg,
-        metavar="x,y|b<id>|c<id>|p<id>|lake<id>|<place>",
-        help="A second end and a `to` key, the walk from the first to it — the tiles too once sections are named.",
-    )
-    parser.add_argument("--water", "-w", type=water_arg, metavar="lake<id>|river<id>|sea<id>", help="One water by its id, its shore measured in `distances`.")
+    parser = arg_parser(prog="tiles/info.py", taken="[C<n>]")
+    parser.add_argument("xy", type=_end_arg, metavar=_END)
+    parser.add_argument("sections", nargs="?")
+    parser.add_argument("--ground", "-g", metavar="ground")
+    parser.add_argument("--island", "-i", type=int, metavar="id")
+    parser.add_argument("--to", type=_end_arg, metavar=_END)
+    parser.add_argument("--water", "-w", type=water_arg, metavar="lake<id>|river<id>|sea<id>")
     args = parser.parse_args(argv)
 
     try:

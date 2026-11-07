@@ -23,6 +23,7 @@ from shared import (
     entity_age,
     entity_born,
     entity_ref,
+    hand_usage,
     index_by_id,
     light,
     load_data,
@@ -135,9 +136,8 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
 
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
-    if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
-        return 2
+    if not argv or argv[0] in ("-h", "--help"):
+        return hand_usage("usage: language/info.py <id> [sections] [C<n>]", argv)
     try:
         language_id = int(argv[0])
     except ValueError:

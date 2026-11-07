@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-# Glosses a field of the tools' outputs from `fields.json` beside it, one sentence of at most 165 characters each. User-facing docs: `docs/tools.md`.
-# A key reads `<tool>.<section>.<field>`, or bare when several tools share the field; any run of its segments finds it: `pairings` hands back the whole section.
+# Glosses a field or an option of the tools from `fields.json` beside it, one sentence of at most 165 characters each. User-facing docs: `docs/tools.md`.
+# A key reads `<tool>.<section>.<field>` or `<tool>.--<option>`, bare when several tools share it; any run of its segments finds it: `pairings` the whole section.
 
 import difflib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -21,14 +22,17 @@ _TOOLS = frozenset(path.parent.name for path in Path(__file__).parents[1].glob("
 # One key's glosses, or its refusal told: the fields it names, a tool's whole with the shared ones, or the neighbour whose gloss tells it.
 def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]) -> dict[str, str]:
     asked = wanted.split(".")
+    option = asked[-1].startswith("-")
     found = {key: glosses[key] for key, segments in segmented.items() if _within(segments, asked)}
-    # A field with no key is told in a gloss of its section (`their_opinion` in `opinion`'s): searched wider, any gloss citing it would answer.
-    if not found and (found := {key: gloss for key, gloss in glosses.items() if f"`{asked[-1]}`" in gloss and _within(segmented[key], asked[:-1])}):
+    # A field with no key is told in a gloss of its section (`their_opinion` in `opinion`'s), an option by its alias (`-i`) or by the field it fills: searched wider.
+    cited = re.compile(rf"`{re.escape(asked[-1])}{'[` ]' if option else '`'}")
+    if not found and (found := {key: gloss for key, gloss in glosses.items() if cited.search(gloss) and _within(segmented[key], asked[:-1])}):
         print(f"· no key for `{asked[-1]}` — told within {', '.join(found)}", file=sys.stderr)
     if not found:
         words = sorted({segment for segments in segmented.values() for segment in segments})
         near = difflib.get_close_matches(asked[-1], words, n=_NEAR) or difflib.get_close_matches(wanted, sorted(glosses), n=_NEAR)
-        print(f"✗ no gloss for `{wanted}`" + (f" — near it: {', '.join(near)}" if near else " — the field says what it is"), file=sys.stderr)
+        unglossed = " — `<tool> --help` lists its options" if option else " — the field says what it is"
+        print(f"✗ no gloss for `{wanted}`" + (f" — near it: {', '.join(near)}" if near else unglossed), file=sys.stderr)
     return found
 
 
@@ -51,9 +55,9 @@ def _within(key: list[str], asked: list[str]) -> bool:
 
 
 def main(argv: list[str]) -> int:
-    parser = arg_parser(prog="gloss/info.py", description="Gloss a field of the tools' outputs.")
-    parser.add_argument("field", help="a field, `section.field` or `tool.section.field`, as `gloss:<key>` names it — several by commas")
-    args = parser.parse_args(argv)
+    parser = arg_parser(prog="gloss/info.py")
+    parser.add_argument("field", metavar="key,…")
+    args = parser.parse_args(argv if argv[:1] in (["-h"], ["--help"]) else ["--", *argv])  # `gloss --since`: an option asked, not one given
     glosses: dict[str, str] = json.loads(_FIELDS.read_text(encoding="utf-8"))
     for key, gloss in glosses.items():  # checked at every run: a gloss past the cap is a doc to cut, and only a run sees it
         if len(gloss) > _CAP:

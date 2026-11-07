@@ -94,9 +94,9 @@ def _zoomed(image: Image.Image, px: int, py: int, span: int) -> Image.Image:
 
 def main(argv: list[str]) -> int:
     save_path, argv, label = take_chapter(argv)
-    parser = arg_parser(prog="map/show.py", description="Ring a tile on a chapter's map (`C<n>`, the latest by default) and hand back the path.")
-    parser.add_argument("position", help="`x,y` in save coordinates — an actor's, a building's, anything `tiles/info.py` reads")
-    parser.add_argument("--zoom", type=int, metavar="n", help=f"only the {_ZOOM_MIN}..{_ZOOM_MAX} tiles each way around it, blown up to read a shore by")
+    parser = arg_parser(prog="map/show.py", taken="[C<n>]")
+    parser.add_argument("position", metavar="x,y")
+    parser.add_argument("--zoom", type=int, metavar="n")
     args = parser.parse_args(argv)
     if args.zoom is not None and not _ZOOM_MIN <= args.zoom <= _ZOOM_MAX:  # refused before the map is opened
         print(f"✗ `--zoom` reads {_ZOOM_MIN} to {_ZOOM_MAX} tiles each way, not {args.zoom}", file=sys.stderr)

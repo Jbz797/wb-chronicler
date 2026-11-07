@@ -164,9 +164,10 @@ _CUMULATIVE_COUNTERS = {
     "wars_started": "warsStarted",
 }
 
+_DEATH_CAUSES = tuple(sorted(set(load_data("attack-types.json").values())))  # what `--died-of` takes: each cause as the register files it
 _FEATS = ("kills", "level", "money", "renown")  # what a life adds up, kept on the body itself — weighed among thinking souls as the skills are
 _FIELD_FLOORS = {"births": 0, "equipment_power": 0, "level": 1, "loot": 0, "money": 0, "renown": 0}  # a tally `actor … stats` tells silent at its floor
-_GONE_FIELDS = ("born", "parents")  # what `--with` asks of the dead, the death register keeping it: anything else would be a stale save's
+_GONE_FIELDS = ("at", "born", "parents")  # what `--with` asks of the dead, the death register keeping it: anything else would be a stale save's
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
 
 # Actor field => the save collection it points into, feeding its `pop` record — every actor counted, wildlife included, as each tier's medal counts its own.
@@ -608,6 +609,7 @@ def _build_roster(
     stage: str | None,
     born: tuple[str, float, float] | None,
     told_parts: frozenset[str],
+    cause: str | None,
 ) -> list[dict] | dict:
     earlier, was = _then(since) if since else (None, None)
     # Each body's stage then, under `--since`: one that grew from a child to a teen changed as one that changed land did
@@ -731,6 +733,8 @@ def _build_roster(
     if earlier is not None and was is not None and not (settle or barred) and "gone" in told_parts:  # the dead found nothing
         standing = partial(_standing, island_of=island_of, grid=grid, names=save["tileMap"])  # where each died, on today's map
         gone = _gone_since(save, earlier, later, kinds, trait, asked, sapient, bred, belonged, stage, standing, fields, born)
+        if cause:  # `--died-of`: the dead of one cause, as the register files it — said once by the filter, never on each line
+            gone = [{**row, "died_of": None} for row in gone if row["died_of"] == cause]
         if gone and entity and entity[0] == "job":  # as a living holder's line: a king's realm, the log's or the earlier save's, anyone else's town
             before = {a["id"]: a for reading in (earlier, *later[:-1]) for a in reading.get("actors_data") or []}
             if entity[1] == "king":
@@ -999,8 +1003,8 @@ def _gone_since(
         row = {"asset_id": dead["asset_id"], "blow": dead["blow"], "died": world_date(dead["died"]), "died_of": dead["cause"], "gone": True, "id": dead["id"]}
         killer = alive_or_dead_ref(dead["killer"], alive, deaths)
         # Its name at death, the register's, before what the save last knew; `was_on` silent under `-i`
-        if fields:  # what `--with` asks that the register keeps: born, and parents with WB's -1 already dropped
-            kept = {"born": world_date(dead["born"]), "parents": sorted(dead["parents"]) or None}
+        if fields:  # what `--with` asks that the register keeps: the tile it fell on, born, and parents with WB's -1 already dropped
+            kept = {"at": tile_text(dead["x"], dead["y"]), "born": world_date(dead["born"]), "parents": sorted(dead["parents"]) or None}
             row |= {field: kept[field] for field in fields if field in _GONE_FIELDS}
         rows.append({**row, "killed_by": killer, "name": dead["name"] or body.get("name"), "was_on": None if asked else standing(dead)})
     return sorted(rows, key=lambda row: row["id"])
@@ -1127,7 +1131,8 @@ def _nearest_parts(parts: dict[str, list[dict]], far: dict[int, float]) -> dict:
 
 # Why `roster` came back empty, told by the filters given — so an empty land never reads as a mistyped kind, and the buildings hint only where no body is that kind.
 def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since: str | None, told_parts: frozenset[str]) -> str:
-    words = [word for part, word in _SINCE_PARTS.items() if part in told_parts]  # the parts asked alone: `--since C15 moved` sought no arrival
+    # The parts asked alone: `--since C15 moved` sought no arrival, `--died-of` the dead of one cause
+    words = [f"died of {args.died_of}"] if args.died_of else [word for part, word in _SINCE_PARTS.items() if part in told_parts]
     changed = ", ".join(words[:-1]) + f" or {words[-1]}" if len(words) > 1 else "".join(words)
     said = [
         f"bearing {args.trait}" if args.trait else None,
@@ -1261,43 +1266,44 @@ def main(argv: list[str]) -> int:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     save_path, argv, chapter = take_chapter(argv)
-    parser = arg_parser(prog="world/info.py", description="World-wide sections, from the save alone.")
-    parser.add_argument("sections", nargs="?", help=f"Comma-separated sections, `full` by default. Valid: {', '.join((*_ALL_SECTIONS, *_ON_REQUEST))}")
+    parser = arg_parser(prog="world/info.py", taken="[--since C<n>] [C<n>]")
+    parser.add_argument("sections", nargs="?")
     for kind in _MEMBERSHIPS:
-        parser.add_argument(f"--{kind}", type=int, metavar="id", help=f"`roster`: the members of one {kind}, in the line its own list kept")
-    parser.add_argument("--barred", action="store_true", help="`roster`: the thinkers something besides their age keeps from founding, and what")
-    parser.add_argument("--beasts", action="store_true", help="`roster`: the bodies of no thinking lineage alone, `--sapient`'s other half")
-    parser.add_argument("--born", type=_born_arg, metavar="yN[ mM]", help="`roster`: the bodies born here that year or month — never a migrant, undated")
-    parser.add_argument("--bred", action="store_true", help="`roster`: the bodies born of another — under `--since`, the births since, the dead among them")
-    parser.add_argument("--has", choices=_TALLIES, help="`roster`: the bodies with one tally above nought — `level` past 1 — and its figure, highest first")
-    parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="`roster`: the bodies standing on one land, or on the `islets` or the `water`")
-    parser.add_argument("--job", choices=JOBS, help="`roster`: the bodies at one job, `king` with its realm — under `--since`, who took it, left it, died at it")
-    parser.add_argument("--lacks", choices=_TALLIES, help="`roster`: the bodies with none of one tally — `level` at 1 —, `--has`'s other half")
-    parser.add_argument("--nearest", type=_near_arg, metavar="x,y|p<id>", help=f"`roster`: its {_TOP_ROWS} nearest to a tile or a body, as the crow flies")
-    parser.add_argument("--patch", type=xy_arg, metavar="x,y", help="`roster`: the bodies standing on that tile's patch, one ground of one land")
-    parser.add_argument("--sapient", action="store_true", help="`roster`: the thinking bodies alone")
-    parser.add_argument("--settle", action="store_true", help="`roster`: the bodies that could found a town where they stand, once grown")
-    parser.add_argument("--stage", choices=_LIFE_STAGES, help="`roster`: the bodies at one life stage — under `--since`, at it now, a dead one at its last")
-    parser.add_argument("--status", help="`roster`: the bodies wearing one status, by its id — what a body wears now, where a trait is what it is")
-    parser.add_argument("--task", help="`roster`: the bodies at one task the instant of the save, by its id — what a body does, where a status is what it wears")
-    parser.add_argument(
-        "--rank",
-        nargs="+",
-        dest="top",
-        metavar="measure [n]",
-        help=f"`roster`: its highest by one measure, a tally, a skill or the age, each with its figure — {_TOP_ROWS} unless `n` says, up to {MAX_LISTED}",
-    )
-    parser.add_argument("--trait", help="`roster`: the bodies bearing one trait, their own or their lineage's, by its id")
-    parser.add_argument("--type", "-t", help="`roster` and `lineages`: one kind, a family (`actors`) or a comma list")
+        parser.add_argument(f"--{kind}", type=int, metavar="id")
+    parser.add_argument("--barred", action="store_true")
+    parser.add_argument("--beasts", action="store_true")
+    parser.add_argument("--born", type=_born_arg, metavar="yN[ mM]")
+    parser.add_argument("--bred", action="store_true")
+    parser.add_argument("--died-of", choices=_DEATH_CAUSES)
+    parser.add_argument("--has", choices=_TALLIES)
+    parser.add_argument("--island", "-i", type=land_arg, metavar="id")
+    parser.add_argument("--job", choices=JOBS)
+    parser.add_argument("--lacks", choices=_TALLIES)
+    parser.add_argument("--nearest", type=_near_arg, metavar="x,y|p<id>")
+    parser.add_argument("--patch", type=xy_arg, metavar="x,y")
+    parser.add_argument("--rank", nargs="+", dest="top", metavar="measure [n]")
+    parser.add_argument("--sapient", action="store_true")
+    parser.add_argument("--settle", action="store_true")
+    parser.add_argument("--stage", choices=_LIFE_STAGES)
+    parser.add_argument("--status", metavar="id")
+    parser.add_argument("--task", metavar="id")
+    parser.add_argument("--trait", metavar="id")
+    parser.add_argument("--type", "-t", metavar="kind")
     parser.add_argument(
         "--with",
         action="append",  # repeated, each adds its fields: a second never drops the first unheard
         dest="fields",
         metavar="field,…",
-        help=f"`roster`: up to {_MAX_FIELDS} of `actor … stats`, `task`, `subspecies` or a line's own field on each line",
     )
     args = parser.parse_args(argv)
-    told_parts = asked_parts or frozenset({"arrived", "gone", "moved", *(["grew"] if args.stage else [])})  # `grew` untold unless named, or a stage sought
+    if args.died_of and not since:  # a cause is a dead body's, and the register files the dead of a span
+        print("✗ `--died-of` sorts the dead of `--since`: name a chapter", file=sys.stderr)
+        return 2
+    if args.died_of and (living := sorted((asked_parts or set()) - {"gone"})):  # a cause is no arrival's nor mover's
+        print(f"✗ `--died-of` sorts the dead: {', '.join(living)} holds none — ask `gone` alone", file=sys.stderr)
+        return 2
+    # `grew` untold unless named, or a stage sought; the dead alone under `--died-of`
+    told_parts = frozenset({"gone"}) if args.died_of else asked_parts or frozenset({"arrived", "gone", "moved", *(["grew"] if args.stage else [])})
     count = _TOP_ROWS
     if args.top:  # `--rank age 20`: a measure, then how many rows of it
         measure, *more = args.top
@@ -1315,6 +1321,7 @@ def main(argv: list[str]) -> int:
     # What keeps only some bodies of the roll: `-t` among them, though it narrows `lineages` too, and `--with` none — it adds fields to every line
     sifted = (
         any((args.barred, args.born, args.bred, args.has, args.lacks, args.patch, args.settle, args.stage, args.status, args.task, args.top, args.trait))
+        or args.died_of is not None
         or bool(entities)
         or args.island is not None
         or args.nearest is not None
@@ -1331,7 +1338,10 @@ def main(argv: list[str]) -> int:
         print("✗ --settle and --barred split the thinkers in two: name one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        flags = "-t, --trait, --has, --lacks, --rank, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --bred, --settle, --barred, -i, an entity"
+        flags = (
+            "-t, --trait, --has, --lacks, --rank, --nearest, --with, --status, --task, --patch, --sapient, --beasts, --bred, --died-of, --settle, --barred, -i,"
+            " an entity"
+        )
         print(f"✗ {flags} narrow `roster`, `-t`, `--sapient` and `--beasts` `lineages` and `pairings` too: name it", file=sys.stderr)
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
@@ -1470,6 +1480,7 @@ def main(argv: list[str]) -> int:
                 args.stage,
                 args.born,
                 told_parts,
+                args.died_of,
             )
         except ValueError as e:  # a field `--with` asks that no body of the roll carries
             print(e, file=sys.stderr)

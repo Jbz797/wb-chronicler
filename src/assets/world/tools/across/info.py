@@ -12,11 +12,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import SAVES_DIR, render
+from shared import SAVES_DIR, hand_usage, render
 
 _SPAN = re.compile(r"C(\d+)(?:-C?(\d+))?")  # `C1-C5`, or `C1-5` — a lone `C5` read too, to be refused with the call it stands for
 _TOOLS = Path(__file__).parents[1]
-_USAGE = "✗ usage: across/info.py C<a>-C<b> <tool> [args…] [--keep a,b.c] — `across C1-C5 geography burning -i 1`, each chapter's suffix the span's"
+_USAGE = "usage: across/info.py C<a>-C<b> <tool> [args…] [--keep a,b.c]\neach option: `gloss across`"
 
 
 # One chapter's answer: the tool's JSON, else the line its refusal says why in — a traceback's last, where it fell over.
@@ -44,8 +44,7 @@ def _kept(answer: object, paths: list[str]) -> object:
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2 or not (span := _SPAN.fullmatch(argv[0])):
-        print(_USAGE, file=sys.stderr)
-        return 2
+        return hand_usage(_USAGE, argv)
     tool, args = argv[1], argv[2:]
     keep = None
     if "--keep" in args:  # `across`'s own, never the tool's: a few fields followed over the span, the rest of each answer left out
@@ -58,7 +57,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ no tool {tool} — `docs/tools.md` lists them", file=sys.stderr)
         return 2
     if chapters := [arg for arg in args if re.fullmatch(r"C\d+", arg)]:
-        print(f"✗ {', '.join(chapters)}: the span names the chapters — {_USAGE.removeprefix('✗ ')}", file=sys.stderr)
+        print(f"✗ {', '.join(chapters)}: the span names the chapters — {_USAGE.splitlines()[0]}", file=sys.stderr)
         return 2
     first, last = sorted((int(span[1]), int(span[2] or span[1])))
     if first == last:  # one chapter is the tool's own suffix, its answer bare

@@ -67,7 +67,7 @@ export const SPECIES_COLORS: Readonly<Record<string, string>> = {
   ghost: '#a4a799',
   human: '#00675C', // preferred blue/navy/teal/cyan
   necromancer: '#822186',
-  orc: '#C51540', // preferred red/orange/brown/maroon/black — WB's red (`colors.json` 0), its black #262626 reading as the prose's own ink
+  orc: '#C51540', // preferred red/orange/brown/maroon/black — WB's red (`heraldry.json` palette 0), its black #262626 reading as the prose's own ink
   plague_doctor: '#d19c00',
   snowman: '#60a4d1',
   white_mage: '#6babaa',

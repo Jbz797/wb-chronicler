@@ -15,6 +15,7 @@ from shared import (
     absent_entity,
     emit,
     entity_age,
+    hand_usage,
     index_by_id,
     is_boat,
     load_save,
@@ -67,9 +68,8 @@ def _build_side(kingdoms: set[int], deaths: int, alliances: list[dict], ctx: dic
 
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
-    if not argv:
-        print("✗ usage: info.py <id> [sections] [C<n>] — see docs/tools.md", file=sys.stderr)
-        return 2
+    if not argv or argv[0] in ("-h", "--help"):
+        return hand_usage("usage: war/info.py <id> [sections] [C<n>]", argv)
     try:
         war_id = int(argv[0])
     except ValueError:

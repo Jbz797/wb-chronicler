@@ -743,18 +743,11 @@ def main(argv: list[str]) -> int:
         return 2
     save_path, argv, _ = take_chapter(argv)  # pop the `C<n>` token first — argparse has no such positional and would abort on it
 
-    parser = arg_parser(prog="geography/info.py", description="Geographic stats reserved for the chronicler.")
-    parser.add_argument("sections", nargs="?", help=f"Comma-separated sections. Valid: {', '.join(_ALL_SECTIONS)}")
-    parser.add_argument(
-        "--type",
-        "-t",
-        help=f"What `positions` sites, bodies aside: an asset id, a family (`trees`), a resource (`wood`) or a comma list; past {MAX_LISTED}, a count by land. "
-        f"Under `biomes`, one biome or ground: the lands it lies on, or with `-i <land>` its {_TOP_PATCHES} largest patches.",
-    )
-    parser.add_argument("--island", "-i", type=land_arg, metavar="id", help="One land alone in the sections that go land by land, or `islets` or `water`.")
-    parser.add_argument(
-        "--water", "-w", type=water_arg, metavar="lake<id>|lake|…", help="`waters` cut to one water by its id, or to one family: `lake`, `river`, `sea`."
-    )
+    parser = arg_parser(prog="geography/info.py", taken="[--since C<n>] [C<n>]")
+    parser.add_argument("sections", nargs="?")
+    parser.add_argument("--island", "-i", type=land_arg, metavar="id")
+    parser.add_argument("--type", "-t", metavar="kind")
+    parser.add_argument("--water", "-w", type=water_arg, metavar="lake<id>|lake|…")
     args = parser.parse_args(argv)
 
     if args.sections in (None, "full"):  # No `full` here, nor its silent default: these sections answer unrelated questions, and no reading wants them all.

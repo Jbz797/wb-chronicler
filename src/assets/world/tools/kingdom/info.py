@@ -33,6 +33,7 @@ from shared import (
     entity_age,
     entity_born,
     entity_ref,
+    hand_usage,
     house_building_ids,
     index_by_id,
     is_transport,
@@ -698,9 +699,8 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    if not argv and rivals:
-        print("✗ usage: info.py [<id> [sections] [--kingdom <id>[,<id>]]] [C<n>] — see docs/tools.md", file=sys.stderr)
-        return 2
+    if (not argv and rivals) or argv[:1] in (["-h"], ["--help"]):
+        return hand_usage("usage: kingdom/info.py [<id> [sections] [--kingdom <id>[,<id>]]] [C<n>]\neach option: `gloss kingdom`", argv)
     if not argv:  # no id: the list of every crown
         save = load_save(save_path)
         if not save.get("kingdoms"):

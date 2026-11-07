@@ -22,6 +22,7 @@ from shared import (
     chapter_length,
     chronicle_git,
     emit,
+    hand_usage,
     i18n,
     latest_chapter,
     short_dialogues,
@@ -63,15 +64,6 @@ _SCARCE = 8  # uses across the whole chronicle under which a word can carry a ch
 _SECTION = re.compile(r"^(##\s|---\s*$)")  # a heading or a separator: where a section, and so its chute, ends
 _SENTENCE = re.compile(r"(?<=[.!?…])\s+")  # where a sentence ends inside a line
 _TERM = 3  # lines of one chapter a turn must be said on to be a term it coined — `le bras du couchant`, a place with no name —, told apart as a refrain is
-
-_USAGE = (
-    "usage: chapter/echo.py [C<n>] [--whole] [--names] — what the chapter says again, each row by its `line`: `passages` taken back from the 2 chapters before "
-    "(`from` their line, `by` its sign), `internal` runs it says twice, `terms` it coins, `formulas` figured turns it keeps coming back to, "
-    "`overused` families, `near` one said thrice in two paragraphs, `shape` its cast poured again, "
-    "`names` each one it tags beside the lines that did in the 2 chapters before (counted, listed on `--names`), `bare` one it tags elsewhere written bare; "
-    "`clear` the checks that found nothing, `length` and `dialogue` among them; a delivered chapter by its changed lines, `--whole` all — "
-    "out of its bounds or under its floor, a ✗ says so; every field glossed by `gloss/info.py echo`"
-)
 
 _WORD = re.compile(r"\b[^\W\d_]{1,2}['’]|\w[\w-]*(?:['’]\w[\w-]*)*")  # an elision splits, `qu'il` as `qu'` and `il`; `aujourd'hui` holds, `---` is none
 
@@ -678,9 +670,7 @@ def faults(n: int) -> dict[str, list[str]]:
 def main(argv: list[str]) -> int:
     chapter, whole, listed = next((arg for arg in argv if arg[:1] == "C" and arg[1:].isdigit()), None), "--whole" in argv, "--names" in argv
     if stray := [arg for arg in argv if arg not in (chapter, "--whole", "--names")]:  # `--help` among them: a word unheard would else run the latest chapter
-        asked = stray[0] in ("-h", "--help")
-        print(_USAGE, file=sys.stdout if asked else sys.stderr)
-        return 0 if asked else 2
+        return hand_usage("usage: chapter/echo.py [C<n>] [--whole] [--names]\neach field and option: `gloss chapter.echo`", stray)
     n = int(chapter[1:]) if chapter else latest_chapter()
     if (found := echoes(n, whole)) is None:
         print(f"✗ no chapter.md for C{n}", file=sys.stderr)

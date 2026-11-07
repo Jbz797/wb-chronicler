@@ -1,0 +1,22 @@
+{
+  "Acid": "acid",
+  "Age": "old_age",
+  "AshFever": "ash_fever",
+  "Divine": "divine",
+  "Drowning": "drowning",
+  "Eaten": "eaten",
+  "Explosion": "explosion",
+  "Fire": "fire",
+  "Gravity": "gravity",
+  "Infection": "infection",
+  "Metamorphosis": "metamorphosis",
+  "None": "none",
+  "Other": "other",
+  "Plague": "plague",
+  "Poison": "poison",
+  "Smile": "grin_reaper",
+  "Starvation": "hunger",
+  "Tumor": "tumor",
+  "Water": "water",
+  "Weapon": "weapon"
+}
