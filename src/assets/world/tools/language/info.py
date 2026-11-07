@@ -89,7 +89,7 @@ def _build_metadata(language: dict, members: list[dict], ctx: dict, tallies: dic
         **({"kills": kills} if (kills := int(language.get("total_kills") or 0)) else {}),
         **({"kingdoms": kingdoms} if (kingdoms := tallies["kingdoms"][language_id]) else {}),  # crowns that made it their own, the widest reach WB grants a tongue
         **({"lost": lost} if (lost := int(language.get("speakers_lost") or 0)) else {}),  # gone over to another tongue, the mirror of `converted`
-        "members": len(members),  # its living, each named by `world … roster --language <id>`
+        "members": len(members),  # its living, each named by `world … roster --filter language:<id>`
         "name": language.get("name"),
         **({"native": native} if (native := int(language.get("speakers_new") or 0)) else {}),  # born to it, WB `speakers_new` — never converts
         **({"renown": renown} if (renown := int(language.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `pop`

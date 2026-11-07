@@ -68,7 +68,7 @@ def _build_metadata(family: dict, members: list[dict], ctx: dict) -> dict:
         "id": family["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         **({"kills": kills} if (kills := int(family.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if (kingdoms := {kid for a in members if (kid := a.get("civ_kingdom_id"))}) else {}),
-        "members": len(members),  # its living, each named by `world … roster --family <id>`
+        "members": len(members),  # its living, each named by `world … roster --filter family:<id>`
         "name": family.get("name"),
         # A family is born of a couple, so WB writes up to two parent lines — but a ref drops when that line has since died out and been purged from the save.
         **({"parents": parents} if (parents := [ref for n in (1, 2) if (ref := entity_ref(family.get(f"original_family_{n}"), ctx["families_by_id"]))]) else {}),

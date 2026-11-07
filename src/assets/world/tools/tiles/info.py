@@ -264,7 +264,7 @@ def _ground(end: str, save: dict, save_path: Path, chapter: str | None) -> tuple
     if (ground := end.removeprefix(_GROUND_PREFIX)) != end:  # the rock at a range's foot, a biome's edge
         names = [(tile_ground(name) or "").removeprefix(BARE) for name in save["tileMap"]]
         if ground not in names:
-            return f"✗ no {ground} in this world — `geography … biomes -i <land>` lists a land's grounds"
+            return f"✗ no {ground} in this world — `geography … biomes --filter i<land>` lists a land's grounds"
         return [(x, y) for y, row in enumerate(tile_mask(save, [own == ground for own in names])) for x, held in enumerate(row) if held], end
     if _LAND.fullmatch(end):  # a land by its id, held by its rim as one `places.json` names
         tiles = [(x, y) for x, y, owner in compute_islands_cached(save, save_path)[1].edges() if owner == int(end[1:])]
@@ -633,7 +633,7 @@ def main(argv: list[str]) -> int:
     ctx = _build_context(save, save_path, sections, coords, "distances" in sections or args.to is not None)
     if sections == {"islet"} and not ctx["tile_to_island"].islet_size((cx, cy)):  # asked alone, an empty block would read as an islet with nothing on it
         land = ctx["tile_to_island"].get((cx, cy))
-        print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands -i {land}`' if land else 'water'}", file=sys.stderr)
+        print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands --filter i{land}`' if land else 'water'}", file=sys.stderr)
         return 2
     # Its town, what lives or stands there: asked with nothing else, a tile with none of them says so, an empty answer reading as a tool gone wrong.
     if sections and sections <= _BARE.keys() and not any(_holds(section, coords, ctx) for section in sections):

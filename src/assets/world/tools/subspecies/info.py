@@ -73,7 +73,7 @@ def _build_metadata(subspecies: dict, members: list[dict], ctx: dict) -> dict:
         "islands": sorted({iid for a in members if (iid := island_of.get(actor_xy(a))) is not None}),  # 1 = biggest — presence, not weight.
         **({"kills": kills} if (kills := int(subspecies.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its bearers answer to — biology owes nothing to borders, so it crosses them freely
-        "members": len(members),  # its living, each named by `world … roster --subspecies <id>`
+        "members": len(members),  # its living, each named by `world … roster --filter subspecies:<id>`
         "name": subspecies.get("name"),
         **({"report": report} if report else {}),
         "sapient": is_sapient(subspecies),  # the faculty that lets its bearers found cities — a beast's biology never carries it

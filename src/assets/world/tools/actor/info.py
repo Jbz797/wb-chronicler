@@ -474,9 +474,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "id": actor.get("id"),  # Actor id — lets the favourite's `<app-person-tag>` resolve its chip from the person registry like every other person ref.
         # Chronicler-only: enlistment is in the resident's own city army or nowhere, and never automatic — `false` marks a fighter left out.
         **({"in_army": bool(actor.get("army"))} if profession in ("army_captain", "warrior") or actor.get("army") else {}),
-        "island_id": land,  # Chronicler-only: its land (geography/info.py), else `water` or `islet`
-        # Chronicler-only: which islet, by its `heart` as `tiles … islet` gives it — the same from a chapter to the next while the rock holds its shape
-        **({"islet": tile_text(*at)} if land == "islet" and (at := islet_heart(ctx["island_lookup"]().islet_tiles(tile))) else {}),
+        # Chronicler-only: its land (geography/info.py), else `water` — on an islet, which one by its `heart` as `tiles … islet` gives it, as `roster` says it
+        **({"islet": tile_text(*at)} if land == "islet" and (at := islet_heart(ctx["island_lookup"]().islet_tiles(tile))) else {"island_id": land}),
         "job": profession,
         "kingdom": entity_ref(actor.get("civ_kingdom_id"), ctx["kingdoms_by_id"]),
         "language": entity_ref(actor.get("language"), ctx["languages_by_id"]),  # a ref, not a bare name: `language/info.py <id>` reads the tongue it answers in

@@ -131,7 +131,7 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
         "captain": entity_ref(army.get("id_captain"), ctx["actors_by_id"]),
         **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
         "deaths": deaths,
-        "id": army.get("id"),  # what `world … roster --army <id>` takes to list its members
+        "id": army.get("id"),  # what `world … roster --filter army:<id>` takes to list its members
         "kills": kills,
         "melee": ctx["melee_by_city"][cid],
         "money": ctx["troop_money_by_city"][cid],
@@ -802,10 +802,8 @@ def main(argv: list[str]) -> int:
 
     requested = sections_arg(argv)
     if since and requested != "buildings":  # the members and the figures have their own roads
-        print(
-            f"✗ `--since` weighs `buildings` — people: `world … roster --city {city_id} --since {since}`, figures: `across {since}-C<n> city {city_id} metadata`",
-            file=sys.stderr,
-        )
+        people, figures = f"`world … roster --filter city:{city_id} --since {since}`", f"`across {since}-C<n> city {city_id} metadata`"
+        print(f"✗ `--since` weighs `buildings` — people: {people}, figures: {figures}", file=sys.stderr)
         return 2
     try:
         sections = parse_sections(requested, _ALL_SECTIONS)

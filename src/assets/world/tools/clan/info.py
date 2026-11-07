@@ -77,7 +77,7 @@ def _build_metadata(clan: dict, members: list[dict], ctx: dict) -> dict:
         "id": clan["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         **({"kills": kills} if (kills := int(clan.get("total_kills") or 0)) else {}),
         **({"kingdoms": len(kingdoms)} if kingdoms else {}),  # crowns its members answer to — a clan is sworn, not granted, so it spans realms freely
-        "members": len(members),  # its living, each named by `world … roster --clan <id>`
+        "members": len(members),  # its living, each named by `world … roster --filter clan:<id>`
         "name": clan.get("name"),
         # The sitting chief included — WB appends him on accession, so 1 is the floor: said from the first succession on.
         **({"past_chiefs": chiefs} if (chiefs := len(clan.get("past_chiefs") or [])) > 1 else {}),

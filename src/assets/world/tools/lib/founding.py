@@ -1,6 +1,5 @@
-# Where a thinking soul could found a town, WB's `try_to_start_new_civilization` gate by gate — `actor … metadata`'s `settle`, `world … roster --settle`.
+# Where a thinking soul could found a town, WB's `try_to_start_new_civilization` gate by gate — `actor … metadata`'s `settle`, `world … roster --filter settle`.
 
-import re
 from collections import Counter
 
 from actor_stats import is_baby
@@ -31,9 +30,6 @@ _BUILD_FREE = (
 
 _BUILD_TAGS = {"corrupted": "corruption", "desert": "desert", "infernal": "infernal", "permafrost": "permafrost", "swamp": "swamp", "wasteland": "wasteland"}
 _CITY_WAVE = 3  # WB `CityPlaceFinder.startWave`: the zones a town keeps founders off, counted from its edge across its own land
-
-# A gate's first word, in the order `settle_gates` ranks them.
-_GATE_KINDS = ("world_law_kingdom_expansion", "king", "has_city", "trait", "biomes", "zone", "city", "ground", "child")
 
 # WB ground, all 64 of a zone's tiles for `canStartCityHere`: the hill left out, ground though it bars; a pit a dry hole (`liquid` 0) till the sea fills it.
 _GROUND_BASES = frozenset({"pit_close_ocean", "pit_deep_ocean", "pit_shallow_waters", "sand", "soil_high", "soil_low"})
@@ -118,12 +114,6 @@ def settle_gates(actor: dict, ctx: dict) -> bool | list[str] | None:
         # WB's first way is half the grown tiles fit: a share said floored, so 49.9 never reads as the 50 that would pass
         place.insert(0, f"biomes {fit * 100 // (fit + unfit)}% fit < 50{bare}" + (f", no {', '.join(cures)}" if cures else ""))
     return [*(gate for gate, holds in own if holds), *place, *(["child"] if is_baby(actor, ctx) else [])] or True
-
-
-# Where a told gate falls in a roll: its kind, the steadiest first, then how far short it leaves the body — points of fit, tiles of ground.
-def settle_rank(gate: str) -> tuple[int, int]:
-    figures = [int(n) for n in re.findall(r"\d+", gate)[:2]]
-    return _GATE_KINDS.index(gate.split(" ", 1)[0]), abs(figures[0] - figures[-1]) if figures else 0
 
 
 # One gate told, the steadiest, and the others it hides — counted on a roll's line, listed on a body's own sheet; youth never there, its own date tells it.

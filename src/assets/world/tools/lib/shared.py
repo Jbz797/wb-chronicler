@@ -167,7 +167,7 @@ _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower 
 _THOUGHTLESS_FLOOR = 3000  # a world with no thinking soul: beasts and ground alone, little to tell that would not be padding
 _UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
 _VALUE_ORDERED = frozenset({"across", "drivers", "inventory", "kills", "taxonomy", "to_islands"})  # in order: chapters in turn, stores heaviest, lands nearest first
-_WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # a water as `geography … waters` ids it, `lake4`, or its family, `lake`: for `-w` and any `--to` end alike
+_WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # a water as `geography … waters` ids it, `lake4`, or its family, `lake`: a `--filter` word, a `--to` end
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 _captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
@@ -506,7 +506,7 @@ def alive_or_dead_ref(body_id: int | None, by_id: dict, deaths: dict[int, dict])
     return None if body_id is None else entity_ref(body_id, by_id) or {"id": body_id, "name": (deaths.get(body_id) or {}).get("name")}
 
 
-# argparse's refusals, marked as every script's are (a bare `usage:`/`error:` reads unflagged), and no abbreviation: `--king` would run as `--kingdom`.
+# argparse's refusals, marked as every script's are (a bare `usage:`/`error:` reads unflagged), and no abbreviation: `--lim` would run as `--limit`.
 def arg_parser(prog: str, taken: str = "") -> argparse.ArgumentParser:
     # A width said: left to the terminal, argparse loads `shutil` and three compressors to measure it, at the first `add_argument` of every run.
     parser = argparse.ArgumentParser(prog=prog, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH), add_help=False, allow_abbrev=False)
@@ -834,6 +834,7 @@ def dormant(site: dict) -> bool | None:
 def emit(out: dict | list) -> None:
     asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}
     asked |= {"islets"} if "islet" in asked else set()  # `land_arg`'s singular names the block its plural keys
+    asked |= {token[1:] for token in asked if re.fullmatch(r"i\d+", token)}  # `--filter i23` names the land its block keys `23`
     raw, value = out, _tiled(_strip_none(out))
     if isinstance(value, dict):  # a shelf, a rack or a fleet counted at nought says nothing in a sheet: only the section asked by its name still answers 0
         value = {key: block for key, block in value.items() if block != {"total": 0} or key in asked}
@@ -1074,7 +1075,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     }
 
 
-# `-i` as a land's id, or `islets` or `water`: what lies off every counted land, which `geography` buckets and `roster` stands a body on.
+# A land's id as `--filter` takes it, or `islets` or `water`: what lies off every counted land, which `geography` buckets and `roster` stands a body on.
 def land_arg(value: str) -> int | str:
     if value == "islet":  # the singular, as outputs spell a body's footing, taken for the plural
         return "islets"
@@ -1668,7 +1669,7 @@ def wants_detail(requested: str | None, count: int) -> bool:
     return not _asks_full(requested) or count < _MIN_SUMMARY_ENTRIES
 
 
-# `-w` as a water's kind and id, `lake4` → `("lake", 4)`, or its family alone, `lake` → `("lake", None)`, for a tool that takes one.
+# A water word as its kind and id, `lake4` → `("lake", 4)`, or its family alone, `lake` → `("lake", None)`, for a tool that takes one.
 def water_arg(value: str) -> tuple[str, int | None]:
     if not (found := _WATER_ARG.fullmatch(value)):
         raise argparse.ArgumentTypeError(f"{value!r} is no water — `lake<id>`, `river<id>` or `sea<id>` as `geography … waters` lists them, or a family: `lake`")
