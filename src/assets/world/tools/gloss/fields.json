@@ -279,7 +279,7 @@
   "world.--barred": "`--barred` : les pensants qu'autre chose que leur âge empêche de fonder une cité là où ils sont, et quoi (`settle`) ; l'autre moitié de `--settle`.",
   "world.--born": "`--born y2`, `\"y2 m12\"` : les nés dans ce monde cette année ou ce mois ; jamais un migrant, dont aucune save ne date la naissance (son `born` est son arrivée).",
   "world.--bred": "`--bred` : les vivants nés d'un parent, même mort ; sous `--since`, les naissances, mortes dans `gone` ; portée : `--with parents,born` ; d'un corps : `actor … kin`.",
-  "world.--city": "`--city <id>` : ses membres ; de même `--alliance`, `--army`, `--clan`, `--culture`, `--family`, `--kingdom`, `--language`, `--religion`, `--subspecies`.",
+  "world.--city": "`--city` : ses membres, comme `--alliance`, `--army`, `--clan`, `--culture`, `--family`, `--kingdom`, `--language`, `--religion`, `--subspecies` ; ils se croisent.",
   "world.--died-of": "`--died-of <cause>` : sous `--since`, les seuls morts de cette cause (`died_of`), tue sur chaque ligne ; aucune autre partie que `gone`.",
   "world.--has": "`--has <compte>` : ceux qui en tiennent ; sous `--since`, ceux dont il a changé, et les morts avec ce qu'ils en emportaient ; `--lacks` : ceux qui n'en ont aucun.",
   "world.--island": "`--island`, `-i <id>` : les corps sur cette terre, ou `islets`, ou `water` ; sous `--since`, ceux qui en sont partis aussi (`was_on`).",

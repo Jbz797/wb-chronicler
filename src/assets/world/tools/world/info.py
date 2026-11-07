@@ -15,7 +15,7 @@ from operator import itemgetter
 from pathlib import Path
 from statistics import median
 lazy import argparse
-lazy from collections.abc import Callable, Collection, Mapping
+lazy from collections.abc import Callable, Mapping
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
@@ -313,18 +313,10 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
     return {field: kept[field]() if field in kept else stats.get(field, _FIELD_FLOORS.get(field)) for field in fields}
 
 
-# Whether a body belongs to the entity `roster` is narrowed to, read off the body itself: a pact through its crown, every other tie by its own field.
-def _belongs(save: dict, entity: tuple[str, int | str] | None) -> Callable[[dict], bool]:
-    if entity is None:
-        return lambda _actor: True
-    kind, entity_id = entity
-    if kind == "job":  # a trade, the crown and an army's lead among them
-        return lambda actor: resolve_profession(actor, save) == entity_id
-    if kind == "alliance":
-        crowns = {kid for pact in save.get("alliances") or [] if pact.get("id") == entity_id for kid in pact.get("kingdoms") or []}
-        return lambda actor: actor.get("civ_kingdom_id") in crowns
-    field = _MEMBERSHIPS[kind][1]
-    return lambda actor: actor.get(field) == entity_id
+# Whether a body belongs to every entity `roster` is narrowed to, read off the body itself — a king the log alone crowned and buried (`fallen`) of the realm he left.
+def _belongs(save: dict, entities: list[tuple[str, int | str]], fallen: dict[int, int] | None = None) -> Callable[[dict], bool]:
+    ties = [_tie(save, kind, entity_id, fallen or {}) for kind, entity_id in entities]
+    return ties[0] if len(ties) == 1 else lambda actor: all(tie(actor) for tie in ties)
 
 
 # `--born`'s span of world time, a year `y2` or a month `"y2 m12"` as every output dates one, with the words it was asked in.
@@ -603,7 +595,7 @@ def _build_roster(
     lacks: str | None,
     top: str | None,
     count: int,
-    entity: tuple[str, int] | None,
+    entities: list[tuple[str, int | str]],
     near: tuple[tuple[int, int], int | None] | None,
     fields: list[str],
     stage: str | None,
@@ -615,11 +607,12 @@ def _build_roster(
     # Each body's stage then, under `--since`: one that grew from a child to a teen changed as one that changed land did
     once_ctx = build_actor_stats_context(earlier) if earlier is not None else {}
     then_bodies = {a["id"]: a for a in earlier.get("actors_data") or []} if earlier is not None else {}
-    belongs = _belongs(save, entity)
-    belonged = _belongs(earlier, entity) if earlier is not None else belongs  # the same tie read off the earlier save, a pact's crowns as they stood
-    fallen = _fallen_kings(save, earlier) if earlier is not None and entity == ("job", "king") else {}
-    if fallen:  # crowned after the earlier save and dead before this one: no save held them king, the log alone did
-        belonged = _or_among(belonged, fallen.keys())
+    entity = entities[0] if entities else None  # the first shapes the line, the others narrow it and go unsaid
+    fixed = dict.fromkeys(kind for kind, _ in entities[1:])
+    belongs = _belongs(save, entities)
+    # Crowned after the earlier save and dead before this one: no save held them king, the log alone did
+    fallen = _fallen_kings(save, earlier) if earlier is not None and ("job", "king") in entities else {}
+    belonged = _belongs(earlier, entities, fallen) if earlier is not None else belongs  # the same ties read off the earlier save, a pact's crowns as they stood
     # Under an entity, `--since` weighs who belonged then: a body that joined arrives, one alive elsewhere has left, though the world saw both all along.
     members_then = {a["id"] for a in earlier.get("actors_data") or [] if belonged(a)} if entity and earlier is not None else None
     known = was if members_then is None else members_then
@@ -824,7 +817,7 @@ def _build_roster(
         else {}
     )
     # A town's own land goes unsaid on its residents' lines, as `-i` does: the room it frees tells their stage instead
-    seat = island_of.get(centre) if entity and entity[0] == "city" and (centre := city_centre(refs["city"].get(entity[1]) or {})) else None
+    seat = island_of.get(centre) if (town := dict(entities).get("city")) and (centre := city_centre(refs["city"].get(town) or {})) else None
     cut = len(ranked)
     if top or (near and not since):  # a ranking's head, its last place whole — the birth month under `age`, the length as shown under `--nearest`
         tie = (lambda b: (order(b)[0], world_date(order(b)[1]))) if top == "age" else (lambda b: b[2]["crow_tiles"]) if near else (lambda b: order(b)[0])
@@ -835,7 +828,7 @@ def _build_roster(
             continue
         if entity:
             told = None if here in (asked, seat) and "was_on" not in change else here
-            rows.append({**_member_row(actor, entity[0], told, refs, save, ctx, one_kind), **change})
+            rows.append({**_member_row(actor, entity[0], told, refs, save, ctx, one_kind), **fixed, **change})
             continue
         age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
         stage = _stage(actor, ctx, age, adult)
@@ -866,7 +859,7 @@ def _build_roster(
         parts = {part: [row for filed, row in marked if filed == part] for part in ("arrived", "grew", "moved")} | {"gone": [{**r, "gone": None} for r in gone]}
         if members_then is not None and entity:  # alive and elsewhere now: left the entity, which a death alone does not say
             leavers = sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id"))
-            parts["left"] = [_member_row(a, entity[0], _standing(a, island_of, grid, save["tileMap"]), refs, save, ctx, one_kind) for a in leavers]
+            parts["left"] = [{**_member_row(a, entity[0], _standing(a, island_of, grid, save["tileMap"]), refs, save, ctx, one_kind), **fixed} for a in leavers]
             if near:
                 parts["left"] = [row | towards(a["id"], *actor_xy(a)) for row, a in zip(parts["left"], leavers, strict=True)]
         parts = {part: bodies for part, bodies in parts.items() if bodies}
@@ -1159,11 +1152,6 @@ def _nobody(args: argparse.Namespace, kinds: set[str] | None, save: dict, since:
     return f"✗ no {living}{thinking}{args.type or 'body'} {', '.join(filter(None, said))}".rstrip() + hint
 
 
-# A tie widened to the bodies beside it: one it holds, or one among `ids`.
-def _or_among(tie: Callable[[dict], bool], ids: Collection[int]) -> Callable[[dict], bool]:
-    return lambda actor: tie(actor) or actor["id"] in ids
-
-
 # Kinds past `MAX_LISTED` as their `_TOP_PAIRINGS` soonest births, the rest counted — later, or what each lacks — and read one by one through `-t`.
 def _pairing_tally(rows: list[dict]) -> list[dict] | dict:
     if len(rows) <= MAX_LISTED:
@@ -1250,6 +1238,21 @@ def _then(chapter: str) -> tuple[dict, dict[int, int | str]]:
     return then, {actor["id"]: _standing(actor, island_of, grid, then["tileMap"]) for actor in then.get("actors_data") or [] if not is_boat(actor)}
 
 
+# A body's tie to one entity: a pact through its crown, every other by its own field — `fallen` given under `--job king` alone, a king to his realm.
+def _tie(save: dict, kind: str, entity_id: int | str, fallen: dict[int, int]) -> Callable[[dict], bool]:
+    if kind == "job":  # a trade, the crown and an army's lead among them
+        if fallen:
+            return lambda actor: resolve_profession(actor, save) == entity_id or actor["id"] in fallen
+        return lambda actor: resolve_profession(actor, save) == entity_id
+    if kind == "alliance":
+        crowns = {kid for pact in save.get("alliances") or [] if pact.get("id") == entity_id for kid in pact.get("kingdoms") or []}
+        return lambda actor: actor.get("civ_kingdom_id") in crowns
+    field = _MEMBERSHIPS[kind][1]
+    if kind == "kingdom" and fallen:
+        return lambda actor: actor.get(field) == entity_id or fallen.get(actor["id"]) == entity_id
+    return lambda actor: actor.get(field) == entity_id
+
+
 # How far a cut of `size` runs on a list ranked by `figures`: past it while the last place is shared, which a cut would split.
 def _tied_cut(figures: list, size: int = _TOP_ROWS) -> int:
     kept = min(size, len(figures))
@@ -1328,9 +1331,6 @@ def main(argv: list[str]) -> int:
     )
     minded = True if args.sapient else False if args.beasts else None  # a roll's bodies split by mind, or a census's lineages
     narrowing = sifted or ((minded is not None or args.type) and not {"lineages", "pairings"} & set(sections)) or args.fields is not None
-    if len(entities) > 1:  # one roll, one entity: the others are its members' own fields
-        print(f"✗ {' and '.join(f'--{kind}' for kind, _ in entities)}: name one entity — the others are fields of its members", file=sys.stderr)
-        return 2
     if args.beasts and (other := next((flag for flag in ("sapient", "settle", "barred") if getattr(args, flag)), None)):  # minds and the rest: none in both
         print(f"✗ --beasts and --{other} split the bodies in two: name one", file=sys.stderr)
         return 2
@@ -1429,12 +1429,12 @@ def main(argv: list[str]) -> int:
         if args.task and args.task not in (done := sorted(set(filter(None, map(kept_task, save.get("actors_data") or []))))):
             print(f"✗ no body is at {args.task} — tasks here: {', '.join(done) or 'none kept in this save'}", file=sys.stderr)
             return 2
-        entity = entities[0] if entities else None
-        if entity and entity[0] != "job" and entity[1] not in {record.get("id") for record in save.get(_MEMBERSHIPS[entity[0]][0]) or []}:
-            # An army has no tool of its own to send the refusal to: a town's names it, where `absent_entity` would point at an `army/info.py`.
-            army = f"✗ no army {entity[1]} here — `city/info.py <id> army` gives a town's"
-            print(army if entity[0] == "army" else absent_entity(entity[0], _MEMBERSHIPS[entity[0]][0], entity[1], chapter), file=sys.stderr)
-            return 1
+        for kind, entity_id in entities:
+            if kind != "job" and entity_id not in {record.get("id") for record in save.get(_MEMBERSHIPS[kind][0]) or []}:
+                # An army has no tool of its own to send the refusal to: a town's names it, where `absent_entity` would point at an `army/info.py`.
+                army = f"✗ no army {entity_id} here — `city/info.py <id> army` gives a town's"
+                print(army if kind == "army" else absent_entity(kind, _MEMBERSHIPS[kind][0], entity_id, chapter), file=sys.stderr)
+                return 1
         near = None
         if isinstance(args.nearest, tuple):
             near = args.nearest, None
@@ -1474,7 +1474,7 @@ def main(argv: list[str]) -> int:
                 args.lacks,
                 args.top,
                 count,
-                entity,
+                entities,
                 near,
                 fields,
                 args.stage,

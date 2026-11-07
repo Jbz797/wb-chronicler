@@ -58,7 +58,7 @@
     "@angular/compiler-cli": "22.2.5",
     "@angular/language-service": "22.2.5",
     "chokidar": "6.0.0",
-    "concurrently": "10.0.6",
+    "concurrently": "10.0.7",
     "eslint-config-angular-strict": "22.6.13",
     "less": "4.9.1",
     "prettier": "3.9.10",
