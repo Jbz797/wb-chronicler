@@ -35,7 +35,7 @@
   "actor.ranks": "Son rang parmi les corps de son espèce (`asset_id`), toutes lignées confondues ; seul le podium sort.",
   "actor.since.moved": "D'où il était au chapitre nommé à où il est : cap et distance à vol d'oiseau, puis le plus court trajet entre les deux, au pas du corps ; jamais le chemin fait.",
   "actor.since.stats": "`stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre eux.",
-  "actor.stats": "Des valeurs déjà agrégées, socle, niveau (santé, mana et endurance seulement) et compétences compris : n'y ajoute rien.",
+  "actor.stats": "Agrégées dans l'ordre du jeu : socle, niveau (santé, mana, endurance), traits, équipement ; n'y ajoute rien, ne recompose rien : `gear`, `traits`, `subspecies`.",
   "actor.stats.armor": "La part de chaque coup qu'il ne prend pas, en % ; « dur à entamer » se lit ici, « robuste » sur `health_max`, ce qu'il peut encaisser.",
   "actor.stats.damage_max": "`damage_min` à `damage_max` : la force d'un coup, `warfare` compris ; bridé de moitié chez un mineur jusqu'à `adult_on`, comme `health_max`.",
   "actor.stats.happiness": "La barre du jeu, en % : 50 au neutre, heureux dès 60, malheureux sous 30 (`wiki:Happiness`).",
