@@ -251,8 +251,6 @@ _TRAIT_SOURCES = {
     "subspecies": ("subspecies", ("saved_actor_birth_traits", "saved_traits")),
 }
 
-_UNSPOKEN = re.compile(r"\[[a-z] [^\]]*\]|\*\*\*[^*]+\*\*\*|^#.*")  # a tag, a place's name, a heading: no species named bare in them
-_WORDS = re.compile(r"[^\W\d_]+")  # the words between a species and a tag, an elision's `l'` one of them
 
 _WORLD_ONLY = (  # the chapter while no favorite stands — in no doc, a world having one most of its life: the recap says it, the targets hand it to the audit
     "the world's news: its lands, beasts and plants, the thinking kinds' first steps and meetings, deaths, births…",
@@ -765,9 +763,6 @@ def _print_step_five(n: int, facts: dict) -> None:
     if stray := facts["stray"]:
         tags = ", ".join(f"l.{line} {tag}" for line, tag in stray)
         print(f"  ✗ tags whose id answers nothing: {tags} — an id made up, one only `history` knows, or what grows or is built: no icon, a blank where it goes")
-    if bare := facts["untagged"]:  # a pointer, never a fault: a word can be a species' name and the language's own (`humain`), and the eye tells them apart
-        named = ", ".join(f"l.{line} {word}" for line, word in bare)
-        print(f"  → species of this world named bare, past a word from an entity's tag: {named} — a `[s …]` each, but a common word; a feminine goes unseen")
 
 
 # One scan of prior chapters for all they arbitrate: a first hull or kill, the favorite before, a new favorite, a turned age, a stale save, a pact, a first crown.
@@ -1059,7 +1054,6 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "named": _named_places(n),
         "owed": owed,
         "stray": stray,
-        "untagged": _untagged_species(n, prose),
         "talk": _favorite_talk(n, favorite),
     }
 
@@ -1076,30 +1070,6 @@ def _stray_tags(n: int, prose: str) -> list[tuple[int, str]]:
 
     tags = ((at, tag) for at, line in enumerate(prose.splitlines(), 1) for tag in _TAG_ID.finditer(line))
     return [(at, tag[0]) for at, tag in tags if (ids := known(tag[1])) is not None and tag[2] not in ids]
-
-
-# A species of this world named bare, by line, singular or plural: out of tags and place names, past a word from an entity's tag or its cell (« l'orc [p 22 Opo] »)
-def _untagged_species(n: int, prose: str) -> list[tuple[int, str]]:
-    save = load_save(SAVES_DIR / f"C{n}" / "map.wbox")
-    here = {a.get("asset_id") for a in save.get("actors_data") or [] if not is_boat(a)} | {s.get("species_id") for s in save.get("subspecies") or []}
-    if not (names := {name.lower() for kind, name in i18n("species.json").items() if kind in here}):
-        return []
-    spoken = re.compile(r"\b(" + "|".join(sorted(map(re.escape, names), key=len, reverse=True)) + r")[sx]?\b", re.IGNORECASE)
-    bare = []
-    for at, line in enumerate(prose.splitlines(), 1):
-        masked = _UNSPOKEN.sub(lambda span: " " * len(span[0]), line)  # spans blanked, not cut: a word keeps its place beside the tags
-        if not (names_said := list(spoken.finditer(masked))):  # most lines name none: their tags are never weighed
-            continue
-        entities = [tag for tag in _TAG_ID.finditer(line) if tag[1] not in _ICON_TAGS]
-        for found in names_said:
-            if line.startswith("|"):  # a table: the cell is the reach, whatever lies between
-                start, end = line.rfind("|", 0, found.start()), line.find("|", found.end())
-                if any(start < tag.start() and tag.end() <= end for tag in entities):
-                    continue
-            gaps = (line[tag.end() : found.start()] if tag.end() <= found.start() else line[found.end() : tag.start()] for tag in entities)
-            if not any(len(_WORDS.findall(gap)) <= 1 for gap in gaps):
-                bare.append((at, found[0]))
-    return bare
 
 
 # How many thinking souls a world raises before its favorite is picked: one per `_LAND_PER_THINKER` of dry ground, never under the floor.
