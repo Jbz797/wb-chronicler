@@ -337,6 +337,7 @@
   "world.pairings.pregnant": "Le nombre de porteuses d'une grossesse en cours, la plus proche du terme faisant `due` ; chacune : `roster --filter type:<espèce>,status:pregnant`.",
   "world.roster.age": "`--with age`, `--rank age` : l'âge en années entières, comme `actor … metadata` le compte ; sous `--rank`, à âge égal, le plus tôt né d'abord.",
   "world.roster.city": "Sous `--city`, la terre de la cité se tait : c'est celle de tous.",
+  "world.roster.crafted": "Les objets du monde qu'il a faits et qui sont encore là, comme `actor … ranks` les compte ; un par un, et où : `actor <id> crafted`.",
   "world.roster.died": "D'un mort (`gone`), le mois de sa mort, au registre du monde ; `was_on` y dit la terre où il est tombé.",
   "world.roster.dir": "Sous `--rank x,y` ou `p<id>`, le cap du corps vu depuis la tuile ou le corps visé ; tu sous `--since`, dont les lignes sont pleines. La marche : `actor … --to`.",
   "world.roster.gone": "Sous `--since`, les morts depuis (`part` `gone`), au registre ; de `--with`, ils ne rendent que `at`, `born` et `parents`, jamais une valeur d'une save périmée.",

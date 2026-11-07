@@ -810,6 +810,11 @@ def counted_birth(actor: dict) -> float:
     return float(actor.get("created_time") or 0) - (actor.get("age_overgrowth") or 0) * UNITS_PER_YEAR
 
 
+# Each body's work: the world's items by their maker (`creator_id`), those still standing — what `actor … ranks` and `world … roster` count alike.
+def crafted_counts(items_by_id: dict) -> Counter:
+    return Counter(maker for item in items_by_id.values() if (maker := item.get("creator_id")))
+
+
 # The crowns by id as the save and WB's own fallen-crown table name them: the dead kept, whom no save carries any more.
 def crowns_named(save: dict) -> dict[int, dict]:
     try:

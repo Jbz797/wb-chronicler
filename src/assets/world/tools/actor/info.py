@@ -67,6 +67,7 @@ from shared import (
     chunks_apart,
     city_centre,
     competition_ranks,
+    crafted_counts,
     dormant,
     emit,
     entity_born,
@@ -751,7 +752,7 @@ def _compute_ranks(actor: dict, ctx: dict) -> dict:
     ranks = competition_ranks(own, peers, getters)
     # Age, kills and work are not in `body_stats` — off `created_time`, the kill count and the items' maker — ranked apart, against the raw actors.
     raw = {"age": lambda a: actor_age(a, ctx["world_time"])} | ({"kills": lambda a: int(a.get("kills") or 0)} if actor.get("kills") else {})
-    made = Counter(maker for item in ctx["items_by_id"].values() if (maker := item.get("creator_id")))
+    made = crafted_counts(ctx["items_by_id"])
     raw |= {"crafted": lambda a: made[a["id"]]} if made[actor["id"]] else {}  # a body that made nothing takes no podium, as one that killed none
     ranks.update(competition_ranks(actor, same_species, raw))
     return ranks

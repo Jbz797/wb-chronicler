@@ -67,6 +67,7 @@ from shared import (
     city_score_dimensions,
     civic_building_ids,
     counted_birth,
+    crafted_counts,
     crowns_named,
     emit,
     entity_born,
@@ -193,6 +194,7 @@ _KEPT_FIELDS = (
     "city",
     "city_since",
     "clan",
+    "crafted",
     "culture",
     "family",
     "gen",
@@ -263,7 +265,7 @@ _SOULBORNE = "reproduction_soulborne"  # a lineage born of the souls it strikes:
 _STRATEGIC = frozenset({"reproduction_hermaphroditic", "reproduction_parthenogenesis", "reproduction_sexual"})  # carried only if viviparous, else laid at once
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `has:` and `lacks:` weigh: a body's own counters, named as `actor … stats` names them
 _TIES = ("city", "clan", "culture", "family", "kingdom", "language", "religion")  # what `--with` names a body's ties by, `{id, name}` as `actor … metadata` does
-_TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "age", "equipment_power")))  # what `--rank` ranks by: those counters, a skill, an arsenal, the age
+_TOP_MEASURES = tuple(sorted((*_SKILLS, *_TALLIES, "age", "crafted", "equipment_power")))  # what `--rank` ranks by: a counter, a skill, an arsenal, age, work
 _UNCARRIED = frozenset({"reproduction_fission", "reproduction_spores"})  # WB makes the new body there and then, `maturation` never read
 _WATER = "water"  # where `roster` says a body stands, or stood, afloat — off every land, as `_ISLET` is, but in the sea or a lake
 
@@ -290,6 +292,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         # Its lineage's own line, as on the roll: none to come where it never bears
         "breeds_on": lambda: crossed_on(actor, breeding) if age < (breeding := breeding_age(actor, ctx)) and fertile(lineage) else None,
         "city_since": lambda: kept_city_since(actor),
+        "crafted": lambda: ctx["made"][actor["id"]],  # the world's items it made, as `actor … ranks` counts them
         "gen": lambda: int(actor.get("generation") or 1),
         "hatch_on": lambda: hatch_on(actor, ctx),
         "home": lambda: actor.get("homeBuildingID"),  # its roof's id, none for one sleeping out: `ground <id>` tells the roof
@@ -637,6 +640,8 @@ def _build_roster(
         ctx["profession"] = lambda actor: resolve_profession(actor, save)
     if "lover" in fields:
         ctx["living_ids"] = {actor["id"] for actor in save.get("actors_data") or []}
+    if top == "crafted" or "crafted" in fields:  # the world's items by their maker, as `actor … ranks` counts a body's work
+        ctx["made"] = crafted_counts(ctx["items_by_id"])
     if "place" in fields:  # each forged place drawn once for the whole roll, as `metadata` draws it for one body
         ctx["place_index"] = PlaceIndex(save, save_path, island_of, WalkMap(save))
     if settle or barred:  # the ground `settle_gates` weighs, gathered only for a roll that filters on it
@@ -775,7 +780,7 @@ def _build_roster(
         if near:
             return (far[row_id], row_id), round(far[row_id])
         if top == "age" and actor is not None:  # whole years tie a cohort: the earliest born first, the years it arrived with counted
-            born_at = float(actor.get("created_time") or 0) - (actor.get("age_overgrowth") or 0) * UNITS_PER_YEAR
+            born_at = counted_birth(actor)
             return (-figure, born_at, row_id), (figure, world_date(born_at))
         return ((-figure, row_id), figure) if top else ((row_id,), row_id)
 
@@ -992,6 +997,8 @@ def _gone_since(
 def _held(actor: dict, tally: str, ctx: dict | None = None) -> int:
     if ctx is not None and tally == "age":  # as `metadata` counts it, the years a body arrived with included: the age that ranks
         return actor_age(actor, ctx["world_time"])
+    if ctx is not None and tally == "crafted":  # off the items' maker, never the body's own field
+        return ctx["made"][actor["id"]]
     if ctx is not None and tally not in _TALLIES:  # read off its stats, where a counter is the body's own
         return equipment_power(actor, ctx) if tally == "equipment_power" else int(compute_actor_stats(actor, ctx).get(tally, 0))
     value = int(actor.get(tally) or 0)
