@@ -34,6 +34,7 @@ from shared import (
     pickle_cached,
     quiet_zeros,
     reigns,
+    run,
     take_chapter,
     take_since,
     world_date,
@@ -478,4 +479,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from grid import BARE, LazyTileGrid, listed_tiles, tile_frost, tile_ground, tile_layer
 from islands import compute_islands_cached
-from shared import arg_parser, load_save, take_chapter
+from shared import arg_parser, load_save, run, take_chapter
 
 _INK = (255, 30, 30)  # a red no biome wears, so the ring never sinks into the ground it marks
 _MAPS_DIR = Path(__file__).parent.parent / ".cache" / "maps"  # inside the chronicler's own directory, read without a prompt; gitignored with the other caches
@@ -139,4 +139,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

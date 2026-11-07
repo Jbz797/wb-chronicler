@@ -21,6 +21,7 @@ from shared import (
     load_data,
     load_save,
     parse_sections,
+    run,
     sections_arg,
     take_chapter,
 )
@@ -104,4 +105,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

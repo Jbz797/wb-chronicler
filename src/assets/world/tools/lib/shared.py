@@ -3,6 +3,7 @@
 
 
 import argparse
+import io
 import json
 import os
 import pickle
@@ -11,7 +12,7 @@ import sys
 import zlib
 from bisect import bisect_right
 from collections import Counter, defaultdict
-from contextlib import closing
+from contextlib import closing, redirect_stderr
 from functools import cache, partial
 from pathlib import Path
 lazy import random  # loaded at first use, as the two below — a report's draw
@@ -1416,6 +1417,18 @@ def resource_sources(resource: str) -> frozenset[str]:
 # The save's hour to the hundredth, as the nav's index keeps it and as `new.py`/`favorite.py` hold the live save against a chapter's: one rounding, one digit.
 def rounded_world_time(map_stats: dict) -> float:
     return round(float(map_stats.get("world_time", 0)), 2)
+
+
+# A tool's `main` run: a `✗` told while the call still answers (code 0) is a part left out, said `⚠` after the answer; a refusal, an exit, a crash keep theirs.
+def run(main: Callable[[list[str]], int]) -> int:
+    notes, code = io.StringIO(), 2
+    try:
+        with redirect_stderr(notes):
+            code = main(sys.argv[1:])
+    finally:
+        told = notes.getvalue()
+        sys.stderr.write(re.sub(r"^✗", "⚠", told, flags=re.MULTILINE) if code == 0 else told)
+    return code
 
 
 # `score_totals` as competition places `{id: place}` (1, 2, 2, 4), 1 = strongest — none below `MIN_SCORE_PEERS`: a town's and a crown's `score_rank`.

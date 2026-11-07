@@ -34,6 +34,7 @@ from shared import (
     parse_sections,
     quiet_zeros,
     resolve_profession,
+    run,
     sections_arg,
     sex_label,
     take_chapter,
@@ -207,4 +208,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

@@ -37,6 +37,7 @@ from shared import (
     meta_report,
     parse_sections,
     population_breakdown,
+    run,
     sections_arg,
     settlement_leaders,
     take_chapter,
@@ -249,4 +250,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

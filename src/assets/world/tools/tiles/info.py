@@ -59,6 +59,7 @@ from shared import (
     parse_sections,
     place_point,
     point_xy,
+    run,
     take_chapter,
     tile_text,
     under_construction,
@@ -678,4 +679,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

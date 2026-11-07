@@ -96,6 +96,7 @@ from shared import (
     place_point,
     resolve_profession,
     resource_sources,
+    run,
     sections_arg,
     sex_label,
     take_chapter,
@@ -801,15 +802,18 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
     return {**(site or {}), "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
 
 
-# What a dead body still answers: its death, blood, victims and work, its statuses by the chapters in full — named, those alone; any other refused with them.
+# What a dead body still answers: its death, blood, victims and work, its statuses by the chapters in full — named, those alone; any other told and left out.
 def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, upto: int) -> int:
     named = requested not in (None, "full")
-    if named and (lost := [section for section in sections if section not in _DEAD_SECTIONS]):
+    if lost := [section for section in sections if section not in _DEAD_SECTIONS] if named else []:
         print(f"✗ {named_body(dead)} is dead: it keeps {', '.join(f'`{s}`' for s in _DEAD_SECTIONS)} — not {', '.join(lost)}", file=sys.stderr)
-        return 2
+        if len(lost) == len(sections):
+            return 2
+        sections = tuple(section for section in sections if section in _DEAD_SECTIONS)
     body = {"id": dead["id"], **dict(zip(("parent_id_1", "parent_id_2"), dead["parents"], strict=False))}  # its parents as a living body carries them
     kin = _kin(body, ctx) if "kin" in sections else None
     out = {
+        **dict.fromkeys(lost),  # refused above, yet named: `emit` leaves the others their names
         "crafted": _crafted(dead["id"], ctx, requested) if "crafted" in sections else None,
         "died": _death(dead, ctx) if not named or "died" in sections else None,
         "kin": kin if kin and any(kin.values()) else None,
@@ -1574,9 +1578,10 @@ def main(argv: list[str]) -> int:
     if actor is None:
         print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
         return 1
-    if "died" in sections:  # known alive only now, the register read
+    if "died" in sections:  # known alive only now, the register read: told, and the other sections asked still answer
         print(f"✗ {named_body(actor)} is alive: `died` is a dead body's", file=sys.stderr)
-        return 2
+        if len(sections) == 1 and not (targets or since):
+            return 2
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
         return 1
@@ -1593,7 +1598,7 @@ def main(argv: list[str]) -> int:
             aimed[words] = None
     if targets and not any(aimed.values()):
         return 1
-    out: dict = {}
+    out: dict = {"died": None} if "died" in sections else {}  # refused above, yet named: `emit` leaves the others their names, never one bare
     if "companions" in sections:  # both as plain refs, the couple dated beside a living mate — `emit` drops what is unset or dead, the section when nothing is left
         by_id = ctx["actors_by_id"]
         lover = entity_ref(actor.get("lover"), by_id)
@@ -1643,4 +1648,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

@@ -62,6 +62,7 @@ from shared import (
     parse_sections,
     pickle_cached,
     quiet_zeros,
+    run,
     take_chapter,
     take_since,
     under_construction,
@@ -880,4 +881,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

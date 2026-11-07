@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import arg_parser, render
+from shared import arg_parser, render, run
 
 _CAP = 165  # characters a gloss holds at most: one line of the chronicler's, never a paragraph
 _FIELDS = Path(__file__).with_name("fields.json")
@@ -74,4 +74,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

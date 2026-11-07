@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from shared import arg_parser
+from shared import arg_parser, run
 
 _API = "https://the-official-worldbox-wiki.fandom.com/api.php"
 _BATCH = 500  # the most titles one `allpages` call hands back
@@ -194,4 +194,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))

@@ -48,6 +48,7 @@ from shared import (
     population_breakdown,
     quiet_zeros,
     reigns,
+    run,
     score_ranks,
     sections_arg,
     settlement_leaders,
@@ -779,4 +780,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(run(main))
