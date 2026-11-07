@@ -1375,9 +1375,9 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
             print(f"✗ no `then`: {whom} not yet in {since}", file=sys.stderr)
         elif then is not None and not isinstance(target, str):
             goals = aims if isinstance(target, tuple) else [actor_xy(then_ctx["actors_by_id"][target])]
-            trip["then"] = _trip_then(then, goals, whom, then_ctx)
+            trip["then"] = _trip_then(then, goals, whom, then_ctx, actor, ctx)
         elif then is not None and isinstance(target, str) and (goals := _then_goals(target, told, then, then_ctx, since)):
-            trip["then"] = _trip_then(then, goals, whom, then_ctx)
+            trip["then"] = _trip_then(then, goals, whom, then_ctx, actor, ctx)
     if each:
         if then is not None:
             print(_REDRAWN, file=sys.stderr)
@@ -1414,13 +1414,15 @@ def _trip_back(actor: dict, was: tuple[int, int], ctx: dict) -> dict:
     return {key: value for key, value in trip.items() if key not in _GOAL_ONLY}
 
 
-# The same goal timed in the chapter `--since` names: from where the body stood then, at its pace and on its ground of then — the two times side by side.
-def _trip_then(then: dict, goals: list[tuple[int, int]], whom: str, then_ctx: dict) -> dict:
+# The same goal timed in the `--since` chapter, from where the body stood then, at its pace then — and `speed` then and now where it moved, a time's other cause.
+def _trip_then(then: dict, goals: list[tuple[int, int]], whom: str, then_ctx: dict, actor: dict, ctx: dict) -> dict:
+    paces = [compute_actor_stats(body, side).get("speed") for body, side in ((then, then_ctx), (actor, ctx))]
+    pace = {"speed": paces} if paces[0] != paces[1] else {}
     try:
         trip = _build_to(then, goals, whom, then_ctx, None, {})
     except _UnreachableError:
-        return {"circle": "far"}
-    return {key: value for key, value in trip.items() if key == "crow_tiles" or key not in _GOAL_ONLY}
+        return {"circle": "far", **pace}
+    return {key: value for key, value in trip.items() if key == "crow_tiles" or key not in _GOAL_ONLY} | pace
 
 
 # A trip's time by parts: `walk_`, `swim_` or `sail_`, `total_` once two (`foot` None: unwalked); past a day `march_days`, a crossing's `total_days`.
@@ -1580,7 +1582,7 @@ def main(argv: list[str]) -> int:
         return 1
     aimed: dict[str, tuple | None] = {}  # each `--to` by its own words: where it aims, or `None` where its refusal was told
     for target in targets:
-        words = f"{target[0]},{target[1]}" if isinstance(target, tuple) else str(target)
+        words = f"{target[0]},{target[1]}" if isinstance(target, tuple) else f"p{target}" if isinstance(target, int) else target  # as typed
         try:
             aimed[words] = _aim(target, actor, ctx, save, chapter)
         except _AimError as e:
@@ -1619,7 +1621,7 @@ def main(argv: list[str]) -> int:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
     if "victims" in sections:
         out["victims"] = _victims(actor_id, ctx, requested)
-    if since:
+    if since and not targets:  # beside a `--to`, it dates the trip's `then` alone: the body's own changes are a call of their own
         out["since"] = _build_since(actor, then, ctx, save, then_ctx, then_save)
     trips = {words: aim and _trip(actor, aim, ctx, then, then_ctx, since) for words, aim in aimed.items()}
     if targets and not any(trips.values()):
