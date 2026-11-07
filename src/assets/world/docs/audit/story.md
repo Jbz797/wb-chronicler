@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 07/11/26 20:58</p>
+<p class="metadata">Date de mise à jour : 07/11/26 22:38</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants : ce message dit alors ta tâche.
 
@@ -15,7 +15,7 @@ Lis le chapitre, puis autant de la chronique qu'il t'en faut, de `saves/C1/chapt
 - un motif, une cause ou un chiffre qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - un personnage ou un lieu qu'elle a lâchés là où la chronique l'attendait.
 
-Un doute qui tient au monde (vit-il ? où est-il ?), un absolu (« seul », « jamais ») ou deux chiffres contraires ne se tranchent pas à l'oreille : c'est un point à mesurer. Tu ne vérifies pas les faits ; un écart que tu soulèves, ou un lieu qu'un conseil cite, se mesure d'une seule commande (`docs/tools.md`), citée avec lui ; au-delà, à mesurer. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Le temps » ; un seuil d'âge d'espèce se mesure, il se signale.
+Un doute qui tient au monde (vit-il ? où est-il ?), un absolu (« seul », « jamais ») ou deux chiffres contraires ne se tranchent pas à l'oreille : c'est un point à mesurer. Tu ne vérifies pas les faits ; un écart que tu soulèves, ou un lieu qu'un conseil cite, se mesure d'une seule commande (`docs/tools.md`), citée avec lui ; au-delà, à mesurer. L'arithmétique du temps se lit dans `docs/chronicler.md` § « Le temps », tes réserves au § « Prudence et rigueur » ; un seuil d'âge d'espèce se mesure, il se signale.
 
 Dis-le là où l'histoire tient. Là où elle ne tient pas, donne à chaque écart son chapitre, sa ligne et sa citation. Tu peux y ajouter ce qui le réparerait (une correction, un passage, un angle neuf), comme une direction, jamais de prose écrite, sauf un dialogue, bâti à deux : à lui les faits, à toi ce que la chronique sait du favori, et le passage d'une veille.
 
@@ -31,7 +31,6 @@ Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton prem
 - **Fusion** : deux veilles d'un même fil, une neuve comprise, se fondent en une, reconduite, au seul chapitre qui les lie ; la plus ancienne garde son ouverture.
 - **Plafond** : au-delà de 5 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, une candidate comprise : abandonnée, une veille sort et n'est plus un écart. Sous 5, aucune ne s'abandonne. Dès le conseil, un abandon probable peut s'annoncer ; l'audit tranche.
 - **Récit** : à chaque sort changé, dis au chroniqueur s'il faut en parler et comment : une direction, et si tu veux 2 ou 3 phrases, qu'il réécrit ou écarte ; une abandonnée se referme sur la page.
-- **Réserves** : celles du chapitre (`chronicler.md` § « Prudence et rigueur »).
 - **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer ni mentionnée, même de biais, se signale au chroniqueur.
 - **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand l'une de ses questions s'y solde ou que le fil se détourne, l'ouverture gardée. Une loi se solde dès qu'un chapitre la montre à l'œuvre.
 
