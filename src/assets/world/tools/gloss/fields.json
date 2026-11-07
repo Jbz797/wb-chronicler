@@ -233,6 +233,7 @@
   "statuses.had_good_dream": "Un rêve tiré au réveil, un sur trois (bon, mauvais, cauchemar), gardé un an et demi : +15 de bonheur ; il ne fait pas d'un corps un dormeur.",
   "statuses.had_nightmare": "Un rêve tiré au réveil, un sur trois (bon, mauvais, cauchemar), gardé un an et demi : −30 de bonheur ; il ne fait pas d'un corps un dormeur.",
   "statuses.handsome_migrant": "Migrant paru adulte au feu d'une cité, appelé par la loi ; le statut tient 6 ans, `born` date l'arrivée : `world roster --status handsome_migrant --with born,city`.",
+  "statuses.pregnant": "Aucun père gardé : l'amant de la mère à la mise bas le devient (`actor … companions`), adoptif si leur couple est plus jeune que la grossesse ; sans amant, aucun.",
   "statuses.rage": "Dégâts ×2, 5 ans de jeu ; une chance sur cinq par goutte de `cloud_rage` ou lecture d'une langue `raging_paragraphs` ; `strong_minded` ou clan `iron_will` l'évitent.",
   "statuses.stunned": "Étourdi : le corps lâche tout et attend, le temps d'un instant ; un coup, une chute, une mise bas le donnent.",
   "subspecies.metadata.biome": "Le sol dont la lignée a pris forme en naissant (sa toison, son nom) ; la save ne garde aucune lignée mère, `born` dit quand elle est apparue.",
