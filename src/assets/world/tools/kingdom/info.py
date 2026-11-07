@@ -56,6 +56,7 @@ from shared import (
     take_chapter,
     under_construction,
     wants_detail,
+    world_date,
     zone_xy,
 )
 
@@ -620,6 +621,12 @@ def _king_stat(king: dict, ctx: dict, stat: str) -> int:
     return int(compute_actor_stats(king, ctx).get(stat, 0))
 
 
+# When its last war ended, as WB `Kingdom.checkEndWar` stamps `timestamp_last_war`; `None` where none ever has, unset or at WB's -1.
+def _last_war_end(kingdom: dict) -> float | None:
+    stamp = kingdom.get("timestamp_last_war")
+    return None if stamp is None or float(stamp) == -1.0 else float(stamp)
+
+
 # WB opinion modifier 11's own notion of power — `countCities × 5 + getPopulationPeople()`. Not `_build_context`'s supreme power, which weighs warriors instead.
 def _opinion_power(kingdom_id: int, ctx: dict) -> int:
     return ctx["cities_by_kingdom"].get(kingdom_id, 0) * 5 + ctx["populations_by_kingdom"].get(kingdom_id, 0)
@@ -642,12 +649,12 @@ def _opinion_side(kingdom: dict, ctx: dict, allies: set, war_sides: list) -> dic
     }
 
 
-# Years without a war: since the last one ended (`Kingdom.checkEndWar` stamps `timestamp_last_war`), or since founding if none. `None` while one runs.
+# Years without a war: since the last one ended (`_last_war_end`), or since founding if none. `None` while one runs.
 def _peace_years(kingdom: dict, ctx: dict) -> int | None:
     if kingdom["id"] in ctx["kingdoms_at_war"]:
         return None
-    stamp = kingdom.get("timestamp_last_war")
-    since = float(stamp) if stamp is not None and float(stamp) != -1.0 else float(kingdom.get("created_time") or 0)
+    since = _last_war_end(kingdom)
+    since = float(kingdom.get("created_time") or 0) if since is None else since
     return int((ctx["world_time"] - since) / UNITS_PER_YEAR)
 
 
@@ -761,6 +768,11 @@ def main(argv: list[str]) -> int:
         out["rulers"] = reigns(kingdom, ctx["actors_by_id"], requested)  # the sitting king is its last entry, the founder its first
     if "wars" in sections:
         out["wars"] = _build_wars(kingdom, save)
+        if not out["wars"] and len(sections) == 1:  # asked alone, a bare `[]` would read as a tool gone wrong — and leave « never » and « not now » alike
+            end = _last_war_end(kingdom)  # unset, and none under way: none ever was
+            told = f"{kingdom.get('name')} has never fought one" if end is None else f"at peace since {world_date(end)}, when its last war ended"
+            print(f"✗ no war under way — {told}", file=sys.stderr)
+            return 1
 
     emit(out)
     return 0
