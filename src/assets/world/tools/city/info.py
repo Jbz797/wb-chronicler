@@ -54,6 +54,7 @@ from shared import (
     quiet_zeros,
     reigns,
     score_ranks,
+    sections_arg,
     settlement_leaders,
     settlement_rank_getters,
     sex_label,
@@ -798,7 +799,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
         return 2
 
-    requested = argv[1] if len(argv) > 1 else None
+    requested = sections_arg(argv)
     if since and requested != "buildings":  # the members and the figures have their own roads
         print(
             f"✗ `--since` weighs `buildings` — people: `world … roster --city {city_id} --since {since}`, figures: `across {since}-C<n> city {city_id} metadata`",

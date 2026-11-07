@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 06/11/26 17:43</p>
+<p class="metadata">Date de mise à jour : 07/11/26 15:58</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants : ce message dit alors ta tâche.
 
@@ -26,7 +26,7 @@ Classe les écarts, le plus porteur d'abord, et dis de chacun s'il se répare ic
 Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton premier audit : ses seules puces. Mets-le à jour à chaque audit qui change le sort d'une veille, jamais au conseil ; ton rapport n'en redit pas les changements. Une veille sortie (soldée, abandonnée, fondue) se retrouve, avec son chapitre, par `git -C saves log -p -- watches.md` : pèse-la aussi quand tu cherches un fil jamais refermé.
 
 - **Chiffres** : le registre n'en porte aucun, pas même une date : le chapitre porte le fait.
-- **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` ni un statut passager (hors `--statuses`) : rien ne garde leur issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas ou redit seulement (_« toujours maudite »_) reste telle quelle.
+- **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` ni un statut passager (hors `status_history`) : rien ne garde leur issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas ou redit seulement (_« toujours maudite »_) reste telle quelle.
 - **Forme** : une puce par veille, par ordre d'ouverture, sans numéro de ligne : _« C1 · reconduite au C16 · son sujet en une ligne »_ : le chapitre de son ouverture, puis celui de son sort. Son sort : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas, ni un fait neuf qui n'y répond pas), détournée s'il le mène ailleurs que vers une autre veille (des bêtes aux morts relevés). Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles d'un même fil, une neuve comprise, se fondent en une, reconduite, au seul chapitre qui les lie ; la plus ancienne garde son ouverture.
 - **Plafond** : au-delà de 5 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, une candidate comprise : abandonnée, une veille sort et n'est plus un écart. Sous 5, aucune ne s'abandonne.

@@ -49,6 +49,7 @@ from shared import (
     quiet_zeros,
     reigns,
     score_ranks,
+    sections_arg,
     settlement_leaders,
     settlement_rank_getters,
     succession_heir,
@@ -399,7 +400,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool, rival
 
     for other in save.get("kingdoms", []):
         other_id = other.get("id")
-        if other_id == kid or (rivals and other_id not in rivals):  # `--kingdom` spares the opinions nobody asked for, both ways
+        if other_id == kid or (rivals and other_id not in rivals):  # `--toward` spares the opinions nobody asked for, both ways
             continue
         r = relations_by_other.get(other_id)
         status = "ally" if other_id in allies else "enemy" if other_id in enemies else "neutral"
@@ -662,15 +663,15 @@ def _resolve_heir(kingdom: dict, ctx: dict) -> dict | None:
     return {"id": heir["id"], "name": heir.get("name")} if heir else None
 
 
-# `--kingdom <id>[,<id>]` taken out of the call, the rest left positional: the rivals `relations` narrows to, none when absent.
+# `--toward <id>[,<id>]` taken out of the call, the rest left positional: the rivals `relations` narrows to, none when absent.
 def _take_rivals(argv: list[str]) -> tuple[list[str], set[int] | None]:
-    if "--kingdom" not in argv:
+    if "--toward" not in argv:
         return argv, None
-    at = argv.index("--kingdom")
+    at = argv.index("--toward")
     try:
         return argv[:at] + argv[at + 2 :], {int(token) for token in argv[at + 1].split(",")}
     except IndexError, ValueError:
-        raise ValueError("✗ `--kingdom` takes kingdom ids, comma-separated: `--kingdom 3,7`") from None
+        raise ValueError("✗ `--toward` takes kingdom ids, comma-separated: `--toward 3,7`") from None
 
 
 # WB keeps the instigator apart from the pack on each side, and writes `None` into the lists it never filled — folded here so callers see two plain sets.
@@ -700,7 +701,7 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
     if (not argv and rivals) or argv[:1] in (["-h"], ["--help"]):
-        return hand_usage("usage: kingdom/info.py [<id> [sections] [--kingdom <id>[,<id>]]] [C<n>]\neach option: `gloss kingdom`", argv)
+        return hand_usage("usage: kingdom/info.py [<id> [sections] [--toward <id>[,<id>]]] [C<n>]\neach option: `gloss kingdom`", argv)
     if not argv:  # no id: the list of every crown
         save = load_save(save_path)
         if not save.get("kingdoms"):
@@ -714,14 +715,14 @@ def main(argv: list[str]) -> int:
         print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
         return 2
 
-    requested = argv[1] if len(argv) > 1 else None
+    requested = sections_arg(argv)
     try:
         sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
     if rivals and "relations" not in sections:
-        print("✗ `--kingdom` narrows `relations` alone — name it: `<id> relations --kingdom <id>`", file=sys.stderr)
+        print("✗ `--toward` narrows `relations` alone — name it: `<id> relations --toward <id>`", file=sys.stderr)
         return 2
     save = load_save(save_path)
     kingdom = index_by_id(save.get("kingdoms", [])).get(kingdom_id)
@@ -729,7 +730,7 @@ def main(argv: list[str]) -> int:
         print(absent_entity("kingdom", "kingdoms", kingdom_id, chapter), file=sys.stderr)
         return 1
     if rivals and (wrong := sorted(rivals.difference(others := sorted(k["id"] for k in save.get("kingdoms", []) if k["id"] != kingdom_id)))):
-        print(f"✗ no other kingdom {', '.join(map(str, wrong))} — `--kingdom` takes {', '.join(map(str, others))}", file=sys.stderr)
+        print(f"✗ no other kingdom {', '.join(map(str, wrong))} — `--toward` takes {', '.join(map(str, others))}", file=sys.stderr)
         return 1
     ctx = _build_context(save, save_path)
 

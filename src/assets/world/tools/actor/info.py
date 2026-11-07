@@ -92,9 +92,11 @@ from shared import (
     named_body,
     needs_food,
     parse_sections,
+    pickle_cached,
     place_point,
     resolve_profession,
     resource_sources,
+    sections_arg,
     sex_label,
     take_chapter,
     take_since,
@@ -191,7 +193,7 @@ _TO_USAGE = (
 )
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
-_UNCOMPARED = frozenset({"breeding_barred", "island_id", "near_places", "place", "statuses_left", "task", "task_target", "x", "y"})
+_UNCOMPARED = frozenset({"breeding_barred", "island_id", "near_places", "place", "status_history", "statuses_left", "task", "task_target", "x", "y"})
 _WATERS = ("lake", "river", "sea", "water")  # the families a `--to` word may name: the nearest numbered water of one, `water` of any
 
 
@@ -682,18 +684,6 @@ def _change(key: str, before: object, after: object) -> dict | list | None:
     return {"new": after} if before is None else [before, after]
 
 
-# The body at each chapter up to the one read, off each chapter's save, where it stood at all: one walk for every option that reads the chapters' past.
-@cache
-def _chapter_bodies(actor_id: int, upto: int) -> tuple[tuple[int, dict], ...]:
-    found = []
-    for n in range(1, upto + 1):
-        if (path := SAVES_DIR / f"C{n}" / "map.wbox").exists():
-            body = next((a for a in load_save(path).get("actors_data") or [] if a.get("id") == actor_id), None)
-            if body is not None:
-                found.append((n, body))
-    return tuple(found)
-
-
 # Chapter numbers as runs, `C2–C5, C7`: a status or a total held chapter after chapter reads as one stretch, its breaks as a comma.
 def _chapter_spans(numbers: list[int]) -> str:
     runs: list[list[int]] = []
@@ -703,6 +693,15 @@ def _chapter_spans(numbers: list[int]) -> str:
         else:
             runs.append([n])
     return ", ".join(f"C{run[0]}" if len(run) == 1 else f"C{run[0]}–C{run[-1]}" for run in runs)
+
+
+# Every body's statuses at each chapter up to the one read, by id where it stood at all: pickled once for the run, every save of it being 8 ms to load whole.
+def _chapter_statuses(upto: int) -> list[tuple[int, dict[int, tuple[str, ...]]]]:
+    def table() -> list[tuple[int, dict[int, tuple[str, ...]]]]:
+        paths = ((n, SAVES_DIR / f"C{n}" / "map.wbox") for n in range(1, upto + 1))
+        return [(n, {a["id"]: tuple(kept_statuses(a) or ()) for a in load_save(path).get("actors_data") or []}) for n, path in paths if path.exists()]
+
+    return pickle_cached("chapter_statuses_v1", SAVES_DIR / f"C{upto}" / "map.wbox", table) if upto else []
 
 
 # The circle a goal falls in, filed as `surroundings` files a body: by the walk's time as told, then off his land by a crown's hull, the walks to and fro counted.
@@ -802,8 +801,8 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
     return {**(site or {}), "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
 
 
-# What a dead body still answers: its death, its blood, its victims and its work — named, those alone; any other section refused with them.
-def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, history: dict | None) -> int:
+# What a dead body still answers: its death, blood, victims and work, its statuses by the chapters in full — named, those alone; any other refused with them.
+def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, upto: int) -> int:
     named = requested not in (None, "full")
     if named and (lost := [section for section in sections if section not in _DEAD_SECTIONS]):
         print(f"✗ {named_body(dead)} is dead: it keeps {', '.join(f'`{s}`' for s in _DEAD_SECTIONS)} — not {', '.join(lost)}", file=sys.stderr)
@@ -814,7 +813,7 @@ def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, 
         "crafted": _crafted(dead["id"], ctx, requested) if "crafted" in sections else None,
         "died": _death(dead, ctx) if not named or "died" in sections else None,
         "kin": kin if kin and any(kin.values()) else None,
-        "statuses": history,
+        "status_history": None if named else _status_history(dead["id"], upto),
         "victims": _victims(dead["id"], ctx, requested) if "victims" in sections else None,
     }
     if named and not any(out.values()):  # asked alone, a bare `{}` would read as a field gone missing
@@ -1120,15 +1119,17 @@ def _species(actor: dict, ctx: dict) -> dict:
     return ctx["species_data"].get(actor.get("asset_id")) or {}
 
 
-# A body's statuses at each chapter up to the one read, off each chapter's save: `held` those moving a stat, `passing` the rest, `seen` where it stood at all.
+# A body's statuses chapter by chapter: `held` those moving a stat, `passing` the rest, `seen` where it stood — silent where none shows or `statuses` says it all.
 def _status_history(actor_id: int, upto: int) -> dict | None:
     lasting, sorts, seen = load_data("statuses.json"), {"held": defaultdict(list), "passing": defaultdict(list)}, []
-    for n, body in _chapter_bodies(actor_id, upto):
+    for n, bodies in _chapter_statuses(upto):
+        if (statuses := bodies.get(actor_id)) is None:
+            continue
         seen.append(n)
-        for status in kept_statuses(body) or ():
+        for status in statuses:
             sorts["held" if status in lasting else "passing"][status].append(n)
     spans = {sort: {status: _chapter_spans(at) for status, at in sorted(statuses.items())} for sort, statuses in sorts.items()}
-    return {**spans, "seen": _chapter_spans(seen)} if seen else None
+    return {**spans, "seen": _chapter_spans(seen)} if any(sorts.values()) and seen != [upto] else None
 
 
 # What each lasting status has still to run, off WB's own clock that Faithful Saves keeps: `soon`, `months` or `years`. An egg's end is `hatch_on`'s to date.
@@ -1532,12 +1533,7 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
-    statuses = "--statuses" in argv
-    argv = [arg for arg in argv if arg != "--statuses"]
     save_path, argv, chapter = take_chapter(argv)
-    if statuses and chapter is None:  # the chapters' saves are the record it reads: before the first, there is none
-        print("✗ `--statuses` reads the chapters' saves, and none is written yet", file=sys.stderr)
-        return 2
     upto = int(chapter[1:]) if chapter else 0
     try:
         targets, argv = _take_targets(argv)
@@ -1546,17 +1542,16 @@ def main(argv: list[str]) -> int:
         return 2
     if not argv or argv[0] in ("-h", "--help"):
         to = 'p<id>|x,y|b<id>|c<id>|cities|i<land>|lands|"<place>"|lake<id>|burning|frozen|g:<ground>|<kind>'
-        return hand_usage(f"usage: actor/info.py <id> [sections] [--to {to}]… [--since C<n>] [--statuses] [C<n>]\neach option: `gloss actor`", argv)
+        return hand_usage(f"usage: actor/info.py <id> [sections] [--to {to}]… [--since C<n>] [C<n>]\neach option: `gloss actor`", argv)
     try:
         actor_id = int(argv[0])
     except ValueError:
         print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
         return 2
 
-    requested = argv[1] if len(argv) > 1 else None
-    flagged = since is not None or statuses
+    requested = sections_arg(argv)
     try:
-        sections = parse_sections(requested, _NAMED_SECTIONS, full=_ALL_SECTIONS) if requested or (not targets and not flagged) else ()  # a flag alone answers alone
+        sections = parse_sections(requested, _NAMED_SECTIONS, full=_ALL_SECTIONS) if requested or not (targets or since) else ()  # a flag alone answers alone
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
@@ -1572,8 +1567,8 @@ def main(argv: list[str]) -> int:
         then_save = load_save(then_path)
         then_ctx = _build_context(then_save, then_path)
         then = then_ctx["actors_by_id"].get(actor_id)
-    if actor is None and (dead := ctx["deaths"].get(actor_id)) and not targets:  # a dead body answers by what the register keeps, `--statuses` by its past
-        return _dead_answer(dead, ctx, sections, requested, _status_history(actor_id, upto) if statuses else None)
+    if actor is None and (dead := ctx["deaths"].get(actor_id)) and not targets:  # a dead body answers by what the register keeps, its statuses by the chapters
+        return _dead_answer(dead, ctx, sections, requested, upto)
     if actor is None:
         print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
         return 1
@@ -1610,7 +1605,7 @@ def main(argv: list[str]) -> int:
     if "kin" in sections:  # its blood, where a mate or a friend is a bond: a parent gone stays (`gone`), and the section goes where it has neither
         out["kin"] = _kin(actor, ctx)
     if "metadata" in sections:
-        out["metadata"] = _build_metadata(actor, ctx, save)
+        out["metadata"] = {**_build_metadata(actor, ctx, save), "status_history": _status_history(actor_id, upto)}
     if "plot" in sections:
         out["plot"] = _build_plot(actor, ctx, save)
     if "ranks" in sections:
@@ -1626,8 +1621,6 @@ def main(argv: list[str]) -> int:
         out["victims"] = _victims(actor_id, ctx, requested)
     if since:
         out["since"] = _build_since(actor, then, ctx, save, then_ctx, then_save)
-    if statuses:
-        out["statuses"] = _status_history(actor_id, upto)
     trips = {words: aim and _trip(actor, aim, ctx, then, then_ctx, since) for words, aim in aimed.items()}
     if targets and not any(trips.values()):
         return 1

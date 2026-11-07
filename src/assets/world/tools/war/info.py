@@ -21,6 +21,7 @@ from shared import (
     load_save,
     meta_report,
     parse_sections,
+    sections_arg,
     take_chapter,
 )
 
@@ -76,7 +77,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ invalid id: {argv[0]}", file=sys.stderr)  # a malformed call, like a bad section — not an entity that happens to be missing
         return 2
 
-    requested = argv[1] if len(argv) > 1 else None
+    requested = sections_arg(argv)
     try:
         sections = parse_sections(requested, _ALL_SECTIONS)
     except ValueError as e:

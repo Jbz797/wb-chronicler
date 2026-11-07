@@ -18,6 +18,7 @@ lazy import random  # loaded at first use, as the two below — a report's draw
 lazy import sqlite3  # the history base
 lazy import subprocess  # one process check
 lazy from collections.abc import Callable, Collection, Mapping, Sequence
+lazy from typing import NoReturn
 
 CHAPTER_CAP = 12000  # a sitting's read, past which a chapter says more than its world did; in no doc, as `chapter_floor`: the recap gives both, delivery holds them
 COUNTED_AS = "every visible character, tags by their name, markdown marks left out"  # how every length a chapter is held to counts it, said beside each figure
@@ -361,6 +362,12 @@ def _person_leaders(actors: Sequence[dict], children: Mapping[int, int], stat_of
     return refs
 
 
+# A call refused as a whole, every tool's alike: what is wrong — a misplaced `across` first —, then where its syntax and each option are told.
+def _refuse(message: str, tool: str) -> NoReturn:
+    print(f"✗ {_misplaced_across() or message} — `--help` for its syntax, `gloss {tool}` for each option", file=sys.stderr)
+    sys.exit(2)
+
+
 # The field a list of rows is matched by across two chapters, if every row carries one: an island's or a site's `id`, a biome's name. `None`: compared whole.
 def _row_identity(rows: list) -> str | None:
     return next((key for key in _IDENTITIES if rows and all(isinstance(row, dict) and key in row for row in rows)), None)
@@ -503,8 +510,7 @@ def arg_parser(prog: str, taken: str = "") -> argparse.ArgumentParser:
     # A width said: left to the terminal, argparse loads `shutil` and three compressors to measure it, at the first `add_argument` of every run.
     parser = argparse.ArgumentParser(prog=prog, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH), add_help=False, allow_abbrev=False)
     parser.add_argument("-h", "--help", action=_Syntax, nargs=0, const=taken, default=argparse.SUPPRESS)
-    told = f"`--help` for its syntax, `gloss {prog.partition('/')[0]}` for each option"
-    parser.error = lambda message: parser.exit(2, f"✗ {_misplaced_across() or message} — {told}\n")
+    parser.error = lambda message: _refuse(message, prog.partition("/")[0])
     return parser
 
 
@@ -1431,6 +1437,13 @@ def score_totals(ids: list[int], dimensions: dict[str, dict]) -> Counter:
             if own > 0:
                 totals[eid] += bisect_right(ordered, own)
     return totals
+
+
+# The sections a hand-read call names, its word after the id: a word past it, or an option where it stands, refused as `arg_parser` refuses one unknown.
+def sections_arg(argv: list[str]) -> str | None:
+    if stray := [arg for arg in argv[1:2] if arg.startswith("-")] + argv[2:]:
+        _refuse(f"unrecognized arguments: {' '.join(stray)}", Path(sys.argv[0]).parent.name)
+    return argv[1] if len(argv) > 1 else None
 
 
 # A body's leading families and singular souls, each measure's first place, for every tier that rosters people; no families where one would win every row
