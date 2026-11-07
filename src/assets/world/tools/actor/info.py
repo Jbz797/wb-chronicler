@@ -126,6 +126,7 @@ _GROUND_PREFIX = "g:"  # `--to g:flower`: a ground by its `biomes` name alone, w
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
+_LIMIT = 10  # the lines each circle of `surroundings` gives unless `--limit` says otherwise, the nearest — its kin besides
 _LISTED_GOALS = 5  # the nearest `--to cities` and `--to lands` list, a last place shared told whole: one more is its own `--to c<id>`, `i<id>`
 _LONE_ID = re.compile(r"[bcip]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): a body, a building, a town, a land — a bare number too
 _NAMED_SECTIONS = tuple(sorted((*_ALL_SECTIONS, "died")))  # what a call may name: `died` a dead body's alone, never in `full`
@@ -554,7 +555,7 @@ def _build_since(actor: dict, then: dict | None, ctx: dict, save: dict, then_ctx
 
 
 # Every living body within the common reach, nearest first, walked at its own gait — a line is built only for a printed circle: `full` never makes the common one.
-def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
+def _build_surroundings(actor: dict, ctx: dict, requested: str | None, lines: int | None) -> dict:
     cx, cy = actor_xy(actor)
     circles: dict[str, list[tuple]] = {name: [] for name, _ in _CIRCLES}
     island_of = ctx["island_lookup"]()
@@ -603,6 +604,10 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None) -> dict:
         return light({name: len(entries) for name, entries in circles.items() if entries}, withheld=True)
     rings: dict = {"intimate": [_surroundings_row(entry, ctx, home, kin) for entry in sorted(circles.pop("intimate"))]}
     rings.update({name: _surroundings_rows(_surroundings_plan(entries, ctx, home, kin), ctx, home, kin) for name, entries in circles.items()})
+    for name, ring in rings.items():  # each circle's nearest, its kin besides, the cut said beside
+        if lines is not None and len(kept := _ring_cut(ring, lines)) < len(ring):
+            print(f"⚠ {name}: {len(ring)} lines, the {lines} nearest, the body's kin besides — `--limit all` for every one", file=sys.stderr)
+            rings[name] = kept
     # An adult's line goes unmarked, most bodies standing there: said beside the rows, where a silence read alone passes for youth. A sexless hull has no stage.
     if any("sex" in row and "life_stage" not in row for ring in rings.values() if isinstance(ring, list) for row in ring):
         rings["life_stage_default"] = "adult"
@@ -1111,6 +1116,11 @@ def _ring_bound(minutes: int) -> float:
     return (minutes + _step(minutes) / 2) / 60
 
 
+# A circle's `limit` nearest lines, its kin farther off kept besides — a post or a kill is `roster --rank`'s to find.
+def _ring_cut(ring: list[dict], limit: int) -> list[dict]:
+    return [row for at, row in enumerate(ring) if at < limit or "kin" in row]
+
+
 # The tiles a land is landed on: the ground of its rim, a land owning its rock, where no body sets foot.
 def _shore(land: int, ctx: dict) -> list[tuple[int, int]]:
     barred = ctx["walk_map"]().barred
@@ -1251,6 +1261,16 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     stamina = int(stats.get("stamina_max") or 0) if rested else int(actor.get("stamina") or 0)  # WB omits a zero, so a body without the field has no breath left
     breath = pace * stamina / _STAMINA_PER_SECOND
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
+
+
+# `--limit n|all` taken out of the call, the rest left positional: `surroundings`'s lines per circle — `None` unasked, 0 for every one.
+def _take_limit(argv: list[str]) -> tuple[int | None, list[str]]:
+    if "--limit" not in argv:
+        return None, argv
+    at = argv.index("--limit")
+    if (word := argv[at + 1] if at + 1 < len(argv) else "") != "all" and not (word.isdigit() and int(word) >= 1):
+        raise ValueError("`--limit` takes a number of lines, or `all`")
+    return 0 if word == "all" else int(word), argv[:at] + argv[at + 2 :]
 
 
 # Every `--to` on the line, in order: a body, a tile, a building, a city, a land, a water, fire, kinds or grounds — repeated where a list of ids would be a tile.
@@ -1542,12 +1562,13 @@ def main(argv: list[str]) -> int:
     upto = int(chapter[1:]) if chapter else 0
     try:
         targets, argv = _take_targets(argv)
+        asked_limit, argv = _take_limit(argv)
     except (ArgumentTypeError, ValueError) as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     if not argv or argv[0] in ("-h", "--help"):
         to = 'p<id>|x,y|b<id>|c<id>|cities|i<land>|lands|"<place>"|lake<id>|burning|frozen|g:<ground>|<kind>'
-        return hand_usage(f"usage: actor/info.py <id> [sections] [--to {to}]… [--since C<n>] [C<n>]\neach option: `gloss actor`", argv)
+        return hand_usage(f"usage: actor/info.py <id> [sections] [--to {to}]… [--since C<n>] [--limit n|all] [C<n>]\neach option: `gloss actor`", argv)
     try:
         actor_id = int(argv[0])
     except ValueError:
@@ -1560,6 +1581,10 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
+    if asked_limit is not None and "surroundings" not in (requested or "").split(","):  # `full` counts the circles: the section named lists them
+        print("✗ `--limit` cuts `surroundings`: name it", file=sys.stderr)
+        return 2
+    limit = _LIMIT if asked_limit is None else asked_limit or None  # `all` read as 0: every line
     save = load_save(save_path)
     ctx = _build_context(save, save_path)
     actor = ctx["actors_by_id"].get(actor_id)
@@ -1620,7 +1645,7 @@ def main(argv: list[str]) -> int:
         stats = body_stats(actor, ctx)
         out["stats"] = {**stats, "swim": _swim(actor, stats, ctx)} if stats else stats
     if "surroundings" in sections:
-        out["surroundings"] = _build_surroundings(actor, ctx, requested)
+        out["surroundings"] = _build_surroundings(actor, ctx, requested, limit)
     if "traits" in sections:
         out["traits"] = _build_traits(actor, ctx, detailed=requested not in (None, "full"))
     if "victims" in sections:

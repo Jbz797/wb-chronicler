@@ -1,6 +1,7 @@
 {
   "--since": "`--since C<n>` : ce qui a changé depuis ce chapitre, sous `actor`, `city … buildings`, `geography`, `history` et `world … roster` ; chaque outil glose le sien.",
   "across.--keep": "`--keep a,b.c` : de chaque chapitre, ces seuls champs, par leur chemin pointé depuis le haut du bloc ; un champ absent s'y tait, un refus reste entier.",
+  "actor.--limit": "`--limit n|all` : sous `surroundings`, les n plus proches de chaque cercle, 10 sans lui, et sa famille (`kin`) en plus, à toute distance ; la coupe dite d'un `⚠`.",
   "actor.--since": "`--since C<n>` : le bloc `since`, ce qui a changé chez le corps depuis ce chapitre ; avec `--to`, seulement le `then` du trajet, sans ce bloc.",
   "actor.--to": "`--to` : le trajet vers un corps, une tuile, un bâtiment, une cité, une terre, un lieu, une eau, le feu, le gel ou un type (par virgules) ; répété, chacun à part.",
   "actor.companions.lover": "Le seul lien qui fait un couple ; `best_friend` n'en fait pas un.",
