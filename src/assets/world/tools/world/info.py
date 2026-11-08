@@ -91,6 +91,7 @@ from shared import (
     latest_chapter,
     life_stage,
     light,
+    limit_arg,
     load_data,
     load_save,
     log_entries,
@@ -1057,15 +1058,6 @@ def _land_told(land: int | str) -> str:
     return f"land {land}" if isinstance(land, int) else "the islets" if land == _ISLET else "the water"
 
 
-# `--limit`'s count: the lines a roll keeps, `all` read as 0 for every one.
-def _limit_arg(value: str) -> int:
-    if value == "all":
-        return 0
-    if not value.isdigit() or int(value) < 1:
-        raise argparse.ArgumentTypeError(f"`{value}` is no count — a number of lines, or `all`")
-    return int(value)
-
-
 # Lineages past `MAX_LISTED` as a count by kind, the rest read by `type:`: a census of a hundred lines tells no one which to read.
 def _lineage_tally(rows: dict, typed: bool) -> dict:
     if typed or len(rows) <= MAX_LISTED:
@@ -1265,7 +1257,7 @@ def main(argv: list[str]) -> int:
     parser = arg_parser(prog="world/info.py", taken="[--since C<n>] [C<n>]")
     parser.add_argument("sections", nargs="?")
     parser.add_argument("--filter", action="append", type=_filter_arg, metavar="word|key:value,…")  # repeated, each narrows further
-    parser.add_argument("--limit", type=_limit_arg, metavar="n|all")
+    parser.add_argument("--limit", type=limit_arg, metavar="n|all")
     parser.add_argument("--rank", dest="top", metavar="measure|x,y|p<id>")
     parser.add_argument(
         "--with",

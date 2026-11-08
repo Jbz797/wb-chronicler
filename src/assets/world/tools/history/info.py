@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     HISTORY_S3DB,
-    MAX_LISTED,
     SAVES_DIR,
     UNITS_PER_YEAR,
     absent_entity,
@@ -28,6 +27,7 @@ from shared import (
     index_by_id,
     kept_deaths,
     latest_chapter,
+    limit_arg,
     load_data,
     load_save,
     log_entries,
@@ -68,15 +68,18 @@ _EVENT_COLUMN = re.compile(
 
 _FINE_STEP = 1  # WB's yearly table: a row a year, the only one whose `timestamp` is a year — every coarser one averages its span or keeps its last year
 
-# The bodies WB's journal never logs the making of, each by its record's own fields: its founder's id and name, the town it rose in.
+# What a body founds and the save keeps, by its record's founder id, name and birth town — a crown's founder its first ruler, a town's town none but itself.
 _FOUNDED = {
+    "cities": ("founder_id", "founder_name", None),
     "clans": ("founder_actor_id", "founder_actor_name", "founder_city_id"),
     "cultures": ("creator_id", "creator_name", "creator_city_id"),
     "families": ("main_founder_id_1", "founder_actor_name_1", "founder_city_id"),
+    "kingdoms": (None, None, None),
     "languages": ("creator_id", "creator_name", "creator_city_id"),
     "religions": ("creator_id", "creator_name", "creator_city_id"),
 }
 
+_LIMIT = 10  # the lines each block of `founded` gives unless `--limit` says otherwise: the latest, the cut told beside
 _MAX_LOG = 50  # past so many entries the journal is read by its kinds of event, not line by line: `-t` or `--actor` narrow it back
 _REIGN_EDGES = {"king_dead": "to", "king_killed": "to", "king_left": "to", "king_new": "from"}  # the log's ends of a reign, a flight none
 
@@ -200,24 +203,34 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
     return older + years  # the coarse spans first, each `year` a span `y20–y24`
 
 
-# What rose since a chapter, or ever, that WB's journal never logs — a clan, a custom, a tongue, a faith, a family —, off the save: those still standing alone.
-def _build_founded(save: dict, since: str | None) -> dict:
+# What rose since a chapter, or ever, and still stands, off the save, `log` telling the fallen; `actor`: one body's alone; each block cut to its latest `limit`.
+def _build_founded(save: dict, since: str | None, actor: int | None, limit: int | None) -> dict:
     start = _chapter_time(load_save(SAVES_DIR / since / "map.wbox")) if since else -1.0
     cities, out = index_by_id(save.get("cities") or []), {}
     for collection, (founder, name, town) in _FOUNDED.items():
-        risen = (record for record in save.get(collection) or [] if float(record.get("created_time") or 0) > start)
-        rows = [
-            {
-                "born": entity_born(record),
-                "city": entity_ref(record.get(town), cities),
-                "founder": {"id": record[founder], "name": record.get(name)} if record.get(founder) is not None else None,
-                "id": record["id"],
-                "name": record.get("name"),
-            }
-            for record in sorted(risen, key=lambda r: (float(r.get("created_time") or 0), r["id"]))
-        ]
-        if rows:  # past the list a count, as `roster` gives
-            out[collection] = rows if len(rows) <= MAX_LISTED else {"total": len(rows)}
+        risen = sorted(
+            (record for record in save.get(collection) or [] if float(record.get("created_time") or 0) > start),
+            key=lambda r: (float(r.get("created_time") or 0), r["id"]),
+        )
+        rows = []
+        for record in risen:
+            first = (record.get("past_rulers") or [{}])[0] if founder is None else {"id": record.get(founder), "name": record.get(name)}
+            if actor is not None and first.get("id") != actor:
+                continue
+            rows.append(
+                {
+                    "born": entity_born(record),
+                    "city": entity_ref(record.get(town), cities) if town else None,
+                    "founder": {"id": first["id"], "name": first.get("name")} if first.get("id") is not None else None,
+                    "id": record["id"],
+                    "name": record.get("name"),
+                }
+            )
+        if limit and len(rows) > limit:  # the latest kept, as a chapter reads what rose last
+            print(f"⚠ {collection}: {len(rows)}, the latest {limit} — `--limit all` for every one", file=sys.stderr)
+            rows = rows[-limit:]
+        if rows:
+            out[collection] = rows
     return out
 
 
@@ -428,6 +441,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("section")
     parser.add_argument("entity", nargs="*", metavar="kind id")
     parser.add_argument("--actor", type=int, metavar="id")
+    parser.add_argument("--limit", type=limit_arg, metavar="n|all")
     kinds = sorted(load_data("world-log.json"))  # WB's own kinds of entry: a word outside them is a typo, refused with the list, never a quiet nothing
     parser.add_argument("--type", "-t", choices=kinds, metavar="event")
     args = parser.parse_args(argv)
@@ -445,8 +459,14 @@ def main(argv: list[str]) -> int:
     if args.section == "entity" and not (len(args.entity) == 2 and args.entity[0] in _ENTITIES and args.entity[1].isdigit()):
         print(f"✗ entity takes a kind and an id: `entity family 12` — kinds: {', '.join(_ENTITIES)}", file=sys.stderr)
         return 2
-    if (args.actor is not None or args.type) and args.section != "log":
-        print("✗ --actor and -t narrow `log`: name it", file=sys.stderr)
+    if args.actor is not None and args.section not in ("founded", "log"):
+        print("✗ --actor narrows `log` and `founded`: name one", file=sys.stderr)
+        return 2
+    if args.type and args.section != "log":
+        print("✗ -t narrows `log`: name it", file=sys.stderr)
+        return 2
+    if args.limit is not None and args.section != "founded":
+        print("✗ --limit cuts `founded`: name it", file=sys.stderr)
         return 2
     if since and args.section not in ("founded", "log"):
         print("✗ --since narrows `log` and `founded`: name one", file=sys.stderr)
@@ -464,7 +484,9 @@ def main(argv: list[str]) -> int:
         elif args.section == "log":
             out = _build_log(save, since, args.actor, args.type)
         elif args.section == "founded":
-            out = _build_founded(save, since) or f"✗ nothing founded {f'since {since}' if since else 'yet'} that WB's journal leaves out"
+            limit = _LIMIT if args.limit is None else args.limit or None  # `all` read as 0: every line
+            by = f" by {args.actor}" if args.actor is not None else ""
+            out = _build_founded(save, since, args.actor, limit) or f"✗ nothing founded{by} {f'since {since}' if since else 'yet'} still stands — the fallen: `log`"
         elif args.section == "rulers":
             out = _build_rulers(save, save_path, chapter, seats or tuple(_RULED))
         elif args.section == "dead_kingdoms":
