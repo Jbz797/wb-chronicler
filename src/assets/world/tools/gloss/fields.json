@@ -115,7 +115,7 @@
   "chapter.echo.refrain": "Dite dans 3 chapitres ou plus, celui-ci et les 6 d'avant : la voix propre de la chronique, pas une redite ; plus dite depuis 6 chapitres, elle redevient une redite.",
   "chapter.echo.shape": "Un moule repris des 2 d'avant : `title`, `heading` (2 mots, racine), `opening` (des 6), `paragraph`, `sentence` (4 mots, hors refrain), `closing`, `example`.",
   "city.--since": "`--since C<n>` : sous `buildings`, ce qui s'est bâti, achevé, changé de sorte ou perdu depuis ce chapitre, le reste compté.",
-  "city.army": "L'armée de la cité, une au plus (`wiki:Armies`) ; son `id` sert à `world … roster --filter army:<id>`.",
+  "city.army": "L'armée de la cité, une au plus (`wiki:Armies`) ; `men`, `women` ses soldats comme `pop` les compte ; son `id` sert à `world … roster --filter army:<id>`.",
   "city.books": "Les livres rangés dans ses bâtiments à la save, gardés et non écrits ; absent, aucun n'y est rangé : rien sur ce qui s'y est écrit.",
   "city.buildings": "`buildings`, `houses` et `buildings_built` comptent un chantier dès sa pose (`laid`) ; la section les liste, chantier marqué : ce qu'elle tait, la cité ne l'a pas.",
   "city.buildings.built": "Sous `--since`, les bâtiments posés depuis, le chantier marqué s'il monte encore.",

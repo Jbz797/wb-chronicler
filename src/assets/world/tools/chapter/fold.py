@@ -3,7 +3,7 @@
 
 # What no panel reads, cut by its section and never by name alone — `nobles` and `loot` have homonyms. A tier shedding more says so in `_AUDIT_TIERS`.
 _AUDIT = {
-    "army": frozenset({"captain_years", "id", "total_captains"}),  # its id, the corps' tenure and its roll of captains — the panel names the one in post
+    "army": frozenset({"captain_years", "id", "men", "total_captains", "women"}),  # its id, tenure, captains and sexes — the panel names the one in post
     "companions": frozenset({"lover_since"}),  # the couple's date: the panel names the mate, never since when
     "identity": frozenset({"founding_city", "founding_clan", "founding_kingdom", "motto", "name_culture", "name_template_set", "worldview"}),
     "metadata": frozenset(

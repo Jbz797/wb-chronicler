@@ -21,13 +21,13 @@ export interface City {
 interface CityArmy {
   age: number;
   captain?: PersonReference;
-  deaths: number;
-  kills: number;
-  melee: number;
+  deaths?: number;
+  kills?: number;
+  melee?: number;
   money?: number;
   name: string;
-  ranged: number;
-  renown: number;
+  ranged?: number;
+  renown?: number;
 }
 
 // Its civic buildings, counted: `city/info.py <id> buildings` lists each by id and tile for the chronicler.

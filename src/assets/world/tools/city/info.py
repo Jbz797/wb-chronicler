@@ -117,29 +117,36 @@ def _besieging_kingdoms(save: dict) -> dict[int, set[int]]:
     return besieging
 
 
-# The city's standing army — at most one, residents only, `None` where there is none. `captain_years`, `id` and `total_captains` stay chronicler-only.
+# The city's standing army — at most one, residents only, `None` where there is none. Its tenure, `id`, sexes and captain count stay chronicler-only.
 def _build_army(city: dict, ctx: dict) -> dict | None:
     army = ctx["armies_by_city"].get(city["id"])
     if army is None:
         return None
     cid, past = city["id"], army.get("past_captains") or []
-    deaths, kills = int(army.get("total_deaths") or 0), int(army.get("total_kills") or 0)
     # The sitting captain's own term: WB appends them to `past_captains` on taking office and only stamps `timestamp_end` when they leave.
     reign = next((float(c["timestamp_ago"]) for c in reversed(past) if c.get("timestamp_end") is None and c.get("timestamp_ago") is not None), None)
-    return {
-        "age": entity_age(army, ctx["world_time"]),
-        "captain": entity_ref(army.get("id_captain"), ctx["actors_by_id"]),
-        **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
-        "deaths": deaths,
-        "id": army.get("id"),  # what `world … roster --filter army:<id>` takes to list its members
-        "kills": kills,
-        "melee": ctx["melee_by_city"][cid],
-        "money": ctx["troop_money_by_city"][cid],
-        "name": army.get("name"),
-        "ranged": ctx["ranged_by_city"][cid],
-        "renown": int(army.get("renown") or 0),
-        "total_captains": len(past),  # every captain since the founding, the sitting one included — a succession count, never a headcount
-    }
+    troops = ctx["actors_by_army"].get(army.get("id"), [])
+    men = sum(soldier.get("sex") != 1 for soldier in troops)  # as `pop` counts them, every age, WB's `sex` 1 a woman
+    # Every count at nought unsaid, as `pop`'s are: an army this year still has an age, a captain this year a tenure
+    return quiet_zeros(
+        {
+            "age": entity_age(army, ctx["world_time"]),
+            "captain": entity_ref(army.get("id_captain"), ctx["actors_by_id"]),
+            **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
+            "deaths": int(army.get("total_deaths") or 0),
+            "id": army.get("id"),  # what `world … roster --filter army:<id>` takes to list its members
+            "kills": int(army.get("total_kills") or 0),
+            "melee": ctx["melee_by_city"][cid],
+            "men": men,
+            "money": ctx["troop_money_by_city"][cid],
+            "name": army.get("name"),
+            "ranged": ctx["ranged_by_city"][cid],
+            "renown": int(army.get("renown") or 0),
+            "total_captains": len(past),  # every captain since the founding, the sitting one included — a succession count, never a headcount
+            "women": len(troops) - men,
+        },
+        ("age", "captain_years"),
+    )
 
 
 # The city's library: volumes on its shelves, whoever wrote them. `total` is the ranked stat, the section lists the titles, `book/info.py <id>` spells one out.
