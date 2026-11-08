@@ -364,7 +364,7 @@ def _breeding_bars(actor: dict, ctx: dict, island_of: TileIslands, grid: LazyTil
     return {f"{bar} {actor['id']}" for bar in bars}
 
 
-# How the lineages listed breed, WB's trait ids prefixes off — `sexual, viviparity` —, each by its ids; one shared by all, alone: `subspecies … traits` names them.
+# How the lineages breed, WB's trait ids prefixes off — `sexual, viviparity` —, each by its ids; one shared by all, alone: `subspecies … traits` names them.
 def _breedings(save: dict, listed: dict) -> str | dict[str, list[int]]:
     held: defaultdict[str, list[int]] = defaultdict(list)
     for lineage in save.get("subspecies") or []:
@@ -1362,9 +1362,8 @@ def main(argv: list[str]) -> int:
             # A mistyped word told apart from a kind with no lineage left, as `roster` tells it
             print(f"✗ {(args.type and unsited_reason(families, args.type)) or f'no living lineage{of} in this world'}", file=sys.stderr)
             return 1
-        if not since:  # the census, and how its lineages listed breed — by ids as its rows: `type:` and `sapient` narrow both
-            lineages = _lineage_cut(lineages, limit, "census")
-            lineages = {**lineages, "reproduction": _breedings(save, lineages)}
+        if not since:  # the census, and how its every lineage breeds, past the cut too — by ids as its rows: `type:` and `sapient` narrow both
+            lineages = {**_lineage_cut(lineages, limit, "census"), "reproduction": _breedings(save, lineages)}
         out["lineages"] = lineages
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)
