@@ -1,6 +1,6 @@
 # 📐 Audit de conformité
 
-<p class="metadata">Date de mise à jour : 07/11/26 20:51</p>
+<p class="metadata">Date de mise à jour : 08/11/26 11:58</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit, ses champs entre parenthèses ; chacune s'audite entière, ses crochets ajoutant au § III ce que le script en demande.
 
@@ -10,7 +10,7 @@ Confronte tes cibles aux parties § I à § V de `docs/chronicler.md` et à `doc
 
 - **Cercle** : l'entité dont relève une balise se lit dans son `actor <id> metadata` (cité, clan, royaume…) ; ce qui ne relève d'aucune entité du favori se classe au `circle` d'`actor <favori> --to`, ou de `surroundings`, qui les donne tous, jamais par les heures de la prose, au pas de son corps. D'un type, `--to` ne rend que le plus proche : tout autre est un point à mesurer, sauf si celui-là est déjà `far`. Une date reprise ne se relève qu'à sa 3ᵉ fois dans une section, sans la rendre floue (jamais « naguère » si elle sert). Un même fait dit dans deux cercles, hors d'un dialogue, qui en parle sans en être un, est à toi : redit, il est de trop ; il n'a qu'une place, le fil qui le porte, dans la voix de son cercle, qui se juge phrase à phrase : un fait du Commun ou du Lointain dit comme l'Intime, en narration directe, est à corriger, son degré de flou un mieux ; dit autrement, c'est une contradiction, un point à mesurer.
 - **Barèmes** : le mot d'une agglomération suit le `total` de `city <id> pop`, celui d'une couronne les `cities` de `kingdom <id> metadata`.
-- **Tes outils** : ceux-là seuls, `--to` pour tout corps (une eau, un sol, le feu), `surroundings` pour le favori, `actor <id>` pour un corps mort, `tiles … --to` sans marcheur (bâtiment, cité, tuile), `… <id> metadata`, `pop` et `traits` des balises de tes cibles, `world metadata` (la date), `echo.py`, et `gloss` pour le sens d'un champ — syntaxe : `docs/tools.md` ; un autre outil vérifie un fait : rends-le aux faits, en point à mesurer.
+- **Tes outils** : ceux-là seuls, `--to` pour tout corps (une eau, un sol, le feu), `surroundings`, `companions` et `kin` pour le favori, `actor <id>` pour un corps mort, `tiles … --to` sans marcheur (bâtiment, cité, tuile), `… <id> metadata`, `pop` et `traits` des balises de tes cibles, `world metadata` (la date), `echo.py`, et `gloss` pour le sens d'un champ — syntaxe : `docs/tools.md` ; un autre outil vérifie un fait : rends-le aux faits, en point à mesurer.
 - **Noms** : une espèce, un biome ou un mois se lit dans `i18n/<lang>/`, un lieu dans `history/places.json` : `places` porte les lieux forgés, ses autres blocs les terres et les eaux comptées ; les ids de balise sont au script.
 - **Redites et longueur** : `python tools/chapter/echo.py C<n>` montre les mots repris (`gloss echo`), et d'un ✗ un chapitre hors bornes. Lui échappent un angle, une chute ou un moule de phrase redits autrement, une tournure courte (_« contre les braises »_) : relis pour eux, des 2 chapitres d'avant, les seules sections répondant à celles de ta cible (même place, même sujet, ou que `shape` désigne), et les lignes où `names` met les mêmes noms.
 
