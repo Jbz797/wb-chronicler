@@ -85,6 +85,7 @@ from shared import (
     kept_city_since,
     kept_deaths,
     kept_lover_since,
+    latest_chapter,
     life_stage,
     light,
     load_data,
@@ -820,7 +821,7 @@ def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, 
     out = {
         **dict.fromkeys(lost),  # refused above, yet named: `emit` leaves the others their names
         "crafted": _crafted(dead["id"], ctx, requested) if "crafted" in sections else None,
-        "died": _death(dead, ctx) if not named or "died" in sections else None,
+        "died": _death(dead, ctx, upto) if not named or "died" in sections else None,
         "kin": kin if kin and any(kin.values()) else None,
         "status_history": None if named else _status_history(dead["id"], upto),
         "victims": _victims(dead["id"], ctx, requested) if "victims" in sections else None,
@@ -833,12 +834,13 @@ def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, 
 
 
 # A body the register saw die: what it was, of whom and in what post, then when, of what, by whom and where — its land as the map read draws it.
-def _death(dead: dict, ctx: dict) -> dict:
+def _death(dead: dict, ctx: dict, upto: int) -> dict:
     by_id, deaths, lineage = ctx["actors_by_id"], ctx["deaths"], dead["subspecies"]
     return {
         "asset_id": dead["asset_id"],
         "blow": dead["blow"],
         "born": world_date(dead["born"]),
+        "city": _last_city(dead["id"], ctx, upto),
         "date": world_date(dead["died"]),
         "died_of": dead["cause"],
         "island_id": _land_of(dead, ctx),
@@ -932,6 +934,16 @@ def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str |
 # Its land's id, else `water` afloat or `islet` on an islet too small to count — as `roster` says it.
 def _land_of(body: dict, ctx: dict) -> int | str:
     return ctx["island_lookup"]().get(actor_xy(body)) or ("water" if "water" in _off_land_at(body, ctx) else "islet")
+
+
+# Its town as the last chapter save to hold it alive knew it, the register keeping none — named as the town is now, or as it was if gone since.
+def _last_city(dead_id: int, ctx: dict, upto: int) -> dict | None:
+    # Found in the chapters' pickled roll first, so only the one save that held it is opened
+    if (last := next((n for n, bodies in reversed(_chapter_statuses(upto or latest_chapter())) if dead_id in bodies), None)) is None:
+        return None
+    save = load_save(SAVES_DIR / f"C{last}" / "map.wbox")
+    town = next(actor for actor in save.get("actors_data") or [] if actor["id"] == dead_id).get("cityID")
+    return town and (entity_ref(town, ctx["cities_by_id"]) or entity_ref(town, index_by_id(save.get("cities") or [])))
 
 
 # A word a `--to` list cannot hold: an id, the fire, every land or a place's name — each a goal aimed at by its own `--to`; a `g:` ground never is.
@@ -1464,6 +1476,14 @@ def _trip_time(per_hour: float, total: float, foot: float | None = None, water: 
     return {"march_days": _half_days(total / day)} if total >= day else _duration(total / per_hour, "walk_" if foot is not None else "total_")
 
 
+# A trip without its circles, at every depth — a town's row, a kind's answer, the `then` of a chapter past.
+def _uncircled(trip: dict) -> dict:
+    def bare(value: object) -> object:
+        return _uncircled(value) if isinstance(value, dict) else [bare(item) for item in value] if isinstance(value, list) else value
+
+    return {key: bare(value) for key, value in trip.items() if key != "circle"}
+
+
 # The deaths a body dealt, oldest first, off the register — WB counts them, never whom, nor a metamorphosis: `full` keeps the latest, the section named all.
 def _victims(actor_id: int, ctx: dict, requested: str | None) -> dict | None:
     dealt = [dead for dead in ctx["deaths"].values() if dead["killer"] == actor_id]
@@ -1661,9 +1681,13 @@ def main(argv: list[str]) -> int:
     if since and not targets:  # beside a `--to`, it dates the trip's `then` alone: the body's own changes are a call of their own
         out["since"] = _build_since(actor, then, ctx, save, then_ctx, then_save)
     trips = {words: aim and _trip(actor, aim, ctx, then, then_ctx, since) for words, aim in aimed.items()}
-    for trip in trips.values():  # whose pace it reads, as `--to` would aim at it: a block quoted without its command still says where it starts
+    favorite = next((body["id"] for body in ctx["actors_by_id"].values() if body.get("favorite") is True), None) if trips else None  # sought for a trip alone
+    foreign = favorite not in (None, actor_id)  # a circle reads from the favourite alone: off another body, it would file nothing the chronicle keeps
+    for words, trip in trips.items():  # whose pace it reads, as `--to` would aim at it: a block quoted without its command still says where it starts
         if isinstance(trip, dict):
-            trip["from"] = f"p{actor_id}"
+            trips[words] = {**(_uncircled(trip) if foreign else trip), "from": f"p{actor_id}"}
+    if foreign and any(trips.values()):
+        print(f"· no `circle` off p{actor_id}: it reads from the favourite — `actor {favorite} --to …`", file=sys.stderr)
     if targets and not any(trips.values()):
         return 1
     if trips:  # several `--to` keep each its words, where one alone comes bare
