@@ -16,6 +16,7 @@ import { KingdomTagComponent } from '../../tags';
   selector: 'app-war-card',
   imports: [DeltaComponent, KingdomTagComponent, NewBadgeComponent, NzDescriptionsModule, NzTagModule, SectionRowDirective, TranslatePipe],
   templateUrl: './war-card.component.html',
+  styleUrl: './war-card.component.scss',
 })
 export class WarCardComponent {
 
