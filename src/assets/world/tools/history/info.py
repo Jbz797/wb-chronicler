@@ -79,8 +79,7 @@ _FOUNDED = {
     "religions": ("creator_id", "creator_name", "creator_city_id"),
 }
 
-_LIMIT = 10  # the lines each block of `founded` gives unless `--limit` says otherwise: the latest, the cut told beside
-_MAX_LOG = 50  # past so many entries the journal is read by its kinds of event, not line by line: `-t` or `--actor` narrow it back
+_LIMIT = 10  # the lines `founded`, `log` and `rulers` give unless `--limit` says otherwise: the latest, the cut told beside
 _REIGN_EDGES = {"king_dead": "to", "king_killed": "to", "king_left": "to", "king_new": "from"}  # the log's ends of a reign, a flight none
 
 # WB's `world_statistics_beasts` walks every unit, the dying and the hulls with it, where `Actor.die` counts a death at the blow and none for a metamorphosis.
@@ -226,25 +225,20 @@ def _build_founded(save: dict, since: str | None, actor: int | None, limit: int 
                     "name": record.get("name"),
                 }
             )
-        if limit and len(rows) > limit:  # the latest kept, as a chapter reads what rose last
-            print(f"⚠ {collection}: {len(rows)}, the latest {limit} — `--limit all` for every one", file=sys.stderr)
-            rows = rows[-limit:]
-        if rows:
+        if rows := _latest(rows, limit, collection):
             out[collection] = rows
     return out
 
 
-# WB's own log up to the chapter, its bodies named by the save and the death register, its crowns by `crowns_named` — past `_MAX_LOG` entries, a count by kind.
-def _build_log(save: dict, since: str | None, actor: int | None, event: str | None) -> dict | list[dict] | str:
+# WB's own log up to the chapter, its bodies named by the save and the death register, its crowns by `crowns_named` — its latest `limit` entries.
+def _build_log(save: dict, since: str | None, actor: int | None, event: str | None, limit: int | None) -> list[dict] | str:
     start = _chapter_time(load_save(SAVES_DIR / since / "map.wbox")) if since else 0.0
     if not (entries := log_entries(start, end := _chapter_time(save), actor, event)):
         told = "✗ nothing logged" + (f" since {since}" if since else "") + (" for that body" if actor is not None else "") + (f" as {event}" if event else "")
         # A kind WB knows but this world never logged, told beside what it did log: the kind exists, its day has not come
         others = Counter(e["event"] for e in log_entries(start, end, actor, None)) if event else None
         return told + (" — logged here: " + ", ".join(f"{kind} {n}" for kind, n in sorted(others.items())) if others else "")
-    if len(entries) > _MAX_LOG:
-        counts = Counter(e["event"] for e in entries)
-        return {"by_event": dict(sorted(counts.items()))}
+    entries = _latest(entries, limit, "entries")
     persons, deaths, crowns = index_by_id(save.get("actors_data") or []), kept_deaths(save), crowns_named(save)
     for entry in entries:
         if event:  # the one `-t` asked for, so no entry repeats it — nor the body `--actor` named
@@ -257,7 +251,7 @@ def _build_log(save: dict, since: str | None, actor: int | None, event: str | No
 
 
 # Every term the world still knows, a crown's, a town's or an army's, off its succession in the last save that held it — a fallen crown's, off the log too.
-def _build_rulers(save: dict, save_path: Path, chapter: str | None, kinds: tuple[str, ...]) -> list[dict] | dict | str:
+def _build_rulers(save: dict, save_path: Path, chapter: str | None, kinds: tuple[str, ...], limit: int | None) -> list[dict] | str:
     persons = index_by_id(save.get("actors_data") or [])
     standing = {(kind, record["id"]) for kind in kinds for record in save.get(_ENTITIES[kind][1]) or []}
     records, rows = _ruled_records(save, save_path, chapter), []
@@ -278,15 +272,15 @@ def _build_rulers(save: dict, save_path: Path, chapter: str | None, kinds: tuple
         rows += [row for (crown, _), row in logged.items() if ("kingdom", crown) not in records]
     if not rows:
         return f"✗ no {' nor '.join(kinds)} has had a head yet"
-    if len(rows) > _MAX_LOG:
-        return {"by_kind": dict(sorted(Counter(kind for row in rows for kind in kinds if kind in row).items()))}
+    rows.sort(key=lambda row: (tuple(int(part[1:]) for part in (row.get("from") or row["to"]).split()), row.get("id") or 0))  # by the date each term opens
+    rows = _latest(rows, limit, "terms")
     deaths = kept_deaths(save)  # 60 ms of register, for the listed rows' `born` alone
     for row in rows:
         if (body := persons.get(row["id"])) is not None:
             row["born"] = entity_born(body)
         elif (dead := deaths.get(row["id"])) is not None:
             row["born"] = world_date(dead["born"])
-    return sorted(rows, key=lambda row: (tuple(int(part[1:]) for part in (row.get("from") or row["to"]).split()), row.get("id") or 0))
+    return rows
 
 
 # The world's years: what each one saw born, raised, razed or dying, as gains, and what it closed on — the one under way, with no row yet, off the save's tallies.
@@ -374,6 +368,14 @@ def _king_entry(entry: dict) -> dict:
         return {**at, "killer": {"id": body, "name": entry.get("killer")}, "name": entry.get("king")}
     names = entry.get("names") or []
     return {**at, "id": body, "name": names[1] if len(names) > 1 else None}
+
+
+# The latest `limit` rows of a list in time order, as a chapter reads what came last — the cut told beside, `None` keeping them all.
+def _latest(rows: list, limit: int | None, what: str) -> list:
+    if limit and len(rows) > limit:
+        print(f"⚠ {what}: {len(rows)}, the latest {limit} — `--limit all` for every one", file=sys.stderr)
+        return rows[-limit:]
+    return rows
 
 
 # The year whose row a moment falls in: Faithful Saves closes a calendar year as January opens — the rows WB wrote before it, a month early, read the same.
@@ -465,8 +467,8 @@ def main(argv: list[str]) -> int:
     if args.type and args.section != "log":
         print("✗ -t narrows `log`: name it", file=sys.stderr)
         return 2
-    if args.limit is not None and args.section != "founded":
-        print("✗ --limit cuts `founded`: name it", file=sys.stderr)
+    if args.limit is not None and args.section not in ("founded", "log", "rulers"):
+        print("✗ --limit cuts `founded`, `log` and `rulers`: name one", file=sys.stderr)
         return 2
     if since and args.section not in ("founded", "log"):
         print("✗ --since narrows `log` and `founded`: name one", file=sys.stderr)
@@ -478,17 +480,17 @@ def main(argv: list[str]) -> int:
         print("✗ no history base yet — `chapter/new.py` copies WB's with each chapter", file=sys.stderr)
         return 1
     save = load_save(save_path)
+    limit = _LIMIT if args.limit is None else args.limit or None  # `all` read as 0: every line
     with closing(sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True)) as conn:  # `with connect()` alone commits, it never closes
         if args.section == "world":
             out = _build_world(conn, save) or "✗ no year closed, and nothing born, raised or dead yet"
         elif args.section == "log":
-            out = _build_log(save, since, args.actor, args.type)
+            out = _build_log(save, since, args.actor, args.type, limit)
         elif args.section == "founded":
-            limit = _LIMIT if args.limit is None else args.limit or None  # `all` read as 0: every line
             by = f" by {args.actor}" if args.actor is not None else ""
             out = _build_founded(save, since, args.actor, limit) or f"✗ nothing founded{by} {f'since {since}' if since else 'yet'} still stands — the fallen: `log`"
         elif args.section == "rulers":
-            out = _build_rulers(save, save_path, chapter, seats or tuple(_RULED))
+            out = _build_rulers(save, save_path, chapter, seats or tuple(_RULED), limit)
         elif args.section == "dead_kingdoms":
             out = _build_dead_kingdoms(conn, save) or "✗ no crown has fallen"
         else:

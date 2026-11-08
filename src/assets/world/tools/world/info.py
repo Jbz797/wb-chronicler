@@ -12,6 +12,7 @@ import re
 import sys
 from collections import Counter, defaultdict
 from functools import cache, partial
+from itertools import islice
 from math import inf
 from operator import itemgetter
 from pathlib import Path
@@ -44,7 +45,6 @@ from islands import TileIslands, compute_islands_cached, islet_heart
 from places import PlaceIndex
 from shared import (
     JOBS,
-    MAX_LISTED,
     MIN_RANK_PEERS,
     MIN_SCORE_PEERS,
     NEW_BABY_NUTRITION,
@@ -364,8 +364,8 @@ def _breeding_bars(actor: dict, ctx: dict, island_of: TileIslands, grid: LazyTil
     return {f"{bar} {actor['id']}" for bar in bars}
 
 
-# How the lineages breed, WB's trait ids prefixes off — `sexual, viviparity` —, each by its ids or count; one shared by all, alone: `subspecies … traits` names them.
-def _breedings(save: dict, listed: dict, counted: bool) -> str | dict[str, list[int] | int]:
+# How the lineages listed breed, WB's trait ids prefixes off — `sexual, viviparity` —, each by its ids; one shared by all, alone: `subspecies … traits` names them.
+def _breedings(save: dict, listed: dict) -> str | dict[str, list[int]]:
     held: defaultdict[str, list[int]] = defaultdict(list)
     for lineage in save.get("subspecies") or []:
         if str(lineage["id"]) in listed:
@@ -374,7 +374,7 @@ def _breedings(save: dict, listed: dict, counted: bool) -> str | dict[str, list[
             held[", ".join(traits) or "none"].append(lineage["id"])
     if len(held) == 1:
         return next(iter(held))
-    return {breeding: len(ids) if counted else sorted(ids) for breeding, ids in sorted(held.items())}
+    return {breeding: sorted(ids) for breeding, ids in sorted(held.items())}
 
 
 # The world's hulls, WB modelling them as actors: `total` is what the panel reads, the section names each one, `boat/info.py <id>` spelling one out.
@@ -1067,16 +1067,16 @@ def _land_told(land: int | str) -> str:
     return f"land {land}" if isinstance(land, int) else "the islets" if land == _ISLET else "the water"
 
 
-# Lineages past `MAX_LISTED` as a count by kind, the rest read by `type:`: a census of a hundred lines tells no one which to read.
-def _lineage_tally(rows: dict, typed: bool) -> dict:
-    if typed or len(rows) <= MAX_LISTED:
-        return rows
-    kinds = Counter(row["asset_id"] for row in rows.values())
-    return {"asset_id": dict(kinds), "info": f"past {MAX_LISTED} lineages, a count by kind — `--filter type:<kind>` lists each by id", "total": len(rows)}
+# The first `limit` lineages by id, as `roster` cuts its roll — the rest said beside, `None` keeping them all.
+def _lineage_cut(rows: dict, limit: int | None, what: str) -> dict:
+    if limit and len(rows) > limit:
+        print(f"⚠ {what}: {len(rows)} lineages, the first {limit} by id — `--limit all` for every one", file=sys.stderr)
+        return dict(islice(rows.items(), limit))  # the head alone walked, never the whole census copied
+    return rows
 
 
 # The lineages a span saw rise and die out: `gone` as the last save to hold them knew them, `new` as this one does, the ids no save between ever held.
-def _lineages_since(save: dict, since: str, chapter: str | None, kinds: set[str] | None, minded: bool | None) -> dict:
+def _lineages_since(save: dict, since: str, chapter: str | None, kinds: set[str] | None, minded: bool | None, limit: int | None) -> dict:
     earlier, saves = load_save(SAVES_DIR / since / "map.wbox"), _since_saves(since, chapter, save)
     then, now, seen = _build_lineages(earlier, kinds, minded), _build_lineages(save, kinds, minded), {}
     for rows in (then, *(_build_lineages(reading, kinds, minded) for reading in saves[:-1])):  # as its last save alive knew it, one born and gone between too
@@ -1087,8 +1087,8 @@ def _lineages_since(save: dict, since: str, chapter: str | None, kinds: set[str]
     unseen = {str(lid): kind_of.get(lid) for lid in came if not kinds or kind_of.get(lid) in kinds}
     out = {
         "came_and_went": None if minded is not None else unseen,
-        "gone": _lineage_tally({key: seen[key] for key in sorted(seen, key=int) if not (now.get(key) or {}).get("members")}, kinds is not None),
-        "new": _lineage_tally({key: row for key, row in now.items() if key not in then and row["members"]}, kinds is not None),
+        "gone": _lineage_cut({key: seen[key] for key in sorted(seen, key=int) if not (now.get(key) or {}).get("members")}, limit, "gone"),
+        "new": _lineage_cut({key: row for key, row in now.items() if key not in then and row["members"]}, limit, "new"),
     }
     return {key: value for key, value in out.items() if value}
 
@@ -1311,13 +1311,16 @@ def main(argv: list[str]) -> int:
         or point is not None
     )
     minded = True if args.sapient else False if args.beasts else None  # a roll's bodies split by mind, or a census's lineages
-    limited = args.limit is not None and "pairings" not in sections  # `--limit` cuts `pairings` too
+    limited = args.limit is not None and not {"lineages", "pairings"} & set(sections)  # `--limit` cuts `lineages` and `pairings` too
     narrowing = sifted or ((minded is not None or args.type) and not {"lineages", "pairings"} & set(sections)) or args.fields is not None or limited
     if args.beasts and (other := next((flag for flag in ("settle", "barred") if getattr(args, flag)), None)):  # a founding is a thinker's alone
         print(f"✗ beasts and {other} split the bodies in two: filter by one", file=sys.stderr)
         return 2
     if narrowing and "roster" not in sections:  # refused before the save is read, as a flag that would go unheard
-        print("✗ --filter, --rank, --limit, --with narrow `roster` — `type:`, `sapient` and `beasts` `lineages` and `pairings` too: name it", file=sys.stderr)
+        print(
+            "✗ --filter, --rank, --limit, --with narrow `roster` — `--limit`, `type:`, `sapient`, `beasts`: `lineages`, `pairings` too",
+            file=sys.stderr,
+        )
         return 2
     if args.has and args.lacks:  # the two halves of a roll by one tally: together they name no one
         print("✗ has: and lacks: split a roll in two: filter by one", file=sys.stderr)
@@ -1351,7 +1354,7 @@ def main(argv: list[str]) -> int:
     if "lineages" in sections:
         of = f" of {args.type}" if args.type else ""
         if since:
-            lineages = _lineages_since(save, since, chapter, bred, minded)
+            lineages = _lineages_since(save, since, chapter, bred, minded, limit)
             if not lineages:
                 print(f"✗ no lineage{of} came or went since {since}", file=sys.stderr)
                 return 1
@@ -1359,9 +1362,9 @@ def main(argv: list[str]) -> int:
             # A mistyped word told apart from a kind with no lineage left, as `roster` tells it
             print(f"✗ {(args.type and unsited_reason(families, args.type)) or f'no living lineage{of} in this world'}", file=sys.stderr)
             return 1
-        if not since:  # the census, and how its lineages breed — by ids as its rows, counted where they are: `type:` and `sapient` narrow both
-            tally = _lineage_tally(lineages, bred is not None)
-            lineages = {**tally, "reproduction": _breedings(save, lineages, counted=tally is not lineages)}
+        if not since:  # the census, and how its lineages listed breed — by ids as its rows: `type:` and `sapient` narrow both
+            lineages = _lineage_cut(lineages, limit, "census")
+            lineages = {**lineages, "reproduction": _breedings(save, lineages)}
         out["lineages"] = lineages
     if "metadata" in sections:
         out["metadata"] = _build_metadata(map_stats)

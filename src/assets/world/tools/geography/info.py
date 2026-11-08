@@ -38,7 +38,6 @@ from islands import TileIslands, compute_islands_cached, islet_heart
 from shared import (
     DIAGONAL_EXTRA,
     HOMES,
-    MAX_LISTED,
     SAVES_DIR,
     ZONE_TILES,
     actor_xy,
@@ -58,6 +57,7 @@ from shared import (
     kept_clouds,
     land_arg,
     land_side,
+    limit_arg,
     load_save,
     moved_between,
     parse_sections,
@@ -82,6 +82,7 @@ _BUCKETED = ("bodies", "burning", "frozen", "gear", "positions")  # the sections
 _BY_LAND = ("biomes", "bodies", "burning", "frozen", "gear", "islands", "positions", "ridges", "waters")  # what a land narrows: the rest is world-wide
 _DETAIL = ("borders", "bounds")  # what `-t` alone tells of a patch, the wide view keeping to where it lies
 _GROUND_SWING = 0.1  # a ground's own change past which `biomes --since` tells it, its land's share still: a field doubled, a tenth of a forest burnt
+_LIMIT = 10  # the lines a list gives unless `--limit` says otherwise: its head, the cut told beside
 _MAX_NAMED_CARRIERS = 5  # past a handful, naming them says less than counting them: on such a land, bearing arms is no longer the fact a chapter turns on
 
 _NONE = {  # what an empty section is said to lack: a bare `{}` reads as a fault, or as a word mistyped
@@ -100,7 +101,6 @@ _SHORE_REACH = 60  # tiles past which a fire is off every water, as `tiles` hold
 _STEPS = tuple((dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)  # the eight ways a crow-flown search widens
 _SURVEY_PCT = 1  # the share of its land under which a ground is only named in the world-wide `biomes`: half its rows weigh less, and a land named has them all
 _TOP_PATCHES = 5  # the patches `biomes -t` sites of one ground — a second massif, a frost in two halves: past a handful, the row's count says the rest
-_TOP_STRAITS = 10  # the narrowest crossings `waters` keeps past `MAX_LISTED`, the ones a tale swims: `--filter i<land>` lists a land's every one
 _WATER_WORD = re.compile(r"(?:lake|river|sea)\d*")  # a water `--filter` takes, `lake4` or a family `lake`, as `water_arg` reads it
 
 
@@ -299,10 +299,8 @@ def _build_gear(save: dict, save_path: Path) -> dict:
     return out
 
 
-# Up to `MAX_LISTED`, or all on the land named, each by `id`, land else islet else water, `asset_id` if kinds mix; past it, by land and `total`. `only`: `--since`'s.
-def _build_positions(
-    save: dict, save_path: Path, kinds: set[str], land: int | str | None, only: Collection[int] | None = None
-) -> list[dict] | dict[str, str | int] | None:
+# Each site, on the land named or all, by `id`, land else islet else water, `asset_id` if kinds mix, south to north. `only`: `--since`'s.
+def _build_positions(save: dict, save_path: Path, kinds: set[str], land: int | str | None, only: Collection[int] | None = None) -> list[dict] | None:
     sites = [(record, tile) for record, tile in asset_sites(save, kinds) if only is None or record.get("id") in only]
     if not sites:  # the lookup below costs 0.2 s cold, so a kind nobody built never pays for it
         return None
@@ -311,12 +309,6 @@ def _build_positions(
     if land is not None:
         # A land by the lookup alone; only `islets` or `water` read the tile, which a sweep over the lands would otherwise decode for every site off them
         sites = [(r, tile) for r, tile in sites if (island_of.get(tile) == land if isinstance(land, int) else _site_key(tile, island_of, grid, tile_map) == land)]
-    elif len(sites) > MAX_LISTED:
-        by_land: defaultdict[str, Counter] = defaultdict(Counter)
-        for record, tile in sites:
-            by_land[_site_key(tile, island_of, grid, tile_map)][record.get("asset_id")] += 1
-        tally = {key: " | ".join(f"{n} {kind}" for kind, n in counts.most_common()) for key, counts in sorted(by_land.items(), key=_land_order)}
-        return {**tally, "info": f"past {MAX_LISTED} sites, a count by land — `--filter i<land>` or one kind lists each by id", "total": len(sites)}
     # `dormant` as `ground … metadata` tells it, so that a roll of volcanoes or geysers says which sleep without a call per mouth.
     mixed, civic, cities = len(kinds) > 1, civic_building_ids(), index_by_id(save.get("cities") or [])
     out = [
@@ -468,6 +460,14 @@ def _compute_biomes(save: dict, save_path: Path) -> dict:
     # Told once rather than on every land that carries the biome: a dozen descriptions would otherwise ride along some eighty times.
     named = {row["biome"] for rows in per_island.values() for row in rows if "biome" in row}
     return {"descriptions": {b: text for b in sorted(named) if (text := biome_lore(b).get("description"))}, "islands": per_island, "patches": top_patches}
+
+
+# A list's first `limit` lines in its own order, the cut told beside — `None` keeping them all.
+def _cut(rows: list, limit: int | None, what: str, order: str) -> list:
+    if limit and len(rows) > limit:
+        print(f"⚠ {len(rows)} {what}, the first {limit} {order} — `--limit all` for every one", file=sys.stderr)
+        return rows[:limit]
+    return rows
 
 
 # `--filter`'s words: a land `i<id>`, `islets` or `water`, as `--to` names one, and a water `lake<id>` or a family `lake`, read as `land_arg` and `water_arg` do.
@@ -766,6 +766,7 @@ def main(argv: list[str]) -> int:
     parser = arg_parser(prog="geography/info.py", taken="[--since C<n>] [C<n>]")
     parser.add_argument("sections", nargs="?")
     parser.add_argument("--filter", action="append", type=_filter_arg, metavar="i<id>|islets|water|lake<id>|lake|…")
+    parser.add_argument("--limit", type=limit_arg, metavar="n|all")
     parser.add_argument("--type", "-t", metavar="kind")
     args = parser.parse_args(argv)
     picked: dict[str, dict] = {"land": {}, "water": {}}  # each word kept with what it reads as
@@ -787,6 +788,10 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
     wanted: str | None = args.type
+    if args.limit is not None and not {"positions", "waters"} & set(sections):  # refused before the save is read
+        print("✗ --limit cuts `positions` and the straits of `waters`: name one", file=sys.stderr)
+        return 2
+    limit = _LIMIT if args.limit is None else args.limit or None  # `all` read as 0: every line
 
     if wanted is None and "positions" in sections:
         print("✗ positions needs --type, a kind, a family or a resource — `entity_types` lists the kinds", file=sys.stderr)
@@ -848,7 +853,7 @@ def main(argv: list[str]) -> int:
         if "positions" in sections and kinds is not None:
             was, now = ({record["id"] for record, _ in asset_sites(reading, kinds)} for reading in (earlier, save))
             gone, came = _build_positions(earlier, then_path, kinds, args.island, was - now), _build_positions(save, save_path, kinds, args.island, now - was)
-            if came_or_went := {side: sites for side, sites in (("gone", gone), ("new", came)) if sites}:
+            if came_or_went := {side: _cut(sites, limit, f"{side} sites", "from the south") for side, sites in (("gone", gone), ("new", came)) if sites}:
                 moved = {**moved, "positions": came_or_went}
         if not moved:
             print(f"✗ nothing moved in {', '.join(sections)} since {since}", file=sys.stderr)
@@ -869,15 +874,16 @@ def main(argv: list[str]) -> int:
         print(f"✗ no {wanted} {where} — without a land, `positions` says which lands hold one", file=sys.stderr)
         return 1
 
-    shown = out if args.island is None else _narrowed(out, args.island)
+    shown: dict = out if args.island is None else _narrowed(out, args.island)
     if args.water is not None:
         if (one := _one_water(shown["waters"], args.water)) is None:
             print(f"✗ no {' '.join(map(str, filter(None, args.water)))} {where} — `geography … waters` lists them", file=sys.stderr)
             return 1
         shown = shown | {"waters": one}
-    elif "waters" in shown and args.island is None and len(straits := shown["waters"]["straits"]) > MAX_LISTED:  # already narrowest first
-        more = f"past {MAX_LISTED} straits, the {_TOP_STRAITS} narrowest, {len(straits) - _TOP_STRAITS} more — `--filter i<land>` lists a land's every one"
-        shown = shown | {"waters": {**shown["waters"], "info": more, "straits": straits[:_TOP_STRAITS]}}
+    elif "waters" in shown and shown["waters"].get("straits"):  # already narrowest first
+        shown = shown | {"waters": {**shown["waters"], "straits": _cut(shown["waters"]["straits"], limit, "straits", "narrowest")}}
+    if shown.get("positions"):
+        shown = shown | {"positions": _cut(shown["positions"], limit, "sites", "from the south")}
     # An empty section says so, the command failing only where all asked are, as `positions` does — a dict of empty blocks counts: `biomes` on a bare land.
     bare = [s for s in sections if s in _NONE and not (any(shown[s].values()) if isinstance(shown[s], dict) else shown[s])]
 
