@@ -256,7 +256,7 @@
   "task.move_to_water": "Malgré son nom : gagner un lieu sûr pour son corps, la terre ferme pour un marcheur tombé à l'eau, l'eau pour une bête aquatique échouée.",
   "tax_tribute": "Part de ce qu'il reçoit que le maire verse au roi, aux taux de `tax_local`.",
   "territory": "Les zones que tient la cité, chacune de 8 × 8 tuiles (0,64 km²) ; d'un royaume ou d'une alliance, la somme de ses cités.",
-  "tiles.--to": "`--to` : un second bout et l'écart du premier à lui (`to`) ; chaque bout une tuile, `b<id>`, `c<id>`, `p<id>`, une terre, une eau, un sol, le feu, le gel ou un lieu.",
+  "tiles.--to": "`--to` : un autre bout, répétable, et l'écart du premier à chacun (`to`) : tuile, `b<id>`, `c<id>`, `p<id>`, une terre, une eau, un sol, le feu, le gel ou un lieu.",
   "tiles.distances.strait_to_land": "L'eau à nager (`swim_tiles`) depuis tout le rocher, écueils à sec gratuits ; de rive à rive : `islet … to_islands`.",
   "tiles.distances.to_islands": "Les 5 terres les plus proches, à vol d'oiseau jusqu'à leur tuile la plus proche.",
   "tiles.distances.to_nearest_city": "La cité la plus proche par son `edge`, un quartier ; `to_capital` vise le centre de la capitale, et ne paraît qu'en cité.",

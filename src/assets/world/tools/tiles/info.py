@@ -585,7 +585,7 @@ def main(argv: list[str]) -> int:
     parser = arg_parser(prog="tiles/info.py", taken="[C<n>]")
     parser.add_argument("xy", type=_end_arg, metavar=_END)
     parser.add_argument("sections", nargs="?")
-    parser.add_argument("--to", type=_end_arg, metavar=_END)
+    parser.add_argument("--to", type=_end_arg, metavar=_END, action="append")  # every one measured, as `actor`'s are
     args = parser.parse_args(argv)
 
     try:
@@ -595,7 +595,9 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
 
-    if any(isinstance(end, str) for end in (args.xy, args.to)) and sections:  # a building lies on many tiles, a section reads one
+    targets: list[str | tuple[int, int]] = args.to or []
+    ends = [args.xy, *targets]
+    if any(isinstance(end, str) for end in ends) and sections:  # a building lies on many tiles, a section reads one
         print("✗ sections read tiles, `x,y`: any other end answers a lone `--to`", file=sys.stderr)
         return 2
 
@@ -609,27 +611,30 @@ def main(argv: list[str]) -> int:
         print("✗ empty grid", file=sys.stderr)
         return 2
 
-    grounds, aimed = [], []
-    for end in (args.xy, args.to or args.xy):
-        if isinstance(found := ([end], None) if isinstance(end, tuple) else _ground(end, save, save_path, chapter), str):
-            print(found, file=sys.stderr)
+    found: list[tuple[list[tuple[int, int]], str | None]] = []
+    for end in ends:
+        if isinstance(told := ([end], None) if isinstance(end, tuple) else _ground(end, save, save_path, chapter), str):
+            print(told, file=sys.stderr)
             return 1
-        grounds.append(found[0])
-        aimed.append(found[1])
-    # A land is held by its rim: the other end standing on it meets it where it stands, no shore away
-    for at, place in enumerate(aimed):
-        if place and _LAND.fullmatch(place):
-            island_of = compute_islands_cached(save, save_path)[1]
-            if inside := next((tile for tile in grounds[1 - at] if island_of.get(tile) == int(place[1:])), None):
+        found.append(told)
+    # A land is held by its rim: the other end standing on it meets it where it stands, no shore away — the map's lands read once for every pair
+    island_of = compute_islands_cached(save, save_path)[1] if any(place and _LAND.fullmatch(place) for _, place in found) else None
+    pairs = []  # each `--to` met from the first end, or the first end alone
+    for ground, place in found[1:] or found[:1]:
+        grounds, aimed = [found[0][0], ground], [found[0][1], place]
+        for at, land in enumerate(aimed):
+            if island_of and land and _LAND.fullmatch(land) and (inside := next((t for t in grounds[1 - at] if island_of.get(t) == int(land[1:])), None)):
                 grounds[at] = [inside]
-    # A building, a town or a place is met at its nearest tile, the walk setting off from the first's toward all the second's
-    (cx, cy), (tx, ty) = _closest_pair(grounds[0], grounds[1])
-    for x, y in ((cx, cy), (tx, ty)):
-        if not (0 <= x < width and 0 <= y < height):
-            print(f"✗ coords ({x}, {y}) out of bounds — map is {width}×{height}", file=sys.stderr)
-            return 2
+        # A building, a town or a place is met at its nearest tile, the walk setting off from the first's toward all the second's
+        (cx, cy), (tx, ty) = _closest_pair(grounds[0], grounds[1])
+        for x, y in ((cx, cy), (tx, ty)):
+            if not (0 <= x < width and 0 <= y < height):
+                print(f"✗ coords ({x}, {y}) out of bounds — map is {width}×{height}", file=sys.stderr)
+                return 2
+        pairs.append(((cx, cy), (tx, ty), grounds, aimed))
 
-    coords = [(cx, cy), (tx, ty)] if args.to else [(cx, cy)]
+    cx, cy = pairs[0][0]  # sections read `x,y` ends alone, so every pair sets off from this one tile
+    coords = [(cx, cy), *(reached for _, reached, _, _ in pairs)] if args.to else [(cx, cy)]
     ctx = _build_context(save, save_path, sections, coords, "distances" in sections or args.to is not None)
     if sections == {"islet"} and not ctx["tile_to_island"].islet_size((cx, cy)):  # asked alone, an empty block would read as an islet with nothing on it
         land = ctx["tile_to_island"].get((cx, cy))
@@ -659,20 +664,25 @@ def main(argv: list[str]) -> int:
         if "tile_info" in sections:
             cell["tile_info"] = _tile_info_at(x, y, ctx)
         out[f"{x},{y}"] = cell
-    if args.to:  # a relation between the two ends, not a trait of either: its own key, the cap read from the first toward the second
-        out["to"] = {
+    # A place that spreads is read off its edge, and a sentence may read it off its middle: the second cap said wherever the two part
+    start = _centre(args.xy, save, save_path) if isinstance(args.xy, str) and (place := found[0][1]) and _SPREAD.fullmatch(place) else None
+    relations = {}  # a relation between the two ends, not a trait of either: its own key, the cap read from the first toward the second
+    for end, ((cx, cy), (tx, ty), grounds, aimed) in zip(targets, pairs, strict=False):
+        relation = {
             "chunks_apart": chunks_apart(cx, cy, tx, ty),
             "dir": bearing(tx - cx, ty - cy),
             **({"from": {"aimed": aimed[0], "x": cx, "y": cy, **_met(aimed[0], cx, cy, save, ctx)}} if aimed[0] else {}),
             **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (gy * width + gx for gx, gy in grounds[1]), ctx),
             **({"reached": {"aimed": aimed[1], "x": tx, "y": ty, **_met(aimed[1], tx, ty, save, ctx)}} if aimed[1] else {}),
         }
-        # A place that spreads is read off its edge, and a sentence may read it off its middle: the second cap said wherever the two part
-        centres = [_centre(end, save, save_path) if place and _SPREAD.fullmatch(place) else None for end, place in zip((args.xy, args.to), aimed, strict=True)]
-        if any(centres) and (cx, cy) != (tx, ty):
-            (fx, fy), (gx, gy) = centres[0] or (cx, cy), centres[1] or (tx, ty)
-            if (turn := bearing(gx - fx, gy - fy)) != out["to"]["dir"]:
-                out["to"]["centre_dir"] = turn
+        aim = _centre(end, save, save_path) if isinstance(end, str) and aimed[1] and _SPREAD.fullmatch(aimed[1]) else None
+        if (start or aim) and (cx, cy) != (tx, ty):
+            (fx, fy), (gx, gy) = start or (cx, cy), aim or (tx, ty)
+            if (turn := bearing(gx - fx, gy - fy)) != relation["dir"]:
+                relation["centre_dir"] = turn
+        relations[end if isinstance(end, str) else tile_text(*end)] = relation
+    if relations:  # one target told bare, several under the name each was given, as `actor --to` keys them
+        out["to"] = relations if len(relations) > 1 else next(iter(relations.values()))
 
     emit(out)
     return 0
