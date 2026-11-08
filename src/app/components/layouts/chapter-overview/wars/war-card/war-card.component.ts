@@ -34,6 +34,7 @@ export class WarCardComponent {
       cities: w[side].cities - before[side].cities,
       deaths: w[side].deaths - before[side].deaths,
       pop: w[side].pop - before[side].pop,
+      taken: (w[side].taken ?? 0) - (before[side].taken ?? 0),
       warriors: w[side].warriors - before[side].warriors,
     });
     return { attackers: diff('attackers'), defenders: diff('defenders') };

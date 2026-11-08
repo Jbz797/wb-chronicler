@@ -34,6 +34,10 @@
     <span [class]="sideClass(w.attackers.cities, w.defenders.cities, 'attackers')">{{ w.attackers.cities }}</span>
     <app-delta [value]="d?.attackers?.cities" />
   </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="takenTitle">
+    <span [class]="sideClass(w.attackers.taken ?? 0, w.defenders.taken ?? 0, 'attackers')">{{ w.attackers.taken ?? 0 }}</span>
+    <app-delta [value]="d?.attackers?.taken" />
+  </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="deathsTitle">
     <span [class]="sideClass(w.attackers.deaths, w.defenders.deaths, 'attackers', true)">{{ w.attackers.deaths }}</span>
     <app-delta [inverted]="true" [value]="d?.attackers?.deaths" />
@@ -59,6 +63,10 @@
   <nz-descriptions-item [nzTitle]="citiesTitle">
     <span [class]="sideClass(w.attackers.cities, w.defenders.cities, 'defenders')">{{ w.defenders.cities }}</span>
     <app-delta [value]="d?.defenders?.cities" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="takenTitle">
+    <span [class]="sideClass(w.attackers.taken ?? 0, w.defenders.taken ?? 0, 'defenders')">{{ w.defenders.taken ?? 0 }}</span>
+    <app-delta [value]="d?.defenders?.taken" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="deathsTitle">
     <span [class]="sideClass(w.attackers.deaths, w.defenders.deaths, 'defenders', true)">{{ w.defenders.deaths }}</span>
@@ -111,6 +119,10 @@
 <ng-template #renownTitle>
   <img src="assets/img/stats/renown.png" />
   <span>{{ 'ui_stake' | translate }}</span>
+</ng-template>
+<ng-template #takenTitle>
+  <img src="assets/img/world/cities_conquered.png" />
+  <span>{{ 'ui_cities_won' | translate }}</span>
 </ng-template>
 <ng-template #typeTitle>
   <img src="assets/img/world/wars.png" />

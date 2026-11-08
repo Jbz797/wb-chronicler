@@ -59,6 +59,8 @@ def _build_side(kingdoms: set[int], deaths: int, alliances: list[dict], ctx: dic
         "pop": sum(realm["pop"] for realm in realms),
         "warriors": sum(ctx["warriors_by_kingdom"][kid] for kid in kingdoms),
     }
+    if taken := sum(ctx["taken_by_kingdom"][kid] for kid in kingdoms):  # none taken goes unsaid, as a town's other tallies at 0
+        side["taken"] = taken
     # WB backs a side with a pact only where two of its members field together — one realm alone answers for itself, whatever it has sworn elsewhere.
     for a in alliances:
         members = set(a.get("kingdoms") or [])
@@ -98,6 +100,7 @@ def main(argv: list[str]) -> int:
     cities_by_kingdom: Counter[int] = Counter()
     populations_by_kingdom: Counter[int] = Counter()
     started_by_actor = None
+    taken_by_kingdom: Counter[int] = Counter()
     warriors_by_kingdom: Counter[int] = Counter()
 
     # The declaring king rides the walk the tallies make, indexing no one: `metadata` wants no tally, so it stops at him — and never starts where none declared it.
@@ -113,9 +116,12 @@ def main(argv: list[str]) -> int:
         populations_by_kingdom[kid] += 1
         warriors_by_kingdom[kid] += actor.get("profession") == PROFESSION_WARRIOR
 
+    declared = float(war.get("created_time") or 0)
     for city in save.get("cities") or []:
         if kid := city.get("kingdomID"):
             cities_by_kingdom[kid] += 1
+            # WB stamps a town's banner on annexation alone, never at its founding: one stamped since the declaration came under it during the war
+            taken_by_kingdom[kid] += (city.get("timestamp_kingdom") or -1.0) >= declared
             if city.get("besieged_by"):
                 besieged.add(kid)
 
@@ -126,6 +132,7 @@ def main(argv: list[str]) -> int:
         "kingdoms_by_id": index_by_id(save.get("kingdoms") or []),
         "populations_by_kingdom": populations_by_kingdom,
         "started_by_actor": started_by_actor,
+        "taken_by_kingdom": taken_by_kingdom,
         "warriors_by_kingdom": warriors_by_kingdom,
         "world_time": float(save["mapStats"].get("world_time") or 0),
     }

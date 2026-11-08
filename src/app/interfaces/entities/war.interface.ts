@@ -22,5 +22,6 @@ interface WarSide {
   deaths: number;
   kingdoms: WarKingdom[];
   pop: number;
+  taken?: number; // towns come under the camp's banner since the declaration, taken or won over — absent at 0
   warriors: number;
 }
