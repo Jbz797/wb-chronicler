@@ -178,10 +178,16 @@ canvas {
         border-width: 0 14px;
       }
 
-      // The village's stone clears 2 rows above and 3 below, so its middle rides above the box's: the name, centred on the box, is lifted to the stone's.
-      &:not(.capital) .entity-name {
-        position: relative;
-        top: -1px;
+      // The village's stone clears 2 rows above and 3 below, so its middle rides above the box's: what it holds, centred on the box, is lifted to the stone's.
+      &:not(.capital) {
+        .entity-name {
+          position: relative;
+          top: -1px;
+        }
+
+        .tag-badge {
+          top: -0.5px;
+        }
       }
 
       .tag-badge {
