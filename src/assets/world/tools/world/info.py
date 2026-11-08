@@ -759,9 +759,10 @@ def _build_roster(
         raise ValueError(
             f"✗ `{top}`: no figure `--rank` reads{_guessed(top, figures)} — it takes one of `actor <id> stats`, `age`, `crafted`, `gen`, `kills`, `p<id>` or `x,y`"
         )
-    gone = []
+    gone, mourned = [], False  # `mourned`: the dead searched, found or not — `killed_by` asked of them even where none died
 
     if earlier is not None and was is not None and not (settle or barred) and "died" in told_parts:  # the dead found nothing
+        mourned = True
         standing = partial(_standing, island_of=island_of, grid=grid, names=save["tileMap"])  # where each died, on today's map
         gone = _gone_since(save, earlier, later, kinds, trait, asked, sapient, bred, belonged, stage, standing, fields, born)
         if gone and (unborne := [field for field in fields if field not in _GONE_FIELDS]):  # a stale save's figure would read as the dead's: said, not dropped
@@ -829,7 +830,7 @@ def _build_roster(
         if since and not has:  # filed by what befell it: an arrival bears no mark of its own, read off the others it would be guessed
             row["part"] = _filed_as(change)
         lines.append((*placed(actor["id"], figure, actor), row))
-    _refuse_unseen(fields, seen | {"killed_by"} if gone else seen)
+    _refuse_unseen(fields, seen | {"killed_by"} if mourned else seen)
     parted = since and not has
     lines.extend((*placed(row["id"]), row) for row in gone)  # a dead line's `part` said even beside `has:`, where no living line bears one
     if parted and members_then is not None and entity and "left" in told_parts:  # alive and elsewhere now: left the entity, which a death does not say
