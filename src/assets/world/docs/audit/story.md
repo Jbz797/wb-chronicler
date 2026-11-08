@@ -1,17 +1,17 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 07/11/26 22:38</p>
+<p class="metadata">Date de mise à jour : 08/11/26 11:41</p>
 
-Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants : ce message dit alors ta tâche.
+Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants avec ta tâche.
 
 ## Ta tâche
 
-Lis le chapitre, puis autant de la chronique qu'il t'en faut, de `saves/C1/chapter.md` au dernier ; un personnage ou un mot s'y suit par `git -C saves grep -nF '[p 46 '`, puis par son espèce et ses épithètes, hors balise. Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
+Lis le chapitre, puis ce qu'il te faut de la chronique, de `saves/C1/chapter.md` au dernier ; un personnage ou un mot s'y suit par `git -C saves grep -nF '[p 46 '`, puis par son espèce et ses épithètes, hors balise. Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
 
 - un chapitre sans tournant en scène, ou dont le tournant ne fait avancer aucun fil ;
 - un fil qu'elle a ouvert et jamais refermé ;
 - une épithète ou un lien que les chapitres ne soutiennent plus (un toponyme n'en est pas une) ;
-- un mot qu'elle a défini une fois (un terme forgé, « sol », « îlot ») et qu'elle emploie aujourd'hui dans un autre sens ;
+- un mot qu'elle a défini une fois (un terme forgé, « sol », « îlot ») et qu'elle emploie aujourd'hui dans un autre sens, hors un mot de barème, qui suit le monde (« fief » devenu « seigneurie ») ;
 - un motif, une cause ou un chiffre qu'elle a donnés une fois et qu'elle contredit aujourd'hui ;
 - un personnage ou un lieu qu'elle a lâchés là où la chronique l'attendait.
 
@@ -31,7 +31,7 @@ Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton prem
 - **Fusion** : deux veilles d'un même fil, une neuve comprise, se fondent en une, reconduite, au seul chapitre qui les lie ; la plus ancienne garde son ouverture.
 - **Plafond** : au-delà de 5 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, une candidate comprise : abandonnée, une veille sort et n'est plus un écart. Sous 5, aucune ne s'abandonne. Dès le conseil, un abandon probable peut s'annoncer ; l'audit tranche.
 - **Récit** : à chaque sort changé, dis au chroniqueur s'il faut en parler et comment : une direction, et si tu veux 2 ou 3 phrases, qu'il réécrit ou écarte ; une abandonnée se referme sur la page.
-- **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer ni mentionnée, même de biais, se signale au chroniqueur.
+- **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer ni mentionnée, même de biais, se signale.
 - **Sujet** : une question ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Un sujet hérité qui dit un état se réécrit en question, le fil gardé ; de même quand l'une de ses questions s'y solde ou que le fil se détourne, l'ouverture gardée. Une loi se solde dès qu'un chapitre la montre à l'œuvre.
 
 ## Au réaudit
