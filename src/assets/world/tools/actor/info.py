@@ -1573,7 +1573,7 @@ def main(argv: list[str]) -> int:
         return 2
     if not argv or argv[0] in ("-h", "--help"):
         to = 'p<id>|x,y|b<id>|c<id>|cities|i<land>|lands|"<place>"|lake<id>|burning|frozen|g:<ground>|<kind>'
-        return hand_usage(f"usage: actor/info.py <id> [sections] [--to {to}]… [--since C<n>] [--limit n|all] [C<n>]\neach option: `gloss actor`", argv)
+        return hand_usage(f"usage: actor/info.py <id> [sections | --to {to}…] [--since C<n>] [--limit n|all] [C<n>]\neach option: `gloss actor`", argv)
     try:
         actor_id = int(argv[0])
     except ValueError:
@@ -1581,6 +1581,9 @@ def main(argv: list[str]) -> int:
         return 2
 
     requested = sections_arg(argv)
+    if targets and requested:  # a trip's block keeps one key, call after call: what the body is, a call of its own
+        print(f"✗ `--to` answers alone — `{requested}` is a call of its own: `actor {actor_id} {requested}`", file=sys.stderr)
+        return 2
     try:
         sections = parse_sections(requested, _NAMED_SECTIONS, full=_ALL_SECTIONS) if requested or not (targets or since) else ()  # a flag alone answers alone
     except ValueError as e:
@@ -1609,7 +1612,7 @@ def main(argv: list[str]) -> int:
         return 1
     if "died" in sections:  # known alive only now, the register read: told, and the other sections asked still answer
         print(f"✗ {named_body(actor)} is alive: `died` is a dead body's", file=sys.stderr)
-        if len(sections) == 1 and not (targets or since):
+        if len(sections) == 1 and not since:  # a named section never stands beside a `--to`
             return 2
     if ctx["subspecies_by_id"].get(actor.get("subspecies")) is None:  # every stat is derived from the biology's base, so there is nothing to report without it
         print(f"✗ no subspecies for actor {actor_id}", file=sys.stderr)
