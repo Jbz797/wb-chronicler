@@ -859,8 +859,8 @@ def _duration(hours: float, prefix: str = "") -> dict:
     return {f"{prefix}hours": f"{minutes // 60}h{minutes % 60:02d}" if minutes % 60 else f"{minutes // 60}h"}
 
 
-# The fire whose flame the walk met, its size and place, then the others by their flame nearest the body as the crow flies: a walk to one is `--to x,y`.
-def _fires(actor: dict, flames: list[tuple[int, int]], met: tuple[int, int], ctx: dict) -> tuple[dict, list[dict] | None]:
+# The fire the walk met, its size, place and middle (as `fire_heart` sites it), then the others by their flame nearest the body as the crow flies: `--to x,y` walks.
+def _fires(actor: dict, flames: list[tuple[int, int]], met: tuple[int, int], ctx: dict) -> tuple[dict, list[dict] | None, tuple[int, int] | None]:
     (cx, cy), index, clusters = actor_xy(actor), ctx["place_index"](), fire_clusters(flames)
     own = next(fire for fire in clusters if met in fire)
     nearest = sorted((min((walk_tiles(x - cx, y - cy), x, y) for x, y in fire), fire) for fire in clusters if fire is not own)[:_OTHER_FIRES]
@@ -868,7 +868,7 @@ def _fires(actor: dict, flames: list[tuple[int, int]], met: tuple[int, int], ctx
         {"crow_tiles": round(crow), "dir": bearing(x - cx, y - cy), "place": fire_place(fire, index), "tiles": len(fire), "x": x, "y": y}
         for (crow, x, y), fire in nearest
     ]
-    return {"place": fire_place(own, index), "tiles": len(own)}, others or None
+    return {"place": fire_place(own, index), "tiles": len(own)}, others or None, islet_heart(own)
 
 
 # How this body walks, or `None` for one the ground never holds — a flyer, a body born to the water, one aboard a hull: all keep the crow's line.
@@ -1390,8 +1390,12 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
             if mark == "reached" and (crow := _crow_nearest(actor, aims, about, trip["reached"], whole=True)):  # a water's or a place's nearest tile
                 trip["crow_nearest"] = crow
             elif mark == "burning":
-                own, trip["other_fires"] = _fires(actor, aims, (trip["burning"]["x"], trip["burning"]["y"]), ctx)
+                met = (trip["burning"]["x"], trip["burning"]["y"])
+                own, trip["other_fires"], heart = _fires(actor, aims, met, ctx)
                 trip["burning"] |= own
+                # Walked to its edge, a fire may be read off its middle: that cap said wherever the two part, as `tiles --to` says a land's or a water's
+                if heart and heart != (at := actor_xy(actor)) and (turn := bearing(heart[0] - at[0], heart[1] - at[1])) != trip["dir"]:
+                    trip["centre_dir"] = turn
         except _UnreachableError as e:
             print(f"{e} — `circle`: far", file=sys.stderr)  # out of reach is past every circle: said, a refusal bearing no field
             return None

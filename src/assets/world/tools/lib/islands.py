@@ -15,7 +15,7 @@ from collections import Counter, defaultdict, deque
 lazy from collections.abc import Iterator
 lazy from pathlib import Path
 
-from grid import HEART_CELL, decode_tile_grid, hearts, tile_block, tile_kind, tile_layer
+from grid import HEART_CELL, decode_tile_grid, fire_clusters, hearts, tile_block, tile_kind, tile_layer
 from shared import pickle_cached, tile_text, union_root
 
 _CHUNK_SIZE = 16  # WB's `CHUNK_SIZE` constant — regions live inside 16×16 chunks.
@@ -305,6 +305,11 @@ def _middle_tile(runs: list[tuple[int, int, int]], size: int) -> tuple[int, int]
 # Disk-cached `_compute_islands`, one slot per save like every sweep of the map: `actor … --since` weighs two saves, which a single slot would evict in turn.
 def compute_islands_cached(save: dict, save_path: Path) -> tuple[list[dict], TileIslands]:
     return pickle_cached("islands_v22", save_path, lambda: _compute_islands(save))
+
+
+# The middle of the fire a flame `met` burns in, as `geography … burning` sites a fire: where a cap may be read off, the walk still ending at its edge.
+def fire_heart(flames: list[tuple[int, int]], met: tuple[int, int]) -> tuple[int, int] | None:
+    return islet_heart(next((fire for fire in fire_clusters(flames) if met in fire), []))
 
 
 # An islet's heart, its own tile nearest the mean of all its tiles — a mean alone could fall at sea, off a crescent of rock: its mark from a chapter to the next.

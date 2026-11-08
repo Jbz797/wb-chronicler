@@ -32,7 +32,7 @@ from grid import (
     tile_layer,
     tile_mask,
 )
-from islands import compute_islands_cached, islet_heart
+from islands import compute_islands_cached, fire_heart, islet_heart
 from places import PlaceError, end_text, named_place, place_centre
 from shared import (
     DIAGONAL_EXTRA,
@@ -675,7 +675,10 @@ def main(argv: list[str]) -> int:
             **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (gy * width + gx for gx, gy in grounds[1]), ctx),
             **({"reached": {"aimed": aimed[1], "x": tx, "y": ty, **_met(aimed[1], tx, ty, save, ctx)}} if aimed[1] else {}),
         }
-        aim = _centre(end, save, save_path) if isinstance(end, str) and aimed[1] and _SPREAD.fullmatch(aimed[1]) else None
+        if end == "burning":  # its flame met first, its middle where `geography … burning` sites it
+            aim = fire_heart(grounds[1], (tx, ty))
+        else:
+            aim = _centre(end, save, save_path) if isinstance(end, str) and aimed[1] and _SPREAD.fullmatch(aimed[1]) else None
         if (start or aim) and (cx, cy) != (tx, ty):
             (fx, fy), (gx, gy) = start or (cx, cy), aim or (tx, ty)
             if (turn := bearing(gx - fx, gy - fy)) != relation["dir"]:

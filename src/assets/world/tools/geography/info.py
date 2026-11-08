@@ -34,7 +34,7 @@ from grid import (
     tile_layer,
     tile_mask,
 )
-from islands import TileIslands, compute_islands_cached
+from islands import TileIslands, compute_islands_cached, islet_heart
 from shared import (
     DIAGONAL_EXTRA,
     HOMES,
@@ -501,8 +501,7 @@ def _fire_home(fire: list[tuple[int, int]], burning: dict[tuple[int, int], tuple
 # A fire's line, sited on its own land's tile nearest its middle, where the heading is read; the rest of it is `spills`.
 def _fire_row(fire: list[tuple[int, int]], burning: dict[tuple[int, int], tuple[str, str]], key: str, land: dict | None) -> dict:
     home = [tile for tile in fire if burning[tile][0] == key]
-    mean_x, mean_y = sum(x for x, _ in home) / len(home), sum(y for _, y in home) / len(home)
-    x, y = min(home, key=lambda tile: ((tile[0] - mean_x) ** 2 + (tile[1] - mean_y) ** 2, tile))
+    x, y = islet_heart(home) or home[0]  # never empty, a fire homing on the land holding most of it: the fallback is for the type alone
     spills = Counter(burning[tile][0] for tile in fire if burning[tile][0] != key)
     side = {"dir": land_side(x, y, land)} if land else {}
     return {"x": x, "y": y, **side, "grounds": _tally(burning[tile][1] for tile in fire), "spills": dict(spills) or None, "tiles": len(fire)}
