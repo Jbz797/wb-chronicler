@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 08/11/26 20:36</p>
+<p class="metadata">Date de mise à jour : 08/11/26 20:38</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants avec ta tâche.
 
@@ -27,9 +27,9 @@ Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton prem
 
 - **Chiffres** : le registre n'en porte aucun, ni date.
 - **Entrées et sorties** : y entre toute question qu'un tournant laisse ouverte et que le monde peut trancher, sauf si une veille la pose déjà, jamais une `task` ni un statut passager (hors `status_history`) : rien ne garde leur issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas ou redit seulement reste telle quelle.
-- **Forme** : une puce par veille, par ordre d'ouverture, sans numéro de ligne : _« C1 · reconduite au C16 · son sujet en une ligne »_ : le chapitre de son ouverture, celui du tournant, puis celui de son sort. Son sort : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas, ni un fait neuf qui n'y répond pas), détournée s'il le mène ailleurs que vers une autre veille. Les noms s'y balisent comme dans un chapitre.
+- **Forme** : une puce par veille, par ordre d'ouverture, sans numéro de ligne : _« C1 · reconduite au C16 · son sujet en une ligne »_ : le chapitre de son ouverture (celui du tournant), puis celui de son sort. Son sort : ouverte, reconduite si un chapitre fait avancer l'une de ses questions sans le solder (un nom n'y suffit pas, ni un fait neuf qui n'y répond pas), détournée s'il le mène ailleurs que vers une autre veille. Les noms s'y balisent comme dans un chapitre.
 - **Fusion** : deux veilles qui posent la même question (un même corps, une même couronne n'y suffisent pas), une neuve comprise, se fondent en une, reconduite, au seul chapitre qui les lie ; la plus ancienne garde son ouverture.
-- **Plafond** : au-delà de 5 veilles, abandonne celles qui pèsent le moins et ont le moins de chances de se refermer, une candidate comprise : elle sort, sans écart. Sous 5, aucune ne s'abandonne. Le conseil peut l'annoncer, l'audit tranche.
+- **Plafond** : au-delà de 5 veilles, abandonne celles qui pèsent le moins et se refermeront le moins sûrement, une candidate ou une part scindée comprise : elle sort, sans écart. Sous 5, nul abandon. Le conseil peut l'annoncer, l'audit tranche.
 - **Récit** : à chaque sort changé, dis au chroniqueur s'il faut en parler et comment : une direction, et si tu veux 2 ou 3 phrases, qu'il réécrit ou écarte ; une abandonnée se referme sur la page.
 - **Sommeil** : une veille que 3 chapitres de suite n'ont ni fait avancer ni mentionnée, même de biais, se signale.
 - **Sujet** : une seule question, qu'une réponse solde, une alternative ou une loi, jamais un état : un état, le monde le renverse, et la veille décrit ce qui n'est plus. Plusieurs questions font autant de veilles, l'ouverture et le sort gardés ; un sujet hérité qui dit un état se réécrit en question, le fil gardé, de même quand le fil se détourne. Une loi se solde dès qu'un chapitre la montre à l'œuvre, une alternative dès qu'une branche l'emporte ou que ce qu'elle visait n'est plus.
