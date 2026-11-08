@@ -65,12 +65,10 @@ from shared import (
     breeding_mode,
     building_family,
     children_by_id,
-    city_centre,
     city_score_dimensions,
     civic_building_ids,
     counted_birth,
     crafted_counts,
-    crowns_named,
     emit,
     entity_born,
     entity_ref,
@@ -165,10 +163,12 @@ _CUMULATIVE_COUNTERS = {
     "wars_started": "warsStarted",
 }
 
+_DEAD_SOCLE = ("asset_id", "name", "sex")  # a dead body's line beside what befell it: its kind, then its name, what `--with` drives off — its sex stays
 _DEATH_CAUSES = tuple(sorted(set(load_data("attack-types.json").values())))  # what `died:` takes: each cause as the register files it
+_DISPLACED = ("city", "island_id", "life_stage", "asset_id", "name")  # what `--with` drives off the socle, one per field asked, least telling first
 _FEATS = ("kills", "level", "money", "renown")  # what a life adds up, kept on the body itself — weighed among thinking souls as the skills are
 _FIELD_FLOORS = {"births": 0, "equipment_power": 0, "level": 1, "loot": 0, "money": 0, "renown": 0}  # a tally `actor … stats` tells silent at its floor
-_GONE_FIELDS = ("at", "born", "parents", "sex")  # what `--with` asks of the dead, the death register keeping it, or a sex that never changes
+_GONE_FIELDS = ("asset_id", "at", "born", "killed_by", "name", "parents", "sex")  # what `--with` asks of the dead, the register keeping it, or a sex never changing
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
 
 # Actor field => the save collection it points into, feeding its `pop` record — every actor counted, wildlife included, as each tier's medal counts its own.
@@ -190,6 +190,7 @@ _KEPT_FIELDS = (
     "adult_on",
     "age",
     "age_overgrowth",
+    "army_since",
     "asset_id",
     "at",
     "born",
@@ -212,6 +213,7 @@ _KEPT_FIELDS = (
     "language",
     "life_stage",
     "lover",
+    "name",
     "parents",
     "place",
     "religion",
@@ -292,6 +294,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "adult_on": lambda: crossed_on(actor, adult) if age < (adult := adult_age(actor, ctx)) else None,
         "age": lambda: age,
         "age_overgrowth": lambda: int(actor.get("age_overgrowth") or 0) or None,  # a migrant's mark, `born` its arrival
+        "army_since": lambda: kept_army_since(actor),  # when it joined its town's army, none outside one
         "asset_id": lambda: actor.get("asset_id"),
         "at": lambda: tile_text(*actor_xy(actor)),
         "born": lambda: entity_born(actor),
@@ -309,6 +312,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "kills": lambda: _held(actor, "kills"),  # the body's own counter, as `--rank` reads it: no stat of `actor … stats`
         "life_stage": lambda: _stage(actor, ctx, age, adult_age(actor, ctx)),
         "lover": lambda: lover if (lover := actor.get("lover")) in ctx["living_ids"] else None,  # its mate's id, a dead one none
+        "name": lambda: actor.get("name"),
         "parents": lambda: sorted(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p and p != -1) or None,  # ids, not refs: a line holds one
         "place": lambda: ctx["place_index"].at(*actor_xy(actor)),
         "sex": lambda: sex_label(actor),
@@ -623,8 +627,7 @@ def _build_roster(
     # Each body's stage then, under `--since`: one that grew from a child to a teen changed as one that changed land did
     once_ctx = build_actor_stats_context(earlier) if earlier is not None else {}
     then_bodies = {a["id"]: a for a in earlier.get("actors_data") or []} if earlier is not None else {}
-    entity = entities[0] if entities else None  # the first shapes the line, the others narrow it and go unsaid
-    fixed = dict.fromkeys(kind for kind, _ in entities[1:])
+    entity = entities[0] if entities else None  # the one whose leavers `left` tells: every entity narrows, none shapes the line
     belongs = _belongs(save, entities)
     # Crowned after the earlier save and dead before this one: no save held them king, the log alone did
     fallen = _fallen_kings(save, earlier) if earlier is not None and ("job", "king") in entities else {}
@@ -760,15 +763,6 @@ def _build_roster(
             print(f"⚠ {told}: none on a `died` line — the dead take {', '.join(f'`{field}`' for field in _GONE_FIELDS)} alone", file=sys.stderr)
         if cause:  # `died:`: the dead of one cause, as the register files it — said once by the filter, never on each line
             gone = [{**row, "died_of": None} for row in gone if row["died_of"] == cause]
-        if gone and entity and entity[0] == "job":  # as a living holder's line: a king's realm, the log's or the earlier save's, anyone else's town
-            before = {a["id"]: a for reading in (earlier, *later[:-1]) for a in reading.get("actors_data") or []}
-            if entity[1] == "king":
-                crowns = crowns_named(save)
-                tie = {row["id"]: {"kingdom": entity_ref(fallen.get(row["id"]) or (before.get(row["id"]) or {}).get("civ_kingdom_id"), crowns)} for row in gone}
-            else:
-                towns = index_by_id([c for reading in (earlier, save) for c in reading.get("cities") or []])
-                tie = {row["id"]: {"city": entity_ref((before.get(row["id"]) or {}).get("cityID"), towns)} for row in gone}
-            gone = [{**row, "asset_id": None, "was_on": None, **tie[row["id"]]} for row in gone]
         if once is not None:  # the dead that held the tally, each with what it takes away: where it stood and who took it are another question's
             gone = [{**row, has: once[row["id"]], "killed_by": None, "was_on": None} for row in gone if once.get(row["id"])]
         if near:  # the dead measured from where they fell
@@ -776,21 +770,26 @@ def _build_roster(
             gone = [row | towards(row["id"], fell[row["id"]]["x"], fell[row["id"]]["y"]) for row in gone]
 
     one_kind = kinds is not None and len(kinds) == 1  # a lone `type:` names the kind, as a lone land its own
-    lineages = ctx["subspecies_by_id"]
-    # Unsaid where a view never reads it — `barred`'s gates, a measure's figure, a distance, `--since`'s blocks — whose lines it would push past inline
-    breeds_said = not (barred or has or top or near or since)
-    refs = (
-        {
-            "city": index_by_id(save.get("cities") or []),
-            "family": index_by_id(save.get("families") or []),
-            "job": entity[1],
-            "kingdom": crowns_named(save) if entity == ("job", "king") else {},  # the base read for a king's line alone
+    one_stage = stage is not None and len(stage) == 1  # and a lone stage its own
+    town = dict(entities).get("city")  # and a town filtered every line's
+    towns = index_by_id(save.get("cities") or [])
+
+    # The one line every body gets, whatever the filter: who, its kind, sex, town, land and stage — a filter silences the field it fixes, `--with` drives some off
+    def socle(actor: dict, here: int | str, change: dict) -> dict:
+        phase = _stage(actor, ctx, actor_age(actor, ctx["world_time"]), adult_age(actor, ctx))
+        heart = islet_heart(island_of.islet_tiles(actor_xy(actor))) if here == _ISLET else None  # which islet, as `actor … metadata` names it
+        return {
+            "asset_id": None if one_kind else actor.get("asset_id"),
+            "city": None if town is not None else entity_ref(actor.get("cityID"), towns),
+            "id": actor["id"],
+            # Said outright beside a `was_on`, a missing one reading as still on the land left; silent where a lone land already named it
+            "island_id": None if heart or (here == alone and "was_on" not in change) else here,
+            "islet": tile_text(*heart) if heart else None,
+            "life_stage": None if phase == "adult" or one_stage else phase,  # silent at `adult`, as in `surroundings`
+            "name": actor.get("name"),
+            "sex": sex_label(actor),
+            **change,
         }
-        if entity
-        else {}
-    )
-    # A town's own land goes unsaid on its residents' lines, as a lone land's does: the room it frees tells their stage instead
-    seat = island_of.get(centre) if (town := dict(entities).get("city")) and (centre := city_centre(refs["city"].get(town) or {})) else None
 
     # Every line's place, the living, the dead and the gone elsewhere alike: nearest first, the measure highest, else by id — and the figure a cut may not split
     def placed(row_id: int, figure: int = 0, actor: dict | None = None) -> tuple[tuple, object]:
@@ -801,45 +800,37 @@ def _build_roster(
             return (-figure, born_at, row_id), (figure, world_date(born_at))
         return ((-figure, row_id), figure) if top else ((row_id,), row_id)
 
+    asked = [field for field in fields if field not in ("island_id", "islet", "killed_by")]  # the land told as the socle tells it, a killer the dead's alone
+    # Each field asked beyond the socle drives one off it, the first the line shows in `_DISPLACED` — never one `--since` or `--rank` put there
+    driving = len([field for field in fields if field not in (*_DISPLACED, "islet", "sex")])
+
+    told_as = {"island_id": ("island_id", "islet")}  # a land is one field, islet or not
+
+    def fielded(actor: dict, here: int | str, change: dict) -> dict:
+        row = socle(actor, here, change)
+        if driving:
+            kept = {*change, *(["island_id"] if "was_on" in change else [])}  # what a part or a rank put there stays, and the land a mover reached
+            shown = [key for key in _DISPLACED if key not in kept and any(row.get(told) is not None for told in told_as.get(key, (key,)))]
+            for key in shown[:driving]:
+                for told in told_as.get(key, (key,)):
+                    row.pop(told, None)
+        return row | _asked_fields(actor, here, asked, ctx, seen)
+
     lines: list[tuple[tuple, object, dict]] = []
     for actor, here, change, figure in bodies:
-        if fields:  # the line is what was asked: who, and those fields, a filter's own figure kept — the default columns stay with the plain roll
-            row = {"id": actor["id"], "name": actor.get("name"), **change, **_asked_fields(actor, here, fields, ctx, seen)}
-            if "islet" in row:  # one land field, keyed as a plain line keys it
-                row["island_id"] = row.pop("islet")
-        elif entity:
-            told = None if here in (alone, seat) and "was_on" not in change else here
-            row = {**_member_row(actor, entity[0], told, refs, save, ctx, one_kind), **fixed, **change}
-        else:
-            age, adult, breeding = actor_age(actor, ctx["world_time"]), adult_age(actor, ctx), breeding_age(actor, ctx)
-            phase = _stage(actor, ctx, age, adult)
-            row = {
-                "adult_on": crossed_on(actor, adult) if age < adult and not near else None,  # beside a distance, `life_stage` tells the youth
-                "asset_id": None if one_kind else actor.get("asset_id"),
-                "breeds_on": crossed_on(actor, breeding) if breeds_said and age < breeding and fertile(lineages.get(actor.get("subspecies"))) else None,
-                "id": actor["id"],
-                # Said outright beside a `was_on`, a missing one reading as still on the land left; silent where a lone land already named it
-                "island_id": None if here == alone and "was_on" not in change else here,
-                # Silent at `adult`, as in `surroundings`, and under `barred`: on every line it would push the longest past inline
-                "life_stage": None if phase == "adult" or barred else phase,
-                "name": actor.get("name"),
-                "sex": None if barred else sex_label(actor),  # founding asks no mate: under `barred`, `adult_on` alone says what the youth waits for
-                **change,
-            }
+        row = fielded(actor, here, change)
         if since and not has:  # filed by what befell it: an arrival bears no mark of its own, read off the others it would be guessed
             row["part"] = _filed_as(change)
-        # Which islet, as `actor … metadata` names it — `island_id: islet` then said by it
-        if here == _ISLET and (not fields or "island_id" in row) and (heart := islet_heart(island_of.islet_tiles(actor_xy(actor)))):
-            row |= {"island_id": None, "islet": tile_text(*heart)}
         lines.append((*placed(actor["id"], figure, actor), row))
-    _refuse_unseen(fields, seen)
+    _refuse_unseen(fields, seen | {"killed_by"} if gone else seen)
     parted = since and not has
     for row in gone:
-        dead = {**row, "asset_id": None if one_kind else row["asset_id"]}  # its `part` said even beside `has:`, where no living line bears one
+        dead = {**row, "asset_id": None if one_kind else row.get("asset_id")}  # its `part` said even beside `has:`, where no living line bears one
         lines.append((*placed(row["id"]), dead))
     if parted and members_then is not None and entity and "left" in told_parts:  # alive and elsewhere now: left the entity, which a death does not say
         for a in sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id")):
-            row = {**_member_row(a, entity[0], _standing(a, island_of, grid, save["tileMap"]), refs, save, ctx, one_kind), **fixed, "part": "left"}
+            here = _standing(a, island_of, grid, save["tileMap"])
+            row = fielded(a, here, {}) | {"part": "left"}
             row |= towards(a["id"], *actor_xy(a)) if near else {}  # before `placed`, which ranks on the length it records
             lines.append((*placed(a["id"]), row))
     if parted and len(told_parts) == 1:  # one part named: the filter says it, no line repeats it
@@ -1000,19 +991,27 @@ def _gone_since(
             continue
         if born and (body.get("age_overgrowth") or not born[1] <= dead["born"] < born[2]):  # a migrant told by the last save that saw it alive
             continue
-        row = {"asset_id": dead["asset_id"], "blow": dead["blow"], "died": world_date(dead["died"]), "died_of": dead["cause"], "id": dead["id"], "part": "died"}
-        killer = alive_or_dead_ref(dead["killer"], alive, deaths)
-        # Its name at death, the register's, before what the save last knew; `was_on` silent under a lone land
-        if fields:  # what `--with` asks that the register keeps: the tile it fell on, born, and parents with WB's -1 already dropped
-            # The register keeps no sex, a body never changing it: the last save to see it alive tells it, none for one born and gone between two
-            kept = {
-                "at": tile_text(dead["x"], dead["y"]),
-                "born": world_date(dead["born"]),
-                "parents": sorted(dead["parents"]) or None,
-                "sex": sex_label(last[dead["id"]]) if dead["id"] in last else None,
-            }
-            row |= {field: kept[field] for field in fields if field in _GONE_FIELDS}
-        rows.append({**row, "killed_by": killer, "name": dead["name"] or body.get("name"), "was_on": None if lone else standing(dead)})
+        # Its name at death the register's, not the last save's; `was_on` silent under a lone land; its sex, never changing, off the last save that saw it alive
+        row = {
+            "blow": dead["blow"],
+            "died": world_date(dead["died"]),
+            "died_of": dead["cause"],
+            "id": dead["id"],
+            "part": "died",
+            "was_on": None if lone else standing(dead),
+        }
+        kept = {  # its socle, or under `--with` what is asked of it: the tile it fell on, born, its killer, and parents with WB's -1 already dropped
+            "asset_id": dead["asset_id"],
+            "at": tile_text(dead["x"], dead["y"]),
+            "born": world_date(dead["born"]),
+            "killed_by": alive_or_dead_ref(dead["killer"], alive, deaths),
+            "name": dead["name"] or body.get("name"),
+            "parents": sorted(dead["parents"]) or None,
+            "sex": sex_label(last[dead["id"]]) if dead["id"] in last else None,
+        }
+        driving = len([field for field in fields if field not in _DEAD_SOCLE])  # each field asked drives off its kind, then its name: its sex stays
+        shown = (*_DEAD_SOCLE[min(driving, 2) :], *fields)
+        rows.append(row | {field: kept[field] for field in shown if field in kept})
     return sorted(rows, key=lambda row: row["id"])
 
 
@@ -1092,37 +1091,6 @@ def _may_mate(a: dict, b: dict, sexed: bool) -> bool:
     if a["id"] in parents_b or b["id"] in parents_a or parents_a & parents_b:
         return False
     return not sexed or a.get("sex") != b.get("sex")
-
-
-# A member's line under an entity, as that entity's own list wrote it: its age, stage and post, one ref the entity leaves open — the town, or a lineage's family.
-def _member_row(actor: dict, kind: str, here: int | str | None, refs: dict, save: dict, ctx: dict, one_kind: bool) -> dict:
-    age = actor_age(actor, ctx["world_time"])
-    row = {
-        "age": age,
-        "asset_id": actor.get("asset_id") if kind == "city" and not one_kind else None,  # a town's line alone: elsewhere the ref fills its room
-        "id": actor["id"],
-        "job": resolve_profession(actor, save),
-        **({"level": level} if (level := int(actor.get("level") or 0)) > 1 else {}),  # WB leaves most souls at 1: a rung above is earned
-        "life_stage": None if (stage := _stage(actor, ctx, age, adult_age(actor, ctx))) == "adult" else stage,  # an age says no stage: each kind grows at its pace
-        "name": actor.get("name"),
-        "sex": sex_label(actor),
-    }
-    if kind == "army":  # its own town's, every one of them: the line tells when each joined instead
-        return {**row, "army_since": kept_army_since(actor), "island_id": here}
-    if kind == "job":  # the trade asked goes without saying, one left for another is told; a king's line tells his crown, any other its town
-        tie = ("kingdom", "civ_kingdom_id") if refs["job"] == "king" else ("city", "cityID")
-        return {**row, "island_id": here, "job": None if row["job"] == refs["job"] else row["job"], tie[0]: entity_ref(actor.get(tie[1]), refs[tie[0]])}
-    if kind == "city":  # the town is the filter: its roof is what a line can still tell, `ground/info.py <id>` behind it
-        return {**row, "home": actor.get("homeBuildingID"), "island_id": here}
-    if kind == "family":  # kin under a roof: the generation and the house, the land left to `actor`
-        return {
-            **row,
-            "city": entity_ref(actor.get("cityID"), refs["city"]),
-            "gen": gen if (gen := int(actor.get("generation") or 1)) > 1 else None,
-            "home": actor.get("homeBuildingID"),
-        }
-    ref = ("family", actor.get("family")) if kind == "subspecies" else ("city", actor.get("cityID"))  # one ref a line can afford: a second blows the inline budget
-    return {**row, ref[0]: entity_ref(ref[1], refs[ref[0]]), "island_id": here}
 
 
 # The one name a leader needs, found by a scan: reading a single row beats indexing a whole collection to serve one key, even on the longest of them.

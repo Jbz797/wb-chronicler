@@ -1,10 +1,10 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 08/11/26 11:20</p>
+<p class="metadata">Date de mise à jour : 08/11/26 12:26</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne) ; une réponse partielle dit là, d'un `⚠`, ce qu'elle laisse, son JSON entier sur stdout, et une ligne `·` informe sans rien retirer ; citée en abrégé : `kingdom … metadata`.
 
-- **Un champ absent vaut rien** : un compte à 0, un drapeau faux, une liste ou un bloc vides se taisent, sauf où une glose dit le contraire ; absent, un compte vaut 0, ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe).
+- **Un champ absent vaut rien** : un compte à 0, un drapeau faux, une liste ou un bloc vides se taisent, sauf où une glose dit le contraire ; absent, un compte vaut 0, ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe) ; sauf sous `roster --with`, qui chasse du socle autant de champs qu'il en ajoute (`gloss world.--with`) : tus, pas nuls.
 - **Ce que fixe un filtre** (une terre `i<id>`, un seul `type:`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre.
 - **Les coordonnées** croissent vers l'est (x) et le nord (y), un `dir` aussi.
 - **`sections`** : liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings` et `roster`, à nommer) ; un bloc nommé seul (section, `--to`, tuile) sort nu, plusieurs gardent leur clé.
