@@ -4,6 +4,10 @@
       {{ heading() }}
       <app-new-badge [dot]="false" [show]="isNew()" />
     </figcaption>
-    <p>@for (run of runs(); track $index) {<span [class.fresh]="run.fresh">{{ run.text }}</span>}</p>
+    <p>
+      @for (run of runs(); track $index) {
+        <span [class.fresh]="run.fresh">{{ run.text }}</span>
+      }
+    </p>
   </figure>
 }

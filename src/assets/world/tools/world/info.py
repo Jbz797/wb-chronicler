@@ -204,7 +204,9 @@ _KEPT_FIELDS = (
     "home",
     "in_building",
     "island_id",
+    "islet",
     "job",
+    "kills",
     "kingdom",
     "language",
     "life_stage",
@@ -301,7 +303,9 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "home": lambda: actor.get("homeBuildingID"),  # its roof's id, none for one sleeping out: `ground <id>` tells the roof
         "in_building": lambda: {"asset_id": inside.get("asset_id"), "id": inside["id"]} if (inside := ctx["buildings_by_id"].get(kept_roof(actor))) else None,
         "island_id": lambda: here,
+        "islet": lambda: here,  # the same land, told as a plain line tells it: an islet's own tile, else the land's id
         "job": lambda: ctx["profession"](actor),
+        "kills": lambda: _held(actor, "kills"),  # the body's own counter, as `--rank` reads it: no stat of `actor … stats`
         "life_stage": lambda: _stage(actor, ctx, age, adult_age(actor, ctx)),
         "lover": lambda: lover if (lover := actor.get("lover")) in ctx["living_ids"] else None,  # its mate's id, a dead one none
         "parents": lambda: sorted(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p and p != -1) or None,  # ids, not refs: a line holds one
@@ -800,6 +804,8 @@ def _build_roster(
     for actor, here, change, figure in bodies:
         if fields:  # the line is what was asked: who, and those fields, a filter's own figure kept — the default columns stay with the plain roll
             row = {"id": actor["id"], "name": actor.get("name"), **change, **_asked_fields(actor, here, fields, ctx, seen)}
+            if "islet" in row:  # one land field, keyed as a plain line keys it
+                row["island_id"] = row.pop("islet")
         elif entity:
             told = None if here in (alone, seat) and "was_on" not in change else here
             row = {**_member_row(actor, entity[0], told, refs, save, ctx, one_kind), **fixed, **change}
@@ -822,7 +828,7 @@ def _build_roster(
         if since and not has:  # filed by what befell it: an arrival bears no mark of its own, read off the others it would be guessed
             row["part"] = _filed_as(change)
         # Which islet, as `actor … metadata` names it — `island_id: islet` then said by it
-        if here == _ISLET and not fields and (heart := islet_heart(island_of.islet_tiles(actor_xy(actor)))):
+        if here == _ISLET and (not fields or "island_id" in row) and (heart := islet_heart(island_of.islet_tiles(actor_xy(actor)))):
             row |= {"island_id": None, "islet": tile_text(*heart)}
         lines.append((*placed(actor["id"], figure, actor), row))
     _refuse_unseen(fields, seen)
@@ -1179,10 +1185,14 @@ def _rank_figure(actor: dict, top: str, ctx: dict, seen: set[str]) -> float:
     return stats.get(top, 0)
 
 
-# A field of `--with` that no body of the roll carries, refused with every one it could take: mistyped, or no lineage here bears it.
+# A field of `--with` that no body of the roll carries, refused with the nearest it could take: mistyped, or no lineage here bears it.
 def _refuse_unseen(fields: list[str], seen: set[str]) -> None:
     if unknown := [field for field in fields if field not in seen]:
-        raise ValueError(f"✗ {', '.join(f'`{f}`' for f in unknown)}: no `--with` field, or a stat no body here carries — it takes {', '.join(sorted(seen))}")
+        known = sorted(seen)
+        guess = "".join(_guessed(field, known) for field in unknown)
+        raise ValueError(
+            f"✗ {', '.join(f'`{f}`' for f in unknown)}: no `--with` field, nor a stat a body here carries{guess} — `gloss world.--with`, `actor <id> stats`"
+        )
 
 
 # The subspecies WB hangs `has_sapience` on, as a set of ids — an allegiance is not a mind, and a world can think long before it crowns anyone.
