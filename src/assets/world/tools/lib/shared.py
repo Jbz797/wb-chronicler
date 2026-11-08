@@ -387,11 +387,11 @@ def _save_cache_name(path: Path) -> str:
     return f"save_v1_{_save_cache_key(path)}.pkl"
 
 
-# The bodies a town won, less those who walked out: its founder is no settler won over, yet WB's `joinCity` counts them as one, the first to have joined it.
+# The bodies a town drew — joined, moved in, called by its fire — less those who walked out; its founder, whom WB's `joinCity` counts as joined, no settler.
 def _settlers_won(city: dict) -> int:
-    gained = int(city.get("joined") or 0) + int(city.get("moved") or 0)
-    founder = int(city.get("founder_id") is not None and gained > 0)
-    return gained - founder - int(city.get("left") or 0)
+    joined = int(city.get("joined") or 0)
+    founder = int(city.get("founder_id") is not None and joined > 0)
+    return joined - founder + int(city.get("moved") or 0) + int(city.get("migrated") or 0) - int(city.get("left") or 0)
 
 
 # Drop `None`, `[]` and `{}` from a nested JSON-like structure — chronicler tokens optimisation. `0`/`""`/`False` are preserved (semantically meaningful values).
