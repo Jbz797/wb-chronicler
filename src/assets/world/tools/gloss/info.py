@@ -28,11 +28,15 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
     cited = re.compile(rf"`{re.escape(asked[-1])}{'[` ]' if option else '`'}")
     if not found and (found := {key: gloss for key, gloss in glosses.items() if cited.search(gloss) and _within(segmented[key], asked[:-1])}):
         print(f"· no key for `{asked[-1]}` — told within {', '.join(found)}", file=sys.stderr)
-    if not found:
-        words = sorted({segment for segments in segmented.values() for segment in segments})
-        near = difflib.get_close_matches(asked[-1], words, n=_NEAR) or difflib.get_close_matches(wanted, sorted(glosses), n=_NEAR)
-        unglossed = " — `<tool> --help` lists its options" if option else " — the field says what it is"
-        print(f"✗ no gloss for `{wanted}`" + (f" — near it: {', '.join(near)}" if near else unglossed), file=sys.stderr)
+    if found:
+        return found
+    if homes := [key for key, segments in segmented.items() if segments[-1] == asked[-1]]:  # its keys named: a bare word would read as a match
+        print(f"✗ no gloss for `{wanted}` — `{asked[-1]}` is glossed only as {', '.join(homes)}", file=sys.stderr)
+        return found
+    words = sorted({segment for segments in segmented.values() for segment in segments})
+    near = difflib.get_close_matches(asked[-1], words, n=_NEAR) or difflib.get_close_matches(wanted, sorted(glosses), n=_NEAR)
+    unglossed = " — `<tool> --help` lists its options" if option else " — the field says what it is"
+    print(f"✗ no gloss for `{wanted}`" + (f" — near it: {', '.join(near)}" if near else unglossed), file=sys.stderr)
     return found
 
 

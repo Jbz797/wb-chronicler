@@ -64,6 +64,7 @@ from shared import (
     body_ref,
     breeding_mode,
     building_family,
+    built_by_tile,
     children_by_id,
     city_score_dimensions,
     civic_building_ids,
@@ -77,6 +78,7 @@ from shared import (
     house_building_ids,
     i18n,
     index_by_id,
+    indoors,
     is_aboard,
     is_boat,
     is_sapient,
@@ -84,7 +86,6 @@ from shared import (
     kept_city_since,
     kept_clouds,
     kept_deaths,
-    kept_roof,
     kingdom_score_dimensions,
     latest_chapter,
     life_stage,
@@ -112,6 +113,7 @@ from shared import (
     unsited_reason,
     walk_tiles,
     wants_detail,
+    whereabouts,
     world_date,
     world_laws,
     xy_arg,
@@ -193,6 +195,7 @@ _KEPT_FIELDS = (
     "army_since",
     "asset_id",
     "at",
+    "beside_building",
     "born",
     "breeds_on",
     "city",
@@ -245,6 +248,7 @@ _MEMBERSHIPS = {
 # The fewest rivals a record's field needs — `MIN_RANK_PEERS`, as a rank does, save for a town and a crown, which a world raises by the handful.
 _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 
+_ONE_BODY = re.compile(r"(?:p|id:)?(\d+)")  # a body by its id, as `--rank` takes one: `--filter` narrows a roll, one body is `actor`'s
 _ON_REQUEST = ("laws", "lineages", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll is no chapter's to carry
 _RANKED_KEPT = ("age_overgrowth", "gen")  # the figures among a body's kept fields `--rank` reads, every other a word or an id
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
@@ -297,6 +301,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "army_since": lambda: kept_army_since(actor),  # when it joined its town's army, none outside one
         "asset_id": lambda: actor.get("asset_id"),
         "at": lambda: tile_text(*actor_xy(actor)),
+        "beside_building": lambda: whereabouts(actor, ctx["buildings_by_id"], ctx["built"])["beside_building"],  # the second ring of `in_building`
         "born": lambda: entity_born(actor),
         # Its lineage's own line, as on the roll: none to come where it never bears
         "breeds_on": lambda: crossed_on(actor, breeding) if age < (breeding := breeding_age(actor, ctx)) and fertile(lineage) else None,
@@ -305,7 +310,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "gen": lambda: int(actor.get("generation") or 1),
         "hatch_on": lambda: hatch_on(actor, ctx),
         "home": lambda: actor.get("homeBuildingID"),  # its roof's id, none for one sleeping out: `ground <id>` tells the roof
-        "in_building": lambda: {"asset_id": inside.get("asset_id"), "id": inside["id"]} if (inside := ctx["buildings_by_id"].get(kept_roof(actor))) else None,
+        "in_building": lambda: {"asset_id": room.get("asset_id"), "id": room["id"]} if (room := indoors(actor, ctx["buildings_by_id"], ctx["built"])) else None,
         "island_id": lambda: here,
         "islet": lambda: here,  # the same land, told as a plain line tells it: an islet's own tile, else the land's id
         "job": lambda: ctx["profession"](actor),
@@ -645,8 +650,9 @@ def _build_roster(
     ctx = build_actor_stats_context(save)
     if ties := [kind for kind in _TIES if kind in fields]:
         ctx["ties"] = {kind: index_by_id(save.get(_MEMBERSHIPS[kind][0]) or []) for kind in ties}
-    if "in_building" in fields:
+    if not {"beside_building", "in_building"}.isdisjoint(fields):
         ctx["buildings_by_id"] = index_by_id(save.get("buildings") or [])
+        ctx["built"] = built_by_tile(save)
     if "job" in fields:
         ctx["profession"] = lambda actor: resolve_profession(actor, save)
     if "lover" in fields:
@@ -928,6 +934,8 @@ def _filter_arg(value: str) -> dict[str, frozenset]:
     groups = {"birth": ("bred",), "founding": ("barred", "settle"), "job": JOBS, "mind": ("beasts", "sapient"), "since": _SINCE_PARTS, "stage": _LIFE_STAGES}
     taken: defaultdict[str, set] = defaultdict(set)
     for word in re.split(r",(?!-?\d)", value):  # a tile's comma, `patch:874,571`, ends no word
+        if body := _ONE_BODY.fullmatch(word):
+            raise argparse.ArgumentTypeError(f"`{word}` filters nothing — one body is `actor {body[1]}`, the bodies nearest it `--rank p{body[1]}`")
         key, colon, said = word.partition(":")
         if colon:
             taken[key].add(_keyed(key, said))

@@ -167,6 +167,11 @@ _TALLY_PARTS = re.compile(r" \| | · ")  # the seams of a tally line, `2 flower 
 _THOUGHTLESS_FLOOR = 3000  # a world with no thinking soul: beasts and ground alone, little to tell that would not be padding
 _UNSEEN_KINDS = ("alliances", "cities", "clans", "cultures", "families", "kingdoms", "languages", "religions", "subspecies", "wars")  # the tiers a tool reads
 _VALUE_ORDERED = frozenset({"across", "drivers", "inventory", "kills", "taxonomy", "to_islands"})  # in order: chapters in turn, stores heaviest, lands nearest first
+
+_WALK_IN_TYPES = frozenset(  # WB lets nobody in, a tale walks in: `_heart_of`
+    {"type_barracks", "type_library", "type_market", "type_stockpile", "type_temple", "type_watch_tower", "type_windmill"},
+)
+
 _WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # a water as `geography … waters` ids it, `lake4`, or its family, `lake`: a `--filter` word, a `--to` end
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
@@ -295,6 +300,16 @@ def _family_leaders(actors: Sequence[dict], families_by_id: dict, world_time: fl
 # WB `Subspecies.cacheTags` reads a biology's faculties off meta tags, not trait names — a mod's own answers too. `isdisjoint` spares a set built per body.
 def _has_meta_tag(subspecies: dict | None, tag: str) -> bool:
     return not _tagged_traits(tag).isdisjoint((subspecies or {}).get("saved_traits") or [])
+
+
+# The building WB lets nobody in that a body stands at the heart of: on its ground, off its outer ring — inside, as the tale would have it, its rim beside.
+def _heart_of(actor: dict, by_tile: Mapping[tuple, dict]) -> dict | None:
+    x, y = actor_xy(actor)
+    if not (building := by_tile.get((x, y))) or (spec := load_data("buildings.json").get(building.get("asset_id")) or {}).get("type") not in _WALK_IN_TYPES:
+        return None
+    bx, by = building_tile(building) or (x, y)
+    left, right, top, bottom = spec["fundament"]
+    return building if _within_walls(x - bx, left, right) and _within_walls(y - by, bottom, top) else None
 
 
 # The date Faithful Saves stamped a body joining what its `field` holds, `faithful_<kind>_of` naming which: a stamp left by one it has since left dates nothing.
@@ -446,6 +461,11 @@ def _tiled(value: object) -> object:
     if not (isinstance(x := tiled.get("x"), int) and isinstance(y := tiled.get("y"), int)):
         return tiled
     return {**{key: v for key, v in tiled.items() if key not in ("x", "y")}, "at": tile_text(x, y)}
+
+
+# Whether a tile, by its offset from the building's own along one axis, lies off the ring of its ground — a span under three having none, its middle instead.
+def _within_walls(offset: int, low: int, high: int) -> bool:
+    return -low < offset < high if low + high >= 2 else abs(offset - (high - low) / 2) <= 0.5
 
 
 # Orphan slots go — a chapter's save never changes, where the live one mints a fresh key at every in-game save. `_CACHE_KEEP` then caps what survives, newest first.
@@ -953,6 +973,12 @@ def i18n(name: str) -> dict:
 
 def index_by_id(records: list[dict]) -> dict:
     return {record["id"]: record for record in records}
+
+
+# Where a body is inside: the roof the Faithful Saves mod kept it under, else the heart of a building WB lets nobody in, temple or market, which the tale enters.
+def indoors(actor: dict, buildings_by_id: Mapping[int, dict], by_tile: Mapping[tuple, dict]) -> dict | None:
+    roof = kept_roof(actor)
+    return buildings_by_id.get(roof) if roof is not None else _heart_of(actor, by_tile)
 
 
 # WB `Actor.isInsideSomething`, the half a save records: `transportID` names the boat a soul boarded, and `disembarkTo` clears it. Indoors, WB never writes.
@@ -1701,10 +1727,9 @@ def weapon_assets() -> frozenset[str]:
     return frozenset(asset for asset, entry in load_data("equipment.json")["items"].items() if "damage" in entry["stats"])
 
 
-# Where a body stands as to the built: the roof it is under, as the Faithful Saves mod kept it, and the structure it stands beside, unsaid where it is that roof.
-def whereabouts(actor: dict, buildings: Sequence[dict], by_tile: Mapping[tuple, dict]) -> dict:
-    roof = kept_roof(actor)
-    inside = next((b for b in buildings if b.get("id") == roof), None) if roof is not None else None
+# Where a body stands as to the built: the building `indoors` puts it in, and the structure it stands beside, unsaid where it is that one.
+def whereabouts(actor: dict, buildings_by_id: Mapping[int, dict], by_tile: Mapping[tuple, dict]) -> dict:
+    inside = indoors(actor, buildings_by_id, by_tile)
     beside = building_at(actor, by_tile)
     return {
         "beside_building": {"asset_id": beside.get("asset_id"), "id": beside["id"]} if beside and beside is not inside else None,

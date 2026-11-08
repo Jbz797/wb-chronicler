@@ -81,14 +81,14 @@ def _build_identity(boat: dict, ctx: dict) -> dict:
 
 # The hull as WB's panel reads it, its « Statuts » being `traits`. WB writes `level`, `kills` and `renown` only once it has fought: an unblooded hull reads level 1.
 def _build_metadata(boat: dict, ctx: dict) -> dict:
-    # One dock to find, so a scan beats indexing every building of the world for it — as `ground/info.py` finds its own. A dangling id reads as none.
+    buildings = ctx["buildings_by_id"]()
     home_id = boat.get("homeBuildingID")
-    home = next((b for b in ctx["buildings"] if b.get("id") == home_id), None) if home_id else None
+    home = buildings.get(home_id) if home_id else None  # a dangling id reads as none
     level = max(int(boat.get("level") or 0), 1)  # WB scales from level 1 even where the field is absent, as `Actor.updateStats` does
     x, y = actor_xy(boat)
     return {
         # Tied up in a quay as the mod kept it, or riding beside one — rare, a hull keeping two tiles offshore at best, and never necessarily its own dock.
-        **whereabouts(boat, ctx["buildings"], ctx["buildings_by_tile"]()),
+        **whereabouts(boat, buildings, ctx["buildings_by_tile"]()),
         "age": entity_age(boat, ctx["world_time"]),
         "health": boat.get("health", UNWRITTEN_HEALTH),
         "health_max": _health_max(boat, ctx, level),
@@ -158,7 +158,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     ctx = {
-        "buildings": save.get("buildings") or [],
+        "buildings_by_id": cache(lambda: index_by_id(save.get("buildings") or [])),  # called, as the next: `metadata` alone reads a building
         "buildings_by_tile": cache(lambda: built_by_tile(save)),  # called not stored: only `metadata` asks what a hull rides beside
         "cities_by_id": index_by_id(save.get("cities") or []),
         "creature_traits": load_data("creature-traits.json"),

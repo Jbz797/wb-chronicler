@@ -209,6 +209,38 @@
           }
         }
 
+        // A chapter closed at war, as `ReaderPage` marks it: a red band across the parchment's head, and crossed swords where the fleurons stood.
+        &.at-war {
+          .war-banner {
+            align-items: center;
+            background: linear-gradient(180deg, #{$error}, color-mix(in srgb, #{$error}, #000 20%));
+            color: $paper;
+            display: flex;
+            font-family: $font-display;
+            font-size: 0.85em;
+            gap: 0.6em;
+            justify-content: center;
+            letter-spacing: $letter-spacing-wide;
+            margin: -2rem -2rem 1.5rem; // the article's padding undone, so the band runs from edge to edge of the parchment
+            padding: 0.35em 1em;
+            text-transform: uppercase;
+
+            img {
+              height: 20px;
+              width: 20px;
+            }
+          }
+
+          hr::before {
+            background: url('/assets/img/tags/favorite-kingdom-at-war.png') center / contain no-repeat;
+            content: '';
+            display: inline-block;
+            height: 24px;
+            image-rendering: pixelated; // the global rule reaches `img` and `canvas` only, and a scaled background smooths without it
+            width: 24px;
+          }
+        }
+
         &.chapter {
           // The drop cap, a chapter's alone: its opening paragraph, unless `ReaderPage` found it too short to stand by one. A workshop page is a manual, not a tale.
           h1 + p:not(.plain-opening)::first-letter {

@@ -1,6 +1,12 @@
 <div class="reader-page">
   <ng-scrollbar class="reader-scroll">
-    <article class="ant-typography" [class.chapter]="isChapter()" (pointerout)="onProseOut($event)" (pointerover)="onProseOver($event)">
+    <article class="ant-typography" [class.at-war]="atWar()" [class.chapter]="isChapter()" (pointerout)="onProseOut($event)" (pointerover)="onProseOver($event)">
+      @if (atWar()) {
+        <div class="war-banner">
+          <img src="assets/img/tags/favorite-kingdom-at-war.png" />
+          {{ 'tag_FAVORITE_KINGDOM_AT_WAR' | translate }}
+        </div>
+      }
       @if (src(); as s) {
         <markdown [disableSanitizer]="true" [src]="s" (ready)="onReady()" />
       } @else if (merged.hasValue()) {

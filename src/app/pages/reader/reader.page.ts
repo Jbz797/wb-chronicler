@@ -34,6 +34,8 @@ export class ReaderPage {
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });
   private readonly _translate = inject(TranslateService);
 
+  // A chapter closed with the favourite's crown at war: a red band heads its tale, and crossed swords take the fleurons' place between its circles.
+  protected readonly atWar = computed(() => !!this._chronicler.chapters().find(c => c.slug === this._slug())?.tags.includes('FAVORITE_KINGDOM_AT_WAR'));
   // Nothing to read and nothing coming: the world is set up but no chapter written yet, so the page says how to open the one who writes them.
   protected readonly awaitsChronicler = computed(() => this._chronicler.probed() && this._chronicler.chapters().length === 0);
   // A chapter, not a workshop page: only a chapter closes on a hook taken up again, which its last paragraph is styled as.

@@ -446,7 +446,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
 
     land = _land_of(actor, ctx)
     return {
-        **whereabouts(actor, save.get("buildings") or [], ctx["buildings_by_tile"]()),  # Chronicler-only: the roof it is under, the structure it stands at
+        **whereabouts(actor, index_by_id(save.get("buildings") or []), ctx["buildings_by_tile"]()),  # Chronicler-only: what it is inside, what it stands at
         # Chronicler-only, and only while it still bites: the date WB gives the child its halved `damage_max`/`health_max` back — a bridling, not an infirmity.
         **({"adult_on": crossed_on(actor, age_adult)} if age < age_adult else {}),
         "age": age,
