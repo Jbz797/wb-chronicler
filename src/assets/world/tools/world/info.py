@@ -1292,10 +1292,10 @@ def main(argv: list[str]) -> int:
         print(f"✗ {' and '.join(sorted(halves))} split the bodies in two: filter by one", file=sys.stderr)
         return 2
     asked_parts = picked["since"] or None
-    # A part or a cause asked with no span: since the chapter before the one read, as a chapter is written against its last — said, a span unseen
-    if (asked_parts or args.died_of) and not since and chapter and (number := int(chapter[1:])) > 1:
-        since = f"C{number - 1}"
-        print(f"⚠ since {since}, the chapter before {chapter} — `--since C<n>` for another", file=sys.stderr)
+    # A part or a cause asked with no span: since the chapter before the one read, as a chapter is written against its last — said once the call holds
+    previous = int(chapter[1:]) - 1 if chapter else 0
+    if defaulted := bool(asked_parts or args.died_of) and not since and previous > 0:
+        since = f"C{previous}"
     if asked_parts and not since:  # a part is what befell a body since a chapter
         print(f"✗ {', '.join(sorted(asked_parts))}: parts of `--since C<n>` — name a chapter", file=sys.stderr)
         return 2
@@ -1454,6 +1454,8 @@ def main(argv: list[str]) -> int:
         if len(fields) > _MAX_FIELDS:
             print(f"✗ `--with` takes {_MAX_FIELDS} fields at most — `actor <id> stats` gives a body's whole sheet", file=sys.stderr)
             return 2
+        if defaulted:  # a span unseen, said beside a roll it shapes — never before a refusal
+            print(f"⚠ since {since}, the chapter before {chapter} — `--since C<n>` for another", file=sys.stderr)
         try:
             roster = _build_roster(
                 save,

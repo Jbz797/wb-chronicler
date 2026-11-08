@@ -181,7 +181,7 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
     older, before = [], dict.fromkeys(events, 0)
     for r in coarse:
         now = {c: r[c] for c in events}
-        older.append({**{names[c]: r[c] for c in states if r[c]}, **_gains(before, now, events), "years": _span(r, born or 1)})
+        older.append({**{names[c]: r[c] for c in states if r[c]}, **_gains(before, now, events), "year": _span(r, born or 1)})
         before = now
     # Its first fine year is its first only if born in it, or in a December filed under the next before the mod: a late window, coarse-less, holds a total.
     if not coarse and born not in (rows[0]["timestamp"], rows[0]["timestamp"] - 1):
@@ -197,7 +197,7 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
         since = {"from_year": coarse[-1]["timestamp"]} if gains and coarse and at == rows[0]["timestamp"] > coarse[-1]["timestamp"] else {}
         years.append({**{names[c]: row[c] for c in states if row[c]}, **gains, **since, "year": f"y{at}"})
         before = now
-    return older + years  # the coarse spans first, each told by its `years`
+    return older + years  # the coarse spans first, each `year` a span `y20–y24`
 
 
 # What rose since a chapter, or ever, that WB's journal never logs — a clan, a custom, a tongue, a faith, a family —, off the save: those still standing alone.
@@ -294,7 +294,7 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
         now = {c: r[c] for c in tracked}
         gains, mean = _gains(before, now, events) | _died(died, max(r["timestamp"] - r["step"], 1), r["timestamp"] - 1), _world_states(r)
         if gains or mean:
-            spans.append({**gains, "mean": mean or None, "years": _span(r, 1)})
+            spans.append({**gains, "mean": mean or None, "year": _span(r, 1)})
         before = now
     if not coarse and rows and rows[0]["timestamp"] != 1:  # a window opened past the world's first year, with no span before it: its first row holds totals
         before = {}
@@ -315,7 +315,7 @@ def _build_world(conn: sqlite3.Connection, save: dict) -> list[dict]:
     now = {c: int(v) if (v := map_stats.get(key)) is not None else None for c, key in keys.items()}
     start = closed + 1 if rows else coarse[-1]["timestamp"] if coarse else 1  # the year after the last row read: a span's end where no year is left
     if gains := _gains(before, now, events) | _died(died, start, closed + 1):
-        timeline.append({**gains, **({"year": f"y{start}"} if start > closed else {"years": f"y{start}–y{closed + 1}"}), "so_far": True})
+        timeline.append({**gains, "year": f"y{start}" if start > closed else f"y{start}–y{closed + 1}", "so_far": True})
     return spans + timeline
 
 

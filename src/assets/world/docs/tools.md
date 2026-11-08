@@ -1,8 +1,8 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 07/11/26 19:53</p>
+<p class="metadata">Date de mise à jour : 08/11/26 11:20</p>
 
-Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne) ; une réponse partielle dit là, d'un `⚠`, ce qu'elle laisse, son JSON entier sur stdout ; citée en abrégé : `kingdom … metadata`.
+Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne) ; une réponse partielle dit là, d'un `⚠`, ce qu'elle laisse, son JSON entier sur stdout, et une ligne `·` informe sans rien retirer ; citée en abrégé : `kingdom … metadata`.
 
 - **Un champ absent vaut rien** : un compte à 0, un drapeau faux, une liste ou un bloc vides se taisent, sauf où une glose dit le contraire ; absent, un compte vaut 0, ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe).
 - **Ce que fixe un filtre** (une terre `i<id>`, un seul `type:`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre.
