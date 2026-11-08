@@ -313,7 +313,7 @@
   "world.--limit": "`--limit` : les lignes de `roster`, 10 sans lui, par `id` sans `--rank` ; les espèces de `pairings`, par naissance.",
   "world.--rank": "`--rank <champ|x,y|p<id>>` : l'ordre, tout chiffre que `--with` lit, le plus haut d'abord (à âge égal, le plus tôt né), ou le plus proche ; sans le chiffre, tus.",
   "world.--since": "`--since C<n>` : ce qui a changé depuis, sauf `grew` ; `--filter` en garde des parties (`world.roster.part`), comptées sans `--since` depuis le chapitre d'avant.",
-  "world.--with": "`--with` : 4 champs au plus, chacun chassant du socle le 1ᵉʳ présent de : cité, terre, stade, espèce, nom ; `sex` reste, comme ce qu'une partie ou `--rank` y met.",
+  "world.--with": "`--with` : 4 champs au plus, chacun chassant du socle le 1ᵉʳ présent de : cité, terre, stade, nom, espèce ; `sex` reste, comme ce qu'une partie ou `--rank` y met.",
   "world.came_and_went": "Parues puis disparues entre les deux saves, qu'aucune save n'a tenues : leurs ids (cités, clans…), une lignée avec son espèce, que ses morts au registre donnent.",
   "world.cumulative": "Des compteurs qui ne font que monter : naissances, morts, extinctions.",
   "world.cumulative.armies_destroyed": "Une armée tombe sans soldat, capitaine ni cité, ou dissoute par sa cité ; ses années, ou entre quels chapitres elle passa : `history entity army <id>`.",

@@ -163,9 +163,9 @@ _CUMULATIVE_COUNTERS = {
     "wars_started": "warsStarted",
 }
 
-_DEAD_SOCLE = ("asset_id", "name", "sex")  # a dead body's line beside what befell it: its kind, then its name, what `--with` drives off — its sex stays
+_DEAD_SOCLE = ("asset_id", "name", "sex")  # a dead body's line beside what befell it: its name, then its kind, what `--with` drives off — its sex stays
 _DEATH_CAUSES = tuple(sorted(set(load_data("attack-types.json").values())))  # what `died:` takes: each cause as the register files it
-_DISPLACED = ("city", "island_id", "life_stage", "asset_id", "name")  # what `--with` drives off the socle, one per field asked, least telling first
+_DISPLACED = ("city", "island_id", "life_stage", "name", "asset_id")  # what `--with` drives off the socle, one per field asked, least telling first
 _FEATS = ("kills", "level", "money", "renown")  # what a life adds up, kept on the body itself — weighed among thinking souls as the skills are
 _FIELD_FLOORS = {"births": 0, "equipment_power": 0, "level": 1, "loot": 0, "money": 0, "renown": 0}  # a tally `actor … stats` tells silent at its floor
 _GONE_FIELDS = ("asset_id", "at", "born", "killed_by", "name", "parents", "sex")  # what `--with` asks of the dead, the register keeping it, or a sex never changing
@@ -780,7 +780,7 @@ def _build_roster(
         heart = islet_heart(island_of.islet_tiles(actor_xy(actor))) if here == _ISLET else None  # which islet, as `actor … metadata` names it
         return {
             "asset_id": None if one_kind else actor.get("asset_id"),
-            "city": None if town is not None else entity_ref(actor.get("cityID"), towns),
+            "city": None if town is not None and "part" not in change else entity_ref(actor.get("cityID"), towns),  # a leaver's is where it went
             "id": actor["id"],
             # Said outright beside a `was_on`, a missing one reading as still on the land left; silent where a lone land already named it
             "island_id": None if heart or (here == alone and "was_on" not in change) else here,
@@ -809,7 +809,8 @@ def _build_roster(
     def fielded(actor: dict, here: int | str, change: dict) -> dict:
         row = socle(actor, here, change)
         if driving:
-            kept = {*change, *(["island_id"] if "was_on" in change else [])}  # what a part or a rank put there stays, and the land a mover reached
+            # What a part or a rank put there stays, and what tells it: the land a mover reached, the town a leaver went to
+            kept = {*change, *(["island_id"] if "was_on" in change else []), *(["city"] if "part" in change else [])}
             shown = [key for key in _DISPLACED if key not in kept and any(row.get(told) is not None for told in told_as.get(key, (key,)))]
             for key in shown[:driving]:
                 for told in told_as.get(key, (key,)):
@@ -824,13 +825,11 @@ def _build_roster(
         lines.append((*placed(actor["id"], figure, actor), row))
     _refuse_unseen(fields, seen | {"killed_by"} if gone else seen)
     parted = since and not has
-    for row in gone:
-        dead = {**row, "asset_id": None if one_kind else row.get("asset_id")}  # its `part` said even beside `has:`, where no living line bears one
-        lines.append((*placed(row["id"]), dead))
+    lines.extend((*placed(row["id"]), row) for row in gone)  # a dead line's `part` said even beside `has:`, where no living line bears one
     if parted and members_then is not None and entity and "left" in told_parts:  # alive and elsewhere now: left the entity, which a death does not say
         for a in sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id")):
             here = _standing(a, island_of, grid, save["tileMap"])
-            row = fielded(a, here, {}) | {"part": "left"}
+            row = fielded(a, here, {"part": "left"})
             row |= towards(a["id"], *actor_xy(a)) if near else {}  # before `placed`, which ranks on the length it records
             lines.append((*placed(a["id"]), row))
     if parted and len(told_parts) == 1:  # one part named: the filter says it, no line repeats it
@@ -966,6 +965,8 @@ def _gone_since(
     ctx, alive = build_actor_stats_context(save) if stage else {}, index_by_id(save.get("actors_data") or [])
     lone, rows = asked is not None and len(asked) == 1, []  # one land named: where each fell goes unsaid
     minded = {body.get("asset_id") for body in (*alive.values(), *last.values()) if body.get("subspecies") in thinking}  # the kinds a mind was seen in
+    one_kind = kinds is not None and len(kinds) == 1  # its kind unsaid, as on every line of the roll: no field to drive off
+    driving = len([field for field in fields if field not in _DEAD_SOCLE])  # each field asked drives one off, as off a living line: its sex stays
 
     # A dead body's lineage: the register's, else a parent's — one born and gone between two saves never had its own written (`-1`) —, else none
     def lineage(dead: dict) -> int | None:
@@ -1001,7 +1002,7 @@ def _gone_since(
             "was_on": None if lone else standing(dead),
         }
         kept = {  # its socle, or under `--with` what is asked of it: the tile it fell on, born, its killer, and parents with WB's -1 already dropped
-            "asset_id": dead["asset_id"],
+            "asset_id": None if one_kind else dead["asset_id"],
             "at": tile_text(dead["x"], dead["y"]),
             "born": world_date(dead["born"]),
             "killed_by": alive_or_dead_ref(dead["killer"], alive, deaths),
@@ -1009,8 +1010,8 @@ def _gone_since(
             "parents": sorted(dead["parents"]) or None,
             "sex": sex_label(last[dead["id"]]) if dead["id"] in last else None,
         }
-        driving = len([field for field in fields if field not in _DEAD_SOCLE])  # each field asked drives off its kind, then its name: its sex stays
-        shown = (*_DEAD_SOCLE[min(driving, 2) :], *fields)
+        present = [key for key in _DISPLACED if key in _DEAD_SOCLE and kept[key] is not None]
+        shown = (*(key for key in _DEAD_SOCLE if key not in present[:driving]), *fields)
         rows.append(row | {field: kept[field] for field in shown if field in kept})
     return sorted(rows, key=lambda row: row["id"])
 
