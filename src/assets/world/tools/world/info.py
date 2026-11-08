@@ -245,7 +245,7 @@ _MIN_PEERS = {"cities": MIN_SCORE_PEERS, "kingdoms": MIN_SCORE_PEERS}
 _ON_REQUEST = ("laws", "lineages", "pairings", "roster")  # named only: `full` is what the bootstrap folds into a chapter, and a roll is no chapter's to carry
 _RANKED_KEPT = ("age_overgrowth", "gen")  # the figures among a body's kept fields `--rank` reads, every other a word or an id
 _SEXED = "reproduction_sexual"  # the one breeding WB pairs by opposite sexes: a hermaphrodite takes any partner of its kind
-_SINCE_PARTS = ("arrived", "died", "grew", "moved")  # what a `--since` roll files a body under, each a verb as `left` is
+_SINCE_PARTS = ("arrived", "died", "grew", "left", "moved")  # what a `--since` roll files a body under, `left` an entity's alone
 _SINCE_SECTIONS = ("cumulative", "lineages", "roster", "snapshot")  # what `--since` answers: the arrivals of a roll or a census, two counts weighed
 
 # WB's four skills, the ones every `actor … ranks` podium reads — civic abilities, weighed among thinking souls alone: a beast's figure moves nothing.
@@ -836,17 +836,16 @@ def _build_roster(
     for row in gone:
         dead = {**row, "asset_id": None if one_kind else row["asset_id"]}  # its `part` said even beside `has:`, where no living line bears one
         lines.append((*placed(row["id"]), dead))
-    leavers = []
-    if parted and members_then is not None and entity:  # alive and elsewhere now: left the entity, which a death alone does not say
-        leavers = sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id"))
-        for a in leavers:
+    if parted and members_then is not None and entity and "left" in told_parts:  # alive and elsewhere now: left the entity, which a death does not say
+        for a in sorted((a for a in save.get("actors_data") or [] if a["id"] in members_then and not belongs(a)), key=itemgetter("id")):
             row = {**_member_row(a, entity[0], _standing(a, island_of, grid, save["tileMap"]), refs, save, ctx, one_kind), **fixed, "part": "left"}
-            lines.append((*placed(a["id"]), row | (towards(a["id"], *actor_xy(a)) if near else {})))
-    if parted and len(told_parts) == 1 and not leavers:  # one part named: the filter says it, no line repeats it
+            row |= towards(a["id"], *actor_xy(a)) if near else {}  # before `placed`, which ranks on the length it records
+            lines.append((*placed(a["id"]), row))
+    if parted and len(told_parts) == 1:  # one part named: the filter says it, no line repeats it
         lines = [(order, tie, {**row, "part": None}) for order, tie, row in lines]
     lines.sort(key=itemgetter(0))
     kept = len(lines) if limit is None else _tied_cut([tie for _, tie, _ in lines], limit)
-    living = bool(told_parts - {"died"})  # who stood still or only grew is a living part's tally: beside the dead alone it would read as theirs
+    living = bool(told_parts - {"died", "left"})  # who stood still or only grew is a living part's tally: beside the dead alone it would read as theirs
     unseen = [f"{still} stood still" if still else "", f"{aged} only grew (`--filter grew`)" if aged else ""] if living else []
     left = [f"{unranked} with no {top}" if unranked else "", *unseen]
     if kept < len(lines) or any(left):  # a cut, or bodies a filter set aside unseen: said beside the list, which keeps its shape
@@ -1311,7 +1310,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ `died:` sorts the dead: {', '.join(living)} holds none — ask `died` alone", file=sys.stderr)
         return 2
     # `grew` untold unless named, or a stage sought; the dead alone under `died:`
-    told_parts = frozenset({"died"}) if args.died_of else asked_parts or frozenset({"arrived", "died", "moved", *(["grew"] if args.stage else [])})
+    told_parts = frozenset({"died"}) if args.died_of else asked_parts or frozenset({"arrived", "died", "left", "moved", *(["grew"] if args.stage else [])})
     point = None  # `--rank` by a figure, highest first, or by a body or a tile, nearest first: a word not a point is a field, refused if none
     if args.top and args.top not in _TOP_MEASURES:
         with contextlib.suppress(argparse.ArgumentTypeError):
@@ -1327,6 +1326,11 @@ def main(argv: list[str]) -> int:
         print(str(e), file=sys.stderr)
         return 2
     entities = [(kind, entity_id) for kind in _MEMBERSHIPS if (entity_id := getattr(args, kind)) is not None] + ([("job", args.job)] if args.job else [])
+    if not entities:  # none to leave: `left` refused if named, else dropped from the default parts
+        if "left" in (asked_parts or ()):
+            print("✗ `left` is an entity's: name one — `city:<id>`, `family:<id>`, `king`…", file=sys.stderr)
+            return 2
+        told_parts -= {"left"}
     # What keeps only some bodies of the roll: `type:` among them, though it narrows `lineages` too, and `--with` none — it adds fields to every line
     sifted = (
         any((args.barred, args.born, args.bred, args.has, args.lacks, args.patch, args.settle, args.stage, args.status, args.task, args.top, args.trait))

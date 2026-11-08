@@ -345,7 +345,7 @@
   "world.roster.in_building": "`--with in_building` : le toit sous lequel le corps se tient, sa sorte et son id, tu dehors.",
   "world.roster.islet": "Sur un îlot, son `heart` à la place d'`island_id`, comme `actor … metadata` le donne, et `--with island_id` ou `islet` de même : même `islet`, même rocher.",
   "world.roster.kills": "`--with kills`, `--rank kills` : les morts que le corps a données, à son compteur propre, absent d'`actor … stats` ; 0 : aucune.",
-  "world.roster.left": "D'une entité, sous `--since` : `arrived` y est entré, `left` en est sorti vivant.",
+  "world.roster.left": "D'une entité, sous `--since` : `arrived` y est entré, `left` en est sorti vivant ; `--filter left` les seuls sortants, jamais sans entité.",
   "world.roster.life_stage": "Tu chez un adulte sur la ligne de base ; demandé par `--with life_stage`, toujours dit, `adult` compris.",
   "world.roster.lover": "`--with lover` : l'id du compagnon vivant, tu chez un corps libre.",
   "world.roster.parents": "`--with parents` : les ids des deux parents, triés, un mort compris (`actor <id>` le nomme).",
