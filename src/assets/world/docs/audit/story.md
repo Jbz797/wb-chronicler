@@ -1,6 +1,6 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 08/11/26 11:41</p>
+<p class="metadata">Date de mise à jour : 08/11/26 11:52</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants avec ta tâche.
 
@@ -23,7 +23,7 @@ Classe les écarts, le plus porteur d'abord, et dis de chacun s'il se répare ic
 
 ## Le registre des veilles
 
-Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton premier audit : ses seules puces. Mets-le à jour à chaque audit qui change le sort d'une veille, jamais au conseil ; ton rapport n'en redit pas les changements. Une veille sortie (soldée, abandonnée, fondue) se retrouve par `git -C saves log -p -- watches.md` : pèse-la aussi quand tu cherches un fil jamais refermé.
+Pars de `saves/watches.md`, les veilles encore ouvertes, ou crée-le à ton premier audit : ses seules puces. Mets-le à jour à chaque audit qui change le sort d'une veille, jamais au conseil ; ton rapport n'en dit que le récit (« Récit »). Une veille sortie (soldée, abandonnée, fondue) se retrouve par `git -C saves log -p -- watches.md` : pèse-la aussi quand tu cherches un fil jamais refermé.
 
 - **Chiffres** : le registre n'en porte aucun, pas même une date : le chapitre porte le fait.
 - **Entrées et sorties** : y entre un fil que le chapitre laisse en suspens et que le monde peut trancher, jamais une `task` ni un statut passager (hors `status_history`) : rien ne garde leur issue ; en sort une veille soldée, et ce que le monde ne tranchera pas ; une que le chapitre ne touche pas ou redit seulement (_« toujours maudite »_) reste telle quelle.
