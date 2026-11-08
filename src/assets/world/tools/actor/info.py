@@ -1658,6 +1658,9 @@ def main(argv: list[str]) -> int:
     if since and not targets:  # beside a `--to`, it dates the trip's `then` alone: the body's own changes are a call of their own
         out["since"] = _build_since(actor, then, ctx, save, then_ctx, then_save)
     trips = {words: aim and _trip(actor, aim, ctx, then, then_ctx, since) for words, aim in aimed.items()}
+    for trip in trips.values():  # whose pace it reads, as `--to` would aim at it: a block quoted without its command still says where it starts
+        if isinstance(trip, dict):
+            trip["from"] = f"p{actor_id}"
     if targets and not any(trips.values()):
         return 1
     if trips:  # several `--to` keep each its words, where one alone comes bare

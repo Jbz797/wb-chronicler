@@ -69,6 +69,7 @@
   "actor.to.crow_nearest": "Le plus proche à vol d'oiseau si la marche en atteint un autre, muré ou plus cher (`--to` sur son id dit pourquoi), ou d'une eau sa tuile ; absent, `nearest` l'est.",
   "actor.to.dormant": "Un volcan ou un geyser visé qui dort, dans `nearest`, `crow_nearest` ou sous `--to b<id>`, comme `ground.metadata.dormant` le dit ; éveillé, rien.",
   "actor.to.farther": "Sous `--to lands`, `cities` : celles que le corps gagne aussi, plus loin que les 5 listées ; une seule : `--to i<id>`, `--to c<id>`.",
+  "actor.to.from": "Le corps d'où part le trajet, et dont il prend le pas, tel que `--to` le viserait : un bloc cité sans sa commande dit encore d'où il part.",
   "actor.to.frozen": "Vers le gel (`--to frozen`) : sa tuile gelée la plus proche et sa sorte, `frost` passager, `snow`, `ice`, `permafrost`, comme `geography … frozen` les compte.",
   "actor.to.ground": "`--to g:<sol>` : un sol seul, par son nom de `biomes`, même quand un type le porte (`flower`, `tumor`) ; le mot nu vise alors le type, et son `info` le dit.",
   "actor.to.info": "Un mot à deux lectures : un type aussi sol (`g:<sol>` vise le sol), ou une ressource, la plus proche des sortes qui la donnent ; une sorte se vise par son id.",
