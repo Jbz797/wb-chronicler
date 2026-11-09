@@ -571,6 +571,7 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None, lines: in
     sail = per_hour / _boat_per_hour()
     reach = limit / min(gait.cheapest, sail if ferried else 1.0) if gait else limit  # the farthest tile the cheapest pace brings within it
     kin: dict[int, str] = {}
+    ctx["best_friend"] = actor.get("best_friend_id")  # kept past the cut as kin is, yet filed by the walk: a friend is no kin, the Intimate never his by right
     ties = _ties(actor)
     within: list[tuple] = []
     for other in ctx["actors_by_id"].values():
@@ -609,7 +610,7 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None, lines: in
     rings.update({name: _surroundings_rows(_surroundings_plan(entries, ctx, home, kin), ctx, home, kin) for name, entries in circles.items()})
     for name, ring in rings.items():  # each circle's nearest, its kin besides, the cut said beside
         if lines is not None and len(kept := _ring_cut(ring, lines)) < len(ring):
-            print(f"⚠ {name}: {len(ring)} lines, the {lines} nearest, the body's kin besides — `--limit all` for every one", file=sys.stderr)
+            print(f"⚠ {name}: {len(ring)} lines, the {lines} nearest, the body's kin and best friend besides — `--limit all` for every one", file=sys.stderr)
             rings[name] = kept
     # An adult's line goes unmarked, most bodies standing there: said beside the rows, where a silence read alone passes for youth. A sexless hull has no stage.
     if any("sex" in row and "life_stage" not in row for ring in rings.values() if isinstance(ring, list) for row in ring):
@@ -1162,7 +1163,7 @@ def _ring_bound(minutes: int) -> float:
 
 # A circle's `limit` nearest lines, its kin farther off kept besides — a post or a kill is `roster --rank`'s to find.
 def _ring_cut(ring: list[dict], limit: int) -> list[dict]:
-    return [row for at, row in enumerate(ring) if at < limit or "kin" in row]
+    return [row for at, row in enumerate(ring) if at < limit or "kin" in row or "best_friend" in row]
 
 
 # The tiles a land is landed on: the ground of its rim, a land owning its rock, where no body sets foot.
@@ -1214,7 +1215,7 @@ def _surroundings_plan(entries: list[tuple], ctx: dict, home: int | None, kin: d
         sapient = not is_boat(other) and is_sapient(ctx["subspecies_by_id"][other["subspecies"]])
         city = other.get("cityID") if sapient else None
         charged = other.get("profession") in _POSTS or i in chiefs
-        if other.get("kills") or charged or i in kin or (city is None if sapient else other.get("name")):
+        if other.get("kills") or charged or i in kin or i == ctx["best_friend"] or (city is None if sapient else other.get("name")):
             plan.append(entry)
             continue
         key = ("city", city) if sapient else ("asset_id", other.get("asset_id"))
@@ -1255,6 +1256,7 @@ def _surroundings_row(entry: tuple, ctx: dict, home: int | None, kin: dict[int, 
         # Silent at `adult`, the stage most bodies stand at, as a tally at nought: printed on every line it would push a named killer's past the inline width.
         **({} if (stage := life_stage(age, adult_age(other, ctx), lifespan, is_egg(other, ctx))) == "adult" else {"life_stage": stage}),
         **mark,
+        **({"best_friend": True} if i == ctx.get("best_friend") else {}),
         # Only when true, as a tally drops at nought: a `false` on every beast would push a named killer's line past the inline width.
         **({"sapient": True} if not mark and is_sapient(ctx["subspecies_by_id"][other["subspecies"]]) else {}),
         "sex": sex_label(other),

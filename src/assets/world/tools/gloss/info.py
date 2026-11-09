@@ -16,6 +16,7 @@ from shared import arg_parser, render, run
 _CAP = 165  # characters a gloss holds at most: one line of the chronicler's, never a paragraph
 _FIELDS = Path(__file__).with_name("fields.json")
 _NEAR = 5  # keys a refusal offers
+_SLIP = 0.75  # how near a word unknown here must stand to a known one to read as its slip: a looser match would flag a real field
 _TOOLS = frozenset(path.parent.name for path in Path(__file__).parents[1].glob("*/*.py")) - {"lib"}  # a key's first segment when it names one
 
 
@@ -30,6 +31,17 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
         print(f"· no key for `{asked[-1]}` — told within {', '.join(found)}", file=sys.stderr)
     if found:
         return found
+    # The words this file knows: its keys' and those its glosses cite — one unknown yet near one of them is a slip, refused with it, never given its section's gloss
+    known = {segment for segments in segmented.values() for segment in segments} | {word for gloss in glosses.values() for word in re.findall(r"`([\w-]+)`", gloss)}
+    section = ".".join(asked[:-1])
+    sectioned = len(asked) > 1 and section in glosses  # a field its section's gloss answers for: the one that says where its fields are told
+    if asked[-1] not in known and (slip := difflib.get_close_matches(asked[-1], sorted(known), n=_NEAR, cutoff=_SLIP)):
+        whole = f" — its section: `gloss {section}`" if sectioned else ""  # a real field never cited, read as a slip, still finds it
+        print(f"✗ no gloss for `{wanted}` — near it: {', '.join(f'`{word}`' for word in slip)}?{whole}", file=sys.stderr)
+        return found
+    if sectioned:
+        print(f"· no gloss of its own for `{asked[-1]}` — its section's", file=sys.stderr)
+        return {section: glosses[section]}
     if homes := [key for key, segments in segmented.items() if segments[-1] == asked[-1]]:  # its keys named: a bare word would read as a match
         print(f"✗ no gloss for `{wanted}` — `{asked[-1]}` is glossed only as {', '.join(homes)}", file=sys.stderr)
         return found

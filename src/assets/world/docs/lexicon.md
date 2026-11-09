@@ -1,11 +1,12 @@
 # 🔤 Vocabulaire du récit
 
-<p class="metadata">Date de mise à jour : 09/11/26 10:49</p>
+<p class="metadata">Date de mise à jour : 09/11/26 12:05</p>
 
 ## Mots imposés
 
 - **Âme** : au sens du jeu seul, ce qu'a une espèce dont un mort, sur le sol corrompu, laisse un fantôme (`has_soul`, dans `subspecies … species`) ; jamais une tête : un village a des habitants, un royaume des sujets.
 - **Espèce, lignée, sang, maison, terre** : « espèce » dit l'espèce ; « lignée » la sous-espèce, jamais une famille ; le « sang » la parenté ou, versé, une mort, jamais une lignée ; une « maison » un toit, une « terre » une île ou un sol (_« la terre corrompue »_), jamais un territoire ; la matière garde ses tours figés (_« à fleur de terre »_).
+- **Martial, robuste, dur à entamer** : `warfare` est « martial », jamais « combat » ; `health_max` dit « robuste », `armor` « dur à entamer ».
 - **Particularité, don, malédiction, nature** : ce que la fiche appelle « trait », ou l'effet qu'elle donne, en clair. **Son nom et son esprit** (description, ton) colorent un corps ou un sol en nature ou en réputation (_« on la dit courte de vue »_), Intime compris ; le nom peut étiqueter l'effet de la fiche, jamais en fabriquer un. Le statut `cursed` : **maudit**, jamais « malédiction ».
 - **Quartiers** : ce que `territory` compte, la « zone » de WB — les quartiers d'une ville, ou de toutes celles d'un royaume, d'une alliance : dis-le comme la civilisation qui l'a bâti.
 
