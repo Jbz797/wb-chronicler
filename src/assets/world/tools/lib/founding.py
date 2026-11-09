@@ -7,6 +7,8 @@ from grid import LAND_LAYERS, tile_kind, tile_layer
 from shared import PROFESSION_KING, ZONE_TILES, actor_xy, is_sapient, zone_xy
 lazy from islands import TileIslands
 
+GATES = ("biomes", "city", "ground", "has_city", "king", "trait", "world_law_kingdom_expansion", "zone")  # each gate `settle_gates` tells, by its first word
+
 # WB `TopTileLibrary`: the biomes any lineage may found on, and those only a meta tag opens — `corrupted` alone spelt apart from its tag.
 _BUILD_FREE = (
     "birch",

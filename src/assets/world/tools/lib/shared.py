@@ -318,6 +318,12 @@ def _heart_of(actor: dict, by_tile: Mapping[tuple, dict]) -> dict | None:
     return building if _within_walls(x - bx, left, right) and _within_walls(y - by, bottom, top) else None
 
 
+# A chapter save's bodies by their crown, read once per run whoever asks.
+@cache
+def _held_crowns(path: Path) -> dict[int, int | None]:
+    return {a["id"]: a.get("civ_kingdom_id") for a in load_save(path).get("actors_data") or []}
+
+
 # The date Faithful Saves stamped a body joining what its `field` holds, `faithful_<kind>_of` naming which: a stamp left by one it has since left dates nothing.
 def _kept_since(actor: dict, field: str, kind: str) -> str | None:
     held, since = actor.get(field), (actor.get("custom_data_float") or {}).get(f"faithful_{kind}_since")
@@ -849,6 +855,26 @@ def crowns_named(save: dict) -> dict[int, dict]:
     except sqlite3.Error:  # no copy yet: the save's own crowns alone
         fallen = {}
     return fallen | index_by_id(save.get("kingdoms") or [])
+
+
+# Whose crown a body served, alive or dead: its own field, a king's or a town head's succession, else the last chapter save that held it alive — `None` unknown.
+def crowns_served(save: dict, upto: int) -> Callable[[int | None], int | None]:
+    alive = {a["id"]: a.get("civ_kingdom_id") for a in save.get("actors_data") or []}
+    served = {ruler["id"]: k["id"] for k in save.get("kingdoms") or [] for ruler in k.get("past_rulers") or []}
+    served |= {ruler["id"]: c.get("kingdomID") for c in save.get("cities") or [] if c.get("kingdomID") for ruler in c.get("past_rulers") or []}
+
+    @cache
+    def crown(body: int | None) -> int | None:
+        if body is None:
+            return None
+        if (kid := alive.get(body) or served.get(body)) is not None:
+            return kid
+        for n in range(upto, 0, -1):  # the dead before, as the latest save to hold them alive knew them
+            if (path := SAVES_DIR / f"C{n}" / "map.wbox").exists() and (held := _held_crowns(path).get(body)) is not None:
+                return held
+        return None
+
+    return crown
 
 
 # Deaths by cause as WB keeps them, a `deaths_<cause>` field each, none at nought — WB's `natural` told `old_age`, as `world` and `history` tell it.
@@ -1710,6 +1736,12 @@ def walk_tiles(dx: int, dy: int) -> float:
 # Spelled out because the section was named, or too small for a summary to earn the call it forces — only where that summary is a pure signpost, never traits.
 def wants_detail(requested: str | None, count: int) -> bool:
     return not _asks_full(requested) or count < _MIN_SUMMARY_ENTRIES
+
+
+# A war's two camps, each the crowns WB fields on its side: the main one and those that joined it.
+def war_camps(war: dict) -> tuple[set[int], set[int]]:
+    attackers, defenders = ({kid for kid in (war.get(f"main_{side}"), *(war.get(f"list_{side}s") or [])) if kid is not None} for side in ("attacker", "defender"))
+    return attackers, defenders
 
 
 # A water word as its kind and id, `lake4` → `("lake", 4)`, or its family alone, `lake` → `("lake", None)`, for a tool that takes one.

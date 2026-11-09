@@ -6,16 +6,14 @@
 
 import sys
 from collections import Counter
-from functools import cache
 from pathlib import Path
-lazy from collections.abc import Callable
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     PROFESSION_WARRIOR,
-    SAVES_DIR,
     absent_entity,
+    crowns_served,
     emit,
     entity_age,
     hand_usage,
@@ -31,6 +29,7 @@ from shared import (
     score_totals,
     sections_arg,
     take_chapter,
+    war_camps,
 )
 
 _ALL_SECTIONS = ("attackers", "defenders", "metadata")
@@ -90,32 +89,6 @@ def _build_side(kingdoms: set[int], deaths: int, alliances: list[dict], ctx: dic
     return side
 
 
-# Whose crown a body served, alive or dead: its own field, a king's or a town head's succession, else the last chapter save that held it alive — `None` unknown.
-def _crowns(save: dict, upto: int) -> Callable[[int | None], int | None]:
-    alive = {a["id"]: a.get("civ_kingdom_id") for a in save.get("actors_data") or []}
-    served = {ruler["id"]: k["id"] for k in save.get("kingdoms") or [] for ruler in k.get("past_rulers") or []}
-    served |= {ruler["id"]: c.get("kingdomID") for c in save.get("cities") or [] if c.get("kingdomID") for ruler in c.get("past_rulers") or []}
-
-    @cache
-    def crown(body: int | None) -> int | None:
-        if body is None:
-            return None
-        if (kid := alive.get(body) or served.get(body)) is not None:
-            return kid
-        for n in range(upto, 0, -1):  # the dead before, as the latest save to hold them alive knew them
-            if (path := SAVES_DIR / f"C{n}" / "map.wbox").exists() and (held := _held(path).get(body)) is not None:
-                return held
-        return None
-
-    return crown
-
-
-# A chapter save's bodies by their crown, read once per run whoever asks.
-@cache
-def _held(path: Path) -> dict[int, int | None]:
-    return {a["id"]: a.get("civ_kingdom_id") for a in load_save(path).get("actors_data") or []}
-
-
 def main(argv: list[str]) -> int:
     save_path, argv, chapter = take_chapter(argv)
     if not argv or argv[0] in ("-h", "--help"):
@@ -138,8 +111,7 @@ def main(argv: list[str]) -> int:
         print(absent_entity("war", "wars", war_id, chapter), file=sys.stderr)
         return 1
 
-    attackers = ({war.get("main_attacker")} | set(war.get("list_attackers") or [])) - {None}
-    defenders = ({war.get("main_defender")} | set(war.get("list_defenders") or [])) - {None}
+    attackers, defenders = war_camps(war)
     started_by_id = war.get("started_by_actor_id")
 
     besieged: set[int] = set()  # a realm one of whose towns another army stands on: the two age-driven verdicts read it, and nothing else here does
@@ -183,7 +155,7 @@ def main(argv: list[str]) -> int:
         "world_time": float(save["mapStats"].get("world_time") or 0),
     }
     upto = int(chapter[1:]) if chapter else latest_chapter()
-    crowns = _crowns(save, upto)
+    crowns = crowns_served(save, upto)
     fallen = [
         dead
         for dead in kept_deaths(save).values()
