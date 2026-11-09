@@ -294,7 +294,7 @@
   "world.--filter.bred": "`bred` : les vivants nés d'un parent, même mort ; sous `--since`, les naissances, mortes en `died` ; portée : `--with parents,born` ; d'un corps : `actor … kin`.",
   "world.--filter.died": "`died` : sous `--since`, les morts depuis, au registre ; `died:<cause>`, d'une cause ; `--with` : `asset_id`, `at`, `born`, `killed_by`, `name`, `parents`, `sex`.",
   "world.--filter.entity": "`city:<id>` : ses membres, comme `alliance:`, `army:`, `clan:`, `culture:`, `family:`, `kingdom:`, `language:`, `religion:`, `subspecies:` ; une de chaque, croisées.",
-  "world.--filter.has": "`has:<compte>` : ceux qui en tiennent ; sous `--since`, ceux dont il a changé, et les morts avec ce qu'ils en emportaient ; `lacks:` : ceux qui n'en ont aucun.",
+  "world.--filter.has": "`has:<compte|lien>` : ceux qui en tiennent ; sous `--since`, un compte qui a changé, morts compris, jamais un lien (`religion`, `clan`…) ; `lacks:` : aucun.",
   "world.--filter.job": "Un métier, `king`, `leader`, `army_captain`, `warrior`, `civilian` ; `--with job`, `kingdom` les disent ; sous `--since`, `left` l'a quitté.",
   "world.--filter.land": "Une terre `i<id>`, `islets` ou `water` : les corps qui s'y tiennent, l'une ou l'autre à plusieurs ; sous `--since`, ceux qui en sont partis aussi (`was_on`).",
   "world.--filter.patch": "`patch:<x,y>` : les corps sur la parcelle de cette tuile, un seul sol d'un seul tenant (`tiles … tile_info.patch`).",

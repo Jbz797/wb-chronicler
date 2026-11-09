@@ -172,6 +172,7 @@ _FEATS = ("kills", "level", "money", "renown")  # what a life adds up, kept on t
 _FIELD_FLOORS = {"births": 0, "equipment_power": 0, "level": 1, "loot": 0, "money": 0, "renown": 0}  # a tally `actor … stats` tells silent at its floor
 _GONE_FIELDS = ("asset_id", "at", "born", "killed_by", "name", "parents", "sex")  # what `--with` asks of the dead, the register keeping it, or a sex never changing
 _GOOD_ISLET = 5  # WB `TileIsland.isGoodIslandForActor`: an islet of so few tiles is one a body leaves before anything else, breeding included
+_HELD_TIES = ("army", "city", "clan", "culture", "family", "kingdom", "language", "religion")  # the ties `has:`/`lacks:` weigh: a lineage, every body has
 
 # Actor field => the save collection it points into, feeding its `pop` record — every actor counted, wildlife included, as each tier's medal counts its own.
 _GROUP_FIELDS = {
@@ -728,7 +729,7 @@ def _build_roster(
         if barred and (gates is None or gates in (True, ["child"])):  # a thinker something besides its youth keeps from founding
             continue
         here = _standing(actor, island_of, grid, save["tileMap"])
-        change: dict = {has: held if once is None else [max(before, floor), max(held, floor)]} if has else {}
+        change: dict = {has: held if once is None else [max(before, floor), max(held, floor)]} if has and has not in _HELD_TIES else {}  # a tie by `--with`
         if top:  # the figure ranked on, beside the line; under `age`, its month, which tells a cohort of one age apart
             change |= {top: figure} | ({"born": entity_born(actor)} if top == "age" else {})
         if near:
@@ -1032,6 +1033,8 @@ def _guessed(word: str, known: Sequence[str]) -> str:
 
 # A body's measure as `has:`, `lacks:` and `--rank` weigh it — `level` counts past 1, WB's floor. A skill, an arsenal or the age asks for `ctx`.
 def _held(actor: dict, tally: str, ctx: dict | None = None) -> int:
+    if tally in _HELD_TIES:  # the key absent where none is held: WB writes no -1 for a tie
+        return int(actor.get(_MEMBERSHIPS[tally][1]) is not None)
     if ctx is not None and tally == "age":  # as `metadata` counts it, the years a body arrived with included: the age that ranks
         return actor_age(actor, ctx["world_time"])
     if ctx is not None and tally == "crafted":  # off the items' maker, never the body's own field
@@ -1048,7 +1051,7 @@ def _keyed(key: str, said: str) -> object:
         if said.isdigit():
             return int(said)
         raise argparse.ArgumentTypeError(f"`{key}:{said}` — `{key}:` takes an id")
-    if (choices := _TALLIES if key in ("has", "lacks") else _DEATH_CAUSES if key == "died" else None) and said not in choices:
+    if (choices := sorted((*_TALLIES, *_HELD_TIES)) if key in ("has", "lacks") else _DEATH_CAUSES if key == "died" else None) and said not in choices:
         told = f"filters nothing{guess}" if (guess := _guessed(said, choices)) else f"— `{key}:` takes {', '.join(choices)}"  # the list only for no near one
         raise argparse.ArgumentTypeError(f"`{key}:{said}` {told}")
     if key == "born":
@@ -1327,6 +1330,9 @@ def main(argv: list[str]) -> int:
         return 2
     if args.top and since:  # a measure read off its own chapter
         print(f"✗ `--rank` ranks one chapter: read the other by its suffix, `{since}`", file=sys.stderr)
+        return 2
+    if since and args.has in _HELD_TIES:  # a tie held is a state, not a count that moves: which one changed, `actor … since` tells
+        print(f"✗ `has:{args.has}` reads one chapter: ask `--since` apart", file=sys.stderr)
         return 2
     if since and (alone := next((flag for flag in ("lacks", "patch", "status", "task") if getattr(args, flag)), None)):
         print(f"✗ `{alone}:` reads one chapter: ask `--since` apart", file=sys.stderr)  # the dead stood, wore and did what no later save tells
