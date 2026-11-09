@@ -197,7 +197,7 @@ _TO_USAGE = (
 )
 
 # What `since` leaves out of `changed`: a place is told as a path, `moved`, a task is an instant — and a status that moves no stat, weeded out apart.
-_UNCOMPARED = frozenset({"breeding_barred", "island_id", "near_places", "place", "status_history", "statuses_left", "task", "task_target", "x", "y"})
+_UNCOMPARED = frozenset({"breeding_barred", "island_id", "near_places", "place", "status_history", "statuses_left", "task", "task_history", "task_target", "x", "y"})
 _WATERS = ("lake", "river", "sea", "water")  # the families a `--to` word may name: the nearest numbered water of one, `water` of any
 
 
@@ -711,6 +711,29 @@ def _chapter_statuses(upto: int) -> list[tuple[int, dict[int, tuple[str, ...]]]]
     return pickle_cached("chapter_statuses_v1", SAVES_DIR / f"C{upto}" / "map.wbox", table) if upto else []
 
 
+# Every body's task with the one it aimed at, a body, a building or a book, at each chapter up to the one read: pickled once, as the statuses are.
+def _chapter_tasks(upto: int) -> list[tuple[int, dict[int, tuple[str, dict]]]]:
+    def table() -> list[tuple[int, dict[int, tuple[str, dict]]]]:
+        rows = []
+        for n in range(1, upto + 1):
+            if not (path := SAVES_DIR / f"C{n}" / "map.wbox").exists():
+                continue
+            save = load_save(path)
+            kinds = {"actor": index_by_id(save.get("actors_data") or []), "ground": index_by_id(save.get("buildings") or [])}  # two ranges of ids, which overlap
+            tasks = {}
+            for actor in save.get("actors_data") or []:
+                # One aim, the body before the building before the book: a talk by the fire is the one talked to, the fire its setting
+                kept = kept_task_target(actor) or {}
+                aim = next(({key: kept[key]} for key in ("actor", "ground", "book") if key in kept), {})
+                if (task := kept_task(actor)) and aim:
+                    told = {key: {"asset_id": (kinds[key].get(value) or {}).get("asset_id") if key in kinds else None, "id": value} for key, value in aim.items()}
+                    tasks[actor["id"]] = (task, told)
+            rows.append((n, tasks))
+        return rows
+
+    return pickle_cached("chapter_tasks_v3", SAVES_DIR / f"C{upto}" / "map.wbox", table) if upto else []
+
+
 # The circle a goal falls in, filed as `surroundings` files a body: by the walk's time as told, then off his land by a crown's hull, the walks to and fro counted.
 def _circle(actor: dict, ctx: dict, hours: float | None, offshore: bool, sailed: Callable[[], float | None]) -> str:
     if hours is not None and (ring := _ring(hours)):  # `None`: no walk gets there at all
@@ -809,7 +832,7 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
 
 
 # What a dead body still answers: its death, blood, victims and work, its statuses by the chapters in full — named, those alone; any other told and left out.
-def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, upto: int) -> int:
+def _dead_answer(dead: dict, ctx: dict, save: dict, sections: tuple, requested: str | None, upto: int) -> int:
     named = requested not in (None, "full")
     if lost := [section for section in sections if section not in _DEAD_SECTIONS] if named else []:
         print(f"✗ {named_body(dead)} is dead: it keeps {', '.join(f'`{s}`' for s in _DEAD_SECTIONS)} — not {', '.join(lost)}", file=sys.stderr)
@@ -824,6 +847,7 @@ def _dead_answer(dead: dict, ctx: dict, sections: tuple, requested: str | None, 
         "died": _death(dead, ctx, upto) if not named or "died" in sections else None,
         "kin": kin if kin and any(kin.values()) else None,
         "status_history": None if named else _status_history(dead["id"], upto),
+        "task_history": None if named else _task_history(dead["id"], upto, ctx, save),
         "victims": _victims(dead["id"], ctx, requested) if "victims" in sections else None,
     }
     if named and not any(out.values()):  # asked alone, a bare `{}` would read as a field gone missing
@@ -1304,6 +1328,25 @@ def _take_targets(argv: list[str]) -> tuple[list[int | tuple[int, int] | str], l
     return targets, argv
 
 
+# A body's tasks chapter by chapter that aimed at a body, a building or a book, before the one read, with what became of each aim since — silent where none did.
+def _task_history(actor_id: int, upto: int, ctx: dict, save: dict) -> list[dict] | None:
+    if not (held := [(n, bodies[actor_id]) for n, bodies in _chapter_tasks(upto) if n != upto and actor_id in bodies]):  # the chapter read: `task`
+        return None
+    standing = {"book": {b["id"]: None for b in save.get("books") or []}, "ground": {b["id"]: b.get("asset_id") for b in save.get("buildings") or []}}
+    told = []
+    for n, (task, aims) in held:
+        for key, aim in aims.items():
+            if key == "actor":
+                now = "alive" if aim["id"] in ctx["actors_by_id"] else "died" if aim["id"] in ctx["deaths"] else "gone"
+                fate = {"name": (alive_or_dead_ref(aim["id"], ctx["actors_by_id"], ctx["deaths"]) or {}).get("name"), "now": now}
+            elif (kind := standing[key].get(aim["id"], "")) == "":
+                fate = {"now": "gone"}
+            else:  # WB raises a tent into a house under the same id: `became`
+                fate = {"now": "became" if kind and kind != aim["asset_id"] else "standing" if key == "ground" else "kept"}
+            told.append({"chapter": f"C{n}", "task": task, key: {**aim, **fate}})
+    return told
+
+
 # Chronicler-only: what the body's task was aimed at the instant of the save — a prey, a store, a tile —, refs told as every ref is, and how far that tile lies.
 def _task_target(actor: dict, ctx: dict, save: dict) -> dict | None:
     if (aim := kept_task_target(actor)) is None:
@@ -1626,7 +1669,7 @@ def main(argv: list[str]) -> int:
         then_ctx = _build_context(then_save, then_path)
         then = then_ctx["actors_by_id"].get(actor_id)
     if actor is None and (dead := ctx["deaths"].get(actor_id)) and not targets:  # a dead body answers by what the register keeps, its statuses by the chapters
-        return _dead_answer(dead, ctx, sections, requested, upto)
+        return _dead_answer(dead, ctx, save, sections, requested, upto)
     if actor is None:
         print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
         return 1
@@ -1664,7 +1707,11 @@ def main(argv: list[str]) -> int:
     if "kin" in sections:  # its blood, where a mate or a friend is a bond: a parent gone stays (`gone`), and the section goes where it has neither
         out["kin"] = _kin(actor, ctx)
     if "metadata" in sections:
-        out["metadata"] = {**_build_metadata(actor, ctx, save), "status_history": _status_history(actor_id, upto)}
+        out["metadata"] = {
+            **_build_metadata(actor, ctx, save),
+            "status_history": _status_history(actor_id, upto),
+            "task_history": _task_history(actor_id, upto, ctx, save),
+        }
     if "plot" in sections:
         out["plot"] = _build_plot(actor, ctx, save)
     if "ranks" in sections:

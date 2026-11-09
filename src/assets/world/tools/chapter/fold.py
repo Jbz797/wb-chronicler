@@ -46,6 +46,7 @@ _AUDIT = {
             "statuses",
             "statuses_left",
             "task",
+            "task_history",
             "task_target",
             "tax_local",
             "tax_tribute",
