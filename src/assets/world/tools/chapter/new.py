@@ -152,7 +152,7 @@ _EMPTIED = (
 
 _EVENT = "an event the chapter owes its reader, glossed in docs/tags.md"  # said to the chronicler at the recap, and to his auditors with their targets
 _FLAGS = frozenset({"--deliver", "--description", "--erosion", "--finalize", "--name", "--reset", "--reset-asked", "--retouch"})  # all `main` reads
-_FRESH = re.compile(r"\[([^\]]*)\]")  # what a rewritten trait summary tells new, between brackets its panel sets apart and no length counts
+_FRESH = re.compile(r"\[([^\]]*)\]")  # what a rewritten trait summary tells new, between brackets its panel sets apart, counted like the rest
 _GEO_ASSETS = re.compile(r"(volcano|geyser)", re.IGNORECASE)  # WB's three natural landmarks, `acid_geyser` included — all a bare world keeps of `buildings`
 _GROWN = frozenset({"adult", "teen"})  # the stages a kind may be counted on: past childhood, an elder read as the adult it is — its span is not asked
 _H1_CAP = 68  # in no doc: `--finalize` gives it as the H1 falls due, and holds the audit on it
@@ -217,7 +217,7 @@ _SUMMARY = (
     "what those traits make of their bearer — and, for a tier, of those it holds (a culture's people, a clan's members), never one of them alone —, "
     f"{_PLAIN}; grouped by what they do (fight, work, body, mind…), a clause each, never one trait after another; "
     "a lean, never a stat's level, which gear and level move too; nor a tally or a figure that ages — read alone, it may echo any chapter; "
-    "rewritten as the same entity's traits moved, what it tells new set between [ ], which no length counts — a correction alone, none"
+    "rewritten as the same entity's traits moved, what it tells new set between [ ], counted like the rest — a correction alone, none"
 )
 
 _SUMMARY_CAP = 400
