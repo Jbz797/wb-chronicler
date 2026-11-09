@@ -1,6 +1,6 @@
 # 🔤 Vocabulaire du récit
 
-<p class="metadata">Date de mise à jour : 08/11/26 11:46</p>
+<p class="metadata">Date de mise à jour : 09/11/26 10:44</p>
 
 ## Mots imposés
 
@@ -19,7 +19,7 @@
 
 ## Barèmes
 
-Le **terme** d'une agglomération ou d'une couronne précise, balisée, reprise ou au pluriel, suit sa tranche (_« ses deux hameaux »_, non _« ses cités »_) ; s'il n'en vise aucune (_« nul royaume »_, le foyer d'un feu), il est libre, sauf à se comparer à l'une d'elles (_« aucune autre ville »_, _« la plus grande ville »_) : il la range dans son terme, qui suit alors sa tranche, ou se dit _« agglomération »_, _« couronne »_.
+Le **terme** d'une agglomération ou d'une couronne précise, balisée, reprise ou au pluriel, suit sa tranche (_« ses deux hameaux »_, non _« ses cités »_) ; s'il n'en vise aucune (_« nul royaume »_, le foyer d'un feu), il est libre, sauf à se comparer à l'une d'elles (_« aucune autre ville »_, _« la plus grande ville »_) : il la range dans son terme, qui suit alors sa tranche, ou se dit _« agglomération »_, _« couronne »_. À une date passée, il suit la tranche d'alors (`history entity city <id>`, fin d'année) ; changée dans l'année sans date connue, l'agglomération se nomme, sans terme. « Place » n'en tient pas lieu.
 
 ### Agglomérations (par population)
 
