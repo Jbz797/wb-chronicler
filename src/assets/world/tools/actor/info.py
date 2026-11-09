@@ -943,15 +943,19 @@ def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mappin
     return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
 
 
-# Whom a body was born of and whom it bore, off the parents WB writes on each body and the register on each dead one: the dead named by it, and said gone.
+# Whom a body was born of, whom it bore and who shares a parent with it, off the parents WB writes on each body and the register on each dead one.
 def _kin(actor: dict, ctx: dict) -> dict:
     by_id, deaths, aid = ctx["actors_by_id"], ctx["deaths"], actor["id"]
     ids = [pid for pid in (actor.get("parent_id_1"), actor.get("parent_id_2")) if pid]
-    parents = [entity_ref(pid, by_id) or {"gone": True, "id": pid, "name": (deaths.get(pid) or {}).get("name")} for pid in ids]
-    living = [entity_ref(b["id"], by_id) for b in by_id.values() if aid in (b.get("parent_id_1"), b.get("parent_id_2"))]
-    lost = [{"gone": True, "id": dead["id"], "name": dead["name"]} for dead in deaths.values() if aid in dead["parents"]]
-    children = sorted(filter(None, living + lost), key=lambda child: child["id"])
-    return {"children": children or None, "parents": parents or None}
+    born_of = {b["id"]: (b.get("parent_id_1"), b.get("parent_id_2")) for b in by_id.values()} | {d["id"]: tuple(d["parents"]) for d in deaths.values()}
+    children = [rid for rid, of in born_of.items() if aid in of]
+    shared = set(ids)
+    siblings = [rid for rid, of in born_of.items() if rid != aid and not shared.isdisjoint(of)]  # a half-sibling too: one parent shared
+    return {
+        "children": [_relative(rid, ctx) for rid in sorted(children)] or None,
+        "parents": [_relative(pid, ctx) for pid in ids] or None,
+        "siblings": [_relative(rid, ctx) for rid in sorted(siblings)] or None,
+    }
 
 
 # The actor's tie to another body, or `None`, off his `_ties`: WB keeps two parents and one mate each — a child names him, a sibling shares a parent.
@@ -1151,6 +1155,16 @@ def _reachable_lands(actor: dict, ctx: dict) -> dict:
     shown, farther = _nearest_listed(rows, _told_time)
     lands = sum(land != home for land in ctx["island_sizes"]())  # a land rimmed by rock alone has no shore, and counts as out of reach
     return {"farther": farther or None, "reachable": shown or None, "unreachable": lands - len(ways) or None}
+
+
+# A relative by its ref while it lives; dead, when and by whose hand, off the register — `gone` alone where the register never saw it fall.
+def _relative(rid: int, ctx: dict) -> dict:
+    if (living := entity_ref(rid, ctx["actors_by_id"])) is not None:
+        return living
+    if (dead := ctx["deaths"].get(rid)) is None:
+        return {"gone": True, "id": rid}
+    killer = alive_or_dead_ref(dead["killer"], ctx["actors_by_id"], ctx["deaths"])
+    return {"date": world_date(dead["died"]), "gone": True, "id": rid, "killed_by": killer, "name": dead["name"]}
 
 
 # A goal of a `--to` list as its own `--to` takes it: a number is a body's, a name with a space or a capital is a place's, quoted.

@@ -13,7 +13,7 @@
   "actor.died.city": "Sa cité, telle que la tenait la dernière save de chapitre qui l'a vu vivant ; nommée comme aujourd'hui, ou comme alors si elle n'est plus.",
   "actor.died.job": "Son poste à sa mort, au registre : `king`, `leader`, `army_captain`, `warrior`, sinon `civilian`, bêtes comprises ; son royaume : `roster --filter king --since`.",
   "actor.died.sex": "Son sexe au registre : `male`, `female`, `none` sans sexe ; absent, il est inconnu, jamais `none`.",
-  "actor.kin": "`parents` et `children`, `gone` : mort (au registre), le sang seul : le compagnon est dans `companions` (`lover`).",
+  "actor.kin": "`parents`, `children`, `siblings` (un parent commun suffit) ; un mort `gone`, sa `date`, `killed_by` ; le sang seul : le compagnon est dans `companions` (`lover`).",
   "actor.kin.parents": "Le père : l'amant de la mère à la naissance (`wiki:Reproduction`) ; adoptif si leur couple (`lover_since`) est plus jeune que la grossesse (`maturation_months`).",
   "actor.metadata.age": "L'âge, années apportées comprises (`age_overgrowth`) : un seuil s'y compare ; l'écart de deux corps, à leur `born` moins `age_overgrowth` ; l'ancienneté, à `born`.",
   "actor.metadata.age_overgrowth": "Les années que `age` compte sans les avoir vécues ici : un migrant appelé par le feu arrive grand (`wiki:World_Laws`), un clone, un paradoxe.",
