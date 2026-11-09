@@ -232,6 +232,10 @@
                 align-items: center;
                 display: flex;
                 gap: 0.4em;
+
+                app-delta {
+                  translate: 0 -1.5px; // the display face's figures ride above their line box's middle, where flex centres the tag
+                }
               }
 
               .pivot {
