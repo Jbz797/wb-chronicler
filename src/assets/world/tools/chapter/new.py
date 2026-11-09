@@ -384,6 +384,7 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     struck = first_kill is not None and first_kill > float(prev_world.get("world_time") or 0)
     firsts = (
         ("FIRST_BIRTH", stats.get("creaturesBorn")),
+        ("FIRST_BOOK", stats.get("booksWritten")),  # a volume written, burnt since or not
         ("FIRST_CITY", towns),
         ("FIRST_DEATH", deaths),
         ("FIRST_HOME", housed),
