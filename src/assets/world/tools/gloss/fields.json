@@ -134,6 +134,7 @@
   "city.inventory": "Le stock à la save, non ce qui s'est fait : un bien fait puis mangé entre deux saves n'y paraît pas ; sa venue : `across … city <id> inventory --keep <bien>`.",
   "city.metadata.attractivity": "Les corps venus (entrés, d'une autre cité, appelés par son feu), moins ceux partis vivants ; le fondateur à part ; sous 0, la cité se vide.",
   "city.metadata.heir": "Qui WB ferait chef si le poste s'ouvrait : un sujet à clan du royaume, du clan royal d'abord, classé selon la culture de la cité ; omis s'il tirerait au sort.",
+  "city.metadata.kingdom_since": "Le mois où la cité est passée sous sa bannière, prise ou ralliée ; absent, elle n'a jamais changé de main ; le journal de WB n'en garde rien, ni l'ancien maître.",
   "city.metadata.migrants": "Ce qui retient la loi d'en amener, sinon `soon` ou `later` (`wiki:World_Laws`).",
   "city.metadata.migrants.later": "Rien ne retient la loi non plus : elle n'amène des migrants qu'à intervalles, et son prochain tour n'approche pas encore. Pas un manque.",
   "city.metadata.migrants.soon": "Rien ne retient la loi, et son prochain tour approche.",

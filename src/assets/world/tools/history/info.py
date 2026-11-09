@@ -171,7 +171,8 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
         if living is not None and not ended:
             return f"✗ {kind} {entity_id} has no year closed yet: a year's row is written as the next one opens"
         refusal = absent_entity(kind, collection, entity_id, last if ended else chapter)
-        return f"{refusal} — WB keeps the years of the living alone" if " is gone " in refusal else refusal
+        fall = " — its fall: `history dead_kingdoms`" if kind == "kingdom" else ""
+        return f"{refusal} — WB keeps the years of the living alone{fall}" if " is gone " in refusal else refusal
     events = [c for c in columns if _EVENT_COLUMN.search(c)]
     # A gain at nought is unsaid on its year, as every count: the tallies this kind keeps, said once, let a silence read as none gained, not as none kept.
     if tallies := sorted({"deaths" if _DEATH_CAUSE.match(c) else _WORLD_RENAMED.get(c, c) for c in events}):

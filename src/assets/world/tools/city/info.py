@@ -64,6 +64,7 @@ from shared import (
     take_since,
     under_construction,
     wants_detail,
+    world_date,
     world_laws,
     zone_xy,
 )
@@ -436,8 +437,8 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
             "wealth": ctx["money_by_city"][cid] + ctx["gold_by_city"][cid],  # Everything it owns: its people's coins + the gold in its buildings.
             # WB's `updateCityCenter` anchor, one `at` once `emit` has it
             **(dict(zip(("x", "y"), centre, strict=True)) if (centre := _city_centre(city, ctx)) else {}),
-            # Chronicler-only, years under the present banner: stamped on annexation, so no key means the city never changed hands. The save keeps no previous owner.
-            **({"years_in_kingdom": _years_since(stamp, ctx)} if (stamp := city.get("timestamp_kingdom")) not in (None, -1.0) else {}),
+            # Chronicler-only: WB stamps an annexation alone, so no key means the city never changed hands — and keeps no previous owner
+            **({"kingdom_since": world_date(stamp)} if (stamp := city.get("timestamp_kingdom")) not in (None, -1.0) else {}),
         },
         _ZERO_SAID,
     )

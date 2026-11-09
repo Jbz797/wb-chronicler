@@ -91,8 +91,8 @@ _AUDIT_TIERS = {
     "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
     "attackers.kingdoms": {"pop"},  # a camp's realms as tags, the side's pooled `pop` printed beside them
     "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
-    # No row counts its births, its crown and seat are the kingdom panel's to name, and its migrants, centre and years under the banner only the chronicler reads.
-    "city.metadata": {"at", "births", "capital", "kingdom", "migrants", "years_in_kingdom"},
+    # No row counts its births, its crown and seat are the kingdom panel's to name, and its migrants, centre and month under the banner only the chronicler reads.
+    "city.metadata": {"at", "births", "capital", "kingdom", "kingdom_since", "migrants"},
     "city.pop": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
     "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
