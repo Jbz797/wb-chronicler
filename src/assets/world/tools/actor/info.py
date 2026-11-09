@@ -228,7 +228,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
     each: dict[str, tuple[list, Mapping] | None] = {}  # the words of a `--to` naming kinds, each with its sites, `None` where it has none: a question apiece
     if isinstance(target, int):
         if (other := ctx["actors_by_id"].get(target)) is None:
-            refusal = absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a))
+            refusal = absent_entity("actor", "actors_data", target, chapter, lambda a: not is_boat(a), aim="--to")
             # An id no body ever bore may be a building's, the two counted apart: `b<id>` aims at it, so the refusal hands that over.
             sites = (b for b in save.get("buildings") or [] if b.get("id") == target)
             if refusal.startswith("✗ unknown") and (building := next(sites, None)) is not None:

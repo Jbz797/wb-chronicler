@@ -286,7 +286,7 @@ def _ground(end: str, save: dict, save_path: Path, chapter: str | None) -> tuple
         city = next((c for c in save.get("cities") or [] if c.get("id") == ref), None)
         return ([centre], None) if city and (centre := city_centre(city)) else absent_entity("city", "cities", ref, chapter)
     body = next((a for a in save.get("actors_data") or [] if a.get("id") == ref and not is_boat(a)), None)
-    return ([actor_xy(body)], None) if body else absent_entity("actor", "actors_data", ref, chapter, lambda a: not is_boat(a))
+    return ([actor_xy(body)], None) if body else absent_entity("actor", "actors_data", ref, chapter, lambda a: not is_boat(a), aim="--to")
 
 
 # One object per tile, never two — WB's `buildings` holds the flowers and the ore too, hence the family.

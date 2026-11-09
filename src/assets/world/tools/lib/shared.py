@@ -494,7 +494,9 @@ def _write_save_cache(cache_file: Path, save: dict) -> None:
 
 
 # Why no record answers an id in this chapter, off the others: dead as the register says, gone since the last one it stood in, not born yet, or never handed out.
-def absent_entity(tool: str, collection: str, entity_id: int, chapter: str | None, match: Callable[[dict], bool] | None = None, noun: str = "") -> str:
+def absent_entity(
+    tool: str, collection: str, entity_id: int, chapter: str | None, match: Callable[[dict], bool] | None = None, noun: str = "", aim: str = ""
+) -> str:
     last = latest_chapter()
     here = int(chapter[1:]) if chapter else last + 1
 
@@ -506,7 +508,8 @@ def absent_entity(tool: str, collection: str, entity_id: int, chapter: str | Non
     noun = noun or tool
     deaths = kept_deaths(load_save(SAVES_DIR / chapter / "map.wbox" if chapter else live_save())) if collection == "actors_data" else {}
     if (dead := deaths.get(entity_id)) and (match is None or match(dead)):  # the register's own: its death told, its sheet one call away
-        return f"✗ {noun} {entity_id} died {world_date(dead['died'])} ({dead['cause']}) — `actor/info.py {entity_id}` tells its death"
+        fell = f"; where it fell: `{aim} {tile_text(dead['x'], dead['y'])}`" if aim else ""  # an aim at the dead handed to its last tile, never taken there unasked
+        return f"✗ {noun} {entity_id} died {world_date(dead['died'])} ({dead['cause']}) — `actor/info.py {entity_id}` tells its death{fell}"
     seen = [n for n in range(1, last + 1) if n != here and stood(n)]
     where = f"C{here}" if chapter else "the live save"
     if before := [n for n in seen if n < here]:

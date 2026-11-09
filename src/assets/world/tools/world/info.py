@@ -1495,7 +1495,7 @@ def main(argv: list[str]) -> int:
             near = point, None
         elif point is not None:
             if (body := next((a for a in save.get("actors_data") or [] if a["id"] == point and not is_boat(a)), None)) is None:
-                print(absent_entity("actor", "actors_data", point, chapter, lambda a: not is_boat(a)), file=sys.stderr)
+                print(absent_entity("actor", "actors_data", point, chapter, lambda a: not is_boat(a), aim="--rank"), file=sys.stderr)
                 return 1
             near = actor_xy(body), point
         patch = None
