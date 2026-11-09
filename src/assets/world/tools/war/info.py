@@ -42,7 +42,7 @@ def _balance(attackers: set[int], defenders: set[int], war: dict, ctx: dict) -> 
     scores = [sum(ctx["scores"][kid] for kid in camp) for camp in (attackers, defenders)]
     power = scores[0] / sum(scores) if sum(scores) else 0.5
     lost, struck = (int(war.get("dead_attackers") or 0), int(war.get("dead_defenders") or 0)), (ctx["nobles"](attackers), ctx["nobles"](defenders))
-    dead, nobles = ((theirs + 1) / (ours + theirs + 2) for ours, theirs in (lost, struck))  # +1, +2: even where none fell
+    dead, nobles = ((theirs + 0.1) / (ours + theirs + 0.2) for ours, theirs in (lost, struck))  # a tenth of a loss each: even where none fell, yet 3 to 0 tells
     return round(100 * (2 * power + dead + nobles) / 4)
 
 
