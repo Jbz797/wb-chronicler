@@ -135,7 +135,7 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
             "captain": entity_ref(army.get("id_captain"), ctx["actors_by_id"]),
             **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
             "deaths": int(army.get("total_deaths") or 0),
-            "id": army.get("id"),  # what `world … roster --filter army:<id>` takes to list its members
+            "id": army.get("id"),  # what `actor --roster --filter army:<id>` takes to list its members
             "kills": int(army.get("total_kills") or 0),
             "melee": ctx["melee_by_city"][cid],
             "men": men,
@@ -810,7 +810,7 @@ def main(argv: list[str]) -> int:
 
     requested = sections_arg(argv)
     if since and requested != "buildings":  # the members and the figures have their own roads
-        people, figures = f"`world … roster --filter city:{city_id} --since {since}`", f"`across {since}-C<n> city {city_id} metadata`"
+        people, figures = f"`actor --roster --filter city:{city_id} --since {since}`", f"`across {since}-C<n> city {city_id} metadata`"
         print(f"✗ `--since` weighs `buildings` — people: {people}, figures: {figures}", file=sys.stderr)
         return 2
     try:

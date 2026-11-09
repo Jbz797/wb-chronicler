@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Glosses a field or an option of the tools from `fields.json` beside it, one sentence of at most 165 characters each. User-facing docs: `docs/tools.md`.
-# A key reads `<tool>.<section>.<field>` or `<tool>.--<option>`, bare when several tools share it; any run of its segments finds it: `pairings` the whole section.
+# A key reads `<tool>.<section>.<field>` or `<tool>.--<option>`, bare when several tools share it; any run of its segments finds it: `pairing` the whole block.
 
 import difflib
 import json
@@ -52,7 +52,7 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
     return found
 
 
-# Whether the asked segments run inside the key's, in order and unbroken: `pairings.lovers` in `world.pairings.lovers`, never `world.lovers`.
+# Whether the asked segments run inside the key's, in order and unbroken: `pairing.lovers` in `subspecies.species.pairing.lovers`, never `species.lovers`.
 def _holds(key: list[str], asked: list[str]) -> bool:
     return any(key[at : at + len(asked)] == asked for at in range(len(key) - len(asked) + 1))
 

@@ -86,7 +86,7 @@ def _build_metadata(religion: dict, members: list[dict], ctx: dict, tallies: dic
         "id": religion_id,  # the block travels into `chapter.json`, detached from its command — the UI resolves the panel from this
         **({"kills": kills} if (kills := int(religion.get("total_kills") or 0)) else {}),
         **({"kingdoms": kingdoms} if (kingdoms := tallies["kingdoms"][religion_id]) else {}),  # crowns that made it their own, the widest reach WB grants a creed
-        "members": len(members),  # its living, each named by `world … roster --filter religion:<id>`
+        "members": len(members),  # its living, each named by `actor --roster --filter religion:<id>`
         "name": religion.get("name"),
         **({"renown": renown} if (renown := int(religion.get("renown") or 0)) else {}),  # WB's own field, where its living's worth now sits in `pop`
         **({"report": report} if report else {}),

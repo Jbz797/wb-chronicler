@@ -37,7 +37,7 @@ interface SubspeciesMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
-  members?: number; // its living, counted: `world … roster --subspecies <id>` names them
+  members?: number; // its living, counted: `actor --roster --filter subspecies:<id>` names them
   name: string;
 }
 

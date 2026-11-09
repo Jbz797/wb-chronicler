@@ -25,7 +25,7 @@ interface ClanMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
-  members?: number; // its living, counted: `world … roster --clan <id>` names them
+  members?: number; // its living, counted: `actor --roster --filter clan:<id>` names them
   name: string;
   past_chiefs?: number;
   renown?: number;

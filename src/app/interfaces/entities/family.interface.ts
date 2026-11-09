@@ -23,7 +23,7 @@ interface FamilyMetadata {
   houses?: number;
   id: number;
   kills?: number;
-  members?: number; // its living, counted: `world … roster --family <id>` names them
+  members?: number; // its living, counted: `actor --roster --filter family:<id>` names them
   name: string;
 }
 

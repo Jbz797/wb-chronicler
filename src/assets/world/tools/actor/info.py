@@ -13,6 +13,8 @@ lazy from collections.abc import Callable, Mapping
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
+lazy from roster import roster_call, roster_main
+
 from actor_stats import (
     MULTIPLIER_TARGETS,
     actor_stat_totals,
@@ -1657,6 +1659,8 @@ def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, 
 
 
 def main(argv: list[str]) -> int:
+    if "--roster" in argv:  # every body of the world, line by line: its own options, no id
+        return 2 if (rest := roster_call(argv, "body", "actor")) is None else roster_main(rest)
     try:
         since, argv = take_since(argv)
     except ValueError as e:
@@ -1672,7 +1676,9 @@ def main(argv: list[str]) -> int:
         return 2
     if not argv or argv[0] in ("-h", "--help"):
         to = 'p<id>|x,y|b<id>|c<id>|cities|i<land>|lands|"<place>"|lake<id>|burning|frozen|g:<ground>|<kind>'
-        return hand_usage(f"usage: actor/info.py <id> [sections | --to {to}…] [--since C<n>] [--limit n|all] [C<n>]\neach option: `gloss actor`", argv)
+        return hand_usage(
+            f"usage: actor/info.py <id> [sections | --to {to}…] [--since C<n>] [--limit n|all] [C<n>] | --roster [options]\neach option: `gloss actor`", argv
+        )
     try:
         actor_id = int(argv[0])
     except ValueError:

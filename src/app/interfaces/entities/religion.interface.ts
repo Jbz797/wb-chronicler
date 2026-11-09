@@ -23,7 +23,7 @@ interface ReligionMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
-  members?: number; // its living, counted: `world … roster --religion <id>` names them
+  members?: number; // its living, counted: `actor --roster --filter religion:<id>` names them
   name: string;
   renown?: number;
 }

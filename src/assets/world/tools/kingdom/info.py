@@ -10,6 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
+from roster import LIMIT, MAX_FIELDS, make_room, refused, roll, roster_call
+
 from actor_stats import build_actor_stats_context, compute_actor_stats, crown_max_cities, is_baby, meta_ratios, settlement_pop
 from islands import compute_islands_cached
 from shared import (
@@ -22,6 +24,7 @@ from shared import (
     UNITS_PER_YEAR,
     ZONE_TILES,
     absent_entity,
+    arg_parser,
     asset_set,
     books_held,
     building_tile,
@@ -39,6 +42,7 @@ from shared import (
     is_transport,
     kingdom_score_dimensions,
     light,
+    limit_arg,
     load_data,
     load_save,
     main_subspecies,
@@ -66,9 +70,12 @@ _ALL_SECTIONS = ("boats", "breakdown", "cities", "gear", "identity", "leaders", 
 # WB `Kingdom.recalcBaseStats`: a tax trait overrides the base rate, emitted as a tier. The local one lives in `city/info.py`, where WB's own panel puts it.
 _KINGDOM_TRIBUTE_TRAITS = {"tax_rate_tribute_high": "high", "tax_rate_tribute_low": "low"}
 
-_LINE_FIELDS = ("age", "births", "buildings", "cities", "houses", "id", "name", "renown", "territory", "wealth")  # what of `metadata` a crown's line holds, inline
+_GIVES_WAY = ("buildings", "births", "age", "renown", "territory", "wealth", "cities", "pop")  # what a `--with` field takes the place of, least telling first
+_LINE_FIELDS = ("age", "births", "buildings", "cities", "id", "name", "renown", "territory", "wealth")  # what of `metadata` a crown's line holds, inline
 _OPINION_CONSTANTS = load_data("opinion-constants.json")
+_SCORE = "score_rank"  # the one figure ranked lowest first: a place, 1 the strongest crown
 _TRAIT_MODS = _OPINION_CONSTANTS["actor_trait_opinion_mods"]  # Read once per king trait in `_compute_opinion`, so it earns its own name (as in `city/info.py`).
+_UNRANKED = frozenset({"id"})  # no figure to rank a roll by: an id, which orders it unasked
 _WORLDVIEWS = ("ethnocentric_guard", "xenophiles", "xenophobic")  # WB's `worldview` culture traits: mutually exclusive, often absent — hence our own fourth value.
 _WORLDVIEW_NEUTRAL = "neutral"
 _ZERO_SAID = frozenset({"age", "peace_time"})  # what `metadata` says even at 0: a crown of the year, one at war this very year — every other count keeps silent
@@ -301,14 +308,27 @@ def _build_leaders(kingdom: dict, ctx: dict) -> dict:
     return settlement_leaders(actors, ctx, ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx))
 
 
-# Every standing crown, strongest first, as one line of its `metadata` and its people's count — the whole sheet a `kingdom <id>` away.
-def _build_list(ctx: dict, save: dict) -> list[dict]:
-    ranked = []
+# `--roster`: every standing crown as one line of its `metadata` and its people's count, by id or by `rank` — the fields `--with` adds alone on the line.
+def _build_roster(save: dict, ctx: dict, sheets: dict[int, dict], getters: dict, rank: str | None, fields: list[str], limit: int | None) -> list[dict]:
+    lines = []
     for kingdom in save.get("kingdoms") or []:
-        sheet = _build_metadata(kingdom, ctx, save)
+        sheet = sheets[kingdom["id"]]
         row = {field: sheet.get(field) for field in _LINE_FIELDS} | {"pop": len(ctx["actors_by_kingdom"].get(kingdom["id"], ())) or None}
-        ranked.append((sheet.get("score_rank") or 0, kingdom["id"], row))  # the place orders, never shown; under three crowns none, the ids then ordering
-    return [row for *_, row in sorted(ranked)]  # an id never ties, so no two lines are ever weighed
+
+        # A ranked measure off its getter, else the sheet's figure — none where the sheet tells it silent (`peace_time` at war, a count at nought)
+        def read(field: str, kingdom: dict = kingdom, sheet: dict = sheet) -> object:
+            value = getters[field](kingdom) if field in getters else sheet.get(field)
+            return round(value, 2) if isinstance(value, float) else value
+
+        line = make_room(row, {field: read(field) for field in fields}, _GIVES_WAY)
+        if not rank:
+            lines.append((kingdom["id"], kingdom["id"], line))
+            continue
+        # The score by its place alone, 1 the strongest: never its points, which climb with every rival
+        figure = value if isinstance(value := read(rank), int | float) else 0  # a figure, as the call's check holds every field ranked to be
+        order = (figure or math.inf) if rank == _SCORE else -figure
+        lines.append(((order, kingdom["id"]), order, line))
+    return roll(lines, limit, "crowns", f"by {rank}" if rank else "by id")
 
 
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.
@@ -587,34 +607,7 @@ def _compute_opinion(main: dict, side: dict, target: dict, ctx: dict, relation: 
 
 # City-tier getters + the kingdom-only metrics (cities, births, fleets, the score's dimensions). Top 3 via `competition_ranks`, like every ranks section.
 def _compute_ranks(kingdom: dict, ctx: dict, save: dict) -> dict:
-    books = ctx["books_by_kingdom"]()  # resolved once here rather than inside the getter, which `competition_ranks` fires per kingdom
-    dims = ctx["score_dimensions"]()
-
-    def populations(k: dict) -> int:
-        return ctx["populations_by_kingdom"].get(k.get("id"), 0)
-
-    getters = settlement_rank_getters(ctx, "kingdom")
-    getters.update(
-        {
-            # Chronicler-only ratios, none of them derivable from a single sheet — a rank needs every other crown to mean anything.
-            "births": lambda k: int(k.get("total_births") or 0),
-            "births_per_death": lambda k: int(k.get("total_births") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
-            "boats": lambda k: len(ctx["boats_by_kingdom"].get(k.get("id")) or ()),
-            "book_reach": lambda k: dims["book_reach"].get(k.get("id"), 0),
-            "books": lambda k: books[k.get("id")],
-            "cities": lambda k: ctx["cities_by_kingdom"].get(k.get("id"), 0),
-            "culture_traits": lambda k: dims["culture_traits"].get(k.get("id"), 0),
-            "foundings": lambda k: dims["foundings"].get(k.get("id"), 0),
-            "gear": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
-            # How dearly a crown sells its dead. A realm that lost nobody is left out — a bare kill count would win the podium on 0 losses.
-            "kills_per_death": lambda k: int(k.get("total_kills") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
-            "pop_per_city": lambda k: p / c if (c := ctx["cities_by_kingdom"].get(k.get("id"), 0)) and (p := populations(k)) >= MIN_PER_CAPITA_UNITS else 0.0,
-            "territory": lambda k: ctx["territory_by_kingdom"].get(k.get("id"), 0),  # A kingdom record has no `zones` — the tally sums its cities'.
-            "wars_won": lambda k: dims["wars_won"].get(k.get("id"), 0),
-        }
-    )
-
-    return competition_ranks(kingdom, save.get("kingdoms", []), getters)
+    return competition_ranks(kingdom, save.get("kingdoms", []), _rank_getters(ctx))
 
 
 # One of a king's runtime stats, rebuilt through the whole `actor_stats` pipeline — WB reads them off the live actor, we recompute from the save.
@@ -659,6 +652,38 @@ def _peace_years(kingdom: dict, ctx: dict) -> int | None:
     return int((ctx["world_time"] - since) / UNITS_PER_YEAR)
 
 
+# Every measure a crown is ranked on, read off its record: the podium's, and what `--roster` ranks by or shows beside its sheet.
+def _rank_getters(ctx: dict) -> dict:
+    books = ctx["books_by_kingdom"]()  # resolved once here rather than inside the getter, which `competition_ranks` fires per kingdom
+    dims = ctx["score_dimensions"]()
+
+    def populations(k: dict) -> int:
+        return ctx["populations_by_kingdom"].get(k.get("id"), 0)
+
+    getters = settlement_rank_getters(ctx, "kingdom")
+    getters.update(
+        {
+            # Chronicler-only ratios, none of them derivable from a single sheet — a rank needs every other crown to mean anything.
+            "births": lambda k: int(k.get("total_births") or 0),
+            "births_per_death": lambda k: int(k.get("total_births") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
+            "boats": lambda k: len(ctx["boats_by_kingdom"].get(k.get("id")) or ()),
+            "book_reach": lambda k: dims["book_reach"].get(k.get("id"), 0),
+            "books": lambda k: books[k.get("id")],
+            "cities": lambda k: ctx["cities_by_kingdom"].get(k.get("id"), 0),
+            "culture_traits": lambda k: dims["culture_traits"].get(k.get("id"), 0),
+            "foundings": lambda k: dims["foundings"].get(k.get("id"), 0),
+            "gear": lambda k: sum(ctx["racks_by_kingdom"][k.get("id")].values()),
+            # How dearly a crown sells its dead. A realm that lost nobody is left out — a bare kill count would win the podium on 0 losses.
+            "kills_per_death": lambda k: int(k.get("total_kills") or 0) / d if (d := int(k.get("total_deaths") or 0)) else 0.0,
+            "pop_per_city": lambda k: p / c if (c := ctx["cities_by_kingdom"].get(k.get("id"), 0)) and (p := populations(k)) >= MIN_PER_CAPITA_UNITS else 0.0,
+            "territory": lambda k: ctx["territory_by_kingdom"].get(k.get("id"), 0),  # A kingdom record has no `zones` — the tally sums its cities'.
+            "wars_won": lambda k: dims["wars_won"].get(k.get("id"), 0),
+        }
+    )
+
+    return getters
+
+
 # Next in line = eligible royal-clan member, ranked by the culture's succession rule — WB `SuccessionTool.getKingFromRoyalClan`, what its own kingdom panel shows.
 def _resolve_heir(kingdom: dict, ctx: dict) -> dict | None:
     royal_clan = kingdom.get("royal_clan_id")
@@ -669,6 +694,37 @@ def _resolve_heir(kingdom: dict, ctx: dict) -> dict | None:
     traits = set((ctx["cultures_by_id"].get(kingdom.get("id_culture")) or {}).get("saved_traits") or [])
     heir = succession_heir(candidates, traits, ctx["world_time"], lambda a: compute_actor_stats(a, ctx))
     return {"id": heir["id"], "name": heir.get("name")} if heir else None
+
+
+# `--roster`, the call past `--roster`: any figure of `metadata` or of `ranks` ranked by or shown, the score by its place — another field refused.
+def _roster(argv: list[str], save_path: Path) -> int:
+    parser = arg_parser(prog="kingdom/info.py --roster", taken="[C<n>]", gloss="kingdom.roster")
+    parser.add_argument("--limit", type=limit_arg, metavar="n|all")
+    parser.add_argument("--rank", metavar="field")
+    parser.add_argument("--with", action="append", dest="fields", metavar="field,…")  # repeated, each adds its fields
+    args = parser.parse_args(argv)
+    fields = list(dict.fromkeys(field for asked in args.fields or () for field in asked.split(",") if field))
+    if len(fields) > MAX_FIELDS:
+        print(f"✗ `--with` takes {MAX_FIELDS} fields at most — `kingdom <id> metadata` gives a crown's whole sheet", file=sys.stderr)
+        return 2
+    save = load_save(save_path)
+    if not save.get("kingdoms"):
+        print("✗ no kingdom in this world", file=sys.stderr)
+        return 1
+    ctx = _build_context(save, save_path)
+    sheets = {kingdom["id"]: _build_metadata(kingdom, ctx, save) for kingdom in save["kingdoms"]}
+    getters = _rank_getters(ctx) if args.rank or fields else {}  # built once, for the check and the lines alike
+    if args.rank or fields:  # every field some crown's sheet tells, one silent on the first as on any other
+        told = {key for sheet in sheets.values() for key in sheet}
+        figures = sorted({key for sheet in sheets.values() for key, value in sheet.items() if type(value) in (int, float)} - _UNRANKED | set(getters))
+        if args.rank and args.rank not in figures:
+            print(refused("--rank", [args.rank], figures, "`gloss kingdom.roster.--rank`, `kingdom <id> metadata,ranks`"), file=sys.stderr)
+            return 2
+        if stray := [field for field in fields if field not in told and field not in figures]:
+            print(refused("--with", stray, {*told, *figures}, "`gloss kingdom.roster.--with`, `kingdom <id> metadata,ranks`"), file=sys.stderr)
+            return 2
+    emit(_build_roster(save, ctx, sheets, getters, args.rank, fields, LIMIT if args.limit is None else args.limit or None))  # `all` read as 0: every line
+    return 0
 
 
 # `--toward <id>[,<id>]` taken out of the call, the rest left positional: the rivals `relations` narrows to, none when absent.
@@ -708,15 +764,13 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    if (not argv and rivals) or argv[:1] in (["-h"], ["--help"]):
-        return hand_usage("usage: kingdom/info.py [<id> [sections] [--toward <id>[,<id>]]] [C<n>]\neach option: `gloss kingdom`", argv)
-    if not argv:  # no id: the list of every crown
-        save = load_save(save_path)
-        if not save.get("kingdoms"):
-            print("✗ no kingdom in this world", file=sys.stderr)
-            return 1
-        emit(_build_list(_build_context(save, save_path), save))
-        return 0
+    if "--roster" in argv:  # every standing crown: its own options, no id
+        return 2 if (rest := roster_call(argv, "crown", "kingdom")) is None else _roster(rest, save_path)
+    if not argv or argv[:1] in (["-h"], ["--help"]):
+        return hand_usage(
+            "usage: kingdom/info.py <id> [sections] [--toward <id>[,<id>]] [C<n>] | --roster [options]\neach option: `gloss kingdom`",
+            argv,
+        )
     try:
         kingdom_id = int(argv[0])
     except ValueError:

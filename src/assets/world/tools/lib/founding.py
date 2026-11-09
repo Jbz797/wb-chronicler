@@ -1,4 +1,4 @@
-# Where a thinking soul could found a town, WB's `try_to_start_new_civilization` gate by gate — `actor … metadata`'s `settle`, `world … roster --filter settle`.
+# Where a thinking soul could found a town, WB's `try_to_start_new_civilization` gate by gate — `actor … metadata`'s `settle`, `actor --roster --filter settle`.
 
 from collections import Counter
 

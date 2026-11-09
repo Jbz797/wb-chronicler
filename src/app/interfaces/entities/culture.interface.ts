@@ -23,7 +23,7 @@ interface CultureMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
-  members?: number; // its living, counted: `world … roster --culture <id>` names them
+  members?: number; // its living, counted: `actor --roster --filter culture:<id>` names them
   name: string;
   renown?: number;
 }

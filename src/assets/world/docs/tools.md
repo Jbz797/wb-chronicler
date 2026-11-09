@@ -1,12 +1,12 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 09/11/26 10:55</p>
+<p class="metadata">Date de mise à jour : 09/11/26 23:06</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne) ; une réponse partielle dit là, d'un `⚠`, ce qu'elle laisse, son JSON entier sur stdout, et une ligne `·` informe sans rien retirer ; citée en abrégé : `kingdom … metadata`.
 
 - **Un champ absent vaut rien** : un compte à 0, un drapeau faux, une liste ou un bloc vides se taisent, sauf où une glose dit le contraire ; absent, un compte vaut 0, ou 1 (`gen`, `level`, `past_chiefs`), `normal` (taxe) ; sauf sous `roster --with`, qui chasse du socle autant de champs qu'il en ajoute (`gloss world.--with`) : omis, pas nuls.
 - **Ce que fixe un filtre** (une terre `i<id>`, un seul `type:`, `--actor`…) ne se répète pas : un champ absent y vaut le filtre.
-- **`sections`** : liste à virgules (`full` par défaut = toutes, sauf `geography`, `world … laws`, `lineages`, `pairings` et `roster`, à nommer) ; un bloc nommé seul (section, `--to`, tuile) sort nu, plusieurs gardent leur clé.
+- **`sections`** : liste à virgules (`full` par défaut = toutes, sauf `geography` et `world … laws`, à nommer) ; un bloc nommé seul (section, `--to`, tuile) sort nu, plusieurs gardent leur clé.
 - **Le suffixe `C<n>`** lit ce chapitre ; sans lui, le dernier ; l'outil `across` pose la question à chacun, rangée par chapitre (`across C1-C9 world metadata --keep date` : la date de chacun).
 - **Une sortie se lit entière** : coupée (`head`), le JSON ne se lit plus ; les sections lourdes, une à une. Trop longue, une liste se coupe, la coupe dite d'un `⚠` : le reste se demande par `--limit` ou ses filtres (`--filter i<id>`, `-t`, une section).
 
@@ -23,16 +23,16 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 | `geography`       | `biomes`, `bodies`, `burning`, `clouds`, `entity_types`, `frozen`, `gear`, `islands`, `positions`, `ridges`, `totals`, `waters`        |
 | `ground <id>`     | `boats`, `inventory`, `metadata`, `occupants`                                                                                          |
 | `history`         | `dead_kingdoms`, `entity`, `founded`, `log`, `rulers`, `world`                                                                         |
-| `kingdom [<id>]`  | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `relations`, `rulers`, `wars`               |
+| `kingdom <id>`    | `boats`, `breakdown`, `cities`, `gear`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `relations`, `rulers`, `wars`               |
 | `language <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
 | `religion <id>`   | `books`, `breakdown`, `identity`, `leaders`, `metadata`, `pop`, `ranks`, `traits`                                                      |
 | `subspecies <id>` | `breakdown`, `leaders`, `metadata`, `pop`, `ranks`, `species`, `stats`, `taxonomy`, `traits`                                           |
 | `tiles <x,y>`     | `actors`, `distances`, `ground`, `islet`, `owner`, `rays`, `tile_info`                                                                 |
 | `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                                   |
-| `world`           | `boats`, `cumulative`, `laws`, `leaders`, `lineages`, `metadata`, `pairings`, `plots`, `roster`, `snapshot`                            |
+| `world`           | `boats`, `cumulative`, `laws`, `leaders`, `metadata`, `plots`, `snapshot`                                                              |
 
 - **La carte** : `tools/map/show.py <x,y> [C<n>]` cerne la tuile sur la carte du chapitre et rend le chemin de l'image ; `gloss map.--zoom` pour lire une côte.
-- **Toute une espèce** : `subspecies <id>` n'en lit qu'une lignée, `world roster --filter type:<espèce>` toutes.
+- **Une liste** : `--roster`, une ligne par corps (`actor`), couronne (`kingdom`) ou lignée (`subspecies`) ; une espèce : `actor --roster --filter type:<espèce>`.
 
 ## Gloses :
 

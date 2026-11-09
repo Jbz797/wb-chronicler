@@ -49,6 +49,7 @@ PROFESSION_LEADER = 4
 PROFESSION_WARRIOR = 5
 SAVES_DIR = Path(__file__).parents[2] / "saves"  # Single source of truth for the chapter dirs `C<n>/`; `chapter/` reaches back to `C<n-1>` through it.
 SICK_TRAITS = frozenset({"infected", "mush_spores", "plague", "tumor_infection"})  # WB `calculateIsSick` traits — `infected` ⊂ `sick`.
+SKILLS = ("diplomacy", "intelligence", "stewardship", "warfare")  # WB's four, every `actor … ranks` podium reads: weighed among thinking souls alone
 TAG_MARK = re.compile(r"\[(?P<kind>[a-z]) (?P<id>[^\s\]]+)(?: (?P<text>[^\]]+))?\]")  # a name's marker, `[p 28 Voxzen]`: read by its text, a bare one nothing
 UNITS_PER_MONTH = 5  # 5 `world_time` units = 1 month, the grain WB counts an incubation and a plot in.
 UNITS_PER_YEAR = 60  # 60 `world_time` units = 1 year (12 months × 5 units).
@@ -203,9 +204,10 @@ class _Syntax(argparse.Action):
     def __call__(self, parser: argparse.ArgumentParser, *_: object) -> None:
         flagged = [action.option_strings for action in parser._actions if action.option_strings and action is not self]  # noqa: SLF001
         short = ", ".join(f"{flags[-1]} {flags[0]}" for flags in flagged if len(flags) > 1)  # the usage names an option by its first spelling alone
-        told = (f"short: {short}\n" if short else "") + (f"each option: `gloss {parser.prog.partition('/')[0]}`\n" if flagged else "")
-        # What the tool takes off the call before argparse reads it, `--since` and the chapter, closes the usage line as the rest of it.
-        sys.stdout.write(parser.format_usage().rstrip() + (f" {self.const}" if self.const else "") + "\n" + told)
+        taken, gloss = self.const  # what the tool takes off the call before argparse reads it, and the gloss its options answer under
+        told = (f"short: {short}\n" if short else "") + (f"each option: `gloss {gloss}`\n" if flagged else "")
+        # `--since` and the chapter, taken before argparse reads the call, close the usage line as the rest of it.
+        sys.stdout.write(parser.format_usage().rstrip() + (f" {taken}" if taken else "") + "\n" + told)
         parser.exit()
 
 
@@ -571,11 +573,12 @@ def alive_or_dead_ref(body_id: int | None, by_id: dict, deaths: dict[int, dict])
 
 
 # argparse's refusals, marked as every script's are (a bare `usage:`/`error:` reads unflagged), and no abbreviation: `--lim` would run as `--limit`.
-def arg_parser(prog: str, taken: str = "") -> argparse.ArgumentParser:
+def arg_parser(prog: str, taken: str = "", gloss: str = "") -> argparse.ArgumentParser:
+    gloss = gloss or prog.partition("/")[0]  # the tool's own, unless a part of it glosses its options apart: `actor.roster`
     # A width said: left to the terminal, argparse loads `shutil` and three compressors to measure it, at the first `add_argument` of every run.
     parser = argparse.ArgumentParser(prog=prog, formatter_class=partial(argparse.HelpFormatter, width=_HELP_WIDTH), add_help=False, allow_abbrev=False)
-    parser.add_argument("-h", "--help", action=_Syntax, nargs=0, const=taken, default=argparse.SUPPRESS)
-    parser.error = lambda message: _refuse(message, prog.partition("/")[0])
+    parser.add_argument("-h", "--help", action=_Syntax, nargs=0, const=(taken, gloss), default=argparse.SUPPRESS)
+    parser.error = lambda message: _refuse(message, gloss)
     return parser
 
 
@@ -874,7 +877,7 @@ def counted_birth(actor: dict) -> float:
     return float(actor.get("created_time") or 0) - (actor.get("age_overgrowth") or 0) * UNITS_PER_YEAR
 
 
-# Each body's work: the world's items by their maker (`creator_id`), those still standing — what `actor … ranks` and `world … roster` count alike.
+# Each body's work: the world's items by their maker (`creator_id`), those still standing — what `actor … ranks` and `actor --roster` count alike.
 def crafted_counts(items_by_id: dict) -> Counter:
     return Counter(maker for item in items_by_id.values() if (maker := item.get("creator_id")))
 
@@ -1536,6 +1539,11 @@ def run(main: Callable[[list[str]], int]) -> int:
     return code
 
 
+# The subspecies WB hangs `has_sapience` on, as a set of ids — an allegiance is not a mind, and a world can think long before it crowns anyone.
+def sapient_subspecies(save: dict) -> frozenset:
+    return frozenset(sid for sid, sub in index_by_id(save.get("subspecies") or []).items() if is_sapient(sub))
+
+
 # `score_totals` as competition places `{id: place}` (1, 2, 2, 4), 1 = strongest — none below `MIN_SCORE_PEERS`: a town's and a crown's `score_rank`.
 def score_ranks(ids: list[int], dimensions: dict[str, dict]) -> dict[int, int]:
     if len(ids) < MIN_SCORE_PEERS:
@@ -1644,6 +1652,12 @@ def short_dialogues(prose: str) -> list[str]:
     said = [(at, chapter_length(" ".join(replies).replace("—", " "))) for at, replies in runs if len(replies) > 1]
     told = f"characters of {_DIALOGUE_FLOOR} at least — asides kept, dashes aside, {COUNTED_AS}"
     return [f"✗ dialogue l.{at}, {length} {told}" for at, length in said if length < _DIALOGUE_FLOOR]
+
+
+# The saves after `since` up to this one: a body a chapter in between held was seen, and is gone rather than passed unseen.
+def since_saves(since: str, chapter: str | None, save: dict) -> list[dict]:
+    later = [SAVES_DIR / f"C{n}" / "map.wbox" for n in range(int(since[1:]) + 1, int(chapter[1:]) if chapter else latest_chapter() + 1)]
+    return [*(load_save(path) for path in later if path.exists()), save]
 
 
 # Spores alone and no stomach: WB lets them go off a body that `just_ate` only, a status a meal gives and sunlit skin never does — such a lineage bears no one.

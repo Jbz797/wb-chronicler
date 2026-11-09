@@ -828,7 +828,7 @@ def main(argv: list[str]) -> int:
     if "positions" in sections and wanted is not None:
         kinds, bodies = asset_kinds(families, wanted), {a.get("asset_id") for a in save.get("actors_data") or [] if not is_boat(a)}  # hulls stay sited here
         if said := [word for word in wanted.split(",") if asset_kinds(families, word) & bodies]:  # a body's roll is `roster`'s, with its sex and dates
-            print(f"✗ {', '.join(said)}: bodies are listed by `world … roster --filter type:`, `positions` sites the rest", file=sys.stderr)
+            print(f"✗ {', '.join(said)}: bodies are listed by `actor --roster --filter type:`, `positions` sites the rest", file=sys.stderr)
             return 2
 
     if then_path and "clouds" in sections:  # a sky lives seconds to minutes: two saves' clouds are never the same ones, nor weighed one against the other

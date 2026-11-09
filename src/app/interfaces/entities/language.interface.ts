@@ -25,7 +25,7 @@ interface LanguageMetadata {
   id: number;
   kills?: number;
   kingdoms?: number;
-  members?: number; // its living, counted: `world … roster --language <id>` names them
+  members?: number; // its living, counted: `actor --roster --filter language:<id>` names them
   name: string;
   native?: number;
   renown?: number;
