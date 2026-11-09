@@ -1,7 +1,7 @@
 {
   "--limit": "`--limit n|all` : les lignes gardées, 10 sans lui (`actor`, `geography`, `history`, `world`) ; la coupe dite d'un `⚠`, `all` pour tout ; chaque outil glose le sien.",
   "--since": "`--since C<n>` : ce qui a changé depuis ce chapitre, sous `actor`, `city … buildings`, `geography`, `history` et `world … roster` ; chaque outil glose le sien.",
-  "across.--keep": "`--keep a,b.c` : de chaque chapitre, ces seuls champs, par leur chemin pointé depuis le haut du bloc ; un champ absent s'y tait, un refus reste entier.",
+  "across.--keep": "`--keep a,b.c` : de chaque chapitre, ces seuls champs, par chemin pointé, une liste item par item (`traits --keep id`) ; un absent se tait, un refus reste entier.",
   "actor.--limit": "`--limit` : sous `surroundings`, les n plus proches de chaque cercle, 10 sans lui, et en plus sa famille (`kin`) et son meilleur ami, à toute distance.",
   "actor.--since": "`--since C<n>` : le bloc `since`, ce qui a changé chez le corps depuis ce chapitre ; avec `--to`, seulement le `then` du trajet, sans ce bloc.",
   "actor.--to": "`--to` : le trajet vers un corps, une tuile, un bâtiment, une cité, une terre, un lieu, une eau, le feu, le gel ou un type (par virgules) ; répété, chacun à part.",
@@ -93,6 +93,7 @@
   "actor.to.walk_hours": "Le temps à pied au pas du corps appelé, jamais du but, déjà arrondi : 5 min sous l'heure (`walk_minutes`), le quart d'heure jusqu'à 3 h (`\"2h15\"`), la demi au-delà.",
   "actor.to.widest_crossing": "Le plus long bras d'eau du trajet, dit seulement s'il passe le souffle du corps.",
   "actor.to.with_boat": "Le trajet par la coque de sa couronne : une autre route que la marche, jamais à additionner à elle.",
+  "actor.traits": "La save ne date aucun trait : sa venue se borne entre deux chapitres, `across C<a>-C<b> actor <id> traits --keep id`.",
   "actor.traits.absorbed": "Les stats que le trait bouge sans changer le total, une borne l'ayant bu (`-5` de précision sur un plancher de 1) : sans effet sur ce corps tant qu'elle tient.",
   "actor.traits.inborn": "Sa lignée, telle qu'elle est aujourd'hui (`subspecies … traits`), le donne à chaque naissance : un héritage de tous les siens, non une particularité du corps.",
   "actor.victims": "Les morts qu'il a données (`total`), cause, coup hors arme, corps neuf (`died_of`, `blow`, `became`) ; nommée, toutes, de la plus ancienne ; en `full`, la dernière.",

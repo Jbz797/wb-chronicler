@@ -29,18 +29,31 @@ def _answer(script: Path, args: list[str], chapter: str) -> tuple[object, list[s
     return next((line for line in lines if line.startswith("✗")), lines[-1] if lines else f"✗ exit {tool.returncode}"), []
 
 
+# The block whose fields `--keep` reads: the answer itself, or a list's first item — none off a refusal.
+def _block_of(answer: object) -> dict | None:
+    if isinstance(answer, list) and answer:
+        answer = answer[0]
+    return answer if isinstance(answer, dict) else None
+
+
 # One chapter's answer cut to the fields asked, each by its dotted path from the block's top: a field it lacks says nothing, a refusal stays whole.
 def _kept(answer: object, paths: list[str]) -> object:
+    if isinstance(answer, list):  # a section that is a list: each item cut alike, a lone field read flat (`traits --keep id`: the ids)
+        if len(paths) == 1:
+            return _picked(answer, paths[0].split("."))
+        return [kept for item in answer if (kept := _kept(item, paths))]
     if not isinstance(answer, dict):
         return answer
-    kept = {}
-    for path in sorted(paths):  # in the order every output keeps its keys
-        value: object = answer
-        for key in path.split("."):
-            value = value.get(key) if isinstance(value, dict) else None
-        if value is not None:
-            kept[path] = value
-    return kept
+    return {path: value for path in sorted(paths) if (value := _picked(answer, path.split("."))) is not None}  # in the order every output keeps its keys
+
+
+# The value at a dotted path, a list on the way walked item by item: `victims.all.id` the id of each victim.
+def _picked(value: object, keys: list[str]) -> object:
+    for at, key in enumerate(keys):
+        if isinstance(value, list):
+            return [found for item in value if (found := _picked(item, keys[at:])) is not None] or None
+        value = value.get(key) if isinstance(value, dict) else None
+    return value
 
 
 def main(argv: list[str]) -> int:
@@ -74,7 +87,8 @@ def main(argv: list[str]) -> int:
             notes[note].append(chapter)
     if keep is not None:
         kept = {chapter: _kept(answer, keep) for chapter, answer in answers.items()}
-        if not any(kept.values()) and (shown := next((answer for answer in answers.values() if isinstance(answer, dict)), None)) is not None:
+        blocks = (block for answer in answers.values() if (block := _block_of(answer)) is not None)  # a section that is a list offers its items' fields
+        if not any(kept.values()) and (shown := next(blocks, None)) is not None:
             print(f"✗ none of {', '.join(keep)} in any chapter — its fields: {', '.join(sorted(shown))}", file=sys.stderr)
             return 1
         answers = kept
