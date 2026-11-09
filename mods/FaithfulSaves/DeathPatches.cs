@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using db;
 using HarmonyLib;
 using SQLite;
@@ -38,11 +40,6 @@ namespace FaithfulSaves
         private static long _killer = -1;
         private static long _victim = -1;
 
-        // Every bolt, a cloud's, a spell's or a god's, strikes through `MapAction.checkLightningAction`: a finalizer, so a throw never leaves it on.
-        [HarmonyFinalizer]
-        [HarmonyPatch(typeof(MapAction), "checkLightningAction")]
-        private static void AfterBolt() => _bolting = false;
-
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Actor), "newKillAction")]
         private static void AfterNewKillAction(Actor __instance, Actor __0)
@@ -60,10 +57,6 @@ namespace FaithfulSaves
             _copiedFrom = __0.getID();
             _copiedTo = __1.getID();
         }
-
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(MapAction), "checkLightningAction")]
-        private static void BeforeBolt() => _bolting = true;
 
         // `Actor.die` is every death's way out, counted or not (a metamorphosis, a god's finger); a call on a body already dead ends its dying animation.
         [HarmonyPrefix]
@@ -171,6 +164,23 @@ namespace FaithfulSaves
             data.get(From, out float from, -1f);
             if (from < 0f)
                 data.set(From, (float)World.world.getCurWorldTime());
+        }
+
+        // Every bolt, a cloud's, a spell's or a god's, falls through a `MapBox.spawnLightning*`: its strike, then its blast (`damageWorld`).
+        [HarmonyPatch]
+        internal static class Bolts
+        {
+            private static IEnumerable<MethodBase> TargetMethods()
+            {
+                return new[] { "spawnLightningBig", "spawnLightningMedium", "spawnLightningSmall" }.Select(name => AccessTools.Method(typeof(MapBox), name));
+            }
+
+            // A finalizer, so a throw never leaves the bolt striking.
+            [HarmonyFinalizer]
+            private static void Finalizer() => _bolting = false;
+
+            [HarmonyPrefix]
+            private static void Prefix() => _bolting = true;
         }
     }
 }
