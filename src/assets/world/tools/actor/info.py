@@ -862,6 +862,7 @@ def _death(dead: dict, ctx: dict, upto: int) -> dict:
     by_id, deaths, lineage = ctx["actors_by_id"], ctx["deaths"], dead["subspecies"]
     return {
         "asset_id": dead["asset_id"],
+        "became": alive_or_dead_ref(dead["became"], by_id, deaths),
         "blow": dead["blow"],
         "born": world_date(dead["born"]),
         "city": _last_city(dead["id"], ctx, upto),
@@ -953,6 +954,10 @@ def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str |
     if other["id"] == lover or other.get("lover") == aid:
         return "lover"
     return "sibling" if not parents.isdisjoint(lineage) else None
+
+
+def _kind_of(body_id: int | None, ctx: dict) -> str | None:
+    return (ctx["actors_by_id"].get(body_id) or ctx["deaths"].get(body_id) or {}).get("asset_id")
 
 
 # Its land's id, else `water` afloat or `islet` on an islet too small to count — as `roster` says it.
@@ -1533,9 +1538,10 @@ def _victims(actor_id: int, ctx: dict, requested: str | None) -> dict | None:
     rows = [
         {
             "asset_id": d["asset_id"],
+            "became": _kind_of(d["became"], ctx),  # its kind alone, a row being a line: `actor <victim>` names the body
             "blow": d["blow"] if d["blow"] != "weapon" else None,  # what struck a changed body down, said on the same terms as `died_of`
             "date": world_date(d["died"]),
-            "died_of": d["cause"] if d["cause"] != "weapon" else None,  # a bolt, a bite or a change under the blow: said, where a blow plainly slew
+            "died_of": d["cause"] if d["cause"] != "weapon" and not d["became"] else None,  # a bolt, a bite, a change: said, where a blow slew or `became` tells
             "id": d["id"],
             "job": d["job"],
             "name": d["name"],
