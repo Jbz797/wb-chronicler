@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 09/11/26 10:44</p>
+<p class="metadata">Date de mise à jour : 09/11/26 10:55</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne) ; une réponse partielle dit là, d'un `⚠`, ce qu'elle laisse, son JSON entier sur stdout, et une ligne `·` informe sans rien retirer ; citée en abrégé : `kingdom … metadata`.
 
@@ -32,7 +32,8 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 | `world`           | `boats`, `cumulative`, `laws`, `leaders`, `lineages`, `metadata`, `pairings`, `plots`, `roster`, `snapshot`                            |
 
 - **La carte** : `tools/map/show.py <x,y> [C<n>]` cerne la tuile sur la carte du chapitre et rend le chemin de l'image ; `gloss map.--zoom` pour lire une côte.
+- **Toute une espèce** : `subspecies <id>` n'en lit qu'une lignée, `world roster --filter type:<espèce>` toutes.
 
 ## Gloses :
 
-`python tools/gloss/info.py <clé>` glose un champ ou une option en une ligne ; une balise **`gloss:<clé>`** y renvoie, comme `wiki:` au wiki. La clé suit la sortie, `<outil>.<section>.<champ>`, une option `<outil>.--<option>` (`world.--rank`), ou le champ seul, l'option seule, s'ils servent à plusieurs (`--since`) ; un fragment suffit (`pairings` rend la section entière). Avant de lire une section, `gloss <outil>.<section>` rend ses gloses, `gloss <outil>` tout l'outil, options et champs partagés compris ; plusieurs par virgules, chaque glose une fois.
+`python tools/gloss/info.py <clé>` glose un champ ou une option ; une balise **`gloss:<clé>`** y renvoie, comme `wiki:` au wiki. La clé suit la sortie, `<outil>.<section>.<champ>`, une option `<outil>.--<option>`, ou le champ seul, l'option seule, s'ils servent à plusieurs (`--since`). Avant de lire une section, `gloss <outil>.<section>` rend ses gloses, `gloss <outil>` tout l'outil ; plusieurs par virgules, chaque glose une fois.

@@ -303,7 +303,7 @@
   "world.--filter.status": "`status:<id>` : les corps qui portent ce statut à la save, ce qu'ils subissent ; ce qu'ils sont : `trait:`.",
   "world.--filter.task": "`task:<id>` : les corps à cette tâche à l'instant de la save, ce qu'ils font ; ce qu'ils portent : `status:`.",
   "world.--filter.trait": "`trait:<id>` : les corps qui portent ce trait, le leur ou celui de leur lignée.",
-  "world.--filter.type": "`type:dwarf` : un type, une famille (`actors`) ; plusieurs s'additionnent (`type:dwarf,type:elf`) ; sous `roster`, `lineages` et `pairings`.",
+  "world.--filter.type": "`type:dwarf` : une espèce, toutes lignées, ou une famille (`actors`) ; plusieurs s'additionnent (`type:dwarf,type:elf`) ; sous `roster`, `lineages` et `pairings`.",
   "world.--limit": "`--limit` : les lignes de `roster`, 10 sans lui, par `id` sans `--rank` ; les lignées de `lineages`, par `id` ; les espèces de `pairings`, par naissance.",
   "world.--rank": "`--rank <champ|x,y|p<id>>` : l'ordre, tout chiffre que `--with` lit, le plus haut d'abord (à âge égal, le plus tôt né), ou le plus proche ; sans le chiffre, omis.",
   "world.--since": "`--since C<n>` : ce qui a changé depuis, sauf `grew` ; `--filter` en garde des parties (`world.roster.part`), comptées sans `--since` depuis le chapitre d'avant.",

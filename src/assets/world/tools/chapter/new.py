@@ -558,6 +558,9 @@ def _finalize() -> int:
     if not (n := latest_chapter()):
         print("✗ no chapter yet — run `tools/chapter/new.py` first", file=sys.stderr)
         return 1
+    if chronicle_git("tag", "--list", f"C{n}-delivered").stdout.strip():  # before a file is tidied or a place dated: a delivered chapter is the retouch's
+        print(f"✗ C{n} is delivered — reworked, it rounds with `tools/chapter/new.py --retouch`", file=sys.stderr)
+        return 1
     lang = reader_settings().get("lang", "")
     _tidy_cards(n)
     dated = _dated_places(n)  # once the gazetteer is known to parse
