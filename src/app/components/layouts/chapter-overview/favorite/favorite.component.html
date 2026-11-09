@@ -39,7 +39,7 @@
     }
     <!-- Kept at nought while the lineage can bear: « 0 / 5 » says what the body could still bear, a sire's count stands alone; a barren lineage's goes unsaid. -->
     <nz-descriptions-item *appPresent="fav.stats.children" [nzTitle]="childrenTitle">
-      <app-ranked-stat stat="children" [suffix]="fav.stats.max_children === undefined ? '' : `/ ${fav.stats.max_children}`" />
+      <app-ranked-stat stat="children" [suffix]="fav.stats.max_children === undefined ? '' : `/${fav.stats.max_children}`" />
     </nz-descriptions-item>
     <nz-descriptions-item *appPresent="fav.stats.kills" [nzTitle]="killsTitle">
       <app-ranked-stat stat="kills" />
