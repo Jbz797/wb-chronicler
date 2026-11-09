@@ -10,7 +10,10 @@
       <app-kingdom-tag [id]="w.metadata.started_by_kingdom.id" [name]="w.metadata.started_by_kingdom.name" />
     </nz-descriptions-item>
   }
-  <nz-descriptions-item [nzTitle]="renownTitle">{{ w.metadata.renown_at_stake }}</nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="renownTitle">
+    {{ w.metadata.renown_at_stake }}
+    <app-delta [value]="d?.stake" />
+  </nz-descriptions-item>
   @if (w.metadata.age > 0) {
     <nz-descriptions-item [nzTitle]="durationTitle">{{ w.metadata.age }}{{ 'ui_years' | translate }}</nz-descriptions-item>
   }

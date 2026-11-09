@@ -25,7 +25,7 @@ export class WarCardComponent {
 
   public readonly war = input.required<War>();
 
-  // Per-stat delta on both camps against the same war a chapter ago — `null` where no chapter precedes, or where this war had not been declared yet.
+  // Per-stat delta on both camps and the stake against the same war a chapter ago — `null` where no chapter precedes, or where this war was not declared yet.
   protected readonly deltas = computed(() => {
     const w = this.war();
     const before = this._chronicler.previousChapter()?.meta.wars?.find(x => x.metadata.id === w.metadata.id);
@@ -38,7 +38,7 @@ export class WarCardComponent {
       taken: (w[side].taken ?? 0) - (before[side].taken ?? 0),
       warriors: w[side].warriors - before[side].warriors,
     });
-    return { attackers: diff('attackers'), defenders: diff('defenders') };
+    return { attackers: diff('attackers'), defenders: diff('defenders'), stake: w.metadata.renown_at_stake - before.metadata.renown_at_stake };
   });
   // A war the chapter before had not declared — its card opens with the same badge a new panel wears.
   protected readonly isNew = computed(() => {
