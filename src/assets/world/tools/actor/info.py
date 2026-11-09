@@ -104,6 +104,8 @@ from shared import (
     take_chapter,
     take_since,
     tile_text,
+    town_edge,
+    town_quarters,
     unsited_reason,
     walk_tiles,
     wants_detail,
@@ -253,6 +255,10 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         if city is None or (tile := city_centre(city)) is None:
             raise _AimError(absent_entity("city", "cities", city_id, chapter))
         target, aims, whom = tile, [tile], city.get("name") or f"city {city_id}"
+        (ax, ay), (tx, ty) = actor_xy(actor), tile
+        # Timed to its centre, a fief's seat: its ground begins at its nearest quarter, told apart where the two part, as `tiles … --to c<id>` does
+        if (edge := town_edge(ax, ay, town_quarters(city))) != round(walk_tiles(tx - ax, ty - ay)):
+            told = {"edge": {"crow_tiles": edge}}
     elif target == "cities":  # every town, each aimed at as `c<id>` is: `_trip` answers with those reached
         whom = "every town"
     elif target == "lands":  # every land but its own, each tried as `i<id>` is: `_trip` answers with those reached

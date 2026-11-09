@@ -62,6 +62,8 @@ from shared import (
     run,
     take_chapter,
     tile_text,
+    town_edge,
+    town_quarters,
     under_construction,
     walk_tiles,
     water_ref,
@@ -189,6 +191,14 @@ def _city_at(x: int, y: int, ctx: dict) -> dict | None:
     return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
 
 
+# A town aimed at by its id is met at its centre, a crown's seat as `--to c<id>` times it; its ground begins at its nearest quarter, as `to_nearest_city` says.
+def _city_edge(end: str | tuple[int, int], x: int, y: int, save: dict) -> int | None:
+    if not (isinstance(end, str) and re.fullmatch(r"c\d+", end)):
+        return None
+    city = next((c for c in save.get("cities") or [] if c.get("id") == int(end[1:])), {})
+    return town_edge(x, y, quarters) if (quarters := town_quarters(city)) else None
+
+
 # The crow's nearest pair between two grounds, their rims alone: past `_BRUTE_PAIRS`, the larger hashed by `_PAIR_CELL`, searched ring by ring from the smaller.
 def _closest_pair(first: list[tuple[int, int]], second: list[tuple[int, int]]) -> tuple[tuple[int, int], tuple[int, int]]:
     if shared := set(first) & set(second):
@@ -229,7 +239,7 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
     city = _city_at(x, y, ctx)
     if city is None:
         if towns := ctx["city_quarters"]:  # a quarter lies whole on the map, WB sizing a world in blocks its zones divide
-            reach = {cid: _fabric_distance(x, y, quarters) for cid, quarters in towns.items()}
+            reach = {cid: town_edge(x, y, quarters) for cid, quarters in towns.items()}
             near = min(reach, key=lambda cid: (reach[cid], cid))
             (cx, cy), width, span = ctx["city_centres"][near], ctx["width"], range(ZONE_TILES)
             fabric = ((qy + dy) * width + qx + dx for qx, qy in towns[near] for dy in span for dx in span)
@@ -249,11 +259,6 @@ def _distances_at(x: int, y: int, ctx: dict) -> dict:
 def _end_arg(value: str) -> str | tuple[int, int]:
     value = end_text(value, "an end")  # argparse names which of the two
     return xy_arg(value) if body_ref(value) is None and re.fullmatch(r"-?\d+,-?\d+", value) else value
-
-
-# A town is its fabric, not its centre, as `to_islands` takes a land's nearest tile: at the edge of a sprawling town a body stands at the gate, not a centre away.
-def _fabric_distance(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
-    return round(min(walk_tiles(max(qx - x, x - qx - ZONE_TILES + 1, 0), max(qy - y, y - qy - ZONE_TILES + 1, 0)) for qx, qy in quarters))
 
 
 # A named end's tiles — any of `_END` but the tile, as `actor … --to` reads them —, what it aimed at, else why none.
@@ -668,11 +673,13 @@ def main(argv: list[str]) -> int:
     start = _centre(args.xy, save, save_path) if isinstance(args.xy, str) and (place := found[0][1]) and _SPREAD.fullmatch(place) else None
     relations = {}  # a relation between the two ends, not a trait of either: its own key, the cap read from the first toward the second
     for end, ((cx, cy), (tx, ty), grounds, aimed) in zip(targets, pairs, strict=False):
+        crow = round(walk_tiles(tx - cx, ty - cy))
         relation = {
             "chunks_apart": chunks_apart(cx, cy, tx, ty),
             "dir": bearing(tx - cx, ty - cy),
+            **({"edge": {"crow_tiles": edge}} if (edge := _city_edge(end, cx, cy, save)) is not None and edge != crow else {}),
             **({"from": {"aimed": aimed[0], "x": cx, "y": cy, **_met(aimed[0], cx, cy, save, ctx)}} if aimed[0] else {}),
-            **_measure(cx, cy, round(walk_tiles(tx - cx, ty - cy)), (gy * width + gx for gx, gy in grounds[1]), ctx),
+            **_measure(cx, cy, crow, (gy * width + gx for gx, gy in grounds[1]), ctx),
             **({"reached": {"aimed": aimed[1], "x": tx, "y": ty, **_met(aimed[1], tx, ty, save, ctx)}} if aimed[1] else {}),
         }
         if end == "burning":  # its flame met first, its middle where `geography … burning` sites it

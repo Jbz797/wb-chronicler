@@ -1715,6 +1715,16 @@ def tile_text(x: int, y: int) -> str:
     return f"{x},{y}"
 
 
+# A town is its fabric, not its centre, as a land is met at its nearest tile: at the edge of a sprawling town a body stands at the gate, not a centre away.
+def town_edge(x: int, y: int, quarters: list[tuple[int, int]]) -> int:
+    return round(min(walk_tiles(max(qx - x, x - qx - ZONE_TILES + 1, 0), max(qy - y, y - qy - ZONE_TILES + 1, 0)) for qx, qy in quarters))
+
+
+# A town's quarters, each by its corner tile: the ground `town_edge` meets it on.
+def town_quarters(city: dict) -> list[tuple[int, int]]:
+    return [(zx * ZONE_TILES, zy * ZONE_TILES) for zx, zy in map(zone_xy, city.get("zones") or [])]
+
+
 # A site still rising: WB flags a town's building the day it is laid — the day its `created_time` and `housesBuilt` count it — and lifts the flag at its completion.
 def under_construction(building: dict) -> bool:
     return "under_construction" in (building.get("custom_data_flags") or ())
