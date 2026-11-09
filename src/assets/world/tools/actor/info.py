@@ -241,11 +241,12 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         site = next((b for b in save.get("buildings") or [] if b.get("id") == building_id), None)
         if site is None or (tile := building_tile(site)) is None:
             raise _AimError(absent_entity("ground", "buildings", building_id, chapter, noun="building"))
-        task = kept_task_target(actor) or {}
-        sought = (task["x"], task["y"]) if task.get("ground") == building_id and "x" in task and "y" in task else None
+        task, ground = kept_task_target(actor) or {}, building_footprint(site)
+        # The tile its task walks to, kept only on that ground: a tile on the way, or left from the step before, is no part of the building
+        sought = tile_at if task.get("ground") == building_id and (tile_at := (task.get("x"), task.get("y"))) in ground else None
         target, whom = tile, f"{site.get('asset_id')} {site.get('id')}"
         asleep = {"dormant": dormant(site)}  # a volcano or geyser asleep, as `ground … metadata` tells it
-        aims, told = ([sought], {"by_task": kept_task(actor), **asleep}) if sought else (building_footprint(site), asleep)
+        aims, told = ([sought], {"by_task": kept_task(actor), **asleep}) if sought else (ground, asleep)
     elif isinstance(target, str) and target[:1] == "c" and target[1:].isdigit():
         # A town by its id, aimed at its centre as `tiles … distances` aims at a capital: one point, the same goal in either chapter while it stands.
         city = ctx["cities_by_id"].get(city_id := int(target[1:]))
@@ -1363,7 +1364,10 @@ def _task_target(actor: dict, ctx: dict, save: dict) -> dict | None:
     if (target := aim.get("ground")) is not None:
         site = next((b for b in save.get("buildings") or [] if b.get("id") == target), None) or {}
         aim["ground"] = {"asset_id": site.get("asset_id"), "id": target}
-    if "x" in aim and "y" in aim:  # where the task leads, never where the body stands: how far off, as the crow flies — `--to` times the walk
+    if {"actor", "book", "ground"} & aim.keys():  # a target named, its own tool places it: the tile walked to is a step on the way, read as a second place
+        aim.pop("x", None)
+        aim.pop("y", None)
+    elif "x" in aim and "y" in aim:  # where the task leads, never where the body stands: how far off, as the crow flies — `--to` times the walk
         cx, cy = actor_xy(actor)
         aim["crow_tiles"] = round(walk_tiles(aim["x"] - cx, aim["y"] - cy))
     return aim
