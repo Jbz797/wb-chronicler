@@ -873,6 +873,7 @@ def _death(dead: dict, ctx: dict, upto: int) -> dict:
         "killed_by": alive_or_dead_ref(dead["killer"], by_id, deaths),
         "name": dead["name"],
         "parents": [alive_or_dead_ref(parent, by_id, deaths) for parent in dead["parents"]] or None,
+        "sex": dead["sex"],
         "subspecies": entity_ref(lineage, ctx["subspecies_by_id"]) or ({"id": lineage} if lineage else None),  # one died out keeps its id
         "x": dead["x"],
         "y": dead["y"],

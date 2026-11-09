@@ -13,12 +13,13 @@ namespace FaithfulSaves
     {
         private const string Create = "CREATE TABLE IF NOT EXISTS " + Table + " (id INTEGER PRIMARY KEY, asset_id TEXT, name TEXT, subspecies INTEGER, "
             + "parent_id_1 INTEGER, parent_id_2 INTEGER, born REAL, died REAL, cause TEXT, killer INTEGER, x INTEGER, y INTEGER, blow TEXT, job TEXT, "
-            + "became INTEGER)";
+            + "became INTEGER, sex TEXT)";
         private const string Became = "became"; // the column a table before 1.13.0 lacks, added at its first save under it
         private const string Blow = "blow"; // the column a table from 1.7.0 lacks, added at its first save under 1.8.0
         private const string Job = "job"; // the column a table before 1.10.0 lacks, added at its first save under it
+        private const string Sex = "sex"; // the column a table before 1.15.0 lacks, added at its first save under it
         private const string From = "faithful_deaths_from"; // the world's time since which the table misses no death: the mod's first death or save there
-        private const string Insert = "INSERT OR REPLACE INTO " + Table + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        private const string Insert = "INSERT OR REPLACE INTO " + Table + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         private const string Table = "FaithfulDeaths";
 
         private static readonly AccessTools.FieldRef<Actor, BaseSimObject> _attackedBy = AccessTools.FieldRefAccess<Actor, BaseSimObject>("attackedBy");
@@ -85,7 +86,7 @@ namespace FaithfulSaves
             _pending.Add(new object[]
             {
                 id, __instance.asset.id, data.name, data.subspecies, data.parent_id_1, data.parent_id_2, data.created_time, World.world.getCurWorldTime(),
-                Named(__1, id), killer, tile?.x ?? 0, tile?.y ?? 0, blow, JobOf(__instance), became,
+                Named(__1, id), killer, tile?.x ?? 0, tile?.y ?? 0, blow, JobOf(__instance), became, data.sex.ToString(),
             });
             _boltStruck.Remove(id);
             MarkFrom();
@@ -122,7 +123,7 @@ namespace FaithfulSaves
             using (connection.Lock())
             {
                 connection.Execute(Create);
-                foreach ((string column, string type) in new[] { (Blow, "TEXT"), (Job, "TEXT"), (Became, "INTEGER") })
+                foreach ((string column, string type) in new[] { (Blow, "TEXT"), (Job, "TEXT"), (Became, "INTEGER"), (Sex, "TEXT") })
                 {
                     if (!connection.GetTableInfo(Table).Exists(kept => kept.Name == column))
                         connection.Execute("ALTER TABLE " + Table + " ADD COLUMN " + column + " " + type);

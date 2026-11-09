@@ -1001,7 +1001,7 @@ def _gone_since(
             continue
         if born and (body.get("age_overgrowth") or not born[1] <= dead["born"] < born[2]):  # a migrant told by the last save that saw it alive
             continue
-        # Its name at death the register's, not the last save's; `was_on` silent under a lone land; its sex, never changing, off the last save that saw it alive
+        # Its name and sex at death the register's, not the last save's — a register older than its sex falls back on it; `was_on` silent under a lone land
         row = {
             "blow": dead["blow"],
             "died": world_date(dead["died"]),
@@ -1017,7 +1017,7 @@ def _gone_since(
             "killed_by": alive_or_dead_ref(dead["killer"], alive, deaths),
             "name": dead["name"] or body.get("name"),
             "parents": sorted(dead["parents"]) or None,
-            "sex": sex_label(last[dead["id"]]) if dead["id"] in last else None,
+            "sex": dead["sex"] or (sex_label(last[dead["id"]]) if dead["id"] in last else None),
         }
         present = [key for key in _DISPLACED if key in _DEAD_SOCLE and kept[key] is not None]
         shown = (*(key for key in _DEAD_SOCLE if key not in present[:driving]), *fields)
