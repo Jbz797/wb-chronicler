@@ -863,6 +863,8 @@ def _dead_answer(dead: dict, ctx: dict, save: dict, sections: tuple, requested: 
 def _death(dead: dict, ctx: dict, upto: int) -> dict:
     by_id, deaths, lineage = ctx["actors_by_id"], ctx["deaths"], dead["subspecies"]
     return {
+        # Unknown on a body that appeared (no parents) and that no save saw alive: its `born` dates its coming, not its birth
+        "age_overgrowth": dead["overgrowth"] or ("unknown" if dead["overgrowth"] is None and not dead["parents"] else None),
         "asset_id": dead["asset_id"],
         "became": alive_or_dead_ref(dead["became"], by_id, deaths),
         "blow": dead["blow"],

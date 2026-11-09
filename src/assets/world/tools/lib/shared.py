@@ -82,7 +82,27 @@ _CITY_STORES = ("food_none", "food_plenty", "food_running_out", "wood_none", "st
 
 _COMPRESSION = 9  # WB reads any zlib stream; the tightest level keeps a rewritten save a shade smaller than the one it replaces
 _DATAS_DIR = Path(__file__).parent.parent / "datas"
-_DEATH_COLUMNS = ("id", "asset_id", "name", "subspecies", "parent_id_1", "parent_id_2", "born", "died", "cause", "killer", "x", "y", "blow", "job", "became", "sex")
+
+_DEATH_COLUMNS = (  # the table's own order, which each row unpacks
+    "id",
+    "asset_id",
+    "name",
+    "subspecies",
+    "parent_id_1",
+    "parent_id_2",
+    "born",
+    "died",
+    "cause",
+    "killer",
+    "x",
+    "y",
+    "blow",
+    "job",
+    "became",
+    "sex",
+    "overgrowth",
+)
+
 _DEATH_EVENTS = ("favorite_dead", "favorite_killed", "king_dead", "king_killed")  # the log's deaths, which the register tells whole
 _DEATH_SLACK = 0.001  # a death at the save's instant: the game writes its time in doubles, the save its clock in floats
 _DIALOGUE_FLOOR = 750  # characters a dialogue holds at least, counted as its ✗ says — under it, a line or two, not a talk
@@ -233,14 +253,14 @@ def _deaths_base(world_time: float) -> Path:
 def _deaths_until(base: Path, now: float) -> dict[int, dict]:
     try:
         with closing(sqlite3.connect(f"file:{base}?mode=ro", uri=True)) as conn:
-            # `blow` came with 1.8.0, `job` 1.10.0, `became` 1.13.0, `sex` 1.15.0: none off an older table
+            # `blow` came with 1.8.0, `job` 1.10.0, `became` 1.13.0, `sex` 1.15.0, `overgrowth` 1.16.0: none off an older table
             kept = {column for _, column, *_ in conn.execute("PRAGMA table_info(FaithfulDeaths)")}
             picked = ", ".join(column if column in kept else f"NULL AS {column}" for column in _DEATH_COLUMNS)
             rows = conn.execute(f"SELECT {picked} FROM FaithfulDeaths WHERE died <= ? ORDER BY died, id", [now + _DEATH_SLACK]).fetchall()
     except sqlite3.Error:  # no table: a base the mod never wrote
         return {}
     deaths, causes = {}, load_data("attack-types.json")  # WB `AttackType` as its counters name it: a type a later game adds, lowercased
-    for body, asset, name, lineage, mother, father, born, died, attack, killer, x, y, blow, job, became, sex in rows:
+    for body, asset, name, lineage, mother, father, born, died, attack, killer, x, y, blow, job, became, sex, overgrowth in rows:
         deaths[body] = {
             "asset_id": asset,
             "became": became,  # the body a metamorphosis put in its place: a metamorphosis's alone
@@ -252,9 +272,10 @@ def _deaths_until(base: Path, now: float) -> dict[int, dict]:
             "job": job,  # its post as it fell, in `resolve_profession`'s words — none off a table older than the column
             "killer": killer,
             "name": name or None,
+            "overgrowth": overgrowth,  # the years it came with, `age_overgrowth` as it fell: 0 for none, `None` unknown, a row older than the column
             "parents": [parent for parent in (mother, father) if parent and parent != -1],  # WB's -1 for none, as the mod copies it
             "sex": sex and sex.lower(),  # WB `ActorSex` as the mod names it: `male`, `female`, `none` for a body without one
-            "subspecies": lineage or None,
+            "subspecies": lineage if lineage and lineage != -1 else None,  # WB's -1 for none, as for the parents
             "x": x,
             "y": y,
         }
@@ -354,6 +375,14 @@ def _misplaced_across() -> str | None:
     span = [word for word in words if re.fullmatch(r"C\d+-C\d+", word)]
     rest = [word for word in words if word not in span and word != tool]
     return f"`across` is a tool of its own, the tool asked after the span: `tools/across/info.py {' '.join([*span, tool, *rest])}`"
+
+
+# A cache file's age, 0 for one another tool just swept away: the auditors run side by side, and a `stat` between their `glob` and its sort would raise.
+def _mtime(path: Path) -> float:
+    try:
+        return path.stat().st_mtime
+    except FileNotFoundError:
+        return 0.0
 
 
 # Whether a kind bears the name as whole segments of its id — `windmill` in `windmill_dwarf_0`, `tree` in `jungle_tree`, never `tow` in `watch_tower`.
@@ -488,7 +517,7 @@ def _write_save_cache(cache_file: Path, save: dict) -> None:
     live = _current_save()
     claimed = {_save_cache_name(p) for p in ([live] if live else []) + list(SAVES_DIR.glob("C*/map.wbox"))}
     cached = list(_CACHE_DIR.glob("save_v1_*.pkl"))
-    kept = sorted((f for f in cached if f.name in claimed), key=lambda f: f.stat().st_mtime, reverse=True)
+    kept = sorted((f for f in cached if f.name in claimed), key=_mtime, reverse=True)
     for doomed in [f for f in cached if f.name not in claimed] + kept[_CACHE_KEEP:]:
         doomed.unlink(missing_ok=True)
 
@@ -1358,7 +1387,7 @@ def pickle_cached[T](name: str, save_path: Path, compute: Callable[[], T]) -> T:
         with cache_file.open("wb") as f:
             pickle.dump(out, f)
         # One slot per save, capped like the saves themselves: a reading that weighs C<n-1> against C<n> would otherwise sweep the map again at every switch.
-        current = sorted(_CACHE_DIR.glob(f"{name}_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)
+        current = sorted(_CACHE_DIR.glob(f"{name}_*.pkl"), key=_mtime, reverse=True)
         outdated = [f for f in _CACHE_DIR.glob(f"{name.rsplit('_', 1)[0]}_*.pkl") if not f.name.startswith(f"{name}_")]  # an older version of the sweep
         for doomed in outdated + current[_CACHE_KEEP:]:
             doomed.unlink(missing_ok=True)
