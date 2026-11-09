@@ -294,11 +294,11 @@ def _build_identity(kingdom: dict, ctx: dict) -> dict:
     }
 
 
-# Its leading families and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
+# Its leading families and clans and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
 def _build_leaders(kingdom: dict, ctx: dict) -> dict:
     actors = ctx["actors_by_kingdom"].get(kingdom["id"], [])
     # `compute_actor_stats`, as every other tier: the podium reads the names it hands out, and a child's blow is halved there — raw totals would flatter one.
-    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
+    return settlement_leaders(actors, ctx, ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx))
 
 
 # Every standing crown, strongest first, as one line of its `metadata` and its people's count — the whole sheet a `kingdom <id>` away.

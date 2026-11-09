@@ -50,9 +50,9 @@ export const CUMULATIVE_STATS: { key: CumulativeStat; label: string }[] = [
   { key: 'evolutions', label: 'ui_evolutions' },
 ];
 
-// The one family a settlement/realm panel names in its « Palmarès », out of the five `leaders.families` rankings Python emits.
-export const LEADER_FAMILY_ROWS: { icon: string; key: 'pop'; label: string }[] = [
-  { icon: 'assets/img/world/families.png', key: 'pop', label: 'ui_leading_family' },
+// The one clan a settlement/realm panel names in its « Palmarès », out of the three `leaders.clans` rankings Python emits.
+export const LEADER_CLAN_ROWS: { icon: string; key: 'pop'; label: string }[] = [
+  { icon: 'assets/img/world/clans.png', key: 'pop', label: 'ui_leading_clan' },
 ];
 
 // The world « Palmarès », one table per group: a soul's feats and age, then its skills (in `SKILL_STATS` order); the parent species ahead of its lineages.

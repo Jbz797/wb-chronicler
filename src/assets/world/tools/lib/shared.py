@@ -113,6 +113,7 @@ _ID_COUNTERS = {
 }
 
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
+_KIN_LEADERS = {"clans": "clan", "families": "family"}  # each kin block a tier ranks, by the body field that names its kin
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
 
 # Markdown's own marks, read by no one: a table's rule and a section's `---`, a heading's `#`, a quote's `>`, a list's bullet, and emphasis, columns, code.
@@ -273,25 +274,28 @@ def _equipment_stats(asset_id: str, modifiers: list[str], item_stats: dict, mod_
     return dict(sorted(result.items()))
 
 
-# The families with someone on the ground: `oldest`/`kills`/`deaths` are WB's own counters, `pop`/`renown` are scoped to who is present.
-def _family_leaders(actors: Sequence[dict], families_by_id: dict, world_time: float) -> dict:
+# The kin with someone on the ground, by the body's `field`: `pop`/`renown` scoped to who is present; a family's `kills`/`deaths` are WB's, a clan keeps none.
+def _kin_leaders(actors: Sequence[dict], kin_by_id: dict, field: str, world_time: float) -> dict:
     members: Counter = Counter()
     renown: Counter = Counter()
 
     for actor in actors:
-        if family_id := actor.get("family"):
-            members[family_id] += 1
+        if kin_id := actor.get(field):
+            members[kin_id] += 1
             if fame := actor.get("renown"):
-                renown[family_id] += int(fame)
+                renown[kin_id] += int(fame)
 
-    present = {fid: family for fid in members if (family := families_by_id.get(fid))}
-    tallies = {  # measure => value per family, the eldest founding negated so that every tally reads the same way: the highest takes the place
-        "deaths": {fid: int(f.get("total_deaths") or 0) for fid, f in present.items()},
-        "kills": {fid: int(f.get("total_kills") or 0) for fid, f in present.items()},
-        "oldest": {fid: -float(f.get("created_time") or 0) for fid, f in present.items()},
-        "pop": {fid: members[fid] for fid in present},
-        "renown": {fid: renown[fid] for fid in present},
+    present = {kid: kin for kid in members if (kin := kin_by_id.get(kid))}
+    tallies = {  # measure => value per kin, the eldest founding negated so that every tally reads the same way: the highest takes the place
+        "oldest": {kid: -float(k.get("created_time") or 0) for kid, k in present.items()},
+        "pop": {kid: members[kid] for kid in present},
+        "renown": {kid: renown[kid] for kid in present},
     }
+    if field == "family":
+        tallies |= {
+            "deaths": {kid: int(k.get("total_deaths") or 0) for kid, k in present.items()},
+            "kills": {kid: int(k.get("total_kills") or 0) for kid, k in present.items()},
+        }
     refs = _leader_refs(tallies, present)
     for ref in refs.get("oldest", ()):  # the sort ran on a negated founding — what a reader wants is the years since
         ref["value"] = entity_age(present[ref["id"]], world_time)
@@ -1501,19 +1505,16 @@ def sections_arg(argv: list[str]) -> str | None:
     return argv[1] if len(argv) > 1 else None
 
 
-# A body's leading families and singular souls, each measure's first place, for every tier that rosters people; no families where one would win every row
-def settlement_leaders(
-    actors: Sequence[dict], families_by_id: dict, children: Mapping[int, int], stat_of: Callable[[dict], dict], world_time: float, families: bool = True
-) -> dict:
-    peers = {"persons": len(actors)}
-    if families:
-        peers["families"] = len({actor.get("family") for actor in actors} & families_by_id.keys())
+# A body's leading kin and singular souls, each measure's first place, for every tier that rosters people. `kin` drops a block whose winner goes without saying.
+def settlement_leaders(actors: Sequence[dict], ctx: dict, children: Mapping[int, int], stat_of: Callable[[dict], dict], kin: Collection[str] = _KIN_LEADERS) -> dict:
+    peers = {"persons": len(actors)} | {block: len({actor.get(_KIN_LEADERS[block]) for actor in actors} & ctx[f"{block}_by_id"].keys()) for block in kin}
     out: dict = {}
     # The bar a rank clears too: under four, a first place tells the body's size and not who holds it — nor is a block weighed that could name no one
     if peers["persons"] >= MIN_RANK_PEERS:
-        out["persons"] = _person_leaders(actors, children, stat_of, world_time)
-    if peers.get("families", 0) >= MIN_RANK_PEERS:
-        out["families"] = _family_leaders(actors, families_by_id, world_time)
+        out["persons"] = _person_leaders(actors, children, stat_of, ctx["world_time"])
+    for block in kin:
+        if peers[block] >= MIN_RANK_PEERS:
+            out[block] = _kin_leaders(actors, ctx[f"{block}_by_id"], _KIN_LEADERS[block], ctx["world_time"])
     if short := unranked({block: (count, MIN_RANK_PEERS) for block, count in peers.items()}):
         out["unranked"] = short
     return out

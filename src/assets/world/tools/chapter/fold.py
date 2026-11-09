@@ -127,8 +127,8 @@ _DEMOGRAPHY = frozenset(
 # A tier the favorite holds none of, a war-free crown: said by the key absent. Never `{"total": 0}` — `emit` drops an empty shelf, and an opinion at 0 is a reading.
 _EMPTY = (None, [], {})
 
-# The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
-_LEADER_ROWS = {"families": frozenset({"pop"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
+# The podium rows a panel names, mirroring `LEADER_CLAN_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
+_LEADER_ROWS = {"clans": frozenset({"pop"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
 
 _OTHER_DEATHS = ("ash_fever", "none", "other")  # the ash fever, the deaths WB files under no cause or its catch-all (heat, sun, a fish ashore…): one « other » row
 
@@ -201,11 +201,12 @@ def _fold_kingdom_detail(kingdom: dict) -> None:
 
 # A tier's podium cut to the six rows its panel names, each to its first holder — the ones it never prints outweighing the ones it does.
 def _fold_leaders(entity: dict) -> None:
-    podium = entity.get("leaders") or {}
-    podium.pop("unranked", None)  # why a block stayed empty: the chronicler's, no panel's
+    if not isinstance(podium := entity.get("leaders"), dict):
+        return
+    entity["leaders"] = {}  # `unranked` and the families go with the unprinted rows: the chronicler's, no panel's — and a block naming nobody
     for block, kept in _LEADER_ROWS.items():
-        if isinstance(rows := podium.get(block), dict):
-            podium[block] = {key: _first_holder(refs) for key, refs in rows.items() if key in kept}
+        if isinstance(rows := podium.get(block), dict) and (named := {key: _first_holder(refs) for key, refs in rows.items() if key in kept}):
+            entity["leaders"][block] = named
 
 
 # The age and sex slices, the lineage depth, the count of nobles — figures the chronicler writes with and no panel prints. `pop` keeps what the UI reads.

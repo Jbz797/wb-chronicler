@@ -228,6 +228,7 @@
   "laid": "D'un bâtiment de cité, le mois de sa pose, jamais de sa fin : la save ne garde ni l'achèvement d'un chantier ni un bâtiment tombé ; un arbre, un gisement dit `born`.",
   "language.metadata.lost": "Les locuteurs partis vers une autre langue depuis sa naissance (une cité rejointe, une conversion, un oubli), jamais ses morts ; pendant de `converted`.",
   "leaders": "Nomme la 1ʳᵉ place, ex æquo compris ; personne si plus de 3 la partagent ou passent la moitié du vivier, ni sous 4 concurrents (3 cités ou royaumes) : `unranked`.",
+  "leaders.clans": "Les clans des membres présents : `pop` et `renown` comptés sur eux, `oldest` l'âge du clan, en années ; un clan ne tient ni `kills` ni `deaths`, une famille si.",
   "leaders.oldest": "L'âge de la fiche, `age_overgrowth` compris.",
   "leaders.value": "Chaque titulaire porte sa `value`, sauf un `score`, dont les points grimpent avec les rivaux ; `hungriest` se lit à l'envers : le ventre le moins plein, en %.",
   "life_stage": "Paliers exclusifs : `baby` sous 1/8 de l'âge adulte, `child` sous la moitié, `teen` avant lui, `elder` passé 70 % de sa vie, jamais compté `adult` ; `egg` à part.",

@@ -228,7 +228,7 @@ def main(argv: list[str]) -> int:
         # The living against the biology they were born into. Species and subspecies both go: WB fixes them at birth, so each would read 100 % and say nothing.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k not in ("species", "subspecies")}
     if "leaders" in sections:  # WB names no such podium — ours, and it drops below four members, where a champion among three names nobody
-        out["leaders"] = settlement_leaders(members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
+        out["leaders"] = settlement_leaders(members, ctx, children_by_id(save), lambda a: compute_actor_stats(a, ctx))
     if "metadata" in sections:
         out["metadata"] = _build_metadata(subspecies, members, ctx)
     if "pop" in sections:

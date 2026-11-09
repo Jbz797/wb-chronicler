@@ -4,15 +4,15 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { LEADER_FAMILY_ROWS, LEADER_PERSON_ROWS } from '../../../../constants';
+import { LEADER_CLAN_ROWS, LEADER_PERSON_ROWS } from '../../../../constants';
 import { PopulatedTier } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
 import { NewBadgeComponent } from '../new-badge/new-badge.component';
-import { FamilyTagComponent, PersonTagComponent } from '../tags';
+import { ClanTagComponent, PersonTagComponent } from '../tags';
 
 @Component({
   selector: 'app-leaders',
-  imports: [FamilyTagComponent, NewBadgeComponent, NzDescriptionsModule, PersonTagComponent, TranslatePipe],
+  imports: [ClanTagComponent, NewBadgeComponent, NzDescriptionsModule, PersonTagComponent, TranslatePipe],
   templateUrl: './leaders.component.html',
 })
 export class LeadersComponent {
@@ -25,12 +25,12 @@ export class LeadersComponent {
   // New on a change of holder, or on a record taken that had none — as the world's « Palmarès » counts it, but only for the body the chapter before named.
   private readonly _carries = computed(() => this._chronicler.carriesOver(this.source()));
   private readonly _leaders = computed(() => this._chronicler.currentChapter()?.meta[this.source()]?.leaders);
-  // The one family the panel names — `new.py` folds the four others out of the chapter, `<tier>/info.py <id> leaders` still ranking them all.
-  protected readonly familyRows = computed(() => {
-    const families = this._leaders()?.families;
-    const before = this._before()?.families;
-    return LEADER_FAMILY_ROWS.flatMap((row) => {
-      const reference = families?.[row.key];
+  // The one clan the panel names — `new.py` folds the two others and the families out of the chapter, `<tier>/info.py <id> leaders` still ranking them all.
+  protected readonly clanRows = computed(() => {
+    const clans = this._leaders()?.clans;
+    const before = this._before()?.clans;
+    return LEADER_CLAN_ROWS.flatMap((row) => {
+      const reference = clans?.[row.key];
       return reference ? [{ ...row, isNew: this._carries() && reference.id !== before?.[row.key]?.id, ref: reference }] : [];
     });
   });

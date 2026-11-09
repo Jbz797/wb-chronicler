@@ -13,9 +13,9 @@ export interface EquipmentStock { total: number }
 // Hulls afloat, on a realm or on the world. Only the count rides in the chapter — `<tier>/info.py … boats` names them for the chronicler.
 export interface HullCount { total: number }
 
-// The standout family and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
+// The standout clan and souls of any body that rosters people, absent below five members — and every entry optional besides: no killer, no `kills` key.
 export interface Leaders {
-  families?: { pop?: EntityReference };
+  clans?: { pop?: EntityReference };
   persons?: {
     kills?: PersonReference;
     level?: PersonReference;

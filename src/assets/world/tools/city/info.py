@@ -363,10 +363,10 @@ def _build_inventory(city_id: int, ctx: dict) -> dict:
     return dict(sorted(ctx["inventory_by_city"][city_id].items(), key=lambda kv: (-kv[1], kv[0])))
 
 
-# Its leading families and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
+# Its leading families and clans and its most singular souls. `stat_of` walks the whole roster, so this rides behind the section: nobody else pays for it.
 def _build_leaders(city: dict, ctx: dict) -> dict:
     actors = ctx["actors_by_city"].get(city["id"], [])
-    return settlement_leaders(actors, ctx["families_by_id"], ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx), ctx["world_time"])
+    return settlement_leaders(actors, ctx, ctx["children_by_id"](), lambda a: compute_actor_stats(a, ctx))
 
 
 # The city's hold on its crown — the panel prints `total`. Chronicler-only beside it: `drivers` is every modifier and sums to `total`, `top_drivers` does not.

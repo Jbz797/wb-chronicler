@@ -1,4 +1,4 @@
-@if (personRows().length || familyRows().length) {
+@if (personRows().length || clanRows().length) {
   <nz-descriptions nzBordered nzSize="small" [nzColumn]="1" [nzTitle]="'ui_standing' | translate">
     <!-- Rows tracked by place: one dropped or reordered between chapters shifts the rest, and a moved `nz-descriptions-item` loses what it projects. -->
     @for (row of personRows(); track $index) {
@@ -11,14 +11,14 @@
         <app-person-tag [id]="row.ref.id" [name]="row.ref.name" />
       </nz-descriptions-item>
     }
-    @for (row of familyRows(); track $index) {
-      <ng-template #familyTitle>
+    @for (row of clanRows(); track $index) {
+      <ng-template #clanTitle>
         <img [src]="row.icon" />
         <span>{{ row.label | translate }}</span>
         <app-new-badge [show]="row.isNew" />
       </ng-template>
-      <nz-descriptions-item [nzTitle]="familyTitle">
-        <app-family-tag [id]="row.ref.id" [name]="row.ref.name" />
+      <nz-descriptions-item [nzTitle]="clanTitle">
+        <app-clan-tag [id]="row.ref.id" [name]="row.ref.name" />
       </nz-descriptions-item>
     }
   </nz-descriptions>

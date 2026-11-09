@@ -163,10 +163,8 @@ def main(argv: list[str]) -> int:
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k != "species"}
     if "identity" in sections:
         out["identity"] = _build_identity(family, ctx)
-    if "leaders" in sections:  # its own family would win every family row, so only the souls stand — and below four, `unranked` says why nobody is named
-        out["leaders"] = settlement_leaders(
-            members, ctx["families_by_id"], children_by_id(save), lambda a: compute_actor_stats(a, ctx), ctx["world_time"], families=False
-        )
+    if "leaders" in sections:  # its own family would win every family row, its clan most clan rows: only the souls stand, below four `unranked` saying why
+        out["leaders"] = settlement_leaders(members, ctx, children_by_id(save), lambda a: compute_actor_stats(a, ctx), kin=())
     if "metadata" in sections:
         out["metadata"] = _build_metadata(family, members, ctx)
     if "pop" in sections:
