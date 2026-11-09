@@ -5,9 +5,11 @@
   @if (w.metadata.war_type) {
     <nz-descriptions-item [nzTitle]="typeTitle">{{ typeLabel(w) }}</nz-descriptions-item>
   }
-  <nz-descriptions-item [nzTitle]="declaredByTitle">
-    <app-kingdom-tag [id]="w.metadata.started_by_kingdom.id" [name]="w.metadata.started_by_kingdom.name" />
-  </nz-descriptions-item>
+  @if (!isDeclarerAlone(w)) {
+    <nz-descriptions-item [nzTitle]="declaredByTitle">
+      <app-kingdom-tag [id]="w.metadata.started_by_kingdom.id" [name]="w.metadata.started_by_kingdom.name" />
+    </nz-descriptions-item>
+  }
   <nz-descriptions-item [nzTitle]="renownTitle">{{ w.metadata.renown_at_stake }}</nz-descriptions-item>
   @if (w.metadata.age > 0) {
     <nz-descriptions-item [nzTitle]="durationTitle">{{ w.metadata.age }}{{ 'ui_years' | translate }}</nz-descriptions-item>
@@ -39,8 +41,12 @@
     <app-delta [value]="d?.attackers?.taken" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="deathsTitle">
-    <span [class]="sideClass(w.attackers.deaths, w.defenders.deaths, 'attackers', true)">{{ w.attackers.deaths }}</span>
-    <app-delta [inverted]="true" [value]="d?.attackers?.deaths" />
+    <span [class]="sideClass(w.defenders.deaths, w.attackers.deaths, 'attackers')">{{ w.defenders.deaths }}</span>
+    <app-delta [value]="d?.defenders?.deaths" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="noblesTitle">
+    <span [class]="sideClass(w.defenders.nobles ?? 0, w.attackers.nobles ?? 0, 'attackers')">{{ w.defenders.nobles ?? 0 }}</span>
+    <app-delta [value]="d?.defenders?.nobles" />
   </nz-descriptions-item>
 
   <nz-descriptions-item [nzTitle]="defendersTitle"><span appSectionRow></span></nz-descriptions-item>
@@ -69,8 +75,12 @@
     <app-delta [value]="d?.defenders?.taken" />
   </nz-descriptions-item>
   <nz-descriptions-item [nzTitle]="deathsTitle">
-    <span [class]="sideClass(w.attackers.deaths, w.defenders.deaths, 'defenders', true)">{{ w.defenders.deaths }}</span>
-    <app-delta [inverted]="true" [value]="d?.defenders?.deaths" />
+    <span [class]="sideClass(w.defenders.deaths, w.attackers.deaths, 'defenders')">{{ w.attackers.deaths }}</span>
+    <app-delta [value]="d?.attackers?.deaths" />
+  </nz-descriptions-item>
+  <nz-descriptions-item [nzTitle]="noblesTitle">
+    <span [class]="sideClass(w.defenders.nobles ?? 0, w.attackers.nobles ?? 0, 'defenders')">{{ w.attackers.nobles ?? 0 }}</span>
+    <app-delta [value]="d?.attackers?.nobles" />
   </nz-descriptions-item>
 </nz-descriptions>
 
@@ -94,7 +104,7 @@
 </ng-template>
 <ng-template #deathsTitle>
   <img src="assets/img/world/deaths.png" />
-  <span>{{ 'ui_deaths' | translate }}</span>
+  <span>{{ 'ui_killed' | translate }}</span>
 </ng-template>
 <ng-template #declaredByTitle>
   <img src="assets/img/professions/king.png" />
@@ -111,6 +121,10 @@
 <ng-template #kingdomsTitle>
   <img src="assets/img/world/kingdoms.png" />
   <span>{{ 'ui_crowns' | translate }}</span>
+</ng-template>
+<ng-template #noblesTitle>
+  <img src="assets/img/professions/king.png" />
+  <span>{{ 'ui_nobles_fallen' | translate }}</span>
 </ng-template>
 <ng-template #populationTitle>
   <img src="assets/img/world/population.png" />

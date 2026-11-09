@@ -209,25 +209,37 @@
           }
         }
 
-        // A chapter closed at war, as `ReaderPage` marks it: a red band across the parchment's head, and crossed swords where the fleurons stood.
+        // A chapter closed at war, as `ReaderPage` marks it: its gauges across the parchment's head, and crossed swords where the fleurons stood.
         &.at-war {
-          .war-banner {
-            align-items: center;
-            background: linear-gradient(180deg, #{$error}, color-mix(in srgb, #{$error}, #000 20%));
-            color: $paper;
-            display: flex;
-            font-family: $font-display;
-            font-size: 0.85em;
-            gap: 0.6em;
-            justify-content: center;
-            letter-spacing: $letter-spacing-wide;
-            margin: -2rem -2rem 1.5rem; // the article's padding undone, so the band runs from edge to edge of the parchment
-            padding: 0.35em 1em;
-            text-transform: uppercase;
+          // One band a war, edge to edge of the parchment: the favourite's crown in its hue on the left, the foe's on the right, swords on the line between.
+          .war-gauges {
+            margin: -2rem -2rem 1.5rem; // the article's padding undone, so each band runs from edge to edge of the parchment
 
-            img {
-              height: 20px;
-              width: 20px;
+            .war-gauge {
+              align-items: center;
+              background: linear-gradient(90deg, var(--own) var(--split), var(--foe) var(--split));
+              color: $paper;
+              display: flex;
+              font-family: $font-display;
+              font-size: 0.85em;
+              height: 32px;
+              justify-content: space-between;
+              padding: 0 0.8em;
+              position: relative; // the pivot's `left` reads this band's width
+              text-shadow: 0 0 3px rgb(0 0 0 / 80%); // readable on any crown's hue, the palest included
+
+              .share {
+                align-items: center;
+                display: flex;
+                gap: 0.4em;
+              }
+
+              .pivot {
+                left: var(--split);
+                position: absolute;
+                transform: translateX(-50%);
+                width: 24px; // the sprite is square: its height follows
+              }
             }
           }
 

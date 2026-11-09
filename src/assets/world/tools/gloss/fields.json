@@ -276,6 +276,8 @@
   "traits": "`description` et `flavor` sont l'ambiance, l'effet tient dans `stats` (`dormant` : endormi par l'ère) ; d'où il vient, ce qui l'ôte : `wiki:Creature_Traits`.",
   "traits.stats": "Pesés contre sa lignée (`subspecies … stats`), jamais un autre corps ; `multiplier_<stat>` : la stat × (1 + leur somme), `max_children` pour `multiplier_offspring`.",
   "walk_tiles": "Les tuiles faites à pied, roche, lave et goo contournés ; sable, marais, neige et arbres sous Entanglewood n'allongent que le temps.",
+  "war.metadata.balance": "Qui domine, en % pour les assaillants : la puissance des couronnes de chaque camp compte double, puis les morts et les nobles tués de chaque camp ; 50, l'égalité.",
+  "war.nobles": "Les nobles du camp (rois, chefs de cité, capitaines) tués d'un coup depuis la déclaration, par l'autre camp quand on sait qui ; omis à 0.",
   "wealth": "Les pièces de ses habitants et l'or brut de ses bâtiments (`gold`) ; ni leur butin ni les biens (`goods`).",
   "war.cities": "Les cités que tient le camp à l'instant, ses couronnes réunies ; celles qu'il a prises depuis la déclaration : `taken`.",
   "war.taken": "Les cités passées sous la bannière d'une couronne du camp depuis la déclaration, prises ou ralliées ; omis à 0.",

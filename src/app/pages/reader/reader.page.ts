@@ -10,16 +10,18 @@ import { MarkdownComponent } from 'ngx-markdown';
 import { NgScrollbar, NgScrollbarModule } from 'ngx-scrollbar';
 import { firstValueFrom, map } from 'rxjs';
 
+import { DeltaComponent } from '../../components/layouts/chapter-overview/delta/delta.component';
 import { BOOT_SETTINGS, PAGES, PERSON_REGISTRY, SPECIES_COLORS } from '../../constants';
 import {
   ActorSpriteHelpers, AllianceSpriteHelpers, BookSpriteHelpers, ClanSpriteHelpers, CultureSpriteHelpers, KingdomSpriteHelpers, LabelHelpers, LanguageSpriteHelpers,
   PaletteHelpers, ReligionSpriteHelpers, SubspeciesSpriteHelpers,
 } from '../../helpers';
+import { War } from '../../interfaces';
 import { ChroniclerService, RegistryService } from '../../services';
 
 @Component({
   selector: 'app-reader',
-  imports: [MarkdownComponent, NgScrollbarModule, NzTooltipModule, TranslatePipe],
+  imports: [DeltaComponent, MarkdownComponent, NgScrollbarModule, NzTooltipModule, TranslatePipe],
   templateUrl: './reader.page.html',
   styleUrl: './reader.page.scss',
 })
@@ -34,7 +36,7 @@ export class ReaderPage {
   private readonly _slug = toSignal(inject(ActivatedRoute).paramMap.pipe(map(p => p.get('slug'))), { requireSync: true });
   private readonly _translate = inject(TranslateService);
 
-  // A chapter closed with the favourite's crown at war: a red band heads its tale, and crossed swords take the fleurons' place between its circles.
+  // A chapter closed with the favourite's crown at war: its gauges head the tale, and crossed swords take the fleurons' place between its circles.
   protected readonly atWar = computed(() => !!this._chronicler.chapters().find(c => c.slug === this._slug())?.tags.includes('FAVORITE_KINGDOM_AT_WAR'));
   // Nothing to read and nothing coming: the world is set up but no chapter written yet, so the page says how to open the one who writes them.
   protected readonly awaitsChronicler = computed(() => this._chronicler.probed() && this._chronicler.chapters().length === 0);
@@ -64,6 +66,26 @@ export class ReaderPage {
   protected readonly src = computed(() => {
     const url = this._mdUrl();
     return typeof url === 'string' ? url : undefined;
+  });
+  // One gauge a war of the favourite's crown: its share of the upper hand on the left in its own hue, the foe's on the right, each moved since the chapter before.
+  protected readonly warGauges = computed(() => {
+    const chapter = this._chronicler.currentChapter();
+    const own = chapter?.meta.kingdom?.metadata.id;
+    if (!chapter || own === undefined) return [];
+    const before = this._chronicler.previousChapter()?.meta.wars ?? [];
+    return (chapter.meta.wars ?? []).map((war) => {
+      const isAttacking = war.attackers.kingdoms.some(k => k.id === own);
+      const share = (w: War): number => isAttacking ? (w.metadata.balance ?? 50) : 100 - (w.metadata.balance ?? 50); // a chapter older than the balance: even
+      const was = before.find(w => w.metadata.id === war.metadata.id && w.metadata.balance !== undefined);
+      return {
+        delta: was ? share(war) - share(was) : undefined,
+        foeHue: PaletteHelpers.realmHue((isAttacking ? war.defenders : war.attackers).kingdoms[0]?.id),
+        id: war.metadata.id,
+        name: war.metadata.name,
+        ownHue: PaletteHelpers.realmHue(own),
+        share: share(war),
+      };
+    });
   });
 
   // Refits the epigraph whenever it or a tag in it resizes: a sprite paints in once its images load, a tag's own face swaps in late, the window narrows.

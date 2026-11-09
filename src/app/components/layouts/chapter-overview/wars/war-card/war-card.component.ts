@@ -33,6 +33,7 @@ export class WarCardComponent {
     const diff = (side: WarSideKey) => ({
       cities: w[side].cities - before[side].cities,
       deaths: w[side].deaths - before[side].deaths,
+      nobles: (w[side].nobles ?? 0) - (before[side].nobles ?? 0),
       pop: w[side].pop - before[side].pop,
       taken: (w[side].taken ?? 0) - (before[side].taken ?? 0),
       warriors: w[side].warriors - before[side].warriors,
@@ -44,6 +45,9 @@ export class WarCardComponent {
     const previous = this._chronicler.previousChapter();
     return !!previous && (previous.meta.wars ?? []).every(x => x.metadata.id !== this.war().metadata.id);
   });
+
+  // The declaring crown, said apart only once the attacking camp is no longer it alone: it left the war, fell, or fights among allies.
+  protected isDeclarerAlone = (war: War): boolean => war.attackers.kingdoms.length === 1 && war.attackers.kingdoms[0]?.id === war.metadata.started_by_kingdom.id;
 
   // `.tier-full` on the side ahead, `.tier-low` on the one behind, nothing where they tie. `isInverted` for the counts a side would rather keep low.
   protected sideClass = (attackers: number, defenders: number, side: WarSideKey, isInverted = false): string => {

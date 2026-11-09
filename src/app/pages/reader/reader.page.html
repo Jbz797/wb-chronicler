@@ -1,10 +1,21 @@
 <div class="reader-page">
   <ng-scrollbar class="reader-scroll">
     <article class="ant-typography" [class.at-war]="atWar()" [class.chapter]="isChapter()" (pointerout)="onProseOut($event)" (pointerover)="onProseOver($event)">
-      @if (atWar()) {
-        <div class="war-banner">
-          <img src="assets/img/tags/favorite-kingdom-at-war.png" />
-          {{ 'tag_FAVORITE_KINGDOM_AT_WAR' | translate }}
+      @if (warGauges().length) {
+        <div class="war-gauges">
+          @for (g of warGauges(); track g.id) {
+            <div class="war-gauge" [style.--foe]="g.foeHue" [style.--own]="g.ownHue" [style.--split]="`${g.share}%`">
+              <span class="share">
+                {{ g.share }} %
+                <app-delta [value]="g.delta" />
+              </span>
+              <img class="pivot" nz-tooltip src="assets/img/tags/favorite-kingdom-at-war.png" [nzTooltipTitle]="g.name" />
+              <span class="share">
+                {{ 100 - g.share }} %
+                <app-delta [inverted]="true" [value]="g.delta === undefined ? undefined : -g.delta" />
+              </span>
+            </div>
+          }
         </div>
       }
       @if (src(); as s) {

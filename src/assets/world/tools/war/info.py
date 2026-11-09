@@ -6,27 +6,44 @@
 
 import sys
 from collections import Counter
+from functools import cache
 from pathlib import Path
+lazy from collections.abc import Callable
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from shared import (
     PROFESSION_WARRIOR,
+    SAVES_DIR,
     absent_entity,
     emit,
     entity_age,
     hand_usage,
     index_by_id,
     is_boat,
+    kept_deaths,
+    kingdom_score_dimensions,
+    latest_chapter,
     load_save,
     meta_report,
     parse_sections,
     run,
+    score_totals,
     sections_arg,
     take_chapter,
 )
 
 _ALL_SECTIONS = ("attackers", "defenders", "metadata")
+_NOBLE_JOBS = frozenset({"army_captain", "king", "leader"})  # the posts a camp mourns apart: its crowns, its towns' heads, its armies' captains
+
+
+# Who holds the upper hand, as the attackers' share in %: power twice (the crowns' scores), then the war's dead and the nobles struck down, each the foe's share.
+def _balance(attackers: set[int], defenders: set[int], war: dict, ctx: dict) -> int:
+    scores = [sum(ctx["scores"][kid] for kid in camp) for camp in (attackers, defenders)]
+    power = scores[0] / sum(scores) if sum(scores) else 0.5
+    lost, struck = (int(war.get("dead_attackers") or 0), int(war.get("dead_defenders") or 0)), (ctx["nobles"](attackers), ctx["nobles"](defenders))
+    dead, nobles = ((theirs + 1) / (ours + theirs + 2) for ours, theirs in (lost, struck))  # +1, +2: even where none fell
+    return round(100 * (2 * power + dead + nobles) / 4)
 
 
 # WB's counters on the war, its origin and the verdict the fighting says of itself. No `identity`: a war swears to no culture or stock, and one line is no section.
@@ -38,6 +55,7 @@ def _build_metadata(war: dict, attackers: set[int], defenders: set[int], ctx: di
     state = {"age": years, "attackers_besieged": bool(attackers & besieged), "deaths": deaths, "defenders_besieged": bool(defenders & besieged)}
     return {
         "age": years,
+        "balance": _balance(attackers, defenders, war, ctx),
         "deaths": deaths,  # the toll of the whole war, as every other tier counts its own; each camp keeps its share
         "id": war["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         "name": war.get("name"),
@@ -61,6 +79,8 @@ def _build_side(kingdoms: set[int], deaths: int, alliances: list[dict], ctx: dic
     }
     if taken := sum(ctx["taken_by_kingdom"][kid] for kid in kingdoms):  # none taken goes unsaid, as a town's other tallies at 0
         side["taken"] = taken
+    if nobles := ctx["nobles"](kingdoms):  # as `taken`
+        side["nobles"] = nobles
     # WB backs a side with a pact only where two of its members field together — one realm alone answers for itself, whatever it has sworn elsewhere.
     for a in alliances:
         members = set(a.get("kingdoms") or [])
@@ -68,6 +88,32 @@ def _build_side(kingdoms: set[int], deaths: int, alliances: list[dict], ctx: dic
             side["alliance"] = {"id": a["id"], "name": a.get("name")}
             break
     return side
+
+
+# Whose crown a body served, alive or dead: its own field, a king's or a town head's succession, else the last chapter save that held it alive — `None` unknown.
+def _crowns(save: dict, upto: int) -> Callable[[int | None], int | None]:
+    alive = {a["id"]: a.get("civ_kingdom_id") for a in save.get("actors_data") or []}
+    served = {ruler["id"]: k["id"] for k in save.get("kingdoms") or [] for ruler in k.get("past_rulers") or []}
+    served |= {ruler["id"]: c.get("kingdomID") for c in save.get("cities") or [] if c.get("kingdomID") for ruler in c.get("past_rulers") or []}
+
+    @cache
+    def crown(body: int | None) -> int | None:
+        if body is None:
+            return None
+        if (kid := alive.get(body) or served.get(body)) is not None:
+            return kid
+        for n in range(upto, 0, -1):  # the dead before, as the latest save to hold them alive knew them
+            if (path := SAVES_DIR / f"C{n}" / "map.wbox").exists() and (held := _held(path).get(body)) is not None:
+                return held
+        return None
+
+    return crown
+
+
+# A chapter save's bodies by their crown, read once per run whoever asks.
+@cache
+def _held(path: Path) -> dict[int, int | None]:
+    return {a["id"]: a.get("civ_kingdom_id") for a in load_save(path).get("actors_data") or []}
 
 
 def main(argv: list[str]) -> int:
@@ -136,6 +182,22 @@ def main(argv: list[str]) -> int:
         "warriors_by_kingdom": warriors_by_kingdom,
         "world_time": float(save["mapStats"].get("world_time") or 0),
     }
+    upto = int(chapter[1:]) if chapter else latest_chapter()
+    crowns = _crowns(save, upto)
+    fallen = [
+        dead
+        for dead in kept_deaths(save).values()
+        if dead["job"] in _NOBLE_JOBS and dead["cause"] == "weapon" and dead["died"] >= declared  # struck down since the declaration, never old age or fire
+    ]
+
+    # A camp's nobles struck down since the declaration, by a body of the other camp where the killer's crown is known, by anyone where it is not
+    def nobles(kingdoms: set[int]) -> int:
+        foes = (attackers | defenders) - kingdoms
+        return sum(crowns(dead["id"]) in kingdoms and ((killer := crowns(dead["killer"])) is None or killer in foes) for dead in fallen)
+
+    ctx["nobles"] = nobles
+    if "metadata" in sections:  # the crowns' power, `balance`'s alone: a walk over every body, spared to a camp asked by itself
+        ctx["scores"] = score_totals([k["id"] for k in save.get("kingdoms") or []], kingdom_score_dimensions(save))
     alliances = save.get("alliances") or []
 
     out: dict = {}

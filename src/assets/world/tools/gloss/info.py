@@ -26,7 +26,7 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
     found = {key: glosses[key] for key, segments in segmented.items() if _within(segments, asked)}
     # A field with no key is told in a gloss of its section (`their_opinion` in `opinion`'s), an option by its alias (`-i`) or by the field it fills: searched wider.
     cited = re.compile(rf"`{re.escape(asked[-1])}{'[` ]' if option else '`'}")
-    if not found and (found := {key: gloss for key, gloss in glosses.items() if cited.search(gloss) and _within(segmented[key], asked[:-1])}):
+    if not found and (found := {key: gloss for key, gloss in glosses.items() if cited.search(gloss) and _related(segmented, key, asked[:-1])}):
         print(f"· no key for `{asked[-1]}` — told within {', '.join(found)}", file=sys.stderr)
     if found:
         return found
@@ -43,6 +43,14 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
 # Whether the asked segments run inside the key's, in order and unbroken: `pairings.lovers` in `world.pairings.lovers`, never `world.lovers`.
 def _holds(key: list[str], asked: list[str]) -> bool:
     return any(key[at : at + len(asked)] == asked for at in range(len(key) - len(asked) + 1))
+
+
+# Whether a gloss citing the word may tell it: under a tool alone, its keys and the shared ones of its sections (`war` has no `leaders`), else the keys within.
+def _related(segmented: dict[str, list[str]], key: str, parent: list[str]) -> bool:
+    segments = segmented[key]
+    if len(parent) == 1 and parent[0] in _TOOLS:
+        return segments[0] == parent[0] or (segments[0] not in _TOOLS and any(other[:2] == [parent[0], segments[0]] for other in segmented.values()))
+    return _within(segments, parent)
 
 
 # Whether the key's segments run through the asked in order, on its very field: a level the output groups by (`common`, `fires`, `base`) is no part of a key.
