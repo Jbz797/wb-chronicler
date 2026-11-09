@@ -21,12 +21,21 @@ namespace FaithfulSaves
         private static readonly AccessTools.FieldRef<Actor, AttackType> _lastAttackType = AccessTools.FieldRefAccess<Actor, AttackType>("_last_attack_type");
         private static readonly AccessTools.FieldRef<MapBox, MapStats> _mapStats = AccessTools.FieldRefAccess<MapBox, MapStats>("map_stats");
 
+        // WB files a bolt's hit under `Other` with the heat and the sun: whether a bolt is striking now, and the bodies whose last hit was one.
+        private static bool _bolting;
+        private static readonly HashSet<long> _boltStruck = new HashSet<long>();
+
         // The deaths since the last save, written into the database only as a save copies it out: a load wipes them with the world they fell in.
         private static readonly List<object[]> _pending = new List<object[]>();
 
         // `Actor.checkDeath` names the killer through `newKillAction` right before the victim's `die`: held till then.
         private static long _killer = -1;
         private static long _victim = -1;
+
+        // Every bolt, a cloud's, a spell's or a god's, strikes through `MapAction.checkLightningAction`: a finalizer, so a throw never leaves it on.
+        [HarmonyFinalizer]
+        [HarmonyPatch(typeof(MapAction), "checkLightningAction")]
+        private static void AfterBolt() => _bolting = false;
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Actor), "newKillAction")]
@@ -37,6 +46,10 @@ namespace FaithfulSaves
             _killer = __instance.getID();
             _victim = __0.getID();
         }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MapAction), "checkLightningAction")]
+        private static void BeforeBolt() => _bolting = true;
 
         // `Actor.die` is every death's way out, counted or not (a metamorphosis, a god's finger); a call on a body already dead ends its dying animation.
         [HarmonyPrefix]
@@ -53,7 +66,7 @@ namespace FaithfulSaves
             // `getHit` runs the death actions (a crab's rebirth, a cursed body's skeleton) once health is spent, before `checkDeath` would credit the blow.
             if (__1 == AttackType.Metamorphosis)
             {
-                blow = _lastAttackType(__instance).ToString();
+                blow = Named(_lastAttackType(__instance), id);
                 if (_attackedBy(__instance) is Actor hitter && !hitter.isRekt())
                     killer = hitter.getID();
             }
@@ -61,15 +74,31 @@ namespace FaithfulSaves
             _pending.Add(new object[]
             {
                 id, __instance.asset.id, data.name, data.subspecies, data.parent_id_1, data.parent_id_2, data.created_time, World.world.getCurWorldTime(),
-                __1.ToString(), killer, tile?.x ?? 0, tile?.y ?? 0, blow, JobOf(__instance),
+                Named(__1, id), killer, tile?.x ?? 0, tile?.y ?? 0, blow, JobOf(__instance),
             });
+            _boltStruck.Remove(id);
             MarkFrom();
+        }
+
+        // `Actor.getHit` sets the body's last attack type first thing, the one `die` is handed: a bolt's mark follows it hit for hit.
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(Actor), "getHit")]
+        private static void BeforeGetHit(Actor __instance, AttackType __2)
+        {
+            if (_bolting && __2 == AttackType.Other)
+                _boltStruck.Add(__instance.getID());
+            else
+                _boltStruck.Remove(__instance.getID());
         }
 
         // A world left for another, or loaded anew: the deaths not yet saved fell in a world no save will hold.
         [HarmonyPrefix]
         [HarmonyPatch(typeof(DBManager), nameof(DBManager.clearAndClose))]
-        private static void BeforeWorldClosed() => _pending.Clear();
+        private static void BeforeWorldClosed()
+        {
+            _boltStruck.Clear();
+            _pending.Clear();
+        }
 
         // As WB copies its history out to the save's folder: the deaths since the last save go in first, under its own lock.
         [HarmonyPrefix]
@@ -96,6 +125,9 @@ namespace FaithfulSaves
         [HarmonyPrefix]
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.currentWorldToSavedMap))]
         private static void BeforeWorldSave() => MarkFrom();
+
+        // A cause as WB names it, `Lightning` apart where the body's last hit was a bolt's.
+        private static string Named(AttackType type, long id) => type == AttackType.Other && _boltStruck.Contains(id) ? "Lightning" : type.ToString();
 
         // The post a body dies in, as the chronicle's tools word the save's `profession`, a warrior leading an army apart: `civilian` for any other, beasts too.
         private static string JobOf(Actor actor)

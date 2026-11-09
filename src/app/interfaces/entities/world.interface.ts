@@ -45,6 +45,7 @@ interface DeathBreakdown {
   grin_reaper?: number;
   hunger?: number;
   infection?: number;
+  lightning?: number;
   old_age?: number;
   other?: number;
   plague?: number;

@@ -166,7 +166,7 @@ _CUMULATIVE_COUNTERS = {
 }
 
 _DEAD_SOCLE = ("asset_id", "name", "sex")  # a dead body's line beside what befell it: its name, then its kind, what `--with` drives off — its sex stays
-_DEATH_CAUSES = tuple(sorted(set(load_data("attack-types.json").values())))  # what `died:` takes: each cause as the register files it
+_DEATH_CAUSES = tuple(sorted({*load_data("attack-types.json").values(), "lightning"}))  # what `died:` takes: each cause as the register files it, a bolt the mod's
 _DISPLACED = ("city", "island_id", "life_stage", "name", "asset_id")  # what `--with` drives off the socle, one per field asked, least telling first
 _FEATS = ("kills", "level", "money", "renown")  # what a life adds up, kept on the body itself — weighed among thinking souls as the skills are
 _FIELD_FLOORS = {"births": 0, "equipment_power": 0, "level": 1, "loot": 0, "money": 0, "renown": 0}  # a tally `actor … stats` tells silent at its floor

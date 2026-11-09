@@ -1533,8 +1533,9 @@ def _victims(actor_id: int, ctx: dict, requested: str | None) -> dict | None:
     rows = [
         {
             "asset_id": d["asset_id"],
+            "blow": d["blow"] if d["blow"] != "weapon" else None,  # what struck a changed body down, said on the same terms as `died_of`
             "date": world_date(d["died"]),
-            "died_of": d["cause"] if d["cause"] == "metamorphosis" else None,  # changed under the blow: said, where any other is plainly slain
+            "died_of": d["cause"] if d["cause"] != "weapon" else None,  # a bolt, a bite or a change under the blow: said, where a blow plainly slew
             "id": d["id"],
             "job": d["job"],
             "name": d["name"],

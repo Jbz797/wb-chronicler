@@ -130,7 +130,7 @@ _EMPTY = (None, [], {})
 # The podium rows a panel names, mirroring `LEADER_FAMILY_ROWS`/`LEADER_PERSON_ROWS` (`stats.constant.ts`). The rest stays in `<tier>/info.py <id> leaders`.
 _LEADER_ROWS = {"families": frozenset({"pop"}), "persons": frozenset({"kills", "level", "money", "oldest", "renown"})}
 
-_OTHER_DEATHS = ("ash_fever", "none", "other")  # the ash fever, the deaths WB files under no cause, a falling UFO: one « other » row
+_OTHER_DEATHS = ("ash_fever", "none", "other")  # the ash fever, the deaths WB files under no cause or its catch-all (heat, sun, a fish ashore…): one « other » row
 
 # Libraries and fleets kept as a count alone — the tier's own `info.py <id> <section>` still names every volume and hull behind the figure.
 _TALLIES = {
