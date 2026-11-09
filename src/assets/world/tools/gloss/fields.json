@@ -22,6 +22,7 @@
   "actor.metadata.can_reproduce": "Le corps seul le peut : un couple veut aussi son amant (`actor … companions`, `world … pairings`) ; sinon `breeding_barred` dit pourquoi, ou sa lignée n'enfante pas.",
   "actor.metadata.city_since": "Le mois où le corps est entré dans sa cité ; `army_since`, dans son armée.",
   "actor.metadata.gen": "Absent : le corps a paru sans parents. Sinon sa génération.",
+  "actor.metadata.hatch_on": "L'éclosion, passée ou à venir : chez qui éclot, `born` date la ponte, et jusque-là un œuf ne fait rien ; sa venue se date à l'éclosion.",
   "actor.metadata.hatches_as": "Ce qu'un œuf sera, éclos, selon sa mère.",
   "actor.metadata.home": "Le toit attitré du corps, où il dort, non où il se tient : dedans, `in_building` ; aux abords, `beside_building` ; un toit, `ground <id> occupants` ; omis dehors.",
   "actor.metadata.in_building": "Le corps est dans ce bâtiment.",

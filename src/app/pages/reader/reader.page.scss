@@ -30,6 +30,11 @@
           font-size: 0.8em;
         }
 
+        // A sub-list ends its item: ng-zorro's typography gives every list 1em below, which would open a gap before the next item.
+        li > ul {
+          margin-bottom: 0;
+        }
+
         h1,
         h2,
         h3,
