@@ -8,6 +8,7 @@ import re
 import sys
 from collections import Counter, defaultdict
 from functools import cache
+from itertools import pairwise
 from pathlib import Path
 from typing import NamedTuple
 
@@ -166,9 +167,16 @@ def _example_lines(n: int) -> dict[tuple[str, ...], tuple[int, str]]:
 # The examples `chronicler.md` and `lexicon.md` give, articles levelled: none with a figure or a tag, a form the manual sets, nor too short to be a mould.
 @cache
 def _examples() -> frozenset[tuple[str, ...]]:
-    docs = SAVES_DIR.parent / "docs"
+    docs, words = SAVES_DIR.parent / "docs", i18n("words.json")
     quoted = (found[1].split("…")[0] for doc in ("chronicler.md", "lexicon.md") for found in _EXAMPLE.finditer((docs / doc).read_text()))
-    return frozenset(key for text in quoted if not re.search(r"[\d\[`]", text) and len(key := _moulded(_tokens(text, 0))) >= _EXAMPLE_WORDS)
+    units, bearings = _measures() | frozenset(words.get("years", ())), frozenset(words.get("bearings", ()))
+
+    # A form the manual sets, not a turn: a measure or a year (`il y a trois ans`), a bearing after its article (`à l'est`), said as asked.
+    def set_form(key: tuple[str, ...]) -> bool:
+        return any(word in units for word in key) or any(first == "·" and then in bearings for first, then in pairwise(key))
+
+    keys = (_moulded(_tokens(text, 0)) for text in quoted if not re.search(r"[\d\[`]", text))
+    return frozenset(key for key in keys if len(key) >= _EXAMPLE_WORDS and not set_form(key))
 
 
 # A figured turn chapter `n` keeps coming back to — `il y a 3 ans`, `plus de 5` —, figures as one: a date or a measure aside, whose form the manual sets.

@@ -1,5 +1,6 @@
 {
-  "measures": ["demie", "heure", "heures", "jour", "journée", "journées", "jours", "kilomètres", "mètres", "minutes", "mois"],
+  "bearings": ["est", "nord", "ouest", "sud"],
+  "measures": ["demie", "heure", "heures", "jour", "journée", "journées", "jours", "kilomètre", "kilomètres", "minute", "minutes", "mois", "mètre", "mètres"],
   "stop": [
     "alors",
     "après",
@@ -94,5 +95,6 @@
     "villages",
     "ville",
     "villes"
-  ]
+  ],
+  "years": ["an", "ans"]
 }
