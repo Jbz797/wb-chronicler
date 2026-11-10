@@ -25,6 +25,11 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
     asked = wanted.split(".")
     option = asked[-1].startswith("-")
     found = {key: glosses[key] for key, segments in segmented.items() if _within(segments, asked)}
+    # A lone word that is a section of several tools would pour every one of them: it keeps the keys it ends or starts, else says which tool to name
+    if len(asked) == 1 and not option and len(owners := {segmented[key][0] for key in found if asked[0] in segmented[key][1:-1]} & _TOOLS) > 1:
+        if not (found := {key: gloss for key, gloss in found.items() if asked[0] in (segmented[key][0], segmented[key][-1])}):
+            print(f"✗ `{wanted}` is a section of {len(owners)} tools: `gloss <tool>.{wanted}` — {', '.join(sorted(owners))}", file=sys.stderr)
+        return found
     # A field with no key is told in a gloss of its section (`their_opinion` in `opinion`'s), an option by its alias (`-i`) or by the field it fills: searched wider.
     cited = re.compile(rf"`{re.escape(asked[-1])}{'[` ]' if option else '`'}")
     if not found and (found := {key: gloss for key, gloss in glosses.items() if cited.search(gloss) and _related(segmented, key, asked[:-1])}):
