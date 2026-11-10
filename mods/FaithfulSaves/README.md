@@ -4,7 +4,7 @@ A save keeps what every creature was in the middle of: a pregnancy, an egg, a sl
 
 ## Why
 
-Vanilla WorldBox writes no status into a save, so every load quietly resets them:
+Vanilla WorldBox writes no status into a save, so every load resets them:
 
 - **Pregnancy.** A live-bearing mother carries for as many months as her kind matures. A load before she is due ends it, with no birth: a kind that carries 21 months, loaded every 2 years, loses 9 pregnancies in 10.
 - **Eggs.** An egg hatches the moment the world loads, however long it had left.
@@ -25,7 +25,7 @@ WorldBox also redraws two kinds of timers on every load:
 
 - **On save**, each creature keeps what is left of its statuses and of its long waits (90 seconds or more), its task (the step reached, the time spent, its aim: a prey, a tile, a building) and the building it is inside; a boat, the shore it was ferrying to; the world, the time left on its two clocks and every cloud of its sky.
 - **On load**, each is handed back for exactly the time it had left, and each creature takes its task up at that very step: a woodcutter walks on to the store, a hunter keeps its prey, a sleeper stays under its roof. Each cloud rises again where it was.
-- **A creature settling in a new town, joining an army or becoming a couple** is stamped with the world's time; **every death** goes into the history database (`map_stats.s3db`, table `FaithfulDeaths`): who died (kind, name, sex, lineage, parents, birth, years brought along, role), when, of what (lightning apart from `Other`), where, by whose hand, and a metamorphosis's blow and new body.
+- **A creature settling in a new town, joining an army or becoming a couple** is stamped with the world's time; **every death** goes into the history database (`map_stats.s3db`, table `FaithfulDeaths`): who died (kind, name, sex, lineage, parents, birth, years brought along, role, kingdom), when, of what (lightning apart from `Other`), where, by whose hand, for which kingdom, and a metamorphosis's blow and new body.
 - **The world's history** closes each year in January, under the year that ended: a row is a calendar year.
 
 Nothing else changes: no status is lengthened, shortened or added, nor replays its first effects (a mood, a sound).
@@ -34,7 +34,7 @@ Nothing else changes: no status is lengthened, shortened or added, nor replays i
 
 ## Installation
 
-Install it as [mods/README.md](../README.md) describes. The game log then reads `[Faithful Saves]: a save now keeps…`.
+Install it as [mods/README.md](../README.md) describes. The log then reads `[Faithful Saves]: a save now keeps…`.
 
 ## Notes
 

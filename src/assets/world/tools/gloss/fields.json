@@ -58,7 +58,7 @@
   "actor.roster.--filter.stage": "Un palier, `egg` à `elder` (`life_stage`) ; sous `--since`, celui d'aujourd'hui ou de sa mort : `teen`, qui l'est devenu depuis.",
   "actor.roster.--filter.trait": "`trait:<id>`, `status:`, `task:` : ce qu'ils sont (le leur ou celui de leur lignée), ce qu'ils subissent, ce qu'ils font, à l'instant de la save.",
   "actor.roster.--filter.type": "`type:dwarf` : une espèce, toutes lignées, ou une famille (`actors`).",
-  "actor.roster.--filter.war": "`war:<id>` : les corps de ses deux camps ; un mort n'y entre que tué par l'autre camp depuis la déclaration ; le camp de chacun : `--with camp`.",
+  "actor.roster.--filter.war": "`war:<id>` : les corps de ses deux camps ; un mort n'y entre que tué par l'autre camp depuis la déclaration, comme le jeu le compte ; son camp : `--with camp`.",
   "actor.roster.--rank": "`--rank <champ|x,y|p<id>>` : l'ordre seul, tout chiffre que `--with` lit, le plus haut d'abord, ou le plus proche ; le voir : `--with`.",
   "actor.roster.--rank.died": "`--rank died` : sous `--since`, les morts seuls (`--filter died`), du premier tombé au dernier : le rythme d'une guerre (`war:`), mois après mois.",
   "actor.roster.--since": "`--since C<n>` : ce qui a changé depuis, sauf `grew`, la `part` chassant un champ comme `--with` ; une part filtrée sans `--since` : depuis le chapitre d'avant.",

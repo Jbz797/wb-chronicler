@@ -7,21 +7,29 @@ using SQLite;
 
 namespace FaithfulSaves
 {
-    // WB keeps nothing of the dead: every death of the world, each by who died, of what, when, where and by whose hand, in a table of its history database.
+    // WB keeps nothing of the dead: every death of the world, by who died, of what, when, where, by whose hand and for which crowns, in its history database.
     // A metamorphosis ends a body under a blow WB then forgets, neither counting the death nor crediting the killer: the blow, its author and the new body kept too.
     internal static class DeathPatches
     {
         private const string Create = "CREATE TABLE IF NOT EXISTS " + Table + " (id INTEGER PRIMARY KEY, asset_id TEXT, name TEXT, subspecies INTEGER, "
             + "parent_id_1 INTEGER, parent_id_2 INTEGER, born REAL, died REAL, cause TEXT, killer INTEGER, x INTEGER, y INTEGER, blow TEXT, job TEXT, "
-            + "became INTEGER, sex TEXT, overgrowth INTEGER)";
+            + "became INTEGER, sex TEXT, overgrowth INTEGER, kingdom INTEGER, killer_kingdom INTEGER)";
         private const string Became = "became"; // the column a table before 1.13.0 lacks, added at its first save under it
         private const string Blow = "blow"; // the column a table from 1.7.0 lacks, added at its first save under 1.8.0
         private const string Job = "job"; // the column a table before 1.10.0 lacks, added at its first save under it
+        private const string KillerKingdom = "killer_kingdom"; // the column a table before 1.17.0 lacks, added at its first save under it
+        private const string Kingdom = "kingdom"; // the column a table before 1.17.0 lacks, added at its first save under it
         private const string Overgrowth = "overgrowth"; // the column a table before 1.16.0 lacks, added at its first save under it
         private const string Sex = "sex"; // the column a table before 1.15.0 lacks, added at its first save under it
         private const string From = "faithful_deaths_from"; // the world's time since which the table misses no death: the mod's first death or save there
-        private const string Insert = "INSERT OR REPLACE INTO " + Table + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        private const string Insert = "INSERT OR REPLACE INTO " + Table + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         private const string Table = "FaithfulDeaths";
+
+        // The columns each later version added, in its order: a table an older version made gains them at its first save under this one.
+        private static readonly (string, string)[] Added =
+        {
+            (Blow, "TEXT"), (Job, "TEXT"), (Became, "INTEGER"), (Sex, "TEXT"), (Overgrowth, "INTEGER"), (Kingdom, "INTEGER"), (KillerKingdom, "INTEGER"),
+        };
 
         private static readonly AccessTools.FieldRef<Actor, BaseSimObject> _attackedBy = AccessTools.FieldRefAccess<Actor, BaseSimObject>("attackedBy");
         private static readonly AccessTools.FieldRef<Actor, AttackType> _lastAttackType = AccessTools.FieldRefAccess<Actor, AttackType>("_last_attack_type");
@@ -38,8 +46,9 @@ namespace FaithfulSaves
         // The deaths since the last save, written into the database only as a save copies it out: a load wipes them with the world they fell in.
         private static readonly List<object[]> _pending = new List<object[]>();
 
-        // `Actor.checkDeath` names the killer through `newKillAction` right before the victim's `die`: held till then.
+        // `Actor.checkDeath` names the killer through `newKillAction` right before the victim's `die`: held till then, with the crown it struck for.
         private static long _killer = -1;
+        private static object _killerKingdom;
         private static long _victim = -1;
 
         [HarmonyPostfix]
@@ -49,6 +58,7 @@ namespace FaithfulSaves
             if (__0 == null)
                 return;
             _killer = __instance.getID();
+            _killerKingdom = CrownOf(__instance);
             _victim = __0.getID();
         }
 
@@ -70,6 +80,7 @@ namespace FaithfulSaves
             ActorData data = (ActorData)__instance.getData();
             long id = __instance.getID();
             object killer = _victim == id ? _killer : null;
+            object killerKingdom = _victim == id ? _killerKingdom : null;
             object blow = null;
             object became = null;
             _victim = -1;
@@ -81,13 +92,17 @@ namespace FaithfulSaves
                     became = _copiedTo;
                 _copiedFrom = -1;
                 if (_attackedBy(__instance) is Actor hitter && !hitter.isRekt())
+                {
                     killer = hitter.getID();
+                    killerKingdom = CrownOf(hitter);
+                }
             }
             WorldTile tile = __instance.current_tile;
             _pending.Add(new object[]
             {
                 id, __instance.asset.id, data.name, data.subspecies, data.parent_id_1, data.parent_id_2, data.created_time, World.world.getCurWorldTime(),
                 Named(__1, id), killer, tile?.x ?? 0, tile?.y ?? 0, blow, JobOf(__instance), became, data.sex.ToString(), data.age_overgrowth,
+                CrownOf(__instance), killerKingdom,
             });
             _boltStruck.Remove(id);
             MarkFrom();
@@ -124,7 +139,7 @@ namespace FaithfulSaves
             using (connection.Lock())
             {
                 connection.Execute(Create);
-                foreach ((string column, string type) in new[] { (Blow, "TEXT"), (Job, "TEXT"), (Became, "INTEGER"), (Sex, "TEXT"), (Overgrowth, "INTEGER") })
+                foreach ((string column, string type) in Added)
                 {
                     if (!connection.GetTableInfo(Table).Exists(kept => kept.Name == column))
                         connection.Execute("ALTER TABLE " + Table + " ADD COLUMN " + column + " " + type);
@@ -133,6 +148,9 @@ namespace FaithfulSaves
             }
             _pending.Clear();
         }
+
+        // The crown a body fights for, as WB weighs a kill in a war (`Actor.newKillAction`): a civilised kingdom's alone, -1 for none, as WB writes a missing parent.
+        private static long CrownOf(Actor actor) => actor.isKingdomCiv() ? actor.kingdom.getID() : -1;
 
         // A world saved before its first death still says since when the table holds, an empty one meaning no death since.
         [HarmonyPrefix]

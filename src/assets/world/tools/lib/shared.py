@@ -102,6 +102,8 @@ _DEATH_COLUMNS = (  # the table's own order, which each row unpacks
     "became",
     "sex",
     "overgrowth",
+    "kingdom",
+    "killer_kingdom",
 )
 
 _DEATH_EVENTS = ("favorite_dead", "favorite_killed", "king_dead", "king_killed")  # the log's deaths, which the register tells whole
@@ -255,14 +257,14 @@ def _deaths_base(world_time: float) -> Path:
 def _deaths_until(base: Path, now: float) -> dict[int, dict]:
     try:
         with closing(sqlite3.connect(f"file:{base}?mode=ro", uri=True)) as conn:
-            # `blow` came with 1.8.0, `job` 1.10.0, `became` 1.13.0, `sex` 1.15.0, `overgrowth` 1.16.0: none off an older table
+            # `blow` came with 1.8.0, `job` 1.10.0, `became` 1.13.0, `sex` 1.15.0, `overgrowth` 1.16.0, the crowns 1.17.0: none off an older table
             kept = {column for _, column, *_ in conn.execute("PRAGMA table_info(FaithfulDeaths)")}
             picked = ", ".join(column if column in kept else f"NULL AS {column}" for column in _DEATH_COLUMNS)
             rows = conn.execute(f"SELECT {picked} FROM FaithfulDeaths WHERE died <= ? ORDER BY died, id", [now + _DEATH_SLACK]).fetchall()
     except sqlite3.Error:  # no table: a base the mod never wrote
         return {}
     deaths, causes = {}, load_data("attack-types.json")  # WB `AttackType` as its counters name it: a type a later game adds, lowercased
-    for body, asset, name, lineage, mother, father, born, died, attack, killer, x, y, blow, job, became, sex, overgrowth in rows:
+    for body, asset, name, lineage, mother, father, born, died, attack, killer, x, y, blow, job, became, sex, overgrowth, crown, killer_crown in rows:
         deaths[body] = {
             "asset_id": asset,
             "became": became,  # the body a metamorphosis put in its place: a metamorphosis's alone
@@ -273,6 +275,8 @@ def _deaths_until(base: Path, now: float) -> dict[int, dict]:
             "id": body,
             "job": job,  # its post as it fell, in `resolve_profession`'s words — none off a table older than the column
             "killer": killer,
+            "killer_kingdom": killer_crown,  # the civilised crown its killer struck for, as WB weighs a war's dead: -1 a beast's, `None` an older row
+            "kingdom": crown,  # the civilised crown it served as it fell, likewise
             "name": name or None,
             "overgrowth": overgrowth,  # the years it came with, `age_overgrowth` as it fell: 0 for none, `None` unknown, a row older than the column
             "parents": [parent for parent in (mother, father) if parent and parent != -1],  # WB's -1 for none, as the mod copies it
@@ -880,6 +884,12 @@ def counted_birth(actor: dict) -> float:
 # Each body's work: the world's items by their maker (`creator_id`), those still standing — what `actor … ranks` and `actor --roster` count alike.
 def crafted_counts(items_by_id: dict) -> Counter:
     return Counter(maker for item in items_by_id.values() if (maker := item.get("creator_id")))
+
+
+# The crowns a dead body and its killer fought for as it fell, -1 for none: the registry's own, else as `crowns_served` last saw them.
+def crowns_at_death(dead: dict, crowns: Callable[[int | None], int | None]) -> tuple[int | None, int | None]:
+    own, theirs = dead["kingdom"], dead["killer_kingdom"]
+    return crowns(dead["id"]) if own is None else own, crowns(dead["killer"]) if theirs is None else theirs
 
 
 # The crowns by id as the save and WB's own fallen-crown table name them: the dead kept, whom no save carries any more.

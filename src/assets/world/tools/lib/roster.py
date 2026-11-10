@@ -48,6 +48,7 @@ from shared import (
     children_by_id,
     counted_birth,
     crafted_counts,
+    crowns_at_death,
     crowns_served,
     emit,
     entity_born,
@@ -799,7 +800,7 @@ def told_part[O, T](lines: list[tuple[O, T, dict]], parts: Collection[str]) -> l
     return [(order, tie, {**row, "part": None}) for order, tie, row in lines] if len(parts) == 1 else lines
 
 
-# A dead body's camp in a war, `None` where it is no dead of that war: struck down since the declaration by a body of the other camp, its crown as `war` reads it.
+# A dead body's camp in a war, `None` where it is no dead of that war: struck down since the declaration by a body of the other camp, as WB's camp tolls count it.
 def _war_side(save: dict, war_id: int, upto: int) -> Callable[[int], str | None]:
     war = index_by_id(save.get("wars") or []).get(war_id) or {}
     attackers, defenders = war_camps(war)
@@ -807,11 +808,11 @@ def _war_side(save: dict, war_id: int, upto: int) -> Callable[[int], str | None]
 
     def side(body_id: int) -> str | None:
         dead = deaths[body_id]
-        crown = crowns(body_id)
-        camp, foes = ("attackers", defenders) if crown in attackers else ("defenders", attackers) if crown in defenders else (None, set())
-        if camp is None or dead["died"] < declared or dead["killer"] is None:
+        if dead["died"] < declared or dead["killer"] is None or dead["cause"] == "metamorphosis":  # WB credits no kill on a change
             return None
-        return camp if (killer := crowns(dead["killer"])) is None or killer in foes else None  # a killer of unknown crown counted, as `war`'s nobles are
+        crown, killer = crowns_at_death(dead, crowns)
+        camp, foes = ("attackers", defenders) if crown in attackers else ("defenders", attackers) if crown in defenders else (None, set())
+        return camp if camp and (killer is None or killer in foes) else None  # a killer of unknown crown counted, as `war`'s nobles are
 
     return side
 

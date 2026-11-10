@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from shared import (
     PROFESSION_WARRIOR,
     absent_entity,
+    crowns_at_death,
     crowns_served,
     emit,
     entity_age,
@@ -156,8 +157,8 @@ def main(argv: list[str]) -> int:
     }
     upto = int(chapter[1:]) if chapter else latest_chapter()
     crowns = crowns_served(save, upto)
-    fallen = [
-        dead
+    fallen = [  # each noble's crown and its killer's, read once for both camps
+        crowns_at_death(dead, crowns)
         for dead in kept_deaths(save).values()
         if dead["job"] in _NOBLE_JOBS and dead["cause"] == "weapon" and dead["died"] >= declared  # struck down since the declaration, never old age or fire
     ]
@@ -165,7 +166,7 @@ def main(argv: list[str]) -> int:
     # A camp's nobles struck down since the declaration, by a body of the other camp where the killer's crown is known, by anyone where it is not
     def nobles(kingdoms: set[int]) -> int:
         foes = (attackers | defenders) - kingdoms
-        return sum(crowns(dead["id"]) in kingdoms and ((killer := crowns(dead["killer"])) is None or killer in foes) for dead in fallen)
+        return sum(crown in kingdoms and (killer is None or killer in foes) for crown, killer in fallen)
 
     ctx["nobles"] = nobles
     if "metadata" in sections:  # the crowns' power, `balance`'s alone: a walk over every body, spared to a camp asked by itself
