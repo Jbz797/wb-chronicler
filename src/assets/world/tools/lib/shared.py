@@ -1224,11 +1224,11 @@ def life_stage(age: int, age_adult: float, lifespan: float, egg: bool) -> str:
     return "adult"
 
 
-# Stamps a summarised section with its own way out, so no doc has to list which ones shrink under `full` — bare when empty, unless the caller `withheld` some.
-def light(payload: dict, *, withheld: bool = False) -> dict:
+# Stamps a summarised section with its way out, so no doc lists what shrinks under `full`: bare when empty unless `withheld`, which may name the field left out.
+def light(payload: dict, *, withheld: bool | str = False) -> dict:
     if not withheld and not any(payload.values()):
         return payload
-    return {**payload, "info": "call this section for the full detail"}
+    return {**payload, "info": f"call this section for its `{withheld}`" if isinstance(withheld, str) else "call this section for the full detail"}
 
 
 # `--limit`'s count: the lines a list keeps, `all` read as 0 for every one.

@@ -180,24 +180,27 @@ def _build_pop(members: list[dict], ctx: dict) -> dict:
 
 
 # The stock's standing over every soul of that species, and its next birth: counts flat beside its `ranks`, `id` to say whose — `chapter.json` keeps the counts.
-def _build_species(subspecies: dict, save: dict, ctx: dict) -> dict:
+def _build_species(subspecies: dict, save: dict, ctx: dict, *, detailed: bool) -> dict:
     asset_id = subspecies.get("species_id") or ""
     totals = _species_totals(save)
     own = totals.get(asset_id) or _EMPTY_SPECIES.copy()
     ranks = competition_ranks(own, list(totals.values()), {key: itemgetter(key) for key in _EMPTY_SPECIES})
     species = load_data("species.json")
     asset = species.get(asset_id) or {}
+    bodies = [actor for actor in save.get("actors_data") or [] if not is_boat(actor) and actor.get("asset_id") == asset_id]  # every lineage of the kind
 
     # Counts drop at zero, the podium reads them all; the panel shows `evolved_from` alone, `evolution_id` read from its other end — the rest is the chronicler's.
     return {
         **{key: value for key, value in own.items() if value},
         "attack": asset.get("attack"),
+        # The faiths, tongues, crowns and lineages its living hold between them, which no single lineage's `breakdown` says: `full` keeps the lineage's alone.
+        **({"breakdown": {k: v for k, v in shares.items() if k != "species"}} if detailed and (shares := population_breakdown(bodies, ctx)) else {}),
         "description": asset.get("description"),
         "evolution_id": asset.get("evolution_id"),
         "evolved_from": min((beast for beast, spec in species.items() if spec.get("evolution_id") == asset_id), default=None),  # one beast a kind, in WB's lists
         "has_soul": asset.get("has_soul"),
         "id": asset_id,
-        "pairing": _pairing(save, asset_id, ctx),  # its next birth, a kind's own: a pair never minds the lineage
+        "pairing": _pairing(save, bodies, ctx),  # its next birth, a kind's own: a pair never minds the lineage
         **({"ranks": ranks} if ranks else {}),
     }
 
@@ -262,8 +265,7 @@ def _may_mate(a: dict, b: dict, sexed: bool) -> bool:
 
 
 # The kind's first couple by WB's `canFallInLoveWith`, dated by the later breeding age (`now` once both hold); today's gap, walked on one shared land only.
-def _pairing(save: dict, species: str, ctx: dict) -> dict | None:
-    bodies = [actor for actor in save.get("actors_data") or [] if not is_boat(actor) and actor.get("asset_id") == species]  # a pair never crosses kinds
+def _pairing(save: dict, bodies: list[dict], ctx: dict) -> dict | None:
     if not bodies:
         return None
     island_of, walk_map = ctx["island_lookup"](), None  # the context `main` built: its trait libraries, its islands, loaded once
@@ -509,7 +511,7 @@ def main(argv: list[str]) -> int:
         "subspecies_by_id": subspecies_by_id,  # the index the id was checked against, so the context's own copy never takes over
     }
 
-    out: dict = {}
+    out, detailed = {}, requested not in (None, "full")  # a section named, not `full`'s summary
     if "breakdown" in sections:
         # The living against the biology they were born into. Species and subspecies both go: WB fixes them at birth, so each would read 100 % and say nothing.
         out["breakdown"] = {k: v for k, v in population_breakdown(members, ctx).items() if k not in ("species", "subspecies")}
@@ -523,13 +525,14 @@ def main(argv: list[str]) -> int:
         getters = _rank_getters(members_by_id, housed, money, renown, warriors, ctx["world_time"])
         out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), getters)
     if "species" in sections:
-        out["species"] = _build_species(subspecies, save, ctx)
+        species = _build_species(subspecies, save, ctx, detailed=detailed)
+        out["species"] = species if detailed else light(species, withheld="breakdown")
     if "stats" in sections:
         out["stats"] = subspecies_stats(subspecies, ctx)
     if "taxonomy" in sections:
         out["taxonomy"] = _build_taxonomy(subspecies)
     if "traits" in sections:
-        out["traits"] = _build_traits(subspecies, detailed=requested not in (None, "full"))
+        out["traits"] = _build_traits(subspecies, detailed=detailed)
 
     emit(out)
     return 0
