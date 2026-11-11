@@ -88,8 +88,8 @@ _MIGRANT_SOON = 40  # seconds, half of WB's 80 between two turns of migrants: un
 _RANGED_ATTACKS = asset_set("ranged")  # WB `attack_type != 0`: every asset cloned from the `$range` template (`ItemLibrary`).
 _TRAIT_MODS = load_data("opinion-constants.json")["actor_trait_opinion_mods"]  # `ActorTrait.same_trait_mod`/`opposite_trait_mod` — the kingdom reads it too.
 
-# What `metadata` says even at 0: a town of the year, a point on the map's edge, a banner changed within the year — every other count keeps silent.
-_ZERO_SAID = frozenset({"age", "x", "y", "years_in_kingdom"})
+# What `metadata` says even at 0: a town of the year, a point on the map's edge — every other count keeps silent.
+_ZERO_SAID = frozenset({"age", "x", "y"})
 
 
 # Untruncated on purpose — loyalty adds stats together before casting, exactly as WB does. See `actor_stat_totals`.
