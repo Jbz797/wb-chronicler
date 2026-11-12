@@ -28,7 +28,7 @@ export class PersonTagComponent {
   // Their blood tie, species and crown for the plate's tooltip, as the prose's plates tell them.
   protected readonly about = computed(() => {
     const person = this.person();
-    return person ? LabelHelpers.personAbout(this._translate, person, this._chronicler.favoriteName()) : '';
+    return person ? LabelHelpers.personAbout(this._translate, person) : '';
   });
   // Their bond to the favourite — lover or best friend —, marked by the icon its own panel gives it; blood wears its own beside it.
   protected readonly bond = computed(() => this._chronicler.bondIcon(this.id()));

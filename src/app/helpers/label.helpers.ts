@@ -7,16 +7,16 @@ import { PersonInfo } from '../interfaces';
 export class LabelHelpers {
 
   // WB stores `male`/`female`, anything else falling to the masculine — and a tongue that does not inflect carries the bare key the gendered one falls back to.
-  public static gendered(translate: TranslateService, base: string, sex: string | undefined, parameters?: Record<string, string>): string {
+  public static gendered(translate: TranslateService, base: string, sex: string | undefined): string {
     const key = `${base}_${sex === 'female' ? 'f' : 'm'}`;
-    const label = translate.instant(key, parameters) as string;
-    return label === key ? (translate.instant(base, parameters) as string) : label;
+    const label = translate.instant(key) as string;
+    return label === key ? (translate.instant(base) as string) : label;
   }
 
   // What a person's plate tells on hover, in the panels as in the prose: their blood tie to the favourite, their species, their crown at this chapter, their age.
-  public static personAbout(translate: TranslateService, person: PersonInfo, favorite: string | undefined): string {
+  public static personAbout(translate: TranslateService, person: PersonInfo): string {
     const age = person.age === undefined ? undefined : `${person.age}${translate.instant('ui_years') as string}`;
-    const kin = favorite && person.kin ? this.gendered(translate, `kin_${person.kin}`, person.sex, { name: favorite }) : undefined;
+    const kin = person.kin ? this.gendered(translate, `kin_${person.kin}`, person.sex) : undefined;
     const realm = person.kingdom === undefined ? undefined : KINGDOM_REGISTRY[String(person.kingdom)]?.name;
     return [kin, translate.instant(`species_${person.asset_id}`) as string, realm, age].filter(Boolean).join(' · ');
   }

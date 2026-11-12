@@ -78,9 +78,6 @@ export class ChroniclerService {
     return !!previous && !!current && previous.id === current.id;
   };
 
-  // The favourite's name, the one a kin plate's hover reckons its tie from.
-  public readonly favoriteName = (): string | undefined => this.currentChapter()?.meta.favorite?.metadata.name;
-
   // The blocks this chapter and the one before it hold, the panels measuring one against the other. Off the number, not the index, which a cold link outruns.
   public load(slug: string): Observable<unknown> {
     const n = Number(slug.slice(1));

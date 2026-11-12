@@ -123,7 +123,7 @@ export class ReaderPage {
     const plate = (event.target as Element).closest<HTMLElement>('.entity-tag.hinted');
     const person = PERSON_REGISTRY[plate?.querySelector<HTMLCanvasElement>('canvas[data-person]')?.dataset.person ?? ''];
     if (!plate || !person || this.proseHint()?.origin.nativeElement === plate) return;
-    this.proseHint.set({ origin: new ElementRef(plate), text: LabelHelpers.personAbout(this._translate, person, this._chronicler.favoriteName()) });
+    this.proseHint.set({ origin: new ElementRef(plate), text: LabelHelpers.personAbout(this._translate, person) });
   }
 
   // Fills the canvas placeholders `marked` left in the prose — subjects and heraldry alike — now that the rendered chapter sits in the DOM.
