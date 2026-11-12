@@ -1495,6 +1495,8 @@ def render(value: object, indent: int = 0, used: int = 0, key: str | None = None
         # ids as keys sort on their value: `2` before `10`. Second, and skipped on a record: a key all digits is no identifier, so the two never both hold.
         numbered = not record and not ordered and all(isinstance(k, str) and k.lstrip("-").isdigit() for k in value)
         items = sorted(value.items(), key=lambda kv: int(kv[0])) if numbered else sorted(value.items()) if record and not ordered else value.items()
+        if record and "year" in value:  # a yearly row heads with its year: sorted last, it sat above the next row's counts, and a grep read them as its own
+            items = [("year", value["year"]), *(kv for kv in items if kv[0] != "year")]
         for k, v in items:
             dumped = f'"{k}"' if record else json.dumps(k, ensure_ascii=False)  # `record` proved every key an identifier; the rest keep their accents
             parts.append(f"{dumped}: {render(v, indent + 1, len(dumped) + 3, k)}")
