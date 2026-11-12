@@ -77,6 +77,13 @@ class _Token(NamedTuple):
     surface: str  # the word as written, to show a run as the chapter says it
 
 
+# Each word family's count in the chapter at its last audited round: an overuse this retouch did not feed was weighed then, one it fed is news.
+def _audited_roots(n: int) -> Counter:
+    text = chronicle_git("show", f"{_last_round(n)}:C{n}/chapter.md").stdout
+    tokens = (token for line in text.splitlines() for part in _SENTENCE.split(line) for token in _tokens(part, 0))
+    return Counter(token.key[:_FAMILY_ROOT] for token in tokens if len(token.key) >= _FAMILY_ROOT and token.content)
+
+
 # A name the chapter tags elsewhere, written bare on a line, headings included: a capitalised tag text alone, `la reine` being a reprise free of its tag.
 def _bare(n: int) -> list[dict]:
     prose = _chapter(n) or ""
@@ -107,11 +114,10 @@ def _borrowed(words: list[_Token], before: int) -> list[tuple[int, int, str]]:
     return [(line, at, word) for word, (line, at) in taken.items()]
 
 
-# The lines a delivered chapter has changed since, off the chronicle's git tag — `None` before delivery, or with no git, when the whole chapter is weighed.
+# The lines a delivered chapter has changed since its last audited round, off the chronicle's git tag — `None` before delivery, or with no git: weighed whole.
 @cache
 def _changed(n: int) -> set[int] | None:
-    tag = f"C{n}-delivered"
-    if chronicle_git("rev-parse", "-q", "--verify", f"refs/tags/{tag}").returncode:
+    if (tag := _last_round(n)) is None:
         return None
     lines: set[int] = set()
     for start, count in re.findall(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", chronicle_git("diff", "-U0", tag, "--", f"C{n}/chapter.md").stdout, re.MULTILINE):
@@ -145,13 +151,6 @@ def _content(word: str, name: bool) -> bool:
 def _dates() -> re.Pattern[str]:
     months = "|".join(map(re.escape, i18n("months.json").values()))
     return re.compile(rf"\b(?:(?:en|au|à)\s+)?(?:{months})\s+de\s+l['’]an\s+\d+", re.IGNORECASE)
-
-
-# Each word family's count in the chapter as delivered, off its tag: an overuse a retouch did not feed was weighed then, one it fed is news.
-def _delivered_roots(n: int) -> Counter:
-    text = chronicle_git("show", f"C{n}-delivered:C{n}/chapter.md").stdout
-    tokens = (token for line in text.splitlines() for part in _SENTENCE.split(line) for token in _tokens(part, 0))
-    return Counter(token.key[:_FAMILY_ROOT] for token in tokens if len(token.key) >= _FAMILY_ROOT and token.content)
 
 
 # The manual's examples chapter `n` says, each at its first line, as written there: an example used is no fault, used again from chapter to chapter a mould.
@@ -267,6 +266,15 @@ def _key(word: str) -> str:
 # A shown run's words as compared, to tell which rare words it already carries.
 def _keys(text: str) -> set[str]:
     return {_key(word) for word in _WORD.findall(text)}
+
+
+# The tag a delivered chapter was last audited at: its latest `--retouch` round, else its delivery — what `--retouch` diffs from; `None` undelivered, or with no git.
+@cache
+def _last_round(n: int) -> str | None:
+    rounds = [int(tag.rsplit("-r", 1)[1]) for tag in chronicle_git("tag", "--list", f"C{n}-r*").stdout.split()]
+    if rounds:
+        return f"C{n}-r{max(rounds)}"
+    return None if chronicle_git("rev-parse", "-q", "--verify", f"refs/tags/C{n}-delivered").returncode else f"C{n}-delivered"
 
 
 # Chapter `n` read once, line by line: its number, whether it is a section's edge (a heading, a separator), and its sentences as tokens.
@@ -672,7 +680,7 @@ def echoes(n: int, whole: bool = False) -> dict | None:
         echoed = {int(match["from"][2:]) for match in row.get("matches") or () if str(match.get("from", "")).startswith("l.")}
         return {*([row["line"]] if "line" in row else row.get("lines") or ()), *echoed}
 
-    then = _delivered_roots(n) if found["overused"] else Counter()  # the tag read only where a family is over
+    then = _audited_roots(n) if found["overused"] else Counter()  # the tag read only where a family is over
     return {key: [row for row in rows if (row["count"] > then[row["family"]] if key == "overused" else changed & named(row))] for key, rows in found.items()}
 
 
