@@ -21,7 +21,7 @@ lazy import subprocess  # one process check
 lazy from collections.abc import Callable, Collection, Mapping, Sequence
 lazy from typing import NoReturn
 
-CHAPTER_CAP = 12000  # a sitting's read, past which a chapter says more than its world did; in no doc, as `chapter_floor`: the recap gives both, delivery holds them
+CHAPTER_CAP = 9000  # a sitting's read, past which a chapter says more than its world did; in no doc, as `chapter_floor`: the recap gives both, delivery holds them
 COUNTED_AS = "every visible character, tags by their name, markdown marks left out"  # how every length a chapter is held to counts it, said beside each figure
 DIAGONAL_EXTRA = 2**0.5 - 1  # WB pays every step its own length (`Actor.updateMovement` over `Toolbox.DistVec2Float`), so a diagonal costs √2 tiles
 
