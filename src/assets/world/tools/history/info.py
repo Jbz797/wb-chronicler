@@ -79,7 +79,7 @@ _FOUNDED = {
     "religions": ("creator_id", "creator_name", "creator_city_id"),
 }
 
-_LIMIT = 10  # the lines `founded`, `log` and `rulers` give unless `--limit` says otherwise: the latest, the cut told beside
+_LIMIT = 10  # the lines `dead_kingdoms`, `founded`, `log` and `rulers` give unless `--limit` says otherwise: the latest, the cut told beside
 _REIGN_EDGES = {"king_dead": "to", "king_killed": "to", "king_left": "to", "king_new": "from"}  # the log's ends of a reign, a flight none
 
 # WB's `world_statistics_beasts` walks every unit, the dying and the hulls with it, where `Actor.die` counts a death at the blow and none for a metamorphosis.
@@ -124,17 +124,17 @@ _WORLD_STATES = (
 )
 
 
-# WB's fallen crowns with their dates, who passed through them and how they died, and the reigns the log names — all a crown keeps once its years are gone.
-def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict) -> list[dict]:
+# WB's fallen crowns with their dates, their last seat, who passed through them and how they died, and the reigns the log names — their latest `limit`.
+def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict, save_path: Path, chapter: str | None, limit: int | None) -> list[dict]:
     now = _chapter_time(save)
     found = conn.execute("SELECT * FROM KingdomData WHERE died_time IS NOT NULL AND died_time <= ? ORDER BY died_time", (now,))
     columns = [c for c, *_ in found.description]
-    crowns = [dict(zip(columns, row, strict=True)) for row in found.fetchall()]
+    crowns = _latest([dict(zip(columns, row, strict=True)) for row in found.fetchall()], limit, "crowns")  # cut first: a seat may open every save
     fallen, reigns = {c["id"] for c in crowns}, defaultdict(list)
     for entry in log_entries(0.0, now, deaths=True) if crowns else ():
         if entry["event"].startswith("king_") and entry["kingdom_id"] in fallen:
             reigns[entry["kingdom_id"]].append(_king_entry(entry))
-    out = []
+    out, towns = [], index_by_id(save.get("cities") or [])
     for crown in crowns:
         deaths = {"old_age" if m[1] == "natural" else m[1]: n for c, n in crown.items() if (m := _DEATH_CAUSE.match(c)) and n}
         if (unknown := (crown["total_deaths"] or 0) - (crown["metamorphosis"] or 0) - sum(deaths.values())) > 0:
@@ -145,6 +145,7 @@ def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict) -> list[dict]:
                 **quiet_zeros(tallies),
                 "asset_id": crown["original_actor_asset"],
                 "births": crown["total_births"],
+                "capital": _seat(crown["last_capital_id"], towns, save, save_path, chapter),
                 "deaths": deaths or None,
                 "fell": world_date(crown["died_time"]),
                 "founded": world_date(crown["created_time"] or 0),
@@ -394,6 +395,15 @@ def _ruled_records(save: dict, save_path: Path, chapter: str | None) -> dict[tup
     return pickle_cached("ruled_records_v2", save_path, table)
 
 
+# A fallen crown's last seat: the town as it stands, else as the last chapter save to hold it named it — `gone`, its name unknown if none ever did.
+def _seat(town: int | None, towns: dict, save: dict, save_path: Path, chapter: str | None) -> dict | None:
+    if town is None or town < 0:
+        return None
+    if town in towns:
+        return entity_ref(town, towns)
+    return {"gone": True, "id": town, "name": (_ruled_records(save, save_path, chapter).get(("city", town)) or {}).get("name")}
+
+
 # Every row of one series before `year`, the fine window's years and, older, the coarse steps' approximations — each row its own blanks carried.
 def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: int) -> tuple[list[str], list[dict], list[dict]]:
     where, params = ("WHERE timestamp < ?", [year]) if entity_id is None else ("WHERE id = ? AND timestamp < ?", [entity_id, year])
@@ -468,8 +478,8 @@ def main(argv: list[str]) -> int:
     if args.type and args.section != "log":
         print("✗ -t narrows `log`: name it", file=sys.stderr)
         return 2
-    if args.limit is not None and args.section not in ("founded", "log", "rulers"):
-        print("✗ --limit cuts `founded`, `log` and `rulers`: name one", file=sys.stderr)
+    if args.limit is not None and args.section not in ("dead_kingdoms", "founded", "log", "rulers"):
+        print("✗ --limit cuts `dead_kingdoms`, `founded`, `log` and `rulers`: name one", file=sys.stderr)
         return 2
     if since and args.section not in ("founded", "log"):
         print("✗ --since narrows `log` and `founded`: name one", file=sys.stderr)
@@ -493,7 +503,7 @@ def main(argv: list[str]) -> int:
         elif args.section == "rulers":
             out = _build_rulers(save, save_path, chapter, seats or tuple(_RULED), limit)
         elif args.section == "dead_kingdoms":
-            out = _build_dead_kingdoms(conn, save) or "✗ no crown has fallen"
+            out = _build_dead_kingdoms(conn, save, save_path, chapter, limit) or "✗ no crown has fallen"
         else:
             out = _build_entity(conn, args.entity[0], int(args.entity[1]), save, chapter)
     if isinstance(out, str):
