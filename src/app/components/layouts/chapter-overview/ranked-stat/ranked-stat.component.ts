@@ -72,8 +72,8 @@ export class RankedStatComponent {
     const key = this.suffix();
     return key ? (this._translate.instant(key) as string) : '';
   });
-  // Kingdom/city/alliance quantities render compact (`X.X K` above 100), like the world panel — except age/`%`/per-capita stats.
-  protected readonly useCompact = computed(() => this.source() !== 'favorite' && !NON_COMPACT_STATS.has(this.stat()));
+  // Quantities render compact (`X.X K` above 100), like the world panel — except years, `%` and per-capita stats.
+  protected readonly useCompact = computed(() => !NON_COMPACT_STATS.has(this.stat()));
 
   // A `Record` rather than a bare list: a tier added to `PeopleTierName` breaks the build here instead of quietly falling through to the favourite's resolver.
   private readonly _peopleSources: Record<PeopleTierName, true> = {

@@ -79,7 +79,7 @@ _AUDIT = {
     "relations": frozenset({"age_years", "borders", "gap_tiles", "years_since_last_war"}),
     # The world's stock of items, its sky, what its bodies are in the middle of and its sites — the panel counts souls, roofs and trees.
     "snapshot": frozenset({"clouds", "gear", "statuses", "under_construction"}),
-    "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "projectiles", "recoil", "swim", "throwing_range"}),
+    "stats": frozenset({"accuracy", "birth_rate", "births", "bonus_towers", "damage_min", "loot", "opinion", "projectiles", "recoil", "swim", "throwing_range"}),
 }
 
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
