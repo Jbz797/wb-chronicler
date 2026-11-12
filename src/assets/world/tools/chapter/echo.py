@@ -147,6 +147,13 @@ def _dates() -> re.Pattern[str]:
     return re.compile(rf"\b(?:(?:en|au|à)\s+)?(?:{months})\s+de\s+l['’]an\s+\d+", re.IGNORECASE)
 
 
+# Each word family's count in the chapter as delivered, off its tag: an overuse a retouch did not feed was weighed then, one it fed is news.
+def _delivered_roots(n: int) -> Counter:
+    text = chronicle_git("show", f"C{n}-delivered:C{n}/chapter.md").stdout
+    tokens = (token for line in text.splitlines() for part in _SENTENCE.split(line) for token in _tokens(part, 0))
+    return Counter(token.key[:_FAMILY_ROOT] for token in tokens if len(token.key) >= _FAMILY_ROOT and token.content)
+
+
 # The manual's examples chapter `n` says, each at its first line, as written there: an example used is no fault, used again from chapter to chapter a mould.
 @cache
 def _example_lines(n: int) -> dict[tuple[str, ...], tuple[int, str]]:
@@ -660,12 +667,13 @@ def echoes(n: int, whole: bool = False) -> dict | None:
     if whole or (changed := _changed(n)) is None:
         return found
 
-    # Delivered: a row stands by the lines it names, its own or the one it echoes — a count over the whole chapter names none, and was weighed at delivery.
+    # Delivered: a row stands by the lines it names, its own or the one it echoes — an overused family, named by no line, by a count the retouch raised
     def named(row: dict) -> set[int]:
         echoed = {int(match["from"][2:]) for match in row.get("matches") or () if str(match.get("from", "")).startswith("l.")}
         return {*([row["line"]] if "line" in row else row.get("lines") or ()), *echoed}
 
-    return {key: [row for row in rows if changed & named(row)] for key, rows in found.items()}
+    then = _delivered_roots(n) if found["overused"] else Counter()  # the tag read only where a family is over
+    return {key: [row for row in rows if (row["count"] > then[row["family"]] if key == "overused" else changed & named(row))] for key, rows in found.items()}
 
 
 # What chapter `n` breaks, empty while it holds: its length, the cap at every retouch too, its dialogues against `--finalize`'s floor: `--retouch` refuses on them.
