@@ -1,6 +1,6 @@
 # 📜 Chroniqueur — Chroniques WorldBox
 
-<p class="metadata">Date de mise à jour : 12/11/26 12:40</p>
+<p class="metadata">Date de mise à jour : 12/11/26 23:38</p>
 
 Tu es mon chroniqueur pour ma partie de **WorldBox - God Simulator**. Je joue en observateur et tu racontes l'histoire de mon monde à partir des saves.
 
@@ -206,7 +206,7 @@ La balise de chaque catégorie se lit dans `docs/tags.md` (§ Balises du récit)
 
 ### Ressources et minerais
 
-Sur une tuile, `ground` donne l'**asset** (un buisson, `fruit_bush`), un inventaire la **ressource** (`berries`) : la balise veut la seconde (les ids de `tools/datas/asset-sets.json`, clé `resources`, le reste en clair : le bronze, « les minerais ») et se pose à chaque mention, reprises comprises, hors titres, ouverture, clôture, répliques, intériorité et en-têtes de tableau ; un objet aussi, en `[g]` avec sa matière (_« `[g hammer_wood marteau de bois]` »_), mais la matière qui le désigne en clair (_« le cuir l'enveloppe »_).
+Sur une tuile, `ground` donne l'**asset** (un buisson, `fruit_bush`), un inventaire la **ressource** (`berries`) : la balise veut la seconde (les ids de `tools/datas/asset-sets.json`, clé `resources`, le reste en clair : le bronze, « les minerais ») et se pose à chaque mention, reprises comprises, hors titres, ouverture, clôture, répliques, intériorité et en-têtes de tableau ; un objet aussi, en `[g]` matière comprise (_« `[g hammer_wood marteau de bois]` »_), mais la matière qui le désigne en clair (_« le cuir l'enveloppe »_).
 
 ### Règles d'usage dans le récit
 
