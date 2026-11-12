@@ -682,27 +682,28 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
             print("  → mode: developer — first, a brief note of your own frictions so far, none at all if there are none. What may go in it:")
             _print_bullets(_DEV_NOTE)
             print("    a note given, wait for the player's word before the pick: what he clears up may change it")
-        print("  → chronicler: choose a favorite before a single word, the best of those there are — your pick, not the player's:")
+        print("  → chronicler: choose a favorite, the best of those there are — your pick, not the player's:")
         _print_bullets(_CHOICE)
         print("  → then put it to the player:")
         _print_bullets(_DESIGNATION)
-        print("  → once he is marked, step 3, the analysis, before the first word and not to be hurried:")
+        lead = "once he is marked,"
     else:
-        print("  → chronicler: step 3, the analysis, before the first word and not to be hurried:")
+        lead = "chronicler:"
+    print(f"  → {lead} step 3, the analysis, before the first word and not to be hurried:")
     fav_id = ((favorite or {}).get("metadata") or {}).get("id")
     if n > 1:
         order = ", the favorite first, then thread by thread:" if fav_id else ","  # the chapter's own order, so the analysis lands already sorted by thread
         print(f"    · the deltas since C{n - 1}{order} what moved as much as what held — `geography bodies C{n}` shows a land newly peopled")
     print("    · the thresholds just crossed: the first times, the levels reached")
     since = f"since C{n - 1}" if n > 1 else "since the world began"
-    print(f"    · the turning points, what tipped {since} — a death, a crown, a first time, a watch the world settled: one at least becomes a scene")
+    print(f"    · the turning points, what tipped {since} — a death, a crown, a watch the world settled: one at least becomes a scene")
     if fav_id:
         if n > 1:
-            print(f"    · what changed on the favorite: `actor {fav_id} --since C{n - 1} C{n}` — its walk and its gates, read before a word of it")
+            print(f"    · what changed on the favorite: `actor {fav_id} --since C{n - 1} C{n}` — its walk and its gates")
         print(f"    · who lives around the favorite: `actor {fav_id} surroundings C{n}`, each by its id: names repeat")
     if n > 1:
         print(f"    · the chapter before, reread: `saves/C{n - 1}/chapter.md`, and the open watches to settle or carry: `saves/watches.md`")
-    print("  → then, before a word, the story auditor's counsel — a sub-agent launched now, its id kept for the audit:")
+    print("  → then the story auditor's counsel — a sub-agent launched now, its id kept for the audit:")
     # Each place the brief names measured from the favorite, lest a counsel be built on a north that is a south: a world with no favorite has none to measure from
     measured = f', each place named with its measure from the favorite (actor {fav_id} --to "<place>")' if fav_id else ""
     print(f"    `{_COUNSEL.format(n=n, measured=measured)}`")
@@ -760,7 +761,7 @@ def _print_step_five(n: int, facts: dict) -> None:
     if bare := facts["bare"]:
         print(f"  ✗ trait summaries rewritten with nothing new set between [ ]: {', '.join(bare)}")
     if sized:
-        print("  → every length above counts spaces too, a tag by its name alone, a summary's [ ] not at all")
+        print("  → the H1 and summaries count spaces too, a tag by its name alone, a summary's [ ] not at all")
     for name, x, y, other in facts["doubled"]:
         print(f"  ✗ places.json « {name} »: ({x},{y}) is the very point of « {other} » — its sign needs a point of its own on the map")
     for name, x, y, found, declared in facts["misplaced"]:
