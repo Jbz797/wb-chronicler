@@ -2,7 +2,7 @@
   "--limit": "`--limit n|all` : les lignes gardées, 10 sans lui (`actor`, `geography`, `history`, `--roster`) ; la coupe dite d'un `⚠`, `all` pour tout ; chaque outil la sienne.",
   "--roster": "`--roster` : sans id, une ligne par entité (`actor`, `kingdom`, `subspecies`), par id sans `--rank`, coupé sans briser d'égalité ; détail : `gloss <outil>.roster`.",
   "--since": "`--since C<n>` : ce qui a changé depuis ce chapitre, sous `actor` et son `--roster`, `city … buildings`, `geography`, `history`, `subspecies --roster`, `world`.",
-  "across.--keep": "`--keep a,b.c` : de chaque chapitre, ces seuls champs, par chemin pointé, une liste item par item (`traits --keep id`) ; un absent se tait, un refus reste entier.",
+  "across.--keep": "`--keep a,b.c` : ces champs de chaque chapitre, par chemin pointé, une liste item par item (`traits --keep id`) ; un champ absent se tait, non une section, un refus.",
   "actor.--limit": "`--limit` : sous `surroundings`, les n plus proches de chaque cercle, et en plus sa famille (`kin`) et son meilleur ami, à toute distance.",
   "actor.--since": "`--since C<n>` : le bloc `since`, ce qui a changé chez le corps depuis ce chapitre ; avec `--to`, seulement le `then` du trajet, sans ce bloc.",
   "actor.--to": "`--to` : le trajet vers un corps, une tuile, un bâtiment, une cité, une terre, un lieu, une eau, le feu, le gel ou un type (par virgules) ; répété, chacun à part.",

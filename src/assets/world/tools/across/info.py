@@ -91,6 +91,11 @@ def main(argv: list[str]) -> int:
         if not any(kept.values()) and (shown := next(blocks, None)) is not None:
             print(f"✗ none of {', '.join(keep)} in any chapter — its fields: {', '.join(sorted(shown))}", file=sys.stderr)
             return 1
+        roots = {path.split(".")[0] for path in keep}
+        for chapter, answer in answers.items():
+            # An answer holding none of the sections asked is of another shape — a dead body's — and says what it holds; a field merely lacking stays silent
+            if not kept[chapter] and (block := _block_of(answer)) is not None and not roots & block.keys():
+                kept[chapter] = f"✗ no {', '.join(f'`{root}`' for root in sorted(roots))} here — its fields: {', '.join(sorted(block))}"
         answers = kept
     print(render(answers, key="across"))
     for note, where in notes.items():
