@@ -79,6 +79,7 @@
   "actor.roster.part": "Sous `--since`, ce qui est arrivé au corps : `arrived`, `moved`, `grew`, `died` mort, `left` sorti de l'entité ; omis si une seule partie est nommée.",
   "actor.roster.settle": "`--with settle` : vrai s'il pourrait fonder une cité là où il se tient, sinon ce qui l'en empêche d'abord (`child`, `king`…) ; les autres, `settle_more`.",
   "actor.roster.settle_more": "Le nombre d'autres obstacles après `settle`, la ligne restant courte ; leur liste, dite comme `settle` : `actor <id> metadata`.",
+  "actor.roster.weapon": "`--with weapon` : l'arme qu'il tient, par sa sorte (`hammer_wood`) ; absent, les mains vides ; `job` n'en dit rien.",
   "actor.since.moved": "D'où il était au chapitre nommé à où il est : cap et distance à vol d'oiseau, puis le plus court trajet entre les deux, au pas du corps ; jamais le chemin fait.",
   "actor.since.stats": "`stats` et `traits` : l'écart entre deux instants, pas ce qui s'est passé entre eux.",
   "actor.stats": "Agrégées dans l'ordre du jeu : socle, niveau, traits, équipement ; n'y ajoute rien, ne recompose rien (`gear`, `traits`) ; le sens de chacune : `wiki:Unit_Stats`.",

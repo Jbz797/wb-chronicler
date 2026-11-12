@@ -77,6 +77,7 @@ from shared import (
     tile_text,
     walk_tiles,
     war_camps,
+    weapon_assets,
     whereabouts,
     world_date,
     world_laws,
@@ -136,6 +137,7 @@ _KEPT_FIELDS = (
     "statuses",
     "subspecies",
     "task",
+    "weapon",
 )
 
 # What `--filter` takes as `key:value` besides each entity's id: an open value
@@ -209,6 +211,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "statuses": lambda: kept_statuses(actor),
         "subspecies": lambda: actor.get("subspecies"),
         "task": lambda: kept_task(actor),
+        "weapon": lambda: _weapon(actor, ctx["items_by_id"]),
         **{kind: (lambda kind=kind: entity_ref(actor.get(_MEMBERSHIPS[kind][1]), ctx["ties"][kind])) for kind in ctx.get("ties", ())},
     }
     return {field: kept[field]() if field in kept else stats.get(field, _FIELD_FLOORS.get(field)) for field in fields}
@@ -816,6 +819,12 @@ def _war_side(save: dict, war_id: int, upto: int) -> Callable[[int], str | None]
         return camp if camp and (killer is None or killer in foes) else None  # a killer of unknown crown counted, as `war`'s nobles are
 
     return side
+
+
+# The weapon in its hand, by its kind: what tells an armed body, where `job` tells only its post — none for one empty-handed.
+def _weapon(actor: dict, items_by_id: dict[int, dict]) -> str | None:
+    weapons = weapon_assets()
+    return next((kind for item in actor.get("saved_items") or () if (kind := (items_by_id.get(item) or {}).get("asset_id")) in weapons), None)
 
 
 # `actor --roster`, the call past `--roster` handed over by `actor`: every body of the world as its options leave them, a stray argument refused.
