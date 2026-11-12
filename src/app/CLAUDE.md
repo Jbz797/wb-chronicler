@@ -5,6 +5,7 @@
 
 ## Commentaires
 
+- Le commentaire d'un champ d'interface va en fin de ligne ou nulle part, jamais au-dessus
 - Pas de commentaires au-dessus des `constructor`, hooks `ng*` et méthodes `init`
 - Pas de commentaires dans `app.component.ts`
 

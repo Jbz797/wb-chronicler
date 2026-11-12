@@ -18,7 +18,7 @@ from pathlib import Path
 lazy import random  # loaded at first use, as the two below — a report's draw
 lazy import sqlite3  # the history base
 lazy import subprocess  # one process check
-lazy from collections.abc import Callable, Collection, Mapping, Sequence
+lazy from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 lazy from typing import NoReturn
 
 CHAPTER_CAP = 9000  # a sitting's read, past which a chapter says more than its world did; in no doc, as `chapter_floor`: the recap gives both, delivery holds them
@@ -644,6 +644,39 @@ def biome_lore(biome_id: str | None) -> dict:
     if not biome_id:  # a tile carrying no biome, and the one lookup that would otherwise take `None` for a key
         return {}
     return load_data("biomes.json").get(_BIOME_ALIASES.get(biome_id, biome_id)) or {}
+
+
+# A body's blood by id, each tie its nearest, off `parents_by_body`: what `actor … kin` lists and what a plate tied to the favourite wears in the reader.
+def blood_ties(body: int, born_of: Mapping[int, frozenset[int]]) -> dict[int, str]:
+    children_of: defaultdict[int, set[int]] = defaultdict(set)
+    for child, parents in born_of.items():
+        for parent in parents:
+            children_of[parent].add(child)
+
+    def offspring(bodies: Collection[int]) -> set[int]:
+        return {child for one in bodies for child in children_of[one]}
+
+    def siblings(one: int) -> set[int]:  # a half-sibling too: one parent shared
+        return offspring(born_of.get(one, frozenset())) - {one}
+
+    parents, children, kin = born_of.get(body, frozenset()), children_of[body], siblings(body)
+    aunts = {aunt for parent in parents for aunt in siblings(parent)}
+    rings = (  # nearest first, so a body tied twice — a cousin who is also a niece — keeps the closer
+        ("parent", parents),
+        ("child", children),
+        ("sibling", {one for one in kin if born_of.get(one) == parents}),
+        ("half_sibling", kin),
+        ("grandparent", {grand for parent in parents for grand in born_of.get(parent, ())}),
+        ("grandchild", offspring(children)),
+        ("aunt_uncle", aunts),
+        ("niece_nephew", offspring(kin)),
+        ("cousin", offspring(aunts)),
+    )
+    ties: dict[int, str] = {}
+    for tie, bodies in rings:
+        for one in bodies - {body}:
+            ties.setdefault(one, tie)
+    return ties
 
 
 # A body as a tool aims at it: its marker's letter and id, `p42`, as `[p 42 …]` reads in the tale. `None` for no body; a bare number names nothing, and says so.
@@ -1360,6 +1393,12 @@ def needs_food(subspecies: dict | None) -> bool:
 # WB `ActorData.age_overgrowth`: 1 from its constructor, the year a body born here is in, and a save leaves that default out; a migrant or a clone carries more.
 def overgrowth(body: dict) -> int:
     return int(body.get("age_overgrowth", 1))
+
+
+# Each body's parents by id, the living's as WB writes them and the dead's off the register — a missing one left out: what `blood_ties` reckons from.
+def parents_by_body(actors: Iterable[dict], deaths: Mapping[int, dict]) -> dict[int, frozenset[int]]:
+    born_of = {actor["id"]: frozenset(parent for parent in (actor.get("parent_id_1"), actor.get("parent_id_2")) if parent) for actor in actors}
+    return born_of | {body: frozenset(dead["parents"]) for body, dead in deaths.items()}
 
 
 # Parses a comma-separated section list — `None` and `full` expand to the default lot (`full`, else every section), and what is named beside `full` adds to it.

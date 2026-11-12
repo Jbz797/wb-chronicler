@@ -19,6 +19,9 @@
     @if (bond(); as b) {
       <img [src]="b" />
     }
+    @if (p.kin) {
+      <img src="assets/img/stats/kin.png" />
+    }
     @if (p.sex; as s) {
       <img [src]="`assets/img/sex/${s}.png`" />
     }

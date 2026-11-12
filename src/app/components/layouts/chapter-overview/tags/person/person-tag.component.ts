@@ -25,12 +25,12 @@ export class PersonTagComponent {
 
   // Species/sex/profession badge/dead come from the person registry, kept fresh by actor/city/kingdom info.py. `null` until the person is registered.
   protected readonly person = computed(() => this._registry.persons()[String(this.id())] ?? null);
-  // Their species and crown for the plate's tooltip, as the prose's plates tell them.
+  // Their blood tie, species and crown for the plate's tooltip, as the prose's plates tell them.
   protected readonly about = computed(() => {
     const person = this.person();
-    return person ? LabelHelpers.personAbout(this._translate, person) : '';
+    return person ? LabelHelpers.personAbout(this._translate, person, this._chronicler.favoriteName()) : '';
   });
-  // Their one bond to the favourite — lover, best friend or kin —, marked by the icon its own panel gives it.
+  // Their bond to the favourite — lover or best friend —, marked by the icon its own panel gives it; blood wears its own beside it.
   protected readonly bond = computed(() => this._chronicler.bondIcon(this.id()));
   // Their realm's own name hue — a subject reads as belonging to that crown, exactly as its `[k]` tag does.
   protected readonly color = computed(() => PaletteHelpers.realmText(this.person()?.kingdom));

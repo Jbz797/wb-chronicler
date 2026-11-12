@@ -21,6 +21,7 @@ from shared import (
     PODIUM_PLACES,
     SAVES_DIR,
     actor_age,
+    blood_ties,
     city_score_dimensions,
     index_by_id,
     is_boat,
@@ -28,6 +29,7 @@ from shared import (
     kingdom_score_dimensions,
     load_data,
     load_save,
+    parents_by_body,
     resolve_profession,
     score_totals,
     sex_label,
@@ -141,15 +143,11 @@ def _build_registries(save: dict, prev: dict) -> dict:
     # A body still in its shell is drawn as that shell: the egg its biology lays, WB keeping it among the biology's traits.
     ctx, shells = build_actor_stats_context(save), {trait for trait, told in load_data("subspecies-traits.json").items() if told.get("group") == "eggs"}
     egg_by_subspecies = {sid: next((trait for trait in sub.get("saved_traits") or () if trait in shells), None) for sid, sub in subspecies_by_id.items()}
-    # The favourite's own family, off the flag `favorite.py` set in the save: its kin wear the bond on their plates, the favourite never.
-    kin = next((family for a, _ in crowd.values() if a.get("favorite") and (family := a.get("family"))), None)
     persons = {}
     for aid, (a, job) in crowd.items():
         egg = egg_by_subspecies.get(a.get("subspecies")) if is_egg(a, ctx) else None
         entry = persons[str(aid)] = _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid), egg)
         entry["age"] = actor_age(a, ctx["world_time"])  # the years WB's own window shows, on the plate's hover
-        if kin is not None and a.get("family") == kin and not a.get("favorite"):  # `None` guarded: a familyless body would else match a familyless favourite
-            entry["favorite_family"] = True
 
     # The composite score's points, medalled as every other podium is — from three rivals up, a world raising its towns and crowns by the handful.
     rank_by_city = _podium(score_totals([c["id"] for c in cities], city_score_dimensions(save)), MIN_SCORE_PEERS)
@@ -214,9 +212,16 @@ def _build_registries(save: dict, prev: dict) -> dict:
     }
 
     # A body dead before a chapter saw it sits in no registry, so its tag would resolve to nothing: the death register gives its stock, a founder's among them.
-    for body, dead in kept_deaths(save).items():
+    deaths = kept_deaths(save)
+    for body, dead in deaths.items():
         if str(body) not in out["persons"] and not is_boat(dead):
             out["persons"][str(body)] = {"asset_id": dead["asset_id"], "dead": True}
+    # The favourite's blood out to its cousins, the dead among them — a fallen son is still a son —, as `actor … kin` lists it
+    favorite = next((a for a, _ in crowd.values() if a.get("favorite")), None)
+    ties = blood_ties(favorite["id"], parents_by_body((a for a, _ in crowd.values()), deaths)) if favorite else {}
+    for body, tie in ties.items():
+        if entry := out["persons"].get(str(body)):
+            entry["kin"] = tie
 
     return out
 
@@ -353,7 +358,7 @@ def _merge(prev: dict, live: dict) -> dict:
         if entry_key in live:
             continue
         carried[entry_key] = fallen = {**entry, "dead": True}
-        for volatile in ("age", "favorite_family", "kingdoms", "rank", "size"):  # the living's years, kin, tier, medal and crowns: no last-known entry claims them
+        for volatile in ("age", "kin", "kingdoms", "rank", "size"):  # the living's years, kin, tier, medal and crowns: no last-known entry claims them
             fallen.pop(volatile, None)
     return carried | live
 

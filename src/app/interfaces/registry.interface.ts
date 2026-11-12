@@ -100,9 +100,9 @@ export interface PersonInfo {
   asset_id: string;
   dead?: boolean;
   egg?: string; // the shell a body is still in, drawn in its stead — the egg its biology lays
-  favorite_family?: boolean; // one of the favourite's living kin, whose plate wears the family's bond
   head?: number;
   job?: string;
+  kin?: 'aunt_uncle' | 'child' | 'cousin' | 'grandchild' | 'grandparent' | 'half_sibling' | 'niece_nephew' | 'parent' | 'sibling'; // tie to this chapter's favourite
   kingdom?: number;
   level?: number;
   phenotype_index?: number;

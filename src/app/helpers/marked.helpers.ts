@@ -253,6 +253,7 @@ export class MarkedHelpers {
     const dead = info.dead ? ' dead' : ''; // fallen actor → drained + struck-through style
     const label = `<span class="entity-name">${name}</span>`;
     const medal = info.rank ? `<img src="assets/img/podium/${info.rank}.png" />` : ''; // top-3 by level, the one axis a soul is ranked on
+    const kin = info.kin ? '<img src="assets/img/stats/kin.png" />' : ''; // the favourite's blood, the tie itself told on hover
     const job = info.job ? `<img src="assets/img/professions/${info.job}.png" />` : ''; // the dead keep theirs — the drained plate already says they are gone
     const level = info.level ? `<span class="tag-badge">${info.level}</span>` : ''; // only once earned — Python omits the level-1 crowd
     const sex = info.sex ? `<img src="assets/img/sex/${info.sex}.png" />` : ''; // Folded pre-history founders carry no actor data — no sex to show.
@@ -260,7 +261,7 @@ export class MarkedHelpers {
     const hue = PaletteHelpers.realmRing(info.kingdom); // their crown's emblem tint, framing the plate exactly as it frames the crown's own tag
     const style = `--tag-color: ${color}${hue ? `; --tag-ring: ${hue}` : ''}`;
 
-    return `<span class="ant-tag entity-tag${dead}" style="${style}">${portrait}${label}${medal}${level}${sex}${job}</span>`;
+    return `<span class="ant-tag entity-tag${dead}" style="${style}">${portrait}${label}${medal}${level}${kin}${sex}${job}</span>`;
   }
 
   // A creed plate: WB's own votive frame, the sign it raises, its hue and the living who hold to it. Preached, not granted, so it borrows no crown's palette.

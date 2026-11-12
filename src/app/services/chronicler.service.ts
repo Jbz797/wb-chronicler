@@ -64,12 +64,11 @@ export class ChroniclerService {
     });
   }
 
-  // The one bond a plate wears towards the favourite, as its panel draws it: the lover first, then the best friend, then kin — `null` for anyone else, herself too.
+  // The one bond a plate wears towards the favourite, as its panel draws it: the lover first, then the best friend — `null` for anyone else.
   public readonly bondIcon = (id: number): string | null => {
     const companions = this.currentChapter()?.meta.favorite?.companions;
     if (companions?.lover?.id === id) return 'assets/img/stats/lovers.png';
-    if (companions?.best_friend?.id === id) return 'assets/img/stats/friendship.png';
-    return this._registry.persons()[String(id)]?.favorite_family ? 'assets/img/world/families.png' : null;
+    return companions?.best_friend?.id === id ? 'assets/img/stats/friendship.png' : null;
   };
 
   // The body this tier names in the chapter before — same id, same entity, or every delta would compare two strangers: a dead favourite, a crown lost.
@@ -78,6 +77,9 @@ export class ChroniclerService {
     const current = this.currentChapter()?.meta[tier]?.metadata;
     return !!previous && !!current && previous.id === current.id;
   };
+
+  // The favourite's name, the one a kin plate's hover reckons its tie from.
+  public readonly favoriteName = (): string | undefined => this.currentChapter()?.meta.favorite?.metadata.name;
 
   // The blocks this chapter and the one before it hold, the panels measuring one against the other. Off the number, not the index, which a cold link outruns.
   public load(slug: string): Observable<unknown> {

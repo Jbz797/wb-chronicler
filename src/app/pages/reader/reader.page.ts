@@ -123,7 +123,7 @@ export class ReaderPage {
     const plate = (event.target as Element).closest<HTMLElement>('.entity-tag.hinted');
     const person = PERSON_REGISTRY[plate?.querySelector<HTMLCanvasElement>('canvas[data-person]')?.dataset.person ?? ''];
     if (!plate || !person || this.proseHint()?.origin.nativeElement === plate) return;
-    this.proseHint.set({ origin: new ElementRef(plate), text: LabelHelpers.personAbout(this._translate, person) });
+    this.proseHint.set({ origin: new ElementRef(plate), text: LabelHelpers.personAbout(this._translate, person, this._chronicler.favoriteName()) });
   }
 
   // Fills the canvas placeholders `marked` left in the prose — subjects and heraldry alike — now that the rendered chapter sits in the DOM.
@@ -149,13 +149,14 @@ export class ReaderPage {
     this._restoreScroll();
   }
 
-  // The favourite's lover, best friend and kin wear the icon its panel gives that bond, just before their sex — `marked` drew the plates without the chapter.
+  // The favourite's lover and best friend wear the icon its panel gives that bond, before their blood and sex — `marked` drew the plates without the chapter.
   private _bondPlates(root: HTMLElement): void {
     for (const portrait of root.querySelectorAll<HTMLCanvasElement>('canvas[data-person]')) {
       const icon = this._chronicler.bondIcon(Number(portrait.dataset.person));
       const plate = portrait.closest('.entity-tag');
       if (!icon || !plate) continue;
-      plate.insertBefore(Object.assign(document.createElement('img'), { src: icon }), plate.querySelector('img[src*="/sex/"], img[src*="/professions/"]'));
+      const next = plate.querySelector('img[src$="/kin.png"], img[src*="/sex/"], img[src*="/professions/"]');
+      plate.insertBefore(Object.assign(document.createElement('img'), { src: icon }), next);
     }
   }
 

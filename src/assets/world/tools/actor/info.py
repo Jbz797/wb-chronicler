@@ -59,6 +59,7 @@ from shared import (
     asset_kinds,
     asset_sites,
     bearing,
+    blood_ties,
     body_ref,
     build_trait_ids,
     build_trait_list,
@@ -96,6 +97,7 @@ from shared import (
     named_body,
     needs_food,
     overgrowth,
+    parents_by_body,
     parse_sections,
     pickle_cached,
     place_point,
@@ -133,6 +135,19 @@ _GROUND_PREFIX = "g:"  # `--to g:flower`: a ground by its `biomes` name alone, w
 _HOURLY_TILES_PER_SPEED = 4.0  # chronicler.md § Échelle: `speed` 10 walks ~40 tiles an hour, so a pace twice as quick halves the time
 _IDS = frozenset({"home"})  # the counts that are no counts: a roof's id, which `--since` tells as `new` or `gone`, never from 0
 _ISSUE_BACKDATE = 10 * UNITS_PER_YEAR  # WB `Actor.createNewWeapon` → `generateItem(…, 10, …)`: the weapon a body arrives with is stamped ten years before it
+
+_KIN_GROUPS = {  # each tie `blood_ties` names, by the list `kin` gives it
+    "aunt_uncle": "aunts_uncles",
+    "child": "children",
+    "cousin": "cousins",
+    "grandchild": "grandchildren",
+    "grandparent": "grandparents",
+    "half_sibling": "half_siblings",
+    "niece_nephew": "nieces_nephews",
+    "parent": "parents",
+    "sibling": "siblings",
+}
+
 _LIMIT = 10  # the lines each circle of `surroundings` gives unless `--limit` says otherwise, the nearest — its kin besides
 _LISTED_GOALS = 5  # the nearest `--to cities` and `--to lands` list, a last place shared told whole: one more is its own `--to c<id>`, `i<id>`
 _LONE_ID = re.compile(r"[bcip]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): a body, a building, a town, a land — a bare number too
@@ -581,7 +596,7 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None, lines: in
     reach = limit / min(gait.cheapest, sail if ferried else 1.0) if gait else limit  # the farthest tile the cheapest pace brings within it
     kin: dict[int, str] = {}
     ctx["best_friend"] = actor.get("best_friend_id")  # kept past the cut as kin is, yet filed by the walk: a friend is no kin, the Intimate never his by right
-    ties = _ties(actor)
+    blood, aid, lover = blood_ties(actor["id"], parents_by_body(ctx["actors_by_id"].values(), ctx["deaths"])), actor["id"], actor.get("lover")
     within: list[tuple] = []
     for other in ctx["actors_by_id"].values():
         if other is actor:
@@ -592,8 +607,8 @@ def _build_surroundings(actor: dict, ctx: dict, requested: str | None, lines: in
         # The crow's line first: no walk is shorter, and a swift swimmer's circles stop at their edge all the same.
         if (crow := walk_tiles(ox - cx, oy - cy)) > reach:
             continue
-        # His parents, children, siblings and mate stand in full wherever they live: a count by town would drop where they are, which no roster of theirs says.
-        if not boat and (tie := _kin_tie(ties, other)):
+        # His blood as `kin` reads it and his mate stand in full wherever they live: a count by town would drop where they are, which no roster of theirs says.
+        if not boat and (tie := "lover" if lover == other["id"] or other.get("lover") == aid else blood.get(other["id"])):
             kin[other["id"]] = tie
         within.append((other["id"], boat, crow, ox, oy, island_of.get((ox, oy))))
     # Each walk stops at the last body it may be asked for, rather than sweeping its whole limit: every one within reach is known before any walk is drawn.
@@ -853,8 +868,7 @@ def _dead_answer(dead: dict, ctx: dict, save: dict, sections: tuple, requested: 
         if len(lost) == len(sections):
             return 2
         sections = tuple(section for section in sections if section in _DEAD_SECTIONS)
-    body = {"id": dead["id"], **dict(zip(("parent_id_1", "parent_id_2"), dead["parents"], strict=False))}  # its parents as a living body carries them
-    kin = _kin(body, ctx) if "kin" in sections else None
+    kin = _kin(dead["id"], ctx, requested) if "kin" in sections else None
     out = {
         **dict.fromkeys(lost),  # refused above, yet named: `emit` leaves the others their names
         "crafted": _crafted(dead["id"], ctx, requested) if "crafted" in sections else None,
@@ -952,32 +966,14 @@ def _heading(cx: int, cy: int, gx: int, gy: int, mark: str | None, about: Mappin
     return {**to, mark: {**about.get((gx, gy), {}), "x": gx, "y": gy}} if mark else to
 
 
-# Whom a body was born of, whom it bore and who shares a parent with it, off the parents WB writes on each body and the register on each dead one.
-def _kin(actor: dict, ctx: dict) -> dict:
-    by_id, deaths, aid = ctx["actors_by_id"], ctx["deaths"], actor["id"]
-    ids = [pid for pid in (actor.get("parent_id_1"), actor.get("parent_id_2")) if pid]
-    born_of = {b["id"]: (b.get("parent_id_1"), b.get("parent_id_2")) for b in by_id.values()} | {d["id"]: tuple(d["parents"]) for d in deaths.values()}
-    children = [rid for rid, of in born_of.items() if aid in of]
-    shared = set(ids)
-    siblings = [rid for rid, of in born_of.items() if rid != aid and not shared.isdisjoint(of)]  # a half-sibling too: one parent shared
-    return {
-        "children": [_relative(rid, ctx) for rid in sorted(children)] or None,
-        "parents": [_relative(pid, ctx) for pid in ids] or None,
-        "siblings": [_relative(rid, ctx) for rid in sorted(siblings)] or None,
-    }
-
-
-# The actor's tie to another body, or `None`, off his `_ties`: WB keeps two parents and one mate each — a child names him, a sibling shares a parent.
-def _kin_tie(ties: tuple[int, frozenset[int], int | None], other: dict) -> str | None:
-    aid, parents, lover = ties
-    lineage = (other.get("parent_id_1"), other.get("parent_id_2"))
-    if other["id"] in parents:
-        return "parent"
-    if aid in lineage:
-        return "child"
-    if other["id"] == lover or other.get("lover") == aid:
-        return "lover"
-    return "sibling" if not parents.isdisjoint(lineage) else None
+# A body's blood out to its cousins, each relative under its nearest tie, off the parents WB writes on the living and the register on the dead: counted in `full`.
+def _kin(body: int, ctx: dict, requested: str | None) -> dict:
+    by_tie: dict[str, list[int]] = defaultdict(list)
+    for rid, tie in sorted(ties := blood_ties(body, parents_by_body(ctx["actors_by_id"].values(), ctx["deaths"])).items()):
+        by_tie[_KIN_GROUPS[tie]].append(rid)
+    if not wants_detail(requested, len(ties)):
+        return light({group: len(rids) for group, rids in sorted(by_tie.items())}, withheld=True)
+    return {group: [_relative(rid, ctx) for rid in by_tie[group]] or None for group in sorted(_KIN_GROUPS.values())}
 
 
 def _kind_of(body_id: int | None, ctx: dict) -> str | None:
@@ -1454,11 +1450,6 @@ def _then_goals(target: str, told: dict, then: dict, then_ctx: dict, since: str 
     return _shore(land, then_ctx)
 
 
-# What `_kin_tie` weighs every neighbour against, read off the actor once: his id, his parents (a missing one left out) and his mate.
-def _ties(actor: dict) -> tuple[int, frozenset[int], int | None]:
-    return actor["id"], frozenset(p for p in (actor.get("parent_id_1"), actor.get("parent_id_2")) if p), actor.get("lover")
-
-
 # A time in the minutes `_duration` tells, rounded at its grain: the one figure both what a row says and the circle it falls in are read from.
 def _told_minutes(hours: float) -> int:
     return int((raw := hours * 60) / (step := _step(raw)) + 0.5) * step
@@ -1754,7 +1745,7 @@ def main(argv: list[str]) -> int:
     if "inventory" in sections:
         out["inventory"] = _build_inventory(actor)
     if "kin" in sections:  # its blood, where a mate or a friend is a bond: a parent gone stays (`gone`), and the section goes where it has neither
-        out["kin"] = _kin(actor, ctx)
+        out["kin"] = _kin(actor_id, ctx, requested)
     if "metadata" in sections:
         out["metadata"] = {
             **_build_metadata(actor, ctx, save),
