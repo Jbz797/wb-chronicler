@@ -870,9 +870,11 @@ def _dead_answer(dead: dict, ctx: dict, save: dict, sections: tuple, requested: 
 # A body the register saw die: what it was, of whom and in what post, then when, of what, by whom and where — its land as the map read draws it.
 def _death(dead: dict, ctx: dict, upto: int) -> dict:
     by_id, deaths, lineage = ctx["actors_by_id"], ctx["deaths"], dead["subspecies"]
+    # Unknown on a body that appeared (no parents) and that no save saw alive: its `born` dates its coming, not its birth, and its age is beyond telling
+    unknown = dead["overgrowth"] is None and not dead["parents"]
     return {
-        # Unknown on a body that appeared (no parents) and that no save saw alive: its `born` dates its coming, not its birth
-        "age_overgrowth": dead["overgrowth"] or ("unknown" if dead["overgrowth"] is None and not dead["parents"] else None),
+        "age": None if unknown else actor_age({"age_overgrowth": dead["overgrowth"], "created_time": dead["born"]}, dead["died"]),
+        "age_overgrowth": dead["overgrowth"] or ("unknown" if unknown else None),
         "asset_id": dead["asset_id"],
         "became": alive_or_dead_ref(dead["became"], by_id, deaths),
         "blow": dead["blow"],
