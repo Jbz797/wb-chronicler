@@ -318,7 +318,7 @@
   "to.centre_dir": "Le cap du point d'une terre, d'une eau, d'une `box` ou du milieu du feu, s'il diffère de `dir`, pris au bord : vrais tous deux, la phrase nomme son départ.",
   "to.chunks_apart": "L'écart en chunks de 16 tuiles : à 0 ou 1, le jeu tient les deux pour tout près.",
   "to.dir": "`--to` : le cap à vol d'oiseau, sur 8 directions, du premier bout vers le second, y croissant vers le nord (de 10,10 à 10,20 : `N`) ; jamais le côté d'une terre.",
-  "to.edge": "`--to c<id>` : sa lisière, son quartier le plus proche, non sa dernière maison ; 0 : dedans ; temps et cap vont au centre. La plus proche cité : `tiles … distances`.",
+  "to.edge": "`--to c<id>` : sa lisière à la save lue (d'un autre temps : `C<n>`), son quartier le plus proche, non sa dernière maison ; 0 : dedans ; temps et cap au centre.",
   "to.frozen": "Vers le gel (`--to frozen`) : la tuile gelée atteinte et sa sorte, `frost` passager, `snow`, `ice`, `permafrost`, comme `geography … frozen` les compte.",
   "to.patch": "Vers un sol (`g:rock`), la parcelle atteinte en tuiles, comme `biomes` la compte : `1`, une tuile isolée ; le pied d'un relief se vise par son nom (`--to \"<lieu>\"`).",
   "traits": "`description` et `flavor` sont l'ambiance, l'effet tient dans `stats` (`dormant` : endormi par l'ère) ; d'où il vient, ce qui l'ôte : `wiki:Creature_Traits`.",
