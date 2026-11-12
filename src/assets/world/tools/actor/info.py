@@ -846,7 +846,10 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
 def _dead_answer(dead: dict, ctx: dict, save: dict, sections: tuple, requested: str | None, upto: int) -> int:
     named = requested not in (None, "full")
     if lost := [section for section in sections if section not in _DEAD_SECTIONS] if named else []:
-        print(f"✗ {named_body(dead)} is dead: it keeps {', '.join(f'`{s}`' for s in _DEAD_SECTIONS)} — not {', '.join(lost)}", file=sys.stderr)
+        # What the register drops, the last save that saw it alive still holds: its gear, its stats — as they stood then, not on the day it fell
+        last = next((n for n, bodies in reversed(_chapter_statuses(upto)) if dead["id"] in bodies), None)
+        then = f"; as last seen alive: `actor/info.py {dead['id']} {','.join(lost)} C{last}`" if last else ""
+        print(f"✗ {named_body(dead)} is dead: it keeps {', '.join(f'`{s}`' for s in _DEAD_SECTIONS)} — not {', '.join(lost)}{then}", file=sys.stderr)
         if len(lost) == len(sections):
             return 2
         sections = tuple(section for section in sections if section in _DEAD_SECTIONS)

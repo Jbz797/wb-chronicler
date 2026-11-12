@@ -241,7 +241,7 @@
   "history.world.close_gap": "Les corps dont la clôture de l'année s'écarte de ses termes (+ trop) : WB garde un mort compté tant qu'il meurt, compte une coque en bête, ignore une métamorphose.",
   "history.world.made_up": "L'écart reprend celui de l'année d'avant : un corps compté un an à côté, les deux années justes ensemble.",
   "houses": "Les maisons comme WB les compte, telles que sa fenêtre de cité les affiche : maisons et tentes, chantiers compris (`under_construction`) ; ni hall ni autre bâtiment.",
-  "job": "Son poste, d'un mort à sa mort, bêtes comprises : `king` mène un royaume, `leader` une cité, `army_captain` une armée ; `warrior` et `civilian` ne mènent rien.",
+  "job": "Son poste, d'un mort à sa mort, bêtes aussi : `king` mène un royaume, `leader` une cité, `army_captain` une armée, les autres rien ; nul ne dit ses armes : `gear`.",
   "killed_by": "Son tueur, `{id, name}`, vivant ou mort ; absent : pas tué, ou un tueur que rien ne nomme (mort avant sa victime, ou qui n'était pas un corps).",
   "kills": "D'une entité, les morts que ses membres ont données sur toute sa vie, au compte du jeu ; d'une coque, les siennes.",
   "kingdom.--toward": "`--toward <id>[,<id>]` : sous `relations`, l'opinion envers ces royaumes seuls, dans les deux sens.",
