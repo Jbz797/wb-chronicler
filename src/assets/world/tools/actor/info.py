@@ -1779,9 +1779,11 @@ def main(argv: list[str]) -> int:
     trips = {words: aim and _trip(actor, aim, ctx, then, then_ctx, since) for words, aim in aimed.items()}
     favorite = next((body["id"] for body in ctx["actors_by_id"].values() if body.get("favorite") is True), None) if trips else None  # sought for a trip alone
     foreign = favorite not in (None, actor_id)  # a circle reads from the favourite alone: off another body, it would file nothing the chronicle keeps
-    for words, trip in trips.items():  # whose pace it reads, as `--to` would aim at it: a block quoted without its command still says where it starts
-        if isinstance(trip, dict):
-            trips[words] = {**(_uncircled(trip) if foreign else trip), "from": f"p{actor_id}"}
+    if foreign:
+        trips = {words: _uncircled(trip) if isinstance(trip, dict) else trip for words, trip in trips.items()}
+    # A trip to a body runs at the walker's pace: a sentence about that body measures from it, at its own (D'où), the call handed beside
+    for body in (match[1] for words, trip in trips.items() if trip and (match := re.fullmatch(r"p(\d+)", words))):
+        print(f"· at p{actor_id}'s pace; at p{body}'s own: `actor {body} --to p{actor_id}`", file=sys.stderr)
     if foreign and any(trips.values()):
         print(f"· no `circle` off p{actor_id}: it reads from the favourite — `actor {favorite} --to …`", file=sys.stderr)
     if targets and not any(trips.values()):
