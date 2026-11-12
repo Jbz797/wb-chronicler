@@ -13,7 +13,7 @@
   "actor.died.age_overgrowth": "Les années qu'il avait en paraissant, comme `metadata.age_overgrowth` ; `unknown` : paru sans parents et jamais vu vivant, son `born` date sa venue, sans `age`.",
   "actor.died.city": "Sa cité, telle que la tenait la dernière save de chapitre qui l'a vu vivant ; nommée comme aujourd'hui, ou comme alors si elle n'est plus.",
   "actor.died.sex": "Son sexe au registre : `male`, `female`, `none` sans sexe ; absent, il est inconnu, jamais `none`.",
-  "actor.kin": "`parents`, `children`, `siblings` (un parent commun suffit) ; un mort `gone`, sa `date`, `killed_by` ; le sang seul : le compagnon est dans `companions` (`lover`).",
+  "actor.kin": "`parents`, `children`, `siblings` (un parent commun suffit), avec leur `sex` ; un mort `gone`, sa `date`, `killed_by` ; le sang seul : le compagnon, `companions`.",
   "actor.kin.parents": "Le père : l'amant de la mère à la naissance (`wiki:Reproduction`) ; adoptif si leur couple (`lover_since`) est plus jeune que la grossesse (`maturation_months`).",
   "actor.metadata.age_overgrowth": "Ce que `age` ajoute aux années vécues ici, tu à 1 chez un né ici : un migrant appelé par le feu arrive grand (`wiki:World_Laws`), un clone, un paradoxe.",
   "actor.metadata.beside_building": "Dehors, aux abords du bâtiment nommé (sa tuile ou une voisine), sans y être entré ; de deux, le plus proche.",

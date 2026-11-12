@@ -1166,14 +1166,14 @@ def _reachable_lands(actor: dict, ctx: dict) -> dict:
     return {"farther": farther or None, "reachable": shown or None, "unreachable": lands - len(ways) or None}
 
 
-# A relative by its ref while it lives; dead, when and by whose hand, off the register — `gone` alone where the register never saw it fall.
+# A relative by its ref and sex, the word a tale needs (son, sister); dead, when and by whose hand, off the register — `gone` alone where it never saw it fall.
 def _relative(rid: int, ctx: dict) -> dict:
     if (living := entity_ref(rid, ctx["actors_by_id"])) is not None:
-        return living
+        return living | {"sex": sex_label(ctx["actors_by_id"][rid])}
     if (dead := ctx["deaths"].get(rid)) is None:
         return {"gone": True, "id": rid}
     killer = alive_or_dead_ref(dead["killer"], ctx["actors_by_id"], ctx["deaths"])
-    return {"date": world_date(dead["died"]), "gone": True, "id": rid, "killed_by": killer, "name": dead["name"]}
+    return {"date": world_date(dead["died"]), "gone": True, "id": rid, "killed_by": killer, "name": dead["name"], "sex": dead["sex"]}
 
 
 # A goal of a `--to` list as its own `--to` takes it: a number is a body's, a name with a space or a capital is a place's, quoted.
