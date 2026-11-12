@@ -50,6 +50,7 @@ export class MarkedHelpers {
         this._extension(INLINE_MARKER.Subspecies, 'subspecies', false, this._renderSubspecies), // `[u <id> <name>]` = subspecies (name in its own hue + bearers).
         this._extension(INLINE_MARKER.War, 'wars', false, this._renderWar), // `[w <id> <name>]` = war (the generic icon + the name it was given).
       ],
+      hooks: { preprocess: (markdown: string) => markdown.replaceAll(/^(— .*)\n(?=— )/gm, '$1\n\n') }, // each reply its own paragraph, blank line or not
     });
   }
 
