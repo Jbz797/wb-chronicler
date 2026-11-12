@@ -20,6 +20,11 @@ canvas {
   image-rendering: pixelated;
 }
 
+// The medals are cropped to their 11px coin: the pixel their 13px canvas framed them with is given back, so every row that hangs one keeps its spacing.
+img[src*='/podium/'] {
+  padding: 1px;
+}
+
 // Every modal's cross lights in the theme's gilt on hover, where ng-zorro's dark theme would only whiten it.
 .ant-modal-close:hover {
   color: $primary;
@@ -259,12 +264,12 @@ canvas {
       }
     }
 
-    // WB's religion nameplate (`nameplate_religion`), 33×20 — its golden hand cut out of the asset, 3-sliced so both bevels hold and the field runs.
+    // WB's religion nameplate (`nameplate_religion`), its golden hand cut out and cropped to 31×17 — 3-sliced so both bevels hold and the field runs.
     &.religion-tag {
       background-color: transparent;
       border: 0 solid transparent;
-      border-image: url('/assets/img/nameplates/religion.png') 0 7 0 5 fill / 0 7px 0 5px / 0 stretch; // right slice cut to the bevel: the hand it cleared is gone
-      border-width: 0 7px 0 5px;
+      border-image: url('/assets/img/nameplates/religion.png') 0 5 fill / 0 5px 3px / 0 stretch; // 17 tall in a 20 row: the plate kept 1:1, the foot left bare
+      border-width: 0 5px;
       box-shadow: none;
       padding: 0;
 

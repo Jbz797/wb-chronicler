@@ -67,6 +67,7 @@ from shared import (
     load_data,
     load_save,
     log_entries,
+    overgrowth,
     resolve_profession,
     sapient_subspecies,
     sex_label,
@@ -180,7 +181,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
     kept = {
         "adult_on": lambda: crossed_on(actor, adult) if age < (adult := adult_age(actor, ctx)) else None,
         "age": lambda: age,
-        "age_overgrowth": lambda: int(actor.get("age_overgrowth") or 0) or None,  # a migrant's mark, `born` its arrival
+        "age_overgrowth": lambda: n if (n := overgrowth(actor)) != 1 else None,  # a migrant's mark, `born` its arrival
         "army_since": lambda: kept_army_since(actor),  # when it joined its town's army, none outside one
         "asset_id": lambda: actor.get("asset_id"),
         "at": lambda: tile_text(*actor_xy(actor)),
@@ -353,7 +354,7 @@ def _build_roster(
         if gear and gear not in {(ctx["items_by_id"].get(item) or {}).get("asset_id") for item in actor.get("saved_items") or ()}:
             continue
         # Born in this world that year or month: a migrant's birth is no date the save holds, its arrival less whole years brought guessing the month
-        if born and (actor.get("age_overgrowth") or not born[1] <= float(actor.get("created_time") or 0) < born[2]):
+        if born and (overgrowth(actor) != 1 or not born[1] <= float(actor.get("created_time") or 0) < born[2]):
             continue
         # Born of a body, its parents kept: under `--since`, born since — one the earlier save held was born before it, whatever it did after
         if bred and (not (actor.get("parent_id_1") or actor.get("parent_id_2")) or (was is not None and actor["id"] in was)):
@@ -585,7 +586,7 @@ def _gone_since(
             continue
         if stage and _stage(body, ctx, actor_age(body, dead["died"]), adult_age(body, ctx)) not in stage:  # the stage it died at
             continue
-        if born and (body.get("age_overgrowth") or not born[1] <= dead["born"] < born[2]):  # a migrant told by the last save that saw it alive
+        if born and (overgrowth(body) != 1 or not born[1] <= dead["born"] < born[2]):  # a migrant told by the last save that saw it alive
             continue
         # Its name and sex at death the register's, not the last save's — a register older than its sex falls back on it; `was_on` silent under a lone land
         row = {

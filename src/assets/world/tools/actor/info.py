@@ -95,6 +95,7 @@ from shared import (
     moved_between,
     named_body,
     needs_food,
+    overgrowth,
     parse_sections,
     pickle_cached,
     place_point,
@@ -461,7 +462,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"adult_on": crossed_on(actor, age_adult)} if age < age_adult else {}),
         "age": age,
         # Years `age` counts that the body never lived here — a migrant called in grown (WB `updateMigrants`), a clone, a time paradox: `born` dates its coming
-        **({"age_overgrowth": n} if (n := int(actor.get("age_overgrowth") or 0)) else {}),
+        **({"age_overgrowth": n} if (n := overgrowth(actor)) != 1 else {}),
         # A pact reaches him through his crown, WB tying one to a realm and never to a soul — the ref lets `new.py` fan out on it like any other body.
         "alliance": entity_ref(ctx["pact_of"].get(actor.get("civ_kingdom_id")), ctx["alliances_by_id"]),
         "army_since": kept_army_since(actor),  # Chronicler-only: the month it joined its army, the mod's stamp
@@ -870,11 +871,12 @@ def _dead_answer(dead: dict, ctx: dict, save: dict, sections: tuple, requested: 
 # A body the register saw die: what it was, of whom and in what post, then when, of what, by whom and where — its land as the map read draws it.
 def _death(dead: dict, ctx: dict, upto: int) -> dict:
     by_id, deaths, lineage = ctx["actors_by_id"], ctx["deaths"], dead["subspecies"]
+    raw = dead["overgrowth"]
     # Unknown on a body that appeared (no parents) and that no save saw alive: its `born` dates its coming, not its birth, and its age is beyond telling
-    unknown = dead["overgrowth"] is None and not dead["parents"]
+    unknown = raw is None and not dead["parents"]
     return {
-        "age": None if unknown else actor_age({"age_overgrowth": dead["overgrowth"], "created_time": dead["born"]}, dead["died"]),
-        "age_overgrowth": dead["overgrowth"] or ("unknown" if unknown else None),
+        "age": None if unknown else actor_age({"age_overgrowth": 1 if raw is None else raw, "created_time": dead["born"]}, dead["died"]),
+        "age_overgrowth": "unknown" if unknown else None if raw in (None, 1) else raw,  # 1 is WB's own for a body born here, unsaid as on a fiche
         "asset_id": dead["asset_id"],
         "became": alive_or_dead_ref(dead["became"], by_id, deaths),
         "blow": dead["blow"],

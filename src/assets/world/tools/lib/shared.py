@@ -278,7 +278,7 @@ def _deaths_until(base: Path, now: float) -> dict[int, dict]:
             "killer_kingdom": killer_crown,  # the civilised crown its killer struck for, as WB weighs a war's dead: -1 a beast's, `None` an older row
             "kingdom": crown,  # the civilised crown it served as it fell, likewise
             "name": name or None,
-            "overgrowth": overgrowth,  # the years it came with, `age_overgrowth` as it fell: 0 for none, `None` unknown, a row older than the column
+            "overgrowth": overgrowth,  # `age_overgrowth` as it fell, 1 for a body born here: `None` unknown, a row older than the column
             "parents": [parent for parent in (mother, father) if parent and parent != -1],  # WB's -1 for none, as the mod copies it
             "sex": sex and sex.lower(),  # WB `ActorSex` as the mod names it: `male`, `female`, `none` for a body without one
             "subspecies": lineage if lineage and lineage != -1 else None,  # WB's -1 for none, as for the parents
@@ -561,9 +561,9 @@ def absent_entity(
     return f"✗ unknown {noun}: {entity_id}"
 
 
-# The age a body reads in-game, and the one every threshold is judged on: the year it is in, so a 15-year-old in its 16th shows 16, plus its `age_overgrowth`.
+# The age a body reads in-game, and the one every threshold is judged on: WB `ActorData.getAge`, its whole years here plus its `age_overgrowth`.
 def actor_age(actor: dict, world_time: float) -> int:
-    return entity_age(actor, world_time) + 1 + (actor.get("age_overgrowth") or 0)
+    return entity_age(actor, world_time) + overgrowth(actor)
 
 
 # A body's tile, soul or hull. WB omits a zero at save time, one coordinate at a time: a body on the first row writes an `x` and no `y`, as a zone does.
@@ -878,7 +878,7 @@ def competition_ranks(entity: dict, peers: list, getters: dict) -> dict:
 
 # The birth WB counts a body's age from: a migrant comes with years already told (`age_overgrowth`), the elder of one who set foot here long before.
 def counted_birth(actor: dict) -> float:
-    return float(actor.get("created_time") or 0) - (actor.get("age_overgrowth") or 0) * UNITS_PER_YEAR
+    return float(actor.get("created_time") or 0) - (overgrowth(actor) - 1) * UNITS_PER_YEAR
 
 
 # Each body's work: the world's items by their maker (`creator_id`), those still standing — what `actor … ranks` and `actor --roster` count alike.
@@ -1355,6 +1355,11 @@ def named_body(body: dict) -> str:
 # WB `Subspecies.needs_food`, cached off the `needs_food` meta-tag in `cacheTags` — carried by the one `stomach` trait, so a body without a gut never hungers.
 def needs_food(subspecies: dict | None) -> bool:
     return _has_meta_tag(subspecies, "needs_food")
+
+
+# WB `ActorData.age_overgrowth`: 1 from its constructor, the year a body born here is in, and a save leaves that default out; a migrant or a clone carries more.
+def overgrowth(body: dict) -> int:
+    return int(body.get("age_overgrowth", 1))
 
 
 # Parses a comma-separated section list — `None` and `full` expand to the default lot (`full`, else every section), and what is named beside `full` adds to it.

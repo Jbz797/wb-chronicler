@@ -40,6 +40,7 @@ from shared import (
     life_stage,
     load_data,
     needs_food,
+    overgrowth,
     sex_label,
     weapon_assets,
     world_date,
@@ -798,9 +799,9 @@ def compute_actor_stats(actor: dict, ctx: dict) -> dict:
     return cleaned
 
 
-# The `world_time` a body crosses a biology's age: WB weighs it against the years begun, so 3.9 opens at 4, three full years past birth, and overgrowth brings it on.
+# The `world_time` a body crosses a biology's age: WB weighs its age against it, so 3.9 opens at 4, three full years past birth, and overgrowth brings it on.
 def crossed_at(actor: dict, threshold: float) -> float:
-    years = math.ceil(threshold) - 1 - int(actor.get("age_overgrowth") or 0)
+    years = math.ceil(threshold) - overgrowth(actor)
     return float(actor.get("created_time") or 0) + years * UNITS_PER_YEAR
 
 
