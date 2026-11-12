@@ -110,16 +110,16 @@ _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no
     "refused: the next best, never of a kind turned down, until one is taken — the world has enough thinking souls, so the chapter never goes without",
 )
 
-_DEV_NOTE = (  # what a developer's note may hold, before a pick as at delivery — flagged, never done by the chronicler's own hand
-    "doc adjustment: a passage of docs/ unclear, contradictory, out of date, or a term to harmonise — flagged, never corrected by your hand",
-    "script improvement spotted on the way: a bug, a field misread, a wrong formula, an awkward output — name the file; no code change of your own",
-    "doc and recap at odds: the recap is right for now, but one of the two needs fixing — say which",
-    "obscure field: one whose meaning stays uncertain, the wiki included",
+_DEV_NOTE = (  # what a developer's note may hold, before a pick as at delivery
     "costly reading: a step that ate the context — say what you read and what you sought — or a passage, an output section, costing without serving: say which",
+    "doc adjustment: a passage of docs/ unclear, contradictory, out of date, or a term to harmonise",
+    "missing tool: a recurring analysis that deserves its own script",
     "new tag: an important kind of event that no code in docs/tags.md covers",
     "new word: one the tale keeps reaching for — imposed, banned or by a scale — that docs/lexicon.md lacks",
-    "missing tool: a recurring analysis that deserves its own script",
-    "and any other observation within your remit",
+    "obscure field: one whose meaning stays uncertain, the wiki included",
+    "script improvement spotted on the way: a bug, a field misread, a wrong formula, an awkward output — name the file",
+    "and any other observation within your remit — not a judgement call you and your auditors settled: that is the audit at work",
+    "flagged only: no doc or code touched by your hand",
 )
 
 _DIALOGUE = "chronicler.md § V, « Un dialogue quand le favori parle »"  # what the audit judges a dialogue by, in the rule's own words
