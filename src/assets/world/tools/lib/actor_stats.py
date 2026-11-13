@@ -721,10 +721,11 @@ def body_stats(actor: dict, ctx: dict) -> dict:
     cleaned = compute_actor_stats(actor, ctx)
     if not cleaned:
         return {}
-    if bears(actor, ctx) is False:  # a sire's `offspring` only bars him from starting — his mate starts in his stead, so no count of his says what he can father
-        cleaned.pop("max_children", None)
-    if not (bearing := fertile(ctx["subspecies_by_id"].get(actor.get("subspecies")))):  # a lineage that never bears, spores with no meal: a cap on nothing
-        cleaned.pop("max_children", None)
+    bearing = fertile(ctx["subspecies_by_id"].get(actor.get("subspecies")))
+    # A litter's size and cap are the bearer's: a sire's mate starts it and WB reads hers (`makeBabiesViaSexual`); nothing to size where the lineage never bears
+    if not bearing or bears(actor, ctx) is False:
+        for stat in ("birth_rate", "max_children"):
+            cleaned.pop(stat, None)
     cleaned.update(
         {
             # Life's tallies, silent at nought as every other stat is: a soul that owns nothing says so by carrying none of them — its kills are `victims`.

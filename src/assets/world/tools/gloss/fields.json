@@ -134,6 +134,7 @@
   "age": "D'un corps, ses années révolues ici plus `age_overgrowth`, 1 s'il est tu (l'année commencée) : les seuils s'y jugent ; de tout autre chose, les années révolues.",
   "at": "Une tuile, `x,y`, que `tiles` et `--to` prennent ; d'un bâtiment, sa tuile d'ancrage, au pied de son milieu, pas son bord ; `bounds`, coins sud-ouest puis nord-est.",
   "became": "D'une `metamorphosis`, le corps neuf qui a pris sa place ; dans `victims`, son espèce seule, et `died_of` s'y tait ; absent, il est inconnu.",
+  "birth_rate": "Les petits en plus du premier d'une portée, chacun tiré à 1 sur 2 puis ×0,85 : lu sur la mère seule, omis chez un mâle comme `max_children`.",
   "blow": "D'une `metamorphosis`, le coup qui a abattu le corps avant qu'il se change (`weapon`, `fire`…), que le jeu oublie ; absent, il est inconnu.",
   "boat.metadata.health": "La coque, sous `health_max` après des coups ; `health_max`, celle de sa sorte, un vingtième de plus par niveau, puis ses traits.",
   "boat.metadata.home": "Le port dont la coque relève, par son id : `ground <id>` dit son âge, sa santé, sa cité.",
