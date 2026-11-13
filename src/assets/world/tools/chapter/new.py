@@ -88,6 +88,7 @@ _BAPTISM = (
 
 _CHOICE = (  # what a pick weighs, said where the pick is made: needed at a world's start and at a favorite's death alone, in no doc
     "a thinking body only: `sapient: true` in `actor … metadata`",
+    "sought across the whole world: a body already part of the chronicle has an edge, never a claim",
     "weighed in depth: traits, political standing, narrative promise, age, its odds of living on, where it stands, what surrounds it…",
     "the world's first favorite also needs room for a homestead — a fitting biome around it, resources, obstacles at a distance; later ones, while nothing is built",
 )
