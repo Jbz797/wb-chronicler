@@ -337,6 +337,7 @@
   "to.frozen": "Vers le gel (`--to frozen`) : la tuile gelée atteinte et sa sorte, `frost` passager, `snow`, `ice`, `permafrost`, comme `geography … frozen` les compte.",
   "to.patch": "Vers un sol (`g:rock`), la parcelle atteinte en tuiles, comme `biomes` la compte : `1`, une tuile isolée ; le pied d'un relief se vise par son nom (`--to \"<lieu>\"`).",
   "traits": "`description` et `flavor` sont l'ambiance, l'effet tient dans `stats` (`dormant` : endormi par l'ère) ; d'où il vient, ce qui l'ôte : `wiki:Creature_Traits`.",
+  "traits.group": "La rubrique où le jeu range le trait, jamais un effet (`happiness` ne réjouit personne) : l'effet tient dans `description`, `stats` et le wiki.",
   "traits.stats": "Pesés contre sa lignée (`subspecies … stats`), jamais un autre corps ; `multiplier_<stat>` : la stat × (1 + leur somme), `max_children` pour `multiplier_offspring`.",
   "under_construction": "Un chantier posé, pas fini : nul n'y dort encore, mais WB le compte parmi les maisons de sa cité (`houses`) ; d'une entité, ses chantiers, déjà dans `buildings`.",
   "walk_tiles": "Les tuiles faites à pied, roche, lave et goo contournés ; sable, marais, neige et arbres sous Entanglewood n'allongent que le temps.",
