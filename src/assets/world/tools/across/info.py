@@ -36,6 +36,11 @@ def _block_of(answer: object) -> dict | None:
     return answer if isinstance(answer, dict) else None
 
 
+# The paths `--keep` meant on an answer keyed by its sections: each field as the section one level down holds it — none if no section does.
+def _by_section(block: dict, paths: list[str]) -> list[str]:
+    return [f"{section}.{path}" for path in paths for section, held in block.items() if path.split(".")[0] in (_block_of(held) or {})]
+
+
 # One chapter's answer cut to the fields asked, each by its dotted path from the block's top: a field it lacks says nothing, a refusal stays whole.
 def _kept(answer: object, paths: list[str]) -> object:
     if isinstance(answer, list):  # a section that is a list: each item cut alike, a lone field read flat (`traits --keep id`: the ids)
@@ -89,7 +94,10 @@ def main(argv: list[str]) -> int:
         kept = {chapter: _kept(answer, keep) for chapter, answer in answers.items()}
         blocks = (block for answer in answers.values() if (block := _block_of(answer)) is not None)  # a section that is a list offers its items' fields
         if not any(kept.values()) and (shown := next(blocks, None)) is not None:
-            print(f"✗ none of {', '.join(keep)} in any chapter — its fields: {', '.join(sorted(shown))}", file=sys.stderr)
+            if deeper := _by_section(shown, keep):
+                print(f"✗ none of {', '.join(keep)} at the top — by their section: {', '.join(deeper)}", file=sys.stderr)
+            else:
+                print(f"✗ none of {', '.join(keep)} in any chapter — its fields: {', '.join(sorted(shown))}", file=sys.stderr)
             return 1
         roots = {path.split(".")[0] for path in keep}
         for chapter, answer in answers.items():
