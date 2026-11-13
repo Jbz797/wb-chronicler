@@ -135,7 +135,7 @@ export const SKILL_STATS: StatConfig[] = [
 
 // Snapshot world stats — display order: demography → environment → society → conflict → culture → activity. A row at 0 hides itself.
 // `icon` names the sprite in `assets/img/world/`, filed by concept: `pop.png` draws a crowd, whichever crowd the key happens to count. `suffix`: a share.
-export const SNAPSHOT_STATS: { icon?: string; key: SnapshotStat; label: string; suffix?: string }[] = [
+export const SNAPSHOT_STATS: { icon?: string; inverted?: boolean; key: SnapshotStat; label: string; suffix?: string }[] = [
   { icon: 'population', key: 'sapient_pop', label: 'ui_sapient_pop' },
   { key: 'sick', label: 'ui_sick' },
   { key: 'infected', label: 'ui_infected' },
@@ -151,7 +151,7 @@ export const SNAPSHOT_STATS: { icon?: string; key: SnapshotStat; label: string; 
   { key: 'families', label: 'ui_families' },
   { key: 'clans', label: 'ui_clans' },
   { key: 'alliances', label: 'ui_alliances' },
-  { key: 'wars', label: 'ui_wars' },
+  { inverted: true, key: 'wars', label: 'ui_wars' },
   { key: 'armies', label: 'ui_armies' },
   { key: 'languages', label: 'ui_languages' },
   { key: 'cultures', label: 'ui_cultures' },

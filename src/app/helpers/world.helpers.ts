@@ -28,12 +28,20 @@ export class WorldHelpers {
   // The world's counts with their change — `snapshot` bar the hulls, which own a block; a count at 0 left out unless it just fell there, which the delta carries.
   public static snapshotRows(world: World, previous: World | undefined): SnapshotRow[] {
     // `chapter.json` drops a zero count, so an absent one reads as 0 on either side.
-    const rows: SnapshotRow[] = SNAPSHOT_STATS.map(({ icon, key, label, suffix }) => {
+    const rows: SnapshotRow[] = SNAPSHOT_STATS.map(({ icon, inverted = false, key, label, suffix }) => {
       const value = world.snapshot?.[key] ?? 0;
-      return { delta: previous ? value - (previous.snapshot?.[key] ?? 0) : undefined, icon, key, label, suffix, value };
+      return { delta: previous ? value - (previous.snapshot?.[key] ?? 0) : undefined, icon, inverted, key, label, suffix, value };
     });
     const boats = world.boats?.total ?? 0;
-    rows.push({ delta: previous && boats - (previous.boats?.total ?? 0), icon: undefined, key: 'boats', label: 'ui_boats', suffix: undefined, value: boats });
+    rows.push({
+      delta: previous && boats - (previous.boats?.total ?? 0),
+      icon: undefined,
+      inverted: false,
+      key: 'boats',
+      label: 'ui_boats',
+      suffix: undefined,
+      value: boats,
+    });
     return rows.filter(row => row.value > 0 || !!row.delta);
   }
 

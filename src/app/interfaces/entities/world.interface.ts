@@ -11,6 +11,7 @@ export interface LeaderRow extends Omit<Leader, 'name'> { group: LeaderGroup; is
 export interface SnapshotRow {
   delta: number | undefined;
   icon: string | undefined;
+  inverted: boolean; // a rise read as bad news, its delta coloured as a fall
   key: string;
   label: string;
   suffix: string | undefined; // `%` on a share, printed whole instead of in the compact form

@@ -13,7 +13,7 @@
         } @else {
           <span nz-tooltip [nzTooltipTitle]="row.value | exact">{{ row.value | compact }}</span>
         }
-        <app-delta [suffix]="row.suffix ?? ''" [value]="row.delta" />
+        <app-delta [inverted]="row.inverted" [suffix]="row.suffix ?? ''" [value]="row.delta" />
       </nz-descriptions-item>
     }
   </nz-descriptions>
