@@ -13,12 +13,13 @@ export class LabelHelpers {
     return label === key ? (translate.instant(base) as string) : label;
   }
 
-  // What a person's plate tells on hover, in the panels as in the prose: their blood tie to the favourite, their species, their crown at this chapter, their age.
+  // A person's plate on hover, panels and prose alike: blood tie to the favourite, species, crown at this chapter, age or the year they fell.
   public static personAbout(translate: TranslateService, person: PersonInfo): string {
     const age = person.age === undefined ? undefined : `${person.age}${translate.instant('ui_years') as string}`;
+    const died = person.died === undefined ? undefined : `${this.gendered(translate, 'ui_died', person.sex)} ${person.died}`;
     const kin = person.kin ? this.gendered(translate, `kin_${person.kin}`, person.sex) : undefined;
     const realm = person.kingdom === undefined ? undefined : KINGDOM_REGISTRY[String(person.kingdom)]?.name;
-    return [kin, translate.instant(`species_${person.asset_id}`) as string, realm, age].filter(Boolean).join(' · ');
+    return [kin, translate.instant(`species_${person.asset_id}`) as string, realm, age, died].filter(Boolean).join(' · ');
   }
 
 }

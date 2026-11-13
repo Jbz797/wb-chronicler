@@ -25,6 +25,7 @@ from shared import (
     entity_born,
     entity_ref,
     index_by_id,
+    is_boat,
     kept_deaths,
     latest_chapter,
     limit_arg,
@@ -124,7 +125,7 @@ _WORLD_STATES = (
 )
 
 
-# WB's fallen crowns with their dates, their last seat, who passed through them and how they died, and the reigns the log names — their latest `limit`.
+# WB's fallen crowns with their dates, last seat and size, who left or came by the fire, how they died, and the reigns the log names — their latest `limit`.
 def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict, save_path: Path, chapter: str | None, limit: int | None) -> list[dict]:
     now = _chapter_time(save)
     found = conn.execute("SELECT * FROM KingdomData WHERE died_time IS NOT NULL AND died_time <= ? ORDER BY died_time", (now,))
@@ -134,12 +135,12 @@ def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict, save_path: Path, 
     for entry in log_entries(0.0, now, deaths=True) if crowns else ():
         if entry["event"].startswith("king_") and entry["kingdom_id"] in fallen:
             reigns[entry["kingdom_id"]].append(_king_entry(entry))
-    out, towns = [], index_by_id(save.get("cities") or [])
+    out, towns, seen = [], index_by_id(save.get("cities") or []), _seen(save_path, chapter) if crowns else {}
     for crown in crowns:
         deaths = {"old_age" if m[1] == "natural" else m[1]: n for c, n in crown.items() if (m := _DEATH_CAUSE.match(c)) and n}
         if (unknown := (crown["total_deaths"] or 0) - (crown["metamorphosis"] or 0) - sum(deaths.values())) > 0:
             deaths["unknown"] = unknown
-        tallies = {key: crown[key] or 0 for key in ("joined", "left", "migrated", "moved")}
+        tallies = {key: crown[key] or 0 for key in ("joined", "left", "migrated")}  # `moved`: its founder, near always
         out.append(
             {
                 **quiet_zeros(tallies),
@@ -153,6 +154,7 @@ def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict, save_path: Path, 
                 "kills": crown["total_kills"],
                 "name": crown["name"],
                 "reigns": reigns.get(crown["id"]),
+                "seen": seen.get(crown["id"]),
             }
         )
     return out
@@ -402,6 +404,21 @@ def _seat(town: int | None, towns: dict, save: dict, save_path: Path, chapter: s
     if town in towns:
         return entity_ref(town, towns)
     return {"gone": True, "id": town, "name": (_ruled_records(save, save_path, chapter).get(("city", town)) or {}).get("name")}
+
+
+# Each crown as the last chapter save before the one read held it, with its subjects then: WB drops a fallen crown's years, so its size at the fall is lost.
+def _seen(save_path: Path, chapter: str | None) -> dict[int, dict]:
+    def table() -> dict[int, dict]:
+        seen: dict[int, dict] = {}
+        for n in range(1, int(chapter[1:]) if chapter else 1):
+            if (path := SAVES_DIR / f"C{n}" / "map.wbox").exists():
+                each = load_save(path)
+                crowns = {crown["id"] for crown in each.get("kingdoms") or []}
+                pops = Counter(kid for a in each.get("actors_data") or [] if (kid := a.get("civ_kingdom_id")) in crowns and not is_boat(a))
+                seen |= {crown: {"chapter": f"C{n}", "pop": pops[crown]} for crown in crowns}
+        return seen
+
+    return pickle_cached("crowns_seen_v1", save_path, table)
 
 
 # Every row of one series before `year`, the fine window's years and, older, the coarse steps' approximations — each row its own blanks carried.

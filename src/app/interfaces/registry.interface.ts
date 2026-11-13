@@ -99,6 +99,7 @@ export interface PersonInfo {
   age?: number; // the living's years at this chapter, dropped once dead
   asset_id: string;
   dead?: boolean;
+  died?: number; // the year it fell, from the death register
   egg?: string; // the shell a body is still in, drawn in its stead — the egg its biology lays
   head?: number;
   job?: string;

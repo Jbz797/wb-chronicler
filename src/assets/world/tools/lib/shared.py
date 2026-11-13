@@ -1886,12 +1886,17 @@ def whereabouts(actor: dict, buildings_by_id: Mapping[int, dict], by_tile: Mappi
 
 # A `world_time` as the chronicle dates it, both counts 1-based as WB displays them: `t = 1181` is `y20 m9`. A string, not a pair: a roll's line stays on one line.
 def world_date(world_time: float) -> str:
-    return f"y{int(world_time // UNITS_PER_YEAR) + 1} m{int(world_time % UNITS_PER_YEAR // UNITS_PER_MONTH) + 1}"
+    return f"y{world_year(world_time)} m{int(world_time % UNITS_PER_YEAR // UNITS_PER_MONTH) + 1}"
 
 
 # The world's laws by name, on or off — WB writes a law left untouched as a bare `{"name": …}`, so an absent `boolVal` reads as on.
 def world_laws(save: dict) -> dict[str, bool]:
     return {law["name"]: law.get("boolVal", True) for law in (save.get("worldLaws") or {}).get("list") or []}
+
+
+# The year a `world_time` falls in, 1-based as WB `Date.getYear` shows it (`getYear0` lags one behind): `world_date`'s own, bare.
+def world_year(world_time: float) -> int:
+    return int(world_time // UNITS_PER_YEAR) + 1
 
 
 def worldbox_running() -> bool:

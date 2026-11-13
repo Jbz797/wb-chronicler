@@ -34,6 +34,7 @@ from shared import (
     score_totals,
     sex_label,
     weapon_assets,
+    world_year,
 )
 
 _ENCODE = json.JSONEncoder(ensure_ascii=False, sort_keys=True).encode  # mounted once: given keyword arguments, `json.dumps` builds a fresh encoder per call
@@ -214,8 +215,10 @@ def _build_registries(save: dict, prev: dict) -> dict:
     # A body dead before a chapter saw it sits in no registry, so its tag would resolve to nothing: the death register gives its stock, a founder's among them.
     deaths = kept_deaths(save)
     for body, dead in deaths.items():
-        if str(body) not in out["persons"] and not is_boat(dead):
-            out["persons"][str(body)] = {"asset_id": dead["asset_id"], "dead": True}
+        if (key := str(body)) not in out["persons"] and not is_boat(dead):
+            out["persons"][key] = {"asset_id": dead["asset_id"], "dead": True}
+        if (entry := out["persons"].get(key)) and entry.get("dead"):  # the year it fell, on the plate's hover: the dead keep no `age`
+            entry["died"] = world_year(dead["died"])
     # The favourite's blood out to its cousins, the dead among them — a fallen son is still a son —, as `actor … kin` lists it
     favorite = next((a for a, _ in crowd.values() if a.get("favorite")), None)
     ties = blood_ties(favorite["id"], parents_by_body((a for a, _ in crowd.values()), deaths)) if favorite else {}

@@ -68,6 +68,7 @@ from shared import (
     unmarked,
     world_date,
     world_laws,
+    world_year,
     worldbox_running,
     write_save,
 )
@@ -718,9 +719,8 @@ def _print_next_step(n: int, live: dict, favorite: dict | None, forgotten: int) 
 # The recap's first half: where the world stands, what fired, and what the journal logged since the chapter before.
 def _print_report(n: int, live: dict, age_id: str, favorite: dict | None, regime: str, tags: list[str], prev_world: dict) -> None:
     age_label = i18n("ages.json").get(age_id) or age_id  # recap line only, in the chronicle's own words — the chapter carries the id alone
-    year = int(rounded_world_time(live["mapStats"]) / UNITS_PER_YEAR) + 1  # WB `Date.getYear`: the displayed year is 1-based, `getYear0` alone lags a year behind
     fav = (favorite or {}).get("metadata")  # by `named_body`: a favorite WB never named, the chronicler's own epithet aside, goes by its kind and id
-    print(f"✓ C{n} — year {year}, {age_label}")
+    print(f"✓ C{n} — year {world_year(rounded_world_time(live['mapStats']))}, {age_label}")
     print(f"  favorite: {named_body(fav) if fav else 'none'}{f' — {regime}' if regime else ''}")
     print(_RECAP_RULE)
     if events := _events(tags):  # a tag in `chapter.json` alone never reaches the chronicler
