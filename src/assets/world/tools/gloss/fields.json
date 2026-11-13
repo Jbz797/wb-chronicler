@@ -15,7 +15,7 @@
   "actor.died.sex": "Son sexe au registre : `male`, `female`, `none` sans sexe ; absent, il est inconnu, jamais `none`.",
   "actor.kin": "Le sang jusqu'aux `cousins`, chacun sous son lien le plus proche (`half_siblings` : un seul parent commun), avec `sex` ; un mort `gone`, `date`, `killed_by`.",
   "actor.kin.parents": "Le père : l'amant de la mère à la naissance (`wiki:Reproduction`) ; adoptif si leur couple (`lover_since`) est plus jeune que la grossesse (`maturation_months`).",
-  "actor.metadata.adult_on": "La date où l'âge fera du corps un adulte : sa santé et ses dégâts entiers, une cité qu'il peut fonder ; tu une fois atteinte.",
+  "actor.metadata.adult_on": "La date où l'âge fera du corps un adulte : sa santé et ses dégâts entiers, une cité qu'il peut fonder ; tue une fois atteinte.",
   "actor.metadata.age_overgrowth": "Ce que `age` ajoute aux années vécues ici, tu à 1 chez un né ici : un migrant appelé par le feu arrive grand (`wiki:World_Laws`), un clone, un paradoxe.",
   "actor.metadata.beside_building": "Dehors, aux abords du bâtiment nommé (sa tuile ou une voisine), sans y être entré ; de deux, le plus proche.",
   "actor.metadata.breeding_barred": "Pourquoi ce corps ne peut enfanter, sa lignée le pouvant : `age`, `hunger` (son ventre, sous 50), `pregnant`, `afterglow`, `infertile`, `children` (vivants/plafond).",
