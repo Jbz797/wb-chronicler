@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 13/11/26 13:49</p>
+<p class="metadata">Date de mise à jour : 13/11/26 16:21</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit des champs, donnés entre parenthèses. Entre crochets, ce que le script a demandé pour ces cibles : cela vaut comme cette fiche pour ce qui s'y vérifie ; la forme qu'il demande (un dialogue dû, sa longueur) est à la conformité.
 
@@ -14,7 +14,7 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 - **Un mécanisme** que ni les sorties ni `docs/chronicler.md` ne donnent se vérifie sur le wiki (§ « Accès au wiki WorldBox »). S'ils divergent, la sortie l'emporte.
 - **Un nombre juste ne prouve que sa question** : vérifie que la commande compte le même ensemble que la phrase (tous les corps ou les pensants, le monde ou une terre), avec le champ que la doc prescrit.
 - **Ce qui écarte tout autre, même sous-entendu** (« seul », « aucun », « le premier », « son fils ») se vérifie sur le monde entier, `actor --roster` pour les corps, `kin` pour un sang, `geography … positions -t` pour le reste, le passé par `across`, jamais sur ce que le texte nomme.
-- **Une distance** se vérifie comme la phrase la dit, de son départ : un km nu à vol d'oiseau, « de marche » à pied, une tournure par la mesure qu'elle suppose.
+- **Une distance** se vérifie comme la phrase la dit, de son départ : un km nu à vol d'oiseau, « de marche » à pied, une tournure par la mesure qu'elle suppose ; son cap, au `dir` de la même mesure, jamais refait d'un `at`.
 - **Une forme** (une chaîne, une mer ouverte) se lit sur la carte (`tools/map/show.py`).
 - **Une phrase à deux lectures dont l'une est fausse** est un écart : cite celle-ci.
 - **Une phrase incertaine, ou une pensée de l'Intime, n'affirme rien** : vérifie ce sur quoi elle s'appuie, pas ce qu'elle suppose.
