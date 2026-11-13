@@ -33,9 +33,9 @@
   }
 
   ::ng-deep {
-    // Preventive: the widest plate ever laid down measures 179px. Past 200 the name gives way rather than the table, which would widen past the panel.
+    // A plate spans all the room its cell gives it and no more: past that, the name gives way rather than the table, which would widen past the panel.
     .entity-tag {
-      max-width: 200px;
+      max-width: 100%;
 
       .entity-name {
         overflow: hidden;
@@ -141,9 +141,11 @@
         }
       }
 
+      // As narrow as its text allows, the value taking the rest — on a two-pair row too, where a value at 100% would starve its neighbour.
       .ant-descriptions-item-label {
         text-align: right;
         white-space: nowrap;
+        width: 1%;
 
         img {
           margin-right: 0.25rem;
@@ -209,9 +211,20 @@
         }
       }
 
+      // The value takes what its label leaves, never more (`max-width: 0` lets a cell shrink below its content): a plate too long for it trails off instead.
+      .ant-descriptions-item-content {
+        max-width: 0;
+      }
+
       // One line per table cell: a plate, a figure and its trend arrow read as one, and a wrap would drop the arrow under its number.
       .ant-table-cell {
         white-space: nowrap;
+
+        // The plate's column takes what the figures leave, as a description's value does its label's.
+        &:has(.entity-tag) {
+          max-width: 0;
+          width: 100%;
+        }
       }
 
       .ant-table-tbody nz-tag {
