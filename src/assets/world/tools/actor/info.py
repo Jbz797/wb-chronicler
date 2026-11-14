@@ -9,7 +9,7 @@ from collections import Counter, defaultdict
 from functools import cache
 from math import inf
 from pathlib import Path
-lazy from collections.abc import Callable, Mapping
+lazy from collections.abc import Callable, Iterable, Mapping
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
@@ -151,7 +151,7 @@ _KIN_GROUPS = {  # each tie `blood_ties` names, by the list `kin` gives it
 
 _LIMIT = 10  # the lines each circle of `surroundings` gives unless `--limit` says otherwise, the nearest — its kin besides
 _LISTED_GOALS = 5  # the nearest `--to cities` and `--to lands` list, a last place shared told whole: one more is its own `--to c<id>`, `i<id>`
-_LONE_ID = re.compile(r"[bcip]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): a body, a building, a town, a land — a bare number too
+_LONE_ID = re.compile(r"[bcikp]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): body, building, town, crown, land — a bare number too
 _NAMED_SECTIONS = tuple(sorted((*_ALL_SECTIONS, "died")))  # what a call may name: `died` a dead body's alone, never in `full`
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
 _OTHER_FIRES = 4  # past the fire met first, as many as `geography … fires` lists in all: its five largest
@@ -280,6 +280,12 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
             told = {"edge": {"crow_tiles": edge}}
     elif target == "cities":  # every town, each aimed at as `c<id>` is: `_trip` answers with those reached
         whom = "every town"
+    elif isinstance(target, str) and target[:1] == "k" and target[1:].isdigit():  # a crown by its nearest town, as `cities` files each: `_trip` answers
+        if (kingdom := ctx["kingdoms_by_id"].get(kingdom_id := int(target[1:]))) is None:
+            raise _AimError(absent_entity("kingdom", "kingdoms", kingdom_id, chapter))
+        whom = kingdom.get("name") or f"kingdom {kingdom_id}"
+        if not _crown_towns(kingdom_id, ctx):
+            raise _AimError(f"✗ {whom} holds no town — a crown is aimed at by its nearest")
     elif target == "lands":  # every land but its own, each tried as `i<id>` is: `_trip` answers with those reached
         whom = "every land"
     elif isinstance(target, str) and target[:1] == "i" and target[1:].isdigit():
@@ -774,6 +780,46 @@ def _circle(actor: dict, ctx: dict, hours: float | None, offshore: bool, sailed:
     return "common_with_boat" if ferried and offshore and (trip := sailed()) is not None and _ring(trip) else "far"
 
 
+# The towns given that the body can reach, the nearest first, each aimed at its centre as `--to c<id>` aims: its circle, heading and time.
+def _city_rows(actor: dict, ctx: dict, cities: Iterable[dict]) -> list[dict]:
+    (cx, cy), island_of, per_hour = actor_xy(actor), ctx["island_lookup"](), _per_hour(actor, ctx)
+    home, centres = island_of.get((cx, cy)), {tile: city for city in cities if (tile := city_centre(city))}
+    timed: dict[tuple[int, int], tuple[float, dict]]  # each town reached, by its centre: the hours that file it in a circle, and its time by parts
+    boat: dict[tuple[int, int], float] = {}  # the towns only a crown's hull brings within the common circle, by the hours aboard
+    if (gait := _gait(actor, ctx)) is None:  # flown, swum or sailed at will: every town on the straight line, as `--to` times it
+        timed = {(x, y): ((crow := round(walk_tiles(x - cx, y - cy))) / per_hour, _trip_time(per_hour, crow)) for x, y in centres}
+    else:
+        walk_map, part = ctx["walk_map"](), "sail" if is_aboard(actor) else "swim"
+        index = {y * walk_map.width + x: (x, y) for x, y in centres}
+        # WB walks round the bays of his own land and swims only toward another, as `--to c<id>` goes: one settling for each, an islet of his tried on foot first.
+        ashore = set() if walk_map.wet(cx, cy) else {t for t, tile in index.items() if home is None or island_of.get(tile) == home}
+        ways = walk_ways(walk_map, gait.ashore(), cx, cy, {t: t for t in ashore}) if ashore else {}
+        # Never asked for none: a settling with no goal to stop it at crosses the whole world, some 4 s, for nothing.
+        if rest := index.keys() - (ways.keys() if home is None else ashore):
+            ways |= walk_ways(walk_map, gait, cx, cy, {t: t for t in rest})
+        timed = {index[t]: (way[0] / per_hour, _way_times(way, per_hour, part)) for t, way in ways.items()}
+        if actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]:  # off his land past the common circle, as `--to` files a town by boat
+            goals = {t for t, tile in index.items() if island_of.get(tile) != home and not (tile in timed and _ring(timed[tile][0]))}
+            sailed = walk_from(walk_map, gait.sailing(per_hour / _boat_per_hour()), cx, cy, _ring_bound(_CIRCLES[-1][1]) * per_hour, goals)
+            boat = {index[t]: hours for t in goals if t in sailed and _ring(hours := sailed[t] / per_hour)}
+    rows = []
+    for (x, y), city in centres.items():
+        hours, times = timed.get((x, y)) or (None, {})
+        if (x, y) in boat:
+            circle, times = "common_with_boat", {**times, "with_boat": _duration(boat[x, y], "total_")}
+        elif hours is None:
+            continue
+        else:
+            circle = _ring(hours) or "far"
+        rows.append({"circle": circle, "city": {"id": city["id"], "name": city.get("name")}, "dir": bearing(x - cx, y - cy), **times})
+    return sorted(rows, key=lambda row: (*_city_told(row), row["city"]["id"]))
+
+
+# The time that files a town in its circle, a hull's where it brings the town in: the order `cities` and a crown's nearest town are told in.
+def _city_told(row: dict) -> tuple[int, float]:
+    return _told_time(row["with_boat"] if row["circle"] == "common_with_boat" else row)
+
+
 # `Actor.getMassKG`: (`scale` / 0.1) × `mass_2`, cut to two fifths on a child. Both stats ride off the pipeline, where the traits and multipliers have had their say.
 def _compute_mass(actor: dict, ctx: dict) -> int | None:
     totals = actor_stat_totals(actor, ctx)
@@ -861,6 +907,11 @@ def _crow_nearest(actor: dict, aims: list[tuple[int, int]], about: Mapping[tuple
     if round(crow) >= round(walked) if whole else site is None or site == about.get(reached) or crow >= walked:
         return None
     return {**(site or {}), "crow_tiles": round(crow), "dir": bearing(gx - cx, gy - cy), "x": gx, "y": gy}
+
+
+# A crown's towns, as `kingdom … cities` lists them: what `--to k<id>` weighs to find its nearest.
+def _crown_towns(kingdom_id: int, ctx: dict) -> list[dict]:
+    return [city for city in ctx["cities_by_id"].values() if city.get("kingdomID") == kingdom_id]
 
 
 # What a dead body still answers: its death, blood, victims and work, its statuses by the chapters in full — named, those alone; any other told and left out.
@@ -1097,46 +1148,11 @@ def _places_at(actor: dict, ctx: dict) -> dict:
     return {**({"near_places": sorted(set(near))} if near else {}), **({"place": on} if (on := index.at(ax, ay)) else {})}
 
 
-# Every town the body can reach, the nearest first, each aimed at its centre as `--to c<id>` aims: its circle, heading and time — the rest counted.
+# Every town the body can reach, the nearest first: `_LISTED_GOALS` of them listed, the rest counted.
 def _reachable_cities(actor: dict, ctx: dict) -> dict:
-    (cx, cy), island_of, per_hour = actor_xy(actor), ctx["island_lookup"](), _per_hour(actor, ctx)
-    home, centres = island_of.get((cx, cy)), {tile: city for city in ctx["cities_by_id"].values() if (tile := city_centre(city))}
-    timed: dict[tuple[int, int], tuple[float, dict]]  # each town reached, by its centre: the hours that file it in a circle, and its time by parts
-    boat: dict[tuple[int, int], float] = {}  # the towns only a crown's hull brings within the common circle, by the hours aboard
-    if (gait := _gait(actor, ctx)) is None:  # flown, swum or sailed at will: every town on the straight line, as `--to` times it
-        timed = {(x, y): ((crow := round(walk_tiles(x - cx, y - cy))) / per_hour, _trip_time(per_hour, crow)) for x, y in centres}
-    else:
-        walk_map, part = ctx["walk_map"](), "sail" if is_aboard(actor) else "swim"
-        index = {y * walk_map.width + x: (x, y) for x, y in centres}
-        # WB walks round the bays of his own land and swims only toward another, as `--to c<id>` goes: one settling for each, an islet of his tried on foot first.
-        ashore = set() if walk_map.wet(cx, cy) else {t for t, tile in index.items() if home is None or island_of.get(tile) == home}
-        ways = walk_ways(walk_map, gait.ashore(), cx, cy, {t: t for t in ashore}) if ashore else {}
-        # Never asked for none: a settling with no goal to stop it at crosses the whole world, some 4 s, for nothing.
-        if rest := index.keys() - (ways.keys() if home is None else ashore):
-            ways |= walk_ways(walk_map, gait, cx, cy, {t: t for t in rest})
-        timed = {index[t]: (way[0] / per_hour, _way_times(way, per_hour, part)) for t, way in ways.items()}
-        if actor.get("civ_kingdom_id") in ctx["ferrying_kingdoms"]:  # off his land past the common circle, as `--to` files a town by boat
-            goals = {t for t, tile in index.items() if island_of.get(tile) != home and not (tile in timed and _ring(timed[tile][0]))}
-            sailed = walk_from(walk_map, gait.sailing(per_hour / _boat_per_hour()), cx, cy, _ring_bound(_CIRCLES[-1][1]) * per_hour, goals)
-            boat = {index[t]: hours for t in goals if t in sailed and _ring(hours := sailed[t] / per_hour)}
-    rows = []
-    for (x, y), city in centres.items():
-        hours, times = timed.get((x, y)) or (None, {})
-        if (x, y) in boat:
-            circle, times = "common_with_boat", {**times, "with_boat": _duration(boat[x, y], "total_")}
-        elif hours is None:
-            continue
-        else:
-            circle = _ring(hours) or "far"
-        rows.append({"circle": circle, "city": {"id": city["id"], "name": city.get("name")}, "dir": bearing(x - cx, y - cy), **times})
-
-    # By the time that files each in its circle, a hull's where it brings the town in: the nearest first, as `surroundings` rings them.
-    def told(row: dict) -> tuple[int, float]:
-        return _told_time(row["with_boat"] if row["circle"] == "common_with_boat" else row)
-
-    rows.sort(key=lambda row: (*told(row), row["city"]["id"]))
-    shown, farther = _nearest_listed(rows, told)
-    return {"farther": farther or None, "reachable": shown or None, "unreachable": len(centres) - len(rows) or None}
+    rows = _city_rows(actor, ctx, cities := ctx["cities_by_id"].values())
+    shown, farther = _nearest_listed(rows, _city_told)
+    return {"farther": farther or None, "reachable": shown or None, "unreachable": sum(city_centre(city) is not None for city in cities) - len(rows) or None}
 
 
 # Every land the body can gain, the nearest first, each by its cheapest shore as `--to i<id>` lands it: its heading, time and swim — the rest counted.
@@ -1476,6 +1492,11 @@ def _trip(actor: dict, aim: tuple, ctx: dict, then: dict | None, then_ctx: dict,
     target, aims, mark, about, whom, each, told = aim
     if target == "cities":
         return _reachable_cities(actor, ctx)
+    if isinstance(target, str) and target[:1] == "k" and target[1:].isdigit():  # the crown's nearest town, a row as `cities` gives it: its circle is the crown's
+        if not (rows := _city_rows(actor, ctx, _crown_towns(kingdom_id := int(target[1:]), ctx))):
+            print(f"✗ no town of {whom} within reach — `circle`: far", file=sys.stderr)
+            return None
+        return {"kingdom": entity_ref(kingdom_id, ctx["kingdoms_by_id"]), **rows[0]}
     if target == "lands":
         return _reachable_lands(actor, ctx)
     trip: dict | None = None
@@ -1679,7 +1700,7 @@ def main(argv: list[str]) -> int:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     if not argv or argv[0] in ("-h", "--help"):
-        to = 'p<id>|x,y|b<id>|c<id>|cities|i<land>|lands|"<place>"|lake<id>|burning|frozen|g:<ground>|<kind>'
+        to = 'p<id>|x,y|b<id>|c<id>|cities|k<id>|i<land>|lands|"<place>"|lake<id>|burning|frozen|g:<ground>|<kind>'
         return hand_usage(
             f"usage: actor/info.py <id> [sections | --to {to}…] [--since C<n>] [--limit n|all] [C<n>] | --roster [options]\neach option: `gloss actor`", argv
         )
