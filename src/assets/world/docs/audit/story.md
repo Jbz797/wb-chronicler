@@ -1,12 +1,12 @@
 # 📖 Vérification du récit
 
-<p class="metadata">Date de mise à jour : 08/11/26 20:38</p>
+<p class="metadata">Date de mise à jour : 14/11/26 13:45</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur, qui te donne le **chapitre** à lire, ou, avant lui, ses tournants avec ta tâche.
 
 ## Ta tâche
 
-Lis le chapitre, puis ce qu'il te faut de la chronique, de `saves/C1/chapter.md` au dernier ; un personnage ou un mot s'y suit par `git -C saves grep -nF '[p 46 '`, puis par son espèce et ses épithètes, hors balise. Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
+Lis le chapitre, puis ce qu'il te faut de la chronique, de `saves/C1/chapter.md` au dernier ; un personnage s'y suit par `tools/chapter/cited.py p46`, puis par son espèce et ses épithètes (`cited.py "la reine"`). Juge si l'histoire qu'elle raconte tient toujours, ni les chiffres de la save ni sa manière :
 
 - un chapitre sans tournant en scène, ou dont le tournant ne fait avancer aucun fil ;
 - un fil qu'elle a ouvert et jamais refermé ;
