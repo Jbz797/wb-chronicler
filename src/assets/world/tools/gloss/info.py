@@ -42,6 +42,9 @@ def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]
     # The words this file knows: its keys' and those its glosses cite — one unknown yet near one of them is a slip, refused with it, never given its section's gloss
     known = {segment for segments in segmented.values() for segment in segments} | {word for gloss in glosses.values() for word in re.findall(r"`([\w-]+)`", gloss)}
     section = ".".join(asked[:-1])
+    # A section asked without its tool (`stats.x`) is that tool's when one alone glosses it (`actor.stats`)
+    if len(asked) > 1 and section not in glosses and len(owned := [key for key, seg in segmented.items() if seg[0] in _TOOLS and seg[1:] == asked[:-1]]) == 1:
+        section = owned[0]
     sectioned = len(asked) > 1 and section in glosses  # a field its section's gloss answers for: the one that says where its fields are told
     if asked[-1] not in known and (slip := difflib.get_close_matches(asked[-1], sorted(known), n=_NEAR, cutoff=_SLIP)):
         whole = f" — its section: `gloss {section}`" if sectioned else ""  # a real field never cited, read as a slip, still finds it
