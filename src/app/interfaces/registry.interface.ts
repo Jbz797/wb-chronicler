@@ -101,11 +101,13 @@ export interface PersonInfo {
   dead?: boolean;
   died?: number; // the year it fell, from the death register
   egg?: string; // the shell a body is still in, drawn in its stead — the egg its biology lays
+  friend_of?: number[]; // those who hold this body their best friend, kept on a fallen one as its last-known
   head?: number;
   job?: string;
   kin?: 'aunt_uncle' | 'child' | 'cousin' | 'grandchild' | 'grandparent' | 'half_sibling' | 'niece_nephew' | 'parent' | 'sibling'; // tie to this chapter's favourite
   kingdom?: number;
   level?: number;
+  lover?: number; // the one it loves, WB's tie running both ways — a fallen body keeps the last
   phenotype_index?: number;
   phenotype_shade?: number;
   rank?: number; // podium place by level, top 3 only — the medal right of the name

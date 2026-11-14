@@ -149,6 +149,10 @@ def _build_registries(save: dict, prev: dict) -> dict:
         egg = egg_by_subspecies.get(a.get("subspecies")) if is_egg(a, ctx) else None
         entry = persons[str(aid)] = _person_entry(a, job, items_by_id, subspecies_by_id, rank_by_person.get(aid), egg)
         entry["age"] = actor_age(a, ctx["world_time"])  # the years WB's own window shows, on the plate's hover
+    # Who holds a body their best friend, the tie running one way, unlike a love: kept, as the love is, on a body fallen since, so its plate still tells it.
+    for aid, (a, _) in crowd.items():
+        if (friend := persons.get(str(a.get("best_friend_id")))) is not None:
+            friend.setdefault("friend_of", []).append(aid)
 
     # The composite score's points, medalled as every other podium is — from three rivals up, a world raising its towns and crowns by the handful.
     rank_by_city = _podium(score_totals([c["id"] for c in cities], city_score_dimensions(save)), MIN_SCORE_PEERS)
@@ -393,6 +397,8 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
         entry["kingdom"] = kingdom
     if (level := int(actor.get("level") or 0)) > 1:  # most of a world sits at 1 — a medallion on every subject would say nothing, so it stays earned
         entry["level"] = level
+    if lover := actor.get("lover"):  # WB clears it at death: the merge keeps the last one, so a fallen body still names the one it loved
+        entry["lover"] = lover
     if rank is not None:
         entry["rank"] = rank
     if skin := (subspecies_by_id.get(actor.get("subspecies")) or {}).get("skin_id"):  # WB `Subspecies.cacheSkins` picks the body sheet; absent means index 0.

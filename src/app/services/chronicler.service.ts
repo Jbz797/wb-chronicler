@@ -64,11 +64,13 @@ export class ChroniclerService {
     });
   }
 
-  // The one bond a plate wears towards the favourite, as its panel draws it: the lover first, then the best friend — `null` for anyone else.
+  // The one bond a plate wears towards the favourite, as its panel draws it, kept once fallen: a love first, then a best friendship — `null` for anyone else.
   public readonly bondIcon = (id: number): string | null => {
-    const companions = this.currentChapter()?.meta.favorite?.companions;
-    if (companions?.lover?.id === id) return 'assets/img/stats/lovers.png';
-    return companions?.best_friend?.id === id ? 'assets/img/stats/friendship.png' : null;
+    const favorite = this.currentChapter()?.meta.favorite?.metadata.id;
+    const person = this._registry.persons()[String(id)];
+    if (favorite === undefined || !person) return null;
+    if (person.lover === favorite) return 'assets/img/stats/lovers.png';
+    return person.friend_of?.includes(favorite) ? 'assets/img/stats/friendship.png' : null;
   };
 
   // The body this tier names in the chapter before — same id, same entity, or every delta would compare two strangers: a dead favourite, a crown lost.
