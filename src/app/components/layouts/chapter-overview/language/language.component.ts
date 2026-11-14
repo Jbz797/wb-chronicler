@@ -5,7 +5,7 @@ import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { BreakdownComponent, RankedStatComponent, TraitSummaryComponent } from '..';
-import { PluralDirective, PresentDirective } from '../../../../directives';
+import { NonZeroDirective, PluralDirective, PresentDirective } from '../../../../directives';
 import { RankedStatKind } from '../../../../interfaces';
 import { ChroniclerService } from '../../../../services';
 import { LeadersComponent } from '../leaders/leaders.component';
@@ -16,6 +16,7 @@ import { PersonTagComponent } from '../tags';
   imports: [
     BreakdownComponent,
     LeadersComponent,
+    NonZeroDirective,
     NzDescriptionsModule,
     PersonTagComponent,
     PluralDirective,
@@ -51,7 +52,7 @@ export class LanguageComponent {
     const m = this.language()?.metadata;
     if (!m) return [];
     const rows = [
-      { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_natives', shown: !!m.native, stat: 'native' as const },
+      { icon: 'assets/img/world/births.png', inverted: false, label: 'ui_born_speakers', shown: !!m.native, stat: 'native' as const },
       { icon: 'assets/img/world/metamorphosis.png', inverted: false, label: 'ui_converts', shown: !!m.converted, stat: 'converted' as const },
     ];
     return rows.filter(r => r.shown).map(({ icon, inverted, label, stat }) => ({ icon, inverted, label, stat }));

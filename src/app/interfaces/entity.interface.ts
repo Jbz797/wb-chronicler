@@ -50,6 +50,7 @@ export interface TierPopulation {
   fed_pct?: number;
   housed_pct?: number;
   money?: number;
+  nobles?: number;
   renown_total?: number;
   total?: number; // the pooled living, on the tiers that gather rather than enrol — a clan counts its own under `members`
   warriors?: number;

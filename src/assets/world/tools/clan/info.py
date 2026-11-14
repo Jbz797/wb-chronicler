@@ -16,6 +16,7 @@ from shared import (
     absent_entity,
     build_trait_ids,
     build_trait_list,
+    captain_ids,
     children_by_id,
     competition_ranks,
     death_causes,
@@ -25,6 +26,7 @@ from shared import (
     entity_ref,
     hand_usage,
     index_by_id,
+    is_noble,
     light,
     load_data,
     load_save,
@@ -120,6 +122,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "kingdoms": lambda c: len({kid for a in tallies["members"].get(c["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
         "members": lambda c: len(tallies["members"].get(c["id"], ())),
         "money": lambda c: tallies["money"][c["id"]],
+        "nobles": lambda c: tallies["nobles"][c["id"]],
         "renown": lambda c: int(c.get("renown") or 0),
         "renown_per_capita": lambda c: int(c.get("renown") or 0) / n if (n := len(tallies["members"].get(c["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": lambda c: tallies["renown_total"][c["id"]],
@@ -159,7 +162,7 @@ def main(argv: list[str]) -> int:
         print(absent_entity("clan", "clans", clan_id, chapter), file=sys.stderr)
         return 1
 
-    tallies: dict = {"members": defaultdict(list), "money": Counter(), "renown_total": Counter(), "warriors": Counter()}
+    tallies: dict = {"members": defaultdict(list), "money": Counter(), "nobles": Counter(), "renown_total": Counter(), "warriors": Counter()}
 
     # WB points the actor at its band, never the reverse, so the bands are gathered in one walk — skipped whole where no section wants the living.
     members_by_id = tallies["members"]
@@ -167,16 +170,18 @@ def main(argv: list[str]) -> int:
         if cid := actor.get("clan"):
             members_by_id[cid].append(actor)
 
-    # The three sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
+    # The sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
     if "ranks" in sections:
-        money, renown, warriors = (tallies[k] for k in ("money", "renown_total", "warriors"))
+        money, nobles, renown, warriors = (tallies[k] for k in ("money", "nobles", "renown_total", "warriors"))
+        captains = captain_ids(save)
         for cid, band in members_by_id.items():
-            coins = fame = fighters = 0
+            coins = fame = fighters = nobility = 0
             for actor in band:
                 coins += int(actor.get("money") or 0)
                 fame += int(actor.get("renown") or 0)
                 fighters += actor.get("profession") == PROFESSION_WARRIOR
-            money[cid], renown[cid], warriors[cid] = coins, fame, fighters
+                nobility += is_noble(actor, captains)
+            money[cid], nobles[cid], renown[cid], warriors[cid] = coins, nobility, fame, fighters
 
     members = members_by_id.get(clan_id, [])
     ctx = {

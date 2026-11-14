@@ -198,7 +198,7 @@ _WALK_IN_TYPES = frozenset(  # WB lets nobody in, a tale walks in: `_heart_of`
 _WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # a water as `geography … waters` ids it, `lake4`, or its family, `lake`: a `--filter` word, a `--to` end
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
-_captains_memo: list = [None, None]  # `resolve_profession`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
+_captains_memo: list = [None, None]  # `captain_ids`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
 
 
 # `--help` as the tools answer it: the syntax alone, options, arguments and choices, each option's meaning living in its gloss (`gloss <tool>`).
@@ -785,6 +785,13 @@ def built_by_tile(save: dict) -> dict[tuple, dict]:
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic for tile in building_footprint(b)}
 
 
+# The bodies leading an army, by WB's `id_captain`: no `profession` int names them. Read once a save, a roster asking it per soul.
+def captain_ids(save: dict) -> set[int]:
+    if _captains_memo[0] is not save:
+        _captains_memo[0], _captains_memo[1] = save, {c for army in save.get("armies") or [] if (c := army.get("id_captain"))}
+    return _captains_memo[1]
+
+
 # The fewest characters chapter `n` holds, off its own save: a world where no thinking soul stands, at its start or after the last, has less to tell.
 def chapter_floor(n: int) -> int:
     if not (path := SAVES_DIR / f"C{n}" / "map.wbox").exists():
@@ -1125,6 +1132,11 @@ def is_aboard(actor: dict) -> bool:
 # WB models boats as actors: they sit in `actors_data` and even carry a `civ_kingdom_id`, so every actor tally must decide whether to skip them.
 def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
+
+
+# A noble, as a town and a crown count them: a king, a town's head, an army's captain (`captain_ids`) — the posts a war mourns apart.
+def is_noble(actor: dict, captains: Collection[int]) -> bool:
+    return actor.get("profession") in (PROFESSION_KING, PROFESSION_LEADER) or actor.get("id") in captains
 
 
 # WB `Building.isRuin`: state 4, what a building struck down, abandoned or burnt leaves — no town lists it (`isUsable`), no one lives or stores in it.
@@ -1612,11 +1624,9 @@ def render(value: object, indent: int = 0, used: int = 0, key: str | None = None
     return f"{ends[0]}\n" + ",\n".join(f"{pad}  {p}" for p in parts) + f"\n{pad}{ends[1]}"
 
 
-# `army_captain` isn't a `profession` int — a warrior (5) leading an army. The roll is memoised: every roster asks this per soul, and rescanning would be O(n×m).
+# `army_captain` isn't a `profession` int — a warrior (5) leading an army, as `captain_ids` reads the armies once a save.
 def resolve_profession(actor: dict, save: dict) -> str | None:
-    if _captains_memo[0] is not save:
-        _captains_memo[0], _captains_memo[1] = save, {c for army in save.get("armies") or [] if (c := army.get("id_captain"))}
-    if actor.get("id") in _captains_memo[1]:
+    if actor.get("id") in captain_ids(save):
         return "army_captain"
     profession = actor.get("profession") or 0  # `0`/absent is WB's `nothing` — no profession, not an unknown one; anything else off the map surfaces as `#<int>`.
     return _PROFESSIONS.get(profession) or (f"#{profession}" if profession else None)

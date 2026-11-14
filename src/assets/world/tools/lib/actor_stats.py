@@ -31,11 +31,13 @@ from shared import (
     UNITS_PER_YEAR,
     UNWRITTEN_HEALTH,
     actor_age,
+    captain_ids,
     equipment_rarity,
     fertile,
     has_emotions,
     head_money,
     index_by_id,
+    is_noble,
     is_sapient,
     life_stage,
     load_data,
@@ -759,6 +761,7 @@ def build_actor_stats_context(save: dict) -> dict:
     return {
         "age_memo": {},  # Filled on demand: both ages hang on the subspecies, so a world of thousands answers them a few dozen times
         "attack_memo": {},  # `_add_natural_attack`: what a species lends its bare hands, resolved once for the shape and not per soul
+        "captain_ids": captain_ids(save),  # `pop_of` tells nobles by it, a captain having no `profession` of his own
         "clan_traits": load_data("clan-traits.json"),
         "clans_by_id": index_by_id(save.get("clans", [])),
         "creature_traits": load_data("creature-traits.json"),
@@ -912,7 +915,7 @@ def pop_of(actors: list[dict], ctx: dict) -> dict:
     generations: list[int] = []
     paired: set[int] = set()
     stages: Counter[str] = Counter()
-    world_time = ctx["world_time"]
+    captains, world_time = ctx["captain_ids"], ctx["world_time"]
 
     for a in actors:
         age = actor_age(a, world_time)
@@ -923,6 +926,7 @@ def pop_of(actors: list[dict], ctx: dict) -> dict:
         generations.append(a.get("generation") or 1)  # WB counts a first child 2, so a parentless founder is its 1 — a default the save omits rather than writes.
         counts["men"] += a.get("sex") != 1
         counts["money"] += int(a.get("money") or 0)
+        counts["nobles"] += is_noble(a, captains)
         counts["renown"] += int(a.get("renown") or 0)
         counts["warriors"] += a.get("profession") == PROFESSION_WARRIOR
         counts["homeless"] += not a.get("homeBuildingID")
@@ -961,6 +965,7 @@ def pop_of(actors: list[dict], ctx: dict) -> dict:
         **({"infected": n} if (n := counts["infected"]) else {}),
         **({"men": n} if (n := counts["men"]) else {}),
         **({"money": n} if (n := counts["money"]) else {}),  # every coin the living carry between them
+        **({"nobles": n} if (n := counts["nobles"]) else {}),
         **({"renown_total": n} if (n := counts["renown"]) else {}),  # summed renown, distinct from whatever the body itself is worth
         **({"sick": n} if (n := counts["sick"]) else {}),
         **({"teens": n} if (n := stages["teen"]) else {}),
@@ -987,7 +992,6 @@ def settlement_pop(entity: dict, ctx: dict, tier: str) -> dict:
             {
                 **population,
                 **({"food_per_capita": round(tally("food") / n, 1)} if (n := tally("eaters")) >= MIN_PER_CAPITA_UNITS else {}),  # stock ÷ mouths, as ranks divide
-                **({"nobles": n} if (n := tally("nobles")) else {}),
                 **({"nobles_money": nobles_money} if nobles_money else {}),  # the other nobles' coins, the head's own being `ruler_money`
                 **({"ruler_money": ruler_money} if ruler_money else {}),  # the head's own purse — with `nobles_money` and `subjects_money`, all of `money`
                 **({"subjects_money": n} if (n := money - ruler_money - nobles_money) else {}),  # commoners' coins, head and nobility aside

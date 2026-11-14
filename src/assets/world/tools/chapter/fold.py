@@ -68,7 +68,6 @@ _AUDIT = {
             "kills_per_capita",
             "kills_per_death",
             "loot",
-            "nobles",
             "nobles_money",
             "pop_per_city",
             "renown_per_capita",
@@ -87,16 +86,17 @@ _AUDIT = {
 # What a tier sheds on top of its bare section, united with it where the cut is read — the bare one stays the only truth a change has to touch.
 _AUDIT_TIERS = {
     # A people's health is charted by a town and a crown alone: no other body's panel prints it, and `<tier>/info.py <id> pop` still counts it
-    **{f"{tier}.pop": {"immortals", "infected", "sick"} for tier in ("alliance", "clan", "culture", "family", "language", "religion", "subspecies")},
+    **{f"{tier}.pop": {"immortals", "infected", "sick"} for tier in ("clan", "culture", "family", "language", "religion", "subspecies")},
     "alliance.kingdoms": {"pop"},  # each member a tag, its headcount the crown's own panel to print
     "alliance.metadata": {"cities", "kingdoms"},  # the pact names its realms and towns as tags, so counting either says nothing the list has not
-    "alliance.ranks": {"cities", "kingdoms", "money", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
+    "alliance.pop": {"immortals", "infected", "nobles", "sick"},  # as the bodies' above, and no nobles row: its crowns' panels count theirs
+    "alliance.ranks": {"cities", "kingdoms", "money", "nobles", "renown_total"},  # among two pacts a podium says less still; `age` and `warriors` are printed
     "attackers.kingdoms": {"pop"},  # a camp's realms as tags, the side's pooled `pop` printed beside them
     "city.identity": {"clan", "culture", "language", "religion", "subspecies"},  # the bodies the town answers to — the panel names its founder alone
     # No row counts its births, its crown and seat are the kingdom panel's to name, and its migrants, centre and month under the banner only the chronicler reads.
     "city.metadata": {"at", "births", "capital", "kingdom", "kingdom_since", "migrants"},
-    "city.pop": {"money"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split
-    "city.ranks": {"money"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
+    "city.pop": {"money", "nobles"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split, nor the heads that share it
+    "city.ranks": {"money", "nobles"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
     "clan.metadata": {"births"},  # unlike a family, a pact or a biology, the clan panel prints no births row
     "culture.identity": {"species", "subspecies"},  # the founder's stock — the panel names the founder alone, whose own tag carries it
@@ -108,8 +108,8 @@ _AUDIT_TIERS = {
     "favorite.metadata": {"age_overgrowth", "asset_id", "city", "clan", "culture", "family", "kingdom", "language", "religion", "subspecies"},
     "kingdom.identity": {"clan", "culture", "language", "religion", "subspecies"},  # as a town's
     "kingdom.metadata": {"births", "ferries", "max_cities"},  # as a town's; whether a crown ferries, what it can hold: rules of the chronicle, not rows
-    "kingdom.pop": {"money"},  # as a town's
-    "kingdom.ranks": {"money"},  # as a town's
+    "kingdom.pop": {"money", "nobles"},  # as a town's
+    "kingdom.ranks": {"money", "nobles"},  # as a town's
     "language.identity": {"species", "subspecies"},  # the founder's stock, as a culture's
     "language.metadata": {"lost"},  # speakers gone to another tongue: the panel prints those born to it and won to it, the chronicler the loss
     "language.ranks": {"lost"},  # as its metadata
@@ -123,7 +123,7 @@ _CHRONICLER_ONLY = frozenset({"age_description", "age_name", "info", "kin", "pas
 
 # `pop` keys no panel reads — the chronicler still gets them whole from `<tier>/info.py <id> pop`, they simply don't ride along in the chapter.
 _DEMOGRAPHY = frozenset(
-    {"adults", "babies", "children", "couples", "eaters", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "nobles", "teens", "women"}
+    {"adults", "babies", "children", "couples", "eaters", "eggs", "elders", "familyless", "gen_deepest", "gen_median", "happy", "men", "teens", "women"}
 )
 
 # A tier the favorite holds none of, a war-free crown: said by the key absent. Never `{"total": 0}` — `emit` drops an empty shelf, and an opinion at 0 is a reading.
@@ -211,7 +211,7 @@ def _fold_leaders(entity: dict) -> None:
             entity["leaders"][block] = named
 
 
-# The age and sex slices, the lineage depth, the count of nobles — figures the chronicler writes with and no panel prints. `pop` keeps what the UI reads.
+# The age and sex slices, the lineage depth — figures the chronicler writes with and no panel prints. `pop` keeps what the UI reads.
 def _fold_pop(entity: dict) -> None:
     if isinstance(block := entity.get("pop"), dict):
         entity["pop"] = {k: v for k, v in block.items() if k not in _DEMOGRAPHY}

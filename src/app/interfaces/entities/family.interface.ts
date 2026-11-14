@@ -35,6 +35,7 @@ interface FamilyRanks {
   kills?: number;
   members?: number;
   money?: number;
+  nobles?: number;
   renown_total?: number;
   warriors?: number;
 }

@@ -17,8 +17,6 @@ from islands import compute_islands_cached
 from shared import (
     EQUIPMENT_RACKS,
     MIN_PER_CAPITA_UNITS,
-    PROFESSION_KING,
-    PROFESSION_LEADER,
     PROFESSION_WARRIOR,
     SICK_TRAITS,
     UNITS_PER_YEAR,
@@ -28,6 +26,7 @@ from shared import (
     asset_set,
     books_held,
     building_tile,
+    captain_ids,
     children_by_id,
     civic_building_ids,
     competition_ranks,
@@ -39,6 +38,7 @@ from shared import (
     hand_usage,
     house_building_ids,
     index_by_id,
+    is_noble,
     is_ruin,
     is_transport,
     kingdom_score_dimensions,
@@ -106,7 +106,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     actors_by_id: dict[int, dict] = {}
     actors_by_kingdom: defaultdict[int, list[dict]] = defaultdict(list)
     boats_by_kingdom: defaultdict[int, list[dict]] = defaultdict(list)  # Boats are actors, skipped by every other tally — gathered here for the `boats` section.
-    captain_ids = {cap for army in save.get("armies", []) if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
+    captains = captain_ids(save)
     eaters_by_kingdom: Counter[int] = Counter()  # a body with no gut takes no share of the stores: `food_per_capita` counts mouths
     families_by_kingdom: defaultdict[int, set[int]] = defaultdict(set)
     gut = {s["id"]: needs_food(s) for s in save.get("subspecies") or []}
@@ -126,7 +126,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
     for actor in save.get("actors_data", []):
         actor_id = actor["id"]
         actors_by_id[actor_id] = actor
-        # Read once apiece, as `city/info.py` does: the boat guard and the hunger tally both want the asset, the warrior and noble tests the profession.
+        # Read once apiece, as `city/info.py` does: the boat guard and the hunger tally both want the asset, the warrior test the profession.
         asset_id, profession = actor.get("asset_id") or "", actor.get("profession")
         if asset_id.startswith("boat_"):  # `is_boat` inlined — it would re-read the field we already hold
             if bkid := actor.get("civ_kingdom_id"):
@@ -153,7 +153,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         if renown := actor.get("renown"):
             renown_by_kingdom[kid] += int(renown)
 
-        if profession in (PROFESSION_KING, PROFESSION_LEADER) or actor_id in captain_ids:
+        if is_noble(actor, captains):
             nobles_by_kingdom[kid] += 1
             if coins and actor_id not in king_ids:  # the purse read above, the head's own reported apart in `metadata`
                 nobles_money_by_kingdom[kid] += int(coins)

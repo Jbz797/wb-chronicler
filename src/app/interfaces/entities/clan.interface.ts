@@ -41,6 +41,7 @@ interface ClanRanks {
   kingdoms?: number;
   members?: number;
   money?: number;
+  nobles?: number;
   renown?: number;
   renown_total?: number;
   warriors?: number;

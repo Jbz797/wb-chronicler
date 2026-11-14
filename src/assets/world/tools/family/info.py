@@ -14,6 +14,7 @@ from shared import (
     MIN_PER_CAPITA_UNITS,
     PROFESSION_WARRIOR,
     absent_entity,
+    captain_ids,
     children_by_id,
     competition_ranks,
     emit,
@@ -22,6 +23,7 @@ from shared import (
     entity_ref,
     hand_usage,
     index_by_id,
+    is_noble,
     load_save,
     meta_report,
     parse_sections,
@@ -97,6 +99,7 @@ def _rank_getters(tallies: dict, world_time: float) -> dict:
         "kingdoms": lambda f: len({kid for a in tallies["members"].get(f["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
         "members": lambda f: len(tallies["members"].get(f["id"], ())),
         "money": lambda f: tallies["money"][f["id"]],
+        "nobles": lambda f: tallies["nobles"][f["id"]],
         "renown_total": lambda f: tallies["renown_total"][f["id"]],  # a family has no renown of its own, unlike a clan — only what its members carry
         "warriors": lambda f: tallies["warriors"][f["id"]],
     }
@@ -125,7 +128,7 @@ def main(argv: list[str]) -> int:
         print(absent_entity("family", "families", family_id, chapter), file=sys.stderr)
         return 1
 
-    tallies: dict = {"houses": {}, "members": defaultdict(list), "money": Counter(), "renown_total": Counter(), "warriors": Counter()}
+    tallies: dict = {"houses": {}, "members": defaultdict(list), "money": Counter(), "nobles": Counter(), "renown_total": Counter(), "warriors": Counter()}
 
     # WB points each actor at its family and never the reverse, so the lines are gathered in one walk — skipped whole where no section wants the living.
     members_by_id = tallies["members"]
@@ -133,18 +136,20 @@ def main(argv: list[str]) -> int:
         if fid := actor.get("family"):
             members_by_id[fid].append(actor)
 
-    # The four sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
+    # The sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
     if "ranks" in sections:
-        houses, money, renown, warriors = (tallies[k] for k in ("houses", "money", "renown_total", "warriors"))
+        houses, money, nobles, renown, warriors = (tallies[k] for k in ("houses", "money", "nobles", "renown_total", "warriors"))
+        captains = captain_ids(save)
         for fid, line in members_by_id.items():
-            roofs, coins, fame, fighters = set(), 0, 0, 0
+            roofs, coins, fame, fighters, nobility = set(), 0, 0, 0, 0
             for actor in line:
                 if home := actor.get("homeBuildingID"):  # a roof only where there is one, the set being keyed on the building itself
                     roofs.add(home)
                 coins += int(actor.get("money") or 0)
                 fame += int(actor.get("renown") or 0)
                 fighters += actor.get("profession") == PROFESSION_WARRIOR
-            houses[fid], money[fid], renown[fid], warriors[fid] = roofs, coins, fame, fighters
+                nobility += is_noble(actor, captains)
+            houses[fid], money[fid], nobles[fid], renown[fid], warriors[fid] = roofs, coins, nobility, fame, fighters
 
     members = tallies["members"].get(family_id, [])
     ctx = {

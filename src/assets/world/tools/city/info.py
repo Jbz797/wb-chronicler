@@ -27,6 +27,7 @@ from shared import (
     asset_set,
     books_held,
     building_tile,
+    captain_ids,
     children_by_id,
     city_centre,
     city_score_dimensions,
@@ -42,6 +43,7 @@ from shared import (
     house_building_ids,
     index_by_id,
     is_aboard,
+    is_noble,
     is_ruin,
     light,
     load_data,
@@ -171,11 +173,10 @@ def _build_buildings(city: dict, ctx: dict, requested: str | None) -> dict | lis
 
 # One pass over actors then buildings — every per-city tally the sections need, so no section rescans the save. Built whole whatever was asked for.
 def _build_context(save: dict, save_path: Path) -> dict:
-    captain_ids = {cap for army in save.get("armies") or [] if (cap := army.get("id_captain"))}  # Captains have no `profession` value, but they rank as nobles.
-
     actors_by_army: defaultdict[int, list[dict]] = defaultdict(list)
     actors_by_city: defaultdict[int, list[dict]] = defaultdict(list)
     actors_by_id: dict[int, dict] = {}
+    captains = captain_ids(save)
     eaters_by_city: Counter[int] = Counter()  # a body with no gut takes no share of the stores: `food_per_capita` counts mouths
     families_by_city: defaultdict[int, set[int]] = defaultdict(set)
     gut = {s["id"]: needs_food(s) for s in save.get("subspecies") or []}
@@ -224,7 +225,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
                 melee_by_city[cid] += 1
         if profession == PROFESSION_WARRIOR:
             warriors_by_city[cid] += 1
-        if profession in (PROFESSION_KING, PROFESSION_LEADER) or actor_id in captain_ids:  # king (the capital's), leader, or captain
+        if is_noble(actor, captains):  # the capital's king among them
             nobles_by_city[cid] += 1
             if coins and actor_id not in leader_ids:
                 nobles_money_by_city[cid] += int(coins)

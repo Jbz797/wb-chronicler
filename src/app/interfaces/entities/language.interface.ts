@@ -45,6 +45,7 @@ interface LanguageRanks {
   members?: number;
   money?: number;
   native?: number;
+  nobles?: number;
   renown?: number;
   renown_total?: number;
   warriors?: number;

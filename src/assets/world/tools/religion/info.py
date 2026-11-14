@@ -17,6 +17,7 @@ from shared import (
     absent_entity,
     build_trait_ids,
     build_trait_list,
+    captain_ids,
     children_by_id,
     competition_ranks,
     emit,
@@ -25,6 +26,7 @@ from shared import (
     entity_ref,
     hand_usage,
     index_by_id,
+    is_noble,
     light,
     load_data,
     load_save,
@@ -120,6 +122,7 @@ def _rank_getters(tallies: dict, world_time: float, books: dict[int, list[dict]]
         "kingdoms": lambda r: tallies["kingdoms"][r["id"]],
         "members": lambda r: len(members.get(r["id"], ())),
         "money": lambda r: tallies["money"][r["id"]],
+        "nobles": lambda r: tallies["nobles"][r["id"]],
         "renown": lambda r: int(r.get("renown") or 0),
         "renown_per_capita": lambda r: int(r.get("renown") or 0) / n if (n := len(members.get(r["id"], ()))) >= MIN_PER_CAPITA_UNITS else 0.0,
         "renown_total": lambda r: tallies["renown_total"][r["id"]],
@@ -158,6 +161,7 @@ def main(argv: list[str]) -> int:
         "kingdoms": Counter(k["id_religion"] for k in save.get("kingdoms") or [] if k.get("id_religion")),
         "members": defaultdict(list),
         "money": Counter(),
+        "nobles": Counter(),
         "renown_total": Counter(),
         "warriors": Counter(),
     }
@@ -168,17 +172,19 @@ def main(argv: list[str]) -> int:
         if rid := actor.get("religion"):
             members_by_id[rid].append(actor)
 
-    # The four sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
+    # The sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
     if "ranks" in sections:
-        housed, money, renown, warriors = (tallies[k] for k in ("housed", "money", "renown_total", "warriors"))
+        housed, money, nobles, renown, warriors = (tallies[k] for k in ("housed", "money", "nobles", "renown_total", "warriors"))
+        captains = captain_ids(save)
         for rid, flock in members_by_id.items():
-            roofs = coins = fame = fighters = 0
+            roofs = coins = fame = fighters = nobility = 0
             for actor in flock:
                 roofs += bool(actor.get("homeBuildingID"))
                 coins += int(actor.get("money") or 0)
                 fame += int(actor.get("renown") or 0)
                 fighters += actor.get("profession") == PROFESSION_WARRIOR
-            housed[rid], money[rid], renown[rid], warriors[rid] = roofs, coins, fame, fighters
+                nobility += is_noble(actor, captains)
+            housed[rid], money[rid], nobles[rid], renown[rid], warriors[rid] = roofs, coins, nobility, fame, fighters
 
     members = members_by_id.get(religion_id, [])
     ctx = {

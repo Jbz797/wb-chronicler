@@ -291,6 +291,7 @@
   "namesakes": "Une autre couronne ou cité dont le nom ne diffère que d'une lettre (`Brah`, `Braah`) : avant de la nommer, vérifie l'id ; absent, aucune.",
   "pop.eaters": "Les bouches, quand un corps n'a pas d'estomac : `food_per_capita` partage les vivres entre elles.",
   "pop.men": "Les mâles (`men`) et les femelles (`women`) de l'entité, même chez les bêtes (le mot de WB) ; d'une espèce : `actor --roster --filter type:<espèce> --with sex`.",
+  "pop.nobles": "Les nobles vivants de l'entité : rois, chefs de cité et capitaines d'armée ; omis à 0.",
   "ranks": "Un rang de compétition (1, 2, 2, 4) ; aucun pour un niveau 1, une seule cité ou royaume, une `attractivity` ≤ 0, une valeur à plus de la moitié du vivier.",
   "religion.metadata.cities": "`cities` et `kingdoms` comptent qui l'a faite sienne (`wiki:Religions`), pas où vivent ses fidèles.",
   "report": "Parle par images : « No fire, no warmth » dit le bois qui manque ; ses manques : `wood`, `stone`, `gold`, `common_metals` (métal, minerai), vivres (`food`).",

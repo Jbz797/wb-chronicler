@@ -43,6 +43,7 @@ from shared import (
     breeding_mode,
     build_trait_ids,
     build_trait_list,
+    captain_ids,
     children_by_id,
     competition_ranks,
     death_causes,
@@ -52,6 +53,7 @@ from shared import (
     hand_usage,
     index_by_id,
     is_boat,
+    is_noble,
     is_sapient,
     kept_deaths,
     light,
@@ -357,7 +359,7 @@ def _pairing(save: dict, bodies: list[dict], ctx: dict) -> dict | None:
 
 
 # What a biology is ranked on among the world's others. Living counts come off the rosters that one actor pass built — the podium weighs every biology.
-def _rank_getters(members: dict, housed: Counter, money: Counter, renown: Counter, warriors: Counter, world_time: float) -> dict:
+def _rank_getters(members: dict, housed: Counter, money: Counter, nobles: Counter, renown: Counter, warriors: Counter, world_time: float) -> dict:
     return {
         "age": lambda s: entity_age(s, world_time),
         "births": lambda s: int(s.get("total_births") or 0),
@@ -372,6 +374,7 @@ def _rank_getters(members: dict, housed: Counter, money: Counter, renown: Counte
         "kingdoms": lambda s: len({kid for a in members.get(s["id"], ()) if (kid := a.get("civ_kingdom_id"))}),
         "members": lambda s: len(members.get(s["id"], ())),
         "money": lambda s: money[s["id"]],
+        "nobles": lambda s: nobles[s["id"]],
         "renown_total": lambda s: renown[s["id"]],  # WB's own `renown` only counts births; this one is the renown its bearers carry
         "warriors": lambda s: warriors[s["id"]],
     }
@@ -482,22 +485,24 @@ def main(argv: list[str]) -> int:
         return 1
 
     # One pass groups the living by the biology they carry: WB points the actor at its subspecies, never the reverse. Skipped whole where no section asked.
-    housed, money, renown, warriors = Counter(), Counter(), Counter(), Counter()
+    housed, money, nobles, renown, warriors = Counter(), Counter(), Counter(), Counter(), Counter()
     members_by_id: defaultdict[int, list] = defaultdict(list)  # a factory, `setdefault` costing a fresh list per actor to throw it away on all but the first
     for actor in (save.get("actors_data") or []) if not _NEEDS_ACTORS.isdisjoint(sections) else ():
         if sid := actor.get("subspecies"):
             members_by_id[sid].append(actor)
 
-    # The four sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
+    # The sums answer to the podium alone, so they are read off the rosters once those stand — a section that wants none of them pays for none of them.
     if "ranks" in sections:
+        captains = captain_ids(save)
         for sid, group in members_by_id.items():
-            roofs = coins = fame = fighters = 0
+            roofs = coins = fame = fighters = nobility = 0
             for actor in group:
                 roofs += bool(actor.get("homeBuildingID"))
                 coins += int(actor.get("money") or 0)
                 fame += int(actor.get("renown") or 0)
                 fighters += actor.get("profession") == PROFESSION_WARRIOR
-            housed[sid], money[sid], renown[sid], warriors[sid] = roofs, coins, fame, fighters
+                nobility += is_noble(actor, captains)
+            housed[sid], money[sid], nobles[sid], renown[sid], warriors[sid] = roofs, coins, nobility, fame, fighters
 
     members = members_by_id.get(subspecies_id, [])
     ctx = {
@@ -522,7 +527,7 @@ def main(argv: list[str]) -> int:
     if "pop" in sections:
         out["pop"] = _build_pop(members, ctx)
     if "ranks" in sections:
-        getters = _rank_getters(members_by_id, housed, money, renown, warriors, ctx["world_time"])
+        getters = _rank_getters(members_by_id, housed, money, nobles, renown, warriors, ctx["world_time"])
         out["ranks"] = competition_ranks(subspecies, list(subspecies_by_id.values()), getters)
     if "species" in sections:
         species = _build_species(subspecies, save, ctx, detailed=detailed)
