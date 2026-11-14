@@ -1,6 +1,6 @@
 # 🧰 Outils du chroniqueur
 
-<p class="metadata">Date de mise à jour : 14/11/26 17:51</p>
+<p class="metadata">Date de mise à jour : 14/11/26 20:45</p>
 
 Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON ou un `✗` seul sur stderr, qui refuse l'appel ou dit qu'il n'y a rien (`no … in this world` est une réponse, pas une panne) ; une réponse partielle dit là, d'un `⚠`, ce qu'elle laisse, son JSON entier sur stdout, et une ligne `·` informe sans rien retirer ; citée en abrégé : `kingdom … metadata`.
 
@@ -31,8 +31,8 @@ Chaque outil : `python tools/<nom>/info.py [arg] [sections] [C<n>]`, sortie JSON
 | `war <id>`        | `attackers`, `defenders`, `metadata`                                                                                                   |
 | `world`           | `boats`, `cumulative`, `laws`, `leaders`, `metadata`, `plots`, `snapshot`                                                              |
 
-- **La carte** : `tools/map/show.py <x,y> [C<n>]` cerne la tuile sur la carte du chapitre et rend le chemin de l'image ; `gloss map.--zoom` pour lire une côte.
-- **Une liste** : `--roster`, une ligne par corps (`actor`), couronne (`kingdom`) ou lignée (`subspecies`) ; une espèce : `actor --roster --filter type:<espèce>`.
+- **La carte** : `tools/map/show.py <x,y> [C<n>]` cerne la tuile sur la carte du chapitre ; `gloss map.--zoom` pour lire une côte.
+- **Une liste** : `--roster`, une ligne par corps (`actor`), couronne (`kingdom`) ou lignée (`subspecies`) ; les morts d'une cité : `actor --roster --since C<n> --filter died,city:<id>`.
 
 ## Gloses :
 
