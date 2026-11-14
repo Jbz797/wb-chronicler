@@ -39,6 +39,7 @@ from shared import (
     hand_usage,
     house_building_ids,
     index_by_id,
+    is_ruin,
     is_transport,
     kingdom_score_dimensions,
     light,
@@ -206,6 +207,8 @@ def _build_context(save: dict, save_path: Path) -> dict:
     zone_to_kingdom = {zone: kid for kid, zone_list in zones_by_kingdom.items() for zone in zone_list}
 
     for b in save.get("buildings", []):
+        if is_ruin(b):  # no town lists a ruin, nor reaches into its stock
+            continue
         # Storage per city's kingdom: `food` (eatable, WB `_current_total_food`), `gold` (ore), `goods` (rest) — gated on `resources`, held by 0.5 % of buildings.
         if (stock := b.get("resources")) and (city := cities_by_id.get(b.get("cityID"))) and (fkid := city.get("kingdomID")):
             for r in stock.get("saved_resources") or []:

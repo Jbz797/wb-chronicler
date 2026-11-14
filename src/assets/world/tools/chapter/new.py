@@ -47,6 +47,7 @@ from shared import (
     i18n,
     index_by_id,
     is_boat,
+    is_ruin,
     is_sapient,
     kept_deaths,
     latest_chapter,
@@ -384,7 +385,7 @@ def _chapter_tags(live: dict, path: Path, blocks: dict, boat: dict | None, favor
     # Its first roof off the map, once it stands — a tent, a house or a hall (`housing_slots`): WB's `housesBuilt` takes a fire for one, and counts a laid site.
     roofs = load_data("buildings.json")
     housed = "FIRST_HOME" not in already and any(
-        (roofs.get(b.get("asset_id")) or {}).get("housing_slots") and not under_construction(b) for b in live.get("buildings") or []
+        (roofs.get(b.get("asset_id")) or {}).get("housing_slots") and not under_construction(b) and not is_ruin(b) for b in live.get("buildings") or []
     )
 
     # The first migrants a fire called in, off each crown's `migrated` (`Kingdom.increaseMigrants`): a realm gone takes its count along, a rare miss.

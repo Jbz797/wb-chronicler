@@ -38,6 +38,7 @@ from shared import (
     i18n,
     is_aboard,
     is_boat,
+    is_ruin,
     kept_clouds,
     kept_deaths,
     kingdom_score_dimensions,
@@ -251,7 +252,8 @@ def _build_plots(save: dict) -> list[dict]:
 def _build_snapshot(save: dict) -> dict:
     actors = save.get("actors_data") or []
     civic, roofs = civic_building_ids(), house_building_ids()
-    asset_counts = Counter(b.get("asset_id") or "" for b in save.get("buildings") or [])  # Count `asset_id`s once, classify the distinct keys — four scans saved.
+    standing = [b for b in save.get("buildings") or [] if not is_ruin(b)]  # a ruin is no longer the kind it was, a burnt tree no tree
+    asset_counts = Counter(b.get("asset_id") or "" for b in standing)  # Count `asset_id`s once, classify the distinct keys — four scans saved.
 
     # `infected` ⊂ `sick` — a plague never shows up in the first, hence both; each drops at 0, outbreaks leaving them idle most chapters.
     boats = infected = passengers = sapients = sick = 0
@@ -284,7 +286,7 @@ def _build_snapshot(save: dict) -> dict:
             # Chronicler-only: how many bodies each status holds this instant, as the Faithful Saves mod kept them.
             "statuses": dict(sorted(statuses.items())) or None,
             "trees": sum(n for aid, n in asset_counts.items() if building_family(aid) == "trees"),
-            "under_construction": sum(under_construction(b) for b in save.get("buildings") or [] if b.get("asset_id") in civic),  # the sites among `buildings`
+            "under_construction": sum(under_construction(b) for b in standing if b.get("asset_id") in civic),  # the sites among `buildings`
             "vegetation": sum(n for aid, n in asset_counts.items() if building_family(aid) == "vegetation"),  # `trees` counts apart — WB files the two as it pleases
             "wars": sum(not w.get("winner") for w in save.get("wars") or []),  # Only those still being fought — WB sets `winner` the moment one ends.
             "wild_creatures": len(actors) - boats - sapients,

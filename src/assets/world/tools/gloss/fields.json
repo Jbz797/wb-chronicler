@@ -289,6 +289,7 @@
   "ranks": "Un rang de compétition (1, 2, 2, 4) ; aucun pour un niveau 1, une seule cité ou royaume, une `attractivity` ≤ 0, une valeur à plus de la moitié du vivier.",
   "religion.metadata.cities": "`cities` et `kingdoms` comptent qui l'a faite sienne (`wiki:Religions`), pas où vivent ses fidèles.",
   "report": "Parle par images : « No fire, no warmth » dit le bois qui manque ; ses manques : `wood`, `stone`, `gold`, `common_metals` (métal, minerai), vivres (`food`).",
+  "ruin": "Une ruine : abattue, abandonnée ou brûlée, elle garde sa cité et sa sorte, mais aucune cité ne la compte (maisons, bâtiments, réserves) et nul n'y loge.",
   "rulers": "La succession, datée comme en jeu ; un royaume, son fondateur en tête ; une cité, ses chefs, jamais son roi (`kingdom … rulers`). Sa bourse : `pop.ruler_money`.",
   "sapient": "Une lignée qui pense au sens du jeu (`has_sapience`), mobs compris : crânes enflammés, Plague Doctors.",
   "speed": "Allure du jeu, d'un corps ou d'une coque : `speed` × 0,2 tuile par seconde de jeu (60 s font un an) ; les minutes de `--to` suivent l'échelle du récit.",

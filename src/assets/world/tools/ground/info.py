@@ -27,6 +27,7 @@ from shared import (
     hand_usage,
     index_by_id,
     is_boat,
+    is_ruin,
     kept_roof,
     light,
     load_data,
@@ -76,6 +77,7 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
     health, whole = house.get("health", UNWRITTEN_HEALTH), asset.get("health")
     hurt = whole is not None and health < whole
     dated = "laid" if ctx["civic"] else "born"  # a town's building is laid, a tree or an ore grows
+    ruin = is_ruin(house)
 
     return {
         # Dropped where it reads under zero: a reset before landmarks were stamped left them older than the world, and no age beats one counting backwards.
@@ -88,11 +90,13 @@ def _build_metadata(house: dict, dwellers: list[dict], ctx: dict) -> dict:
         "families": len({fid for a in dwellers if (fid := a.get("family"))}) or None,  # none says nothing of who sleeps there: `occupants` does
         "health": int(health) if hurt or (whole is None and "health" in house) else None,  # an asset the tables do not know keeps what the save wrote
         "health_max": whole if hurt else None,
-        "housing_slots": asset.get("housing_slots"),  # the souls WB lets live under this roof (`BuildingAsset.housing_slots`), whoever does: `occupants`
+        # The souls WB lets live under this roof (`BuildingAsset.housing_slots`), whoever does: `occupants` — none in a ruin, which no town lists
+        "housing_slots": None if ruin else asset.get("housing_slots"),
         "island_id": island_id,
         "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
+        "ruin": ruin or None,
         # A site, laid and not built: nobody sleeps in it yet, though WB already counts it among a town's `houses` (`City.getHouseCurrent`).
-        "under_construction": _site(house),
+        "under_construction": None if ruin else _site(house),
         "x": hx,
         "y": hy,
     }

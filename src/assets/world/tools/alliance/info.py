@@ -26,6 +26,7 @@ from shared import (
     hand_usage,
     index_by_id,
     is_boat,
+    is_ruin,
     load_save,
     meta_report,
     parse_sections,
@@ -189,7 +190,7 @@ def main(argv: list[str]) -> int:
     # Civic buildings standing on the pact's ground, as a crown counts its own — `civic` gates first, one building in twenty passing it.
     civic = civic_building_ids()
     for b in save.get("buildings") or [] if ground else ():
-        if b.get("asset_id") not in civic:
+        if b.get("asset_id") not in civic or is_ruin(b):
             continue
         if (tile := building_tile(b)) is not None and (pact := zone_to_pact.get((tile[0] // ZONE_TILES, tile[1] // ZONE_TILES))) is not None:
             pooled["buildings"][pact] += 1

@@ -42,6 +42,7 @@ from shared import (
     house_building_ids,
     index_by_id,
     is_aboard,
+    is_ruin,
     light,
     load_data,
     load_save,
@@ -163,7 +164,8 @@ def _build_buildings(city: dict, ctx: dict, requested: str | None) -> dict | lis
     owned = ctx["civic_by_city"].get(city["id"], [])
     if requested in (None, "full"):  # whatever their number: the panel reads the total there, and a town's roofs are the section's to list
         return light({"total": len(owned)})
-    return [_building_row(building) for building in sorted(owned, key=itemgetter("id"))]
+    ruins = ctx["ruins_by_city"].get(city["id"], [])  # what was its own, struck down: named, so a roof is never told standing that is not
+    return sorted([*map(_building_row, owned), *({**_building_row(ruin), "ruin": True} for ruin in ruins)], key=itemgetter("id"))
 
 
 # One pass over actors then buildings — every per-city tally the sections need, so no section rescans the save. Built whole whatever was asked for.
@@ -249,11 +251,16 @@ def _build_context(save: dict, save_path: Path) -> dict:
     gold_by_city: Counter[int] = Counter()
     goods_by_city: Counter[int] = Counter()
     houses_by_city: Counter[int] = Counter()
+    ruins_by_city: defaultdict[int, list[dict]] = defaultdict(list)
     sites_by_city: Counter[int] = Counter()
 
     for b in save.get("buildings") or []:
         cid = b.get("cityID")
         if not cid:
+            continue
+        if is_ruin(b):  # its town's id kept, yet no longer one of its buildings, its stock out of reach: listed apart, counted nowhere
+            if b.get("asset_id") in civic:
+                ruins_by_city[cid].append(b)
             continue
         if stock := b.get("resources"):  # Storage: `food` (eatable, WB `_current_total_food`), `gold` (ore), `goods` (rest) — every building, not just civic.
             for r in stock.get("saved_resources") or []:
@@ -316,6 +323,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "realm": cache(lambda: _build_realm_context(save, warriors_by_city)),  # the crown, its peers, its wars — read by loyalty alone, called not stored
         "religions_by_id": index_by_id(save.get("religions") or []),
         "renown_by_city": renown_by_city,
+        "ruins_by_city": ruins_by_city,
         "score_dimensions": cache(lambda: city_score_dimensions(save)),  # the composite score's tallies, some sourced nowhere else; same two callers
         "shelved_by_city": cache(lambda: _shelved_by_city(save)),  # the records behind `books_by_city`, only the `books` section spells them out
         "sick_by_city": sick_by_city,
@@ -487,7 +495,10 @@ def _building_row(building: dict) -> dict:
 # What became of its civic buildings since an earlier save: raised, a site finished, another kind under one id (a tent grown a house), lost — the rest counted.
 def _buildings_since(city_id: int, save: dict, then_save: dict) -> dict:
     civic = civic_building_ids()
-    now, then = ({b["id"]: b for b in s.get("buildings") or [] if b.get("cityID") == city_id and b.get("asset_id") in civic} for s in (save, then_save))
+    # A building fallen to ruin since reads as lost, under `gone`: WB lists it no more
+    now, then = (
+        {b["id"]: b for b in s.get("buildings") or [] if b.get("cityID") == city_id and b.get("asset_id") in civic and not is_ruin(b)} for s in (save, then_save)
+    )
     parts: dict[str, list] = {"built": [], "changed": [], "finished": []}
     still = 0
     for bid, building in sorted(now.items()):
@@ -739,7 +750,7 @@ def _migrants(city: dict, residents: list[dict], ctx: dict, save: dict) -> str |
         return f"people {len(residents)}/{_MIGRANT_PEOPLE}"
     if (food := ctx["food_by_city"][city["id"]]) < _MIGRANT_FOOD:
         return f"food {food}/{_MIGRANT_FOOD}"
-    fires = (b for b in save.get("buildings") or [] if b.get("cityID") == city["id"] and b.get("asset_id") == "bonfire")
+    fires = (b for b in save.get("buildings") or [] if b.get("cityID") == city["id"] and b.get("asset_id") == "bonfire" and not is_ruin(b))
     if all(under_construction(b) for b in fires):  # none, or none finished
         return "no_bonfire"
     if (lineage := main_subspecies(city, ctx, "city")) is None:

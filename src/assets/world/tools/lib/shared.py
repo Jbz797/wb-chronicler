@@ -338,7 +338,11 @@ def _has_meta_tag(subspecies: dict | None, tag: str) -> bool:
 # The building WB lets nobody in that a body stands at the heart of: on its ground, off its outer ring — inside, as the tale would have it, its rim beside.
 def _heart_of(actor: dict, by_tile: Mapping[tuple, dict]) -> dict | None:
     x, y = actor_xy(actor)
-    if not (building := by_tile.get((x, y))) or (spec := load_data("buildings.json").get(building.get("asset_id")) or {}).get("type") not in _WALK_IN_TYPES:
+    if (
+        not (building := by_tile.get((x, y)))
+        or is_ruin(building)
+        or (spec := load_data("buildings.json").get(building.get("asset_id")) or {}).get("type") not in _WALK_IN_TYPES
+    ):
         return None
     bx, by = building_tile(building) or (x, y)
     left, right, top, bottom = spec["fundament"]
@@ -590,7 +594,7 @@ def arg_parser(prog: str, taken: str = "", gloss: str = "") -> argparse.Argument
 def asset_families(save: dict) -> dict[str, Counter]:
     families: defaultdict[str, Counter] = defaultdict(Counter, actors=Counter(a["asset_id"] for a in save.get("actors_data") or [] if a.get("asset_id")))
     for building in save.get("buildings") or []:
-        if asset := building.get("asset_id"):
+        if (asset := building.get("asset_id")) and not is_ruin(building):  # a ruin is no longer the kind it was
             families[building_family(asset)][asset] += 1
     return {family: counts for family, counts in families.items() if counts}
 
@@ -621,7 +625,7 @@ def asset_set(name: str) -> frozenset[str]:
 # `footprint` gives a building once per tile of its ground, for a walk to reach its nearest: a list of places keeps it to its own.
 def asset_sites(save: dict, kinds: Collection[str], *, footprint: bool = False) -> list[tuple[dict, tuple[int, int]]]:
     bodies = [(record, actor_xy(record)) for record in save.get("actors_data") or [] if record.get("asset_id") in kinds]
-    built = [record for record in save.get("buildings") or [] if record.get("asset_id") in kinds]
+    built = [record for record in save.get("buildings") or [] if record.get("asset_id") in kinds and not is_ruin(record)]
     if footprint:
         return bodies + [(record, tile) for record in built for tile in building_footprint(record)]
     return bodies + [(record, tile) for record in built if (tile := building_tile(record)) is not None]
@@ -762,7 +766,7 @@ def building_tile(building: dict) -> tuple[int, int] | None:
     return None if x is None and y is None else (x or 0, y or 0)  # WB writes both as ints, so no `int()` to pay on every building of the world
 
 
-# Built structures by every tile of their ground. Nature files under `buildings` too, and nobody stands at a field as at a fire.
+# Built structures by every tile of their ground, ruins kept to stand beside, never in. Nature files under `buildings` too: nobody stands at a field as at a fire.
 def built_by_tile(save: dict) -> dict[tuple, dict]:
     civic = civic_building_ids()  # hoisted out of the comprehension, where the call stood once per building of the world
     return {tile: b for b in save.get("buildings") or [] if b.get("asset_id") in civic for tile in building_footprint(b)}
@@ -852,7 +856,7 @@ def city_score_dimensions(save: dict) -> dict[str, dict]:
     gold: Counter = Counter()
 
     for building in save.get("buildings") or []:
-        if (cid := building.get("cityID")) is None:
+        if (cid := building.get("cityID")) is None or is_ruin(building):  # a ruin keeps its town's id, which lists it no more
             continue
         if building.get("asset_id") in civic:
             buildings[cid] += 1
@@ -1110,6 +1114,11 @@ def is_boat(actor: dict) -> bool:
     return (actor.get("asset_id") or "").startswith("boat_")
 
 
+# WB `Building.isRuin`: state 4, what a building struck down, abandoned or burnt leaves — no town lists it (`isUsable`), no one lives or stores in it.
+def is_ruin(building: dict) -> bool:
+    return building.get("state") == 4
+
+
 # WB `Subspecies.isSapient`: the faculty rides on the biology, so a soul without one — as `Actor.isSapient` has it — never thinks.
 def is_sapient(subspecies: dict | None) -> bool:
     return _has_meta_tag(subspecies, "has_sapience")
@@ -1190,7 +1199,7 @@ def kingdom_score_dimensions(save: dict) -> dict[str, dict]:
     gold: Counter = Counter()  # gold ore stockpiled in a kingdom's buildings; each building carries its `cityID`, so no spatial lookup
 
     for building in save.get("buildings") or []:  # `resources` first: by far the rarest of the three tests, so it spares the city lookup on nearly every building
-        if (stock := building.get("resources")) and (city := cities_by_id.get(building.get("cityID"))) and (kid := city.get("kingdomID")):
+        if (stock := building.get("resources")) and not is_ruin(building) and (city := cities_by_id.get(building.get("cityID"))) and (kid := city.get("kingdomID")):
             for resource in stock.get("saved_resources") or []:
                 if resource.get("id") == "gold":
                     gold[kid] += resource.get("amount", 0)
@@ -1888,7 +1897,7 @@ def whereabouts(actor: dict, buildings_by_id: Mapping[int, dict], by_tile: Mappi
     inside = indoors(actor, buildings_by_id, by_tile)
     beside = building_at(actor, by_tile)
     return {
-        "beside_building": {"asset_id": beside.get("asset_id"), "id": beside["id"]} if beside and beside is not inside else None,
+        "beside_building": {"asset_id": beside.get("asset_id"), "id": beside["id"], "ruin": is_ruin(beside) or None} if beside and beside is not inside else None,
         "in_building": {"asset_id": inside.get("asset_id"), "id": inside["id"]} if inside else None,
     }
 
