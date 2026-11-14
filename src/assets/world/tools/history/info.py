@@ -489,6 +489,11 @@ def main(argv: list[str]) -> int:
     if args.section not in ("entity", "rulers") and args.entity:
         print(f"✗ {args.section} takes no entity", file=sys.stderr)
         return 2
+    if args.section == "entity" and args.entity[:1] == ["actor"]:
+        body = args.entity[1] if len(args.entity) > 1 else "<id>"  # the asked id, so the way round runs as given
+        past = f"`history log --actor {body}`, `actor {body} --since C<n>`, `across C<a>-C<b> actor {body} metadata --keep <field>`"
+        print(f"✗ WB keeps no years for a body — its past: {past}", file=sys.stderr)
+        return 2
     if args.section == "entity" and not (len(args.entity) == 2 and args.entity[0] in _ENTITIES and args.entity[1].isdigit()):
         print(f"✗ entity takes a kind and an id: `entity family 12` — kinds: {', '.join(_ENTITIES)}", file=sys.stderr)
         return 2
