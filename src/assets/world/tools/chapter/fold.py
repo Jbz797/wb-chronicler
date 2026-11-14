@@ -250,6 +250,12 @@ def _without(block: dict, cut: frozenset) -> dict:
     return {key: value for key, value in block.items() if key not in cut}
 
 
+# Whole years from one `y<year> m<month>` to another, counted by the month as the dates read.
+def _years_between(since: str, now: str) -> int:
+    (y1, m1), (y2, m2) = ((int(part[1:]) for part in date.split()) for date in (since, now))
+    return (y2 * 12 + m2 - y1 * 12 - m1) // 12
+
+
 # `_CHRONICLER_ONLY` cuts at every depth, `_AUDIT` from one named section; the empties a cut leaves go too, and the one nought kept for the chronicler alone.
 def drop_chronicler_keys(node: object, parent: str = "") -> object:
     if isinstance(node, dict):
@@ -296,7 +302,7 @@ def fold_bodies(blocks: dict, boat: dict | None) -> None:
 
 
 # Folds the favorite's heavy blocks: traits, gear and its own work, who stands around, victims and the scheme's detail go — `actor/info.py <id>` hands each whole.
-def fold_favorite_detail(favorite: dict) -> None:
+def fold_favorite_detail(favorite: dict, now: str) -> None:
     for section, stat in (("crafted", "crafted"), ("victims", "kills")):  # the panel ranks its work and its kills among `stats`, where `actor` tells neither
         if total := (favorite.pop(section, None) or {}).get("total"):
             favorite.setdefault("stats", {})[stat] = total
@@ -308,6 +314,9 @@ def fold_favorite_detail(favorite: dict) -> None:
     if kind := plot.get("type"):
         plot["type"] = {"id": kind.get("id")}
     favorite.pop("traits", None)  # the chronicler's summary takes its place, carried over or owed
+    metadata = favorite.get("metadata") or {}
+    if since := metadata.pop("tenure_since", None):  # the panel prints the post's whole years, the chronicler the month it began
+        metadata["tenure_years"] = _years_between(since, now)
 
 
 # The world block as its panels print it: the tallies and podiums folded, each scheme's type cut to its key.

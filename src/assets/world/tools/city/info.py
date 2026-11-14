@@ -20,7 +20,6 @@ from shared import (
     PROFESSION_WARRIOR,
     SAVES_DIR,
     SICK_TRAITS,
-    UNITS_PER_YEAR,
     ZONE_TILES,
     absent_entity,
     actor_age,
@@ -66,6 +65,7 @@ from shared import (
     wants_detail,
     world_date,
     world_laws,
+    years_since,
     zone_xy,
 )
 
@@ -133,7 +133,7 @@ def _build_army(city: dict, ctx: dict) -> dict | None:
         {
             "age": entity_age(army, ctx["world_time"]),
             "captain": entity_ref(army.get("id_captain"), ctx["actors_by_id"]),
-            **({"captain_years": _years_since(reign, ctx)} if reign is not None else {}),
+            **({"captain_years": years_since(reign, ctx["world_time"])} if reign is not None else {}),
             "deaths": int(army.get("total_deaths") or 0),
             "id": army.get("id"),  # what `actor --roster --filter army:<id>` takes to list its members
             "kills": int(army.get("total_kills") or 0),
@@ -607,9 +607,9 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
 
     # 21-22. Fresh bonds fade over a decade: the realm's latest conquest, and this town's own years under the banner.
     conquest = kingdom.get("timestamp_new_conquest")
-    if conquest is not None and float(conquest) != -1.0 and (years := _years_since(conquest, ctx)) <= 10:
+    if conquest is not None and float(conquest) != -1.0 and (years := years_since(conquest, ctx["world_time"])) <= 10:
         add("new_conquest", (10 - years) * 30)
-    if (years := _years_since(city.get("timestamp_kingdom") or 0, ctx)) <= 10:
+    if (years := years_since(city.get("timestamp_kingdom") or 0, ctx["world_time"])) <= 10:
         add("part_of_kingdom", (10 - years) * 10)
 
     # 23-24. Standing among the realms — WB ranks them by warriors and holdings, and only the top two earn anything.
@@ -619,7 +619,7 @@ def _city_loyalty(city: dict, ctx: dict) -> dict:
         add("second_best_kingdom", 50)
 
     # 25-27. The reign itself: one point per year past the fifth (capped at 40), the age's own temper, and a child on the throne.
-    if king and (years := _years_since(kingdom.get("timestamp_king_rule") or 0, ctx)) >= 5:
+    if king and (years := years_since(kingdom.get("timestamp_king_rule") or 0, ctx["world_time"])) >= 5:
         add("king_rule", min(years, 40))
     add("loyalty_world_era", realm["era_loyalty"])
     if king and actor_age(king, ctx["world_time"]) < 18:  # a body, so the age WB judges it on — `entity_age` would keep the malus a year too long
@@ -787,10 +787,6 @@ def _traits_mod(leader: dict, king: dict) -> int:
         if spec := _TRAIT_MODS.get(trait_id):
             total += spec["same"] * (trait_id in king_traits) + spec["opposite"] * (spec["opposite_trait"] in king_traits)
     return total
-
-
-def _years_since(timestamp: float, ctx: dict) -> int:
-    return int((ctx["world_time"] - float(timestamp)) / UNITS_PER_YEAR)
 
 
 def main(argv: list[str]) -> int:

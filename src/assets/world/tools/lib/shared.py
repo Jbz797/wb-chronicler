@@ -982,7 +982,7 @@ def emit(out: dict | list) -> None:
 
 # Years a record has behind it — a city, a crown, a clan, a family, a roof. Only a body counts the year it is in, and `actor_age` adds that one.
 def entity_age(record: dict, world_time: float) -> int:
-    return int((world_time - float(record.get("created_time") or 0)) / UNITS_PER_YEAR)
+    return years_since(record.get("created_time") or 0, world_time)
 
 
 # The month WB set a record on the map, as `born` dates a body: `age` counts whole years, and two of one year need telling apart.
@@ -1001,7 +1001,7 @@ def equipment_entry(item: dict, item_stats: dict, mod_stats: dict, world_time: f
     mods = sorted(item.get("modifiers") or [])
     asset_id = item["asset_id"]
     return {
-        "age": int((world_time - created) / UNITS_PER_YEAR) if (created := item.get("created_time")) is not None else None,  # WB: « created N years ago »
+        "age": years_since(created, world_time) if (created := item.get("created_time")) is not None else None,  # WB: « created N years ago »
         "asset_id": asset_id,
         "by": item.get("by"),
         "durability": item.get("durability"),
@@ -1917,6 +1917,11 @@ def xy_arg(value: str) -> tuple[int, int]:
         return int(x_str), int(y_str)
     except ValueError as e:
         raise argparse.ArgumentTypeError(f"expected `x,y` (e.g. `415,117`), got {value!r}") from e
+
+
+# Whole years from a `world_time` stamp to the save's, as WB counts a tenure, a record's age or an item's.
+def years_since(timestamp: float, world_time: float) -> int:
+    return int((world_time - float(timestamp)) / UNITS_PER_YEAR)
 
 
 # A city zone's `(x, y)`, in zone units. WB omits a zero at save time, so the first row writes no `y` and the first column no `x` — both read 0.

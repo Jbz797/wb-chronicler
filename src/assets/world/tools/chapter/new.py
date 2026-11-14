@@ -556,10 +556,10 @@ def _favorite_talk(n: int, favorite: dict) -> str | None:
     return f"the favorite talks with {name}" if task == "socialize_do_talk" else f"{name} talks to the favorite"
 
 
-# The save's `favorite`-flagged actor (WB's in-game marker), detail folded.
-def _featured_favorite(chapter: str, fav_id: int) -> dict | None:
+# The save's `favorite`-flagged actor (WB's in-game marker), detail folded — `now`, the chapter's date, counts its years in post.
+def _featured_favorite(chapter: str, fav_id: int, now: str) -> dict | None:
     if (favorite := _run("actor/info.py", fav_id, "full", chapter)) is not None:
-        fold_favorite_detail(favorite)
+        fold_favorite_detail(favorite, now)
     return favorite
 
 
@@ -1301,7 +1301,7 @@ def main(argv: list[str]) -> int:
         # Two waves rather than a call per tier: the favorite's metadata names the bodies it belongs to, so none of those can start until it has landed.
         world, favorite = _run_together(
             (_run, "world/info.py", chapter),
-            (_featured_favorite, chapter, fav_id) if fav_id is not None else None,
+            (_featured_favorite, chapter, fav_id, world_date(world_time)) if fav_id is not None else None,
         )
 
         lost_favorite = fav_id is not None and favorite is None

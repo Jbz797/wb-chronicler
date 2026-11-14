@@ -118,6 +118,7 @@ from shared import (
     whereabouts,
     world_date,
     world_laws,
+    years_since,
 )
 from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_foot, walled_in
 from waters import water_bodies, water_family, water_tiles, waters_cached, waters_within
@@ -463,8 +464,9 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
     age_adult, age_breeding = adult_age(actor, ctx), breeding_age(actor, ctx)
     tile = actor_xy(actor)
     profession = resolve_profession(actor, save)
-    seats = _tenures(_TENURE_ROLES.get(profession or ""), save, ctx["world_time"])  # every holder of the post, read once: the years, then the place among them
-    held, tenure = [{"years": years} for years in seats.values()], seats.get(actor["id"])
+    seats = _tenures(_TENURE_ROLES.get(profession or ""), save)  # every holder of the post, read once: its month, then the place among them
+    years = {holder: years_since(start, ctx["world_time"]) for holder, start in seats.items()}
+    held, took = [{"years": n} for n in years.values()], seats.get(actor["id"])
 
     lineage = ctx["subspecies_by_id"].get(actor.get("subspecies"))
     lineage_bears = fertile(lineage)
@@ -490,7 +492,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "city": entity_ref(actor.get("cityID"), ctx["cities_by_id"]),
         "city_since": kept_city_since(actor),  # Chronicler-only: the month it settled there, the mod's stamp
         "clan": entity_ref(actor.get("clan"), ctx["clans_by_id"]),  # a ref, not a bare name: `clan/info.py <id>` can be called on it, as on `family`
-        "clan_chief_years": _tenures(_CLAN_CHIEF_ROLE, save, ctx["world_time"]).get(actor["id"]),  # Chronicler-only: a role, so it stacks with `tenure_years`.
+        # Chronicler-only: a role, so it stacks with `tenure_since`.
+        "clan_chief_years": years_since(start, ctx["world_time"]) if (start := _tenures(_CLAN_CHIEF_ROLE, save).get(actor["id"])) is not None else None,
         "culture": entity_ref(actor.get("culture"), ctx["cultures_by_id"]),  # a ref like `clan`: `culture/info.py <id>` reads the customs it was raised in
         "family": entity_ref(actor.get("family"), ctx["families_by_id"]),  # a ref, not a bare name: `family/info.py <id>` can be called on it
         "favorite_food": actor.get("favorite_food"),
@@ -524,8 +527,8 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         "task": kept_task(actor),  # Chronicler-only: what the body was doing the instant of the save, by WB's own id, where the save keeps it
         "task_target": _task_target(actor, ctx, save),
         # A chief among chiefs, a king among kings: no species seats enough of either for its own podium to rank them.
-        "tenure_rank_in_post": competition_ranks({"years": tenure or 0}, held, {"tenure": lambda seat: seat["years"]}).get("tenure"),
-        "tenure_years": tenure,
+        "tenure_rank_in_post": competition_ranks({"years": years.get(actor["id"], 0)}, held, {"tenure": lambda seat: seat["years"]}).get("tenure"),
+        "tenure_since": world_date(took) if took is not None else None,  # Chronicler-only as a month: the panel's whole years are folded off it
         # WB `isInsideSomething`: a save keeps the boat half, never the building. A plain ref, souls boarding transports alone — `boat/info.py <id>` spells it out.
         **({"transport": entity_ref(actor.get("transportID"), ctx["actors_by_id"])} if is_aboard(actor) else {}),
         "x": tile[0],
@@ -1405,16 +1408,16 @@ def _task_target(actor: dict, ctx: dict, save: dict) -> dict | None:
     return aim
 
 
-# Years each holder of a post has sat in it, by its id — `role` = (holder field, collection, history). A seat counts while its history's last entry names its holder.
-def _tenures(role: tuple[str, str, str] | None, save: dict, world_time: float) -> dict[int, int]:
+# When each holder of a post took it, by its id — `role` = (holder field, collection, history). A seat counts while its history's last entry names its holder.
+def _tenures(role: tuple[str, str, str] | None, save: dict) -> dict[int, float]:
     if role is None:
         return {}
     holder_field, collection, history = role
-    seats: dict[int, int] = {}
+    seats: dict[int, float] = {}
     for record in save.get(collection, []):
         entries = record.get(history) or []
         if entries and (holder := record.get(holder_field)) is not None and entries[-1].get("id") == holder:
-            seats.setdefault(holder, int((world_time - float(entries[-1].get("timestamp_ago") or 0)) / UNITS_PER_YEAR))
+            seats.setdefault(holder, float(entries[-1].get("timestamp_ago") or 0))  # WB's name for it, yet the moment the term began
     return seats
 
 
