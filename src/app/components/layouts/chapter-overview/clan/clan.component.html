@@ -18,10 +18,6 @@
       </nz-descriptions-item>
     }
 
-    <!-- The founder alone counts 1: a succession only reads as one from a second chief. -->
-    @if ((c.metadata.past_chiefs ?? 1) > 1) {
-      <nz-descriptions-item [nzTitle]="chiefsTitle">{{ c.metadata.past_chiefs }}</nz-descriptions-item>
-    }
     @if (c.metadata.age > 0) {
       <nz-descriptions-item [nzTitle]="ageTitle">
         <app-ranked-stat source="clan" stat="age" suffix="ui_years" [hideDelta]="true" />
@@ -83,10 +79,6 @@
   <ng-template #chiefTitle>
     <img src="assets/img/stats/renown.png" />
     <span>{{ 'ui_leader' | translate }}</span>
-  </ng-template>
-  <ng-template #chiefsTitle>
-    <img src="assets/img/world/duration.png" />
-    <span>{{ 'ui_past_chiefs' | translate }}</span>
   </ng-template>
   <ng-template #citiesTitle>
     <img src="assets/img/world/cities.png" />

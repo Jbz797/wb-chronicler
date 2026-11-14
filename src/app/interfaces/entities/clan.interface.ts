@@ -14,7 +14,7 @@ export interface Clan {
 // Who founded the band. Its culture and the stock it sprang from stay in `clan/info.py <id> identity`.
 interface ClanIdentity { founder?: PersonReference }
 
-// Every counter drops at zero, so panels read them via `?? 0` — and `past_chiefs` at 1, its floor: WB counts the sitting chief.
+// Every counter drops at zero, so panels read them via `?? 0`.
 interface ClanMetadata {
   age: number;
   books_written?: number;
@@ -27,7 +27,6 @@ interface ClanMetadata {
   kingdoms?: number;
   members?: number; // its living, counted: `actor --roster --filter clan:<id>` names them
   name: string;
-  past_chiefs?: number;
   renown?: number;
 }
 

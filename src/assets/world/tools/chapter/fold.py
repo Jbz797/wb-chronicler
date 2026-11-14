@@ -98,7 +98,7 @@ _AUDIT_TIERS = {
     "city.pop": {"money", "nobles"},  # « Richesse » prints the shares and `metadata.wealth`, never the purse they split, nor the heads that share it
     "city.ranks": {"money", "nobles"},  # the purse the shares split, which « Richesse » prints bare, ranked for the chronicler alone
     "clan.identity": {"culture", "species", "subspecies"},  # its custom and the founder's stock — the panel names the founder alone, as a culture's does
-    "clan.metadata": {"births"},  # unlike a family, a pact or a biology, the clan panel prints no births row
+    "clan.metadata": {"births", "past_chiefs"},  # unlike a family, a pact or a biology, the clan panel prints no births row, nor its chiefs' count
     "culture.identity": {"species", "subspecies"},  # the founder's stock — the panel names the founder alone, whose own tag carries it
     "defenders.kingdoms": {"pop"},  # as `attackers`
     "family.identity": {"culture", "species", "subspecies"},  # the family is read by the souls it seated, its blood and its tongue answering from their own tiers
