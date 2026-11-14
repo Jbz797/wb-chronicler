@@ -51,7 +51,7 @@ The model's **1M-token context window** lets that single thread run a long way b
 ## Requirements
 
 - **Claude Code**, with a Claude subscription — Pro or higher is recommended, the chronicler reading, cross-checking and writing a multi-section chapter on every save
-- **Opus 5.5** at **high** effort for the chronicler, recommended — the depth a chapter's cross-checks need, without the cost of `xhigh` or `max`
+- **Opus 5.5** at **high** effort for the chronicler and its auditors, set by `src/assets/world/.claude/settings.json` — the depth a chapter's cross-checks need, without the cost of `xhigh` or `max`
 - **Node** 22+ and **Yarn** for the reader
 - **Python** 3.15+ for the `tools/` extractors — the standard library, plus **Pillow** for `map/show.py` (`pip install pillow`)
 - **WorldBox** (Steam) and a save to follow
@@ -96,7 +96,7 @@ The laws the chronicle is played under, by tab of the game's _World Laws_ window
 To write the chronicle, open the chronicler in its own directory:
 
 ```sh
-cd src/assets/world && claude --model claude-opus-5-5 --effort high
+cd src/assets/world && claude
 ```
 
 The session opens on a single order, _« Lis le docs/chronicler.md »_ — the chronicler takes it from there.
