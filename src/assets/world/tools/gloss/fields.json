@@ -237,6 +237,7 @@
   "heart": "`heart` (`islands`, `waters`, `islet`, `places.json`) : où se pose son nom, le plus loin des rives ; d'une rivière, d'un îlot, sa tuile la plus proche de sa moyenne.",
   "heir": "Qui WB ferait chef si le poste s'ouvrait, classé selon la culture : d'un royaume, un sujet de son clan royal, hors rois ; d'un clan, l'un des siens hors son chef.",
   "history.--actor": "`--actor <id>` : sous `log`, les seules entrées qui nomment ce corps ; sous `founded`, ce qu'il a fondé.",
+  "history.--kingdom": "`--kingdom <id>` : sous `log`, les seules entrées de cette couronne, tombée comprise ; avec `--since C<n>`, depuis ce chapitre.",
   "history.--limit": "`--limit` : sous `dead_kingdoms`, `founded` (par bloc), `log` et `rulers`, les lignes gardées, les plus récentes.",
   "history.--type": "`--type`, `-t <event>` : sous `log`, un seul type d'entrée, par son id du jeu (`kingdom_new`…) ; un mot hors de la liste est refusé avec elle.",
   "history.dead_kingdoms": "Les royaumes tombés : `joined`, `left`, `migrated` comme sous `entity`, leurs morts par cause, et `reigns`, les rois que nomme le journal.",

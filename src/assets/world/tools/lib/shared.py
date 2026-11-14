@@ -1339,15 +1339,17 @@ def load_save(path: Path | str) -> dict:
     return save
 
 
-# WB's own log from `start` to `end` (world times): each entry dated, its names told by role where `special1..3` shift meaning, its body and crown by id.
-# Its deaths left out unless `deaths`: the register tells each one, cause, killer and tile, and a fallen crown's reigns alone still read them here.
-def log_entries(start: float, end: float = float("inf"), actor: int | None = None, event: str | None = None, *, deaths: bool = False) -> list[dict]:
+# WB's log, `start` to `end`: entries dated, names by role, body and crown by id; deaths only under `deaths` (the register tells them), for a fallen crown's reigns.
+def log_entries(
+    start: float, end: float = float("inf"), actor: int | None = None, event: str | None = None, *, crown: int | None = None, deaths: bool = False
+) -> list[dict]:
     sql = "SELECT timestamp, asset_id, special1, special2, special3, unit_id, kingdom_id, x, y FROM WorldLogMessage WHERE asset_id != 'auto_tester'"
     sql += "" if deaths else f" AND asset_id NOT IN ({', '.join(repr(kind) for kind in _DEATH_EVENTS)})"
-    sql += " AND timestamp >= ? AND timestamp <= ?" + (" AND unit_id = ?" if actor is not None else "") + (" AND asset_id = ?" if event else "")
+    asked = [(column, value) for column, value in (("unit_id", actor), ("asset_id", event), ("kingdom_id", crown)) if value is not None]
+    sql += " AND timestamp >= ? AND timestamp <= ?" + "".join(f" AND {column} = ?" for column, _ in asked)
     try:
         with closing(sqlite3.connect(f"file:{HISTORY_S3DB}?mode=ro", uri=True)) as conn:  # WB stamps a whole unit, hence `>=`
-            rows = conn.execute(sql + " ORDER BY timestamp, rowid", [start, end, *([actor] if actor is not None else []), *([event] if event else [])]).fetchall()
+            rows = conn.execute(sql + " ORDER BY timestamp, rowid", [start, end, *(value for _, value in asked)]).fetchall()
     except sqlite3.Error:  # no copy yet, the live save having come without one
         return []
     # Read off each `WorldLog.log…`: `roles` names `special1..3` where they shift meaning, a crown's skipped as `kingdom_id` names it; `point`, whose place it is.

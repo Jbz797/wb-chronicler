@@ -235,22 +235,24 @@ def _build_founded(save: dict, since: str | None, actor: int | None, limit: int 
 
 
 # WB's own log up to the chapter, its bodies named by the save and the death register, its crowns by `crowns_named` — its latest `limit` entries.
-def _build_log(save: dict, since: str | None, actor: int | None, event: str | None, limit: int | None) -> list[dict] | str:
+def _build_log(save: dict, since: str | None, actor: int | None, crown: int | None, event: str | None, limit: int | None) -> list[dict] | str:
     start = _chapter_time(load_save(SAVES_DIR / since / "map.wbox")) if since else 0.0
-    if not (entries := log_entries(start, end := _chapter_time(save), actor, event)):
-        told = "✗ nothing logged" + (f" since {since}" if since else "") + (" for that body" if actor is not None else "") + (f" as {event}" if event else "")
+    if not (entries := log_entries(start, end := _chapter_time(save), actor, event, crown=crown)):
+        asked = (f" since {since}" if since else "", " for that body" if actor is not None else "", " for that crown" if crown is not None else "")
+        told = "✗ nothing logged" + "".join(asked) + (f" as {event}" if event else "")
         # A kind WB knows but this world never logged, told beside what it did log: the kind exists, its day has not come
-        others = Counter(e["event"] for e in log_entries(start, end, actor, None)) if event else None
+        others = Counter(e["event"] for e in log_entries(start, end, actor, None, crown=crown)) if event else None
         return told + (" — logged here: " + ", ".join(f"{kind} {n}" for kind, n in sorted(others.items())) if others else "")
     entries = _latest(entries, limit, "entries")
-    persons, deaths, crowns = index_by_id(save.get("actors_data") or []), kept_deaths(save), crowns_named(save)
+    persons, deaths = index_by_id(save.get("actors_data") or []), kept_deaths(save)
+    crowns = crowns_named(save) if crown is None else {}  # `--kingdom` names none: its entries all hold the one crown it asked
     for entry in entries:
         if event:  # the one `-t` asked for, so no entry repeats it — nor the body `--actor` named
             entry.pop("event")
         if (unit := entry.pop("actor_id")) is not None and actor is None:
             entry["actor"] = alive_or_dead_ref(unit, persons, deaths)
-        if (crown := entry.pop("kingdom_id")) is not None:
-            entry["kingdom"] = entity_ref(crown, crowns) or {"id": crown}
+        if (held := entry.pop("kingdom_id")) is not None and crown is None:  # the crown `--kingdom` named, as `--actor` its body, goes unsaid
+            entry["kingdom"] = entity_ref(held, crowns) or {"id": held}
     return entries
 
 
@@ -471,6 +473,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("section")
     parser.add_argument("entity", nargs="*", metavar="kind id")
     parser.add_argument("--actor", type=int, metavar="id")
+    parser.add_argument("--kingdom", type=int, metavar="id")
     parser.add_argument("--limit", type=limit_arg, metavar="n|all")
     kinds = sorted(load_data("world-log.json"))  # WB's own kinds of entry: a word outside them is a typo, refused with the list, never a quiet nothing
     parser.add_argument("--type", "-t", choices=kinds, metavar="event")
@@ -491,6 +494,9 @@ def main(argv: list[str]) -> int:
         return 2
     if args.actor is not None and args.section not in ("founded", "log"):
         print("✗ --actor narrows `log` and `founded`: name one", file=sys.stderr)
+        return 2
+    if args.kingdom is not None and args.section != "log":
+        print("✗ --kingdom narrows `log`: name it", file=sys.stderr)
         return 2
     if args.type and args.section != "log":
         print("✗ -t narrows `log`: name it", file=sys.stderr)
@@ -513,7 +519,7 @@ def main(argv: list[str]) -> int:
         if args.section == "world":
             out = _build_world(conn, save) or "✗ no year closed, and nothing born, raised or dead yet"
         elif args.section == "log":
-            out = _build_log(save, since, args.actor, args.type, limit)
+            out = _build_log(save, since, args.actor, args.kingdom, args.type, limit)
         elif args.section == "founded":
             by = f" by {args.actor}" if args.actor is not None else ""
             out = _build_founded(save, since, args.actor, limit) or f"✗ nothing founded{by} {f'since {since}' if since else 'yet'} still stands — the fallen: `log`"
