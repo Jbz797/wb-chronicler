@@ -492,10 +492,10 @@ def _building_row(building: dict) -> dict:
     return {"asset_id": building.get("asset_id"), "id": building["id"], "under_construction": under_construction(building) or None, "x": x, "y": y}
 
 
-# What became of its civic buildings since an earlier save: raised, a site finished, another kind under one id (a tent grown a house), lost — the rest counted.
+# What became of its civic buildings since an earlier save: raised, a site finished, another kind under one id, fallen to ruin, lost — the rest counted.
 def _buildings_since(city_id: int, save: dict, then_save: dict) -> dict:
     civic = civic_building_ids()
-    # A building fallen to ruin since reads as lost, under `gone`: WB lists it no more
+    # Standing ones alone, as WB lists them: one fallen to ruin since is told apart, `ruined`, where `gone` keeps what the save holds no more
     now, then = (
         {b["id"]: b for b in s.get("buildings") or [] if b.get("cityID") == city_id and b.get("asset_id") in civic and not is_ruin(b)} for s in (save, then_save)
     )
@@ -510,8 +510,10 @@ def _buildings_since(city_id: int, save: dict, then_save: dict) -> dict:
             parts["finished"].append(_building_row(building))
         else:
             still += 1
-    gone = [_building_row(b) for bid, b in sorted(then.items()) if bid not in now]  # as the earlier save last knew them
-    return parts | {"gone": gone, "info": f"{still} stood still" if still else None}
+    lost = [(bid, b) for bid, b in sorted(then.items()) if bid not in now]
+    ruins = {b["id"]: b for b in save.get("buildings") or [] if is_ruin(b)} if lost else {}  # the world's buildings walked only when one is missing
+    gone = [_building_row(b) for bid, b in lost if bid not in ruins]  # as the earlier save last knew them
+    return parts | {"gone": gone, "info": f"{still} stood still" if still else None, "ruined": [_building_row(ruins[bid]) for bid, _ in lost if bid in ruins]}
 
 
 # Memo over `city_centre` — every town asks its capital's, over and over.
