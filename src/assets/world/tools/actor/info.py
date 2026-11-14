@@ -71,6 +71,7 @@ from shared import (
     city_centre,
     competition_ranks,
     crafted_counts,
+    date_span,
     dormant,
     emit,
     entity_born,
@@ -243,6 +244,33 @@ def _absorbed(actor: dict, trait: dict, ctx: dict, totals: dict) -> list[str] | 
     without = actor_stat_totals({**actor, "saved_traits": [t for t in actor.get("saved_traits") or () if t != trait["id"]]}, ctx)
     # A multiplier is weighed on the stat it multiplies, WB folding it into that one: `multiplier_damage` shows in `damage`, and nowhere else.
     return sorted(stat for stat in moved if round(totals.get(key := MULTIPLIER_TARGETS.get(stat, stat), 0), 6) == round(without.get(key, 0), 6)) or None
+
+
+# `--age-at`: a body's age through the span asked, WB's own (`actor_age`), a pair where a birthday falls in it — refused before birth, past death or save.
+def _age_answer(span: tuple[str, float, float], actor_id: int, actor: dict | None, ctx: dict, chapter: str | None) -> int:
+    words, start, end = span
+    if actor is not None:
+        body, name, gone = actor, named_body(actor), inf
+    elif (dead := ctx["deaths"].get(actor_id)) is None:
+        print(absent_entity("actor", "actors_data", actor_id, chapter, lambda a: not is_boat(a)), file=sys.stderr)
+        return 1
+    elif dead["overgrowth"] is None and not dead["parents"]:
+        print(f"✗ {dead['name']}'s age is beyond telling: it appeared, and no save saw it alive", file=sys.stderr)
+        return 1
+    else:
+        body, name, gone = {"age_overgrowth": dead["overgrowth"] or 1, "created_time": dead["born"]}, dead["name"], dead["died"]
+    born, now = float(body.get("created_time") or 0), ctx["world_time"]
+    if start >= now:
+        print(f"✗ {words} is past {chapter or 'the save'}, read at {world_date(now)}", file=sys.stderr)
+    elif start >= gone:
+        print(f"✗ {name} died {world_date(gone)}, at {actor_age(body, gone)} — `died` tells it", file=sys.stderr)
+    elif end <= born:
+        print(f"✗ {name} was not yet born in {words}: born {world_date(born)}", file=sys.stderr)
+    else:
+        ages = sorted({actor_age(body, max(start, born)), actor_age(body, min(end, gone, now) - 1e-6)})
+        emit({"age": ages[0] if len(ages) == 1 else ages})
+        return 0
+    return 1
 
 
 # Where one `--to` aims: its goal in both chapters, the tiles a walk seeks, how its end is told, each word of a list of kinds, what the trip adds — a refusal raised.
@@ -1362,6 +1390,16 @@ def _swim_reach(actor: dict, stats: dict, biology: tuple | list, aloft: bool, sw
     return breath, breath + pace * _SPENT_BREATH_PACE * health / _DROWNING_PER_SECOND
 
 
+# `--age-at y70 m1`, its month typed as one word or as two: the span asked, as `born:` reads one — `None` unasked.
+def _take_age_at(argv: list[str]) -> tuple[tuple[str, float, float] | None, list[str]]:
+    if "--age-at" not in argv:
+        return None, argv
+    at = argv.index("--age-at")
+    words = argv[at + 1 : at + 3]
+    taken = 2 if len(words) == 2 and re.fullmatch(r"y\d+", words[0]) and re.fullmatch(r"m\d+", words[1]) else 1
+    return date_span(" ".join(words[:taken])), argv[:at] + argv[at + 1 + taken :]
+
+
 # `--limit n|all` taken out of the call, the rest left positional: `surroundings`'s lines per circle — `None` unasked, 0 for every one.
 def _take_limit(argv: list[str]) -> tuple[int | None, list[str]]:
     if "--limit" not in argv:
@@ -1700,14 +1738,14 @@ def main(argv: list[str]) -> int:
     try:
         targets, argv = _take_targets(argv)
         asked_limit, argv = _take_limit(argv)
+        age_at, argv = _take_age_at(argv)
     except (ArgumentTypeError, ValueError) as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
     if not argv or argv[0] in ("-h", "--help"):
         to = 'p<id>|x,y|b<id>|c<id>|cities|k<id>|i<land>|lands|"<place>"|lake<id>|burning|frozen|g:<ground>|<kind>'
-        return hand_usage(
-            f"usage: actor/info.py <id> [sections | --to {to}…] [--since C<n>] [--limit n|all] [C<n>] | --roster [options]\neach option: `gloss actor`", argv
-        )
+        usage = f"usage: actor/info.py <id> [sections | --to {to}… | --age-at <date>] [--since C<n>] [--limit n|all] [C<n>] | --roster [options]"
+        return hand_usage(f"{usage}\neach option: `gloss actor`", argv)
     try:
         actor_id = int(argv[0])
     except ValueError:
@@ -1723,6 +1761,9 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
+    if age_at is not None and (requested or targets or since):  # answers alone, as a `--to` does
+        print("✗ `--age-at` answers alone — its sections, `--to` or `--since`, a call of their own", file=sys.stderr)
+        return 2
     if asked_limit is not None and "surroundings" not in (requested or "").split(","):  # `full` counts the circles: the section named lists them
         print("✗ `--limit` cuts `surroundings`: name it", file=sys.stderr)
         return 2
@@ -1730,6 +1771,8 @@ def main(argv: list[str]) -> int:
     save = load_save(save_path)
     ctx = _build_context(save, save_path)
     actor = ctx["actors_by_id"].get(actor_id)
+    if age_at is not None:
+        return _age_answer(age_at, actor_id, actor, ctx, chapter)
     then_save, then_ctx, then = {}, {}, None
     if since:
         then_path = SAVES_DIR / since / "map.wbox"

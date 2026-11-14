@@ -955,6 +955,15 @@ def crowns_served(save: dict, upto: int) -> Callable[[int | None], int | None]:
     return crown
 
 
+# A date's span of world time, a year `y2` or a month `"y2 m12"` as every output dates one, with the words it was asked in.
+def date_span(value: str) -> tuple[str, float, float]:
+    words = value.strip()
+    if not (found := re.fullmatch(r"y(\d+)(?: m(\d+))?", words)) or (year := int(found[1])) < 1 or not 1 <= (month := int(found[2] or 1)) <= 12:
+        raise argparse.ArgumentTypeError(f'`{value}` is no date — a year `y2`, a month `"y2 m12"`')
+    start = (year - 1) * UNITS_PER_YEAR + (month - 1) * UNITS_PER_MONTH
+    return words, start, start + (UNITS_PER_MONTH if found[2] else UNITS_PER_YEAR)
+
+
 # Deaths by cause as WB keeps them, a `deaths_<cause>` field each, none at nought — WB's `natural` told `old_age`, as `world` and `history` tell it.
 def death_causes(record: dict) -> dict[str, int]:
     return {"old_age" if (cause := k.removeprefix("deaths_")) == "natural" else cause: v for k, v in record.items() if k.startswith("deaths_") and v}

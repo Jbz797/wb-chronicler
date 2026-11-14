@@ -33,8 +33,6 @@ from shared import (
     JOBS,
     SAVES_DIR,
     SKILLS,
-    UNITS_PER_MONTH,
-    UNITS_PER_YEAR,
     absent_entity,
     actor_age,
     actor_xy,
@@ -50,6 +48,7 @@ from shared import (
     crafted_counts,
     crowns_at_death,
     crowns_served,
+    date_span,
     emit,
     entity_born,
     entity_ref,
@@ -225,14 +224,6 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
 def _belongs(save: dict, entities: list[tuple[str, int | str]], fallen: dict[int, int] | None = None) -> Callable[[dict], bool]:
     ties = [_tie(save, kind, entity_id, fallen or {}) for kind, entity_id in entities]
     return ties[0] if len(ties) == 1 else lambda actor: all(tie(actor) for tie in ties)
-
-
-# `born:`'s span of world time, a year `y2` or a month `"y2 m12"` as every output dates one, with the words it was asked in.
-def _born_arg(value: str) -> tuple[str, float, float]:
-    if not (found := re.fullmatch(r"y(\d+)(?: m(\d+))?", value.strip())) or int(found[1]) < 1 or not 1 <= int(found[2] or 1) <= 12:
-        raise argparse.ArgumentTypeError(f'`{value}` is no date — a year `y2`, a month `"y2 m12"`')
-    start = (int(found[1]) - 1) * UNITS_PER_YEAR + (int(found[2] or 1) - 1) * UNITS_PER_MONTH
-    return value.strip(), start, start + (UNITS_PER_MONTH if found[2] else UNITS_PER_YEAR)
 
 
 # Each living body but the hulls, to weigh a world-wide claim (« the only one »); `since` keeps the arrivals and the land-changers, whose `was_on` `land` reads too.
@@ -653,7 +644,7 @@ def _keyed(key: str, said: str) -> object:
         told = f"filters nothing{guess}" if (guess := _guessed(said, choices)) else f"— `{key}:` takes {', '.join(choices)}"  # the list only for no near one
         raise argparse.ArgumentTypeError(f"`{key}:{said}` {told}")
     if key == "born":
-        return _born_arg(said)
+        return date_span(said)
     if key == "patch":
         return xy_arg(said)
     if key in _KEYED and not said:
