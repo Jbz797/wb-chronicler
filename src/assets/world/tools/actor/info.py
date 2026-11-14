@@ -1479,6 +1479,18 @@ def _tenures(role: tuple[str, str, str] | None, save: dict) -> dict[int, float]:
     return seats
 
 
+# The way back from a body the walker aims at, timed at that body's own pace: its time alone, `None` where it reads the same or the walk fails it.
+def _their_pace(actor: dict, body_id: int, trip: dict, ctx: dict) -> dict | None:
+    if (other := ctx["actors_by_id"].get(body_id)) is None:
+        return None
+    try:
+        back = _build_to(other, [actor_xy(actor)], named_body(actor), ctx, None, {})
+    except _UnreachableError:
+        return None
+    timed, mine = ({key: value for key, value in way.items() if key.endswith(("_days", "_hours", "_minutes"))} for way in (back, trip))
+    return None if timed == mine else timed
+
+
 # A goal by a save's own numbers, found again in the chapter `--since` names: a forged place by its name, a counted land or water by its point (`heart`).
 def _then_goals(target: str, told: dict, then: dict, then_ctx: dict, since: str | None) -> list[tuple[int, int]] | None:
     aimed = told["place"]["aimed"] if "place" in told else target
@@ -1846,9 +1858,10 @@ def main(argv: list[str]) -> int:
     foreign = favorite not in (None, actor_id)  # a circle reads from the favourite alone: off another body, it would file nothing the chronicle keeps
     if foreign:
         trips = {words: _uncircled(trip) if isinstance(trip, dict) else trip for words, trip in trips.items()}
-    # A trip to a body runs at the walker's pace: a sentence about that body measures from it, at its own (D'où), the call handed beside
-    for body in (match[1] for words, trip in trips.items() if trip and (match := re.fullmatch(r"p(\d+)", words))):
-        print(f"· at p{actor_id}'s pace; at p{body}'s own: `actor {body} --to p{actor_id}`", file=sys.stderr)
+    # A trip to a body runs at the walker's pace: a sentence about that body measures from it, at its own (D'où), told beside where it differs
+    for words, trip in trips.items():
+        if isinstance(trip, dict) and (match := re.fullmatch(r"p(\d+)", words)) and (theirs := _their_pace(actor, int(match[1]), trip, ctx)) is not None:
+            trip["at_their_pace"] = theirs
     if foreign and any(trips.values()):
         print(f"· no `circle` off p{actor_id}: it reads from the favourite — `actor {favorite} --to …`", file=sys.stderr)
     if targets and not any(trips.values()):

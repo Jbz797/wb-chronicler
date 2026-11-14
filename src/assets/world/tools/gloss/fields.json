@@ -104,6 +104,7 @@
   "actor.surroundings.nearest": "Le plus proche des `count` corps du groupe, à vol d'oiseau : pour une cité, l'un de ses habitants alentour, non la cité, qui se mesure par `--to c<id>`.",
   "actor.surroundings.sapient": "Se tait devant `kin`, `job` ou `role`, qui le disent déjà.",
   "actor.surroundings.water": "`water` et `islet_tiles` comme dans `tiles … tile_info`, omis sur la terre ou l'îlot du corps.",
+  "actor.to.at_their_pace": "Vers un corps : le temps du trajet inverse, à son pas à lui, quand il diffère ; une phrase qui parle de ce corps le prend (`chronicler.md` § Échelle, D'où).",
   "actor.to.burning": "Vers le feu (`--to burning`) : la flamme qu'il croise d'abord, où vont temps et distance, `tiles` son foyer, `place` son lieu ; le cap de son milieu : `centre_dir`.",
   "actor.to.by_task": "Vers un bâtiment : la tuile de son emprise où mène la tâche du corps s'il y va, sinon la plus proche ; sa distance se dit jusqu'à elle, non jusqu'à son ancrage.",
   "actor.to.circle": "Le cercle du but, au départ du favori seul (d'un autre corps, omis) : `intimate` ≤ 30 min, `common` ≤ 2 h, sinon `far` ; `total_` préfixe un compte dès deux parts.",
