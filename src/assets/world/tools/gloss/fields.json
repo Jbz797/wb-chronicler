@@ -27,7 +27,7 @@
   "actor.metadata.gen": "Absent : le corps a paru sans parents. Sinon sa génération.",
   "actor.metadata.hatch_on": "L'éclosion, passée ou à venir : chez qui éclot, `born` date la ponte, et jusque-là un œuf ne fait rien ; sa venue se date à l'éclosion.",
   "actor.metadata.hatches_as": "Ce qu'un œuf sera, éclos, selon sa mère.",
-  "actor.metadata.home": "Le toit attitré du corps, où il dort, non où il se tient : dedans, `in_building` ; aux abords, `beside_building` ; un toit, `ground <id> occupants` ; omis dehors.",
+  "actor.metadata.home": "Le toit attitré du corps, où il dort, non où il se tient (`in_building`, `beside_building`) ; un toit : `ground <id> occupants` ; omis dehors, perdu : `--since`.",
   "actor.metadata.in_building": "Le bâtiment où le corps se tient, sa sorte et son id ; omis dehors ; aux abords : `beside_building`.",
   "actor.metadata.islet": "Le `heart` de son îlot, à la place d'`island_id`, comme `tiles … islet` et `actor --roster` ; autre d'un chapitre à l'autre si l'îlot change de forme.",
   "actor.metadata.near_places": "Les lieux nommés tout près au sens du jeu (`chunks_apart` ≤ 1), eaux et autres terres comprises, celui où il se tient à part : un volcan, une rive.",
