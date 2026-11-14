@@ -41,6 +41,7 @@
   "actor.metadata.task_history": "Par chapitre passé, la tâche visant un corps, un bâtiment ou un livre (le corps d'abord), son sort en `now` ; `became` : changé de sorte, `ground <id>` dit laquelle.",
   "actor.metadata.task_target": "Ce vers quoi la tâche en cours mène le corps, non où il est : un corps, un bâtiment, un livre, ou, sans eux, une tuile `at` à `crow_tiles` ; le temps, `--to`.",
   "actor.metadata.tenure_since": "Le mois où le corps a pris son poste en cours, roi, chef de cité ou capitaine ; chaque mandat, daté : `history rulers <siège>`.",
+  "actor.metadata.zone_of": "La cité dont la zone porte sa tuile à la save, la sienne ou une autre ; absent en terre sauvage. Un mort, par son `at` : `tiles <x,y> owner`.",
   "actor.plot": "Le complot qu'il mène : son `type`, depuis `months` mois, `progress` la jauge du jeu (sans plafond : mûre, elle passe 100) ; sa cible, cité, royaume ou alliance.",
   "actor.ranks": "Son rang parmi les corps de son espèce (`asset_id`), toutes lignées confondues ; seul le podium sort.",
   "actor.roster": "Une ligne par corps vivant du monde : âge, espèce, cité, terre, palier, nom, sexe ; sous `--since`, aussi les morts et ceux partis d'une entité filtrée.",

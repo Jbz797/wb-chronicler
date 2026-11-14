@@ -119,6 +119,8 @@ from shared import (
     world_date,
     world_laws,
     years_since,
+    zone_cities,
+    zone_of,
 )
 from walking import Gait, WalkMap, walk_from, walk_way, walk_ways, walled_foot, walled_in
 from waters import water_bodies, water_family, water_tiles, waters_cached, waters_within
@@ -434,6 +436,7 @@ def _build_context(save: dict, save_path: Path) -> dict:
         "water_tiles": lambda kind, water_id: water_tiles(save, save_path, kind, water_id),  # `--to lake4`'s
         "waters_within": lambda *window: waters_within(save, save_path, *window),  # the named waters by a body, for `metadata`'s `near_places`
         "world_laws": world_laws(save),
+        "zone_cities": cache(lambda: zone_cities(save)),  # called not stored: `metadata` alone asks
     }
 
 
@@ -539,6 +542,7 @@ def _build_metadata(actor: dict, ctx: dict, save: dict) -> dict:
         **({"transport": entity_ref(actor.get("transportID"), ctx["actors_by_id"])} if is_aboard(actor) else {}),
         "x": tile[0],
         "y": tile[1],
+        "zone_of": zone_of(*tile, ctx["zone_cities"]()),  # Chronicler-only: whose town's ground it stands on, its own or another's — none in the wild
     }
 
 

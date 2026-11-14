@@ -82,6 +82,8 @@ from shared import (
     world_date,
     world_laws,
     xy_arg,
+    zone_cities,
+    zone_of,
 )
 from walking import WalkMap
 
@@ -138,6 +140,7 @@ _KEPT_FIELDS = (
     "subspecies",
     "task",
     "weapon",
+    "zone_of",
 )
 
 # What `--filter` takes as `key:value` besides each entity's id: an open value
@@ -212,6 +215,7 @@ def _asked_fields(actor: dict, here: int | str, fields: list[str], ctx: dict, se
         "subspecies": lambda: actor.get("subspecies"),
         "task": lambda: kept_task(actor),
         "weapon": lambda: _weapon(actor, ctx["items_by_id"]),
+        "zone_of": lambda: zone_of(*actor_xy(actor), ctx["zone_cities"]),  # whose town's ground it stands on, none in the wild
         **{kind: (lambda kind=kind: entity_ref(actor.get(_MEMBERSHIPS[kind][1]), ctx["ties"][kind])) for kind in ctx.get("ties", ())},
     }
     return {field: kept[field]() if field in kept else stats.get(field, _FIELD_FLOORS.get(field)) for field in fields}
@@ -318,6 +322,8 @@ def _build_roster(
             "tile_map": save["tileMap"],
             "world_laws": world_laws(save),
         }
+    if "zone_of" in fields:  # every town's zones indexed once for the roll
+        ctx["zone_cities"] = zone_cities(save)
 
     # A trait is a body's own or its lineage's: `gift_of_thunder` is born with a whole line, `fire_blood` with one body — `trait:` finds either.
     bearers = {sub["id"] for sub in save.get("subspecies") or [] if trait in (sub.get("saved_traits") or ())} if trait else set()

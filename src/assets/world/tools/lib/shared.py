@@ -1924,6 +1924,16 @@ def years_since(timestamp: float, world_time: float) -> int:
     return int((world_time - float(timestamp)) / UNITS_PER_YEAR)
 
 
+# The town each zone belongs to, by its `(x, y)` in zone units, as a ref: what `zone_of` reads a tile against.
+def zone_cities(save: dict) -> dict[tuple[int, int], dict]:
+    return {zone_xy(zone): {"id": city["id"], "name": city.get("name")} for city in save.get("cities") or [] for zone in city.get("zones") or []}
+
+
+# The town whose zone holds a tile, as a ref, `None` in the wild — `tiles … owner`'s own answer, off `zone_cities`.
+def zone_of(x: int, y: int, by_zone: Mapping[tuple[int, int], dict]) -> dict | None:
+    return by_zone.get((x // ZONE_TILES, y // ZONE_TILES))
+
+
 # A city zone's `(x, y)`, in zone units. WB omits a zero at save time, so the first row writes no `y` and the first column no `x` — both read 0.
 def zone_xy(zone: dict) -> tuple[int, int]:
     return zone.get("x", 0), zone.get("y", 0)
