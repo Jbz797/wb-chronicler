@@ -81,6 +81,7 @@ from shared import (
     world_date,
     world_laws,
     xy_arg,
+    zone_at_death,
     zone_cities,
     zone_of,
 )
@@ -92,7 +93,25 @@ _DISPLACED = ("city", "island_id", "life_stage", "name", "asset_id", "age")  # w
 _FIELD_FLOORS = {"births": 0, "equipment_power": 0, "level": 1, "loot": 0, "money": 0, "renown": 0}  # a tally `actor … stats` tells silent at its floor
 
 # What `--with` asks of the dead: the register keeps it, a sex never changes, a war its side, a tally what the last save saw
-_GONE_FIELDS = ("asset_id", "at", "births", "born", "camp", "crow_tiles", "dir", "killed_by", "kills", "level", "loot", "money", "name", "parents", "renown", "sex")
+_GONE_FIELDS = (
+    "asset_id",
+    "at",
+    "births",
+    "born",
+    "camp",
+    "crow_tiles",
+    "dir",
+    "killed_by",
+    "kills",
+    "level",
+    "loot",
+    "money",
+    "name",
+    "parents",
+    "renown",
+    "sex",
+    "zone_of",
+)
 
 # What `has:`/`lacks:` weigh held or not: a lineage, every body has
 _HELD = ("army", "city", "clan", "culture", "family", "home", "kingdom", "language", "lover", "religion")
@@ -606,6 +625,7 @@ def _gone_since(
             "parents": sorted(dead["parents"]) or None,
             "sex": dead["sex"] or (sex_label(last[dead["id"]]) if dead["id"] in last else None),
             **{tally: _held(body, tally) or None for tally in _TALLIES if tally in fields},  # what it took away, as the last save saw it alive
+            **({"zone_of": zone_at_death(dead)} if "zone_of" in fields else {}),  # a save read for it: asked alone
         }
         socle = row | {key: kept[key] for key in _DEAD_SOCLE}
         gives = [key for key in _DISPLACED if key in _DEAD_SOCLE and kept[key] is not None]  # its name, then its kind: its sex stays

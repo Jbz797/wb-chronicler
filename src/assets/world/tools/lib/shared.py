@@ -243,6 +243,19 @@ def _current_save() -> Path | None:
     return Path(path) if (path := reader_settings().get("savePath")) else None
 
 
+# Each chapter by the hour its save was taken, off `saves/index.json`: what tells the first save after an instant, read once per run.
+@cache
+def _chapter_hours() -> tuple[tuple[int, float], ...]:
+    rows = json.loads(index.read_text()) if (index := SAVES_DIR / "index.json").exists() else []
+    return tuple(sorted((row["n"], float(row["world_time"])) for row in rows))
+
+
+# A chapter save's town zones, read once per run whoever asks: every body that fell before it reads its ground there.
+@cache
+def _chapter_zones(n: int) -> dict[tuple[int, int], dict]:
+    return zone_cities(load_save(SAVES_DIR / f"C{n}" / "map.wbox"))
+
+
 # The history base that holds a save's deaths: the latest chapter's copy for any chapter, the live slot's for a world gone on since.
 @cache
 def _deaths_base(world_time: float) -> Path:
@@ -1957,6 +1970,12 @@ def xy_arg(value: str) -> tuple[int, int]:
 # Whole years from a `world_time` stamp to the save's, as WB counts a tenure, a record's age or an item's.
 def years_since(timestamp: float, world_time: float) -> int:
     return int((world_time - float(timestamp)) / UNITS_PER_YEAR)
+
+
+# The town whose zone held the tile a body fell on, as the first chapter save after its death draws them — `None` in the wild, or with no save past it yet.
+def zone_at_death(dead: dict) -> dict | None:
+    after = next((n for n, hour in _chapter_hours() if hour >= dead["died"]), None)
+    return zone_of(dead["x"], dead["y"], _chapter_zones(after)) if after is not None else None
 
 
 # The town each zone belongs to, by its `(x, y)` in zone units, as a ref: what `zone_of` reads a tile against.

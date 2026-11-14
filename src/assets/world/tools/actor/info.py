@@ -120,6 +120,7 @@ from shared import (
     world_date,
     world_laws,
     years_since,
+    zone_at_death,
     zone_cities,
     zone_of,
 )
@@ -999,6 +1000,7 @@ def _death(dead: dict, ctx: dict, upto: int) -> dict:
         "subspecies": entity_ref(lineage, ctx["subspecies_by_id"]) or ({"id": lineage} if lineage else None),  # one died out keeps its id
         "x": dead["x"],
         "y": dead["y"],
+        "zone_of": zone_at_death(dead),  # whose town's ground it fell on, as the first save after its death draws the towns
     }
 
 
