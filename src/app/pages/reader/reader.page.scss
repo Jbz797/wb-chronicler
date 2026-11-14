@@ -1,6 +1,8 @@
 @use 'variables' as *;
 
 :host ::ng-deep .reader-page {
+  --selection-share: 20%; // the sienna of quotes and links keeps 4.7:1 under the strongest species' hue, where 25 % would drop it to 4.4
+
   background: $parchment-noise, radial-gradient(ellipse at center, $paper 0%, $paper-dim 100%);
   border-radius: $radius;
   box-shadow: $glow;

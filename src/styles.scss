@@ -14,6 +14,12 @@ body {
   --scrollbar-track-thickness: 5px; // finer than the library's 7px, which reads heavy against the chronicle's type
 }
 
+// Selected text in the fleurons' hue, thinned and in its own ink (ng-zorro whitens it): 25 % keeps every species' text ≥ 6:1 on dark, the parchment less.
+::selection {
+  background: color-mix(in srgb, var(--favorite-hue, #{$gold}) var(--selection-share, 25%), transparent);
+  color: inherit;
+}
+
 // Every pixel WorldBox ships is art, whether it arrives as a file or gets composed at runtime — never let a browser smooth one.
 img,
 canvas {
