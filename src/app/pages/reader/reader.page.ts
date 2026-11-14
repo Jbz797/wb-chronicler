@@ -19,9 +19,11 @@ import {
 import { War } from '../../interfaces';
 import { ChroniclerService, RegistryService } from '../../services';
 
+import { TombstoneComponent } from './tombstone/tombstone.component';
+
 @Component({
   selector: 'app-reader',
-  imports: [DeltaComponent, MarkdownComponent, NgScrollbarModule, NzTooltipModule, TranslatePipe],
+  imports: [DeltaComponent, MarkdownComponent, NgScrollbarModule, NzTooltipModule, TombstoneComponent, TranslatePipe],
   templateUrl: './reader.page.html',
   styleUrl: './reader.page.scss',
 })
@@ -53,6 +55,8 @@ export class ReaderPage {
       return Array.isArray(url) ? url : undefined;
     },
   });
+  // The favourite dead since the chapter before: his stone heads the tale, and his obituary is edged in mourning.
+  protected readonly mourned = computed(() => this.isChapter() ? this._chronicler.currentChapter()?.meta.mourned : undefined);
   // The prose's person plate under the pointer and what its tooltip tells: `marked` writes plain HTML, so one tooltip follows the pointer from plate to plate.
   protected readonly proseHint = signal<{ origin: ElementRef<HTMLElement>; text: string } | null>(null);
 
@@ -94,6 +98,7 @@ export class ReaderPage {
     requestAnimationFrame(() => openings.forEach(opening => opening && this._fitOneLine(opening))); // a frame later, or the refit's own resize loops
   });
   private readonly _scroller = viewChild.required(NgScrollbar);
+  private readonly _tombstone = viewChild(TombstoneComponent, { read: ElementRef<HTMLElement> }); // held by reference: once moved, a new tale's prose detaches it
 
   constructor() {
     // The default redirect, and any Précepte slug, resolve to nothing outside dev mode: the latest chapter takes their place as soon as the probe finds one.
@@ -146,6 +151,7 @@ export class ReaderPage {
     ReligionSpriteHelpers.paintAll(root, this._registry.religions());
     SubspeciesSpriteHelpers.paintAll(root, this._registry.subspecies());
     this._plainOpening(root).catch(() => {});
+    this._frameObituary(root);
     this._restoreScroll();
   }
 
@@ -175,6 +181,18 @@ export class ReaderPage {
       opening.style.fontSize = `${Math.min(Math.floor(((size * room) / content) * 10) / 10, size - 0.1)}px`;
     }
     opening.style.removeProperty('white-space');
+  }
+
+  // Frames the obituary, the first section `marked` leaves as loose siblings, in mourning under his stone; with no heading yet, the stone heads the tale.
+  private _frameObituary(root: HTMLElement): void {
+    const heading = root.querySelector(':scope markdown > h2');
+    const stone = this._tombstone()?.nativeElement; // set only for a mourned favourite
+    if (!heading || !stone) return;
+    const frame = document.createElement('section');
+    frame.classList.add('obituary');
+    heading.before(frame);
+    frame.append(stone, heading);
+    for (let node = frame.nextElementSibling; node && !['H2', 'HR'].includes(node.tagName); node = frame.nextElementSibling) frame.append(node);
   }
 
   // Marks the prose's person plates that tell their species and crown on hover: all but the favourite's, whose own panel already says both.

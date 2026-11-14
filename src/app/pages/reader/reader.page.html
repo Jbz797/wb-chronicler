@@ -18,6 +18,9 @@
           }
         </div>
       }
+      @if (mourned(); as m) {
+        <app-tombstone [mourned]="m" />
+      }
       @if (src(); as s) {
         <markdown [disableSanitizer]="true" [src]="s" (ready)="onReady()" />
       } @else if (merged.hasValue()) {

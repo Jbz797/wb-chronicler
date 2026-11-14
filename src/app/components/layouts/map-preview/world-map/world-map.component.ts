@@ -5,9 +5,10 @@ import { afterRenderEffect, Component, computed, ElementRef, inject, input, sign
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { PLACES_FILE, SPECIES_COLORS } from '../../../../constants';
+import { LabelHelpers } from '../../../../helpers';
 import { LabelBox, MapPin, MapPinKind, PlaceArea, Places, TileExtent } from '../../../../interfaces';
 import { ChroniclerService, RegistryService } from '../../../../services';
 
@@ -21,6 +22,7 @@ export class WorldMapComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _registry = inject(RegistryService);
+  private readonly _translate = inject(TranslateService);
 
   public readonly previewUrl = input.required<string>();
 
@@ -44,6 +46,14 @@ export class WorldMapComponent {
   protected readonly frame = computed(() => {
     const extent = this._extent();
     return extent && { ratio: `${extent.width} / ${extent.height}`, width: `min(100vw, ${(100 * extent.width) / extent.height}vh)` };
+  });
+  // Where the favourite before fell, dead since the chapter before, under WB's own gravestone: his name and year on hover — none while the favourite lives.
+  protected readonly grave = computed(() => {
+    const extent = this._extent();
+    const mourned = this._chronicler.currentChapter()?.meta.mourned;
+    if (!extent || !mourned) return null;
+    const person = this._registry.persons()[String(mourned.id)]; // his year of death is the registry's
+    return { ...this._at(mourned.at, extent), tip: `${mourned.name} · ${LabelHelpers.gendered(this._translate, 'ui_died', person?.sex)} ${person?.died}` };
   });
   // How far each emoji steps down for its drawing to sit on the middle of the capitals beside it, in `em` — measured, no two being drawn at the same height.
   protected readonly lifts = signal<Record<string, number>>({});

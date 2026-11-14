@@ -1,0 +1,72 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+
+  // An arched slab in WB's gravestone greys (`iconDead`), bevelled as its sprites are: a lit edge top-left, a shade bottom-right, the dark line round it all.
+  .stone {
+    align-items: center;
+    background: #757a81;
+    border-radius: 50% 50% #{$radius} #{$radius} / 30% 30% #{$radius} #{$radius}; // interpolated: a bare `/` between Sass values is a division
+    box-shadow:
+      inset 4px 4px 0 #a7b7a8,
+      inset -4px -4px 0 $stone-shade,
+      0 0 0 3px $stone-line;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-width: 22rem;
+    padding: 2.25rem 2.5rem 1.5rem;
+    text-align: center;
+    text-shadow: 0 1px 0 rgb(255 255 255 / 25%); // cut into the stone: the light catches the groove's lower lip
+
+    // A niche cut in the slab, dark as its outline, so the likeness reads where grey on grey would lose it.
+    .niche {
+      align-items: center;
+      background: $stone-line;
+      border-radius: 50%;
+      box-shadow:
+        inset 3px 3px 0 $stone-ink,
+        inset -3px -3px 0 $stone-shade;
+      display: flex;
+      height: 96px;
+      justify-content: center;
+      margin-bottom: 0.4rem;
+      width: 96px;
+
+      .portrait {
+        filter: grayscale(1) brightness(1.3); // a likeness in the stone, not the living colours its plate wore
+        height: 60px;
+      }
+    }
+
+    .name {
+      font-family: $font-display;
+      font-size: 1.5rem;
+      letter-spacing: $letter-spacing-wide;
+      line-height: 1.2;
+    }
+
+    .span {
+      font-family: $font-display;
+      font-size: 0.85rem;
+      letter-spacing: $letter-spacing-wide;
+    }
+
+    .epitaph {
+      font-size: 1.05rem;
+      font-style: italic;
+      line-height: 1.4;
+      margin: 0.5rem 0 0;
+      text-align: center; // the parchment justifies its paragraphs, and a line cut in stone is centred
+      text-wrap: balance;
+    }
+
+    .death {
+      font-size: 0.9rem;
+      margin-top: 0.6rem;
+    }
+  }
+}

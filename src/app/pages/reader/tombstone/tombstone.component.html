@@ -1,0 +1,18 @@
+@let m = mourned();
+<div class="stone">
+  <div class="niche">
+    <canvas #portrait class="portrait" height="0" width="0"></canvas>
+  </div>
+  <div class="name">{{ m.name }}</div>
+  <div class="span">{{ 'ui_tombstone_span' | translate: { born: m.born, died: person()?.died } }} · {{ m.age }}{{ 'ui_years' | translate }}</div>
+  @if (m.epitaph) {
+    <p class="epitaph">{{ m.epitaph }}</p>
+  }
+  <div class="death">
+    @if (m.killer; as killer) {
+      {{ slainBy() }} {{ killer }}
+    } @else {
+      {{ cause() }}
+    }
+  </div>
+</div>

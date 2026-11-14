@@ -89,6 +89,18 @@
           margin-top: 1.4em;
         }
 
+        // A favourite's obituary, as `ReaderPage` gathers it: the chapter's first section in a double band of mourning, his stone then its heading at its head.
+        .obituary {
+          border: 6px double $stone-ink;
+          margin-top: 1.6em; // below, the next section's heading keeps its own, the larger
+          padding: 1.5em 1.5em 0.5em;
+
+          h2 {
+            margin-top: 0; // the stone above it keeps its own margin
+            text-align: center;
+          }
+        }
+
         h4 {
           font-style: italic;
         }

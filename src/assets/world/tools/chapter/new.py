@@ -104,7 +104,10 @@ _COUNSEL = (
 )
 
 # What the chapter owes a favorite just dead — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
-_DEATH = "the death section opens the chapter: how he died, as the death register tells it (`actor <id>`), what he leaves, the handover"
+_DEATH = (
+    "the death section opens the chapter, under his stone: an obituary in a voice of its own, solemn and unhurried — his life in brief, what he founded, held, "
+    "won and lost; how he died, as the death register tells it (`actor <id>`); what he leaves, and the handover"
+)
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
     "announce it to the player with `tools/map/show.py <x,y>`: only the map finds it among a thousand",
@@ -152,6 +155,10 @@ _EMPTIED = (
     "wars",
 )
 
+# What an epitaph is — in no doc, a death being rare: said as it falls due, and handed to the audit with the target that names it.
+_EPITAPH = "the line cut in the dead favorite's stone, above his obituary: plain text with no tag, in the chronicle's language, his own and no other's"
+
+_EPITAPH_CAP = 120  # a stone's width: past it the line would wrap onto the years beneath
 _EVENT = "an event the chapter owes its reader, glossed in docs/tags.md"  # said to the chronicler at the recap, and to his auditors with their targets
 _FLAGS = frozenset({"--deliver", "--description", "--erosion", "--finalize", "--name", "--reset", "--reset-asked", "--retouch"})  # all `main` reads
 _FRESH = re.compile(r"\[([^\]]*)\]")  # what a rewritten trait summary tells new, between brackets its panel sets apart, counted like the rest
@@ -300,6 +307,7 @@ def _audit_targets(n: int, facts: dict) -> str:
     summed = [
         *([f"trait summaries: {_SUMMARY}"] if any(field.endswith(".traits") for field in facts["audited"]) else []),
         *([_LINEAGE] if "subspecies.traits" in facts["audited"] else []),
+        *([f"epitaph: {_EPITAPH}"] if "mourned.epitaph" in facts["audited"] else []),
     ]
     shape, summed_shape = (f" [{' — '.join(items)}]" if items else "" for items in (asked, summed))
     written = f", saves/C{n}/chapter.json ({', '.join(facts['audited'])}){summed_shape}" if facts["audited"] else ""
@@ -654,6 +662,24 @@ def _mods_off(save: dict) -> list[str]:
     return stale + [name for name, key in _MODS_LATEST.items() if name not in stale and key not in stamps]
 
 
+# The stone of the favorite the chapter before carried, dead since, off the death register — `None` while he lives. Its epitaph is the chronicler's to write.
+def _mourned(chapter: str, fav_id: int | None, deaths: dict[int, dict]) -> dict | None:
+    if fav_id is None or (dead := deaths.get(fav_id)) is None:
+        return None
+    told = _run("actor/info.py", fav_id, "died", chapter) or {}  # his age as a fiche reads it, and his killer, a crab reborn or a body gone alike
+    killer = told.get("killed_by") or {}
+    # No year of death: the person registry holds it, as for every dead plate; the killer, a name cut in the stone, needs no id
+    return {
+        "age": told.get("age"),
+        "at": told.get("at"),
+        "born": world_year(dead["born"]),
+        "cause": dead["cause"],
+        "id": fav_id,
+        "killer": killer.get("name"),
+        "name": dead["name"],
+    }
+
+
 # The names this chapter put on the map, a land's or a water's as a place's own: what `--finalize` dated, and what the chronicler wrote `chapter` on himself.
 def _named_places(n: int) -> list[str]:
     gazetteer = _gazetteer()
@@ -755,6 +781,10 @@ def _print_step_five(n: int, facts: dict) -> None:
         print(f"  → trait summaries owed ({', '.join(owed)}): one string each under the block's own `traits` key, read off {reads}")
         lineage = f", a lineage's {_SUMMARY_CAPS['subspecies']} — {_LINEAGE}" if "subspecies" in owed else ""
         print(f"    {_SUMMARY}; {_SUMMARY_CAP} characters at most{lineage}")
+    if facts["epitaph_owed"]:
+        print(f"  → the epitaph owed: one string under `mourned.epitaph` — {_EPITAPH}; {_EPITAPH_CAP} characters at most")
+    elif facts["epitaph_length"] > _EPITAPH_CAP:
+        print(f"  ✗ epitaph, {facts['epitaph_length']} characters of {_EPITAPH_CAP}")
     if facts["length"] < (floor := facts["floor"]):  # held before the round, so a correction and the gain it costs go to the audit together
         print(f"  ✗ chapter.md, {facts['length']} characters of {floor} at least, {COUNTED_AS} — the gain goes with this round's corrections, before the audit")
     if long := facts["long"]:
@@ -1035,8 +1065,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
     prose = (chapter_dir / "chapter.md").read_text()
     headings = [line[2:] for line in prose.splitlines() if line.startswith("# ")]
     draft = _draft_heading(lang)
-    favorite, before = chapter.get("favorite") or {}, prior.get("favorite") or {}
-    same = (before.get("metadata") or {}).get("id") == (favorite.get("metadata") or {}).get("id")  # a favorite stays so until death: another, or none, mourns him
+    favorite = chapter.get("favorite") or {}
     written = {tier: summary for tier in _TRAIT_SOURCES if isinstance(summary := (chapter.get(tier) or {}).get("traits"), str)}
     h1 = headings[0] if len(headings) == 1 and headings[0] != draft else None
     h1_length = len(unmarked(h1 or ""))
@@ -1058,14 +1087,19 @@ def _step_five_facts(n: int, lang: str) -> dict:
     saves = [load_save(path) if rewritten and (path := SAVES_DIR / f"C{m}" / "map.wbox").exists() else {} for m in (n, n - 1)]
     bare = [tier for tier, entity in rewritten.items() if len({_trait_fingerprint(save, tier, entity) for save in saves}) > 1]
     length, floor = chapter_length(prose), chapter_floor(n)
-    faults = dialogues or doubled or owed or long or misplaced or stray or bare or length < floor
+    stone = chapter.get("mourned")  # a stone stands only over a favorite the death register keeps
+    epitaph_length = len(epitaph) if isinstance(epitaph := (stone or {}).get("epitaph"), str) else 0
+    epitaph_owed = bool(stone) and not epitaph_length  # an empty line cuts nothing in the stone: still owed
+    faults = dialogues or doubled or owed or long or misplaced or stray or bare or epitaph_owed or epitaph_length > _EPITAPH_CAP or length < floor
     return {
-        "audited": [f"{tier}.traits" for tier in moved],
+        "audited": [f"{tier}.traits" for tier in moved] + (["mourned.epitaph"] if epitaph_length else []),
         "bare": bare,
         "dialogues": dialogues,
         "done": 0 < h1_length <= _H1_CAP and not faults,
         "doubled": doubled,
         "draft": draft,
+        "epitaph_length": epitaph_length,
+        "epitaph_owed": epitaph_owed,
         "events": _events(chapter.get("tags") or []),
         "favorite": bool(favorite),
         "h1": h1,
@@ -1074,7 +1108,7 @@ def _step_five_facts(n: int, lang: str) -> dict:
         "length": length,
         "long": long,
         "misplaced": misplaced,
-        "mourned": bool(before) and not same,
+        "mourned": bool(stone),
         "named": _named_places(n),
         "owed": owed,
         "stray": stray,
@@ -1181,9 +1215,13 @@ def _write_world(save: dict) -> None:
     _WORLD_JSON.write_text(render(world) + "\n")  # `render` like every other file the bootstrap writes, so a short blurb would inline as they do
 
 
-# The prose the chronicler writes into a `chapter.json`, which the audit reads as it reads the chapter: each tier's trait summary.
+# The prose the chronicler writes into a `chapter.json`, which the audit reads as it reads the chapter: each tier's trait summary, a dead favorite's epitaph.
 def _written_prose(record: dict) -> dict:
-    return {f"{tier}.traits": summary for tier in _TRAIT_SOURCES if isinstance(summary := (record.get(tier) or {}).get("traits"), str)}
+    epitaph = (record.get("mourned") or {}).get("epitaph")
+    return {
+        **{f"{tier}.traits": summary for tier in _TRAIT_SOURCES if isinstance(summary := (record.get(tier) or {}).get("traits"), str)},
+        **({"mourned.epitaph": epitaph} if isinstance(epitaph, str) else {}),
+    }
 
 
 def main(argv: list[str]) -> int:
@@ -1299,11 +1337,13 @@ def main(argv: list[str]) -> int:
         age_id = (live["mapStats"].get("world_age_id") or "").removeprefix("age_")  # short form, as `world/info.py` emits it — `prev_world` carries that one
         tags = _chapter_tags(live, chapter_dir / "map.wbox", blocks, boat, favorite, just_designated, prior, age_id)
 
+        deaths = kept_deaths(live)
         # No `age_label`: the panel translates `world.metadata.age_id`. No `title` either: the H1 of `chapter.md` is the title, and nothing reads a copy of it.
         chapter_json = {
             **blocks,  # `render` sorts a record's keys, so the tiers need no place of their own here
             "boat": boat,
             "favorite": favorite,
+            "mourned": _mourned(chapter, prev_fav_id, deaths),  # a living favorite, kept or new, is none of the dead
             "tags": tags,
             "wars": wars,
             "world": world,
@@ -1316,7 +1356,7 @@ def main(argv: list[str]) -> int:
         (chapter_dir / "chapter.md").write_text(f"# {_draft_heading()}\n")
         _write_index(n, world_time)
 
-        _print_report(n, live, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id, kept_deaths(live)), tags, prev_world)
+        _print_report(n, live, age_id, favorite, _regime(n, actors, fav_id, prev_fav_id, deaths), tags, prev_world)
         _print_next_step(n, live, favorite, _forget_subagents())
     except BaseException as fault:  # a crash or a Ctrl-C halfway, which `_abandon` never sees: the half-built folder goes the same way, the fault still surfacing
         shutil.rmtree(chapter_dir, ignore_errors=True)

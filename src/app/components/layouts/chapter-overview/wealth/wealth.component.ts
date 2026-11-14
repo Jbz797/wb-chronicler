@@ -36,7 +36,7 @@ export class WealthComponent {
         { icon: 'professions/leader', label: 'ui_ruler', value: c.pop.ruler_money },
         { icon: 'world/nobles', label: 'ui_nobles', value: c.pop.nobles_money },
         { icon: 'world/population', label: 'ui_inhabitants', value: c.pop.subjects_money },
-        { icon: 'world/gold', label: 'ui_ingots', value: c.metadata.gold ?? 0 }, // absent at nought, as every count of the block
+        { icon: 'resources/gold', label: 'ui_ingots', value: c.metadata.gold ?? 0 }, // absent at nought, as every count of the block
       ];
     }
     const k = meta?.kingdom;
@@ -46,7 +46,7 @@ export class WealthComponent {
       { icon: 'professions/king', label: 'ui_lord', value: k.pop.ruler_money },
       { icon: 'world/nobles', label: 'ui_nobles', value: k.pop.nobles_money },
       { icon: 'world/population', label: 'ui_inhabitants', value: k.pop.subjects_money },
-      { icon: 'world/gold', label: 'ui_ingots', value: k.metadata.gold ?? 0 },
+      { icon: 'resources/gold', label: 'ui_ingots', value: k.metadata.gold ?? 0 },
     ];
   });
   // `metadata.wealth`, the sum of the shares: at nought the table would print nothing but noughts, so it goes whole.

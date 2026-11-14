@@ -11,6 +11,7 @@ import { Religion } from './entities/religion.interface';
 import { Subspecies } from './entities/subspecies.interface';
 import { War } from './entities/war.interface';
 import { World } from './entities/world.interface';
+import { Mourned } from './mourned.interface';
 import { ChapterTier } from './types';
 
 // One chronicle chapter as the nav knows it, off `saves/index.json`: what a row prints, without opening the chapter itself.
@@ -30,6 +31,7 @@ export interface ChapterMeta extends Partial<Record<ChapterTier, unknown>> {
   favorite?: Favorite;
   kingdom?: Kingdom;
   language?: Language;
+  mourned?: Mourned; // the favorite dead since the chapter before, whose stone opens this one
   religion?: Religion;
   subspecies?: Subspecies;
   wars?: War[]; // the crown's own, each answering for itself — its `kingdom.wars` names them, this block fields them

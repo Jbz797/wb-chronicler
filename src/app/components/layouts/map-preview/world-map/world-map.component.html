@@ -18,6 +18,9 @@
       {{ pin.name }}
     </nz-tag>
   }
+  @if (grave(); as d) {
+    <img class="grave" nz-tooltip src="assets/img/world/deaths.png" [nzTooltipTitle]="d.tip" [style.left.%]="d.left" [style.top.%]="d.top" />
+  }
   @if (favorite(); as f) {
     <span class="favorite" [style.--favorite]="f.color" [style.left.%]="f.left" [style.top.%]="f.top">
       <nz-tag #favoriteTag class="favorite-name">{{ f.name ?? ('anonymous' | translate) }}</nz-tag>

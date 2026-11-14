@@ -61,6 +61,14 @@
     }
   }
 
+  // The favourite before, where he fell: WB's own gravestone (`iconDead`).
+  .grave {
+    cursor: help;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 1.85cqw;
+  }
+
   // The favourite where the chapter left them: a ring in its species' hue, gilt if it has none, white-edged like the name hung above so the spot stays in view.
   .favorite {
     --hue: var(--favorite, #{$primary});

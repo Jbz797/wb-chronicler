@@ -6,7 +6,7 @@ export class WorldHelpers {
 
   // « Activité récente » rows: cumulative deltas, kept above zero — the schemes afoot have their own list.
   public static activityRows = (world: World, previous: World | undefined): { icon: string; label: string; value: number }[] => CUMULATIVE_STATS
-    .map(({ key, label }) => ({ icon: key, label, value: (world.cumulative?.[key] ?? 0) - (previous?.cumulative?.[key] ?? 0) }))
+    .map(({ icon, key, label }) => ({ icon: icon ?? key, label, value: (world.cumulative?.[key] ?? 0) - (previous?.cumulative?.[key] ?? 0) }))
     .filter(row => row.value > 0);
 
   // Per-cause death delta vs the previous chapter — `chapter.json` omits 0-counts, so a missing key reads 0. `null` on a world that never counted a death.
