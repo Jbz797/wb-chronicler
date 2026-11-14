@@ -105,9 +105,9 @@ _COUNSEL = (
 
 # What the chapter owes a favorite just dead, and the one after him — in no doc, a death being rare: the recap says it, the targets hand it to the audit.
 _DEATH = (
-    "the death section opens the chapter, under his stone: an obituary in a voice of its own, solemn and unhurried — his life in brief, what he founded, held, "
-    "won and lost; how he died, as the death register tells it (`actor <id>`); what he leaves, and the handover. The section after it presents the new "
-    "favorite: who he is, and the life that brought him there"
+    "the death section opens the chapter, under his stone: an obituary in a voice of its own, solemn and unhurried — his life from childhood on, what he "
+    "founded, held, won and lost; how he died, as the death register tells it (`actor <id>`); what he leaves, and the handover. The section after it "
+    "presents the new favorite under a heading that says so: who he is, and the life that brought him there"
 )
 
 _DESIGNATION = (  # putting the chosen favorite to the player — an exchange no chapter shows, so it is said where it is acted on
