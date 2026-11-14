@@ -23,6 +23,9 @@ _TOOLS = frozenset(path.parent.name for path in Path(__file__).parents[1].glob("
 # One key's glosses, or its refusal told: the fields it names, a tool's whole with the shared ones, or the neighbour whose gloss tells it.
 def _found(wanted: str, glosses: dict[str, str], segmented: dict[str, list[str]]) -> dict[str, str]:
     asked = wanted.split(".")
+    # An option's fields live under its section, `actor.--to.x` in `actor.to.x`, unless a key holds the option itself (`actor.roster.--filter.died`)
+    if any(segment.startswith("-") for segment in asked[:-1]) and not any(_within(segments, asked) for segments in segmented.values()):
+        asked = [segment.lstrip("-") for segment in asked[:-1]] + asked[-1:]
     option = asked[-1].startswith("-")
     found = {key: glosses[key] for key, segments in segmented.items() if _within(segments, asked)}
     # A lone word that is a section of several tools would pour every one of them: it keeps the keys it ends or starts, else says which tool to name

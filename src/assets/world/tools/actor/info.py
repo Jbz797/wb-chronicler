@@ -1865,7 +1865,7 @@ def main(argv: list[str]) -> int:
         if isinstance(trip, dict) and (match := re.fullmatch(r"p(\d+)", words)) and (theirs := _their_pace(actor, int(match[1]), trip, ctx)) is not None:
             trip["at_their_pace"] = theirs
     if foreign and any(trips.values()):
-        print(f"· no `circle` off p{actor_id}: it reads from the favourite — `actor {favorite} --to …`", file=sys.stderr)
+        print(f"· no `circle` off p{actor_id}: only the favourite's trips have one (`actor {favorite} --to …`); times stay at p{actor_id}'s pace", file=sys.stderr)
     if targets and not any(trips.values()):
         return 1
     if trips:  # several `--to` keep each its words, where one alone comes bare
