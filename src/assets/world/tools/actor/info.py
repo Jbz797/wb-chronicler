@@ -572,7 +572,9 @@ def _build_since(actor: dict, then: dict | None, ctx: dict, save: dict, then_ctx
     for side in (before, after):
         side["statuses"] = [status for status in side.get("statuses") or () if status in lasting] or None
     changed = {
-        key: _change(key, before.get(key), after.get(key)) for key in sorted((before.keys() | after.keys()) - _UNCOMPARED) if before.get(key) != after.get(key)
+        key: change
+        for key in sorted((before.keys() | after.keys()) - _UNCOMPARED)
+        if before.get(key) != after.get(key) and (change := _change(key, before.get(key), after.get(key))) is not None
     }
     # A level unsaid is WB's floor, 1: left out, it would weigh as 0. No `swim`, which only follows stamina and health.
     stats_then, stats_now = ({"level": 1, **body_stats(body, side)} for body, side in ((then, then_ctx), (actor, ctx)))
@@ -705,13 +707,14 @@ def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
     ]
 
 
-# A field as it moved: a list, `roles`, by what came and went; a count or a flag as its pair, unsaid read as its floor; anything else as the pair, or `new`/`gone`.
+# A field as it moved: a list by what came and went; a count or flag as its pair, unsaid read as its floor, `None` if both match; else the pair, or `new`/`gone`.
 def _change(key: str, before: object, after: object) -> dict | list | None:
     if isinstance(before, list) and isinstance(after, list):
         return moved_between(before, after)
     if key not in _IDS and isinstance(said := before if after is None else after, int):  # a bool is an int: `False` unsaid as a 0 is
         floor = _FLOORS.get(key, False if isinstance(said, bool) else 0)
-        return [floor if before is None else before, floor if after is None else after]
+        pair = [floor if before is None else before, floor if after is None else after]
+        return None if pair[0] == pair[1] else pair
     if after is None:  # a pair would lose its empty side to `emit`, which drops every `None`
         return {"gone": before}
     return {"new": after} if before is None else [before, after]
