@@ -48,6 +48,7 @@ from shared import (
     load_save,
     main_subspecies,
     meta_report,
+    namesakes,
     needs_food,
     parse_sections,
     population_breakdown,
@@ -381,6 +382,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
             "kills": int(kingdom.get("total_kills") or 0),  # Enemies its members have slain over the kingdom's lifetime (WB `total_kills`).
             "max_cities": crown_max_cities(kingdom, ctx["actors_by_id"].get(kingdom.get("kingID")), ctx),  # chronicler-only: past it, outlying towns lose loyalty
             "name": kingdom.get("name"),
+            "namesakes": namesakes(kingdom, ctx["kingdoms_by_id"].values()),  # chronicler-only: another crown a letter apart, never to be taken for this one
             **({"peace_time": peace} if (peace := _peace_years(kingdom, ctx)) is not None else {}),  # Years without a war; absent while one is being fought.
             "renown": kingdom.get("renown", 0),
             "report": report,  # what WB has the realm say of itself

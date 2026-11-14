@@ -48,6 +48,7 @@ from shared import (
     load_save,
     main_subspecies,
     meta_report,
+    namesakes,
     needs_food,
     parse_sections,
     population_breakdown,
@@ -437,6 +438,7 @@ def _build_metadata(city: dict, ctx: dict, save: dict) -> dict:
             "kingdom": entity_ref(city.get("kingdomID"), ctx["kingdoms_by_id"]),
             "migrants": _migrants(city, residents, ctx, save),  # chronicler-only: whether strangers may yet sit at its fire, and what keeps them off
             "name": city.get("name"),
+            "namesakes": namesakes(city, ctx["cities_by_id"].values()),  # chronicler-only: another town a letter apart, never to be taken for this one
             "renown": city.get("renown", 0),
             "report": report,  # what WB has the settlement say of itself
             "score_rank": score_ranks([e["id"] for e in save.get("cities") or []], dims).get(cid),  # composite settlement place (1 = heaviest), total kept internal

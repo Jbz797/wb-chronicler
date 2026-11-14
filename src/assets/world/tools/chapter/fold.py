@@ -37,6 +37,7 @@ _AUDIT = {
             "islet",
             "mass",
             "motto",
+            "namesakes",
             "near_places",
             "peace_time",
             "place",

@@ -1403,6 +1403,23 @@ def named_body(body: dict) -> str:
     return f"{body.get('name') or body.get('asset_id')} ({body['id']})"
 
 
+# The others among `records` whose name a letter at most sets apart from this one's (`Brah`, `Braah`), as refs: a crown or a town named, the id checked.
+def namesakes(record: dict, records: Iterable[dict]) -> list[dict] | None:
+    if not (name := (record.get("name") or "").casefold()):
+        return None
+
+    def near(other: str) -> bool:
+        if abs(len(other) - len(name)) > 1:
+            return False
+        if len(other) == len(name):
+            return sum(a != b for a, b in zip(other, name, strict=True)) <= 1
+        short, long = sorted((other, name), key=len)
+        return any(long[:i] + long[i + 1 :] == short for i in range(len(long)))
+
+    found = [{"id": o["id"], "name": o.get("name")} for o in records if o is not record and near((o.get("name") or "").casefold())]
+    return found or None
+
+
 # WB `Subspecies.needs_food`, cached off the `needs_food` meta-tag in `cacheTags` — carried by the one `stomach` trait, so a body without a gut never hungers.
 def needs_food(subspecies: dict | None) -> bool:
     return _has_meta_tag(subspecies, "needs_food")
