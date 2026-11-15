@@ -174,7 +174,8 @@ def _build_entity(conn: sqlite3.Connection, kind: str, entity_id: int, save: dic
         earlier = living is not None and chapter not in (None, last)  # the save in hand is the latest otherwise, and is not read twice
         ended = earlier and all(e.get("id") != entity_id for e in load_save(SAVES_DIR / last / "map.wbox").get(collection) or [])
         if living is not None and not ended:
-            return f"✗ {kind} {entity_id} has no year closed yet: a year's row is written as the next one opens"
+            now = f" — now: `{kind} {entity_id}`" if (Path(__file__).parents[1] / kind).is_dir() else ""  # its tool's state at the save, an army having none
+            return f"✗ {kind} {entity_id} has no year closed yet: a year's row is written as the next one opens{now}"
         refusal = absent_entity(kind, collection, entity_id, last if ended else chapter)
         fall = " — its fall: `history dead_kingdoms`" if kind == "kingdom" else ""
         return f"{refusal} — WB keeps the years of the living alone{fall}" if " is gone " in refusal else refusal
