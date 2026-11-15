@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
-from roster import LIMIT, MAX_FIELDS, make_room, refused, roll, roster_call
+from roster import BY_ID, LIMIT, MAX_FIELDS, make_room, refused, roll, roster_call
 
 from actor_stats import build_actor_stats_context, compute_actor_stats, crown_max_cities, is_baby, meta_ratios, settlement_pop
 from islands import compute_islands_cached
@@ -332,7 +332,7 @@ def _build_roster(save: dict, ctx: dict, sheets: dict[int, dict], getters: dict,
         figure = value if isinstance(value := read(rank), int | float) else 0  # a figure, as the call's check holds every field ranked to be
         order = (figure or math.inf) if rank == _SCORE else -figure
         lines.append(((order, kingdom["id"]), order, line))
-    return roll(lines, limit, "crowns", f"by {rank}" if rank else "by id")
+    return roll(lines, limit, "crowns", f"by {rank}" if rank else BY_ID)
 
 
 # The kingdom's identity card: WB's own lifetime counters (`total_deaths`/`total_kills`/`renown`) alongside the stocks and holdings tallied in `_build_context`.

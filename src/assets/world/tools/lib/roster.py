@@ -87,6 +87,8 @@ from shared import (
 )
 from walking import WalkMap
 
+BY_ID = "by id (`--rank <field>` orders them)"  # a rankable roll's order unasked: the cut says how to order it, not only how to take all
+
 _DEAD_SOCLE = ("asset_id", "name", "sex")  # a dead body's line beside what befell it: its name, then its kind, what `--with` drives off — its sex stays
 _DEATH_CAUSES = tuple(sorted({*load_data("attack-types.json").values(), "lightning"}))  # what `died:` takes: each cause as the register files it, a bolt the mod's
 _DISPLACED = ("city", "island_id", "life_stage", "name", "asset_id", "age")  # what `--with` and `--since` drive off the socle, one per field, least telling first
@@ -512,7 +514,7 @@ def _build_roster(
         lines = told_part(lines, told_parts)
     living = bool(told_parts - {"died", "left"})  # who stood still or only grew is a living part's tally: beside the dead alone it would read as theirs
     unseen = [f"{still} stood still" if still else "", f"{aged} only grew (`--filter grew`)" if aged else ""] if living else []
-    by = f"nearest the {'body' if near[1] is not None else 'tile'}" if near else "as they fell" if top == "died" else f"by {top}" if top else "by id"
+    by = f"nearest the {'body' if near[1] is not None else 'tile'}" if near else "as they fell" if top == "died" else f"by {top}" if top else BY_ID
     return roll(lines, limit, "bodies", by, [f"{unranked} with no {top}" if unranked else "", *unseen])
 
 
