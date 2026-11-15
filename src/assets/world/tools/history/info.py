@@ -226,7 +226,7 @@ def _build_founded(save: dict, since: str | None, actor: int | None, limit: int 
                 {
                     "born": entity_born(record),
                     "city": entity_ref(record.get(town), cities) if town else None,
-                    "founder": {"id": first["id"], "name": first.get("name")} if first.get("id") is not None else None,
+                    "founder": {"id": first["id"], "name": first.get("name")} if first.get("id") is not None and actor is None else None,  # `--actor` named him
                     "id": record["id"],
                     "name": record.get("name"),
                 }
@@ -261,7 +261,7 @@ def _build_log(save: dict, since: str | None, actor: int | None, crown: int | No
 
 
 # Every term the world still knows, a crown's, a town's or an army's, off its succession in the last save that held it — a fallen crown's, off the log too.
-def _build_rulers(save: dict, save_path: Path, chapter: str | None, kinds: tuple[str, ...], limit: int | None) -> list[dict] | str:
+def _build_rulers(save: dict, save_path: Path, chapter: str | None, kinds: tuple[str, ...], asked: int | None, limit: int | None) -> list[dict] | str:
     persons = index_by_id(save.get("actors_data") or [])
     standing = {(kind, record["id"]) for kind in kinds for record in save.get(_ENTITIES[kind][1]) or []}
     records, rows = _ruled_records(save, save_path, chapter), []
@@ -279,9 +279,12 @@ def _build_rulers(save: dict, save_path: Path, chapter: str | None, kinds: tuple
         for row in rows:
             if row.get("gone") and "kingdom" in row and "to" not in row and (end := logged.get((row["kingdom"]["id"], row["name"]), {}).get("to")):
                 row["to"] = end
-        rows += [row for (crown, _), row in logged.items() if ("kingdom", crown) not in records]
+        held = {(row["kingdom"]["id"], row["name"]) for row in rows if "kingdom" in row}  # a king its last save held: crowned after it, the log alone has him
+        rows += [row for key, row in logged.items() if key not in held]
+    if asked is not None:  # `--kingdom`: that crown's kings alone, fallen or standing, the crown it named unsaid as under `log`
+        rows = [{key: value for key, value in row.items() if key != "kingdom"} for row in rows if row.get("kingdom", {}).get("id") == asked]
     if not rows:
-        return f"✗ no {' nor '.join(kinds)} has had a head yet"
+        return f"✗ no {' nor '.join(kinds)} has had a head yet" if asked is None else f"✗ no king of crown {asked} is known"
     rows.sort(key=lambda row: (tuple(int(part[1:]) for part in (row.get("from") or row["to"]).split()), row.get("id") or 0))  # by the date each term opens
     rows = _latest(rows, limit, "terms")
     deaths = kept_deaths(save)  # 60 ms of register, for the listed rows' `born` alone
@@ -550,8 +553,8 @@ def main(argv: list[str]) -> int:
     if args.actor is not None and args.section not in ("founded", "log"):
         print("✗ --actor narrows `log` and `founded`: name one", file=sys.stderr)
         return 2
-    if args.kingdom is not None and args.section != "log":
-        print("✗ --kingdom narrows `log`: name it", file=sys.stderr)
+    if args.kingdom is not None and (args.section not in ("log", "rulers") or (seats and "kingdom" not in seats)):
+        print("✗ --kingdom narrows `log` and the kings of `rulers`: name one", file=sys.stderr)
         return 2
     if args.type and args.section != "log":
         print("✗ -t narrows `log`: name it", file=sys.stderr)
@@ -582,7 +585,7 @@ def main(argv: list[str]) -> int:
             by = f" by {args.actor}" if args.actor is not None else ""
             out = _build_founded(save, since, args.actor, limit) or f"✗ nothing founded{by} {f'since {since}' if since else 'yet'} still stands — the fallen: `log`"
         elif args.section == "rulers":
-            out = _build_rulers(save, save_path, chapter, seats or tuple(_RULED), limit)
+            out = _build_rulers(save, save_path, chapter, seats or tuple(_RULED), args.kingdom, limit)
         elif args.section == "dead_kingdoms":
             out = _build_dead_kingdoms(conn, save, save_path, chapter, limit) or "✗ no crown has fallen"
         else:
