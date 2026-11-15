@@ -273,6 +273,7 @@
   "kingdom.metadata.heir": "Sacré quelques mois après la mort du roi, il quitte sa mairie pour la capitale (`wiki:Kings_and_Leaders` § How are Kings crowned?).",
   "kingdom.metadata.max_cities": "Les cités au-delà desquelles chacune perd en loyauté : le socle de l'espèce du roi, plus sa part (`wiki:Kingdoms`).",
   "kingdom.metadata.peace_time": "Les années sans guerre : depuis la fin de la dernière, sinon depuis sa fondation ; 0 si une guerre a fini cette année, absent pendant une guerre.",
+  "kingdom.relations": "Une ligne par autre couronne, de celle qu'il estime le plus à celle qu'il estime le moins (`opinion`) ; une paire seule : `--toward`.",
   "kingdom.relations.gap_tiles": "De bord à bord des quartiers, à vol d'oiseau ; omis s'ils se touchent.",
   "kingdom.relations.opinion": "`opinion` : la sienne envers l'autre ; `their_opinion` : celle d'en face.",
   "kingdom.roster": "Une ligne par couronne debout, tirée de sa `metadata` : âge, naissances, bâtiments, cités, sujets (`pop`), renom, quartiers, richesse.",

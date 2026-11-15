@@ -397,7 +397,7 @@ def _build_metadata(kingdom: dict, ctx: dict, save: dict) -> dict:
     )
 
 
-# Diplomatic ties involving this kingdom. Status derived from alliances/wars cross-ref (WB only persists pair + timestamps).
+# Diplomatic ties involving this kingdom, the crown it esteems most first. Status derived from alliances/wars cross-ref (WB only persists pair + timestamps).
 def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool, rivals: set[int] | None) -> list[dict]:
     kid = kingdom["id"]
     alliances = save.get("alliances", [])
@@ -451,7 +451,7 @@ def _build_relations(kingdom: dict, ctx: dict, save: dict, detailed: bool, rival
             }
         )
 
-    return sorted(out, key=lambda x: x["kingdom"]["id"])
+    return sorted(out, key=lambda x: (-x["opinion"]["total"], x["kingdom"]["id"]))
 
 
 # Ongoing wars it is drawn into, named and nothing more — `war/info.py <id>` fields both camps. A concluded war is skipped: WB sets `winner` when one ends.
