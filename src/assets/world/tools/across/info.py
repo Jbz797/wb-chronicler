@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # One tool asked of a run of chapters at once, its answers keyed by chapter in their order. User-facing docs: `docs/tools.md`.
-# A chapter the tool refuses keeps its refusal in its slot: an absence reads chapter by chapter, and one save missing never breaks the run.
+# A chapter the tool refuses is left out of the answers, its refusal told apart, a run of like ones at once: one save missing never breaks the run.
 
 import json
 import re
@@ -9,6 +9,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from itertools import groupby
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
@@ -61,6 +62,11 @@ def _picked(value: object, keys: list[str]) -> object:
     return value
 
 
+# Each refusal once, over the chapters that told it in a row: `C27–C28` for a run, the run broken by any chapter between that answered or said else.
+def _runs(refused: dict[str, str], chapters: list[str]) -> list[tuple[str, str]]:
+    return [(why, f"{held[0]}–{held[-1]}" if len(held) > 1 else held[0]) for why, run in groupby(chapters, key=refused.get) if why for held in (list(run),)]
+
+
 def main(argv: list[str]) -> int:
     if len(argv) < 2 or not (span := _SPAN.fullmatch(argv[0])):
         return hand_usage(_USAGE, argv)
@@ -105,10 +111,14 @@ def main(argv: list[str]) -> int:
             if not kept[chapter] and (block := _block_of(answer)) is not None and not roots & block.keys():
                 kept[chapter] = f"✗ no {', '.join(f'`{root}`' for root in sorted(roots))} here — its fields: {', '.join(sorted(block))}"
         answers = kept
-    print(render(answers, key="across"))
+    refused = {chapter: answer for chapter, answer in answers.items() if isinstance(answer, str) and answer.startswith("✗")}
+    if answered := {chapter: answer for chapter, answer in answers.items() if chapter not in refused}:
+        print(render(answered, key="across"))
+    for why, where in _runs(refused, chapters):
+        print(f"✗ {where}: {why.removeprefix('✗ ')}", file=sys.stderr)
     for note, where in notes.items():
         print(f"⚠ {', '.join(where)}: {note}", file=sys.stderr)
-    return 0
+    return 0 if answered else 1
 
 
 if __name__ == "__main__":
