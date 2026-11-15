@@ -302,6 +302,7 @@
   "ruin": "Une ruine : abattue, abandonnée ou brûlée, elle garde sa cité et sa sorte, mais aucune cité ne la compte (maisons, bâtiments, réserves) et nul n'y loge.",
   "rulers": "La succession, datée ; un royaume, son fondateur en tête ; une cité, ses chefs, jamais son roi (`kingdom … rulers`). Sa bourse : `pop.ruler_money`.",
   "sapient": "Une lignée qui pense au sens du jeu (`has_sapience`), mobs compris : crânes enflammés, Plague Doctors.",
+  "score_rank": "Sa place parmi les cités, ou les royaumes, sur toutes leurs mesures à la fois (habitants, force, richesse, renom, territoire…), 1 en tête, ex æquo à la même place.",
   "speed": "Allure du jeu, d'un corps ou d'une coque : `speed` × 0,2 tuile par seconde de jeu (60 s font un an) ; les minutes de `--to` suivent l'échelle du récit.",
   "statuses": "Un statut, son effet, sa source et sa durée : `wiki:Status_Effects`, où 60 s valent un an de jeu.",
   "statuses.drowning": "Porté sur la terre ferme : le corps vient de sortir de l'eau.",
