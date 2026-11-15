@@ -98,8 +98,13 @@ def main(argv: list[str]) -> int:
         if len(gloss) > _CAP:
             print(f"✗ {key}: {len(gloss)} characters, past {_CAP} — cut it in tools/gloss/fields.json", file=sys.stderr)
     segmented, found, missed = {key: key.split(".") for key in glosses}, {}, False
-    for wanted in dict.fromkeys(args.field.split(",")):  # several asked at once, each gloss told once: tools share their fields
-        got = _found(wanted.removeprefix("gloss:"), glosses, segmented)  # the docs write a key as `gloss:<key>`, and that prefix is no part of it
+    asked = list(dict.fromkeys(word.removeprefix("gloss:") for word in args.field.split(",")))  # the docs write a key as `gloss:<key>`, no part of it
+    for wanted in asked:  # several asked at once, each gloss told once: tools share their fields
+        if wanted in _TOOLS and len(asked) > 1:  # a tool's every gloss amid keys: a key cut short, far likelier than the whole tool wanted
+            print(f"✗ `{wanted}` is a tool: its whole gloss comes alone, `gloss {wanted}`", file=sys.stderr)
+            missed = True
+            continue
+        got = _found(wanted, glosses, segmented)
         found, missed = found | got, missed or not got
     if not found:
         return 1
