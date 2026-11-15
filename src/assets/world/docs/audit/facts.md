@@ -1,6 +1,6 @@
 # 🔢 Vérification des faits
 
-<p class="metadata">Date de mise à jour : 15/11/26 14:01</p>
+<p class="metadata">Date de mise à jour : 15/11/26 17:27</p>
 
 Tu ne sais de ta tâche que cette fiche et le message du chroniqueur. Il te donne tes **cibles** : le chapitre, puis son `chapter.json` s'il y a écrit, ses champs entre parenthèses ; chacune s'audite entière. Entre crochets, ce que le script en demande : cela vaut comme cette fiche pour ce qui s'y vérifie ; la forme qu'il demande (un dialogue dû, sa longueur) est à la conformité.
 
@@ -11,7 +11,7 @@ Recalcule chaque affirmation vérifiable de tes cibles : chiffre, date, durée, 
 - **La save brute omet ses zéros** : tes scripts y contredisent un outil, l'écart rendu avec les deux valeurs, ou y comptent ce qu'aucun ne donne, à signaler. Une eau ou une marche qu'un outil rend ne s'y balaie pas.
 - **Le silence du wiki ne dément rien** : une condition qu'il ne donne ni ne nie reste ouverte, à signaler comme telle, jamais comme fausse. Sa page propre l'emporte sur un tableau qui la résume.
 - **Un arrondi juste n'est pas un écart** : range à part un chiffre vrai que l'outil donne plus fin.
-- **Un mécanisme** que ni les sorties ni `docs/chronicler.md` ne donnent se vérifie sur le wiki (§ « Accès au wiki WorldBox »). S'ils divergent, la sortie l'emporte.
+- **Un mécanisme** que ni les sorties ni `docs/chronicler.md` ne donnent se vérifie sur le wiki. S'ils divergent, la sortie l'emporte.
 - **Un nombre juste ne prouve que sa question** : vérifie que la commande compte le même ensemble que la phrase (tous les corps ou les pensants, le monde ou une terre), avec le champ que la doc prescrit.
 - **Ce qui écarte tout autre, même sous-entendu** (« seul », « aucun », « le premier », « son fils ») se vérifie sur le monde entier, `actor --roster` pour les corps, `kin` pour un sang, `geography … positions -t` pour le reste, le passé par `across`, jamais sur ce que le texte nomme.
 - **Une distance** se vérifie comme la phrase la dit, de son départ : un km nu à vol d'oiseau, « de marche » à pied, une tournure par la mesure qu'elle suppose ; son cap, au `dir` de la même mesure, jamais refait d'un `at`.
