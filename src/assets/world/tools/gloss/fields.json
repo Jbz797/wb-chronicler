@@ -3,7 +3,7 @@
   "--roster": "`--roster` : sans id, une ligne par entité (`actor`, `kingdom`, `subspecies`), par id sans `--rank`, coupé sans briser d'égalité ; détail : `gloss <outil>.roster`.",
   "--since": "`--since C<n>` : ce qui a changé depuis ce chapitre, sous `actor` et son `--roster`, `city … buildings`, `geography`, `history`, `subspecies --roster`, `world`.",
   "across.--keep": "`--keep a,b.c` : ces champs de chaque chapitre, par chemin pointé, une liste item par item (`traits --keep id`) ; un champ absent se tait, non une section, un refus.",
-  "actor.--age-at": "`--age-at y<n> m<n>` (ou `y<n>`) : l'âge du corps à cette date, compté comme `age` ; une paire si son anniversaire y tombe ; refusé hors de sa vie ou après la save.",
+  "actor.--age-at": "`--age-at y<n> m<n>` (ou `y<n>`), seul, sans section ni `--to` : l'âge du corps à cette date, comme `age`, une paire si son anniversaire y tombe.",
   "actor.--limit": "`--limit` : sous `surroundings`, les n plus proches de chaque cercle, et en plus sa famille (`kin`) et son meilleur ami, à toute distance.",
   "actor.--since": "`--since C<n>` : ce qui a changé chez le corps depuis ce chapitre, sous `since`, sans cette clé s'il sort seul ; avec `--to`, seulement le `then` du trajet.",
   "actor.--to": "`--to` : vers un corps, une tuile, un bâtiment, une cité, une couronne, une terre, un lieu, une eau, le feu, le gel ou un type (virgules) ; répété, chacun à part.",
