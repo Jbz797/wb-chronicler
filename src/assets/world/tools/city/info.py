@@ -498,10 +498,15 @@ def _building_row(building: dict) -> dict:
 # What became of its civic buildings since an earlier save: raised, a site finished, another kind under one id, fallen to ruin, lost — the rest counted.
 def _buildings_since(city_id: int, save: dict, then_save: dict) -> dict:
     civic = civic_building_ids()
-    # Standing ones alone, as WB lists them: one fallen to ruin since is told apart, `ruined`, where `gone` keeps what the save holds no more
-    now, then = (
-        {b["id"]: b for b in s.get("buildings") or [] if b.get("cityID") == city_id and b.get("asset_id") in civic and not is_ruin(b)} for s in (save, then_save)
-    )
+    # Standing ones compared, as WB lists them: one fallen to ruin since is told apart, `ruined`, where `gone` keeps what the save holds no more
+    now = {b["id"]: b for b in save.get("buildings") or [] if b.get("cityID") == city_id and b.get("asset_id") in civic and not is_ruin(b)}
+    then, wrecks = {}, []  # a ruin then, its town's id still on it, that WB has cleared since is gone too
+    for b in then_save.get("buildings") or []:
+        if b.get("cityID") == city_id and b.get("asset_id") in civic:
+            if is_ruin(b):
+                wrecks.append(b)
+            else:
+                then[b["id"]] = b
     parts: dict[str, list] = {"built": [], "changed": [], "finished": []}
     still = 0
     for bid, building in sorted(now.items()):
@@ -514,8 +519,10 @@ def _buildings_since(city_id: int, save: dict, then_save: dict) -> dict:
         else:
             still += 1
     lost = [(bid, b) for bid, b in sorted(then.items()) if bid not in now]
-    ruins = {b["id"]: b for b in save.get("buildings") or [] if is_ruin(b)} if lost else {}  # the world's buildings walked only when one is missing
-    gone = [_building_row(b) for bid, b in lost if bid not in ruins]  # as the earlier save last knew them
+    held = {b["id"]: b for b in save.get("buildings") or []} if lost or wrecks else {}  # the world's buildings walked only when one may be missing
+    ruins = {bid: b for bid, b in held.items() if is_ruin(b)}
+    cleared = ({**_building_row(b), "ruin": True} for b in wrecks if b["id"] not in held)
+    gone = sorted([*(_building_row(b) for bid, b in lost if bid not in ruins), *cleared], key=itemgetter("id"))  # as the earlier save last knew them
     return parts | {"gone": gone, "info": f"{still} stood still" if still else None, "ruined": [_building_row(ruins[bid]) for bid, _ in lost if bid in ruins]}
 
 
