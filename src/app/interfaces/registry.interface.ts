@@ -108,6 +108,7 @@ export interface PersonInfo {
   kingdom?: number;
   level?: number;
   lover?: number; // the one it loves, WB's tie running both ways — a fallen body keeps the last
+  nameless?: boolean; // a thinking soul WB never named: the tale tags it by its nickname, which reads as plain italics
   phenotype_index?: number;
   phenotype_shade?: number;
   rank?: number; // podium place by level, top 3 only — the medal right of the name

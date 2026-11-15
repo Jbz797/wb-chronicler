@@ -25,6 +25,7 @@ from shared import (
     city_score_dimensions,
     index_by_id,
     is_boat,
+    is_sapient,
     kept_deaths,
     kingdom_score_dimensions,
     load_data,
@@ -399,6 +400,8 @@ def _person_entry(actor: dict, profession: str | None, items_by_id: dict, subspe
         entry["level"] = level
     if lover := actor.get("lover"):  # WB clears it at death: the merge keeps the last one, so a fallen body still names the one it loved
         entry["lover"] = lover
+    if not actor.get("name") and is_sapient(subspecies_by_id.get(actor.get("subspecies"))):  # a soul WB never named: its tag in the tale wears the nickname
+        entry["nameless"] = True
     if rank is not None:
         entry["rank"] = rank
     if skin := (subspecies_by_id.get(actor.get("subspecies")) or {}).get("skin_id"):  # WB `Subspecies.cacheSkins` picks the body sheet; absent means index 0.

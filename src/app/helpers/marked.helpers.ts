@@ -247,6 +247,7 @@ export class MarkedHelpers {
     const info = PERSON_REGISTRY[id];
     const name = children?.length ? this.parser.parseInline(children) : id;
     if (!info) return name;
+    if (info.nameless) return `<em>${name}</em>`; // a soul WB never named, tagged by the tale's nickname: read as the nickname it is, the tag kept for the search
 
     const portrait = `<canvas class="portrait" data-person="${id}" height="0" width="0"></canvas>`; // `ActorSpriteHelpers.paintAll` fills it once rendered
 
