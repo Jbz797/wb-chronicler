@@ -713,6 +713,11 @@ def bears(actor: dict, ctx: dict) -> bool | None:
     return None if "reproduction_hermaphroditic" in biology else True  # a lone breeder bears its own
 
 
+# A litter's size and cap are the bearer's: a sire's mate starts it and WB reads hers (`makeBabiesViaSexual`); nothing to size where the lineage never bears
+def bears_litters(actor: dict, ctx: dict) -> bool:
+    return fertile(ctx["subspecies_by_id"].get(actor.get("subspecies"))) and bears(actor, ctx) is not False
+
+
 # A body's own span in years, raw totals narrowed to it — whole, an insect's half year too: truncated, it would read as no span and no old age.
 def body_lifespan(actor: dict, ctx: dict) -> float:
     return float(actor_stat_totals(actor, ctx, lifespan_only=True).get("lifespan", 0))
@@ -724,8 +729,7 @@ def body_stats(actor: dict, ctx: dict) -> dict:
     if not cleaned:
         return {}
     bearing = fertile(ctx["subspecies_by_id"].get(actor.get("subspecies")))
-    # A litter's size and cap are the bearer's: a sire's mate starts it and WB reads hers (`makeBabiesViaSexual`); nothing to size where the lineage never bears
-    if not bearing or bears(actor, ctx) is False:
+    if not bears_litters(actor, ctx):
         for stat in ("birth_rate", "max_children"):
             cleaned.pop(stat, None)
     cleaned.update(

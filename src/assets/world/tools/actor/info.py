@@ -20,6 +20,7 @@ from actor_stats import (
     actor_stat_totals,
     adult_age,
     bears,
+    bears_litters,
     body_lifespan,
     body_stats,
     breeding_age,
@@ -155,6 +156,7 @@ _KIN_GROUPS = {  # each tie `blood_ties` names, by the list `kin` gives it
 
 _LIMIT = 10  # the lines each circle of `surroundings` gives unless `--limit` says otherwise, the nearest — its kin besides
 _LISTED_GOALS = 5  # the nearest `--to cities` and `--to lands` list, a last place shared told whole: one more is its own `--to c<id>`, `i<id>`
+_LITTER_STATS = frozenset({"birth_rate", "offspring"})  # a litter's size and cap, as WB names them: read on the bearer alone
 _LONE_ID = re.compile(r"[bcikp]?\d+")  # the ids a `--to` aims at alone, a water's aside (`water_ref`): body, building, town, crown, land — a bare number too
 _NAMED_SECTIONS = tuple(sorted((*_ALL_SECTIONS, "died")))  # what a call may name: `died` a dead body's alone, never in `full`
 _NEAR_REACH = 32  # tiles past which no tile can be a chunk from the body's own: a place farther off is never weighed as close
@@ -238,13 +240,20 @@ class _UnreachableError(Exception):
     pass
 
 
-# The stats a trait moves that a WB bound swallows on this body: its total the same without it, as a `-5` accuracy on a floor of 1 — `None` where none is.
-def _absorbed(actor: dict, trait: dict, ctx: dict, totals: dict) -> list[str] | None:
+# The stats a trait moves to no effect here: a WB bound swallowing them (a `-5` accuracy on a floor of 1), or a litter's on a body bearing none — `None` if none.
+def _absorbed(actor: dict, trait: dict, ctx: dict, totals: dict, barren: bool) -> list[str] | None:
     if not (moved := trait.get("stats")):
         return None
     without = actor_stat_totals({**actor, "saved_traits": [t for t in actor.get("saved_traits") or () if t != trait["id"]]}, ctx)
     # A multiplier is weighed on the stat it multiplies, WB folding it into that one: `multiplier_damage` shows in `damage`, and nowhere else.
-    return sorted(stat for stat in moved if round(totals.get(key := MULTIPLIER_TARGETS.get(stat, stat), 0), 6) == round(without.get(key, 0), 6)) or None
+    return (
+        sorted(
+            stat
+            for stat in moved
+            if ((key := MULTIPLIER_TARGETS.get(stat, stat)) in _LITTER_STATS and barren) or round(totals.get(key, 0), 6) == round(without.get(key, 0), 6)
+        )
+        or None
+    )
 
 
 # `--age-at`: a body's age through the span asked, WB's own (`actor_age`), a pair where a birthday falls in it — refused before birth, past death or save.
@@ -742,9 +751,13 @@ def _build_traits(actor: dict, ctx: dict, detailed: bool) -> dict | list[dict]:
     if not detailed:
         return light({"ids": build_trait_ids(sworn, library, "rarity")})
     asleep, totals = ctx["era_dormant_traits"], actor_stat_totals(actor, ctx)  # `asleep`: the verdict `stats` already heeds, an age's gift lulled by another
-    inborn = set((ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_actor_birth_traits") or ())
+    barren, inborn = not bears_litters(actor, ctx), set((ctx["subspecies_by_id"].get(actor.get("subspecies")) or {}).get("saved_actor_birth_traits") or ())
     return [
-        {**trait, "inborn": trait["id"] in inborn or None, **({"dormant": True} if trait["id"] in asleep else {"absorbed": _absorbed(actor, trait, ctx, totals)})}
+        {
+            **trait,
+            "inborn": trait["id"] in inborn or None,
+            **({"dormant": True} if trait["id"] in asleep else {"absorbed": _absorbed(actor, trait, ctx, totals, barren)}),
+        }
         for trait in build_trait_list(sworn, library)
     ]
 

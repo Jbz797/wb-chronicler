@@ -134,7 +134,7 @@
   "actor.to.widest_crossing": "Le plus long bras d'eau du trajet, dit seulement s'il passe le souffle du corps.",
   "actor.to.with_boat": "Le trajet par la coque de sa couronne : une autre route que la marche, jamais à additionner à elle.",
   "actor.traits": "La save ne date aucun trait : sa venue se borne entre deux chapitres, `across C<a>-C<b> actor <id> traits --keep id`.",
-  "actor.traits.absorbed": "Les stats que le trait bouge sans changer le total, une borne l'ayant bu (`-5` de précision sur un plancher de 1) : sans effet sur ce corps tant qu'elle tient.",
+  "actor.traits.absorbed": "Les stats que le trait bouge sans effet sur ce corps : une borne les boit (`-5` de précision sur un plancher de 1), ou il ne porte pas (la portée d'un mâle).",
   "actor.traits.inborn": "Sa lignée, telle qu'elle est aujourd'hui (`subspecies … traits`), le donne à chaque naissance : un héritage de tous les siens, non une particularité du corps.",
   "actor.victims": "Les morts qu'il a données (`total`), cause, coup hors arme, corps neuf (`died_of`, `blow`, `became`) ; nommée, toutes, de la plus ancienne ; en `full`, la dernière.",
   "age": "D'un corps, ses années révolues ici plus `age_overgrowth`, 1 s'il est tu (l'année commencée), seuils compris ; à une autre date : `--age-at`. Sinon, années révolues.",
