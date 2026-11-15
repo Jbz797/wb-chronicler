@@ -251,13 +251,19 @@ def _build_log(save: dict, since: str | None, actor: int | None, crown: int | No
     entries = _latest(entries, limit, "entries")
     persons, deaths = index_by_id(save.get("actors_data") or []), kept_deaths(save)
     crowns = crowns_named(save) if crown is None else {}  # `--kingdom` names none: its entries all hold the one crown it asked
+    ended = _ended_wars(save)
     for entry in entries:
+        if (event or entry["event"]) == "diplomacy_war_ended" and (war := ended.get(((entry.get("names") or [None])[0], entry["date"]))):
+            entry["war"] = {"id": war["id"], "name": war.get("name")}
         if event:  # the one `-t` asked for, so no entry repeats it — nor the body `--actor` named
             entry.pop("event")
         if (unit := entry.pop("actor_id")) is not None and actor is None:
             entry["actor"] = alive_or_dead_ref(unit, persons, deaths)
         if (held := entry.pop("kingdom_id")) is not None and crown is None:  # the crown `--kingdom` named, as `--actor` its body, goes unsaid
             entry["kingdom"] = entity_ref(held, crowns) or {"id": held}
+        said = {ref.get("name") for key in ("actor", "kingdom", "war") if (ref := entry.get(key))}
+        if names := [name for name in entry.pop("names", None) or () if name not in said]:  # a name its refs already say goes, one of the day renamed since stays
+            entry["names"] = names
     return entries
 
 
@@ -361,6 +367,11 @@ def _died(died: Mapping[int, Counter], first: int, last: int) -> dict:
     return ({"deaths": dict(counts)} if counts else {}) | ({"metamorphosis": changed} if changed else {})
 
 
+# The wars whose end WB logs by name alone, as the save still holds them — by the name and the month it ended.
+def _ended_wars(save: dict) -> dict[tuple[str | None, str], dict]:
+    return {(war.get("name"), world_date(float(war["died_time"]))): war for war in save.get("wars") or [] if war.get("died_time")}
+
+
 # Each year's rise of the rising tallies: `None` before any reading, so a window opened past the entity's first year never passes a total off as a year's gain.
 def _gains(before: dict, now: dict, events: list[str]) -> dict:
     out: dict = {}
@@ -397,7 +408,7 @@ def _of_crown(entries: list[dict], save: dict, crown: int | None) -> list[dict]:
     if crown is None:
         return entries
     name = (crowns_named(save).get(crown) or {}).get("name")
-    ended = {(war.get("name"), world_date(float(war["died_time"]))) for war in save.get("wars") or [] if war.get("died_time") and crown in _war_crowns(war)}
+    ended = {key for key, war in _ended_wars(save).items() if crown in _war_crowns(war)}
     return [
         entry
         for entry in entries
