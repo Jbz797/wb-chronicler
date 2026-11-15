@@ -240,6 +240,7 @@
   "history.--kingdom": "`--kingdom <id>` : sous `log`, les seules entrées de cette couronne, tombée comprise, ses guerres aussi (WB les note par noms) ; `--since C<n>` : depuis.",
   "history.--limit": "`--limit` : sous `dead_kingdoms`, `founded` (par bloc), `log` et `rulers`, les lignes gardées, les plus récentes.",
   "history.--type": "`--type`, `-t <event>` : sous `log`, un seul type d'entrée, par son id du jeu (`kingdom_new`…) ; un mot hors de la liste est refusé avec elle.",
+  "history.--year": "`--year y<n>` : sous `entity` ou `world`, la seule ligne qui tient cette année, une plage (`y40–y49`) là où le jeu ne garde qu'elle.",
   "history.dead_kingdoms": "Les royaumes tombés : `joined`, `left`, `migrated` comme sous `entity`, leurs morts par cause, et `reigns`, les rois que nomme le journal.",
   "history.dead_kingdoms.capital": "Sa dernière capitale ; `gone` si elle est tombée aussi, nommée par la dernière save de chapitre qui la tenait, sans nom si aucune ne l'a vue.",
   "history.dead_kingdoms.seen": "Le dernier chapitre dont la save tenait la couronne, et ses sujets d'alors : le jeu efface ses années à sa chute, sa taille ce jour-là est perdue.",

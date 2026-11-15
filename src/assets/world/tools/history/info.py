@@ -3,6 +3,7 @@
 # WB's own history, `history/map_stats.s3db`, read so that no one queries it raw: windows joined, blanks carried, tallies told as each year's gains, dates compact.
 # User-facing docs: `docs/tools.md`.
 
+import argparse
 import re
 import sqlite3
 import sys
@@ -402,6 +403,15 @@ def _of_crown(entries: list[dict], save: dict, crown: int | None) -> list[dict]:
     ]
 
 
+# The one row whose `year`, a year or a span, holds the year asked — its span said by it, never cut to the year.
+def _of_year(rows: list[dict], year: int) -> list[dict] | str:
+    for row in rows:
+        first, _, last = row["year"].partition("–")
+        if int(first[1:]) <= year <= int((last or first)[1:]):
+            return [row]
+    return f"✗ no row holds y{year}: its years run {rows[0]['year'].partition('–')[0]} to {rows[-1]['year'].rpartition('–')[2]}"
+
+
 # The year whose row a moment falls in: Faithful Saves closes a calendar year as January opens — the rows WB wrote before it, a month early, read the same.
 def _row_year(world_time: float) -> int:
     return int(world_time // UNITS_PER_YEAR) + 1
@@ -451,11 +461,19 @@ def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: in
     opens = rows[0]["timestamp"] if rows else year
     coarse: list[dict] = []
     owner, held = ("", []) if entity_id is None else ("id = ? AND ", [entity_id])
+    first_fine = opens
     # The finest step still reaching further back, one at a time, never two for the same years: a row at `timestamp` spans the `step` years before it.
     for step in _STEPS[1:]:
-        older = conn.execute(f"SELECT * FROM {stem}Yearly{step} WHERE {owner}timestamp <= ? ORDER BY timestamp", [*held, opens])
+        older = conn.execute(f"SELECT * FROM {stem}Yearly{step} WHERE {owner}timestamp < ? ORDER BY timestamp", [*held, opens + step])
         coarse_names = [c for c, *_ in older.description]
-        if found := [{**dict(zip(coarse_names, row, strict=True)), "step": step} for row in older.fetchall()]:
+        found = [{**dict(zip(coarse_names, row, strict=True)), "step": step} for row in older.fetchall()]
+        # A row over the finer spans' first years takes their place where the older rows stop short, a hole otherwise; over a fine year, it gives way
+        if found and (straddles := found[-1]["timestamp"]) > opens:
+            if len(found) > 1 and found[-2]["timestamp"] < opens and straddles <= first_fine:
+                coarse = [row for row in coarse if row["timestamp"] > straddles]
+            else:
+                found.pop()
+        if found:
             coarse, opens = found + coarse, found[0]["timestamp"] - step
     carried: dict = {}
     for row in [*coarse, *rows]:  # WB blanks a value equal to the one before: every cell carries the last one read, in the order they were written
@@ -476,6 +494,13 @@ def _span(row: dict, first: int) -> str:
 def _war_crowns(war: dict) -> set[int]:
     sides = (f"{kind}_{side}" for kind in ("died", "list", "past") for side in ("attackers", "defenders"))
     return {war.get("main_attacker"), war.get("main_defender"), *(kid for key in sides for kid in war.get(key) or [])} - {None}
+
+
+# A year as `--year` takes it, `y40`: the one row of `entity` or `world` that holds it.
+def _year_arg(value: str) -> int:
+    if not (found := re.fullmatch(r"y(\d+)", value)):
+        raise argparse.ArgumentTypeError(f"{value!r} is no year — `y40`")
+    return int(found[1])
 
 
 # A world row's states under `world`'s own names. WB's `vegetation` counts its trees in, where `snapshot` tells them apart — and a nought goes unsaid.
@@ -501,6 +526,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--limit", type=limit_arg, metavar="n|all")
     kinds = sorted(load_data("world-log.json"))  # WB's own kinds of entry: a word outside them is a typo, refused with the list, never a quiet nothing
     parser.add_argument("--type", "-t", choices=kinds, metavar="event")
+    parser.add_argument("--year", type=_year_arg, metavar="y<n>")
     args = parser.parse_args(argv)
     if args.section not in _SECTIONS:
         hint = f"an entity's years: `entity {args.section} <id>`" if args.section in _ENTITIES else f"valid: {', '.join(_SECTIONS)}"
@@ -530,6 +556,9 @@ def main(argv: list[str]) -> int:
     if args.type and args.section != "log":
         print("✗ -t narrows `log`: name it", file=sys.stderr)
         return 2
+    if args.year is not None and args.section not in ("entity", "world"):
+        print("✗ --year picks a row of `entity` or `world`: name one", file=sys.stderr)
+        return 2
     if args.limit is not None and args.section not in ("dead_kingdoms", "founded", "log", "rulers"):
         print("✗ --limit cuts `dead_kingdoms`, `founded`, `log` and `rulers`: name one", file=sys.stderr)
         return 2
@@ -558,6 +587,8 @@ def main(argv: list[str]) -> int:
             out = _build_dead_kingdoms(conn, save, save_path, chapter, limit) or "✗ no crown has fallen"
         else:
             out = _build_entity(conn, args.entity[0], int(args.entity[1]), save, chapter)
+    if args.year is not None and isinstance(out, list):
+        out = _of_year(out, args.year)
     if isinstance(out, str):
         print(out, file=sys.stderr)
         return 1
