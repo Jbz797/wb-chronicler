@@ -326,5 +326,8 @@ def fold_world(world: dict) -> None:
     _fold_cumulative(world)
     _fold_world_leaders(world)
     _fold_total(world, "boats")  # counted, never listed: both panels print the count alone, `<tier>/info.py … boats` naming the hulls on demand
+    snapshot = world.get("snapshot") or {}
+    if (frozen := snapshot.pop("frozen_pct", None)) and (whole := round(frozen)):  # the panel prints the whole share, quiet at 0, the chronicler reads the tenth
+        snapshot["frozen_pct"] = whole
     for scheme in world.get("plots") or []:  # the schemer and the type's key: WB's English is the chronicler's, and the panel owns the French
         scheme["type"] = {"id": (scheme.get("type") or {}).get("id")}
