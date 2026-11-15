@@ -228,7 +228,7 @@ _SUMMARY = (
     "what those traits make of their bearer — and, for a tier, of those it holds (a culture's people, a clan's members), never one of them alone —, "
     f"{_PLAIN}; grouped by what they do (fight, work, body, mind…), a clause each, never one trait after another; "
     "a lean, never a stat's level, which gear and level move too; nor a tally or a figure that ages — read alone, it may echo any chapter; "
-    "rewritten as the same entity's traits moved, what it tells new set between [ ], counted like the rest — a correction alone, none"
+    "rewritten as the same entity's traits moved, only what it tells new set between [ ], never a correction, counted like the rest"
 )
 
 _SUMMARY_CAP = 400
