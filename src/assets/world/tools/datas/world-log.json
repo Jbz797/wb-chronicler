@@ -37,6 +37,6 @@
   "kingdom_royal_clan_dead": { "point": "capital" },
   "kingdom_royal_clan_new": { "point": "king" },
   "kingdom_shattered": { "point": "capital" },
-  "log_city_revolted": { "point": "town" },
+  "log_city_revolted": { "never_written": true, "point": "town" },
   "total_war_started": { "point": "capital" }
 }

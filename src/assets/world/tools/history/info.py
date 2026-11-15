@@ -92,6 +92,7 @@ _SECTIONS = ("dead_kingdoms", "entity", "founded", "log", "rulers", "world")
 _SKIPPED = frozenset({"auto", "id", "timestamp"})  # WB's row bookkeeping: `auto` flags a row it wrote itself, and says nothing of the world
 _STAT_KEYS = {"deaths_natural": "deaths_age", _DEATHS_TOTAL: "deaths"}  # the yearly columns `mapStats` names otherwise: old age, and the bare total
 _STEPS = (1, 5, 10, 50, 100, 500, 1000, 5000, 10000)  # WB's table suffixes, each keeping a window of the last rows at that step
+_WAR_STARTS = ("diplomacy_war_started", "total_war_started")  # the log's war openings, their camps told by name alone, never by id
 
 # WB's columns under the names `world`'s own sections tell them by: its houses are all its buildings, its two populations the thinking and the wild.
 _WORLD_RENAMED = {
@@ -236,12 +237,14 @@ def _build_founded(save: dict, since: str | None, actor: int | None, limit: int 
 
 # WB's own log up to the chapter, its bodies named by the save and the death register, its crowns by `crowns_named` — its latest `limit` entries.
 def _build_log(save: dict, since: str | None, actor: int | None, crown: int | None, event: str | None, limit: int | None) -> list[dict] | str:
+    if event and load_data("world-log.json")[event].get("never_written"):
+        return f"✗ WB never writes {event}: a rebellion logs `kingdom_new`, then its war (`war <id>`: `war_type: rebellion`); the count: `world … cumulative`"
     start = _chapter_time(load_save(SAVES_DIR / since / "map.wbox")) if since else 0.0
-    if not (entries := log_entries(start, end := _chapter_time(save), actor, event, crown=crown)):
+    if not (entries := _of_crown(log_entries(start, end := _chapter_time(save), actor, event), save, crown)):
         asked = (f" since {since}" if since else "", " for that body" if actor is not None else "", " for that crown" if crown is not None else "")
         told = "✗ nothing logged" + "".join(asked) + (f" as {event}" if event else "")
         # A kind WB knows but this world never logged, told beside what it did log: the kind exists, its day has not come
-        others = Counter(e["event"] for e in log_entries(start, end, actor, None, crown=crown)) if event else None
+        others = Counter(e["event"] for e in _of_crown(log_entries(start, end, actor, None), save, crown)) if event else None
         return told + (" — logged here: " + ", ".join(f"{kind} {n}" for kind, n in sorted(others.items())) if others else "")
     entries = _latest(entries, limit, "entries")
     persons, deaths = index_by_id(save.get("actors_data") or []), kept_deaths(save)
@@ -384,6 +387,21 @@ def _latest(rows: list, limit: int | None, what: str) -> list:
     return rows
 
 
+# One crown's entries: its id, and the wars WB logs by names alone — an opening by the crown's own among the camps, an end by its war's name and month.
+def _of_crown(entries: list[dict], save: dict, crown: int | None) -> list[dict]:
+    if crown is None:
+        return entries
+    name = (crowns_named(save).get(crown) or {}).get("name")
+    ended = {(war.get("name"), world_date(float(war["died_time"]))) for war in save.get("wars") or [] if war.get("died_time") and crown in _war_crowns(war)}
+    return [
+        entry
+        for entry in entries
+        if entry["kingdom_id"] == crown
+        or (entry["event"] in _WAR_STARTS and name in (entry.get("names") or ()))
+        or (entry["event"] == "diplomacy_war_ended" and ((entry.get("names") or [None])[0], entry["date"]) in ended)
+    ]
+
+
 # The year whose row a moment falls in: Faithful Saves closes a calendar year as January opens — the rows WB wrote before it, a month early, read the same.
 def _row_year(world_time: float) -> int:
     return int(world_time // UNITS_PER_YEAR) + 1
@@ -452,6 +470,12 @@ def _series(conn: sqlite3.Connection, stem: str, entity_id: int | None, year: in
 def _span(row: dict, first: int) -> str:
     start, end = max(row["timestamp"] - row["step"], first), row["timestamp"] - 1
     return f"y{start}–y{end}" if start < end else f"y{end}"
+
+
+# Every crown a war ever drew in: its two leads, those still fighting, those gone over to peace or fallen since
+def _war_crowns(war: dict) -> set[int]:
+    sides = (f"{kind}_{side}" for kind in ("died", "list", "past") for side in ("attackers", "defenders"))
+    return {war.get("main_attacker"), war.get("main_defender"), *(kid for key in sides for kid in war.get(key) or [])} - {None}
 
 
 # A world row's states under `world`'s own names. WB's `vegetation` counts its trees in, where `snapshot` tells them apart — and a nought goes unsaid.
