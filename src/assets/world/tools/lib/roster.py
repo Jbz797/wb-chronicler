@@ -549,6 +549,8 @@ def _filter_arg(value: str) -> dict[str, frozenset]:
         key, colon, said = word.partition(":")
         if re.fullmatch(r"land:\d+|islets?|water", word):  # a land `land:<id>`, as `--to` names one, the islets a body stands on one of, the water
             taken["land"].add(int(said) if colon else ISLET if word.startswith("islet") else word)
+        elif colon and key not in _MEMBERSHIPS and key not in _KEYED and any(said in words for words in groups.values()):  # `job:warrior`: its bare form told
+            raise argparse.ArgumentTypeError(f"`{word}` filters nothing — the word alone: `{said}`")
         elif colon:
             taken[key].add(_keyed(key, said))
         elif group := next((name for name, words in groups.items() if word in words), None):
@@ -988,6 +990,9 @@ def roster_main(argv: list[str]) -> int:
             return 2
         patch = patch_finder(save, LazyTileGrid(save), island_of)(*args.patch)[0]
     fields = list(dict.fromkeys(",".join(args.fields).split(","))) if args.fields else []
+    if dated := [field for field in fields if field in ("died", "died_of")]:  # no figure to add: every dead line already says when and of what
+        print(f"✗ {', '.join(f'`{field}`' for field in dated)}: a dead line says `died` and `died_of` already — `--filter died` brings the dead", file=sys.stderr)
+        return 2
     if len(fields) > MAX_FIELDS:
         print(f"✗ `--with` takes {MAX_FIELDS} fields at most — `actor <id> stats` gives a body's whole sheet", file=sys.stderr)
         return 2

@@ -55,7 +55,7 @@
   "actor.roster.--filter.entity": "`city:<id>` : ses membres, comme `alliance:`, `army:`, `clan:`, `culture:`, `family:`, `kingdom:`, `language:`, `religion:`, `subspecies:` ; une de chaque.",
   "actor.roster.--filter.gear": "`gear:<objet>` : ceux qui portent un objet de cette sorte (`gear:bow_wood`), le chapitre seul ; d'un corps : `actor <id> gear`.",
   "actor.roster.--filter.has": "`has:<compte|lien>` : ceux qui en tiennent ; sous `--since`, ceux dont un compte a changé, morts compris, sa paire par `--with` ; jamais un lien ; `lacks:` : aucun.",
-  "actor.roster.--filter.job": "Un poste, dit comme `actor … metadata.job` ; `--with job`, `kingdom` les disent ; sous `--since`, `left` l'a quitté.",
+  "actor.roster.--filter.job": "`--filter warrior` : un poste, dit comme `actor … metadata.job`, le mot seul ; `--with job`, `kingdom` les disent ; sous `--since`, `left` l'a quitté.",
   "actor.roster.--filter.land": "Une terre `land:<id>`, `islets` ou `water`, l'une ou l'autre à plusieurs ; sous `--since`, aussi ceux partis (`was_on`) ; `patch:<x,y>` : la parcelle de la tuile.",
   "actor.roster.--filter.settle": "`settle` : les corps qui pourraient fonder une cité là où ils se tiennent, une fois adultes (`settle` vrai ou `child`).",
   "actor.roster.--filter.stage": "Un palier, `egg` à `elder` (`life_stage`) ; sous `--since`, celui d'aujourd'hui ou de sa mort : `teen`, qui l'est devenu depuis.",
