@@ -41,7 +41,7 @@ from actor_stats import (
 from founding import city_zones, settle_gates, settle_told
 from grid import BARE, LazyTileGrid, fire_clusters, frozen_tiles, listed_tiles, off_land, patch_finder, tile_ground, tile_mask
 from islands import compute_islands_cached, islet_heart
-from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, end_text, fire_place, kind_word, named_place, unquoted
+from places import PLACE_REACH, PlaceError, PlaceIndex, UnknownPlaceError, end_text, fire_place, kind_word, named_place, place_box, unquoted
 from shared import (
     EQUIPMENT_RACKS,
     HOMES,
@@ -342,7 +342,7 @@ def _aim(target: int | tuple[int, int] | str, actor: dict, ctx: dict, save: dict
         mark, whom = "reached", _named(gazetteer(), f"{kind}s", water_id) or f"{kind} {water_id}"
     elif isinstance(target, str) and _GROUND_PREFIX not in target and (place := _place_aim(target, actor, ctx)) is not None:
         (aims, aimed, foot), mark, whom = place, "reached", target
-        told = {"place": {"aimed": aimed, "foot": foot or None, "name": target}}
+        told = {"place": {"aimed": aimed, "foot": foot or None, "name": target, "within_box": _within_box(actor, target, aims) or None}}
     elif target == "burning":  # a fire's nearest flame, where `geography … burning` sites its middle: what a body would meet first
         if not (aims := list(listed_tiles(save, "fire"))):
             raise _AimError("✗ nothing burns in this world")
@@ -1750,6 +1750,15 @@ def _why_unreachable(actor: dict, goal: tuple[int, int], whom: str, gait: Gait, 
     if home is not None and land is not None and (gap := ctx["strait_gaps"]().get(tuple(sorted((home, land))))) is not None and gap > reach:
         return f"{head}: lands {home} and {land} are {gap} tiles of water apart at their narrowest, and no islet chain shortens it enough for {who}, who {swims}"
     return f"{head}: no crossing short enough for {who}, who {swims}, reaches {where}"
+
+
+# Whether the body stands in a place's box yet off the ground aimed at: a range's frame round its rock, where a walk to the rock is no contradiction
+def _within_box(actor: dict, name: str, aims: list[tuple[int, int]]) -> bool:
+    if not (box := place_box(name)):  # the name as `--to` read it, its case and article aside
+        return False
+    x, y = actor_xy(actor)
+    inside = all(min(box[f"{a}0"], box[f"{a}1"]) <= at <= max(box[f"{a}0"], box[f"{a}1"]) for a, at in (("x", x), ("y", y)))
+    return inside and (x, y) not in aims
 
 
 def main(argv: list[str]) -> int:

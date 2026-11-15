@@ -163,6 +163,10 @@ def named_place(name: str, save: dict, save_path: Path, island_of: TileIslands, 
     return tiles, f"{prefix}{key}"
 
 
+def place_box(name: str) -> dict | None:
+    return _find(name)[2].get("box")
+
+
 def place_centre(name: str) -> tuple[int, int]:
     return place_point(_find(name)[2])
 
