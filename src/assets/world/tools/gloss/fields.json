@@ -364,7 +364,7 @@
   "war.cities": "Les cités que tient le camp à l'instant, ses couronnes réunies.",
   "war.kingdoms": "Ses couronnes, la plus peuplée d'abord, chacune avec ses sujets (`pop`).",
   "war.metadata.age": "Ses années ; finie, sa durée. Avant 11 ans, seule la chute d'un camp clôt la guerre ; ensuite, la paix est possible (`wiki:Plots` § Peace Talks).",
-  "war.metadata.balance": "Qui domine, en % pour les assaillants : la puissance des couronnes de chaque camp compte double, puis les morts et les nobles tués de chaque camp ; 50, l'égalité.",
+  "war.metadata.balance": "Qui domine, en % des assaillants (50 : égalité) : la force des couronnes de chaque camp, puis, dès qu'il en tombe, ses morts et ses nobles tués.",
   "war.metadata.ended": "Le mois où la guerre a pris fin ; absent, elle se livre encore. Finie, elle perd `balance` et `report`, qui ne lisent que les combats.",
   "war.metadata.winner": "D'une guerre finie, son issue (`wiki:War`) : `attackers`, `defenders`, `peace`, `merged` (fondue dans une autre), `nobody`.",
   "war.nobles": "Les nobles du camp (rois, chefs de cité, capitaines) tués d'un coup depuis la déclaration, par l'autre camp quand on sait qui ; omis à 0.",

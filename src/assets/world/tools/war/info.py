@@ -35,17 +35,21 @@ from shared import (
 )
 
 _ALL_SECTIONS = ("attackers", "defenders", "metadata")
+_FEW = {"dead": 10, "nobles": 2}  # up to this many fallen in all, a `balance` term weighs half the crowns' power, as much past it; none fallen, nothing
 _NOBLE_JOBS = frozenset({"army_captain", "king", "leader"})  # the posts a camp mourns apart: its crowns, its towns' heads, its armies' captains
 _WINNERS = {1: "attackers", 2: "defenders", 3: "peace", 4: "merged"}  # WB `WarWinner`, as its locale names them; an end with none is `nobody`
 
 
-# Who holds the upper hand, as the attackers' share in %: power twice (the crowns' scores), then the war's dead and the nobles struck down, each the foe's share.
+# Who holds the upper hand, as the attackers' share in %: the crowns' scores, then the war's dead and nobles struck down, each the foe's share, weighed by `_FEW`.
 def _balance(attackers: set[int], defenders: set[int], war: dict, ctx: dict) -> int:
     scores = [sum(ctx["scores"][kid] for kid in camp) for camp in (attackers, defenders)]
     power = scores[0] / sum(scores) if sum(scores) else 0.5
-    lost, struck = (int(war.get("dead_attackers") or 0), int(war.get("dead_defenders") or 0)), (ctx["nobles"](attackers), ctx["nobles"](defenders))
-    dead, nobles = ((theirs + 0.1) / (ours + theirs + 0.2) for ours, theirs in (lost, struck))  # a tenth of a loss each: even where none fell, yet 3 to 0 tells
-    return round(100 * (2 * power + dead + nobles) / 4)
+    fallen = {"dead": (int(war.get("dead_attackers") or 0), int(war.get("dead_defenders") or 0)), "nobles": (ctx["nobles"](attackers), ctx["nobles"](defenders))}
+    terms = [(1.0, power)]
+    for term, (ours, theirs) in fallen.items():
+        if total := ours + theirs:  # a tenth of a loss each side: 3 to 0 tells, yet not as a rout
+            terms.append((0.5 if total <= _FEW[term] else 1.0, (theirs + 0.1) / (total + 0.2)))
+    return round(100 * sum(weight * share for weight, share in terms) / sum(weight for weight, _ in terms))
 
 
 # WB's counters on the war, its origin and the verdict the fighting says of itself. No `identity`: a war swears to no culture or stock, and one line is no section.
