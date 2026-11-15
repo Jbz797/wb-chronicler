@@ -16,7 +16,6 @@ from shared import (
     crowns_at_death,
     crowns_served,
     emit,
-    entity_age,
     hand_usage,
     index_by_id,
     is_boat,
@@ -31,10 +30,13 @@ from shared import (
     sections_arg,
     take_chapter,
     war_camps,
+    world_date,
+    years_since,
 )
 
 _ALL_SECTIONS = ("attackers", "defenders", "metadata")
 _NOBLE_JOBS = frozenset({"army_captain", "king", "leader"})  # the posts a camp mourns apart: its crowns, its towns' heads, its armies' captains
+_WINNERS = {1: "attackers", 2: "defenders", 3: "peace", 4: "merged"}  # WB `WarWinner`, as its locale names them; an end with none is `nobody`
 
 
 # Who holds the upper hand, as the attackers' share in %: power twice (the crowns' scores), then the war's dead and the nobles struck down, each the foe's share.
@@ -50,20 +52,24 @@ def _balance(attackers: set[int], defenders: set[int], war: dict, ctx: dict) -> 
 def _build_metadata(war: dict, attackers: set[int], defenders: set[int], ctx: dict) -> dict:
     besieged = ctx["besieged_kingdoms"]
     deaths = int(war.get("total_deaths") or 0)
+    ended = float(war.get("died_time") or 0)  # WB stamps a war's end and its verdict together: neither is set while it is fought
     started_by = ctx["started_by_actor"]  # WB stores the declaring kingdom's name but not the actor's, so a bare `{id}` is all a dead one leaves
-    years = entity_age(war, ctx["world_time"])
+    years = years_since(war.get("created_time") or 0, ended or ctx["world_time"])
     state = {"age": years, "attackers_besieged": bool(attackers & besieged), "deaths": deaths, "defenders_besieged": bool(defenders & besieged)}
+    # Who holds the upper hand and the camp's mood are the fighting's own readings: a war over keeps its end and verdict instead
     return {
         "age": years,
-        "balance": _balance(attackers, defenders, war, ctx),
+        **({} if ended else {"balance": _balance(attackers, defenders, war, ctx)}),
         "deaths": deaths,  # the toll of the whole war, as every other tier counts its own; each camp keeps its share
+        **({"ended": world_date(ended)} if ended else {}),
         "id": war["id"],  # the block travels into `chapter.json`, detached from its command — the UI resolves the tag from this
         "name": war.get("name"),
         "renown_at_stake": war.get("renown", 0),
-        **({"report": report} if (report := meta_report("war", state, (ctx["world_time"], "war", war["id"]))) else {}),
+        **({"report": report} if not ended and (report := meta_report("war", state, (ctx["world_time"], "war", war["id"]))) else {}),
         "started_by": {"id": war.get("started_by_actor_id"), **({"name": started_by["name"]} if started_by and started_by.get("name") else {})},
         "started_by_kingdom": {"id": war.get("started_by_kingdom_id"), "name": war.get("started_by_kingdom_name")},
         **({"war_type": kind} if (kind := war.get("war_type")) else {}),  # WB leaves it unset on most declarations, and an absent kind is not `none`
+        **({"winner": _WINNERS.get(int(war.get("winner") or 0), "nobody")} if ended else {}),
     }
 
 
@@ -169,7 +175,7 @@ def main(argv: list[str]) -> int:
         return sum(crown in kingdoms and (killer is None or killer in foes) for crown, killer in fallen)
 
     ctx["nobles"] = nobles
-    if "metadata" in sections:  # the crowns' power, `balance`'s alone: a walk over every body, spared to a camp asked by itself
+    if "metadata" in sections and not war.get("died_time"):  # the crowns' power, `balance`'s alone: a walk over every body, spared a camp or a war over
         ctx["scores"] = score_totals([k["id"] for k in save.get("kingdoms") or []], kingdom_score_dimensions(save))
     alliances = save.get("alliances") or []
 
