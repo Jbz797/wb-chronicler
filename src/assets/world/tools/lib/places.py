@@ -17,7 +17,7 @@ _ARTICLE = re.compile(r"^(?:l'|(?:le|la|les|the)\s+)", re.IGNORECASE)  # the art
 _FIRE_PLACE_REACH = 32  # tiles, two chunks, within which a fire is told by a forged place: « aux abords » of a cone, never across a land
 _LANDMARKS = ("geyser", "volcano")  # the words of the buildings a forged place names by its point: `acid_geyser` too, the world's own landmarks
 _QUOTES = {'"': '"', "'": "'", "«": "»", "“": "”"}  # the pairs a name may come wrapped in when a caller's shell left them on: `"La Carapace"`
-_SEEDED_BOOKS = {"islands": "i", "lakes": "lake", "rivers": "river", "seas": "sea"}  # the gazetteer's counted lands and waters, by the prefix their ids take
+_SEEDED_BOOKS = {"islands": "land", "lakes": "lake", "rivers": "river", "seas": "sea"}  # the gazetteer's counted lands and waters, by the kind their ids take
 
 
 # A name no tile answers, or answers wrongly: its message, the `✗` included, for the caller to tell as its own refusals.
@@ -109,7 +109,7 @@ def _place_tiles(name: str, spot: dict, save: dict, save_path: Path, island_of: 
     landmarks = (site for site in save.get("buildings") or [] if any(word in (site.get("asset_id") or "") for word in _LANDMARKS))
     near = [(walk_tiles(tx - x, ty - y), site) for site in landmarks for tx, ty in building_footprint(site)]
     if near and (closest := min(near, key=lambda pair: pair[0]))[0] <= PLACE_REACH:
-        return building_footprint(closest[1]), f"b{closest[1]['id']}"
+        return building_footprint(closest[1]), f"building:{closest[1]['id']}"
     if islet := island_of.islet_tiles((x, y)):
         return islet, "islet"
     raise PlaceError(f"✗ {name} has no `box` in places.json: its extent is unknown, its point alone — `--to {x},{y}`")
@@ -158,9 +158,9 @@ def named_place(name: str, save: dict, save_path: Path, island_of: TileIslands, 
     book, key, entry = _find(name)
     if book == "places":
         return _place_tiles(key, entry, save, save_path, island_of, walk_map)
-    prefix, entry_id = _SEEDED_BOOKS[book], int(key)
-    tiles = [(x, y) for x, y, owner in island_of.edges() if owner == entry_id] if book == "islands" else water_tiles(save, save_path, prefix, entry_id)
-    return tiles, f"{prefix}{key}"
+    kind, entry_id = _SEEDED_BOOKS[book], int(key)
+    tiles = [(x, y) for x, y, owner in island_of.edges() if owner == entry_id] if book == "islands" else water_tiles(save, save_path, kind, entry_id)
+    return tiles, f"{kind}:{key}"
 
 
 def place_box(name: str) -> dict | None:

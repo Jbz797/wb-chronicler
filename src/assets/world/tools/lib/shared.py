@@ -135,6 +135,7 @@ _ID_COUNTERS = {
     "wars": "id_war",
 }
 
+_ID_REF = re.compile(r"(actor|building|city|kingdom|land|lake|river|sea):(\d+)")  # what a tool aims at by its id, its kind spelled out: `city:8`, `lake:4`
 _INLINE_WIDTH = 165  # `emit` collapses a dict/list onto one line when it fits this width, else expands — compact yet readable, fewer tokens.
 _KIN_LEADERS = {"clans": "clan", "families": "family"}  # each kin block a tier ranks, by the body field that names its kin
 _LEVEL_RE = re.compile(r"(\d+)$")  # trailing enchant tier on a modifier id (`power5`) — `re` rides in free, `pathlib` already pulls it.
@@ -195,7 +196,7 @@ _WALK_IN_TYPES = frozenset(  # WB lets nobody in, a tale walks in: `_heart_of`
     {"type_barracks", "type_library", "type_market", "type_stockpile", "type_temple", "type_watch_tower", "type_windmill"},
 )
 
-_WATER_ARG = re.compile(r"(lake|river|sea)(\d*)")  # a water as `geography … waters` ids it, `lake4`, or its family, `lake`: a `--filter` word, a `--to` end
+_WATER_ARG = re.compile(r"(lake|river|sea)(?::(\d+))?")  # a water as `geography … waters` ids it, `lake:4`, or its family, `lake`: a `--filter` word, a `--to` end
 
 _books_memo: list = [None, None]  # `books_held`'s one slot: (save, result). Module state rather than `@cache` — a save dict is unhashable.
 _captains_memo: list = [None, None]  # `captain_ids`'s one slot: (save, captain ids). Same reason as `_books_memo`, and the same single-save lifetime.
@@ -696,11 +697,11 @@ def blood_ties(body: int, born_of: Mapping[int, frozenset[int]]) -> dict[int, st
     return ties
 
 
-# A body as a tool aims at it: its marker's letter and id, `p42`, as `[p 42 …]` reads in the tale. `None` for no body; a bare number names nothing, and says so.
+# A body as a tool aims at it, `actor:42`. `None` for no body; a bare number names nothing, and says so.
 def body_ref(value: str) -> int | None:
     if value.isdigit():
-        raise argparse.ArgumentTypeError(f"`{value}` names nothing — a body is `p{value}`")
-    return int(value[1:]) if value[:1] == "p" and value[1:].isdigit() else None
+        raise argparse.ArgumentTypeError(f"`{value}` names nothing — a body is `actor:{value}`")
+    return ref[1] if (ref := id_ref(value)) and ref[0] == "actor" else None
 
 
 # Books sit in a settlement's hall (`buildings[].books.list_books`), so their holder is that city and its crown. Memoised: a `full` run asks twice, 15 k rows each.
@@ -1002,7 +1003,7 @@ def dormant(site: dict) -> bool | None:
 def emit(out: dict | list) -> None:
     asked = {token.lstrip("-") for arg in sys.argv[1:] for token in (arg, *arg.split(","))}
     asked |= {"islets"} if "islet" in asked else set()  # `land_arg`'s singular names the block its plural keys
-    asked |= {token[1:] for token in asked if re.fullmatch(r"i\d+", token)}  # `--filter i23` names the land its block keys `23`
+    asked |= {str(ref[1]) for token in asked if (ref := id_ref(token)) and ref[0] == "land"}  # `--filter land:23` names the land its block keys `23`
     raw, value = out, _tiled(_strip_none(out))
     if isinstance(value, dict):  # a shelf, a rack or a fleet counted at nought says nothing in a sheet: only the section asked by its name still answers 0
         value = {key: block for key, block in value.items() if block != {"total": 0} or key in asked}
@@ -1112,6 +1113,10 @@ def house_building_ids() -> frozenset[str]:
 def i18n(name: str) -> dict:
     path = SAVES_DIR.parent / "i18n" / (reader_settings().get("lang") or "fr") / name
     return json.loads(path.read_text()) if path.exists() else {}
+
+
+def id_ref(value: str) -> tuple[str, int] | None:
+    return (found[1], int(found[2])) if (found := _ID_REF.fullmatch(value)) else None
 
 
 def index_by_id(records: list[dict]) -> dict:
@@ -1265,9 +1270,9 @@ def land_arg(value: str) -> int | str:
         return "islets"
     if value in ("islets", "water"):
         return value
-    if not value.isdigit():
-        raise argparse.ArgumentTypeError(f"{value!r} is no land — a land's id, `islets` or `water`")
-    return int(value)
+    if (ref := id_ref(value)) is None or ref[0] != "land":
+        raise argparse.ArgumentTypeError(f"{value!r} is no land — `land:<id>`, `islets` or `water`")
+    return ref[1]
 
 
 # Where a point lies on a land (« the desert covers its north-east »): its heading from the land's centroid, `centre` within a quarter of each half-span.
@@ -1916,16 +1921,16 @@ def war_camps(war: dict) -> tuple[set[int], set[int]]:
     return attackers, defenders
 
 
-# A water word as its kind and id, `lake4` → `("lake", 4)`, or its family alone, `lake` → `("lake", None)`, for a tool that takes one.
+# A water word as its kind and id, `lake:4` → `("lake", 4)`, or its family alone, `lake` → `("lake", None)`, for a tool that takes one.
 def water_arg(value: str) -> tuple[str, int | None]:
     if not (found := _WATER_ARG.fullmatch(value)):
-        raise argparse.ArgumentTypeError(f"{value!r} is no water — `lake<id>`, `river<id>` or `sea<id>` as `geography … waters` lists them, or a family: `lake`")
+        raise argparse.ArgumentTypeError(f"{value!r} is no water — `lake:<id>`, `river:<id>` or `sea:<id>` as `geography … waters` lists them, or a family: `lake`")
     return found[1], int(found[2]) if found[2] else None
 
 
-# A water by its id as `geography … waters` numbers it, `lake4` → `("lake", 4)` — `None` for any other word, a family `lake` among them.
+# A water by its id as `geography … waters` numbers it, `lake:4` → `("lake", 4)` — `None` for any other word, a family `lake` among them.
 def water_ref(value: str) -> tuple[str, int] | None:
-    return (found[1], int(found[2])) if (found := _WATER_ARG.fullmatch(value)) and found[2] else None
+    return ref if (ref := id_ref(value)) and ref[0] in ("lake", "river", "sea") else None
 
 
 # Wieldable item asset_ids — `damage` is what tells a weapon from armor in `equipment.json`; the eight boat projectiles that share it never sit in an inventory.

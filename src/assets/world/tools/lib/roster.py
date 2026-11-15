@@ -185,7 +185,7 @@ _MEMBERSHIPS = {
     "war": ("wars", None),  # its two camps, each body by the crown it serves
 }
 
-_ONE_BODY = re.compile(r"(?:p|id:)?(\d+)")  # a body by its id, as `--rank` takes one: `--filter` narrows a roll, one body is `actor`'s
+_ONE_BODY = re.compile(r"(?:actor:|id:)?(\d+)")  # a body by its id, as `--rank` takes one: `--filter` narrows a roll, one body is `actor`'s
 _RANKED_KEPT = ("age_overgrowth", "gen")  # the figures among a body's kept fields `--rank` reads, every other a word or an id
 _SINCE_PARTS = ("arrived", "died", "grew", "left", "moved")  # what a `--since` roll files a body under, `left` an entity's alone
 _TALLIES = ("births", "kills", "level", "loot", "money", "renown")  # what `has:` and `lacks:` weigh: a body's own counters, named as `actor … stats` names them
@@ -422,7 +422,7 @@ def _build_roster(
                 bodies.append((actor, here, change, figure))
     if top and top not in (*seen, *_TOP_MEASURES, "died") and (bodies or unranked):  # a stat no body weighed here carries, told once their stats are known
         figures = sorted({*_TOP_MEASURES, *_RANKED_KEPT, *(field for field in seen if field not in _KEPT_FIELDS)})
-        raise ValueError(refused("--rank", [top], figures, "`gloss actor.roster.--rank`, `actor <id> stats`, `p<id>` or `x,y`"))
+        raise ValueError(refused("--rank", [top], figures, "`gloss actor.roster.--rank`, `actor <id> stats`, `actor:<id>` or `x,y`"))
     gone, mourned = [], False  # `mourned`: the dead searched, found or not — `killed_by` asked of them even where none died
 
     if earlier is not None and was is not None and not (settle or barred) and "died" in told_parts:  # the dead found nothing
@@ -545,16 +545,16 @@ def _filter_arg(value: str) -> dict[str, frozenset]:
     taken: defaultdict[str, set] = defaultdict(set)
     for word in re.split(r",(?!-?\d)", value):  # a tile's comma, `patch:874,571`, ends no word
         if body := _ONE_BODY.fullmatch(word):
-            raise argparse.ArgumentTypeError(f"`{word}` filters nothing — one body is `actor {body[1]}`, the bodies nearest it `--rank p{body[1]}`")
+            raise argparse.ArgumentTypeError(f"`{word}` filters nothing — one body is `actor {body[1]}`, the bodies nearest it `--rank actor:{body[1]}`")
         key, colon, said = word.partition(":")
-        if colon:
+        if re.fullmatch(r"land:\d+|islets?|water", word):  # a land `land:<id>`, as `--to` names one, the islets a body stands on one of, the water
+            taken["land"].add(int(said) if colon else ISLET if word.startswith("islet") else word)
+        elif colon:
             taken[key].add(_keyed(key, said))
-        elif re.fullmatch(r"i\d+|islets?|water", word):  # a land `i<id>`, as `--to` names one, the islets a body stands on one of, the water
-            taken["land"].add(int(word[1:]) if word[1:].isdigit() else ISLET if word.startswith("islet") else word)
         elif group := next((name for name, words in groups.items() if word in words), None):
             taken[group].add(word)
         else:  # every word and key in `gloss actor.roster`, the closest few offered
-            known = [*(word for words in groups.values() for word in words), "islets", "water", *(f"{key}:" for key in (*_MEMBERSHIPS, *_KEYED))]
+            known = [*(word for words in groups.values() for word in words), "islets", "land:", "water", *(f"{key}:" for key in (*_MEMBERSHIPS, *_KEYED))]
             raise argparse.ArgumentTypeError(f"`{word}` filters nothing{_guessed(word, known)}")
     return {group: frozenset(values) for group, values in taken.items()}
 
@@ -688,7 +688,7 @@ def make_room(row: dict, added: dict, gives_way: Sequence[str], owed: int | None
     return {key: value for key, value in row.items() if key not in gone} | added
 
 
-# `--rank`'s point: a body `p<id>`, else a tile `x,y`.
+# `--rank`'s point: a body `actor:<id>`, else a tile `x,y`.
 def _near_arg(value: str) -> int | tuple[int, int]:
     return xy_arg(value) if (body := body_ref(value)) is None else body
 
@@ -857,7 +857,7 @@ def roster_main(argv: list[str]) -> int:
     parser = arg_parser(prog="actor/info.py --roster", taken="[--since C<n>] [C<n>]", gloss="actor.roster")
     parser.add_argument("--filter", action="append", type=_filter_arg, metavar="word|key:value,…")  # repeated, each narrows further
     parser.add_argument("--limit", type=limit_arg, metavar="n|all")
-    parser.add_argument("--rank", dest="top", metavar="measure|x,y|p<id>")
+    parser.add_argument("--rank", dest="top", metavar="measure|x,y|actor:<id>")
     parser.add_argument(
         "--with",
         action="append",  # repeated, each adds its fields: a second never drops the first unheard

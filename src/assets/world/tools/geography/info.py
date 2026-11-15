@@ -101,7 +101,7 @@ _SHORE_REACH = 60  # tiles past which a fire is off every water, as `tiles` hold
 _STEPS = tuple((dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)  # the eight ways a crow-flown search widens
 _SURVEY_PCT = 1  # the share of its land under which a ground is only named in the world-wide `biomes`: half its rows weigh less, and a land named has them all
 _TOP_PATCHES = 5  # the patches `biomes -t` sites of one ground — a second massif, a frost in two halves: past a handful, the row's count says the rest
-_WATER_WORD = re.compile(r"(?:lake|river|sea)\d*")  # a water `--filter` takes, `lake4` or a family `lake`, as `water_arg` reads it
+_WATER_WORD = re.compile(r"(?:lake|river|sea)(?::\d+)?")  # a water `--filter` takes, `lake:4` or a family `lake`, as `water_arg` reads it
 
 
 # Every biome's patches, land by land: each row's runs of one biome joined to those they touch above, corners included, never across lands — C walks the map.
@@ -470,16 +470,18 @@ def _cut(rows: list, limit: int | None, what: str, order: str) -> list:
     return rows
 
 
-# `--filter`'s words: a land `i<id>`, `islets` or `water`, as `--to` names one, and a water `lake<id>` or a family `lake`, read as `land_arg` and `water_arg` do.
+# `--filter`'s words: a land `land:<id>`, `islets` or `water`, as `--to` names one, and a water `lake:<id>` or a family `lake`, as `land_arg`, `water_arg` read them.
 def _filter_arg(value: str) -> dict[str, dict]:
     taken: dict[str, dict] = {}
     for word in value.split(","):
-        if re.fullmatch(r"i\d+|islets?|water", word):
-            taken.setdefault("land", {})[word] = land_arg(word[1:] if word[1:].isdigit() else word)
+        if re.fullmatch(r"land:\d+|islets?|water", word):
+            taken.setdefault("land", {})[word] = land_arg(word)
         elif _WATER_WORD.fullmatch(word):
             taken.setdefault("water", {})[word] = water_arg(word)
         else:
-            raise argparse.ArgumentTypeError(f"`{word}` filters nothing — a land `i<id>`, `islets`, `water`, or a water `lake<id>`, `river<id>`, `sea<id>`, `lake`…")
+            raise argparse.ArgumentTypeError(
+                f"`{word}` filters nothing — a land `land:<id>`, `islets`, `water`, or a water `lake:<id>`, `river:<id>`, `sea:<id>`, a kind `lake`…"
+            )
     return taken
 
 
@@ -616,9 +618,9 @@ def _land_order(item: tuple[str, object]) -> tuple[bool, int, str]:
     return (not key.isdigit(), int(key) if key.isdigit() else 0, key)
 
 
-# A land as `--filter` writes it: `i23`, `islets`, `water`.
+# A land as `--filter` writes it: `land:23`, `islets`, `water`.
 def _land_word(land: int | str) -> str:
-    return f"i{land}" if isinstance(land, int) else land
+    return f"land:{land}" if isinstance(land, int) else land
 
 
 # The sections cut to one land: its row, biomes, frost, fire and gear, and the waters and ridges it borders — new dicts all, the cached ones left as they are.
@@ -765,7 +767,7 @@ def main(argv: list[str]) -> int:
 
     parser = arg_parser(prog="geography/info.py", taken="[--since C<n>] [C<n>]")
     parser.add_argument("sections", nargs="?")
-    parser.add_argument("--filter", action="append", type=_filter_arg, metavar="i<id>|islets|water|lake<id>|lake|…")
+    parser.add_argument("--filter", action="append", type=_filter_arg, metavar="land:<id>|islets|water|lake:<id>|lake|…")
     parser.add_argument("--limit", type=limit_arg, metavar="n|all")
     parser.add_argument("--type", "-t", metavar="kind")
     args = parser.parse_args(argv)
@@ -899,7 +901,7 @@ def main(argv: list[str]) -> int:
                 shown = shown | {"biomes": _surveyed(shown["biomes"])}
         elif args.island is None:
             if (found := _ground_lands(shown["biomes"], wanted)) is None:
-                print(f"✗ no {wanted} in this world — `biomes --filter i<land>` lists a land's grounds", file=sys.stderr)
+                print(f"✗ no {wanted} in this world — `biomes --filter land:<id>` lists a land's grounds", file=sys.stderr)
                 return 1
             shown = shown | {"biomes": found}
         elif detail := _patch_detail(save, save_path, args.island, wanted):

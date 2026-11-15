@@ -52,6 +52,7 @@ from shared import (
     entity_born,
     entity_ref,
     gazetteer,
+    id_ref,
     index_by_id,
     is_boat,
     is_ruin,
@@ -79,11 +80,11 @@ _AXES = ("E–W", "NE–SW", "N–S", "NW–SE")  # the four lines a shape can l
 _BARE = {"actors": "no body", "ground": "nothing built or grown", "owner": "no town"}  # what a tile lacks, said when these are all the call asked
 _BRUTE_PAIRS = 20_000  # tile pairs two grounds are weighed by one by one: a building and a body, never a land and a lake
 _BURNING = "burning"  # the end of the fires, no ground: `geography … burning` names them so
-_END = "x,y|b<id>|c<id>|p<id>|i<land>|lake<id>|burning|frozen|g:<ground>|<place>"  # what either end of a reading takes, as `--help` shows it
+_END = "x,y|actor:<id>|building:<id>|city:<id>|lake:<id>|land:<id>|burning|frozen|ground:<name>|<place>"  # what either end of a reading takes, as `--help` shows it
 _FARTHER = float("inf")  # the standing best before any land is seen, so the first tile of an island always takes its place
 _FROZEN = "frozen"  # the end of every frost, no ground: snow, ice, permafrost and the passing frost, as `geography … frozen` counts them
-_GROUND_PREFIX = "g:"  # `--to g:rock`: a ground by its `biomes` name, as `actor … --to` takes one
-_LAND = re.compile(r"i\d+")  # a land by its id, as `geography … islands` lists it
+_GROUND_PREFIX = "ground:"  # `--to ground:rock`: a ground by its `biomes` name, as `actor … --to` takes one
+_LAND = re.compile(r"land:(\d+)")  # a land by its id, as `geography … islands` lists it
 _LAND_REACH = 60  # past that, a tile is open sea and the nearest shore is no longer what isolates it — `strait_to_land` gives the reach, not a number
 _LONG_SHAPE = 1.5  # length over breadth from which a shape lies along a line: rounder, it lies along none
 _NEAR_ENDS = 3  # a river's ends `to_river_ends` names from a tile, nearest along its water: where it runs out from here, a delta's dozens left to the map
@@ -91,7 +92,7 @@ _NEAR_ISLANDS = 5  # the lands a reading names around a point: past five, the re
 _PAIR_CELL = 16  # the side of the cells a large ground is hashed into for `_closest_pair`, a chunk's
 _REFERENCE_SPEED = 10  # chronicler.md § Échelle's walker: a tile has no body, so its way is the one the scale's pace would take, never timed
 _RELIEF = {"mountains": "mountain", "snow_block": "mountain", "snow_summit": "mountain", "summit": "mountain"}  # a wall and its peak, one relief
-_SPREAD = re.compile(r"i\d+|(?:lake|river|sea)\d+|box")  # what a place aimed at spreads over, edge and middle apart: a land, a water, a box
+_SPREAD = re.compile(r"land:\d+|(?:lake|river|sea):\d+|box")  # what a place aimed at spreads over, edge and middle apart: a land, a water, a box
 
 # The eight steps a tide takes, each with its length — a slanted one being longer than a straight one, the least water is not the nearest in rings.
 _WEIGHTED_DELTAS = tuple(((dx, dy), 1.0 if dx == 0 or dy == 0 else 1 + DIAGONAL_EXTRA) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy)
@@ -180,8 +181,8 @@ def _build_context(save: dict, save_path: Path, sections: set[str], coords: list
 
 # The middle of an end that spreads: a land or a water named by its id at its `heart`, as `geography` sites it; any other by its point in `places.json`.
 def _centre(end: str, save: dict, save_path: Path) -> tuple[int, int]:
-    if _LAND.fullmatch(end):
-        return point_xy(next(land["heart"] for land in compute_islands_cached(save, save_path)[0] if land["id"] == int(end[1:])))
+    if found := _LAND.fullmatch(end):
+        return point_xy(next(land["heart"] for land in compute_islands_cached(save, save_path)[0] if land["id"] == int(found[1])))
     if not (water := water_ref(end)):
         return place_centre(end)
     return point_xy(next(body["heart"] for body in waters_cached(save, save_path)[f"{water[0]}s"] if body["id"] == water[1]))
@@ -192,11 +193,11 @@ def _city_at(x: int, y: int, ctx: dict) -> dict | None:
     return ctx["city_by_pos"].get((x // ZONE_TILES, y // ZONE_TILES))
 
 
-# A town aimed at by its id is met at its centre, a crown's seat as `--to c<id>` times it; its ground begins at its nearest quarter, as `to_nearest_city` says.
+# A town aimed at by its id is met at its centre, a crown's seat as `--to city:<id>` times it; its ground begins at its nearest quarter, as `to_nearest_city` says.
 def _city_edge(end: str | tuple[int, int], x: int, y: int, save: dict) -> int | None:
-    if not (isinstance(end, str) and re.fullmatch(r"c\d+", end)):
+    if not (isinstance(end, str) and (ref := id_ref(end)) and ref[0] == "city"):
         return None
-    city = next((c for c in save.get("cities") or [] if c.get("id") == int(end[1:])), {})
+    city = next((c for c in save.get("cities") or [] if c.get("id") == ref[1]), {})
     return town_edge(x, y, quarters) if (quarters := town_quarters(city)) else None
 
 
@@ -270,25 +271,25 @@ def _ground(end: str, save: dict, save_path: Path, chapter: str | None) -> tuple
     if (ground := end.removeprefix(_GROUND_PREFIX)) != end:  # the rock at a range's foot, a biome's edge
         names = [(tile_ground(name) or "").removeprefix(BARE) for name in save["tileMap"]]
         if ground not in names:
-            return f"✗ no {ground} in this world — `geography … biomes --filter i<land>` lists a land's grounds"
+            return f"✗ no {ground} in this world — `geography … biomes --filter land:<id>` lists a land's grounds"
         return [(x, y) for y, row in enumerate(tile_mask(save, [own == ground for own in names])) for x, held in enumerate(row) if held], end
-    if _LAND.fullmatch(end):  # a land by its id, held by its rim as one `places.json` names
-        tiles = [(x, y) for x, y, owner in compute_islands_cached(save, save_path)[1].edges() if owner == int(end[1:])]
-        return (tiles, end) if tiles else f"✗ no land {end[1:]} — `geography … islands` lists them"
+    if land := _LAND.fullmatch(end):  # a land by its id, held by its rim as one `places.json` names
+        tiles = [(x, y) for x, y, owner in compute_islands_cached(save, save_path)[1].edges() if owner == int(land[1])]
+        return (tiles, end) if tiles else f"✗ no land {land[1]} — `geography … islands` lists them"
     if water := water_ref(end):  # by its id, as its name in `places.json` would: a water yet unnamed is measured all the same
         tiles = water_tiles(save, save_path, *water)
         return (tiles, end) if tiles else f"✗ no {water[0]} {water[1]} — `geography … waters` lists them"
-    if not re.fullmatch(r"[bcp]\d+", end):
+    if (aimed := id_ref(end)) is None or aimed[0] not in ("actor", "building", "city"):
         try:
             found = named_place(end, save, save_path, compute_islands_cached(save, save_path)[1], WalkMap(save))
         except PlaceError as e:
             return str(e)
         return found or f"✗ `{end}` is no end — {_END.replace('|', ', ')}"
-    kind, ref = end[0], int(end[1:])
-    if kind == "b":
+    kind, ref = aimed
+    if kind == "building":
         site = next((b for b in save.get("buildings") or [] if b.get("id") == ref), None)
         return (site and (building_footprint(site), end)) or absent_entity("ground", "buildings", ref, chapter, noun="building")
-    if kind == "c":
+    if kind == "city":
         city = next((c for c in save.get("cities") or [] if c.get("id") == ref), None)
         return ([centre], None) if city and (centre := city_centre(city)) else absent_entity("city", "cities", ref, chapter)
     body = next((a for a in save.get("actors_data") or [] if a.get("id") == ref and not is_boat(a)), None)
@@ -630,7 +631,7 @@ def main(argv: list[str]) -> int:
     for ground, place in found[1:] or found[:1]:
         grounds, aimed = [found[0][0], ground], [found[0][1], place]
         for at, land in enumerate(aimed):
-            if island_of and land and _LAND.fullmatch(land) and (inside := next((t for t in grounds[1 - at] if island_of.get(t) == int(land[1:])), None)):
+            if island_of and land and (held := _LAND.fullmatch(land)) and (inside := next((t for t in grounds[1 - at] if island_of.get(t) == int(held[1])), None)):
                 grounds[at] = [inside]
         # A building, a town or a place is met at its nearest tile, the walk setting off from the first's toward all the second's
         (cx, cy), (tx, ty) = _closest_pair(grounds[0], grounds[1])
@@ -645,7 +646,7 @@ def main(argv: list[str]) -> int:
     ctx = _build_context(save, save_path, sections, coords, "distances" in sections or args.to is not None)
     if sections == {"islet"} and not ctx["tile_to_island"].islet_size((cx, cy)):  # asked alone, an empty block would read as an islet with nothing on it
         land = ctx["tile_to_island"].get((cx, cy))
-        print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands --filter i{land}`' if land else 'water'}", file=sys.stderr)
+        print(f"✗ ({cx}, {cy}) is on no islet — {f'land {land}: `geography … islands --filter land:{land}`' if land else 'water'}", file=sys.stderr)
         return 2
     # Its town, what lives or stands there: asked with nothing else, a tile with none of them says so, an empty answer reading as a tool gone wrong.
     if sections and sections <= _BARE.keys() and not any(_holds(section, coords, ctx) for section in sections):
