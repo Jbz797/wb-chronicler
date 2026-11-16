@@ -127,6 +127,14 @@ _WORLD_STATES = (
 )
 
 
+# A row's value at a dotted path, `None` where a step is missing.
+def _at(row: dict, path: str) -> object:
+    value: object = row
+    for key in path.split("."):
+        value = value.get(key) if isinstance(value, dict) else None
+    return value
+
+
 # WB's fallen crowns with their dates, last seat and size, who left or came by the fire, how they died, and the reigns the log names — their latest `limit`.
 def _build_dead_kingdoms(conn: sqlite3.Connection, save: dict, save_path: Path, chapter: str | None, limit: int | None) -> list[dict]:
     now = _chapter_time(save)
@@ -386,6 +394,18 @@ def _gains(before: dict, now: dict, events: list[str]) -> dict:
     return out
 
 
+# A year series cut to the paths asked as `across` reads them, `year` kept — a field other rows hold in another block (`mean` a span's, `at_close` a year's), said.
+def _kept(rows: list[dict], paths: list[str]) -> list[dict]:
+    asked = sorted(paths)
+    for path in (path for path in asked if "." in path):
+        field = path.rpartition(".")[2]
+        found = ({f"{key}.{field}" for key, held in row.items() if isinstance(held, dict) and field in held} for row in rows if _at(row, path) is None)
+        if twins := [unasked for twin in found if (unasked := twin.difference(asked))]:
+            other = ", ".join(sorted(set().union(*twins)))
+            print(f"⚠ {path}: {other} on {len(twins)} row{'s' * (len(twins) > 1)} instead — keep both for the whole series", file=sys.stderr)
+    return [{"year": row["year"]} | {path: value for path in asked if (value := _at(row, path)) is not None} for row in rows]
+
+
 # A king's line in the log, under the names it was written with: a murder's body is its killer, every other entry's the king himself.
 def _king_entry(entry: dict) -> dict:
     body, at = entry["actor_id"], {"date": entry["date"], "event": entry["event"]}
@@ -505,6 +525,14 @@ def _span(row: dict, first: int) -> str:
     return f"y{start}–y{end}" if start < end else f"y{end}"
 
 
+# The paths no row of the series holds, refused with those it does: a block's own by its dotted path.
+def _unheld(rows: list[dict], paths: list[str]) -> str | None:
+    held = {key for row in rows for key in row} - {"year"}
+    held |= {f"{key}.{inner}" for row in rows for key, block in row.items() if isinstance(block, dict) for inner in block}
+    unknown = [path for path in paths if path not in held]
+    return f"✗ no {', '.join(unknown)} in these years — fields: {', '.join(sorted(held))}" if unknown else None
+
+
 # Every crown a war ever drew in: its two leads, those still fighting, those gone over to peace or fallen since
 def _war_crowns(war: dict) -> set[int]:
     sides = (f"{kind}_{side}" for kind in ("died", "list", "past") for side in ("attackers", "defenders"))
@@ -537,6 +565,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("section")
     parser.add_argument("entity", nargs="*", metavar="kind id")
     parser.add_argument("--actor", type=int, metavar="id")
+    parser.add_argument("--keep", type=lambda value: [field for field in value.split(",") if field], metavar="a,b")
     parser.add_argument("--kingdom", type=int, metavar="id")
     parser.add_argument("--limit", type=limit_arg, metavar="n|all")
     kinds = sorted(load_data("world-log.json"))  # WB's own kinds of entry: a word outside them is a typo, refused with the list, never a quiet nothing
@@ -574,6 +603,9 @@ def main(argv: list[str]) -> int:
     if args.year is not None and args.section not in ("entity", "world"):
         print("✗ --year picks a row of `entity` or `world`: name one", file=sys.stderr)
         return 2
+    if args.keep is not None and (args.section not in ("entity", "world") or not args.keep):
+        print("✗ --keep follows fields of `entity` or `world` over the years: `entity city 8 --keep pop,loyalty`", file=sys.stderr)
+        return 2
     if args.limit is not None and args.section not in ("dead_kingdoms", "founded", "log", "rulers"):
         print("✗ --limit cuts `dead_kingdoms`, `founded`, `log` and `rulers`: name one", file=sys.stderr)
         return 2
@@ -602,8 +634,12 @@ def main(argv: list[str]) -> int:
             out = _build_dead_kingdoms(conn, save, save_path, chapter, limit) or "✗ no crown has fallen"
         else:
             out = _build_entity(conn, args.entity[0], int(args.entity[1]), save, chapter)
+    if args.keep and isinstance(out, list):  # checked on the whole series: a field a year leaves unsaid is still one the series holds
+        out = _unheld(out, args.keep) or out
     if args.year is not None and isinstance(out, list):
         out = _of_year(out, args.year)
+    if args.keep and isinstance(out, list):
+        out = _kept(out, args.keep)
     if isinstance(out, str):
         print(out, file=sys.stderr)
         return 1
