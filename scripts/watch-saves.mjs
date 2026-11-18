@@ -4,9 +4,7 @@
 //  · finds and records where WorldBox keeps its live save — the one path the whole toolchain hangs on, and the only thing that ever tied it to one OS.
 
 import { watch } from 'chokidar';
-import {
-  readdir, readFile, rm, stat, utimes, writeFile,
-} from 'node:fs/promises';
+import { readdir, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -175,9 +173,7 @@ class SaveScout {
   async #describe(savePath) {
     try {
       const [{ mtimeMs, size }, world] = await Promise.all([stat(savePath), this.#worldName(savePath)]);
-      return [{
-        mtime: Math.round(mtimeMs), path: savePath, size, world,
-      }];
+      return [{ mtime: Math.round(mtimeMs), path: savePath, size, world }];
     } catch {
       return [];
     }
