@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, DOCUMENT } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { afterRenderEffect, Component, computed, ElementRef, inject, input, signal, untracked, viewChild, viewChildren } from '@angular/core';
 
@@ -21,6 +21,7 @@ import { ChroniclerService, RegistryService } from '../../../../services';
 export class WorldMapComponent {
 
   private readonly _chronicler = inject(ChroniclerService);
+  private readonly _document = inject(DOCUMENT);
   private readonly _registry = inject(RegistryService);
   private readonly _translate = inject(TranslateService);
 
@@ -176,7 +177,7 @@ export class WorldMapComponent {
   // The middle of a glyph's drawing above its baseline, in `em` — read off a canvas, a font giving every emoji the same box whatever its art.
   private _inkMiddle(text: string, family: string): number {
     const [size, side] = [64, 128];
-    const context = Object.assign(document.createElement('canvas'), { height: side, width: side }).getContext('2d', { willReadFrequently: true });
+    const context = Object.assign(this._document.createElement('canvas'), { height: side, width: side }).getContext('2d', { willReadFrequently: true });
     if (!context) return 0;
     context.font = `${size}px ${family}`;
     context.fillText(text, size / 2, size * 1.5);

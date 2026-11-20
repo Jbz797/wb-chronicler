@@ -17,6 +17,6 @@
 
   <ng-template #plotTitle>
     {{ 'ui_ongoing_plot' | translate }}
-    <app-new-badge [dot]="false" [show]="isNew()" />
+    <app-new-badge [dot]="false" [show]="changed()" />
   </ng-template>
 }

@@ -19,7 +19,7 @@ export class PlotCardComponent {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _translate = inject(TranslateService);
 
-  public readonly isNew = input.required<boolean>();
+  public readonly changed = input.required<boolean>();
 
   protected readonly plot = computed(() => this._chronicler.currentChapter()?.meta.favorite?.plot ?? null);
   protected readonly progressColor = computed(() => (this.plot()?.progress ?? 0) >= 75 ? '#7a9b3a' : '#e6b94a');

@@ -20,7 +20,7 @@ export class BoatCardComponent {
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _translate = inject(TranslateService);
 
-  public readonly isNew = input.required<boolean>();
+  public readonly changed = input.required<boolean>();
 
   protected readonly boat = computed(() => this._chronicler.currentChapter()?.meta.boat ?? null);
   // The hull's own name where WB gave it one — barely a tenth of a world's boats are ever named, and a nameless one is simply the favorite's boat.

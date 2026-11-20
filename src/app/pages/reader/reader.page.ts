@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, resource, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -31,6 +32,7 @@ export class ReaderPage {
 
   private readonly _chronicler = inject(ChroniclerService);
   private readonly _dev = inject(BOOT_SETTINGS).dev;
+  private readonly _document = inject(DOCUMENT);
   private readonly _element = inject(ElementRef<HTMLElement>);
   private readonly _http = inject(HttpClient);
   private readonly _registry = inject(RegistryService);
@@ -162,14 +164,14 @@ export class ReaderPage {
       const plate = portrait.closest('.entity-tag');
       if (!icon || !plate) continue;
       const next = plate.querySelector('img[src$="/kin.png"], img[src*="/sex/"], img[src*="/professions/"]');
-      plate.insertBefore(Object.assign(document.createElement('img'), { src: icon }), next);
+      plate.insertBefore(Object.assign(this._document.createElement('img'), { src: icon }), next);
     }
   }
 
   // The epigraph's larger face can wrap: shrunk by its one-line overflow, pass after pass, since a tag keeps its pixel size and one proportional cut falls short.
   private _fitOneLine(opening: HTMLElement): void {
     opening.style.whiteSpace = 'nowrap';
-    const range = document.createRange();
+    const range = this._document.createRange();
     for (let pass = 0; pass < 8; pass++) {
       // Measured in fractions: `scrollWidth` and `clientWidth` round to whole pixels, and a tenth of one over the line is enough to wrap.
       range.selectNodeContents(opening);
@@ -188,7 +190,7 @@ export class ReaderPage {
     const heading = root.querySelector(':scope markdown > h2');
     const stone = this._tombstone()?.nativeElement; // set only for a mourned favourite
     if (!heading || !stone) return;
-    const frame = document.createElement('section');
+    const frame = this._document.createElement('section');
     frame.classList.add('obituary');
     heading.before(frame);
     frame.append(stone, heading);
@@ -213,7 +215,7 @@ export class ReaderPage {
   // Google Fonts swaps faces in late, so a measure waits for the one it reads — spelled from longhands: computed `font` often reads empty, and `load('')` throws.
   private async _loadFaces(element: HTMLElement): Promise<FontFace[]> {
     const { fontFamily, fontSize, fontStyle, fontWeight } = getComputedStyle(element);
-    return document.fonts.load(`${fontStyle} ${fontWeight} ${fontSize} ${fontFamily}`, element.textContent);
+    return this._document.fonts.load(`${fontStyle} ${fontWeight} ${fontSize} ${fontFamily}`, element.textContent);
   }
 
   // A chapter opening shorter than the two-line cap forgoes it — measured, not counted, since chars per line follow the window. A workshop page's is instruction.
@@ -238,7 +240,7 @@ export class ReaderPage {
     const tags = elements.flatMap(element => [...element.querySelectorAll(':scope .entity-tag, :scope .icon-wrap')]);
     for (const tag of tags) {
       const name = tag.querySelector(':scope .entity-name');
-      const plain = document.createElement('span');
+      const plain = this._document.createElement('span');
       plain.classList.add('plain-tag');
       plain.textContent = name?.textContent ?? tag.textContent;
       // The ink the tag's name wore (a `[s]` its species', a resource the line's); a family takes its fill, a crownless soul its species' hue, not its grey.

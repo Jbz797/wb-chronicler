@@ -32,7 +32,7 @@
   </ng-template>
   <ng-template #boatTitle>
     {{ 'ui_aboard' | translate }} {{ title() }}
-    <app-new-badge [dot]="false" [show]="isNew()" />
+    <app-new-badge [dot]="false" [show]="changed()" />
   </ng-template>
   <ng-template #cityTitle>
     <img src="assets/img/world/cities.png" />

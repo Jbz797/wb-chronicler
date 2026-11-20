@@ -50,7 +50,7 @@ export class RankedStatComponent {
 
     // Python drops a figure at 0, so a body's line absent last chapter reads 0 there: a figure that appears is new, not a rise from nothing.
     const isNew = !!p && p.value === 0 && c.value !== 0;
-    const valueDelta = isNew || this.hideDelta() ? undefined : (p ? c.value - p.value : undefined);
+    const valueDelta = !p || isNew || this.hideDelta() ? undefined : c.value - p.value;
     return { ...c, isNew, rankStatus: this._rankStatus(c.rank, p?.rank, !!p), valueDelta };
   });
   // Live gauge value for stats that have a cap (health/mana/stamina). `null` for all others.
