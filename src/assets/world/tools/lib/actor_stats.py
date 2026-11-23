@@ -1,20 +1,5 @@
-# Shared actor stats pipeline — mirrors `Actor.updateStats` from WB's `Assembly-CSharp.dll`.
-#
-# ─── Maintenance / algorithm reference ───
-# The pipeline below is the spec; numeric tables (_GENE_VALUES, _GENE_INDEX, ceil-on-bad, synergy-always) were read off WorldBox's in-game tooltips.
-#
-# Pipeline per chromosome:
-#   1. For each locus (skipping `void_loci`):
-#        a. Detect BAD: at least one cardinal neighbor (N/S/E/W) contains the `bad` gene.
-#        b. Detect GOLDEN: every side that holds a real gene synergizes (≥1 such side). Borders AND `empty` slots are skipped. BAD wins over GOLDEN.
-#        c. Apply tier: BAD → floor(v/2) (ceil for `attack_speed`/`damage_1`/`health_1`/`speed_1`); GOLDEN → v×2; else v as-is.
-#        d. Accumulate per stat name — into the neutral block, or into one sex's block for the neighbours of a `bonus_male`/`bonus_female` locus.
-#   2. Actor-side: neutral block + the actor's sex block, then traits, equipment, level, `normalize`, derived stats, multipliers, `normalize` again.
-#   3. `_cleanup_stats` truncates floats toward zero (1 decimal for `_KEEP_DECIMAL`), renames, drops zeros.
-#
-# Color synergy: .NET `System.Random` (seed `life_dna + gene._GENE_INDEX`) → 4-side color signature/gene; int32 overflow mirrored (`_to_int32()`/`_SystemRandom`).
-# Color positions: indices target *spaced* text (`"XXX XXX XXX XXX XXX"`, 19 chars) at 0/8/10/18 → unspaced 15-char text at 0/6/8/14.
-# ⚠️ If you ever rewrite the DNA generator to keep the spaces, shift the indices back.
+# Shared actor stats pipeline, mirroring WB `Actor.updateStats`: chromosomes (each locus halved by a bad neighbour, doubled in full accord, sex genes apart),
+# the actor's sex block, traits, equipment, level, `normalize`, derived stats, multipliers, `normalize` again — `_cleanup_stats` last.
 
 import math
 from collections import Counter
