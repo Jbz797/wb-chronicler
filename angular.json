@@ -11,7 +11,7 @@
           "builder": "@angular/build:application",
           "configurations": {
             "development": { "optimization": false, "sourceMap": true },
-            "production": { "optimization": true, "sourceMap": false }
+            "production": {}
           },
           "defaultConfiguration": "development",
           "options": {
@@ -20,7 +20,6 @@
               {
                 "glob": "**/*",
                 "ignore": [
-                  "**/.DS_Store",
                   "**/.cache/**",
                   "**/.claude/**",
                   "**/.git/**",
