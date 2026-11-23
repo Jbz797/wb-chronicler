@@ -25,7 +25,7 @@
 
   <p class="intro">{{ 'ui_pick_save' | translate }}</p>
 
-  <ng-scrollbar class="choices-scroll">
+  <ng-scrollbar>
     <nz-radio-group class="choices" [ngModel]="picked()" (ngModelChange)="picked.set($event)">
       @for (candidate of candidates(); track candidate.path) {
         <label nz-radio [nzValue]="candidate.path">

@@ -44,7 +44,7 @@
   }
 
   // A machine can hold as many slots as the player cares to keep, and the panel's own button must stay in sight whatever their number.
-  .choices-scroll {
+  ng-scrollbar {
     max-height: 40vh;
 
     .choices {

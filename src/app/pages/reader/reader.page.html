@@ -1,5 +1,5 @@
 <div class="reader-page">
-  <ng-scrollbar class="reader-scroll">
+  <ng-scrollbar>
     <article class="ant-typography" [class.at-war]="atWar()" [class.chapter]="isChapter()" (pointerout)="onProseOut($event)" (pointerover)="onProseOver($event)">
       @if (warGauges().length) {
         <div class="war-gauges">

@@ -14,7 +14,7 @@
   overflow: hidden;
   width: calc(100% - 4rem);
 
-  .reader-scroll {
+  ng-scrollbar {
     // `ngx-scrollbar` sizes its content box to its widest child, so one long code line would stretch every paragraph past the parchment and clip the prose.
     .ng-scroll-content {
       max-width: 100%;

@@ -4800,9 +4800,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-angular-strict@npm:22.8.0":
-  version: 22.8.0
-  resolution: "eslint-config-angular-strict@npm:22.8.0"
+"eslint-config-angular-strict@npm:22.8.3":
+  version: 22.8.3
+  resolution: "eslint-config-angular-strict@npm:22.8.3"
   dependencies:
     "@angular-eslint/builder": "npm:22.8.0"
     "@angular-eslint/eslint-plugin": "npm:22.8.0"
@@ -4821,7 +4821,7 @@ __metadata:
     eslint-plugin-toml: "npm:1.5.0"
     eslint-plugin-unicorn: "npm:80.0.0"
     eslint-plugin-yml: "npm:3.10.0"
-  checksum: 10c0/f2486d69d56d8f3c49e8869762dd9c622590308dcf9f2e526d8508b1d225bdfedf0e8aebdbd1f6f0c0151bb523efacaf0c5945011e2df8b95b731258a119d702
+  checksum: 10c0/800210bb2d277a4cafd76e48b644f9275625d286f255a81b0d8f3a3325b1014f2e7beb2b0f70d8ff9f37655357441d2025f4e4eac939524bf61331bac51c9a19
   languageName: node
   linkType: hard
 
@@ -7512,9 +7512,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ng-zorro-antd@npm:22.2.0":
-  version: 22.2.0
-  resolution: "ng-zorro-antd@npm:22.2.0"
+"ng-zorro-antd@npm:22.2.1":
+  version: 22.2.1
+  resolution: "ng-zorro-antd@npm:22.2.1"
   dependencies:
     "@angular/cdk": "npm:^22.0.0"
     "@ant-design/icons-angular": "npm:^22.1.0"
@@ -7527,7 +7527,8 @@ __metadata:
     "@angular/forms": ^22.0.0
     "@angular/platform-browser": ^22.0.0
     "@angular/router": ^22.0.0
-  checksum: 10c0/76ce2dd5085f602ea49f8dcb3c2e5a6f34338245340802e9811ac9defd3d63d81b3bc4a9cd1ee86f0e744fdfec98edbbfe04945a883fe0f37922d579066af4e0
+    rxjs: ^6.5.3 || ^7.4.0
+  checksum: 10c0/f615b85f448a0a52b8d3dddd4e6a63f8b9e25fbe3afc1b48717ee8d21c4cf2cd9be0b9754d51fcd7295e098dd137443cf9485877e2284f60e5f2fbed57475a23
   languageName: node
   linkType: hard
 
@@ -9842,10 +9843,10 @@ __metadata:
     "@ngx-translate/core": "npm:18.1.0"
     chokidar: "npm:6.0.0"
     concurrently: "npm:10.0.7"
-    eslint-config-angular-strict: "npm:22.8.0"
+    eslint-config-angular-strict: "npm:22.8.3"
     less: "npm:4.9.1"
     marked: "npm:18.2.1"
-    ng-zorro-antd: "npm:22.2.0"
+    ng-zorro-antd: "npm:22.2.1"
     ngx-markdown: "npm:22.1.1"
     ngx-scrollbar: "npm:^19.1.5"
     prettier: "npm:3.10.1"
