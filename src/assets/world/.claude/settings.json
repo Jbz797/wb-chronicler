@@ -1,6 +1,7 @@
 {
   "allowedMcpServers": [],
   "autoMemoryEnabled": false,
+  "claudeMdExcludes": ["**/.claude/CLAUDE.md"],
   "disableClaudeAiConnectors": true,
   "effortLevel": "high",
   "model": "claude-opus-5-5",
